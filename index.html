@@ -204,19 +204,26 @@
   }
   .ava{
     display:inline-flex;align-items:center;justify-content:center;
-    width:28px;height:28px;flex:0 0 28px;border-radius:999px;overflow:hidden;
+    width:28px;height:28px;flex:0 0 28px;border-radius:999px;
+    /* بریده نمی‌شود تا شمارندهٔ پیام بیرونِ گوشهٔ عکس بنشیند */
+    overflow:visible;
     background:var(--field);color:var(--muted);
     font-size:11px;font-weight:700;border:1px solid var(--line);
     vertical-align:middle;line-height:1;
   }
   .ava{position:relative;}
-  .ava img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ava img{width:100%;height:100%;object-fit:cover;display:block;border-radius:999px;}
   .ava .msg-dot{
-    position:absolute;top:-3px;inset-inline-end:-3px;
-    min-width:15px;height:15px;padding:0 3px;border-radius:999px;
-    background:var(--alert);color:#fff;font-family:var(--m);font-size:9px;font-style:normal;
-    display:flex;align-items:center;justify-content:center;border:1.5px solid var(--surface);
+    position:absolute;top:-5px;inset-inline-end:-5px;z-index:3;
+    min-width:16px;height:16px;padding:0 4px;border-radius:999px;
+    background:var(--alert);color:#fff;font-family:var(--m);font-size:9.5px;
+    font-weight:700;font-style:normal;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--surface);
+    box-shadow:0 2px 6px -2px rgba(20,25,45,.55);
   }
+  .ava.lg .msg-dot{top:-6px;inset-inline-end:-6px;min-width:19px;height:19px;font-size:10.5px;}
+  .ava.chat .msg-dot,.ava.tiny .msg-dot{display:none;}
   .ava.has-msg{box-shadow:0 0 0 2px var(--alert-soft);}
   .user-list{display:flex;flex-direction:column;gap:7px;max-height:46vh;overflow-y:auto;}
   .user-btn{
@@ -2903,7 +2910,8 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .hr-card > .hr-head .hr-ar{margin-inline-start:auto;font-size:11px;color:var(--muted);}
-  .hr-split{display:none;gap:10px;padding:0 12px 12px;}
+  /* دو گزارش اجرایی و اداری همیشه زیر هم می‌آیند تا در هم نروند */
+  .hr-split{display:none;gap:10px;padding:0 12px 12px;flex-direction:column;}
   .hr-card.open > .hr-split{display:flex;}
   .hr-col{
     flex:1 1 0;min-width:0;padding:11px 12px;border-radius:12px;
@@ -2941,7 +2949,7 @@
     white-space:nowrap;
   }
   .hc-n.warn{color:var(--alert);font-weight:700;}
-  @media(max-width:620px){ .hr-split{flex-direction:column;} }
+
   [data-theme="dark"] .hr-col.exec{background:rgba(63,122,82,.10);}
   [data-theme="dark"] .hr-col.adm{background:rgba(127,180,208,.09);}
   /* بخش‌های پروفایل */
@@ -3708,13 +3716,14 @@
   .p-card span.rl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* ============ اصلاحات نسخهٔ وب ============ */
   @media(min-width:700px){
-    /* ۱) عکس نفرات روی خانه‌های تقویم، بزرگ‌تر و خواناتر */
-    .tc-cell{min-height:58px;gap:4px;padding:6px 3px;}
+    /* ۱) عکس نفرات روی خانه‌های تقویم، بزرگ‌تر و خواناتر
+       (فقط اندازه بزرگ می‌شود؛ چیدمان خانه‌ها دست نمی‌خورد
+        تا نشان‌ها و شمارنده‌های روی تقویم سر جایشان بمانند) */
+    .tc-cell{min-height:56px;}
     .tc-cell b{font-size:13.5px;}
-    .tc-faces .ava{width:21px;height:21px;flex:0 0 21px;font-size:9px;
-      border:1.5px solid var(--surface);margin-inline-start:-6px;}
-    .tc-faces em{font-size:9.5px;margin-inline-start:4px;}
-    .tc-grid{gap:6px;}
+    .tc-faces .ava{width:19px;height:19px;flex:0 0 19px;font-size:8.5px;}
+    .tc-faces em{font-size:9px;}
+    .tc-dots i{width:7px;height:7px;}
 
   }
 
@@ -3984,22 +3993,21 @@
   .cm-more svg{width:14px;height:14px;}
   .cm-item:hover .cm-more{opacity:1;}
   .cm-more:hover,.cm-more.on{background:var(--field);color:var(--ink);opacity:1;}
+  /* منوی ویرایش/حذف: بلوکِ عادی زیر نظر، دو ردیف کامل و جدا */
   .cm-menu{
-    position:absolute;top:27px;inset-inline-end:0;z-index:40;
-    display:flex;flex-direction:column;gap:4px;padding:5px;
-    min-width:126px;white-space:nowrap;
-    border-radius:13px;background:var(--surface);
-    border:1px solid var(--glass-brd);
-    box-shadow:0 16px 38px -14px rgba(20,25,45,.45);
+    position:static;display:flex;flex-direction:column;gap:6px;
+    margin-top:7px;padding:6px;
+    border-radius:12px;background:var(--field);
+    border:1px solid var(--glass-line);
     animation:cmMenuIn .14s ease;
   }
   .cm-menu[hidden]{display:none !important;}
   @keyframes cmMenuIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
   .cm-menu button{
     display:flex;align-items:center;gap:8px;width:100%;cursor:pointer;
-    padding:8px 11px;border-radius:9px;border:1px solid var(--glass-line);
-    background:var(--field);color:var(--ink);text-align:start;transition:.15s;
-    font-family:var(--f);font-size:11.5px;font-weight:600;
+    padding:9px 12px;border-radius:9px;border:1px solid var(--glass-line);
+    background:var(--surface);color:var(--ink);text-align:start;transition:.15s;
+    font-family:var(--f);font-size:12px;font-weight:600;
   }
   .cm-menu button svg{width:15px;height:15px;color:var(--muted);flex:0 0 15px;}
   .cm-menu button:hover{background:var(--sky-soft);border-color:var(--sky);}
@@ -4046,6 +4054,265 @@
   .sh-what button.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
   .sh-what button[disabled]{opacity:.4;cursor:default;}
   .sh-cap{font-size:10.5px;color:var(--muted);margin:0 2px 7px;}
+  /* نام پیمانکار به‌شکل کپسولِ قابل کلیک */
+  .hr-chip{
+    /* کپسول ساده و جمع؛ فقط به اندازهٔ خودِ نام */
+    display:inline-flex;align-items:center;gap:4px;cursor:pointer;
+    flex:0 1 auto;align-self:center;width:auto;
+    max-width:min(100%, 240px);box-sizing:border-box;
+    padding:3px 10px;border-radius:999px;
+    background:var(--field);border:1px solid var(--glass-line);
+    font-family:var(--f);font-size:12.5px;font-weight:700;color:var(--ink);
+    letter-spacing:-.2px;line-height:1.7;transition:border-color .15s, background .15s;
+  }
+  .hr-chip:hover{background:var(--sky-soft);border-color:var(--sky);}
+  .hr-chip-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hr-chip-ar{font-size:12px;color:var(--muted);line-height:1;flex:0 0 auto;}
+  .hr-chip:hover .hr-chip-ar{color:var(--sky);}
+  .hr-card.crit .hr-chip{border-color:color-mix(in srgb, var(--alert) 45%, var(--glass-line));}
+  [data-theme="dark"] .hr-chip{background:rgba(255,255,255,.06);}
+  .gen-bell{
+    flex:0 0 26px;width:26px;height:26px;font-size:12px;
+    margin-inline-start:4px;opacity:.6;transition:.15s;
+  }
+  .gen-bell svg{width:14px;height:14px;}
+  .gen-row-item:hover .gen-bell{opacity:1;}
+  /* هشدار سن‌بالا روی کارت اداری */
+  .adm-alert-note{
+    display:block;margin-top:3px;font-size:10.5px;font-weight:600;color:var(--alert);
+  }
+  .sec-alert.hot{background:var(--alert);color:#fff;border-color:var(--alert);}
+  /* گیرندگان بیشتر برای تلنگر */
+  .nd-more{
+    display:flex;align-items:center;gap:7px;width:100%;cursor:pointer;
+    margin:2px 0 9px;padding:8px 11px;border-radius:11px;text-align:start;
+    background:var(--field);border:1px dashed var(--line);
+    font-family:var(--f);font-size:11.5px;font-weight:600;color:var(--muted);
+  }
+  .nd-more:hover,.nd-more.on{border-style:solid;border-color:var(--sky);
+    background:var(--sky-soft);color:var(--ink);}
+  .nd-more span{font-size:14px;line-height:1;}
+  .nd-picks{
+    display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto;
+    margin:0 0 11px;padding:9px;border-radius:12px;
+    background:var(--field);border:1px solid var(--glass-line);
+  }
+  .nd-picks[hidden]{display:none;}
+  .nd-p{
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    padding:4px 10px 4px 5px;border-radius:999px;
+    background:var(--surface);border:1px solid var(--glass-line);
+    font-family:var(--f);font-size:11.5px;font-weight:600;color:var(--ink);
+  }
+  .nd-p .ava{width:22px;height:22px;flex:0 0 22px;font-size:9px;}
+  .nd-p:hover{border-color:var(--sky);}
+  .nd-p.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+  /* تلنگر داخل نخ نظرات */
+  .cm-item.nudge .cm-bub{
+    background:linear-gradient(160deg,
+      color-mix(in srgb, #d8a13f 20%, var(--surface)),
+      color-mix(in srgb, #d8a13f 7%, var(--surface)));
+    border-color:color-mix(in srgb, #d8a13f 40%, var(--glass-line));
+  }
+  [data-theme="dark"] .cm-item.nudge .cm-bub{
+    background:linear-gradient(160deg, rgba(216,161,63,.20), rgba(216,161,63,.07));
+  }
+  .cm-kindtag{
+    font-size:9.5px;font-weight:700;color:#8a6414;
+    padding:1px 7px;border-radius:999px;
+    background:color-mix(in srgb, #d8a13f 22%, var(--surface));
+  }
+  [data-theme="dark"] .cm-kindtag{color:#e0b45f;background:rgba(216,161,63,.2);}
+  .cm-cnt.nd{background:color-mix(in srgb, #d8a13f 18%, var(--surface));
+    border-color:color-mix(in srgb, #d8a13f 35%, var(--glass-line));}
+
+  /* تگ کردن افراد */
+  .cm-tag{
+    flex:0 0 28px;width:28px;height:28px;border-radius:50%;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--field);border:none;color:var(--muted);
+    font-family:var(--m);font-size:14px;font-weight:700;transition:.15s;
+  }
+  .cm-tag:hover{background:var(--sky-soft);color:var(--sky);}
+  .cm-tagbar{
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    max-height:170px;overflow:auto;margin-bottom:9px;padding:9px;
+    border-radius:12px;background:var(--field);border:1px solid var(--glass-line);
+  }
+  .cm-tagbar[hidden]{display:none !important;}
+  .cm-tagcap{width:100%;font-size:10.5px;color:var(--muted);margin-bottom:2px;}
+  /* نقطه‌های رنگی روی خانه‌های تقویم */
+  .tc-dots i.done{background:var(--ok);}
+  .tc-dots i.late{background:var(--alert);}
+  .tc-cell .tc-dots{margin-top:1px;}
+  .tc-legend i.done{background:var(--ok);}
+  .tc-legend i.late{background:var(--alert);}
+  /* تخصص یا نام قرارداد، کپسول کوچک هم‌قدِ نام پیمانکار */
+  .hr-sub.chip{
+    display:inline-flex;align-items:center;flex:0 1 auto;align-self:center;
+    max-width:min(100%, 210px);box-sizing:border-box;
+    padding:2px 9px;border-radius:999px;
+    font-family:var(--f);font-size:10.5px;font-weight:600;font-style:normal;
+    line-height:1.7;letter-spacing:-.1px;
+    color:#2f6f8f;background:color-mix(in srgb, var(--sky) 14%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--sky) 32%, var(--glass-line));
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .hr-sub.chip.none{
+    color:var(--muted);opacity:1;font-style:normal;
+    background:var(--field);border-color:var(--glass-line);border-style:dashed;
+  }
+  [data-theme="dark"] .hr-sub.chip{
+    color:var(--sky);background:rgba(127,180,208,.14);border-color:var(--glass-brd);
+  }
+  /* شمارندهٔ پیام روی عکس فرستنده */
+  .pc-ava{position:relative;flex:0 0 auto;display:inline-flex;}
+  .pc-badge{
+    position:absolute;top:-4px;inset-inline-start:-4px;
+    min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--alert);color:#fff;
+    font-family:var(--m);font-size:10px;font-weight:700;
+    border:2px solid var(--surface);
+    box-shadow:0 2px 6px -2px rgba(20,25,45,.55);
+  }
+  /* بازهٔ بدون موعد: از روز ابلاغ تا امروز، با ته‌رنگ متفاوت */
+  .tc-cell.in-range.range-open{
+    background:color-mix(in srgb, #a9822f 14%, var(--surface));
+    border-color:color-mix(in srgb, #a9822f 34%, var(--glass-line));
+  }
+  .tc-cell.in-range.range-open b{color:#7a5f22;font-weight:700;}
+  .tc-cell.range-now{
+    border-color:#a9822f;box-shadow:inset 0 0 0 1px #a9822f;
+  }
+  [data-theme="dark"] .tc-cell.in-range.range-open{background:rgba(169,130,47,.16);}
+  [data-theme="dark"] .tc-cell.in-range.range-open b{color:#e0b45f;}
+  /* نوار ابزار ابلاغ فعالیت */
+  .gen-tools{
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    margin:0 0 10px;padding:8px 10px;border-radius:12px;
+    background:var(--field);border:1px solid var(--glass-line);
+  }
+  .gen-tg{
+    cursor:pointer;padding:6px 11px;border-radius:999px;
+    background:var(--surface);border:1px solid var(--glass-line);
+    font-family:var(--f);font-size:11.5px;font-weight:600;color:var(--muted);
+    transition:.15s;
+  }
+  .gen-tg:hover{color:var(--ink);border-color:var(--sky);}
+  .gen-tg.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+  .gen-tg.ghost{border-style:dashed;}
+  .gen-tools-n{
+    margin-inline-start:auto;font-family:var(--m);font-size:10.5px;color:var(--muted);
+  }
+  .gen-group .adm-acts .ico-btn[data-ghide]{opacity:.45;}
+  .gen-group:hover .adm-acts .ico-btn[data-ghide]{opacity:1;}
+  /* خلاصهٔ روزهای بازه، زیر فعالیتِ انتخاب‌شده در تقویم */
+  .range-sum{
+    display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px;
+  }
+  .rs-b{
+    display:inline-flex;flex-direction:column;gap:1px;
+    padding:5px 11px;border-radius:11px;
+    background:var(--field);border:1px solid var(--glass-line);
+  }
+  .rs-b u{text-decoration:none;font-size:9.5px;color:var(--muted);}
+  .rs-b b{font-family:var(--m);font-size:12px;font-weight:700;color:var(--ink);}
+  .rs-b.late{background:var(--alert-soft);border-color:#f0cec6;}
+  .rs-b.late b{color:var(--alert);}
+  .rs-b.ok{background:var(--ok-soft);border-color:#cfe3d6;}
+  .rs-b.ok b{color:var(--ok);}
+  .rs-b.now{background:var(--sky-soft);border-color:#dbe7ee;}
+  .rs-b.now b{color:#2f6f8f;}
+  .rs-b.open{border-style:dashed;}
+  [data-theme="dark"] .rs-b{background:rgba(255,255,255,.05);}
+  [data-theme="dark"] .rs-b.late{background:rgba(190,90,70,.16);border-color:#4a3330;}
+  [data-theme="dark"] .rs-b.ok{background:rgba(63,122,82,.16);border-color:#2f4a39;}
+  [data-theme="dark"] .rs-b.now{background:rgba(127,180,208,.14);border-color:var(--glass-brd);}
+  /* کارت‌های آمار: فاصلهٔ کافی از سربرگ، بدون رفتن روی نوار چسبان */
+  #reportView .rule + .stats{margin-top:14px;}
+  #reportView .stats{
+    margin-bottom:18px;position:relative;z-index:1;
+    padding-top:3px;      /* حاشیهٔ رنگی بالای کارت‌ها بریده نشود */
+  }
+  #reportView .stat{overflow:visible;}
+  #secHr{scroll-margin-top:calc(var(--headH, 62px) + var(--tabsH, 56px) + 60px);}
+
+  /* ---------- شفافیت و درخشش بیشتر در نمای روز ---------- */
+  #reportView .stat,
+  #reportView .tcal,
+  #reportView .rv,
+  #reportView .sumpanel,
+  #reportView .rchart{
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 46%),
+      linear-gradient(120deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 38%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.6),
+      0 10px 26px -20px rgba(20,25,45,.5);
+  }
+  #reportView .stat{
+    border-top-width:3px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.75),
+      0 12px 28px -20px rgba(20,25,45,.55);
+  }
+  [data-theme="dark"] #reportView .stat,
+  [data-theme="dark"] #reportView .tcal,
+  [data-theme="dark"] #reportView .rv,
+  [data-theme="dark"] #reportView .sumpanel,
+  [data-theme="dark"] #reportView .rchart{
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,0) 46%),
+      linear-gradient(120deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0) 40%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.09),
+      0 12px 30px -22px rgba(0,0,0,.85);
+  }
+  [data-theme="dark"] #reportView .stat{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.13),
+      0 14px 32px -22px rgba(0,0,0,.9);
+  }
+  /* دکمه‌های ویرایش و حذف روی هر نظر */
+  .cm-tools{display:inline-flex;gap:3px;flex:0 0 auto;margin-inline-start:4px;}
+  .cm-ic{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;padding:0;border-radius:8px;cursor:pointer;
+    background:none;border:1px solid transparent;color:var(--muted);
+    opacity:.6;transition:.15s;
+  }
+  .cm-ic svg{width:14px;height:14px;}
+  .cm-item:hover .cm-ic{opacity:1;}
+  .cm-ic:hover{background:var(--field);border-color:var(--glass-line);color:var(--ink);}
+  .cm-ic.rm:hover{background:var(--alert-soft);border-color:var(--alert);color:var(--alert);}
+  /* سربرگ بخش‌های اعلان با چند دکمه، مرتب و هم‌اندازه بماند */
+  #notifBody .rule{flex-wrap:wrap;row-gap:6px;}
+  #notifBody .rule h3{flex:0 0 auto;}
+  #notifBody .rule .mini{
+    height:26px;padding:0 10px;font-size:10.5px;border-radius:8px;
+    flex:0 0 auto;white-space:nowrap;line-height:26px;font-weight:600;
+  }
+  #notifBody .rule .n{flex:0 0 auto;margin-inline-start:auto;}
+  #notifBody .nz .nz-msg,
+  #notifBody .nz .nz-meta{font-family:var(--f);}
+  .gen-nudge-all{
+    height:26px;padding:0 10px;font-size:10.5px;border-radius:999px;
+    white-space:nowrap;font-weight:600;
+  }
+  .gen-group .adm-acts{gap:6px;align-items:center;}
+  /* حباب پیام در حال ارسال */
+  .chat-row.pending .bubble{opacity:.62;}
+  .b-sending{
+    font-family:var(--f);font-size:9.5px;color:var(--muted);
+  }
+  .chat-row.pending .bubble::after{
+    content:"";display:block;height:2px;margin-top:5px;border-radius:2px;
+    background:linear-gradient(90deg, transparent, var(--sky), transparent);
+    background-size:200% 100%;animation:sendGlow 1s linear infinite;
+  }
+  @keyframes sendGlow{from{background-position:200% 0;}to{background-position:-200% 0;}}
+  @media (prefers-reduced-motion:reduce){ .chat-row.pending .bubble::after{animation:none;} }
 </style>
 <script>
   (function(){
@@ -4929,6 +5196,10 @@
       <p id="nudgeTo" style="margin:0 0 10px;font-size:12.5px;color:var(--muted);"></p>
       <div class="field"><label for="nudgeMsg">پیام</label>
         <textarea id="nudgeMsg" placeholder="مثلاً: لطفاً وضعیت این مورد را تا فردا مشخص کنید."></textarea></div>
+      <button type="button" class="nd-more" id="nudgeMoreBtn">
+        <span>+</span> همین تلنگر برای افراد دیگر هم فرستاده شود
+      </button>
+      <div class="nd-picks" id="nudgePicks" hidden></div>
       <button type="button" class="send" id="nudgeSend" style="width:100%;">ارسال تلنگر</button>
     </div>
   </div>
@@ -5011,7 +5282,6 @@
         <button type="button" data-shw="text" class="on">متن گزارش</button>
         <button type="button" data-shw="link">لینک پیوست</button>
         <button type="button" data-shw="both">متن + پیوست</button>
-        <button type="button" data-shw="app">لینک برنامه</button>
       </div>
       <div class="sh-prev" id="shareText"></div>
       <div class="sh-cap">با کدام برنامه فرستاده شود؟</div>
@@ -5495,17 +5765,7 @@
                      : ('تا موعد اقدام ' + toFa(Math.abs(dl)) + ' روز مانده')});
     });
 
-    (A.letters || []).forEach(r => {
-      const n = pick(r,AD.lNotify);
-      if(n === 'برون‌سازمانی' || n === 'درون‌سازمانی') return;
-      const dl = daysSince(pick(r,AD.lDate));
-      if(dl == null || dl <= 5) return;
-      const who = pick(r, AD_OWNER.letter);
-      if(!mine(who)) return;
-      out.push({level: dl > 30 ? 'hot' : 'warm', kind:'letter', id: pick(r,AD.id), who,
-        title: 'نامه ' + (pick(r,AD.lNo) || '') + ' — ' + (pick(r,AD.lSubject) || ''),
-        note: toFa(dl) + ' روز از ارسال گذشته'});
-    });
+    // نامه‌ها هشدار نمی‌گیرند: ماهیتشان پیگیریِ زمان‌دار نیست.
 
     return out.sort((a,b) => (a.level === b.level) ? 0 : (a.level === 'hot' ? -1 : 1));
   }
@@ -5513,9 +5773,15 @@
   function myNudges(all){
     const me = activeUserName();
     // پیام‌های معمولی در بخش پیام‌ها دیده می‌شوند، نه در زنگوله
-    return (all || []).filter(r =>
-      nameKey(pick(r,N.to)) === nameKey(me) && pick(r,N.kind) !== MSG_KIND
-      && pick(r,N.kind) !== COMMENT_KIND);
+    return (all || []).filter(r => {
+      if(nameKey(pick(r,N.to)) !== nameKey(me)) return false;
+      const k = pick(r,N.kind);
+      if(k === MSG_KIND || k === COMMENT_KIND) return false;
+      // اعلان گزارش‌نفرستاده‌ای که گزارشش بعداً ثبت شده، نمایش داده نمی‌شود
+      if(k === MISS_KIND && typeof missResolved !== 'undefined'
+         && missResolved.has(String(pick(r,N.title) || ''))) return false;
+      return true;
+    });
   }
 
   const NOTIF_SEEN_KEY = 'siteLogM.notifSeen.v1';
@@ -5538,7 +5804,8 @@
       if(id) seenIds.add(id);
       return n + 1;
     }, 0);
-    const unread = countNew(notifCache.nudges) + countNew(notifCache.comments);
+    const unread = countNew(notifCache.nudges)
+      + countNew((notifCache.comments || []).filter(r => r.__forMe));
     const seen = notifSeenToday();
     const alertIds = new Set();
     (notifCache.items || []).concat(notifCritical || []).forEach(x => {
@@ -5548,8 +5815,13 @@
     if(!n){ el.hidden = true; el.textContent = ''; return; }
     el.hidden = false;
     el.textContent = n > 99 ? '+۹۹' : toFa(n);
-    el.title = toFa(unread) + ' اعلان خوانده‌نشده'
-      + (seen || !alertIds.size ? '' : ' · ' + toFa(alertIds.size) + ' مورد نیازمند پیگیری');
+    const nNud = countNew(notifCache.nudges);
+    const nCmt = unread - nNud;
+    el.title = [
+      nNud ? toFa(nNud) + ' تلنگر' : '',
+      nCmt ? toFa(nCmt) + ' نظر' : '',
+      (seen || !alertIds.size) ? '' : toFa(alertIds.size) + ' مورد نیازمند پیگیری'
+    ].filter(Boolean).join(' · ') || 'بدون مورد تازه';
   }
 
   /* شمارنده‌ها خودشان را تازه نگه می‌دارند:
@@ -5559,15 +5831,72 @@
     if(badgeBusy) return;
     badgeBusy = true;
     try{
-      if(force && typeof clearBundle === 'function') clearBundle();
-      if(typeof loadMessages === 'function') await loadMessages();
-      if(typeof loadNotif === 'function') await loadNotif();
-      if(typeof primeCommentCounts === 'function') await primeCommentCounts(!!force);
+      if(typeof loadMessages === 'function') await loadMessages(!!force);
+      if(typeof loadNotif === 'function') await loadNotif(false);
+      if(typeof primeCommentCounts === 'function') await primeCommentCounts(false);
+      if(typeof renderNotif === 'function'
+         && !document.getElementById('notifModal').hidden) renderNotif();
     }catch(e){}
     badgeBusy = false;
   }
   window.refreshBadges = refreshBadges;
   setInterval(() => { if(!document.hidden) refreshBadges(true); }, 4 * 60 * 1000);
+
+  /* بررسی سبک هر ۲۵ ثانیه، حتی وقتی هیچ پنجره‌ای باز نیست:
+     فقط یک درخواست برای پیام‌ها و تلنگرها، تا شمارنده‌ها بدون
+     باز کردن صفحهٔ چت هم به‌روز بمانند. */
+  setInterval(async () => {
+    if(document.hidden) return;
+    const chatOpen = !(document.getElementById('chatModal') || {hidden:true}).hidden;
+    const notifOpen = !(document.getElementById('notifModal') || {hidden:true}).hidden;
+    if(chatOpen || notifOpen) return;     // حلقهٔ تند خودش کار را می‌کند
+    try{
+      await loadMessages(true);
+      notifCache.nudges = myNudges(nudgeCache.rows || []);
+      refreshBell();
+    }catch(e){}
+  }, 25000);
+  /* وقتی پنجرهٔ گفت‌وگو یا اعلان‌ها باز است، هر ۲۰ ثانیه تازه می‌شود
+     تا پیام و نظر تازه فوری دیده شود. */
+  /* حلقهٔ تند: فقط تلنگر و پیام را می‌گیرد (یک درخواست سبک)،
+     و صفحه را وقتی چیزی عوض شده باشد دوباره می‌کشد. */
+  let fastTick = 0;
+  setInterval(async () => {
+    if(document.hidden) return;
+    const chatOpen = !(document.getElementById('chatModal') || {hidden:true}).hidden;
+    const notifOpen = !(document.getElementById('notifModal') || {hidden:true}).hidden;
+    const openPanels = Array.from(document.querySelectorAll('.cm-panel'))
+      .filter(b => !b.hidden && !b.querySelector('.cm-editbox'));
+    if(!chatOpen && !notifOpen && !openPanels.length) return;
+    fastTick++;
+    try{
+      await loadMessages(true);           // یک درخواست سبک، شمارنده‌ها فوری
+      if(notifOpen || fastTick % 4 === 0) await loadNotif(false);
+      refreshBell();
+    }catch(e){}
+    try{
+      const pw = document.getElementById('msgPeopleWrap');
+      if(chatOpen && pw && !pw.hidden
+         && typeof renderPeoplePicker === 'function') renderPeoplePicker('');
+      // اگر گفت‌وگویی باز است، همان را دوباره بکش
+      const wrap = document.getElementById('msgChatWrap');
+      const cur = (document.getElementById('msgTo') || {}).value || '';
+      if(chatOpen && cur && wrap && !wrap.hidden
+         && typeof renderMessages === 'function') renderMessages(cur);
+      if(notifOpen && typeof renderNotif === 'function') renderNotif();
+      // پنجره‌های باز نظرات هم تازه می‌شوند تا نظر تازه فوری دیده شود
+      for(const b of openPanels){
+        if(b.hidden || b.querySelector('.cm-editbox')) continue;
+        const kk = String(b.dataset.cmp || '').split(CM_SEP);
+        if(!kk[1]) continue;
+        const ta = b.querySelector('.cm-input');
+        const draft = ta ? ta.value : '';
+        if(draft) continue;                     // وسط نوشتن، دست نزن
+        b.innerHTML = cmThreadHtml(kk[0], kk[1]);
+      }
+      if(typeof refreshCommentCounts === 'function') refreshCommentCounts();
+    }catch(e){}
+  }, 5000);
   let lastBadgeAt = 0;
   document.addEventListener('visibilitychange', () => {
     // فقط اگر بیش از یک دقیقه گذشته باشد، وگرنه از کش استفاده می‌شود
@@ -5611,9 +5940,11 @@
 
   function criticalOf(id, dueRaw, done, opt){
     if(!id || alertOffSet().has(String(id))) return '';
-    if(hasOpenNudge(id)) return 'تلنگر بی‌پاسخ دارد';
-    if(done) return '';
+    if(done) return '';                       // کار تمام‌شده هشدار ندارد
     const o = opt || {};
+    // نامه‌ها هیچ سازوکار هشداری ندارند
+    if(o.kind === 'letter') return '';
+    if(hasOpenNudge(id)) return 'تلنگر بی‌پاسخ دارد';
 
     // موعد: گذشته یا نزدیک
     if(dueRaw){
@@ -5642,11 +5973,12 @@
       + 'stroke-linecap="round"><path d="M12 7.5v6"/><path d="M12 17h.01"/></svg></button>';
   }
 
-  async function loadNotif(){
+  async function loadNotif(force){
     try{
       const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
+      const allN = await loadAllNudges(force);
       notifCache.items = buildAlerts(b.admin);
-      notifCache.nudges = myNudges(b.nudges);
+      notifCache.nudges = myNudges(allN);
       // نظرها و پاسخ‌هایی که به من مربوط‌اند
       try{
         const rows = await loadComments(false);
@@ -5654,19 +5986,22 @@
         const adminAll2 = isAdminUser();
         notifCache.comments = (rows || []).filter(r => {
           if(nameKey(pick(r,N.from)) === nameKey(me)) return false;   // نظر خودم نه
-          if(nameKey(pick(r,N.to)) === nameKey(me)) return true;      // مستقیماً به من
-          // پاسخ به نظری که خودم نوشته‌ام
-          const par = cmParts(r).parent;
-          if(par){
-            const pr = (rows || []).find(x => String(pick(x,N.id)) === String(par));
-            if(pr && nameKey(pick(pr,N.from)) === nameKey(me)) return true;
+          // آیا مستقیماً به من مربوط است؟
+          let mineFlag = nameKey(pick(r,N.to)) === nameKey(me);
+          if(!mineFlag){
+            const par = cmParts(r).parent;
+            if(par){
+              const pr = (rows || []).find(x => String(pick(x,N.id)) === String(par));
+              if(pr && nameKey(pick(pr,N.from)) === nameKey(me)) mineFlag = true;
+            }
           }
-          return adminAll2;   // ادمین همهٔ نظرهای تازه را می‌بیند
+          r.__forMe = mineFlag;
+          return mineFlag || adminAll2;   // ادمین بقیه را هم می‌بیند، ولی شمرده نمی‌شوند
         })
           .sort((x,y) => String(pick(y,N.time)).localeCompare(String(pick(x,N.time))))
           .slice(0, 30);
       }catch(e){ notifCache.comments = []; }
-      rebuildOpenNudges(b.nudges);
+      rebuildOpenNudges(allN);
       try{
         notifCritical = criticalList(
           (b.tasks || []).concat(adminAsTasks(b.admin) || []));
@@ -5675,6 +6010,7 @@
     }catch(e){}
   }
 
+  let clearingNotifs = false;
   let notifShowRead = false;
   let notifCritical = [];
   function renderNotif(){
@@ -5851,18 +6187,57 @@
     body.innerHTML = h;
   }
 
+  /* همهٔ تلنگرها و نظرهای خوانده‌نشده را خوانده علامت می‌زند.
+     در پس‌زمینه اجرا می‌شود تا باز شدن پنجره معطل نماند. */
+  let markingRead = false;
+  async function markAllNotifRead(){
+    if(markingRead) return;
+    const ids = (notifCache.nudges || [])
+      .concat((notifCache.comments || []).filter(r => r.__forMe))
+      .filter(r => pick(r,N.state) !== 'خوانده‌شده')
+      .map(r => pick(r,N.id)).filter(Boolean);
+    if(!ids.length) return;
+    markingRead = true;
+    try{
+      for(const id of ids) await sendAction({action:'nudgeRead', id});
+      await loadNotif(true);
+      if(!document.getElementById('notifModal').hidden) renderNotif();
+      refreshBell();
+    }catch(e){}
+    markingRead = false;
+  }
+
+
   (function(){
     const bg = document.getElementById('notifModal');
     document.getElementById('bellBtn').addEventListener('click', async (ev) => {
       if(ev){ ev.preventDefault(); ev.stopPropagation(); }
       bg.hidden = false;
       document.getElementById('notifBody').innerHTML = '<div class="empty">در حال بررسی...</div>';
+
+      // شمارنده همان لحظه صفر می‌شود؛ خواندنِ واقعی در پس‌زمینه ثبت می‌گردد
+      const bc = document.getElementById('bellCount');
+      if(bc){ bc.hidden = true; bc.textContent = ''; }
+      markNotifSeen();
+
       await loadNotif();
       renderNotif();
-      markNotifSeen();   // تا پایان امروز شمارنده خاموش می‌ماند
+      if(bc){ bc.hidden = true; bc.textContent = ''; }
+      // خوانده‌شدن هنگام بستنِ پنجره ثبت می‌شود، نه همین حالا،
+      // تا فهرست جلوی چشم کاربر جابه‌جا نشود.
     });
-    document.getElementById('notifX').addEventListener('click', () => { bg.hidden = true; });
-    bg.addEventListener('click', e => { if(e.target === bg) bg.hidden = true; });
+
+    /* با بستن پنجره، همه‌چیز «خوانده‌شده» می‌شود — نه حذف.
+       موارد به بخش «خوانده‌شده‌ها» می‌روند و هر وقت خواستید دیده می‌شوند. */
+    function closeNotif(){
+      bg.hidden = true;
+      markAllNotifRead();
+    }
+    document.getElementById('notifX').addEventListener('click', closeNotif);
+    bg.addEventListener('click', e => { if(e.target === bg) closeNotif(); });
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape' && !bg.hidden) closeNotif();
+    });
 
     document.getElementById('notifBody').addEventListener('click', async e => {
       const rp = e.target.closest('[data-nreply]');
@@ -5881,9 +6256,10 @@
           .filter(r => pick(r,N.state) !== 'خوانده‌شده')
           .map(r => pick(r,N.id)).filter(Boolean);
         for(const id of ids) await sendAction({action:'nudgeRead', id});
-        clearNetCache();
-        await loadNotif();
+        if(typeof invalidateNudges === 'function') invalidateNudges();
+        await loadNotif(true);
         renderNotif();
+        refreshBell();
         return;
       }
       // پنهان کردن یک مورد بحرانی تا پایان امروز
@@ -5940,10 +6316,12 @@
       if(nd){
         nd.disabled = true;
         try{
-          await supaFetch('nudges?id=eq.' + encodeURIComponent(nd.dataset.ndel), {method:'DELETE'});
-          clearNetCache();
-          await loadNotif();
+          const okDel = await sendAction({action:'delete', target:'nudge', id: nd.dataset.ndel});
+          if(!okDel) throw new Error(lastServerError || 'سرور اجازهٔ حذف نداد.');
+          if(typeof invalidateNudges === 'function') invalidateNudges();
+          await loadNotif(true);
           renderNotif();
+          refreshBell();
         }catch(err){
           nd.disabled = false;
           showDialog('err','حذف نشد', String(err && err.message ? err.message : err));
@@ -5951,30 +6329,47 @@
         return;
       }
       if(e.target.closest('#nClearAll')){
-        const ids = notifCache.nudges.map(r => pick(r,N.id))
-          .concat((notifCache.comments || []).map(r => pick(r,N.id)))
-          .filter(Boolean);
-        const total = ids.length + (notifCritical || []).length
-                    + (notifCache.items || []).length;
+        if(clearingNotifs) return;
+        const me2 = activeUserName();
+        // تلنگرهای خودم حذف می‌شوند
+        const delIds = (notifCache.nudges || []).map(r => pick(r,N.id)).filter(Boolean);
+        // نظرهای دیگران حذف نمی‌شوند، فقط خوانده‌شده علامت می‌خورند
+        const readIds = (notifCache.comments || [])
+          .filter(r => pick(r,N.state) !== 'خوانده‌شده')
+          .map(r => pick(r,N.id)).filter(Boolean);
+        const total = delIds.length + readIds.length
+                    + (notifCritical || []).length + (notifCache.items || []).length;
         if(!total) return;
         if(!await askConfirm('پاک کردن اعلان‌ها',
              'همهٔ ' + toFa(total) + ' مورد پاک شود؟', 'پاک کن')) return;
+
+        clearingNotifs = true;
+        const body0 = document.getElementById('notifBody');
+        if(body0) body0.innerHTML = '<div class="empty">در حال پاک کردن…</div>';
+        let bad = 0;
         try{
-          if(ids.length)
-            await supaFetch('nudges?id=in.(' + ids.map(encodeURIComponent).join(',') + ')',
-              {method:'DELETE'});
-          // موارد بحرانی تا پایان امروز پنهان می‌شوند
+          for(const id of delIds){
+            const ok = await sendAction({action:'delete', target:'nudge', id});
+            if(!ok) bad++;
+          }
+          for(const id of readIds) await sendAction({action:'nudgeRead', id});
+          // موارد بحرانی و نیازمند پیگیری تا پایان امروز پنهان می‌شوند
           (notifCritical || []).forEach(x => { if(x.id) muteAlert(x.id); });
           (notifCache.items || []).forEach(x => { if(x.id) muteAlert(x.id); });
+          markNotifSeen();
           notifCritical = [];
           notifCache.items = [];
           notifCache.nudges = [];
-          clearNetCache();
+          await loadNotif(true);
           renderNotif();
           refreshBell();
-          await loadNotif();
+          if(bad) showDialog('warn','بخشی پاک نشد',
+            toFa(bad) + ' مورد را سرور اجازهٔ حذف نداد. دسترسی حذف روی جدول تلنگرها را بررسی کنید.');
+        }catch(err){
+          showDialog('err','پاک نشد', String(err && err.message ? err.message : err));
           renderNotif();
-        }catch(err){ showDialog('err','پاک نشد', String(err && err.message ? err.message : err)); }
+        }
+        clearingNotifs = false;
         return;
       }
       if(e.target.closest('#nClearRead')){
@@ -5985,11 +6380,16 @@
         if(!await askConfirm('پاک کردن اعلان‌ها',
              toFa(ids.length) + ' اعلان خوانده‌شده حذف شود؟', 'پاک کن')) return;
         try{
-          await supaFetch('nudges?id=in.(' + ids.map(encodeURIComponent).join(',') + ')',
-            {method:'DELETE'});
-          clearNetCache();
-          await loadNotif();
+          let bad2 = 0;
+          for(const id of ids){
+            const ok = await sendAction({action:'delete', target:'nudge', id});
+            if(!ok) bad2++;
+          }
+          await loadNotif(true);
           renderNotif();
+          refreshBell();
+          if(bad2) showDialog('warn','بخشی پاک نشد',
+            toFa(bad2) + ' مورد را سرور اجازهٔ حذف نداد.');
         }catch(err){ showDialog('err','حذف نشد', String(err && err.message ? err.message : err)); }
         return;
       }
@@ -6011,16 +6411,18 @@
           .filter(r => pick(r,N.state) !== 'خوانده‌شده')
           .map(r => pick(r,N.id)).filter(Boolean);
         for(const id of unreadIds) await sendAction({action:'nudgeRead', id});
-        await loadNotif();
+        await loadNotif(true);
         renderNotif();
+        refreshBell();
         return;
       }
       const readBtn = e.target.closest('button[data-nread]');
       if(readBtn){
         readBtn.disabled = true;
         await sendAction({action:'nudgeRead', id: readBtn.dataset.nread});
-        await loadNotif();
+        await loadNotif(true);
         renderNotif();
+        refreshBell();
         return;
       }
       const nb = e.target.closest('button[data-nudge-to]');
@@ -6039,16 +6441,49 @@
   const PUBLIC_ROOM = 'گفت‌وگوی عمومی';
   let allMessages = [];
 
-  async function loadMessages(){
+  /* همهٔ تلنگرها، پیام‌ها و نظرها با یک درخواست سبک و تازه */
+  let nudgeCache = {t:0, rows:[]};
+  const NUDGE_TTL = 8 * 1000;
+  const NUDGE_COLS = 'id,created_at,date_fa,from_name,to_name,kind,item_id,title,message,seen';
+
+  function invalidateNudges(){ nudgeCache = {t:0, rows: nudgeCache.rows};
+    commentCache.t = 0; cmIndex = null; }
+
+  async function loadAllNudges(force){
+    if(!force && nudgeCache.t && (Date.now() - nudgeCache.t) < NUDGE_TTL) return nudgeCache.rows;
+    let rows = nudgeCache.rows;
     try{
-      const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
-      allMessages = (b.nudges || []);
+      if(BACKEND === 'supabase'){
+        const raw = await supaFetch('nudges?select=' + NUDGE_COLS
+          + '&order=created_at.desc&limit=600');
+        rows = (raw || []).map(x => fromSupa('nudges', x));
+      }else{
+        const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
+        rows = b.nudges || [];
+      }
+    }catch(e){}
+    nudgeCache = {t: Date.now(), rows: rows};
+    return rows;
+  }
+
+  /* هر جا پیام یا تلنگر تازه‌ای رد و بدل شد، این را صدا بزن */
+  async function syncInbox(){
+    try{
+      await loadMessages(true);
+      if(typeof loadNotif === 'function') await loadNotif(false);
+      if(typeof refreshBell === 'function') refreshBell();
+    }catch(e){}
+  }
+  window.syncInbox = syncInbox;
+
+  async function loadMessages(force){
+    try{
+      allMessages = await loadAllNudges(force);
       refreshUnreadMap();
       const me = activeUserName();
       const seenM = new Set();
       const unread = allMessages.reduce((n, r) => {
-        const k = pick(r,N.kind);
-        if(k === MISS_KIND || k === COMMENT_KIND) return n;
+        if(pick(r,N.kind) !== MSG_KIND) return n;   // تلنگر و نظر در زنگوله شمرده می‌شوند
         if(pick(r,N.state) === 'خوانده‌شده') return n;
         const toMe = nameKey(pick(r,N.to)) === nameKey(me);
         const inRoom = pick(r,N.to) === PUBLIC_ROOM && nameKey(pick(r,N.from)) !== nameKey(me);
@@ -6080,34 +6515,41 @@
   function cmParts(r){
     const raw = String(pick(r,N.title) || '');
     const a = raw.split(CM_SEP);
-    return {target: a[0] || '', parent: a[1] || '', itemTitle: a[2] || '', edited: a[3] === '1'};
+    return {target: a[0] || '', parent: a[1] || '', itemTitle: a[2] || '',
+            edited: a[3] === '1', removed: a[3] === 'X'};
   }
 
   async function loadComments(force){
-    if(!force && commentCache.rows.length && (Date.now() - commentCache.t) < CM_TTL) return commentCache.rows;
-    let rows = [];
-    try{
-      if(BACKEND === 'supabase'){
-        // فقط ستون‌های لازم و ۶۰۰ ردیف آخر — سبک‌تر و سریع‌تر
-        const raw = await supaFetch('nudges?kind=eq.' + encodeURIComponent(COMMENT_KIND)
-          + '&select=id,created_at,date_fa,from_name,to_name,kind,item_id,title,message,seen'
-          + '&order=created_at.desc&limit=600');
-        rows = (raw || []).map(x => fromSupa('nudges', x));
-      }else{
-        const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
-        rows = (b.nudges || []).filter(r => pick(r,N.kind) === COMMENT_KIND);
-      }
-    }catch(e){ rows = commentCache.rows; }
-    commentCache = {t: Date.now(), rows: rows};
-    return rows;
+    if(!force && commentCache.t && (Date.now() - commentCache.t) < CM_TTL) return commentCache.rows;
+    const all = await loadAllNudges(force);
+    commentCache = {t: Date.now(),
+      rows: (all || []).filter(r => pick(r,N.kind) === COMMENT_KIND && !cmParts(r).removed)};
+    cmIndex = null;
+    return commentCache.rows;
   }
 
-  function commentsOf(target, id){
-    return (commentCache.rows || []).filter(r =>
-      String(pick(r,N.itemId) || '') === String(id) &&
-      cmParts(r).target === target);
+  /* یک بار روی نظرها می‌رویم و همه چیز را در دو نگاشت می‌ریزیم؛
+     بعد از آن، شمارش هر کارت یک جست‌وجوی ساده است. */
+  let cmIndex = null;
+  const cmKey = (target, id) => String(target) + '\u0000' + String(id);
+  function buildCmIndex(){
+    const byKey = new Map(), cnt = new Map();
+    (commentCache.rows || []).forEach(r => {
+      const k = cmKey(cmParts(r).target, pick(r,N.itemId) || '');
+      if(!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(r);
+      cnt.set(k, (cnt.get(k) || 0) + 1);
+    });
+    cmIndex = {byKey, cnt};
   }
-  const commentCount = (target, id) => commentsOf(target, id).length;
+  function commentsOf(target, id){
+    if(!cmIndex) buildCmIndex();
+    return cmIndex.byKey.get(cmKey(target, id)) || [];
+  }
+  function commentCount(target, id){
+    if(!cmIndex) buildCmIndex();
+    return cmIndex.cnt.get(cmKey(target, id)) || 0;
+  }
 
   const CM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
     + 'stroke-linecap="round" stroke-linejoin="round">'
@@ -6123,17 +6565,20 @@
 
   /* نوار زیر هر کارت: نظرات + تلنگر + اشتراک‌گذاری */
   function commentBarHtml(target, id, itemTitle, opts){
-    if(!id) return '';
     const o = opts || {};
-    const n = commentCount(target, id);
+    // بدون شناسه هم نوار می‌آید تا دکمهٔ تلنگر و اشتراک از دست نرود
+    if(!id && !o.owner) return '';
+    const n = id ? commentCount(target, id) : 0;
     return '<div class="cm-bar">'
-      + '<button type="button" class="cm-act cm-open" '
-      +   'data-cm-target="' + esc(target) + '" data-cm-id="' + esc(id) + '" '
-      +   'data-cm-title="' + esc(itemTitle || '') + '" '
-      +   'data-cm-owner="' + esc(o.owner || '') + '" title="نظرات">'
-      +   CM_ICON + '<span>نظرات</span>'
-      +   (n ? '<span class="cm-n">' + toFa(n) + '</span>' : '')
-      + '</button>'
+      + (id
+          ? '<button type="button" class="cm-act cm-open" '
+            + 'data-cm-target="' + esc(target) + '" data-cm-id="' + esc(id) + '" '
+            + 'data-cm-title="' + esc(itemTitle || '') + '" '
+            + 'data-cm-owner="' + esc(o.owner || '') + '" title="نظرات">'
+            + CM_ICON + '<span>نظرات</span>'
+            + (n ? '<span class="cm-n">' + toFa(n) + '</span>' : '')
+            + '</button>'
+          : '')
       + (o.owner
           ? '<button type="button" class="cm-act" title="تلنگر به ' + esc(o.owner) + '" '
             + 'data-nudge-to="' + esc(o.owner) + '" data-nudge-kind="' + esc(target) + '" '
@@ -6146,7 +6591,8 @@
       +   'data-share-link="' + esc(o.link || '') + '">'
       +   SH_ICON + '<span>اشتراک</span></button>'
       + '</div>'
-      + '<div class="cm-panel" hidden data-cmp="' + esc(target) + CM_SEP + esc(id) + '"></div>';
+      + (id ? '<div class="cm-panel" hidden data-cmp="'
+              + esc(target) + CM_SEP + esc(id) + '"></div>' : '');
   }
 
   /* تاریخ شمسی ثبت نظر — برای اجازهٔ ویرایش تا پایان همان روز */
@@ -6158,12 +6604,14 @@
   /* حذف: نویسنده هر وقت بخواهد، حتی نظرهای قدیمی. ادمین هم همیشه. */
   function canDeleteComment(r){
     if(isAdminUser()) return true;
+    try{ if(myLevel() <= 2) return true; }catch(e){}      // مدیریت پروژه و سرپرست
     return nameKey(pick(r,N.from)) === nameKey(activeUserName());
   }
   /* ویرایش: نویسنده تا پایان همان روزِ ثبت. ادمین همیشه. */
   function canEditComment(r){
     const me = activeUserName();
     if(isAdminUser()) return true;
+    try{ if(myLevel() <= 2) return true; }catch(e){}
     if(nameKey(pick(r,N.from)) !== nameKey(me)) return false;
     const d = cmDayFa(r);
     return !d || d === todayShamsi();
@@ -6180,36 +6628,45 @@
     + '<path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/>'
     + '<path d="M10 11v6M14 11v6"/></svg>';
 
-  function cmItemHtml(r, isReply, mine){
+  /* تلنگرهای ثبت‌شده روی همین مورد */
+  function nudgesOf(target, id){
+    return ((typeof nudgeCache !== 'undefined' ? nudgeCache.rows : []) || []).filter(r =>
+      pick(r,N.kind) === target &&
+      String(pick(r,N.itemId) || '') === String(id));
+  }
+
+  function cmItemHtml(r, isReply, mine, isNudge){
     const who = pick(r,N.from) || 'نامشخص';
     const t = pick(r,N.time);
     const id2 = esc(pick(r,N.id) || '');
-    const canEd = canEditComment(r);
-    const canDel = canDeleteComment(r);
-    const menu = (canEd || canDel)
-      ? '<span class="cm-menu-wrap">'
-        + '<button type="button" class="cm-more" data-cm-menu="' + id2 + '" '
-        +   'title="گزینه‌ها" aria-label="گزینه‌ها">' + DOTS_ICON + '</button>'
-        + '<div class="cm-menu" hidden>'
-        +   (canEd ? '<button type="button" data-cm-edit="' + id2 + '">'
-                   + PEN_ICON + '<span>ویرایش</span></button>' : '')
-        +   (canDel ? '<button type="button" class="rm" data-cm-del="' + id2 + '">'
-                    + BIN_ICON + '<span>حذف</span></button>' : '')
-        + '</div></span>'
+    const canEd = isNudge ? false : canEditComment(r);
+    const canDel = isNudge ? isAdminUser() : canDeleteComment(r);
+    // دو دکمهٔ مستقل و همیشه در دسترس، بدون منوی بازشو
+    const dots = (canEd || canDel)
+      ? '<span class="cm-tools">'
+        + (canEd ? '<button type="button" class="cm-ic" data-cm-edit="' + id2 + '" '
+                 + 'title="ویرایش" aria-label="ویرایش">' + PEN_ICON + '</button>' : '')
+        + (canDel ? '<button type="button" class="cm-ic rm" data-cm-del="' + id2 + '" '
+                  + 'title="حذف" aria-label="حذف">' + BIN_ICON + '</button>' : '')
+        + '</span>'
       : '';
-    return '<div class="cm-item' + (isReply ? ' reply' : '') + (mine ? ' mine' : '') + '" '
-      +   'data-cmid="' + id2 + '">'
+    const menuRows = '';
+    return '<div class="cm-item' + (isReply ? ' reply' : '') + (mine ? ' mine' : '')
+      +   (isNudge ? ' nudge' : '') + '" data-cmid="' + id2 + '">'
       + avatarHtml(who, '', true)
       + '<div class="cm-bd">'
       +   '<div class="cm-bub">'
       +     '<div class="cm-hd"><b>' + esc(who) + '</b>'
-      +       (cmParts(r).edited ? '<span class="cm-ed">ویرایش‌شده</span>' : '')
+      +       (isNudge ? '<span class="cm-kindtag">🔔 تلنگر'
+                       + (pick(r,N.to) ? ' به ' + esc(pick(r,N.to)) : '') + '</span>' : '')
+      +       (!isNudge && cmParts(r).edited ? '<span class="cm-ed">ویرایش‌شده</span>' : '')
       +       '<span class="cm-t">' + esc(clockOf(t) || '')
       +         (clockOf(t) ? ' · ' : '') + esc(stampFa(t) || '') + '</span>'
-      +       menu
+      +       dots
       +     '</div>'
       +     '<div class="cm-tx">' + esc(pick(r,N.msg) || '') + '</div>'
       +   '</div>'
+      +   menuRows
       +   (isReply ? ''
           : '<div class="cm-ops"><button type="button" data-cm-reply="' + id2 + '" '
             + 'data-cm-who="' + esc(who) + '">پاسخ</button></div>')
@@ -6218,19 +6675,24 @@
 
   function cmThreadHtml(target, id){
     const me = activeUserName();
-    const all = commentsOf(target, id)
+    const cms = commentsOf(target, id);
+    const nds = nudgesOf(target, id);
+    const nudgeIds = new Set(nds.map(r => String(pick(r,N.id))));
+    // تلنگرها و نظرها در یک نخ، به ترتیب زمان
+    const all = cms.concat(nds)
       .slice().sort((a,b) => String(pick(a,N.time)).localeCompare(String(pick(b,N.time))));
-    const roots = all.filter(r => !cmParts(r).parent);
-    const kids = pid => all.filter(r => cmParts(r).parent === String(pid));
+    const roots = all.filter(r => !cmParts(r).parent || nudgeIds.has(String(pick(r,N.id))));
+    const kids = pid => cms.filter(r => cmParts(r).parent === String(pid));
     const isMine = r => nameKey(pick(r,N.from)) === nameKey(me);
 
     const list = roots.length
       ? roots.map(r => {
+          const isN = nudgeIds.has(String(pick(r,N.id)));
           const kk = kids(pick(r,N.id));
           return '<div class="cm-thread">'
-            + cmItemHtml(r, false, isMine(r))
+            + cmItemHtml(r, false, isMine(r), isN)
             + (kk.length ? '<div class="cm-kids">'
-                + kk.map(k => cmItemHtml(k, true, isMine(k))).join('') + '</div>' : '')
+                + kk.map(k => cmItemHtml(k, true, isMine(k), false)).join('') + '</div>' : '')
             + '</div>';
         }).join('')
       : '<div class="cm-blank">'
@@ -6239,12 +6701,16 @@
         + '<span>اولین نفری باشید که دربارهٔ این مورد می‌نویسد.</span></div>';
 
     return '<div class="cm-top"><b>نظرات</b>'
-      +   (all.length ? '<span class="cm-cnt">' + toFa(all.length) + '</span>' : '')
+      +   (cms.length ? '<span class="cm-cnt">' + toFa(cms.length) + '</span>' : '')
+      +   (nds.length ? '<span class="cm-cnt nd">🔔 ' + toFa(nds.length) + '</span>' : '')
       + '</div>'
       + '<div class="cm-list">' + list + '</div>'
       + '<div class="cm-repbar" hidden></div>'
+      + '<div class="cm-tagbar" hidden></div>'
       + '<div class="cm-new">' + avatarHtml(me, '', true)
       +   '<div class="cm-field">'
+      +     '<button type="button" class="cm-tag" title="تگ کردن مسئول" '
+      +       'aria-label="تگ کردن">@</button>'
       +     '<textarea class="cm-input" rows="1" placeholder="نظرتان را بنویسید…"></textarea>'
       +     '<button type="button" class="cm-send" aria-label="ارسال" title="ارسال">➤</button>'
       +   '</div>'
@@ -6260,10 +6726,23 @@
     box.hidden = false; btn.classList.add('on');
     box.dataset.title = btn.dataset.cmTitle || '';
     box.dataset.owner = btn.dataset.cmOwner || '';
-    box.innerHTML = '<div class="empty" style="margin:0;">در حال دریافت نظرها…</div>';
-    await loadComments(true);
-    box.innerHTML = cmThreadHtml(target, id);
-    refreshCommentCounts();
+
+    // آنچه در حافظه هست فوری کشیده می‌شود تا پنجره بدون معطلی باز شود
+    box.innerHTML = (commentCache.rows && commentCache.rows.length)
+      ? cmThreadHtml(target, id)
+      : '<div class="empty" style="margin:0;">در حال دریافت نظرها…</div>';
+
+    // بعد در پس‌زمینه تازه می‌شود
+    loadComments(true).then(() => {
+      if(box.hidden) return;
+      if(box.querySelector('.cm-editbox')) return;   // وسط ویرایش دست نزن
+      const keep = box.querySelector('.cm-input');
+      const draft = keep ? keep.value : '';
+      box.innerHTML = cmThreadHtml(target, id);
+      const ta = box.querySelector('.cm-input');
+      if(ta && draft){ ta.value = draft; }
+      refreshCommentCounts();
+    }).catch(() => {});
   }
 
   function refreshCommentCounts(){
@@ -6343,11 +6822,25 @@
       showDialog('warn','ثبت نظر انجام نشد', lastServerError || 'اتصال برقرار نشد؛ دوباره تلاش کنید.');
       return false;
     }
+    // برای هرکس که تگ شده، یک تلنگر با متن همان نظر می‌رود
+    const tagged = String(box.dataset.tags || '').split('|').filter(Boolean);
+    for(const w of tagged){
+      if(nameKey(w) === nameKey(me)) continue;
+      try{
+        await sendAction({action:'nudge', from: me, to: w,
+          kind: target, itemId: id, title: box.dataset.title || '',
+          message: 'در نظرات شما را تگ کرد: ' + text,
+          date: todayShamsi()});
+      }catch(e){}
+    }
+    delete box.dataset.tags;
     delete box.dataset.replyTo;
+    const tb = box.querySelector('.cm-tagbar');
+    if(tb){ tb.hidden = true; tb.innerHTML = ''; }
     await loadComments(true);
     box.innerHTML = cmThreadHtml(target, id);
     refreshCommentCounts();
-    if(typeof loadNotif === 'function'){ try{ await loadNotif(); }catch(e){} }
+    if(typeof loadNotif === 'function'){ try{ await loadNotif(true); }catch(e){} }
     return true;
   }
 
@@ -6392,6 +6885,40 @@
       return;
     }
 
+    // باز کردن فهرست تگ
+    const tg = e.target.closest('.cm-tag');
+    if(tg){
+      e.preventDefault(); e.stopPropagation();
+      const box = tg.closest('.cm-panel');
+      const bar = box && box.querySelector('.cm-tagbar');
+      if(!bar) return;
+      if(!bar.hidden){ bar.hidden = true; return; }
+      const me2 = activeUserName();
+      bar.innerHTML = '<span class="cm-tagcap">چه کسی خبردار شود؟</span>'
+        + listNames().filter(n => nameKey(n) !== nameKey(me2))
+            .map(n => '<button type="button" class="nd-p" data-cm-tagp="'
+              + esc(n) + '">' + avatarHtml(n, '', true)
+              + '<span>' + esc(n) + '</span></button>').join('');
+      bar.hidden = false;
+      return;
+    }
+    const tp = e.target.closest('[data-cm-tagp]');
+    if(tp){
+      e.preventDefault(); e.stopPropagation();
+      const box = tp.closest('.cm-panel');
+      const who = tp.dataset.cmTagp;
+      const set = new Set(String(box.dataset.tags || '').split('|').filter(Boolean));
+      if(set.has(who)) set.delete(who); else set.add(who);
+      box.dataset.tags = Array.from(set).join('|');
+      tp.classList.toggle('on', set.has(who));
+      const ta3 = box.querySelector('.cm-input');
+      if(ta3 && set.has(who)){
+        ta3.value = (ta3.value ? ta3.value.replace(/\s*$/, ' ') : '') + '@' + who + ' ';
+        ta3.focus();
+      }
+      return;
+    }
+
     const snd = e.target.closest('.cm-send');
     if(snd){
       e.preventDefault(); e.stopPropagation();
@@ -6408,8 +6935,8 @@
     const mn = e.target.closest('[data-cm-menu]');
     if(mn){
       e.preventDefault(); e.stopPropagation();
-      const wrap = mn.parentElement;
-      const box2 = wrap.querySelector('.cm-menu');
+      const item0 = mn.closest('.cm-item');
+      const box2 = item0 ? item0.querySelector('.cm-menu') : null;
       const wasOpen = box2 && !box2.hidden;
       document.querySelectorAll('.cm-menu').forEach(m => { m.hidden = true; });
       document.querySelectorAll('.cm-more.on').forEach(b2 => b2.classList.remove('on'));
@@ -6505,7 +7032,17 @@
         .map(x => pick(x,N.id)).filter(Boolean);
       let ok = true;
       for(const cid of [dl.dataset.cmDel].concat(kids)){
-        const r2 = await sendAction({action:'delete', target:'nudge', id: cid});
+        let r2 = await sendAction({action:'delete', target:'nudge', id: cid});
+        if(!r2){
+          // پشتیبان: اگر حذف واقعی ممکن نبود، نظر علامتِ حذف‌شده می‌گیرد
+          const rw = cmRowById(cid);
+          if(rw){
+            const pp = cmParts(rw);
+            r2 = await sendAction({action:'update', target:'nudge', id: cid,
+              values:{'عنوان مورد': pp.target + CM_SEP + pp.parent + CM_SEP
+                        + pp.itemTitle + CM_SEP + 'X'}});
+          }
+        }
         if(!r2) ok = false;
       }
       if(!ok){
@@ -6533,9 +7070,6 @@
       if(t) lines.push(t);
       if(shareCtx.body) lines.push(shareCtx.body);
       if(shareCtx.link) lines.push('پیوست: ' + shareCtx.link);
-    }else if(shareCtx.mode === 'app'){
-      if(t) lines.push(t);
-      lines.push(location.href.split('#')[0]);
     }else{
       if(t) lines.push(t);
       if(shareCtx.body) lines.push(shareCtx.body);
@@ -6544,10 +7078,7 @@
     return lines.filter(Boolean).join('\n');
   }
   /* آدرسی که به‌عنوان لینک همراه پیام می‌رود */
-  function shareUrl(){
-    if(shareCtx.mode === 'app') return location.href.split('#')[0];
-    return shareCtx.link || '';
-  }
+  function shareUrl(){ return shareCtx.link || ''; }
 
   function shareSyncUI(){
     const wrap = document.getElementById('shareWhat');
@@ -6649,6 +7180,7 @@
       + '</div></div></div>';
   }
 
+  let lastChatSig = '';
   function renderMessages(withName){
     const box = document.getElementById('msgList');
     const me = activeUserName();
@@ -6666,6 +7198,21 @@
           nameKey(pick(r,N.to)) === nameKey(withName) || nameKey(pick(r,N.from)) === nameKey(withName));
       }
     }
+    // از قدیمی به تازه مرتب می‌شود تا تازه‌ترین پیام پایین بنشیند
+    list = list.slice().sort((a,b) =>
+      String(pick(a,N.time)).localeCompare(String(pick(b,N.time))));
+
+    // اگر چیزی عوض نشده، صفحه دست‌نخورده می‌ماند (بدون پرش و لرزش)
+    const sig = String(withName || '*') + '#' + list.length + '#'
+      + list.map(r => String(pick(r,N.id)) + (pick(r,N.state) === 'خوانده‌شده' ? '1' : '0')).join(',');
+    const had = box.querySelector('.chat-wrap');
+    if(had && sig === lastChatSig) return;
+
+    // اگر کاربر بالا رفته و در حال خواندن است، به زور پایین نمی‌بریمش
+    const prev = document.getElementById('chatWrap');
+    const stick = !prev || (prev.scrollHeight - prev.scrollTop - prev.clientHeight) < 80;
+
+    lastChatSig = sig;
     box.innerHTML = '<div class="rule"><h3>'
       + (withName ? 'گفت‌وگو با ' + esc(withName) : 'همهٔ گفت‌وگوها')
       + '</h3><span class="n">'+toFa(list.length)+'</span></div>'
@@ -6673,7 +7220,21 @@
           ? '<div class="chat-wrap" id="chatWrap">' + list.map(msgRowHtml).join('') + '</div>'
           : '<div class="empty">پیامی نیست.</div>');
     const cw = document.getElementById('chatWrap');
-    if(cw) cw.scrollTop = cw.scrollHeight;
+    if(cw && stick) cw.scrollTop = cw.scrollHeight;
+  }
+
+  /* حباب موقتِ پیام تازه: بی‌درنگ دیده می‌شود، بعد جای خود را به ردیف واقعی می‌دهد */
+  function appendPendingBubble(text){
+    const cw = document.getElementById('chatWrap');
+    if(!cw) return null;
+    const el = document.createElement('div');
+    el.className = 'chat-row out pending';
+    el.innerHTML = avatarHtml(activeUserName(), 'chat', true)
+      + '<div class="bubble mine"><div class="b-text">' + esc(text) + '</div>'
+      + '<div class="b-meta"><span class="b-sending">در حال ارسال…</span></div></div>';
+    cw.appendChild(el);
+    cw.scrollTop = cw.scrollHeight;
+    return el;
   }
 
   function renderPeoplePicker(sel){
@@ -6683,6 +7244,7 @@
     const names = listNames().filter(n => nameKey(n) !== nameKey(me));
     const unreadFrom = {};
     allMessages.forEach(r => {
+      if(pick(r,N.kind) !== MSG_KIND) return;          // فقط پیام، نه تلنگر و نظر
       if(nameKey(pick(r,N.to)) !== nameKey(me)) return;
       if(pick(r,N.state) === 'خوانده‌شده') return;
       const k = nameKey(pick(r,N.from));
@@ -6730,11 +7292,10 @@
       return '<button type="button" class="p-card'+(c ? ' has-new' : '')
         + (withPreview ? '' : ' slim')+'" '
         + 'data-person-pick="'+esc(n)+'">'
-        + avatarHtml(n, 'lg')
+        + '<span class="pc-ava">' + avatarHtml(n, 'lg') + '</span>'
         + '<span class="pi"><b>'+esc(n)+' '+adminBadge(n)+'</b>'
         + '<span class="rl">'+sub+'</span></span>'
-        + (c ? '<span class="cnt">'+toFa(c)+'</span>'
-             : (time ? '<span class="pc-time">'+time+'</span>' : ''))
+        + (time ? '<span class="pc-time">'+time+'</span>' : '')
         + '</button>';
     };
 
@@ -6774,9 +7335,10 @@
       pick(r,N.state) !== 'خوانده‌شده').map(r => pick(r,N.id)).filter(Boolean);
     if(!ids.length) return;
     for(const id of ids) await sendAction({action:'nudgeRead', id});
-    clearNetCache();
-    await loadMessages();
+    await loadMessages(true);
     renderMessages(name);
+    renderPeoplePicker('');
+    if(typeof loadNotif === 'function') await loadNotif(false);
     if(typeof refreshBell === 'function') refreshBell();
   }
 
@@ -6804,6 +7366,14 @@
     });
     bg.addEventListener('click', e => { if(e.target === bg) bg.hidden = true; });
 
+    // Enter می‌فرستد، Shift+Enter خط تازه می‌سازد
+    const msgBox = document.getElementById('msgText');
+    if(msgBox) msgBox.addEventListener('keydown', ev => {
+      if(ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return;
+      ev.preventDefault();
+      document.getElementById('msgSend').click();
+    });
+
     document.getElementById('msgSend').addEventListener('click', async e => {
       const btn = e.currentTarget;
       const to = document.getElementById('msgTo').value.trim();
@@ -6811,6 +7381,9 @@
       if(!to){ showDialog('warn','گیرنده انتخاب نشده','نام گیرنده را انتخاب کنید.'); return; }
       if(!text){ showDialog('warn','پیام خالی است','متن پیام را بنویسید.'); return; }
       btn.disabled = true;
+      // پیام بی‌درنگ روی صفحه می‌نشیند؛ بعد با پاسخ سرور جایگزین می‌شود
+      document.getElementById('msgText').value = '';
+      const ghost = appendPendingBubble(text);
       const ok = await sendAction({
         action:'nudge', from: activeUserName(), to, kind: MSG_KIND,
         itemId:'', title:'', message: text,
@@ -6818,11 +7391,12 @@
       });
       btn.disabled = false;
       if(ok){
-        document.getElementById('msgText').value = '';
-        clearNetCache();
-        await loadMessages();
+        lastChatSig = '';                 // بازکشیدن اجباری
+        await syncInbox();
         renderMessages(to);
       }else{
+        document.getElementById('msgText').value = text;
+        if(ghost) ghost.remove();
         showDialog('err','ارسال نشد', lastServerError || 'دوباره تلاش کنید.');
         lastServerError = '';
       }
@@ -6947,12 +7521,26 @@
 
   // پنجرهٔ ارسال تلنگر
   let nudgeCtx = null;
+  let nudgeExtra = new Set();
+  function nudgePicksHtml(main){
+    const me = activeUserName();
+    return listNames()
+      .filter(n => nameKey(n) !== nameKey(me) && nameKey(n) !== nameKey(main))
+      .map(n => '<button type="button" class="nd-p' + (nudgeExtra.has(n) ? ' on' : '') + '" '
+        + 'data-nd-pick="' + esc(n) + '">' + avatarHtml(n, '', true)
+        + '<span>' + esc(n) + '</span></button>').join('');
+  }
   function openNudge(to, kind, itemId, title){
     if(!to){ showDialog('warn','مسئول ندارد','برای این مورد مسئولی ثبت نشده است.'); return; }
     nudgeCtx = {to, kind, itemId, title};
+    nudgeExtra = new Set();
     document.getElementById('nudgeTitle').textContent = 'تلنگر به ' + to;
     document.getElementById('nudgeTo').textContent = title || '';
     document.getElementById('nudgeMsg').value = '';
+    const pk = document.getElementById('nudgePicks');
+    if(pk){ pk.hidden = true; pk.innerHTML = nudgePicksHtml(to); }
+    const mb = document.getElementById('nudgeMoreBtn');
+    if(mb) mb.classList.remove('on');
     const pm = document.getElementById('profileModal');
     if(pm && !pm.hidden) pm.hidden = true;
     const nm = document.getElementById('nudgeModal');
@@ -6969,16 +7557,37 @@
       const msg = document.getElementById('nudgeMsg').value.trim();
       if(!msg){ showDialog('warn','پیام خالی است','یک پیام کوتاه بنویسید.'); return; }
       btn.disabled = true;
-      const ok = await sendAction({
-        action:'nudge', from: activeUserName(), to: nudgeCtx.to,
-        kind: nudgeCtx.kind, itemId: nudgeCtx.itemId, title: nudgeCtx.title,
-        message: msg, date: normDate(dateInput.value) || todayShamsi()
-      });
+      const targets = [nudgeCtx.to].concat(Array.from(nudgeExtra));
+      let done = 0;
+      for(const who of targets){
+        const ok = await sendAction({
+          action:'nudge', from: activeUserName(), to: who,
+          kind: nudgeCtx.kind, itemId: nudgeCtx.itemId, title: nudgeCtx.title,
+          message: msg, date: normDate(dateInput.value) || todayShamsi()
+        });
+        if(ok) done++;
+      }
       btn.disabled = false;
       bg.hidden = true;
-      if(ok) showDialog('ok','تلنگر فرستاده شد', 'پیام شما برای ' + nudgeCtx.to + ' ثبت شد.');
+      if(done) showDialog('ok','تلنگر فرستاده شد',
+        done === 1 ? ('پیام شما برای ' + nudgeCtx.to + ' ثبت شد.')
+                   : ('پیام شما برای ' + toFa(done) + ' نفر ثبت شد.'));
       else showDialog('err','ارسال نشد', lastServerError || 'دوباره تلاش کنید.');
       lastServerError = '';
+      if(typeof refreshBadges === 'function') refreshBadges(true);
+    });
+    // انتخاب گیرندگان بیشتر
+    document.getElementById('nudgeMoreBtn').addEventListener('click', e => {
+      const pk = document.getElementById('nudgePicks');
+      pk.hidden = !pk.hidden;
+      e.currentTarget.classList.toggle('on', !pk.hidden);
+    });
+    bg.addEventListener('click', e => {
+      const b2 = e.target.closest('[data-nd-pick]');
+      if(!b2) return;
+      const n = b2.dataset.ndPick;
+      if(nudgeExtra.has(n)) nudgeExtra.delete(n); else nudgeExtra.add(n);
+      b2.classList.toggle('on', nudgeExtra.has(n));
     });
   })();
 
@@ -6992,7 +7601,9 @@
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-person]');
       if(!el) return;
-      if(e.target.closest('button:not(.person)')) return;
+      // جاهایی که خودِ کارت کار دیگری دارد (انتخاب گفت‌وگو، روز تقویم، انتخاب گیرنده)
+      if(e.target.closest('.p-card, .day-item, .nd-p, [data-cm-tagp]')) return;
+      e.stopPropagation();
       openProfile(el.dataset.person);
     });
   })();
@@ -7968,8 +8579,10 @@
       if(gcal){
         if(!profileState.genCal)
           profileState.genCal = {ym:null, open:false, who:'', showWho:true,
-                                 title:'تقویم ابلاغ‌ها'};
-        const genList = generalTasksOf(tasks);
+                                 title:'تقویم فعالیت‌ها'};
+        // همهٔ فعالیت‌ها روی تقویم می‌آیند، نه فقط ابلاغی‌ها
+        const genList = (tasks || []).slice()
+          .concat(typeof adminAsTasks === 'function' ? (adminAsTasks(adm) || []) : []);
         profileState.genCal.names = () => Array.from(new Set(
           genList.map(r => pick(r,T.m1)).filter(Boolean)))
           .sort((x,y) => x.localeCompare(y,'fa'));
@@ -8944,8 +9557,8 @@
     unreadFromMap = {};
     const me = activeUserName();
     (allMessages || []).forEach(r => {
-      // نظرها نشان قرمزِ پیام روی عکس نمی‌سازند
-      if(pick(r,N.kind) === COMMENT_KIND) return;
+      // فقط پیام‌های واقعی نشان قرمز روی عکس می‌سازند
+      if(pick(r,N.kind) !== MSG_KIND) return;
       if(nameKey(pick(r,N.to)) !== nameKey(me)) return;
       if(pick(r,N.state) === 'خوانده‌شده') return;
       const k = nameKey(pick(r,N.from));
@@ -9019,7 +9632,7 @@
     if(currentUser) return currentUser;
     const admEl = document.getElementById('admOwner');
     const adm = admEl ? admEl.value.trim() : '';
-    const eng = document.getElementById('engineerName').value.trim();
+    const eng = (document.getElementById('engineerName').value.trim() || activeUserName());
     const onAdmin = !document.getElementById('panelAdmin').hidden;
     return (onAdmin && adm) ? adm : (eng || adm);
   }
@@ -9235,6 +9848,8 @@
      تا وقتی گزارش ثبت نشود، هر روز تکرار می‌شود. */
   const MISS_KIND = 'missing';
   const MISS_BACK_DAYS = 7;
+  /* اعلان‌های «گزارش ثبت‌نشده» که صاحبشان بعداً گزارش داده است */
+  const missResolved = new Set();
 
   /* مثل pastDeadline ولی جمعه را هم حساب می‌کند */
   function pastDeadlineAny(faDate){
@@ -9287,8 +9902,36 @@
 
       // اعلان‌های موجود، تا تکراری فرستاده نشود
       const olds = await supaFetch('nudges?kind=eq.' + MISS_KIND
-        + '&select=title,to_name&limit=2000').catch(() => []);
+        + '&select=id,title,to_name&limit=2000').catch(() => []);
       const had = new Set((olds || []).map(x => String(x.title || '')));
+
+      // ---- پاک‌سازی: هر اعلانی که صاحبش بعداً گزارش داده، حذف می‌شود ----
+      const staleIds = [];
+      (olds || []).forEach(x => {
+        const t = String(x.title || '');
+        const pr = t.split(' — ');            // «گزارش ثبت‌نشده — تاریخ — نام»
+        if(pr.length < 3) return;
+        const dk = dayKey(pr[1]);
+        if(!dk) return;
+        if(seen.has(dk + '|' + nameKey(pr[2]))){
+          missResolved.add(t);                // فوری از نمایش کنار می‌رود
+          if(x.id) staleIds.push(x.id);
+        }
+      });
+      if(staleIds.length){
+        try{
+          await supaFetch('nudges?id=in.(' + staleIds.map(encodeURIComponent).join(',') + ')',
+            {method:'DELETE'});
+        }catch(e){ /* اگر حذف ممکن نبود، فیلتر نمایش کافی است */ }
+        if(typeof invalidateNudges === 'function') invalidateNudges();
+      }
+      if(staleIds.length || missResolved.size){
+        try{
+          await loadNotif(true);
+          if(!document.getElementById('notifModal').hidden) renderNotif();
+          refreshBell();
+        }catch(e){}
+      }
 
       const bosses = allPeopleNames().filter(n => levelOf(n) <= 2);
       const body = [];
@@ -9867,9 +10510,12 @@
         + 'data-ct="' + (ct ? 1 : 0) + '" data-st="' + (st ? 1 : 0) + '">'
         + '<div class="hr-head">'
         +   '<span class="hr-id">'
-        +     '<span class="hr-name" data-hrprof="' + esc(name) + '">'
-        +       esc(name) + '</span>'
-        +     '<span class="hr-sub' + (subLine === 'بدون قرارداد' ? ' none' : '') + '">'
+        +     '<button type="button" class="hr-chip" '
+        +       'data-hrprof="' + esc(name) + '" '
+        +       'title="نمایش پروندهٔ ' + esc(name) + '">'
+        +       '<span class="hr-chip-tx">' + esc(name) + '</span>'
+        +       '<span class="hr-chip-ar">‹</span></button>'
+        +     '<span class="hr-sub chip' + (subLine === 'بدون قرارداد' ? ' none' : '') + '">'
         +       esc(subLine) + '</span>'
         +   '</span>'
         +   (cNo ? '<span class="no-tag hr-no">' + ADM_ICON.hash
@@ -10055,7 +10701,28 @@
     document.body.appendChild(bg);
     document.body.style.overflow = 'hidden';
 
-    const card = await findHrCard(name);
+    // ---- راه خروج همین اول ساخته می‌شود، پیش از هر انتظاری ----
+    const close = () => { bg.remove(); document.body.style.overflow = ''; };
+    bg.addEventListener('click', ev => {
+      if(ev.target === bg || ev.target.closest('[data-ctx]')){ close(); return; }
+      const ss = ev.target.closest('.subsec > .subsec-head');
+      if(ss){
+        const op = ss.parentElement.classList.toggle('open');
+        const a3 = ss.querySelector('.ss-ar');
+        if(a3) a3.textContent = op ? '▴' : '▾';
+      }
+    });
+    const onEsc = ev => {
+      if(ev.key !== 'Escape') return;
+      document.removeEventListener('keydown', onEsc);
+      close();
+    };
+    document.addEventListener('keydown', onEsc);
+
+    let card = null;
+    try{ card = await findHrCard(name); }catch(e){ card = null; }
+    if(!document.body.contains(bg)) return;      // کاربر زودتر بسته است
+
     const body = bg.querySelector('.ct-body');
     if(body){
       body.innerHTML = card
@@ -10069,18 +10736,22 @@
             }).join('')
         : '<div class="empty">برای این پیمانکار نه گزارش کارگاهی ثبت شده و نه پروندهٔ اداری.</div>';
     }
-
-    const close = () => { bg.remove(); document.body.style.overflow = ''; };
-    bg.addEventListener('click', ev => {
-      if(ev.target === bg || ev.target.closest('[data-ctx]')){ close(); return; }
-      const ss = ev.target.closest('.subsec > .subsec-head');
-      if(ss){
-        const op = ss.parentElement.classList.toggle('open');
-        const a3 = ss.querySelector('.ss-ar');
-        if(a3) a3.textContent = op ? '▴' : '▾';
-      }
-    });
   }
+
+
+  /* پشتیبان: اگر پرده‌ای به هر دلیل جا ماند، با Escape بسته می‌شود */
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Escape') return;
+    const stuck = Array.from(document.querySelectorAll('.modal-bg'))
+      .filter(el => !el.hidden && el.offsetParent !== null);
+    if(!stuck.length) return;
+    const top = stuck[stuck.length - 1];
+    if(top.id && document.getElementById(top.id) && top.hasAttribute('hidden') === false
+       && ['ctProfModal','digestModal'].indexOf(top.id) !== -1){
+      top.remove();
+      document.body.style.overflow = '';
+    }
+  });
 
   /* ====== خلاصهٔ بازهٔ زمانی ====== */
   let lastRange = null;   // برای بازسازی خلاصه هنگام تغییر فیلتر پیمانکار
@@ -11143,19 +11814,28 @@
   document.getElementById('cfX').addEventListener('click', closeCf);
   document.getElementById('cfCancel').addEventListener('click', closeCf);
   cfModal.addEventListener('click', e => { if(e.target === cfModal) closeCf(); });
+  let cfBusy = false;   // جلوی دو بار فرستادن با یک کلیک را می‌گیرد
   document.getElementById('cfSend').addEventListener('click', () => {
+    if(cfBusy) return;
+    cfBusy = true;
     closeCf(); submitConfirmed = true;
     form.dispatchEvent(new Event('submit', {cancelable:true}));
+    setTimeout(() => { cfBusy = false; }, 800);
   });
   document.getElementById('cfCopySend').addEventListener('click', async e => {
+    if(cfBusy) return;
+    cfBusy = true;
     const m = formModel();
     if(m) await copyText(reportText(m), e.currentTarget);
     closeCf(); submitConfirmed = true;
     form.dispatchEvent(new Event('submit', {cancelable:true}));
+    setTimeout(() => { cfBusy = false; }, 800);
   });
 
+  let submitting = false;
   form.addEventListener('submit', async e => {
     e.preventDefault();
+    if(submitting) return;          // ارسالِ در جریان، دوباره شروع نشود
     const raw = collect();
     const d = normDate(raw.date);
     const contractors = raw.contractors.filter(c => c.name || c.activity)
@@ -11205,8 +11885,13 @@
     }
 
     // همه‌چیز درست است؛ حالا یادآوری کپی متن پیش از ثبت
-    if(!isAdmin && !submitConfirmed){ cfModal.hidden = false; return; }
+    // (فقط برای گزارش روزانه، و فقط یک بار)
+    if(!isAdmin && !submitConfirmed){
+      if(cfModal.hidden) cfModal.hidden = false;
+      return;
+    }
     submitConfirmed = false;
+    submitting = true;
 
     const payload = isAdmin ? {
       type:'admin', date:d, project:raw.project, engineer:raw.engineer,
@@ -11234,6 +11919,7 @@
     }catch(err){
       r = {state:'failed', detail: String(err && err.message ? err.message : err)};
     }finally{
+      submitting = false;
       submitBtn.disabled = false;
       const sTx2 = submitBtn.querySelector('.db-tx');
       if(sTx2) sTx2.textContent = 'ثبت گزارش'; else submitBtn.textContent = 'ثبت گزارش';
@@ -11262,6 +11948,8 @@
       refreshDateLong();
       if(!isAdmin) setTimeout(() => loadMine(payload.engineer, d), 500);
       if(!isAdmin && lastDate === d) setTimeout(loadReports, 1500);
+      // اعلان «گزارش ثبت‌نشده» همین حالا بررسی و پاک می‌شود
+      if(!isAdmin) setTimeout(() => { try{ checkMissingReports(); }catch(e){} }, 1200);
     }else if(r.state === 'sent'){
       mineEng = payload.engineer; mineDate = d;
       if(!isAdmin) showJustSent(payload);
@@ -12333,6 +13021,8 @@
   }
 
   async function sendAction(obj){
+    if(obj && ['nudge','nudgeRead','update','delete'].indexOf(obj.action) !== -1
+       && typeof invalidateNudges === 'function') invalidateNudges();
     clearNetCache();
     if(BACKEND === 'supabase') return await supaAction(obj);
     try{
@@ -12529,7 +13219,7 @@
     const box = document.getElementById('prevIssues');
     const d = normDate(dateInput.value);
     if(!d){ box.innerHTML = '<div class="empty">اول تاریخ گزارش را وارد کنید.</div>'; return; }
-    const me = document.getElementById('engineerName').value.trim();
+    const me = (document.getElementById('engineerName').value.trim() || activeUserName());
     if(!me){ box.innerHTML = '<div class="empty">اول نام تهیه‌کنندهٔ گزارش را انتخاب کنید.</div>'; return; }
     const pd = prevDay(d);
     box.innerHTML = '<div class="empty">در حال دریافت مشکلات ' + esc(pd) + ' ...</div>';
@@ -12754,21 +13444,21 @@
     msg('warn','گزارش ' + prevDate + ' در فرم بارگذاری شد؛ اعداد و شرح فعالیت را برای امروز اصلاح کنید.');
   });
   document.getElementById('prevReportBtn').addEventListener('click', () => {
-    offerPrevReport(document.getElementById('engineerName').value.trim(), true);
+    offerPrevReport((document.getElementById('engineerName').value.trim() || activeUserName()), true);
   });
   document.getElementById('prevPickGo').addEventListener('click', () => {
     const v = normDate(document.getElementById('prevPickDate').value);
     if(!v){ showDialog('warn','تاریخ نامعتبر','یک تاریخ شمسی معتبر انتخاب کنید.'); return; }
-    offerPrevReport(document.getElementById('engineerName').value.trim(), true, v);
+    offerPrevReport((document.getElementById('engineerName').value.trim() || activeUserName()), true, v);
   });
   document.getElementById('prevPickPrev').addEventListener('click', () => {
     const cur = normDate(document.getElementById('prevPickDate').value) || prevDate;
     const back = prevDay(cur || normDate(dateInput.value) || todayShamsi());
-    offerPrevReport(document.getElementById('engineerName').value.trim(), true, back);
+    offerPrevReport((document.getElementById('engineerName').value.trim() || activeUserName()), true, back);
   });
   document.getElementById('prevPickDate').addEventListener('change', () => {
     const v = normDate(document.getElementById('prevPickDate').value);
-    if(v) offerPrevReport(document.getElementById('engineerName').value.trim(), true, v);
+    if(v) offerPrevReport((document.getElementById('engineerName').value.trim() || activeUserName()), true, v);
   });
 
   /* ====== قراردادهای پروژه (پایهٔ کشویی‌ها) ====== */
@@ -12981,9 +13671,27 @@
     return nums.reduce((acc, n) => acc * 10000 + (+n), 0);
   }
 
+  /* رتبهٔ عددی شمارهٔ نامه، برای مرتب‌سازی درست ۹ و ۱۰ و ۱۰۰ */
+  function letterNoRank(r){
+    const raw = toEn(String(pick(r,AD.lNo) || ''));
+    const nums = raw.match(/\d+/g);
+    if(!nums || !nums.length) return -1;
+    return nums.reduce((acc, n) => acc * 10000 + (+n), 0);
+  }
+
   function sortAdmin(kind, list){
     if(kind === 'contract'){
       return list.slice().sort((a,b) => contractNoRank(b) - contractNoRank(a));
+    }
+    // نامه‌ها بر اساس شمارهٔ نامه، از بزرگ به کوچک
+    if(kind === 'letter'){
+      return list.slice().sort((a,b) => {
+        const ra = letterNoRank(a), rb = letterNoRank(b);
+        if(ra !== rb) return rb - ra;
+        const da = latestDateOf(kind,a), db = latestDateOf(kind,b);
+        if(da && db) return db - da;
+        return 0;
+      });
     }
     return list.slice().sort((a,b) => {
       const da = latestDateOf(kind,a), db = latestDateOf(kind,b);
@@ -13291,9 +13999,30 @@
     return false;
   }
 
+  /* همان قاعدهٔ زنگوله، این بار روی خودِ کارت اداری */
+  function admAlertOf(kind, r){
+    // نامه‌ها و هر موردی که کارش تمام شده، هشدار نمی‌گیرند
+    if(kind === 'letter' || kind === 'minute') return null;
+    try{ if(admDoneState(kind, r).cls === 'ok') return null; }catch(e){}
+    let dl = null, why = '';
+    if(kind === 'statement'){
+      if(isPaid(r)) return null;
+      dl = daysSince(pick(r,AD.sDate));
+      why = 'روز از ارسال گذشته و هنوز تسویه نشده';
+    }else if(kind === 'contract'){
+      const n = pick(r,AD.cNotify);
+      if(n === 'برون‌سازمانی' || n === 'درون‌سازمانی') return null;
+      dl = daysSince(pick(r,AD.cDate) || pick(r,AD.cStart));
+      why = 'روز بلاتکلیف مانده';
+    }else return null;
+    if(dl == null || dl <= 5) return null;
+    return {level: dl > 30 ? 'hot' : 'warm', note: toFa(dl) + ' ' + why};
+  }
+
   function admCard(kind, r, editableIn){
     const editable = (editableIn === false) ? false : canEditAdm(kind, r);
     const id = pick(r,AD.id);
+    const admAl = admAlertOf(kind, r);
     const kv = (label, value, cls) => value
       ? '<span class="kv '+(cls||'')+'"><i>'+esc(label)+'</i><b>'+esc(value)+'</b></span>' : '';
     const head = {
@@ -13416,8 +14145,16 @@
               ? '<a class="dl-tag" href="'+esc(pick(r,AD.link))+'" target="_blank" rel="noopener" '
                 + 'title="دانلود پیوست">' + ADM_ICON.down + '<b>پیوست</b></a>'
               : '')
+      +       (admAl
+              ? '<span class="sec-alert-wrap alert-flag" title="' + esc(admAl.note) + '">'
+                + '<span class="sec-alert' + (admAl.level === 'hot' ? ' hot' : '') + '">'
+                + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                + 'stroke-width="2.2" stroke-linecap="round">'
+                + '<path d="M12 7.5v6"/><path d="M12 17h.01"/></svg></span></span>'
+              : '')
       +     '</span>'
       +     '<h4 class="adm-title">'+esc(head.title)+'</h4>'
+      +     (admAl ? '<span class="adm-alert-note">' + esc(admAl.note) + '</span>' : '')
       +   '</div>'
       +   '<div class="adm-acts">'
       +     ((kind === 'statement' && !isPaid(r) && id && editable)
@@ -14007,8 +14744,7 @@
       // فرم باز می‌ماند تا بتوان مورد بعدی را پشت سر هم وارد کرد
       host.innerHTML = newFormHead(kind)
         + '<div class="nf-body">'
-        +   '<div class="queued-note">به صف تغییرات اضافه شد — مورد بعدی را وارد کنید '
-        +     'یا «ثبت تغییرات» را بزنید.</div>'
+        +   '<div class="queued-note">ثبت شد — مورد بعدی را وارد کنید.</div>'
         +   admEditHtml(kind, {}, 'new') + addMoreBtn(kind)
         + '</div>';
       host.classList.add('open');
@@ -14021,6 +14757,12 @@
     }
     const nb = document.getElementById('admNewBox');
     if(nb) nb.innerHTML = '';
+
+    // مورد تازه بی‌درنگ ثبت می‌شود؛ دیگر لازم نیست جداگانه
+    // «ثبت تغییرات» را هم بزنید. ویرایش‌های درجا مثل قبل در صف می‌مانند.
+    if(!pendingAdmin.size) {
+      try{ await commitAdmin(); }catch(e){}
+    }
   }
 
   // ثبت پرداخت صورت وضعیت
@@ -14563,6 +15305,15 @@
         const open = sec.classList.toggle('open');
         const ar = h.querySelector('.sec-ar');
         if(ar) ar.textContent = open ? '▴' : '▾';
+        // فقط یک دسته در هر لحظه باز می‌ماند
+        if(open){
+          box.querySelectorAll('.adm-sec.open').forEach(other => {
+            if(other === sec) return;
+            other.classList.remove('open');
+            const oa = other.querySelector('.adm-sec-head .sec-ar');
+            if(oa) oa.textContent = '▾';
+          });
+        }
         if(open && sec.id === 'secAdmchore') loadChoreList();
       });
     });
@@ -14652,6 +15403,18 @@
         + '<div class="zone-head sm"><b>' + esc(t) + '</b>'
         +   '<span class="n">' + toFa(rows.length) + ' نفر · ✔ ' + toFa(done)
         +     ' · ✘ ' + toFa(rows.length - done) + '</span>'
+        +   '<span class="adm-acts">'
+        +     (rows.some(r => taskStatus(r).cls !== 'done')
+                ? '<button type="button" class="mini gen-nudge-all" data-gnudge-all="'
+                  + esc(rows.filter(r => taskStatus(r).cls !== 'done')
+                        .map(r => pick(r,T.m1) || '').filter(Boolean).join('|')) + '" '
+                  + 'data-gnudge-title="' + esc(t) + '" '
+                  + 'title="تلنگر به همهٔ کسانی که هنوز انجام نداده‌اند">🔔 تلنگر به همه</button>'
+                : '')
+        +     '<button type="button" class="ico-btn" data-ghide="'
+        +       esc(String(t).trim() + '¦' + String(pick(rows[0],T.start) || '')) + '" '
+        +       'title="این ابلاغ را دیگر نشان نده" aria-label="پنهان">✕</button>'
+        +   '</span>'
         +   (may
               ? '<span class="adm-acts">'
                 + '<button type="button" class="ico-btn add-p" data-gadd="1" title="افزودن گیرنده" '
@@ -14675,6 +15438,13 @@
               + '<span class="who">' + personName(who, 'span') + '</span>'
               + '<span class="t' + (ok ? '' : ' no') + '">'
               +   (ok ? 'انجام شده' : st.label) + '</span>'
+              + ((!ok && who && who !== '—')
+                  ? '<button type="button" class="ico-btn bell gen-bell" '
+                    + 'title="تلنگر به ' + esc(who) + '" aria-label="تلنگر" '
+                    + 'data-nudge-to="' + esc(who) + '" data-nudge-kind="task" '
+                    + 'data-nudge-id="' + esc(rid) + '" '
+                    + 'data-nudge-title="' + esc(t) + '">' + ADM_ICON.bell + '</button>'
+                  : '')
               + '<span class="mark-slot">'
               +   ((may && rid)
                     ? '<button type="button" class="' + markCls + ' mark-btn" '
@@ -14907,6 +15677,40 @@
     return false;
   }
 
+  /* ابلاغ‌هایی که کاربر «دیگر نشان نده» زده است — روی همین دستگاه */
+  const GEN_HIDE_KEY = 'siteLogM.genHidden.v1';
+  function genHiddenSet(){
+    try{ return new Set(JSON.parse(localStorage.getItem(GEN_HIDE_KEY) || '[]')); }
+    catch(e){ return new Set(); }
+  }
+  function genHideSave(set){
+    try{ localStorage.setItem(GEN_HIDE_KEY, JSON.stringify(Array.from(set))); }catch(e){}
+  }
+  const genGroupKey = rows => String(pick(rows[0],T.title) || 'بدون عنوان').trim()
+    + '\u00a6' + String(pick(rows[0],T.start) || '');
+
+  /* آیا این ابلاغ باید پنهان بماند؟ */
+  function genIsHidden(rows, hid, hideDone){
+    if(hid.has(genGroupKey(rows))) return true;
+    if(hideDone && rows.every(r => taskStatus(r).cls === 'done')) return true;
+    return false;
+  }
+
+  let genHideDone = false;
+  try{ genHideDone = localStorage.getItem('siteLogM.genHideDone.v1') === '1'; }catch(e){}
+
+  function genToolbarHtml(total, shown, hiddenN){
+    return '<div class="gen-tools">'
+      + '<button type="button" class="gen-tg' + (genHideDone ? ' on' : '') + '" data-gen-hidedone="1">'
+      +   (genHideDone ? '✓ ' : '') + 'پنهان کردن ابلاغ‌های انجام‌شده</button>'
+      + (hiddenN
+          ? '<button type="button" class="gen-tg ghost" data-gen-showall="1">'
+            + 'نمایش دوبارهٔ ' + toFa(hiddenN) + ' مورد پنهان</button>'
+          : '')
+      + '<span class="gen-tools-n">' + toFa(shown) + ' از ' + toFa(total) + '</span>'
+      + '</div>';
+  }
+
   async function loadGeneralList(bodyId){
     const body = document.getElementById(bodyId || 'genListBody');
     const cnt = bodyId ? null : document.getElementById('genListCount');
@@ -14914,9 +15718,28 @@
     body.innerHTML = '<div class="empty">در حال دریافت…</div>';
     try{
       const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
-      const list = generalTasksOf(b.tasks);
+      const listAll = generalTasksOf(b.tasks);
+
+      // گروه‌بندی برای تشخیص ابلاغ‌های پنهان‌شده
+      const hid = genHiddenSet();
+      const byTitle = new Map();
+      listAll.forEach(r => {
+        const k2 = String(pick(r,T.title) || 'بدون عنوان').trim()
+          + '¦' + String(pick(r,T.start) || '');
+        if(!byTitle.has(k2)) byTitle.set(k2, []);
+        byTitle.get(k2).push(r);
+      });
+      let hiddenN = 0;
+      const keep = [];
+      byTitle.forEach(rows => {
+        if(genIsHidden(rows, hid, genHideDone)){ hiddenN += rows.length; return; }
+        rows.forEach(r => keep.push(r));
+      });
+      const list = keep;
+
       if(cnt) cnt.textContent = list.length ? (toFa(list.length) + ' ابلاغ') : '';
-      body.innerHTML = generalGroupsHtml(list);
+      body.innerHTML = genToolbarHtml(listAll.length, list.length, hiddenN)
+        + generalGroupsHtml(list);
       // اطلاعات هر گروه برای «افزودن گیرنده» کنار خود عنصر نگه داشته می‌شود
       body.querySelectorAll('.gen-group').forEach(g => {
         const ids = String(g.dataset.gids || '').split(',').filter(Boolean);
@@ -14930,6 +15753,62 @@
     }catch(e){
       body.innerHTML = '<div class="empty">دریافت اطلاعات انجام نشد.</div>';
     }
+  }
+
+  /* دکمه‌های پنهان‌سازی ابلاغ‌ها */
+  document.addEventListener('click', e => {
+    const gh = e.target.closest('[data-ghide]');
+    if(gh){
+      e.preventDefault(); e.stopPropagation();
+      const set = genHiddenSet();
+      set.add(gh.dataset.ghide);
+      genHideSave(set);
+      reloadGeneralLists();
+      return;
+    }
+    const gd = e.target.closest('[data-gen-hidedone]');
+    if(gd){
+      e.preventDefault(); e.stopPropagation();
+      genHideDone = !genHideDone;
+      try{ localStorage.setItem('siteLogM.genHideDone.v1', genHideDone ? '1' : '0'); }catch(err){}
+      reloadGeneralLists();
+      return;
+    }
+    const gs = e.target.closest('[data-gen-showall]');
+    if(gs){
+      e.preventDefault(); e.stopPropagation();
+      genHideSave(new Set());
+      genHideDone = false;
+      try{ localStorage.setItem('siteLogM.genHideDone.v1', '0'); }catch(err){}
+      reloadGeneralLists();
+      return;
+    }
+  });
+  /* تلنگر یک‌جا به همهٔ گیرندگانی که هنوز کار را انجام نداده‌اند */
+  document.addEventListener('click', e => {
+    const ga = e.target.closest('[data-gnudge-all]');
+    if(!ga) return;
+    e.preventDefault(); e.stopPropagation();
+    const names = String(ga.dataset.gnudgeAll || '').split('|').filter(Boolean);
+    if(!names.length){
+      showDialog('ok','چیزی نمانده','همهٔ گیرندگان این ابلاغ کارشان را انجام داده‌اند.');
+      return;
+    }
+    // پنجرهٔ تلنگر با نفر اول باز می‌شود و بقیه از پیش انتخاب‌شده‌اند
+    openNudge(names[0], 'task', '', ga.dataset.gnudgeTitle || '');
+    nudgeExtra = new Set(names.slice(1));
+    const pk = document.getElementById('nudgePicks');
+    if(pk){
+      pk.innerHTML = nudgePicksHtml(names[0]);
+      pk.hidden = false;
+    }
+    const mb = document.getElementById('nudgeMoreBtn');
+    if(mb) mb.classList.add('on');
+  });
+
+  function reloadGeneralLists(){
+    if(document.getElementById('genListBody')) loadGeneralList('genListBody');
+    if(document.getElementById('genListBodyPf')) loadGeneralList('genListBodyPf');
   }
 
   // فقط فهرست موارد هر دسته به‌روز می‌شود؛ فرم‌های خالی دست نمی‌خورند
@@ -15042,7 +15921,7 @@
     // شمارش هشدار روی پنجره‌های بالادست: نفر، زیربخش، پنجرهٔ تاشو
     root.querySelectorAll('.eng.foldable, .subsec, .tcal.tpanel, .own-sec')
       .forEach(box => {
-        const n = box.querySelectorAll('.nudge-flag').length;
+        const n = box.querySelectorAll('.nudge-flag, .alert-flag').length;
         box.classList.toggle('has-alert', !!n);
         if(!n) return;
         const head = box.querySelector(
@@ -15063,7 +15942,7 @@
   /* بعد از رندر، تعداد هشدارهای هر دسته از خود صفحه شمرده می‌شود */
   function refreshSecAlerts(){
     document.querySelectorAll('#adminView .adm-sec').forEach(sec => {
-      const n = sec.querySelectorAll('.adm-sec-body .nudge-flag').length;
+      const n = sec.querySelectorAll('.adm-sec-body .nudge-flag, .adm-sec-body .alert-flag').length;
       setSecAlert(sec, n);
     });
     refreshMutedBar();
@@ -15090,7 +15969,9 @@
     });
   }
 
+  let adminOpenSnap = null;
   function renderAdminList(items){
+    adminOpenSnap = snapAdminOpen();
     if(!document.getElementById('admList-statement')) renderAdminSkeleton();
     refreshAdmPending();
     refreshGenPeople();
@@ -15199,19 +16080,43 @@
             + list2.map(row => admCard(k, row, true)).join('') + '</div>').join('');
       };
 
+      /* ترتیب گروه‌ها: نامه و قرارداد بر اساس بزرگ‌ترین شمارهٔ سند،
+         بقیه بر اساس تازه‌ترین تاریخ. یعنی آخرین نامه همیشه اول می‌آید. */
+      const groupRank = items => {
+        if(k === 'letter' || k === 'contract'){
+          const keys2 = (k === 'letter') ? AD.lNo : AD.cNo;
+          let best = -1;
+          items.forEach(row => {
+            const v = noVal(String(pick(row, keys2) || ''));
+            if(v > best) best = v;
+          });
+          return best;
+        }
+        let best = -1;
+        items.forEach(row => {
+          const d = latestDateOf(k, row);
+          if(d && +d > best) best = +d;
+        });
+        return best;
+      };
+
       // هر گروه یک پنجرهٔ تاشو است و پیش‌فرض بسته می‌ماند
       box.innerHTML = Array.from(byOwner.entries())
-        .sort((a,b) => b[1].length - a[1].length)
+        .sort((a,b) => {
+          const r = groupRank(b[1]) - groupRank(a[1]);
+          return r !== 0 ? r : (b[1].length - a[1].length);
+        })
         .map(([own, items]) =>
-          '<div class="own-sec open">'
+          '<div class="own-sec">'
           + '<button type="button" class="owner-head">'
           +   avatarHtml(own === 'بدون مسئول' ? '' : own)
           +   (own === 'بدون مسئول' ? '<b>بدون مسئول</b>' : personName(own))
           +   '<span class="meta">' + toFa(items.length) + ' مورد</span>'
-          +   '<span class="own-ar">▴</span>'
+          +   '<span class="own-ar">▾</span>'
           + '</button>'
           + '<div class="own-body">' + bodyHtml(items) + '</div></div>').join('');
     });
+    restoreAdminOpen(adminOpenSnap);
     refreshSecAlerts();
     markAlertCards('#adminView');
   }
@@ -15228,6 +16133,37 @@
     if(!who) return list;
     return list.filter(x =>
       nameKey(pick(x.row, AD_OWNER[x.kind] || ['مسئول'])) === nameKey(who));
+  }
+
+  /* وضعیت باز و بستهٔ دسته‌ها و گروه‌های مسئول، بین دو بار کشیدن حفظ می‌شود */
+  function snapAdminOpen(){
+    const secs = [], owners = [];
+    document.querySelectorAll('#adminView .adm-sec').forEach(x => {
+      if(x.classList.contains('open') && x.id) secs.push(x.id);
+    });
+    document.querySelectorAll('#adminView .own-sec.open').forEach(x => {
+      const h = x.querySelector('.owner-head');
+      if(h) owners.push(h.textContent.trim());
+    });
+    return {secs, owners};
+  }
+  function restoreAdminOpen(snap){
+    if(!snap) return;
+    snap.secs.forEach(id => {
+      const x = document.getElementById(id);
+      if(!x) return;
+      x.classList.add('open');
+      const ar = x.querySelector('.adm-sec-head .sec-ar');
+      if(ar) ar.textContent = '▴';
+    });
+    document.querySelectorAll('#adminView .own-sec').forEach(x => {
+      const h = x.querySelector('.owner-head');
+      if(!h) return;
+      if(snap.owners.indexOf(h.textContent.trim()) === -1) return;
+      x.classList.add('open');
+      const ar = x.querySelector('.own-ar');
+      if(ar) ar.textContent = '▴';
+    });
   }
 
   function applyAdminFilters(){
@@ -15792,17 +16728,45 @@
 
   /* روزهای بین ابلاغ و موعد را روی تقویم مشخص می‌کند */
   function paintRange(box, aFa, bFa){
-    const A = faToDate(aFa), B = faToDate(bFa);
-    if(!A || !B) return;
+    const A = faToDate(aFa);
+    // اگر موعدی ثبت نشده، بازه تا امروز رنگ می‌شود
+    let B = faToDate(bFa), openEnd = false;
+    if(!B){ B = faToDate(todayShamsi()); openEnd = true; }
+    if(!A || !B) return null;
     const from = A <= B ? A : B, to = A <= B ? B : A;
+    let span = 0;
     box.querySelectorAll('.tc-cell[data-tc-day]').forEach(c => {
       const d = faToDate(c.dataset.tcDay);
       if(!d) return;
       if(d < from || d > to) return;
       c.classList.add('in-range');
+      if(openEnd) c.classList.add('range-open');
       if(+d === +from) c.classList.add('range-a');
-      if(+d === +to)   c.classList.add('range-b');
+      if(+d === +to)   c.classList.add(openEnd ? 'range-now' : 'range-b');
+      span++;
     });
+    return {from, to, openEnd, days: Math.round((to - from) / 86400000) + 1, span};
+  }
+
+  /* خلاصهٔ روزها: چند روز گذشته، چند روز مانده */
+  function rangeSummaryLine(aFa, bFa, info){
+    if(!info) return '';
+    const passed = daysSince(aFa);            // مثبت یعنی از ابلاغ گذشته
+    const dueIn  = bFa ? daysSince(bFa) : null;  // مثبت یعنی موعد گذشته
+    const bits = [];
+    bits.push('<span class="rs-b"><u>طول بازه</u><b>' + toFa(info.days) + ' روز</b></span>');
+    if(passed != null && passed >= 0)
+      bits.push('<span class="rs-b"><u>از ابلاغ</u><b>' + toFa(passed) + ' روز گذشته</b></span>');
+    if(dueIn != null){
+      bits.push(dueIn > 0
+        ? '<span class="rs-b late"><u>موعد</u><b>' + toFa(dueIn) + ' روز گذشته</b></span>'
+        : (dueIn === 0
+            ? '<span class="rs-b now"><u>موعد</u><b>امروز است</b></span>'
+            : '<span class="rs-b ok"><u>تا موعد</u><b>' + toFa(Math.abs(dueIn)) + ' روز مانده</b></span>'));
+    }else{
+      bits.push('<span class="rs-b open"><u>موعد</u><b>ثبت نشده — تا امروز</b></span>');
+    }
+    return '<div class="range-sum">' + bits.join('') + '</div>';
   }
 
   function renderTaskCalendar(list, boxEl, st){
@@ -15864,15 +16828,20 @@
                   const w = pick(x.r,T.m1);
                   if(w && who.indexOf(w) === -1) who.push(w);
                 });
-                return who.length
+                // نقطه‌های رنگی همیشه می‌آیند: آبی = موعد، خردلی = ابلاغ،
+                // سبز = انجام‌شده، قرمز = عقب‌افتاده
+                const dots = '<span class="tc-dots">'
+                  + (dues.length
+                      ? '<i class="' + (doneAll ? 'done' : (late ? 'late' : 'due'))
+                        + '" title="موعد"></i>' : '')
+                  + (starts.length ? '<i class="start" title="ابلاغ"></i>' : '')
+                  + '</span>';
+                return (who.length
                   ? '<span class="tc-faces">'
-                    + who.slice(0,3).map(w => avatarHtml(w, 'tiny')).join('')
+                    + who.slice(0,3).map(w => avatarHtml(w, 'tiny', true)).join('')
                     + (who.length > 3 ? '<em>+' + toFa(who.length - 3) + '</em>' : '')
                     + '</span>'
-                  : '<span class="tc-dots">'
-                    + (dues.length ? '<i class="due"></i>' : '')
-                    + (starts.length ? '<i class="start"></i>' : '')
-                    + '</span>';
+                  : '') + dots;
               })()
             : '')
         + (dues.length ? '<u>'+toFa(dues.length)+'</u>' : '')
@@ -15957,7 +16926,7 @@
       const items = (byDay[p[2]] || []);
       // بازهٔ ابلاغ تا موعد روی خانه‌های تقویم
       box.querySelectorAll('.tc-cell').forEach(c => {
-        c.classList.remove('in-range','range-a','range-b');
+        c.classList.remove('in-range','range-a','range-b','range-open','range-now');
       });
       const dayBox = box.querySelector('.tc-day');
       dayBox.innerHTML = items.length
@@ -16026,13 +16995,16 @@
           const on = it.classList.contains('on');
           dayBox.querySelectorAll('.day-item').forEach(x => x.classList.remove('on'));
           box.querySelectorAll('.tc-cell').forEach(c =>
-            c.classList.remove('in-range','range-a','range-b'));
+            c.classList.remove('in-range','range-a','range-b','range-open','range-now'));
           const brd = dayBox.querySelector('.day-board');
           if(brd) brd.remove();
+          dayBox.querySelectorAll('.range-sum').forEach(x => x.remove());
           if(on) return;
           it.classList.add('on');
-          paintRange(box, it.dataset.rangeA, it.dataset.rangeB);
-          it.insertAdjacentHTML('afterend', dayBoardHtml(items[+it.dataset.ix]));
+          const info = paintRange(box, it.dataset.rangeA, it.dataset.rangeB);
+          it.insertAdjacentHTML('afterend',
+            rangeSummaryLine(it.dataset.rangeA, it.dataset.rangeB, info)
+            + dayBoardHtml(items[+it.dataset.ix]));
         });
       });
     }));
@@ -16116,7 +17088,7 @@
       + (r.__adm ? '' : taskControls(r))
       + commentBarHtml(r.__admKind || 'task', pick(r,T.id) || r.__admId || '',
           pick(r,T.title) || 'فعالیت', {
-            owner: pick(r,T.m1) || '',
+            owner: pick(r,T.m1) || pick(r,T.m2) || '',
             shareBody: [
               pick(r,T.side) ? String(pick(r,T.side)) : '',
               pick(r,T.m1) ? 'مسئول: ' + pick(r,T.m1) : '',
