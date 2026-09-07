@@ -4682,6 +4682,66 @@
   .fz-sec.critical .fz-sec-head b{color:var(--alert);}
   .fz-cat.critical{--fc:var(--alert);}
   .fz-cat.mine{--fc:#3f7a52;}
+
+  /* ردیف اداری در پروفایل، قابل کلیک برای رفتن به همان بخش */
+  #profileBody .line[data-go-kind]{cursor:pointer;}
+
+  /* عدد روزِ بررسی داخلی، داخل دایره کنار عکس مسئولین */
+  .rvw-days{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:20px;height:20px;padding:0 4px;margin-inline-start:5px;
+    border-radius:999px;font-family:var(--m);font-size:10.5px;font-weight:600;
+    background:var(--field);color:var(--muted);border:1px solid var(--line);
+  }
+  .rvw-days.late{
+    background:color-mix(in srgb, var(--alert) 14%, transparent);
+    color:var(--alert);border-color:color-mix(in srgb, var(--alert) 34%, transparent);
+  }
+  /* همان ردیف عکس، این بار به‌جای نوار سن در ردیف فعالیت */
+  .rvw-ava.inline{display:inline-flex;align-items:center;}
+  .rvw-ava.inline .ava{margin-inline-start:-6px;box-shadow:0 0 0 2px var(--surface);}
+  .rvw-ava.inline .ava:first-child{margin-inline-start:0;}
+  .line.has-age .line-rail .rvw-ava.inline{gap:0;}
+
+  /* نشان مدت مرحله روی کارت اعلان — با عنوان، نه فقط عدد */
+  .fz-stage{
+    display:inline-flex;align-items:center;gap:5px;
+    margin-inline-end:auto;padding:3px 9px;border-radius:999px;
+    background:var(--field);border:1px solid var(--line);
+  }
+  .fz-stage i{font-style:normal;font-size:10.5px;color:var(--muted);}
+  .fz-stage b{font-family:var(--m);font-size:11.5px;font-weight:600;color:var(--ink);}
+  .fz-stage u{text-decoration:none;font-size:10px;color:var(--muted);}
+  .fz-stage.late{
+    background:color-mix(in srgb, var(--alert) 12%, transparent);
+    border-color:color-mix(in srgb, var(--alert) 32%, transparent);
+  }
+  .fz-stage.late b, .fz-stage.late i{color:var(--alert);}
+  .stat-chip .rvw-days{margin-inline-start:6px;min-width:18px;height:18px;font-size:10px;}
+
+  .rvw-days u{text-decoration:none;font-size:8.5px;margin-inline-start:2px;opacity:.75;}
+
+  /* گزارش مدیریتی */
+  #mgReport{margin-bottom:12px;}
+  .mg-links{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px;}
+  .mg-person{margin-bottom:8px;}
+  .mg-row{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;
+    padding:5px 0;font-size:12px;border-bottom:1px solid var(--line);
+  }
+  .mg-row:last-of-type{border-bottom:none;}
+  .mg-why{color:var(--alert);font-size:11px;}
+  .mg-act{display:flex;justify-content:flex-end;padding-top:8px;}
+
+  .mg-sum{font-size:11.5px;color:var(--muted);margin-bottom:10px;}
+  .mg-person.quiet .eng-head b{color:var(--muted);font-weight:500;}
+  .mg-sub{margin:6px 0;}
+
+  .mg-diag{
+    font-family:var(--m);font-size:10.5px;color:var(--muted);
+    padding:5px 9px;margin-bottom:10px;border-radius:8px;
+    background:var(--field);border:1px solid var(--line);
+  }
 </style>
 <script>
   (function(){
@@ -5765,10 +5825,44 @@
     }
   }
 
+  /* ====== بررسی و تغییر رمز روی سرور ======
+     اگر توابع هنوز در پایگاه‌داده ساخته نشده باشند، srvAuthOff روشن
+     می‌شود و برنامه به روش قدیمی برمی‌گردد تا کسی پشت در نماند. */
+  let srvAuthOff = false;
+
+  async function supaRpc(fn, args){
+    return await supaFetch('rpc/' + fn, {
+      method:'POST', prefer:'return=representation', body: args || {}
+    });
+  }
+
+  async function loginCheck(name, hash){
+    if(srvAuthOff) return null;
+    try{
+      const r = await supaRpc('login_check', {p_name: name, p_hash: hash});
+      if(r && typeof r === 'object') return r;
+      srvAuthOff = true; return null;
+    }catch(e){ srvAuthOff = true; return null; }
+  }
+
+  async function changePass(name, oldHash, newHash){
+    if(srvAuthOff) return null;
+    try{
+      const r = await supaRpc('change_pass',
+        {p_name: name, p_old: oldHash || '', p_new: newHash});
+      if(r && typeof r === 'object') return r;
+      srvAuthOff = true; return null;
+    }catch(e){ srvAuthOff = true; return null; }
+  }
+
   let peopleRows = [];
   async function loadPeople(){
     try{
-      peopleRows = await supaFetch('people?select=name,role,level,avatar_url,password_hash,must_change,active',
+      /* password_hash عمداً در این فهرست نیست. تا حالا هش رمز همهٔ
+         کاربران روی مرورگر هر کسی که سایت را باز می‌کرد دانلود
+         می‌شد. مقایسه و تغییر رمز حالا با تابع سمت سرور انجام
+         می‌شود و هیچ هشی از پایگاه‌داده بیرون نمی‌آید. */
+      peopleRows = await supaFetch('people?select=name,role,level,avatar_url,must_change,active',
         {prefer:'return=representation'}) || [];
     }catch(e){ peopleRows = []; }
     return peopleRows;
@@ -5864,8 +5958,35 @@
       await loadPeople();
       const row = personRow(loginName) || {};
       const hash = await sha256(pass);
-      const first = !row.password_hash;
-      const okPass = first ? (pass === '0000') : (row.password_hash === hash);
+
+      // مسیر اصلی: مقایسه روی سرور
+      const chk = await loginCheck(loginName, hash);
+      let first, okPass;
+      if(chk){
+        okPass = chk.ok === true;
+        first  = chk.first === true;
+        if(!okPass && chk.reason === 'inactive'){
+          btn.disabled = false;
+          note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
+          return;
+        }
+      }else{
+        // توابع هنوز ساخته نشده‌اند؛ روش قدیمی، فقط برای همین کاربر
+        let mine = null;
+        try{
+          const rows = await supaFetch('people?select=password_hash,must_change,active&name=eq.'
+            + encodeURIComponent(loginName) + '&limit=1', {prefer:'return=representation'});
+          mine = (rows && rows[0]) || null;
+        }catch(e){ mine = null; }
+        first  = !(mine && mine.password_hash);
+        okPass = first ? (pass === '0000') : (mine.password_hash === hash);
+        if(mine && mine.active === false){
+          btn.disabled = false;
+          note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
+          return;
+        }
+        if(mine) row.must_change = mine.must_change;
+      }
 
       if(!okPass){
         btn.disabled = false;
@@ -5878,7 +5999,8 @@
         return;
       }
 
-      const needsChange = first || row.must_change !== false;
+      const needsChange = first
+        || (chk ? chk.must_change !== false : row.must_change !== false);
       const newBox = document.getElementById('userPassNew');
       if(needsChange && newBox.hidden){
         newBox.hidden = false;
@@ -5892,10 +6014,20 @@
         if(n1.length < 4){ note.textContent = 'رمز تازه حداقل ۴ نویسه باشد.'; btn.disabled = false; return; }
         if(n1 !== n2){ note.textContent = 'دو رمز یکسان نیستند.'; btn.disabled = false; return; }
         if(n1 === '0000'){ note.textContent = 'رمز تازه نباید ۰۰۰۰ باشد.'; btn.disabled = false; return; }
-        await savePerson(loginName, {
-          password_hash: await sha256(n1), must_change:false,
-          role: roleOf(loginName) || row.role || null
-        });
+        const newHash = await sha256(n1);
+        const res = await changePass(loginName, first ? '' : hash, newHash);
+        if(res && res.ok !== true){
+          note.textContent = 'تغییر رمز انجام نشد؛ دوباره تلاش کنید.';
+          btn.disabled = false;
+          return;
+        }
+        if(!res){
+          // توابع نیستند؛ مسیر قدیمی
+          await savePerson(loginName, {password_hash: newHash, must_change:false});
+        }
+        if(roleOf(loginName) || row.role){
+          try{ await savePerson(loginName, {role: roleOf(loginName) || row.role}); }catch(e){}
+        }
       }
 
       btn.disabled = false;
@@ -6121,7 +6253,9 @@
       if(dl == null || dl <= 5) return;
       const who = pick(r, AD_OWNER.statement);
       if(!mine(who)) return;
+      const sd = reviewStageDays(r);
       out.push({level: dl > ADM_HOT_DAYS ? 'hot' : 'warm', kind:'statement', id: pick(r,AD.id), who,
+        stageDays: sd, stage: String(pick(r,AD.review) || ''),
         title: 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''),
         note: toFa(dl) + ' روز از ارسال گذشته و هنوز تسویه نشده'});
     });
@@ -6134,7 +6268,9 @@
       if(dl == null || dl <= 5) return;
       const who = pick(r, AD_OWNER.contract);
       if(!mine(who)) return;
+      const cd = reviewStageDays(r);
       out.push({level: dl > ADM_HOT_DAYS ? 'hot' : 'warm', kind:'contract', id: pick(r,AD.id), who,
+        stageDays: cd, stage: String(pick(r,AD.review) || ''),
         title: 'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
         note: toFa(dl) + ' روز بلاتکلیف مانده'});
     });
@@ -6167,12 +6303,13 @@
       if(!rev.length) return;
       const forMe = rev.some(n => nameKey(n) === meKey);
       if(!forMe && !mgrView) return;    // مسئولین بررسی، و مدیریت برای نظارت
-      const dl = daysSince(pick(r,AD.rvISent));
+      const dl = daysSince(pick(r,AD.rvIS));
       out.push({
         level: (dl != null && dl > 7) ? 'hot' : 'warm',
         kind: kind, id: pick(r,AD.id), tag: pick(r,AD.id) + '|rv',
         who: forMe ? me : rev[0],
         avatars: rev,                   // یک اعلان، عکس همهٔ مسئولین بررسی
+        stageDays: reviewStageDays(r), stage: st,
         title: titleOf(r),
         note: (st === 'رد داخلی' ? 'رد داخلی خورده و منتظر بررسی دوبارهٔ شماست'
                                  : 'بررسی داخلی به شما سپرده شده و هنوز تأیید نشده')
@@ -6215,9 +6352,10 @@
     el.hidden = !fresh.length;
     el.textContent = fresh.length ? (fresh.length > 99 ? '+۹۹' : toFa(fresh.length)) : '';
     const by = {};
-    fresh.forEach(x => { by[x.cat] = (by[x.cat] || 0) + 1; });
-    const lbl = {due:'مورد باز', nudge:'تلنگر', comment:'نظر', missing:'نقص گزارش'};
-    el.title = Object.keys(by).map(k => toFa(by[k]) + ' ' + lbl[k]).join(' · ')
+    fresh.forEach(x => { by[x.dcat || x.cat] = (by[x.dcat || x.cat] || 0) + 1; });
+    const lbl = {critical:'بحرانی', due:'نیاز به اقدام', nudge:'تلنگر',
+                 comment:'نظر', missing:'نقص گزارش'};
+    el.title = Object.keys(by).map(k => toFa(by[k]) + ' ' + (lbl[k] || k)).join(' · ')
       || 'بدون مورد تازه';
   }
 
@@ -6346,8 +6484,12 @@
     return REVIEW_DONE.indexOf(v) !== -1;
   }
 
+  /* opt.ignoreMuted: فهرست «فعلاً نشانم نده»ی همین دستگاه نادیده گرفته
+     شود. گزارش مدیریتی باید تصویر کامل بدهد؛ خاموش کردن یک هشدار روی
+     مرورگر یک نفر نباید مورد را از دید مدیریت پنهان کند. */
   function criticalOf(id, dueRaw, done, opt){
-    if(!id || alertOffSet().has(String(id))) return '';
+    if(!id) return '';
+    if(!(opt && opt.ignoreMuted) && alertOffSet().has(String(id))) return '';
     if(done) return '';                       // کار تمام‌شده هشدار ندارد
     const o = opt || {};
     if(o.review) return '';                   // در مرحلهٔ بررسی، موعد رعایت شده
@@ -6386,6 +6528,7 @@
     try{
       const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
       const allN = await loadAllNudges(force);
+      try{ await loadFeedReads(); }catch(e){}
       try{ await mergeReviewCols(b.admin); }catch(e){}
       notifCache.items = buildAlerts(b.admin);
       notifCache.nudges = myNudges(allN);
@@ -6393,10 +6536,12 @@
       try{
         const rows = await loadComments(false);
         const me = activeUserName();
-        const adminAll2 = isAdminUser();
         notifCache.comments = (rows || []).filter(r => {
           if(nameKey(pick(r,N.from)) === nameKey(me)) return false;   // نظر خودم نه
-          // آیا مستقیماً به من مربوط است؟
+          /* ستون «به» در ردیف نظر، صاحبِ همان پست است. پس این شرط یعنی
+             «نظری که زیر پست خودم گذاشته شده». حالت دوم هم پاسخ به
+             نظرِ خودم است. ادمین قبلاً نظرهای همه را می‌گرفت و همین
+             فهرست را پر می‌کرد؛ آن استثنا برداشته شد. */
           let mineFlag = nameKey(pick(r,N.to)) === nameKey(me);
           if(!mineFlag){
             const par = cmParts(r).parent;
@@ -6406,13 +6551,15 @@
             }
           }
           r.__forMe = mineFlag;
-          return mineFlag || adminAll2;   // ادمین بقیه را هم می‌بیند، ولی شمرده نمی‌شوند
+          return mineFlag;
         })
           .sort((x,y) => String(pick(y,N.time)).localeCompare(String(pick(x,N.time))))
           .slice(0, 30);
       }catch(e){ notifCache.comments = []; }
       rebuildOpenNudges(allN);
       try{
+        // زنگوله مثل قبل: اجرایی‌ها اینجا نمی‌آیند تا فهرست شلوغ نشود.
+        // فقط گزارش «موارد بحرانی» در پروفایل کامل است.
         notifCritical = criticalList(
           (b.tasks || []).concat(adminAsTasks(b.admin) || []));
       }catch(e){ notifCritical = []; }
@@ -6446,18 +6593,81 @@
   /* خوانده‌شده‌های محلی برای مواردی که ردیف دیتابیس ندارند (موعدها) */
   /* یک بار باز و بسته کردن = خوانده‌شده. این نشان ماندگار است و
      به روز وابسته نیست، وگرنه فردا همه‌چیز دوباره تازه می‌شد. */
-  function feedSeenKey(){ return 'siteLogM.feedSeen.v2'; }
-  function feedSeenSet(){
-    try{ return new Set(JSON.parse(localStorage.getItem(feedSeenKey()) || '[]')); }
-    catch(e){ return new Set(); }
+  /* نسخهٔ کلید عوض شد تا فهرستِ «همه خوانده شد»ی که نسخهٔ قبل
+     یکجا ساخته بود دور ریخته شود و شمارنده از نو درست بشمارد. */
+  function feedSeenKey(){ return 'siteLogM.feedSeen.v3'; }
+  /* ====== وضعیت «خوانده شد» روی سرور ======
+     حافظهٔ مرورگر فقط حافظهٔ پنهان است، نه مرجع. مرجع جدول feed_reads
+     است که به خودِ شخص وصل می‌شود، پس با مرورگر تازه یا پاک شدن
+     داده‌ها از بین نمی‌رود. اگر جدول هنوز ساخته نشده باشد، همه‌چیز
+     مثل قبل فقط محلی کار می‌کند و چیزی نمی‌شکند. */
+  let feedSrvSeen = new Set();
+  let feedSrvOff  = false;
+
+  async function loadFeedReads(){
+    if(feedSrvOff || typeof BACKEND === 'undefined' || BACKEND !== 'supabase') return;
+    const me = activeUserName();
+    if(!me) return;
+    try{
+      const rows = await supaFetch('feed_reads?select=fid&person=eq.'
+        + encodeURIComponent(me) + '&limit=4000', {prefer:'return=representation'});
+      feedSrvSeen = new Set((rows || []).map(x => String(x.fid)));
+    }catch(e){ feedSrvOff = true; }
   }
+
+  function pushFeedReads(ids){
+    if(feedSrvOff || typeof BACKEND === 'undefined' || BACKEND !== 'supabase') return;
+    const me = activeUserName();
+    if(!me) return;
+    const fresh = (Array.isArray(ids) ? ids : [ids])
+      .map(String).filter(x => x && !feedSrvSeen.has(x));
+    if(!fresh.length) return;
+    fresh.forEach(x => feedSrvSeen.add(x));       // خوش‌بینانه، تا فهرست فوری درست شود
+    (async () => {
+      try{
+        await supaFetch('feed_reads?on_conflict=person,fid', {
+          method:'POST',
+          prefer:'resolution=ignore-duplicates,return=minimal',
+          body: fresh.map(f => ({person: me, fid: f}))
+        });
+      }catch(e){ feedSrvOff = true; }             // آفلاین یا بی‌جدول؛ نسخهٔ محلی سر جایش است
+    })();
+  }
+
+  function feedSeenSet(){
+    let local = [];
+    try{ local = JSON.parse(localStorage.getItem(feedSeenKey()) || '[]'); }catch(e){ local = []; }
+    const st = new Set(local);
+    feedSrvSeen.forEach(x => st.add(x));
+    feedJustSeen.forEach(x => st.add(x));
+    return st;
+  }
+  /* نوشتن در حافظهٔ مرورگر می‌تواند به‌خاطر پر بودن فضا شکست بخورد.
+     تا حالا خطا بی‌سروصدا بلعیده می‌شد و نتیجه‌اش این بود که «خواندم»
+     زده می‌شد ولی مورد خوانده‌نشده می‌ماند. حالا اگر جا کم بیاید،
+     نصفِ قدیمیِ فهرست دور ریخته می‌شود و دوباره تلاش می‌کند؛ و اگر
+     باز هم نشد، false برمی‌گرداند تا صدازننده بتواند خبر بدهد. */
+  /* هرچه در همین جلسه «خواندم» خورده، تا پایان جلسه خوانده می‌ماند —
+     حتی اگر نوشتن در حافظهٔ مرورگر یا سرور شکست بخورد، یا بارگذاری
+     دوبارهٔ فهرست از سرور مقدار تازه را پس بزند. */
+  const feedJustSeen = new Set();
+
   function feedMarkSeen(ids){
+    (Array.isArray(ids) ? ids : [ids]).forEach(x => feedJustSeen.add(String(x)));
+    pushFeedReads(ids);                 // مرجع، سرور است
     const st = feedSeenSet();
     (Array.isArray(ids) ? ids : [ids]).forEach(x => st.add(String(x)));
-    // فهرست بی‌نهایت بزرگ نشود
-    const arr = Array.from(st);
-    try{ localStorage.setItem(feedSeenKey(),
-      JSON.stringify(arr.length > 3000 ? arr.slice(-2000) : arr)); }catch(e){}
+    let arr = Array.from(st);
+    if(arr.length > 1200) arr = arr.slice(-800);
+    for(let i = 0; i < 4 && arr.length; i++){
+      try{
+        localStorage.setItem(feedSeenKey(), JSON.stringify(arr));
+        return true;
+      }catch(e){
+        arr = arr.slice(Math.ceil(arr.length / 2));   // جا کم است، قدیمی‌ها بروند
+      }
+    }
+    return false;
   }
 
   /* ====== پاک‌شده‌های امروز ======
@@ -6476,8 +6686,14 @@
   function feedMarkCleared(ids){
     const st = feedClearedSet();
     (Array.isArray(ids) ? ids : [ids]).forEach(x => st.add(String(x)));
-    try{ localStorage.setItem(FEED_CLEAR_KEY,
-      JSON.stringify({day: todayShamsi(), ids: Array.from(st).slice(-1500)})); }catch(e){}
+    let arr = Array.from(st).slice(-800);
+    for(let i = 0; i < 4 && arr.length; i++){
+      try{
+        localStorage.setItem(FEED_CLEAR_KEY, JSON.stringify({day: todayShamsi(), ids: arr}));
+        return true;
+      }catch(e){ arr = arr.slice(Math.ceil(arr.length / 2)); }
+    }
+    return false;
   }
 
   /* جریان کامل اعلان‌ها */
@@ -6508,8 +6724,12 @@
       out.push({
         cat:'due', fid:'due:' + key, level: x.level === 'hot' ? 'hot' : 'warm',
         who: x.who || '', avatars: x.avatars || null, title: x.title || 'مورد باز',
+        stageDays: (x.stageDays == null ? null : x.stageDays), stage: x.stage || '',
         text: x.note || '', time:'', tFa:'',
-        seen: lseen.has('due:' + x.id),
+        // باید همان کلیدی باشد که در fid رفته؛ برای هشدارهایی که tag
+        // دارند (مثل بررسی داخلی) این دو یکی نبودند و «خواندم» هیچ‌وقت
+        // اثر نمی‌کرد
+        seen: lseen.has('due:' + key),
         goto:{kind: x.kind || '', id: x.id, who: x.who || ''},
         canRemind: mgr && !!x.who && !mineItem,
         mine: mineItem
@@ -6547,12 +6767,21 @@
       const pr = cmParts(r);
       const isTag = String(pick(r,N.title) || '').indexOf(CM_SEP + 'TAG') !== -1;
       out.push({
-        cat:'comment', fid: 'cm:' + pick(r,N.id), nid: pick(r,N.id), level:'info',
+        cat:'comment', fid: 'cm:' + pick(r,N.id),
+        nid: (nameKey(pick(r,N.to)) === nameKey(me)) ? pick(r,N.id) : null,
+        level:'info', openCm: true,
         who: pick(r,N.from) || '',
         title: (isTag ? 'شما را تگ کرد' : (pr.parent ? 'به نظر شما پاسخ داد' : 'نظر تازه'))
                + (pr.itemTitle ? ' — ' + pr.itemTitle : ''),
         text: pick(r,N.msg) || '', time: pick(r,N.time),
-        seen: pick(r,N.state) === 'خوانده‌شده' || lseen.has('cm:' + pick(r,N.id)),
+        /* ردیف نظر در پایگاه‌داده مشترک است و ستون «خوانده‌شده»اش یکی
+           بیشتر نیست. اگر به آن تکیه می‌کردیم، خواندنِ یک نفر برای
+           همه خوانده حساب می‌شد. پس ستون سرور فقط وقتی معتبر است که
+           نظر مستقیماً به خودِ من مربوط باشد؛ در بقیهٔ موارد نشانِ
+           محلی همین دستگاه ملاک است. */
+        seen: ((nameKey(pick(r,N.to)) === nameKey(me)
+                && pick(r,N.state) === 'خوانده‌شده')
+               || lseen.has('cm:' + pick(r,N.id))),
         goto:{kind: pr.target || '', id: pick(r,N.itemId) || '', who: pick(r,N.to) || ''},
         reply: pick(r,N.from) || '', forMe: !!r.__forMe
       });
@@ -6631,7 +6860,8 @@
       +   (x.seen ? '' : ' fresh') + '" data-fid="' + esc(x.fid) + '"'
       +   (goto ? ' data-goto-kind="' + esc(x.goto.kind) + '"'
                 + ' data-goto-id="' + esc(x.goto.id || 'general') + '"'
-                + ' data-goto-who="' + esc(x.goto.who || '') + '"' : '')
+                + ' data-goto-who="' + esc(x.goto.who || '') + '"'
+                + (x.openCm ? ' data-goto-cm="1"' : '') : '')
       + '>'
       + '<span class="fz-ic">' + (FEED_ICON[x.cat] || '') + '</span>'
       + '<div class="fz-main">'
@@ -6649,7 +6879,12 @@
       +   '</div>'
       +   (x.text ? '<div class="fz-tx">' + esc(x.text) + '</div>' : '')
       +   '<div class="fz-acts">'
-      +     (goto ? '<button type="button" class="mini go" data-fgo="1">رفتن به مورد</button>' : '')
+      +     (x.stageDays != null
+              ? '<span class="fz-stage' + (x.stageDays > 7 ? ' late' : '') + '">'
+                + '<i>' + esc(x.stage || 'در این مرحله') + '</i>'
+                + '<b>' + toFa(x.stageDays) + '</b><u>روز</u></span>' : '')
+      +     (goto ? '<button type="button" class="mini go" data-fgo="1">'
+                    + (x.openCm ? 'خواندن نظرها' : 'رفتن به مورد') + '</button>' : '')
       +     (x.reply ? '<button type="button" class="mini" data-nreply="' + esc(x.reply) + '" '
                      + 'data-nreply-title="' + esc(x.title) + '">پاسخ</button>' : '')
       +     (x.canRemind ? '<button type="button" class="mini" data-fremind="'
@@ -6753,31 +6988,6 @@
     body.innerHTML = h;
   }
 
-  /* همهٔ تلنگرها و نظرهای خوانده‌نشده را خوانده علامت می‌زند.
-     در پس‌زمینه اجرا می‌شود تا باز شدن پنجره معطل نماند. */
-  let markingRead = false;
-  async function markAllNotifRead(){
-    const feed = (typeof buildFeed === 'function') ? buildFeed() : [];
-    const fresh = feed.filter(x => !x.seen);
-    // نشان محلی هر بار ثبت می‌شود، حتی اگر همگام‌سازی قبلی هنوز در جریان باشد
-    if(fresh.length) feedMarkSeen(fresh.map(x => x.fid));
-    if(markingRead || !fresh.length){ refreshBell(); return; }
-    // نشان محلی همین حالا ثبت می‌شود؛ حتی اگر سرور اجازهٔ به‌روزرسانی ندهد
-    // مورد دیگر «تازه» به حساب نمی‌آید.
-    feedMarkSeen(fresh.map(x => x.fid));
-    refreshBell();
-    const ids = fresh.map(x => x.nid).filter(Boolean);
-    markingRead = true;
-    try{
-      for(const id of ids) await sendAction({action:'nudgeRead', id});
-      await loadNotif(true);
-      if(!document.getElementById('notifModal').hidden) renderNotif();
-      refreshBell();
-    }catch(e){}
-    markingRead = false;
-  }
-
-
   (function(){
     const bg = document.getElementById('notifModal');
     document.getElementById('bellBtn').addEventListener('click', async (ev) => {
@@ -6788,20 +6998,36 @@
 
       feedCat = '';        // فیلتر دسته بین دو بار باز کردن نچسبد
 
-      /* باز کردن زنگوله هیچ موردی را «خوانده» نمی‌کند. خوانده‌شدن فقط
-         با یکی از این سه اتفاق می‌افتد: دکمهٔ «خواندم» روی خود مورد،
-         رفتن به آن مورد، یا دکمهٔ «خواندن همه». وگرنه دیدنِ فهرست با
-         خواندنِ تک‌تک اشتباه گرفته می‌شد و شمارنده دیگر هیچ‌وقت
-         بالا نمی‌آمد. */
+      /* باز شدن هنوز چیزی را خوانده نمی‌کند تا فهرست جلوی چشمتان
+         جابه‌جا نشود و ببینید کدام‌ها تازه‌اند؛ علامت خوردن هنگام
+         بستن پنجره انجام می‌شود. */
       await loadNotif();
       renderNotif();
       refreshBell();
     });
 
-    /* بستن پنجره چیزی را خوانده نمی‌کند؛ فقط می‌بندد. برای خواندنِ
-       یکجا، دکمهٔ «خواندن همه» بالای فهرست هست. */
+    /* بستن پنجره یعنی «دیدمشان»: هرچه در فهرست بود خوانده علامت
+       می‌خورد و شمارنده صفر می‌شود. نشانِ محلی همان لحظه و به‌صورت
+       همگام ثبت می‌شود تا شمارنده فوری خالی شود؛ همگام‌سازی با سرور
+       در پس‌زمینه انجام می‌گیرد و اگر شکست بخورد چیزی خراب نمی‌شود.
+       ردیف‌های مشترک (نظرها) nid ندارند، پس روی سرور دست نمی‌خورند
+       و خواندنِ شما برای بقیه خوانده حساب نمی‌شود. */
     function closeNotif(){
       bg.hidden = true;
+      try{
+        const fresh = ((typeof buildFeed === 'function') ? buildFeed() : [])
+          .filter(x => !x.seen);
+        if(fresh.length){
+          feedMarkSeen(fresh.map(x => x.fid));
+          const ids = fresh.filter(x => x.nid).map(x => x.nid);
+          if(ids.length) (async () => {
+            for(const id of ids){
+              try{ await sendAction({action:'nudgeRead', id}); }catch(e){}
+            }
+            if(typeof invalidateNudges === 'function') invalidateNudges();
+          })();
+        }
+      }catch(e){}
       refreshBell();
     }
     window.__closeNotif = closeNotif;
@@ -6818,7 +7044,11 @@
         e.stopPropagation();
         const nid = fr.dataset.fnid;
         if(nid) await sendAction({action:'nudgeRead', id: nid});
-        feedMarkSeen(fr.dataset.fread);
+        if(!feedMarkSeen(fr.dataset.fread) && feedSrvOff){
+          showDialog('warn','ثبت نشد',
+            'حافظهٔ مرورگر پر است و ذخیرهٔ روی سرور هم در دسترس نیست. '
+            + 'یک بار صفحه را ببندید و دوباره باز کنید.');
+        }
         if(nid){ if(typeof invalidateNudges === 'function') invalidateNudges();
                  await loadNotif(true); }
         renderNotif(); refreshBell();
@@ -6894,7 +7124,7 @@
       if(frm){
         e.stopPropagation();
         if(window.__closeNotif) window.__closeNotif();
-        else document.getElementById('notifModal').hidden = true;
+        else document.getElementById('notifModal').hidden = true;   // پشتیبان
         openNudge(frm.dataset.fremind, frm.dataset.fkind || 'task',
                   frm.dataset.fid2 || '', frm.dataset.ftitle || '');
         const box = document.getElementById('nudgeMsg');
@@ -6915,8 +7145,24 @@
             if(row && row.nid){ try{ sendAction({action:'nudgeRead', id: row.nid}); }catch(e){} }
           }
           if(window.__closeNotif) window.__closeNotif();
-          else document.getElementById('notifModal').hidden = true;
-          gotoAdminItem(card.dataset.gotoKind, card.dataset.gotoId, card.dataset.gotoWho);
+          else document.getElementById('notifModal').hidden = true;   // پشتیبان
+          const wantCm = card.dataset.gotoCm === '1';
+          const cmId = card.dataset.gotoId;
+          await gotoAdminItem(card.dataset.gotoKind, cmId, card.dataset.gotoWho);
+          /* برای نظرها، رفتن به مورد کافی نیست — پنجرهٔ نظرها هم باید
+             باز شود. چون رندر بعد از پیمایش انجام می‌شود، چند بار با
+             فاصله تلاش می‌کنیم و به اولین موفقیت بسنده می‌کنیم. */
+          if(wantCm && cmId){
+            let tries = 0;
+            const tick = setInterval(() => {
+              const b = document.querySelector('.cm-open[data-cm-id="' + cmId + '"]');
+              if(b){
+                clearInterval(tick);
+                if(!b.classList.contains('on')) b.click();
+                b.scrollIntoView({behavior:'smooth', block:'center'});
+              }else if(++tries > 20) clearInterval(tick);
+            }, 150);
+          }
         }
         return;
       }
@@ -6924,7 +7170,7 @@
       const rp = e.target.closest('[data-nreply]');
       if(rp){
         if(window.__closeNotif) window.__closeNotif();
-        else document.getElementById('notifModal').hidden = true;
+        else document.getElementById('notifModal').hidden = true;   // پشتیبان
         await openMessages(rp.dataset.nreply);
         const box2 = document.getElementById('msgText');
         if(box2){
@@ -6939,7 +7185,7 @@
       const gz = e.target.closest('.nz-go');
       if(gz && !e.target.closest('button')){
         if(window.__closeNotif) window.__closeNotif();
-        else document.getElementById('notifModal').hidden = true;
+        else document.getElementById('notifModal').hidden = true;   // پشتیبان
         gotoAdminItem('general', 'general', gz.dataset.goWho || '');
         return;
       }
@@ -6947,7 +7193,7 @@
       const gt = e.target.closest('[data-goto-id]');
       if(gt && !(gt.classList.contains('nz') && e.target.closest('button'))){
         if(window.__closeNotif) window.__closeNotif();
-        else document.getElementById('notifModal').hidden = true;
+        else document.getElementById('notifModal').hidden = true;   // پشتیبان
         gotoAdminItem(gt.dataset.gotoKind, gt.dataset.gotoId, gt.dataset.gotoWho);
         return;
       }
@@ -8673,6 +8919,133 @@
     return h;
   }
 
+  /* ====== گزارش موارد بحرانی ======
+     تب مستقل در پروفایل، فقط برای سطح ۱ و ۲. همهٔ افراد فهرست
+     می‌شوند — حتی آنهایی که موردی ندارند — تا معلوم باشد کسی از قلم
+     نیفتاده. زیر هر نفر، موارد به تفکیک نوع فعالیت بخش‌بندی و بسته
+     می‌شوند. */
+  function mgLinksHtml(){
+    return '<div class="mg-links">'
+      + '<button type="button" class="mini" data-mg-go="daily|day">گزارش روزانه</button>'
+      + '<button type="button" class="mini" data-mg-go="daily|week">هفتگی</button>'
+      + '<button type="button" class="mini" data-mg-go="daily|month">ماهانه</button>'
+      + '<button type="button" class="mini" data-mg-go="hr|day">نیروی انسانی</button>'
+      + '</div>';
+  }
+
+  async function mgReportHtml(){
+    const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
+    try{ await mergeReviewCols(b.admin); }catch(e){}
+    // اعلان‌ها لازم‌اند، وگرنه «تلنگر بی‌پاسخ» در تشخیص بحرانی حساب نمی‌شود
+    try{ if(typeof loadNotif === 'function') await loadNotif(); }catch(e){}
+
+    const rows = (Array.isArray(b.tasks) ? b.tasks.slice() : [])
+      .concat(adminAsTasks(b.admin));
+
+    /* همان تابعی که بقیهٔ برنامه برای تشخیص بحرانی استفاده می‌کند.
+       قبلاً منطقش را اینجا دوباره نوشته بودم و همین باعث می‌شد نتیجه
+       با لیست فعالیت‌ها نخواند. */
+    const crit = (typeof criticalList === 'function')
+      ? criticalList(rows, {includeExec: true, ignoreMuted: true}) : [];
+
+    const byWho = new Map();
+    crit.forEach(x => {
+      const who = x.who || 'بدون مسئول';
+      const k = nameKey(who);
+      if(!byWho.has(k)) byWho.set(k, {name: who, list: []});
+      byWho.get(k).list.push(x);
+    });
+
+    // کارهای باز هر نفر، تا «مورد بحرانی ندارد» با «داده نرسیده» اشتباه نشود
+    const openBy = new Map();
+    rows.forEach(r => {
+      if(taskStatus(r).cls === 'done') return;
+      const k = nameKey(pick(r,T.m1) || pick(r,T.m2) || '');
+      if(!k) return;
+      openBy.set(k, (openBy.get(k) || 0) + 1);
+    });
+
+    const meKey = nameKey(activeUserName());
+    const seen = new Map();
+    (typeof listNames === 'function' ? listNames() : []).forEach(n => {
+      if(!n) return;
+      const k = nameKey(n);
+      if(k && !seen.has(k)) seen.set(k, n);
+    });
+    byWho.forEach((v, k) => { if(!seen.has(k)) seen.set(k, v.name); });
+
+    const all = Array.from(seen.keys()).filter(k => k && k !== meKey);
+    const cnt = k => ((byWho.get(k) || {}).list || []).length;
+    all.sort((x, y) => cnt(y) - cnt(x)
+      || String(seen.get(x)).localeCompare(String(seen.get(y)), 'fa'));
+
+    const body = all.map(k => {
+      const n = seen.get(k);
+      const list = ((byWho.get(k) || {}).list) || [];
+      const isNone = (nameKey('بدون مسئول') === k);
+
+      const groups = new Map();
+      list.forEach(x => {
+        const g = x.group || 'فعالیت';
+        if(!groups.has(g)) groups.set(g, []);
+        groups.get(g).push(x);
+      });
+
+      const inner = list.length
+        ? Array.from(groups.keys()).map(g => {
+            const gl = groups.get(g);
+            return '<div class="subsec mg-sub">'
+              + '<button type="button" class="subsec-head">'
+              +   '<b>' + esc(g) + '</b>'
+              +   '<span class="n">' + toFa(gl.length) + '</span>'
+              +   '<span class="ss-ar">▾</span></button>'
+              + '<div class="subsec-body">'
+              +   gl.map(x =>
+                    '<div class="mg-row">'
+                    + '<b>' + esc(x.title || 'بدون عنوان') + '</b>'
+                    + '<span class="mg-why">' + esc(x.why) + '</span>'
+                    + '</div>').join('')
+              + '</div></div>';
+          }).join('')
+          + (isNone ? '' :
+              '<div class="mg-act"><button type="button" class="mini go" '
+              + 'data-mg-nudge="' + esc(n) + '">تلنگر به ' + esc(n) + '</button></div>')
+        : '<div class="empty">مورد بحرانی ندارد'
+          + ((openBy.get(k) || 0)
+              ? ' — ' + toFa(openBy.get(k)) + ' فعالیت باز دارد.' : '.') + '</div>';
+
+      return '<div class="eng foldable mg-person' + (list.length ? '' : ' quiet') + '">'
+        + '<button type="button" class="eng-head">'
+        +   (isNone ? '' : avatarHtml(n, '', true))
+        +   '<b>' + esc(n) + '</b>'
+        +   '<span class="meta">'
+        +     (list.length ? toFa(list.length) + ' بحرانی' : 'پاک')
+        +     ' · ' + toFa(openBy.get(k) || 0) + ' باز</span>'
+        +   '<span class="eng-ar">▾</span></button>'
+        + '<div class="eng-body">' + inner + '</div></div>';
+    }).join('');
+
+    const total = all.reduce((n, k) => n + cnt(k), 0);
+    const withAny = all.filter(k => cnt(k)).length;
+
+    /* خط تشخیصی: می‌گوید چند ردیف اصلاً به این گزارش رسیده. اگر عددها
+       صفر یا خیلی کمتر از انتظار بودند، مشکل در بارگذاری داده است نه
+       در تشخیص بحرانی — و همان‌جا معلوم می‌شود. */
+    const nTask = Array.isArray(b.tasks) ? b.tasks.length : 0;
+    const nAdm  = rows.length - nTask;
+    const nOpen = rows.filter(r => taskStatus(r).cls !== 'done').length;
+    const diag = '<div class="mg-diag">'
+      + 'خوانده شد: ' + toFa(nTask) + ' فعالیت · ' + toFa(nAdm) + ' مورد اداری · '
+      + toFa(nOpen) + ' باز · ' + toFa(all.length) + ' نفر'
+      + '</div>';
+
+    return mgLinksHtml()
+      + '<div class="mg-sum">' + toFa(total) + ' مورد بحرانی در کل، بین '
+      + toFa(withAny) + ' نفر</div>'
+      + diag
+      + (body || '<div class="empty">کسی مورد بحرانی ندارد.</div>');
+  }
+
   /* ====== لاگ کارهای کاربران ======
      بدون جدول تازه ساخته می‌شود: هر جدول ستون created_at دارد، پس
      تازه‌ترین ردیف‌های هر بخش را می‌گیریم و کنار هم مرتب می‌کنیم.
@@ -8761,13 +9134,16 @@
 
     box.innerHTML = head + matchPanelHtml() + names.map(n => {
       const row = personRow(n) || {};
-      const hasPass = !!row.password_hash;
+      /* هش دیگر به مرورگر نمی‌آید، پس وضعیت رمز از must_change
+         استنباط می‌شود: null یعنی هنوز رمزی نساخته. */
+      const passTag = (row.must_change === false) ? 'رمز شخصی'
+                    : (row.must_change === true ? 'رمز اولیه' : 'بدون رمز');
       const active = row.active !== false;
       return '<div class="rv" data-user-row="'+esc(n)+'">'
         + '<div class="top">' + avatarHtml(n)
         + '<b>'+esc(n)+'</b>'
         + '<span class="pill '+(active ? 'st-ok' : 'st-bad')+'">'+(active ? 'فعال' : 'غیرفعال')+'</span>'
-        + '<span class="pill">'+(hasPass ? (row.must_change ? 'رمز اولیه' : 'رمز شخصی') : 'بدون رمز')+'</span>'
+        + '<span class="pill">'+passTag+'</span>'
         + '</div>'
         + '<div class="user-grid">'
         + '<div class="field" style="margin:0;"><label>سمت</label>'
@@ -8912,7 +9288,15 @@
         }
         if(reset){
           if(confirm('رمز ' + name + ' به ۰۰۰۰ بازنشانی شود؟')){
-            await savePerson(name, {password_hash: null, must_change: true});
+            let done = false;
+            if(!srvAuthOff){
+              try{
+                const r = await supaRpc('reset_pass', {p_name: name});
+                done = !!(r && r.ok === true);
+              }catch(e){ srvAuthOff = true; }
+            }
+            // اگر تابع نبود، مسیر قدیمی
+            if(!done) await savePerson(name, {password_hash: null, must_change: true});
             showDialog('ok','رمز بازنشانی شد', name + ' در ورود بعدی با ۰۰۰۰ وارد می‌شود و باید رمز تازه بگذارد.');
           }
         }
@@ -8956,6 +9340,138 @@
   // ---------- پروفایل کاربری با بخش‌های مجزا ----------
   let profileState = {name:'', tab:'settings', date:''};
 
+  /* تغییر وضعیت از داخل پروفایل. تا حالا دکمه‌ها رندر می‌شدند ولی
+     هیچ شنونده‌ای نداشتند و کلیک بی‌اثر بود، چون این منطق فقط روی
+     تب فعالیت‌ها بسته شده بود. اینجا نوار «ثبت تغییرات» وجود ندارد،
+     پس بلافاصله ذخیره می‌شود و پروفایل دوباره کشیده می‌شود. */
+  (function(){
+    const host = document.getElementById('profileBody');
+    if(!host) return;
+    host.addEventListener('click', async e => {
+      const pk = e.target.closest('button[data-tpick]');
+      if(pk){
+        e.stopPropagation();
+        pk.parentElement.innerHTML = statusOptionsHtml(pk.dataset.tpick);
+        return;
+      }
+      const sb = e.target.closest('button[data-tset]');
+      if(sb){
+        e.stopPropagation();
+        sb.textContent = '...';
+        setTaskStatus(sb.dataset.tset, sb.dataset.st);
+        try{ await commitTasks(); }catch(err){}
+        try{ await renderProfile(); }catch(err){}
+        return;
+      }
+
+      /* ردیف‌های اداری دکمه‌های دیگری دارند. همین باعث می‌شد تغییر
+         وضعیت در پروفایل کار نکند، چون بیشتر ردیف‌های آنجا اداری‌اند. */
+      const ap = e.target.closest('button[data-admpick]');
+      if(ap){
+        e.stopPropagation();
+        const k = ap.dataset.admkind, id = ap.dataset.admpick, amt = ap.dataset.amount || '';
+        const opt = (st, emo, lbl) =>
+          '<button type="button" class="st ' + st + ' st-btn" data-admset="'+esc(id)+'" '
+          + 'data-admkind="'+esc(k)+'" data-amount="'+esc(amt)+'" data-st="'+st+'">'
+          + emo + ' ' + lbl + '</button>';
+        ap.parentElement.innerHTML =
+          opt('done','✅','انجام شده') + opt('doing','🔄','در حال اجرا') + opt('todo','❌','انجام نشده');
+        return;
+      }
+
+      const as = e.target.closest('button[data-admset]');
+      if(as){
+        e.stopPropagation();
+        const k = as.dataset.admkind, id = as.dataset.admset, want = as.dataset.st;
+        as.textContent = '...';
+        const values = (k === 'statement')
+          ? {'مبلغ پرداختی': want === 'done' ? (as.dataset.amount || '') : ''}
+          : {'وضعیت ابلاغ': want === 'done' ? 'برون‌سازمانی'
+                          : (want === 'todo' ? 'Hold' : 'در حال تنظیم')};
+        const ok = await sendAction({action:'update', target:k, id:id, values:values});
+        if(!ok){
+          showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.');
+          lastServerError = '';
+        }
+        clearNetCache();
+        try{ await renderProfile(); }catch(err){}
+        return;
+      }
+
+      const ad = e.target.closest('button[data-admdone]');
+      if(ad){
+        e.stopPropagation();
+        const nowDone = ad.dataset.cur !== '1';
+        ad.disabled = true; ad.textContent = '...';
+        const ok = await sendAction({action:'update', target:'minute', id: ad.dataset.admdone,
+          values:{'انجام شد': nowDone ? '1' : '', 'تاریخ انجام': nowDone ? todayShamsi() : ''}});
+        if(!ok){
+          showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.');
+          lastServerError = '';
+        }
+        clearNetCache();
+        try{ await renderProfile(); }catch(err){}
+        return;
+      }
+
+      // ---- گزارش مدیریتی ----
+      const mgGo = e.target.closest('[data-mg-go]');
+      if(mgGo){
+        e.stopPropagation();
+        const [kind, rng] = String(mgGo.dataset.mgGo || '').split('|');
+        const bg1 = document.getElementById('profileModal');
+        if(bg1) bg1.hidden = true;
+        document.body.style.overflow = '';
+        switchTab('view');
+        const kc = document.querySelector('#viewKindCaps .kcap[data-kind="' + kind + '"]');
+        if(kc) kc.click();
+        if(rng && rng !== 'day') setTimeout(() => {
+          const rc = document.querySelector('#rangeCaps .kcap[data-range="' + rng + '"]');
+          if(rc) rc.click();
+        }, 300);
+        return;
+      }
+
+      const mgN = e.target.closest('[data-mg-nudge]');
+      if(mgN){
+        e.stopPropagation();
+        const bg2 = document.getElementById('profileModal');
+        if(bg2) bg2.hidden = true;
+        document.body.style.overflow = '';
+        openNudge(mgN.dataset.mgNudge);
+        return;
+      }
+
+      const mgH = e.target.closest('.mg-person > .eng-head');
+      if(mgH){
+        e.stopPropagation();
+        const open = mgH.parentElement.classList.toggle('open');
+        const ar = mgH.querySelector('.eng-ar');
+        if(ar) ar.textContent = open ? '▴' : '▾';
+        return;
+      }
+
+      const mgS = e.target.closest('.mg-sub > .subsec-head');
+      if(mgS){
+        e.stopPropagation();
+        const open = mgS.parentElement.classList.toggle('open');
+        const ar = mgS.querySelector('.ss-ar');
+        if(ar) ar.textContent = open ? '▴' : '▾';
+        return;
+      }
+
+      /* کلیک روی خودِ ردیف، مستقیم به همان مورد در بخش مربوطه می‌برد.
+         روی دکمه‌ها و لینک‌ها اثری ندارد تا کارشان مختل نشود. */
+      if(e.target.closest('button, a, input, select, textarea')) return;
+      const row = e.target.closest('[data-go-kind]');
+      if(!row) return;
+      const bg0 = document.getElementById('profileModal');
+      if(bg0) bg0.hidden = true;
+      document.body.style.overflow = '';
+      await gotoAdminItem(row.dataset.goKind, row.dataset.goId, '');
+    });
+  })();
+
   async function openProfile(name){
     if(!name) return;
     const mineProfile = (nameKey(name) === nameKey(activeUserName()));
@@ -8980,6 +9496,7 @@
       + (me
           ? [['settings','تنظیمات'], ['reports','گزارش‌های ارسالی'],
              ['tasks','فعالیت‌ها']]
+              .concat(isMgrView() ? [['mgreport','موارد بحرانی']] : [])
               .concat(canSendGeneral() ? [['general','ابلاغ فعالیت']] : [])
               .concat([['msgs','پیام‌ها']])
           : [['reports','گزارش‌های ارسالی'], ['tasks','فعالیت‌ها']])
@@ -8993,8 +9510,9 @@
     const body = document.getElementById('profileBody');
     const me = (nameKey(name) === nameKey(activeUserName()));
     if(!me && (profileState.tab === 'settings' || profileState.tab === 'msgs'
-               || profileState.tab === 'general'))
+               || profileState.tab === 'general' || profileState.tab === 'mgreport'))
       profileState.tab = 'reports';
+    if(profileState.tab === 'mgreport' && !isMgrView()) profileState.tab = 'settings';
     if(profileState.tab === 'general' && !canSendGeneral()) profileState.tab = 'settings';
     body.innerHTML = profileHeader(name) + '<div class="empty">در حال دریافت…</div>';
 
@@ -9005,6 +9523,19 @@
     const adm = (b && b.admin) || null;
 
     let h = profileHeader(name);
+
+    if(profileState.tab === 'mgreport'){
+      body.innerHTML = profileHeader(name)
+        + '<div class="empty">در حال آماده‌سازی گزارش…</div>';
+      let mh = '';
+      try{ mh = await mgReportHtml(); }
+      catch(e){ mh = '<div class="empty">آماده‌سازی گزارش ممکن نشد.</div>'; }
+      body.innerHTML = profileHeader(name) + mh;
+      body.querySelectorAll('[data-ptab]').forEach(b2 => b2.addEventListener('click', () => {
+        profileState.tab = b2.dataset.ptab; renderProfile();
+      }));
+      return;
+    }
 
     if(profileState.tab === 'settings'){
       let workers = 0;
@@ -9183,6 +9714,7 @@
     if(profileState.tab === 'tasks'){
       const myTasks = tasks.filter(r =>
         nameKey(pick(r,T.m1)) === nameKey(name) || nameKey(pick(r,T.m2)) === nameKey(name));
+      try{ if(typeof mergeReviewCols === 'function') await mergeReviewCols(adm); }catch(e){}
       const admTasks = (typeof adminAsTasks === 'function' ? adminAsTasks(adm) : [])
         .filter(r => nameKey(pick(r,T.m1)) === nameKey(name));
       const all = myTasks.concat(admTasks);
@@ -9201,11 +9733,13 @@
         .filter(r => taskStatus(r).cls !== 'done' || needsApproval(r));
       const choreMine = all.filter(r =>
         String(pick(r,T.side) || '').trim() === CHORE_SIDE && taskStatus(r).cls !== 'done');
-      const rest = all.filter(r => {
+      const restAll = all.filter(r => {
         const sd = String(pick(r,T.side) || '').trim();
         return sd !== GENERAL_SIDE && sd !== CHORE_SIDE;
       });
-      const restDone = rest.filter(r => taskStatus(r).cls === 'done').length;
+      const restDone = restAll.filter(r => taskStatus(r).cls === 'done').length;
+      // تکمیل‌شده‌ها دیده نمی‌شوند؛ فقط در شمارندهٔ بالای پنجره می‌آیند
+      const rest = restAll.filter(r => taskStatus(r).cls !== 'done');
 
       // هر بخش داخل پنجرهٔ تاشو
       const pfPanel = (id, ico, title, meta, inner, open) =>
@@ -9231,10 +9765,13 @@
         false);
 
       h += pfPanel('pfRest', SEC_ICON.adm, 'بقیهٔ فعالیت‌ها',
-        toFa(rest.length) + ' مورد · ' + toFa(restDone) + ' انجام‌شده',
+        toFa(rest.length) + ' مورد باز'
+          + (restDone ? ' · ' + toFa(restDone) + ' انجام‌شده پنهان' : ''),
         (rest.length
           ? rest.map(r => taskLineHtml(r)).join('')
-          : '<div class="empty">فعالیت دیگری برای این شخص ثبت نشده است.</div>'),
+          : '<div class="empty">'
+            + (restDone ? 'همهٔ این فعالیت‌ها انجام شده‌اند.'
+                        : 'فعالیت دیگری برای این شخص ثبت نشده است.') + '</div>'),
         false);
 
       profileState.calList = all;
@@ -9893,6 +10430,44 @@
     const hit = REVIEW_STATES.find(x => x.v === v);
     return hit ? hit.e : '';
   }
+  /* مدت ماندن در مرحلهٔ جاریِ بررسی. هر مرحله از تاریخ ورود به
+     خودش شمرده می‌شود، نه از ابتدای مسیر — پس عدد پیمانکار ربطی
+     به روزهای بررسی داخلی ندارد. حالت‌های «رد» هم به مرحله‌ای که
+     کار به آن برگشته لنگر می‌خورند. */
+  const RV_STAGE_START = {
+    'بررسی داخلی':'rvIS',  'رد داخلی':'rvIS',
+    'بررسی پیمانکار':'rvPS','رد پیمانکار':'rvPS',
+    'بررسی کارفرما':'rvCS', 'رد کارفرما':'rvCS'
+  };
+
+  function reviewStageDays(r){
+    const k = RV_STAGE_START[String(pick(r,AD.review) || '')];
+    if(!k) return null;
+    const from = pick(r, AD[k]);
+    if(!from) return null;
+    const d = daysSince(from);
+    return (d == null || d < 0) ? null : d;
+  }
+
+  /* در مرحلهٔ بررسی داخلی، عدد کنار عکس مسئولین می‌نشیند و همان‌جا
+     کافی است؛ تکرارش روی کپسول رسیدگی فقط شلوغی بود. در مرحلهٔ
+     پیمانکار و کارفرما عکسی در کار نیست، پس آنجا روی کپسول می‌ماند. */
+  function rvChipShown(r){
+    const st = String(pick(r,AD.review) || '');
+    // مرحلهٔ پیمانکار و کارفرما کپسول اختصاصی خودشان را دارند
+    if(st.indexOf('پیمانکار') !== -1 || st.indexOf('کارفرما') !== -1) return true;
+    if(st !== 'بررسی داخلی' && st !== 'رد داخلی') return false;
+    return !!String(pick(r,AD.rvWho) || '').trim();
+  }
+
+  function stageDayDot(r, cls){
+    if(rvChipShown(r)) return '';
+    const d = reviewStageDays(r);
+    if(d == null) return '';
+    return '<span class="rvw-days' + (d > 7 ? ' late' : '') + (cls ? ' ' + cls : '') + '" '
+      + 'title="' + toFa(d) + ' روز در این مرحله">' + toFa(d) + '</span>';
+  }
+
   function reviewCls(v){
     if(REVIEW_OK.indexOf(v)  !== -1) return 'st-ok';
     if(REVIEW_BAD.indexOf(v) !== -1) return 'st-bad';
@@ -13595,6 +14170,12 @@
   function toSupa(table, obj){
     const m = SUPA_MAP[table] || {};
     const out = {};
+    /* پرچم داخلی، نه ستون پایگاه‌داده: اگر مسئول بررسی ثبت شده و
+       تاریخ شروع خالی است، همان امروز را می‌گذارد. */
+    if(obj && obj['rvISentIfNew']){
+      delete obj['rvISentIfNew'];
+      if(obj['rvWho'] && !obj['rvISent']) obj['rvISent'] = todayShamsi();
+    }
     Object.keys(obj || {}).forEach(k => {
       const col = m[k];
       if(!col) return;
@@ -14744,7 +15325,8 @@
   function statChip(o){
     const inner = '<i class="dt"></i>'
       + '<u>' + esc(o.cap) + '</u>'
-      + '<b>' + esc(o.txt) + '</b>';
+      + '<b>' + esc(o.txt) + '</b>'
+      + (o.extra || '');
     if(o.live)
       return '<button type="button" class="stat-chip live ' + o.cls + '" '
         + 'data-fast="' + o.what + '" data-fid="' + esc(o.id) + '" data-fkind="' + o.kind + '" '
@@ -14773,10 +15355,19 @@
     // فقط در مرحلهٔ داخلی یا وقتی مسئولی ثبت شده، جا اشغال می‌کند
     if(!who.length && cur !== 'بررسی داخلی' && cur !== 'رد داخلی') return '';
     const id = pick(r,AD.id);
+    /* عدد داخل دایره، کنار عکس‌ها: چند روز است که این مورد در بررسی
+       داخلی مانده. مدت مالِ خودِ مورد است نه هر شخص، پس یک عدد بیشتر
+       نمی‌آید. بعد از هفت روز رنگ هشدار می‌گیرد. */
+    const dl = daysSince(pick(r,AD.rvIS));
+    const dayDot = (dl != null && dl >= 0)
+      ? '<span class="rvw-days' + (dl > 7 ? ' late' : '') + '" '
+        + 'title="' + toFa(dl) + ' روز در بررسی داخلی">'
+        + toFa(dl) + '<u>روز</u></span>' : '';
     const inner = '<u>بررسی داخلی</u>'
       + (who.length
           ? '<span class="rvw-ava">' + who.slice(0,5).map(rvAva).join('') + '</span>'
             + (who.length > 5 ? '<b>+' + toFa(who.length - 5) + '</b>' : '')
+            + dayDot
           : '<b>مسئولی ثبت نشده</b>');
     if(editable && id)
       return '<button type="button" class="stat-chip live rvw-chip' + (who.length ? '' : ' off') + '" '
@@ -14803,6 +15394,28 @@
       }catch(e){}
     }
     if(typeof invalidateNudges === 'function') invalidateNudges();
+  }
+
+  /* در مرحلهٔ پیمانکار و کارفرما هم مثل بررسی داخلی یک کپسول می‌آید
+     که می‌گوید توپ در زمین چه کسی است و چند روز آنجاست. */
+  function partyChip(kind, r){
+    if(kind !== 'statement' && kind !== 'contract') return '';
+    const st = String(pick(r,AD.review) || '');
+    const party = (st === 'بررسی پیمانکار' || st === 'رد پیمانکار');
+    const client = (st === 'بررسی کارفرما' || st === 'رد کارفرما');
+    if(!party && !client) return '';
+
+    const name = party
+      ? (pick(r, kind === 'statement' ? AD.sParty : AD.cParty) || 'پیمانکار')
+      : 'کارفرما';
+    const d = reviewStageDays(r);
+    const dot = (d == null) ? ''
+      : '<span class="rvw-days' + (d > 7 ? ' late' : '') + '" '
+        + 'title="' + toFa(d) + ' روز در این مرحله">' + toFa(d) + '<u>روز</u></span>';
+
+    return '<span class="stat-chip rvw-chip' + (st.indexOf('رد') === 0 ? ' st-bad' : '') + '">'
+      + '<u>' + (party ? 'بررسی پیمانکار' : 'بررسی کارفرما') + '</u>'
+      + '<b>' + esc(name) + '</b>' + dot + '</span>';
   }
 
   function reviewersMenuHtml(kind, id, cur){
@@ -14880,8 +15493,13 @@
       const before = rowNow ? reviewersOf(rowNow) : [];
       const holder = rvS.closest('.chip-set');
       holder.innerHTML = '<span class="stat-chip off">در حال ثبت…</span>';
-      const ok = await sendAction({action:'update', target:kind, id:id,
-                                   values:{'rvWho': names.join('|')}});
+
+      /* ساعتِ بررسی داخلی از روزی شروع می‌شود که کار به این افراد
+         سپرده می‌شود، نه از تاریخ اصلی خودِ مورد. اگر قبلاً مسئولی
+         نبوده و حالا هست، تاریخ از نو ثبت می‌شود. */
+      const vals = {'rvWho': names.join('|')};
+      if(names.length && !before.length) vals['rvISent'] = todayShamsi();
+      const ok = await sendAction({action:'update', target:kind, id:id, values: vals});
       if(!ok){
         showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.');
         lastServerError = '';
@@ -15204,9 +15822,11 @@
       +     ((kind === 'statement' || kind === 'contract')
             ? statChip({live: editable && id, what:'review', id:id, kind:kind,
                         cls: pick(r,AD.review) ? reviewCls(pick(r,AD.review)) : 'off',
-                        cap:'رسیدگی', txt: pick(r,AD.review) || 'ثبت نشده'})
+                        cap:'رسیدگی', txt: pick(r,AD.review) || 'ثبت نشده',
+                        extra: stageDayDot(r)})
             : '')
       +     reviewersChip(kind, r, editable)
+      +     partyChip(kind, r)
       +   '</span>'
       + '</div>'
 
@@ -15526,6 +16146,7 @@
       put(o,'تاریخ ارسال','a-sDate'); put(o,'موعد اتمام','a-due');
       put(o,'نوع ابلاغ','a-sNotify'); put(o,'توضیحات','a-sNote');
       put(o,'وضعیت رسیدگی','a-sReview'); put(o,'rvWho','a-rvWho');
+      if(o['rvWho']) o['rvISentIfNew'] = '1';
       put(o,'مسئول','a-owner'); put(o,'لینک','a-link');
       if(o['مبلغ صورت وضعیت'] != null) o['مبلغ صورت وضعیت'] = String(moneyNum(o['مبلغ صورت وضعیت']) || '');
       if(o['مبلغ پرداختی'] != null)   o['مبلغ پرداختی']   = String(moneyNum(o['مبلغ پرداختی']) || '');
@@ -15536,6 +16157,7 @@
       put(o,'موعد اتمام','a-due');
       put(o,'وضعیت ابلاغ','a-cNotify'); put(o,'موضوع قرارداد','a-cSubject'); put(o,'مسئول','a-owner');
       put(o,'وضعیت رسیدگی','a-cReview'); put(o,'rvWho','a-rvWho');
+      if(o['rvWho']) o['rvISentIfNew'] = '1';
       put(o,'لینک','a-link');
       if(o['مبلغ قرارداد'] != null) o['مبلغ قرارداد'] = String(moneyNum(o['مبلغ قرارداد']) || '');
       if(o['مبلغ پرداختی'] != null) o['مبلغ پرداختی'] = String(moneyNum(o['مبلغ پرداختی']) || '');
@@ -16869,7 +17491,11 @@
   }
   const GROUP_ORDER = ['ابلاغی','عمومی','صورتجلسه','اداری'];
 
-  function criticalList(tasks){
+  /* opts.includeExec: فعالیت‌های اجرایی هم بیایند.
+     خلاصهٔ روزانه عمداً آنها را کنار می‌گذارد چون فهرستش را خیلی
+     بلند می‌کرد، ولی گزارش موارد بحرانی باید کامل باشد. */
+  function criticalList(tasks, opts){
+    const o = opts || {};
     const me = activeUserName();
     const lv = myLevel();
     const out = [];
@@ -16877,12 +17503,14 @@
       const id = pick(r,T.id) || r.__admId;
       const st = taskStatus(r);
       if(st.cls === 'done') return;
-      const owner = pick(r,T.m1) || '';
+      // اگر مسئول اول خالی باشد، مسئول دوم صاحبِ کار است
+      const owner = pick(r,T.m1) || pick(r,T.m2) || '';
       if(lv >= 3 && nameKey(owner) !== nameKey(me)) return;
       const why = criticalOf(id, pick(r,T.due), false,
-        {kind: r.__admKind || 'task', startRaw: pick(r,T.start), review: inReview(r)});
+        {kind: r.__admKind || 'task', startRaw: pick(r,T.start), review: inReview(r),
+         ignoreMuted: !!o.ignoreMuted});
       const g = taskGroupOf(r);
-      if(g === 'اجرایی') return;   // فعالیت‌های اجرایی در خلاصه نمی‌آیند
+      if(g === 'اجرایی' && !o.includeExec) return;
       if(why) out.push({
         id: id, title: pick(r,T.title) || 'بدون عنوان',
         who: owner, why, group: g,
@@ -18131,11 +18759,24 @@
     // اگر موعدی نبود، برای موارد اداری دایرهٔ روزهای گذشته می‌آید
     const age = (!ring && r.__adm && st.cls !== 'done')
       ? daysSince(pick(r,T.start) || pick(r,T.due)) : null;
-    const rail = ring || (age != null ? ageBadge(age) : '');
+    let rail = ring || (age != null ? ageBadge(age) : '');
     /* بدون این شناسه، «نمایش مورد» در اعلان‌ها هیچ‌وقت ردیف را پیدا نمی‌کرد */
     const rowId = pick(r,T.id) || r.__admId || '';
+    /* ردیف بررسی داخلی: به‌جای دایرهٔ سنِ معمولی، عکس مسئولین با
+       همان دایرهٔ روزِ بررسی — یک زبان با کپسول بخش اداری. */
+    if(r.__rv && r.__rvWho && r.__rvWho.length){
+      const d = r.__rvDays;
+      rail = '<span class="rvw-ava inline" title="بررسی داخلی'
+        + ((d != null && d >= 0) ? ' — ' + toFa(d) + ' روز' : '') + '">'
+        + r.__rvWho.slice(0,4).map(rvAva).join('')
+        + ((d != null && d >= 0)
+            ? '<span class="rvw-days' + (d > 7 ? ' late' : '') + '">' + toFa(d) + '</span>' : '')
+        + '</span>';
+    }
     return '<div class="line' + (rail ? ' has-age' : '') + '"'
-      + (rowId ? ' data-task-id="' + esc(rowId) + '"' : '') + '>'
+      + (rowId ? ' data-task-id="' + esc(rowId) + '"' : '')
+      + (r.__adm ? ' data-go-kind="' + esc(r.__admKind || '') + '"'
+                 + ' data-go-id="' + esc(r.__admId || '') + '"' : '') + '>'
       + (rail ? '<span class="line-rail">' + rail + '</span>' : '')
       + '<div class="top">'
       + '<b>' + esc(pick(r,T.title) || 'بدون عنوان') + '</b>'
@@ -18891,7 +19532,9 @@
         'در حال اجرا': status === 'doing' ? 1 : '',
         'انجام نشده': status === 'todo' ? 1 : '',
         '__adm': true, '__admKind': kind || '', '__admId': id || '',
-        '__amount': (extra && extra.amount) || ''
+        '__amount': (extra && extra.amount) || '',
+        // سطر خام، تا بتوان همان کارت بخش اداری را اینجا هم کشید
+        '__admRow': (extra && extra.row) || null
       };
       out.push(o);
     };
@@ -18901,7 +19544,7 @@
       pick(r, AD_OWNER.statement), 'صورت وضعیت',
       pick(r,AD.sDate), pick(r,AD.due),
       isPaid(r) ? 'done' : 'doing', pick(r,AD.sParty),
-      'statement', pick(r,AD.id), {amount: pick(r,AD.sAmount)}));
+      'statement', pick(r,AD.id), {amount: pick(r,AD.sAmount), row: r}));
 
     (A.contracts || []).forEach(r => {
       const n = pick(r,AD.cNotify);
@@ -18909,8 +19552,44 @@
         pick(r, AD_OWNER.contract), 'قرارداد',
         pick(r,AD.cDate) || pick(r,AD.cStart), pick(r,AD.due),
         (n === 'برون‌سازمانی' || n === 'درون‌سازمانی') ? 'done' : (n === 'Hold' ? 'todo' : 'doing'),
-        pick(r,AD.cParty), 'contract', pick(r,AD.id));
+        pick(r,AD.cParty), 'contract', pick(r,AD.id), {row: r});
     });
+
+    /* ---- بررسی داخلی: یک ردیف برای هر مسئول بررسی ----
+       تا حالا مورد اداری فقط برای مسئول اصلی‌اش ردیف می‌ساخت. کسی که
+       به بررسی داخلی سپرده شده بود، آن را در فهرست فعالیت‌های خودش
+       نمی‌دید و فقط از زنگوله خبردار می‌شد. این ردیف‌ها تا وقتی
+       وضعیت روی «بررسی داخلی» یا «رد داخلی» است ساخته می‌شوند و به
+       محض «تأیید داخلی» خودشان ناپدید می‌شوند. */
+    const rvRows = (rows, kind, sideName, titleOf, startOf) => {
+      (rows || []).forEach(r => {
+        const st = String(pick(r,AD.review) || '');
+        if(st !== 'بررسی داخلی' && st !== 'رد داخلی') return;
+        const who = String(pick(r,AD.rvWho) || '').split('|')
+          .map(x => x.trim()).filter(Boolean);
+        if(!who.length) return;
+        who.forEach(n => {
+          const before = out.length;
+          mk('بررسی داخلی: ' + titleOf(r), n, sideName,
+            pick(r,AD.rvIS) || startOf(r), pick(r,AD.due),
+            st === 'رد داخلی' ? 'todo' : 'doing',
+            '', kind, pick(r,AD.id), {row: r});
+          if(out.length > before){
+            const o = out[out.length - 1];
+            o.__rv = true;
+            o.__rvWho = who;                       // عکس همهٔ مسئولین بررسی
+            o.__rvDays = daysSince(pick(r,AD.rvIS));
+          }
+        });
+      });
+    };
+    rvRows(A.statements, 'statement', 'صورت وضعیت',
+      r => 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — '
+           + (pick(r,AD.sName) || pick(r,AD.sParty) || ''),
+      r => pick(r,AD.sDate));
+    rvRows(A.contracts, 'contract', 'قرارداد',
+      r => 'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
+      r => pick(r,AD.cDate) || pick(r,AD.cStart));
 
     (A.minutes || []).forEach(r => mkMinute(r));
     function mkMinute(r){
@@ -18926,7 +19605,8 @@
         'انجام نشده': '',
         '__adm': true, '__admKind':'minute', '__admId': pick(r,AD.id),
         '__exec': String(pick(r,AD.mCat) || '').trim() === 'اجرایی',
-        '__doneDate': pick(r,AD.mDoneDate)
+        '__doneDate': pick(r,AD.mDoneDate),
+        '__admRow': r
       };
       if(o['مسئول 1']) out.push(o);
     }
@@ -18936,10 +19616,18 @@
         pick(r, AD_OWNER.letter), 'نامه',
         pick(r,AD.lDate), pick(r,AD.due),
         (n === 'برون‌سازمانی' || n === 'درون‌سازمانی') ? 'done' : (n === 'Hold' ? 'todo' : 'doing'),
-        pick(r,AD.lParty), 'letter', pick(r,AD.id));
+        pick(r,AD.lParty), 'letter', pick(r,AD.id), {row: r});
     });
 
-    return out;
+    /* اگر یک نفر هم مسئول اصلیِ یک مورد باشد و هم مسئول بررسی داخلی‌اش،
+       دو ردیف برای یک کار می‌گرفت. فقط مرحله‌ای می‌ماند که جلوتر است:
+       تا وقتی در بررسی داخلی است، ردیف بررسی؛ و به محض «تأیید داخلی»
+       ردیف بررسی خودش می‌رود و ردیف عادیِ همان مورد برمی‌گردد تا
+       نوبت تأیید نهایی. */
+    const rvOwned = new Set(out.filter(o => o.__rv)
+      .map(o => String(o.__admId) + '|' + nameKey(o['مسئول 1'])));
+    return out.filter(o =>
+      o.__rv || !rvOwned.has(String(o.__admId) + '|' + nameKey(o['مسئول 1'])));
   }
 
   let tasksLoading = null;   // اگر بارگذاری در جریان است، همان را برمی‌گرداند
@@ -18959,6 +19647,14 @@
     box.innerHTML = '<div class="empty">در حال دریافت فعالیت‌ها...</div>';
     try{
       const bundle = await fetchBundle(normDate(dateInput.value) || todayShamsi());
+      // بدون این، ستون مسئولین بررسی خالی است و ردیف‌های بررسی داخلی ساخته نمی‌شوند
+      try{ await mergeReviewCols(bundle.admin); }catch(e){}
+      // wireFastEdit سطر را از rowMap می‌گیرد؛ بدون این، چیپ‌ها بی‌اثرند
+      ['statements','contracts','minutes','letters'].forEach(k => {
+        (bundle.admin && bundle.admin[k] || []).forEach(r => {
+          const id = pick(r,AD.id); if(id) rowMap.set(id, r);
+        });
+      });
       let all = Array.isArray(bundle.tasks) ? bundle.tasks.slice() : [];
       tasksLoaded = true;
       all = all.concat(adminAsTasks(bundle.admin));
