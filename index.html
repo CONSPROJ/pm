@@ -868,7 +868,7 @@
     padding-left:26px;
   }
   .combo-pop{
-    position:absolute;z-index:60;
+    position:fixed;z-index:9600;
     max-height:250px;overflow-y:auto;
     -webkit-backdrop-filter:blur(18px) saturate(1.5);
     backdrop-filter:blur(18px) saturate(1.5);
@@ -883,6 +883,8 @@
     padding:5px;
   }
   .combo-pop[hidden]{display:none;}
+  /* پس‌زمینهٔ مات: متنِ زیر فهرست (مثل نام کارگر بعدی) از پشتش دیده نشود */
+  .combo-pop, [data-theme="dark"] .combo-pop{background:var(--surface) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
   .combo-item{
     display:block;width:100%;text-align:right;
     border:none;background:none;cursor:pointer;
@@ -31046,11 +31048,13 @@
     return dl ? Array.from(dl.options).map(o => o.value) : [];
   }
   function drawPop(filter){
-    const q = String(filter || '').trim().toLowerCase();
+    /* رقم فارسی و لاتین یکی حساب می‌شوند: صفحه‌کلید عددی گوشی «7»
+       می‌نویسد و فهرست ساعت‌ها «۰۷:۰۰» است؛ پیش‌تر چیزی پیدا نمی‌شد. */
+    const q = toEn(String(filter || '').trim().toLowerCase());
     /* فهرست‌هایی که گزینه‌هایشان گروه دارند (data-g)، با سرتیتر هر گروه */
     const dl = document.getElementById(popInput.getAttribute('data-list'));
     const opts = dl ? Array.from(dl.options).map(o => ({v: o.value, g: o.getAttribute('data-g') || ''})) : [];
-    const hit = opts.filter(o => !q || o.v.toLowerCase().indexOf(q) !== -1);
+    const hit = opts.filter(o => !q || toEn(o.v.toLowerCase()).indexOf(q) !== -1);
     let html = '', lastG = null;
     hit.forEach(o => {
       if(o.g && o.g !== lastG){ html += '<div class="combo-g">' + esc(o.g) + '</div>'; lastG = o.g; }
@@ -31085,27 +31089,34 @@
   document.addEventListener('focusin', e => {
     if(e.target && e.target.matches && e.target.matches('input[data-list="letterPartyList"]')){ try{ buildLetterParties(); }catch(er){} }
   }, true);
+  /* فهرست روی بالاترین لایهٔ صفحه شناور است، نه داخل خودِ فرم. پیش‌تر
+     داخل ردیف می‌نشست و ردیف بعدی (مثلاً نام کارگر بعدی) رویش کشیده
+     می‌شد. جایش از مختصات کادر روی صفحه حساب می‌شود و اگر پایین جا
+     نباشد، بالای کادر باز می‌شود. */
   function placePop(){
     if(!popInput) return;
-    const holder = popInput.parentElement;
-    if(!holder) return;
-    if(getComputedStyle(holder).position === 'static') holder.style.position = 'relative';
-    if(pop.parentElement !== holder) holder.appendChild(pop);
-    pop.style.top = (popInput.offsetTop + popInput.offsetHeight + 4) + 'px';
-    /* در چیدمان راست‌به‌چپ، offsetLeft از لبهٔ چپ اندازه گرفته می‌شود؛
-       پس برای چسباندن فهرست به لبهٔ راستِ خودِ کادر باید از عرضِ ظرف
-       کم شود. پیش‌تر مستقیم روی right می‌نشست و برای کادرهای باریکِ
-       وسط یک ردیف (مثل ساعت‌ها) فهرست جای دیگری باز می‌شد. */
-    const holderW = holder.clientWidth || holder.offsetWidth || 0;
-    const rightGap = Math.max(0, holderW - (popInput.offsetLeft + popInput.offsetWidth));
-    const wantW = Math.max(popInput.offsetWidth, 150);
-    /* اگر فهرست از لبهٔ چپِ ظرف بیرون بزند، به داخل کشیده می‌شود */
-    const maxW = Math.max(120, holderW - rightGap);
-    pop.style.right = rightGap + 'px';
+    if(pop.parentElement !== document.body) document.body.appendChild(pop);
+    const r = popInput.getBoundingClientRect();
+    if(!r.width && !r.height){ closePop(); return; }
+    const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const dock = document.querySelector('.tabs, .dock');
+    const dockTop = (dock && dock.offsetParent !== null) ? Math.min(vh, dock.getBoundingClientRect().top) : vh;
+    const w = Math.min(Math.max(r.width, 150), vw - 16);
+    const right = Math.min(Math.max(8, vw - r.right), vw - w - 8);
+    const below = dockTop - r.bottom - 10, above = r.top - 10;
+    const maxH = 250;
+    pop.style.right = right + 'px';
     pop.style.left = 'auto';
-    pop.style.width = Math.min(wantW, maxW) + 'px';
-    pop.style.minWidth = Math.min(150, maxW) + 'px';
-    pop.style.maxWidth = maxW + 'px';
+    pop.style.width = w + 'px';
+    pop.style.minWidth = '';
+    pop.style.maxWidth = '';
+    if(below >= Math.min(maxH, 160) || below >= above){
+      pop.style.top = (r.bottom + 4) + 'px'; pop.style.bottom = 'auto';
+      pop.style.maxHeight = Math.max(120, Math.min(maxH, below)) + 'px';
+    }else{
+      pop.style.top = 'auto'; pop.style.bottom = (vh - r.top + 4) + 'px';
+      pop.style.maxHeight = Math.max(120, Math.min(maxH, above)) + 'px';
+    }
   }
   function openPop(input, filter){
     popInput = input;
@@ -31114,9 +31125,13 @@
     pop.hidden = false;
   }
   function closePop(){ pop.hidden = true; popInput = null; }
+  // بعد از انتخاب، کادر دوباره فوکوس می‌گیرد؛ فهرست نباید دوباره باز شود
+  let popPickedEl = null, popPickedAt = 0;
+  window.addEventListener('scroll', () => { if(!pop.hidden) placePop(); }, true);
 
   document.addEventListener('focusin', e => {
     const el = e.target.closest ? e.target.closest('input[data-list]') : null;
+    if(el && el === popPickedEl && Date.now() - popPickedAt < 700) return;
     if(el) openPop(el, '');
     else if(!pop.contains(e.target)) closePop();
   });
@@ -31128,12 +31143,16 @@
     const b = e.target.closest('.combo-item');
     if(!b || !popInput) return;
     const inp = popInput;
+    closePop();
+    popPickedEl = inp; popPickedAt = Date.now();
     inp.value = b.textContent;
     inp.dispatchEvent(new Event('input', {bubbles:true}));
     inp.dispatchEvent(new Event('change', {bubbles:true}));
-    closePop();
   });
   document.addEventListener('click', e => {
+    // لمس دوباره روی همان کادر بعد از انتخاب، فهرست را باز می‌کند
+    const el = e.target.closest ? e.target.closest('input[data-list]') : null;
+    if(el && pop.hidden && !(el === popPickedEl && Date.now() - popPickedAt < 700)){ openPop(el, ''); return; }
     if(pop.hidden) return;
     if(e.target === popInput || pop.contains(e.target)) return;
     closePop();
@@ -44684,9 +44703,14 @@
     const picked = all.filter(x => x.c && x.c.engineer);
     if(!picked.length) return '';
 
+    /* ادمین سامانه در برگه‌های چاپی نمی‌آید: نه کادر امضا، نه نام در
+       ستون مسئول. نگهبان و نظافت هر روز خودکار به نام او ثبت می‌شوند و
+       برای همین نامش همیشه روی برگه‌ها بود. */
+    const shown = nm => (nm && !isAdminName(nm)) ? nm : '';
     const engs = [];
     picked.forEach(x => {
-      if(!engs.some(n => nameKey(n) === nameKey(x.c.engineer))) engs.push(x.c.engineer);
+      const n0 = shown(x.c.engineer);
+      if(n0 && !engs.some(n => nameKey(n) === nameKey(n0))) engs.push(n0);
     });
 
     /* برگهٔ کامل: همهٔ کارگرانِ آن روز در یک فهرست پیوسته و به همان
@@ -44697,7 +44721,7 @@
       : all;
     if(onlyEng && !mine.length) return '';
     const free = all.filter(x => !x.c || !x.c.engineer);
-    const signers = onlyEng ? [onlyEng] : engs;
+    const signers = onlyEng ? [shown(onlyEng)].filter(Boolean) : engs;
 
     const hrs = c => {
       const h = wrkHours(c && c.t1, c && c.t2);
@@ -44729,7 +44753,7 @@
         + '<td class="c">' + esc(toFa(c.t1 || '')) + '</td>'
         + '<td class="c">' + esc(toFa(c.t2 || '')) + '</td>'
         + (kind === 'ot' ? '<td class="c">' + hrs(c) + '</td>' : '')
-        + whoCell(c.engineer || '')
+        + whoCell(shown(c.engineer || ''))
         + '</tr>';
     };
 
@@ -44790,8 +44814,8 @@
       + '</section>';
   }
 
-  /* نوار امضا: هر مهندسی که کارگر انتخاب کرده، با عکس و نامش، به‌علاوهٔ
-     مدیریت کارگری و کنترل پروژه. */
+  /* نوار امضا: هر مهندسی که کارگر انتخاب کرده، با عکس و نامش، و جای
+     امضای سرپرست کارگاه. */
   function wrkSignHtml(engs){
     const box = (nm, role) => {
       const img = nm ? avatarOf(nm) : '';
@@ -44809,16 +44833,10 @@
     };
     /* یک نفر = یک کادر. اگر مدیریت کارگری خودش کارگر هم انتخاب کرده
        باشد، دو کادر نمی‌گیرد؛ هر دو نقش روی یک کادر می‌آید. */
-    const man = WRK_ADMIN();
     const seen = [];
-    (engs || []).filter(Boolean).forEach(n => {
+    (engs || []).filter(n => n && !isAdminName(n)).forEach(n => {
       if(!seen.some(x => nameKey(x.nm) === nameKey(n))) seen.push({nm: n, roles:['مهندس اجرا']});
     });
-    if(man){
-      const hit = seen.find(x => nameKey(x.nm) === nameKey(man));
-      if(hit) hit.roles.push('مدیریت کارگری');
-      else seen.push({nm: man, roles:['مدیریت کارگری']});
-    }
     return '<div class="pr-signwrap">'
       + '<div class="pr-signttl">تأیید و امضا</div>'
       + '<div class="pr-sign">'
