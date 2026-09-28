@@ -2450,6 +2450,33 @@
   }
   @keyframes ms-blink{50%{opacity:.45;}}
 
+  /* لیست فعالیت به تفکیک نفر: پرسنل و خارج سازمان */
+  .tk-grp-h{
+    display:flex;align-items:center;gap:8px;margin:14px 4px 8px;
+    font-size:12px;font-weight:800;color:var(--ink);
+  }
+  .tk-grp-h::after{content:"";flex:1;height:1px;background:var(--line);}
+  .tk-grp-h u{
+    order:1;text-decoration:none;font-size:10.5px;font-weight:700;color:var(--muted);
+    background:var(--field);padding:1px 8px;border-radius:999px;
+  }
+  .tk-grp-h::after{order:2;}
+  .tk-jsep{
+    display:inline-flex;align-items:center;padding:0 8px;font-size:10.5px;font-weight:700;color:var(--muted);
+    border-inline-start:1px solid var(--line);margin-inline-start:4px;white-space:nowrap;
+  }
+
+  /* «رد» روی خط مرحله: دایرهٔ قرمز کوچک با ضربدر، به نسبت تاریخش */
+  .adm-ms .ms-rej{
+    position:absolute;top:7px;transform:translate(50%, -50%);z-index:3;
+    width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+    background:var(--c-bad);color:#fff;font-size:9px;font-weight:900;line-height:1;
+    box-shadow:0 0 0 2.5px var(--surface), 0 2px 8px color-mix(in srgb, var(--c-bad) 50%, transparent);
+    cursor:help;
+  }
+  /* روی تکهٔ دوری که عکس افراد وسطش است، ضربدر کمی بالاتر می‌نشیند */
+  .adm-ms .ms-ln.has-ppl .ms-rej{top:-6px;}
+
   /* دورهای گردش داخلی: یک گروه، با کروشهٔ جمع کل زیرش */
   .adm-ms .ms-rds{flex:1 1 0;min-width:120px;position:relative;display:flex;flex-direction:column;}
   .adm-ms .ms-rdrow{display:flex;}
@@ -2480,14 +2507,24 @@
   }
   .adm-ms .ms-track:has(.ms-pt small){padding-bottom:58px;}
 
-  /* خروجی Excel و PDF بخش اداری */
-  .adm-xbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:2px 0 10px;flex-wrap:wrap;}
-  .adm-xlbl{font-size:10.5px;color:var(--muted);margin-inline-end:auto;}
-  .adm-xsel{
-    height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line);
-    background:var(--surface);color:var(--ink);font-family:var(--f);font-size:11px;font-weight:600;
+  /* خروجی Excel و PDF دفتر فنی: یک دکمهٔ بسته که باز می‌شود */
+  .adm-xwrap{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin:4px 2px 12px;}
+  .adm-xtg{
+    display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;cursor:pointer;
+    font-family:var(--f);font-size:11.5px;font-weight:700;color:var(--muted);
+    border:1px solid var(--line);background:var(--surface);
   }
-  #adminView > .adm-xbar{margin:4px 2px 12px;}
+  .adm-xtg svg{width:15px;height:15px;color:var(--ok);}
+  .adm-xtg i{font-style:normal;font-size:10px;}
+  .adm-xtg[aria-expanded="true"]{color:var(--ink);border-color:color-mix(in srgb, var(--ink) 25%, var(--line));}
+  .adm-xbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;}
+  .adm-xbar[hidden]{display:none;}
+  /* فقط background-color: خلاصهٔ background تکرارِ فلش کشویی را روشن می‌کرد
+     و کادر هاشورخورده می‌شد */
+  .adm-xsel{
+    width:auto;height:30px;padding:0 12px 0 28px;border-radius:999px;border:1px solid var(--line);
+    background-color:var(--surface);color:var(--ink);font-family:var(--f);font-size:11.5px;font-weight:600;
+  }
   .adm-xbtn{
     display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:999px;cursor:pointer;
     font-family:var(--f);font-size:11px;font-weight:700;
@@ -14149,6 +14186,9 @@
   .acat.hot .acat-n{margin-inline-end:10px;}
   /* فقط دستهٔ انتخاب‌شده؛ در جست‌وجو همه */
   #adminView[data-cat]:not(.searching) > .adm-sec{display:none;}
+  /* «فعالیت عمومی» فعلاً در دفتر فنی دیده نمی‌شود */
+  #adminView .acat.c-chore, #adminView #secAdmchore,
+  #adminView [data-jumpadm="secAdmchore"]{display:none !important;}
   #adminView[data-cat="statement"]:not(.searching) > #secAdmstatement,
   #adminView[data-cat="contract"]:not(.searching) > #secAdmcontract,
   #adminView[data-cat="minute"]:not(.searching) > #secAdmminute,
@@ -24957,21 +24997,27 @@
        برگشت به «بررسی داخلی» → تأییدهای داخلی از نو.
      این مقدارها همراه خودِ مرحله ذخیره می‌شوند. */
   const RV_OUTSIDE = ['بررسی کارفرما','رد کارفرما','تایید شده'];
+  const NOTIFY_BY_REVIEW = {
+    'بررسی داخلی':'درون‌سازمانی', 'تأیید داخلی':'درون‌سازمانی', 'رد داخلی':'درون‌سازمانی',
+    'بررسی پیمانکار':'برون‌سازمانی', 'تأیید پیمانکار':'برون‌سازمانی', 'رد پیمانکار':'برون‌سازمانی',
+    'بررسی کارفرما':'برون‌سازمانی', 'رد کارفرما':'برون‌سازمانی', 'تایید شده':'برون‌سازمانی'
+  };
   function stageSideValues(kind, row, v){
     const out = {};
     if(!row || (kind !== 'statement' && kind !== 'contract')) return out;
     const notifyField = (kind === 'statement') ? 'نوع ابلاغ' : 'وضعیت ابلاغ';
     const cur = String(pick(row, kind === 'statement' ? AD.sNotify : AD.cNotify) || '');
     const rev = (typeof reviewersOf === 'function') ? reviewersOf(row) : [];
+    /* نوع ابلاغ کاملاً از مرحلهٔ رسیدگی می‌آید: مرحله‌های داخلی
+       درون‌سازمانی، و پیمانکار و کارفرما و تأیید نهایی برون‌سازمانی. */
+    const want = NOTIFY_BY_REVIEW[v];
+    if(want && cur !== want) out[notifyField] = want;
     if(RV_OUTSIDE.indexOf(v) !== -1){
-      if(cur !== 'برون‌سازمانی') out[notifyField] = 'برون‌سازمانی';
       if(rev.length) out['rvDone'] = rev.join('|');       // بررسی داخلی تمام شد
     }else if(v === 'تأیید داخلی'){
       if(rev.length) out['rvDone'] = rev.join('|');
-      if(!cur) out[notifyField] = 'درون‌سازمانی';
     }else if(v === 'بررسی داخلی'){
       out['rvDone'] = '';                                  // تأییدها از نو
-      if(!cur) out[notifyField] = 'درون‌سازمانی';
     }else if(v === 'رد داخلی'){
       out['rvDone'] = '';
     }
@@ -31309,6 +31355,13 @@
     return pick(r,AD.mOwner);
   }
   function admNotify(kind, r){
+    /* صورت وضعیت و قرارداد: اگر مرحلهٔ رسیدگی دارد، نوع ابلاغ از همان
+       می‌آید تا موارد قدیمی هم بدون ویرایش درست نشان داده شوند */
+    if(kind === 'statement' || kind === 'contract'){
+      let rv = '';
+      try{ rv = String(effectiveReview(r) || ''); }catch(e){ rv = String(pick(r,AD.review) || ''); }
+      if(NOTIFY_BY_REVIEW[rv]) return NOTIFY_BY_REVIEW[rv];
+    }
     if(kind === 'statement') return pick(r,AD.sNotify);
     if(kind === 'contract')  return pick(r,AD.cNotify);
     if(kind === 'letter')    return pick(r,AD.lNotify);
@@ -31329,6 +31382,14 @@
       return isPaid(r)
         ? {emoji:'✅', label:'تسویه شده', cls:'ok'}
         : {emoji:'⏳', label:'در انتظار پرداخت', cls:'warn'};
+    /* قراردادِ در گردش: نوع ابلاغ از مرحلهٔ رسیدگی می‌آید و نشانهٔ پایان
+       نیست؛ فقط تأیید نهایی کارش را تمام می‌کند. */
+    if(kind === 'contract'){
+      const rv = String(effectiveReview(r) || '');
+      if(rv) return rv === 'تایید شده'
+        ? {emoji:'✅', label:'تأیید شده', cls:'ok'}
+        : {emoji:'⏳', label: rv, cls:'warn'};
+    }
     const n = admNotify(kind, r);
     if(n === 'برون‌سازمانی' || n === 'درون‌سازمانی') return {emoji:'✅', label:'ابلاغ شده', cls:'ok'};
     if(n === 'در حال تنظیم') return {emoji:'✏️', label:'در حال تنظیم', cls:'warn'};
@@ -32232,6 +32293,9 @@
         + (x.em ? '<em>' + (x.tone === 'bad' ? '<i class="ms-warn">!</i>' : '') + x.em + '</em>' : '')
         + '<span class="ms-bar"></span>'
         + (x.ppl || '')
+        + (x.rejs || []).map(rj =>
+            '<span class="ms-rej" style="inset-inline-start:' + rj.pos.toFixed(1) + '%" '
+            + 'title="' + esc(rj.tip) + '">✕</span>').join('')
         + '</span>';
     };
     const body = items.map(x => {
@@ -32370,7 +32434,8 @@
         // آخرین نقطهٔ تاریخ‌دارِ پیش از این؛ موعد مرحله نیست و حساب نمی‌شود
         let pv = null;
         for(let q = i - 1; q >= 0; q--) if(!pts[q].due && dateOf(pts[q])){ pv = pts[q]; break; }
-        const ln = {ln:true, a: prev.k, b: x.k, ahead: !!x.ahead};
+        const ln = {ln:true, a: prev.k, b: x.k, ahead: !!x.ahead,
+          from: pv ? dateOf(pv) : '', to: dateOf(x) || (x.ahead ? today : '')};
 
         if(prev.k === 'i' && rounds.length){
           // خطِ گردش داخلی، تکه‌تکه به تعداد دورها، با جمع کل زیرشان
@@ -32380,7 +32445,7 @@
             const end = rd.to || (!prev.now && x.d && !x.due ? x.d : today);
             const dd = (rd.to && rd.days != null) ? rd.days : faDiff(rd.from, end);
             if(dd != null && dd > 0) sum += dd;
-            return {ln:true, a:'i', b:'i', round:true, odd: j % 2 === 1,
+            return {ln:true, a:'i', b:'i', round:true, odd: j % 2 === 1, from: rd.from, to: end,
               live: rd.open && prev.now, tone: msTone('i', dd),
               em: (rounds.length > 1 ? 'دور ' + toFa(rd.n) + (dd != null ? ' · ' : '') : '')
                 + (dd != null && dd >= 0 ? toFa(dd) + ' روز' : ''),
@@ -32416,6 +32481,37 @@
         items.push(ln);
       }
       items.push(x);
+    });
+
+    /* ردها روی خط: هر «رد» روی خطِ همان مرحله (مدت ماندن در آن) و به
+       نسبت تاریخش نشانه می‌خورد؛ ردِ گردش داخلی روی همان دوری که در آن
+       رد شده. رد فعلی که در تاریخچه ثبت نشده، وسط خط مرحلهٔ فعلی. */
+    const REJ_K = {'رد داخلی':'i', 'رد پیمانکار':'p', 'رد کارفرما':'c'};
+    const rejs = stageLogOf(r).filter(e => e && REJ_K[e.to])
+      .map(e => ({k: REJ_K[e.to], d: e.date || '', t: e.to, by: e.by || ''}));
+    if(bad && MS_STAGE[rv] && !rejs.some(x => x.k === MS_STAGE[rv]))
+      rejs.push({k: MS_STAGE[rv], d: '', t: rv, by: ''});
+    const lnsOf = k => {
+      const out = [];
+      items.forEach(x => {
+        if(x.grp){ if(k === 'i') x.items.forEach(y => out.push(y)); }
+        else if(x.ln && x.a === k) out.push(x);
+      });
+      return out;
+    };
+    rejs.forEach(rj => {
+      const cands = lnsOf(rj.k);
+      if(!cands.length) return;
+      const dd = faToDate(rj.d);
+      const hit = (dd && cands.find(y => {
+        const a = faToDate(y.from), b = faToDate(y.to);
+        return a && b && dd >= a && dd <= b;
+      })) || cands[cands.length - 1];
+      let pos = 50;
+      const a = faToDate(hit.from), b = faToDate(hit.to);
+      if(dd && a && b && b > a) pos = Math.max(8, Math.min(92, (dd - a) / (b - a) * 100));
+      (hit.rejs = hit.rejs || []).push({pos: pos,
+        tip: rj.t + (rj.d ? ' — ' + admDate(rj.d) : '') + (rj.by ? ' · ' + rj.by : '')});
     });
 
     // سربرگ: وضعیت فعلی و روزهای سپری‌شده
@@ -33497,6 +33593,9 @@
       put(o,'وضعیت ابلاغ','a-lNotify'); put(o,'مسئول','a-owner');
       put(o,'لینک','a-link');
     }
+    // صورت وضعیت و قرارداد: نوع ابلاغ از مرحلهٔ رسیدگی پیروی می‌کند
+    if((kind === 'statement' || kind === 'contract') && NOTIFY_BY_REVIEW[o['وضعیت رسیدگی']])
+      o[kind === 'statement' ? 'نوع ابلاغ' : 'وضعیت ابلاغ'] = NOTIFY_BY_REVIEW[o['وضعیت رسیدگی']];
     return o;
   }
 
@@ -34425,7 +34524,7 @@
   function admSetCat(k, quiet){
     const box = document.getElementById('adminView');
     if(!box) return;
-    if(!document.getElementById('secAdm' + k)) k = 'statement';
+    if(!document.getElementById('secAdm' + k) || k === 'chore') k = 'statement';
     admCat = k;
     try{ localStorage.setItem('admCat', k); }catch(e){}
     box.dataset.cat = k;
@@ -35742,20 +35841,31 @@
     window.print();
   }
 
-  /* یک نوار خروجی برای کل دفتر فنی: اول بخش را انتخاب کنید، بعد نوع فایل */
+  /* خروجی دفتر فنی: یک دکمهٔ بسته؛ با زدنش انتخاب بخش و نوع فایل باز می‌شود */
   function admExportBarHtml(){
-    return '<div class="adm-xbar">'
-      + '<span class="adm-xlbl">خروجی</span>'
-      + '<select class="adm-xsel" id="admXSel" aria-label="بخش خروجی">'
-      +   '<option value="all">همهٔ بخش‌ها</option>'
-      +   ADM_ORDER.map(k => '<option value="' + k + '">' + esc(KIND_LABEL[k]) + '</option>').join('')
-      + '</select>'
-      + '<button type="button" class="adm-xbtn xls" data-admx="xls" title="دانلود Excel">'
-      +   XLS_ICON + '<span>Excel</span></button>'
-      + '<button type="button" class="adm-xbtn pdf" data-admx="pdf" title="دانلود PDF">'
-      +   PDF_ICON + '<span>PDF</span></button>'
-      + '</div>';
+    return '<div class="adm-xwrap">'
+      + '<button type="button" class="adm-xtg" data-admxtg="1" aria-expanded="false">'
+      +   XLS_ICON + '<span>خروجی Excel / PDF</span><i>▾</i></button>'
+      + '<div class="adm-xbar" hidden>'
+      +   '<select class="adm-xsel" id="admXSel" aria-label="بخش خروجی">'
+      +     '<option value="all">همهٔ بخش‌ها</option>'
+      +     ADM_ORDER.map(k => '<option value="' + k + '">' + esc(KIND_LABEL[k]) + '</option>').join('')
+      +   '</select>'
+      +   '<button type="button" class="adm-xbtn xls" data-admx="xls" title="دانلود Excel">'
+      +     XLS_ICON + '<span>Excel</span></button>'
+      +   '<button type="button" class="adm-xbtn pdf" data-admx="pdf" title="دانلود PDF">'
+      +     PDF_ICON + '<span>PDF</span></button>'
+      + '</div></div>';
   }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-admxtg]');
+    if(!t) return;
+    const bar = t.parentElement.querySelector('.adm-xbar');
+    if(!bar) return;
+    bar.hidden = !bar.hidden;
+    t.setAttribute('aria-expanded', bar.hidden ? 'false' : 'true');
+    const ar = t.querySelector('i'); if(ar) ar.textContent = bar.hidden ? '▾' : '▴';
+  });
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-admx]');
     if(!b) return;
@@ -37578,15 +37688,38 @@
       if(who.length) who.forEach(p => push(p, r));
       else push('بدون مسئول', r);
     });
-    return Array.from(people.keys()).sort((a,b) => a.localeCompare(b,'fa'))
-      .map((p,i) => {
+    const sp = taskPeopleSplit(people);
+    return sp.names.map((p,i) => {
         const items = people.get(p);
-        return '<div class="eng foldable" id="'+pre+i+'">'
+        return sp.headAt(i)
+          + '<div class="eng foldable" id="'+pre+i+'">'
           + '<button type="button" class="eng-head">' + avatarHtml(p) + personName(p)
           + '<span class="meta">' + toFa(items.length) + ' مورد</span>'
           + '<span class="eng-ar">▾</span></button>'
           + '<div class="eng-body">' + personSectionsHtml(items) + '</div></div>';
       }).join('');
+  }
+
+  /* نام‌های لیست فعالیت در دو دسته: پرسنل (کاربران سامانه) و خارج سازمان
+     (کارفرما و پیمانکارانی که سندی در گردش آن‌هاست). people: نام → ردیف‌ها */
+  function taskPeopleSplit(people){
+    const staff = new Set();
+    try{ listNames().forEach(n => staff.add(nameKey(n))); }catch(e){}
+    try{ Object.keys(ROLE_OF).forEach(n => staff.add(nameKey(n))); }catch(e){}
+    const isOut = p => p !== 'بدون مسئول' && (p === 'کارفرما'
+      || (!staff.has(nameKey(p)) && (people.get(p) || []).some(r => r.__outside)));
+    const byName = (a,b) => a.localeCompare(b,'fa');
+    const inNames  = Array.from(people.keys()).filter(p => !isOut(p)).sort(byName);
+    const outNames = Array.from(people.keys()).filter(isOut)
+      .sort((a,b) => (a === 'کارفرما' ? -1 : b === 'کارفرما' ? 1 : byName(a,b)));
+    const head = (t, n) => '<div class="tk-grp-h"><b>' + t + '</b><u>' + toFa(n) + '</u></div>';
+    return {
+      inNames, outNames, names: inNames.concat(outNames),
+      // سرتیتر دسته پیش از اولین نام هر دسته (فقط وقتی دستهٔ بیرونی هم هست)
+      headAt: i => !outNames.length ? ''
+        : (i === 0 && inNames.length) ? head('پرسنل', inNames.length)
+        : (i === inNames.length) ? head('خارج سازمان — کارفرما و پیمانکاران', outNames.length) : ''
+    };
   }
 
   function renderTasksByPerson(list){
@@ -37603,13 +37736,20 @@
       if(who.length) who.forEach(p => push(p, r));
       else push('بدون مسئول', r);
     });
-    const pNames = Array.from(people.keys()).sort((a,b) => a.localeCompare(b,'fa'));
+    // دو دسته: پرسنل و خارج سازمان (کارفرما و پیمانکاران)
+    const sp = taskPeopleSplit(people);
+    const pNames = sp.names;
 
     const bar = document.getElementById('taskJumpBar');
     if(bar) bar.innerHTML = pNames.map((n,i) =>
-      '<button type="button" class="mini" data-jumpt="taskP'+i+'">'+esc(n)+'</button>').join('');
+      (i === sp.inNames.length && sp.outNames.length ? '<span class="tk-jsep">خارج سازمان</span>' : '')
+      + '<button type="button" class="mini" data-jumpt="taskP'+i+'">'+esc(n)+'</button>').join('');
 
-    box.innerHTML = taskStats(list) + pNames.map((p,i) => {
+    box.innerHTML = taskStats(list) + pNames.map((p,i) => sp.headAt(i) + personBlock(p, i)).join('');
+    if(window.updateJumpActive) setTimeout(window.updateJumpActive, 60);
+    return;
+
+    function personBlock(p, i){
       const items = people.get(p);
       let done = 0;
       items.forEach(r => { if(taskStatus(r).cls === 'done') done++; });
@@ -37622,8 +37762,7 @@
         + '</span>'
         + '<span class="eng-ar">▾</span></button>'
         + '<div class="eng-body">' + personOpenDoneHtml(items) + '</div></div>';
-    }).join('');
-    if(window.updateJumpActive) setTimeout(window.updateJumpActive, 60);
+    }
   }
 
   // حالت انتخاب نام: جدول چک‌لیست
@@ -38461,20 +38600,42 @@
       out.push(o);
     };
 
-    (A.statements || []).forEach(r => mk(
-      'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sName) || pick(r,AD.sParty) || ''),
-      pick(r, AD_OWNER.statement), 'صورت وضعیت',
-      pick(r,AD.sDate), pick(r,AD.due),
-      isPaid(r) ? 'done' : 'doing', pick(r,AD.sParty),
-      'statement', pick(r,AD.id), {amount: pick(r,AD.sAmount), row: r}));
+    /* وقتی سند در گردش پیمانکار یا کارفرماست، توپ در زمین آن‌هاست: ردیف
+       به‌نام همان پیمانکار (طرف قرارداد) یا «کارفرما» ساخته می‌شود و دیگر
+       زیر نام مسئولِ داخلی نمی‌آید. با رد یا تأیید، دوباره به مسئول برمی‌گردد. */
+    const outsideOwner = (r, partyKeys) => {
+      const st = String(effectiveReview(r) || '');
+      if(st === 'بررسی پیمانکار') return String(pick(r, partyKeys) || '').trim() || 'پیمانکار';
+      if(st === 'بررسی کارفرما') return 'کارفرما';
+      return '';
+    };
+    const mkOut = () => { const o = out[out.length - 1]; if(o) o.__outside = true; };
+
+    (A.statements || []).forEach(r => {
+      const ow = outsideOwner(r, AD.sParty);
+      const before = out.length;
+      mk('صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sName) || pick(r,AD.sParty) || ''),
+        ow || pick(r, AD_OWNER.statement), 'صورت وضعیت',
+        pick(r,AD.sDate), pick(r,AD.due),
+        isPaid(r) ? 'done' : 'doing', pick(r,AD.sParty),
+        'statement', pick(r,AD.id), {amount: pick(r,AD.sAmount), row: r});
+      if(ow && out.length > before) mkOut();
+    });
 
     (A.contracts || []).forEach(r => {
       const n = pick(r,AD.cNotify);
+      const rv = String(effectiveReview(r) || '');
+      /* نوع ابلاغ حالا از مرحلهٔ رسیدگی می‌آید، پس قراردادِ در گردش را
+         «انجام‌شده» نمی‌کند؛ اگر رسیدگی دارد، فقط تأیید نهایی تمامش می‌کند. */
+      const status = rv ? (rv === 'تایید شده' ? 'done' : 'doing')
+        : ((n === 'برون‌سازمانی' || n === 'درون‌سازمانی') ? 'done' : (n === 'Hold' ? 'todo' : 'doing'));
+      const ow = outsideOwner(r, AD.cParty);
+      const before = out.length;
       mk('قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
-        pick(r, AD_OWNER.contract), 'قرارداد',
+        ow || pick(r, AD_OWNER.contract), 'قرارداد',
         pick(r,AD.cDate) || pick(r,AD.cStart), pick(r,AD.due),
-        (n === 'برون‌سازمانی' || n === 'درون‌سازمانی') ? 'done' : (n === 'Hold' ? 'todo' : 'doing'),
-        pick(r,AD.cParty), 'contract', pick(r,AD.id), {row: r});
+        status, pick(r,AD.cParty), 'contract', pick(r,AD.id), {row: r});
+      if(ow && out.length > before) mkOut();
     });
 
     /* ---- بررسی داخلی: یک ردیف برای هر مسئول بررسی ----
