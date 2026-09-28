@@ -13587,6 +13587,123 @@
   .flow-note svg{width:16px;height:16px;color:var(--warn);flex:0 0 16px;}
   .flow-note b{color:var(--ink);}
   .flow-note .rej{margin-inline-start:auto;font-style:normal;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--alert-soft);color:var(--alert);}
+
+  /* ====== نمودارهای رسیدگی: رنگ مرحله‌ها، هم‌زبان با خط زمانی کارت‌ها ====== */
+  .ar-charts{
+    --ar-td:#a9822f; --ar-i:var(--sky); --ar-i2:#2a8a86; --ar-p:#b8742f; --ar-p2:#c79a45;
+    --ar-c:#6d5bb5; --ar-ok:var(--ok); --ar-bad:var(--alert);
+  }
+  [data-theme="dark"] .ar-charts{--ar-td:#d6b25e; --ar-i2:#5cc2bd; --ar-p:#e0a15e; --ar-p2:#e7c27a; --ar-c:#a898e6;}
+  .arc{transition:transform .2s, box-shadow .2s;}
+  .arc:hover{transform:translateY(-2px);box-shadow:0 18px 34px -24px rgba(15,20,35,.7);}
+  .arc::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--sky) 6%, transparent), transparent 55%);
+  }
+
+  /* ۱) مسیر رسیدگی */
+  .arp{display:flex;align-items:flex-start;padding:26px 6px 4px;overflow-x:auto;scrollbar-width:none;}
+  .arp::-webkit-scrollbar{display:none;}
+  .arp-st{
+    flex:0 0 auto;width:78px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;
+    position:relative;animation:ms-in .5s cubic-bezier(.2,.7,.3,1) both;animation-delay:calc(var(--i) * 60ms);
+  }
+  .arp-dot{
+    width:var(--s);height:var(--s);border-radius:50%;display:grid;place-items:center;
+    margin-top:calc((56px - var(--s)) / 2);
+    background:radial-gradient(circle at 35% 30%, color-mix(in srgb, #fff 30%, var(--c)), var(--c) 72%);
+    box-shadow:0 0 0 4px var(--surface), 0 0 0 5.5px color-mix(in srgb, var(--c) 30%, transparent),
+               0 6px 16px -4px color-mix(in srgb, var(--c) 55%, transparent);
+    transition:transform .2s;
+  }
+  .arp-st:hover .arp-dot{transform:scale(1.07);}
+  .arp-dot b{font-size:14px;font-weight:900;color:#fff;letter-spacing:-.3px;}
+  .arp-st.zero .arp-dot{background:var(--field);box-shadow:0 0 0 4px var(--surface), 0 0 0 5.5px var(--line);}
+  .arp-st.zero .arp-dot b{color:var(--muted);font-size:11px;}
+  .arp-st.neck .arp-dot{animation:ms-pulse 2s ease-out infinite;}
+  .arp-st u{text-decoration:none;font-size:10.5px;font-weight:700;color:var(--ink);line-height:1.5;}
+  .arp-st.zero u{color:var(--muted);font-weight:500;}
+  .arp-st small{font-size:10px;color:var(--muted);min-height:15px;font-weight:600;}
+  .arp-st.t-warn small{color:var(--warn);}
+  .arp-st.t-bad small{color:var(--alert);}
+  .arp-st small i{
+    display:inline-grid;place-items:center;width:13px;height:13px;border-radius:50%;margin-inline-end:3px;vertical-align:-2px;
+    background:var(--alert);color:#fff;font-style:normal;font-size:9px;font-weight:900;
+  }
+  .arp-st em{
+    position:absolute;top:-22px;font-style:normal;font-size:9.5px;font-weight:800;white-space:nowrap;
+    padding:1px 7px;border-radius:99px;background:var(--alert-soft);color:var(--alert);
+  }
+  .arp-st em:empty{display:none;}
+  .arp-ln{
+    flex:1 1 0;min-width:14px;height:4px;border-radius:4px;margin-top:26px;
+    background:var(--line);position:relative;overflow:hidden;
+  }
+  .arp-ln.on{background:linear-gradient(to left, var(--a), var(--b));}
+  .arp-ln.on::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(to left, transparent, rgba(255,255,255,.8), transparent);
+    background-size:40% 100%;background-repeat:no-repeat;animation:ms-shine 2.4s ease-in-out infinite;
+  }
+
+  /* ۲) زمان هر مرحله در برابر سقف‌ها */
+  .arc-h .leg i.avg{background:var(--sky);}
+  .arc-h .leg i.open{background:transparent;border:2px solid var(--alert);border-radius:50%;}
+  .ast{display:grid;grid-template-columns:118px minmax(0,1fr) 54px;align-items:center;gap:10px;margin:0 0 13px;
+    animation:ms-in .5s both;animation-delay:calc(var(--k) * 70ms);}
+  .ast-n{font-size:11.5px;font-weight:700;color:var(--ink);}
+  .ast-tr{position:relative;height:12px;border-radius:99px;background:var(--field);}
+  .ast-tr .avg{
+    position:absolute;inset-block:0;inset-inline-start:0;border-radius:99px;
+    background:linear-gradient(to left, color-mix(in srgb, var(--c) 55%, var(--surface)), var(--c));
+    transform-origin:right center;animation:ms-grow .8s cubic-bezier(.3,.7,.3,1) both;
+  }
+  .ast.t-warn .ast-tr .avg{background:linear-gradient(to left, color-mix(in srgb, var(--warn) 55%, var(--surface)), var(--warn));}
+  .ast.t-bad .ast-tr .avg{background:linear-gradient(to left, color-mix(in srgb, var(--alert) 55%, var(--surface)), var(--alert));
+    box-shadow:0 0 10px color-mix(in srgb, var(--alert) 45%, transparent);}
+  .ast-tr .z{position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:2px;z-index:1;transform:translateX(50%);}
+  .ast-tr .z.w{background:var(--warn);opacity:.75;}
+  .ast-tr .z.b{background:var(--alert);opacity:.75;}
+  .ast-tr .open{
+    position:absolute;top:50%;width:12px;height:12px;border-radius:50%;z-index:2;
+    transform:translate(50%, -50%);background:var(--surface);border:2.5px solid var(--muted);box-sizing:border-box;
+  }
+  .ast-tr .open.t-warn{border-color:var(--warn);}
+  .ast-tr .open.t-bad{border-color:var(--alert);animation:ms-pulse 2s ease-out infinite;--c:var(--alert);}
+  .ast > b{font-size:15px;font-weight:900;color:var(--ink);text-align:end;white-space:nowrap;}
+  .ast > b u{text-decoration:none;font-size:9.5px;font-weight:600;color:var(--muted);margin-inline-start:3px;}
+  .ast.t-warn > b{color:var(--warn);} .ast.t-bad > b{color:var(--alert);}
+  .ast-note{font-size:10px;color:var(--muted);margin-top:2px;}
+
+  /* ۳) رسیدگی و ابلاغ */
+  .ars-row{margin:0 0 16px;}
+  .ars-row:last-child{margin-bottom:2px;}
+  .ars-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px;}
+  .ars-h b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .ars-h span{font-size:10.5px;color:var(--muted);}
+  .ars-bar{display:flex;gap:3px;height:22px;}
+  .ars-bar i{
+    position:relative;min-width:6px;border-radius:7px;display:grid;place-items:center;
+    background:linear-gradient(180deg, color-mix(in srgb, #fff 18%, var(--c)), var(--c));
+    transform-origin:right center;animation:ms-grow .7s cubic-bezier(.3,.7,.3,1) both;animation-delay:calc(var(--k, 0) * 60ms);
+  }
+  .ars-bar i b{font-size:10.5px;font-weight:900;color:#fff;}
+  .ars-bar i.none{background:var(--field);}
+  .ars-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;}
+  .ars-leg span{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);}
+  .ars-leg span b{color:var(--ink);font-weight:800;}
+  .ars-leg i{width:8px;height:8px;border-radius:3px;background:var(--c);}
+  .ars-leg i.none{background:var(--line);}
+
+  @media (max-width: 640px){
+    .arp-st{width:62px;}
+    .arp-st u{font-size:9.5px;}
+    .ast{grid-template-columns:92px minmax(0,1fr) 46px;gap:8px;}
+    .ast-n{font-size:10.5px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .arp-st, .arp-st.neck .arp-dot, .arp-ln.on::after, .ast, .ast-tr .avg, .ast-tr .open, .ars-bar i{animation:none !important;}
+  }
   /* موعدها */
   .due-bar{display:flex;gap:3px;height:14px;border-radius:99px;overflow:hidden;background:var(--field);}
   .due-bar i{display:block;transform-origin:right;animation:barGrow .8s .2s cubic-bezier(.22,.7,.2,1) both;}
@@ -22384,8 +22501,11 @@
         as.textContent = '...';
         const values = (k === 'statement')
           ? {'مبلغ پرداختی': want === 'done' ? (as.dataset.amount || '') : ''}
-          : {'وضعیت ابلاغ': want === 'done' ? 'برون‌سازمانی'
-                          : (want === 'todo' ? 'Hold' : 'در حال تنظیم')};
+          : (k === 'contract')
+            ? (want === 'done' ? {'وضعیت رسیدگی':'تایید شده', 'وضعیت ابلاغ':'برون‌سازمانی'}
+               : (want === 'todo' ? {'وضعیت ابلاغ':'Hold'} : {'وضعیت رسیدگی': RV_DRAFT, 'وضعیت ابلاغ':'درون‌سازمانی'}))
+            : {'وضعیت ابلاغ': want === 'done' ? 'برون‌سازمانی'
+                            : (want === 'todo' ? 'Hold' : 'در حال تنظیم')};
         const holder2 = as.parentElement;
         const ok = await sendAction({action:'update', target:k, id:id, values:values});
         if(!ok){
@@ -24773,7 +24893,11 @@
   /* زنجیرهٔ بررسی، به ترتیبی که یک مورد جلو می‌رود.
      مرحلهٔ پیمانکار اختیاری است؛ بعضی موارد از تأیید داخلی
      مستقیم به کارفرما می‌روند. */
+  /* «در حال تنظیم» از وضعیت ابلاغ به اولین مرحلهٔ رسیدگی آمده است
+     (صورت وضعیت و قرارداد)؛ ابلاغش درون‌سازمانی حساب می‌شود. */
+  const RV_DRAFT = 'در حال تنظیم';
   const REVIEW_STATES = [
+    {v:'در حال تنظیم',  e:'✏️'},
     {v:'بررسی داخلی',   e:'🔍'},
     {v:'تأیید داخلی',   e:'☑️'},
     {v:'بررسی پیمانکار', e:'🧱'},
@@ -24878,7 +25002,7 @@
   function reviewCls(v){
     if(REVIEW_OK.indexOf(v)  !== -1) return 'st-ok';
     if(REVIEW_BAD.indexOf(v) !== -1) return 'st-bad';
-    if(String(v).indexOf('بررسی') === 0) return 'st-warn';
+    if(String(v).indexOf('بررسی') === 0 || v === RV_DRAFT) return 'st-warn';
     return '';
   }
   /* ====== گردش بررسی: مهر زدن تاریخ و مدت هر مرحله ======
@@ -24951,6 +25075,14 @@
      ثبت شده، مورد در بررسی داخلی است، نه رد شده. */
   function effectiveReview(r){
     const st = String(pick(r,AD.review) || '');
+    /* ردیف قدیمیِ صورت وضعیت یا قرارداد که «در حال تنظیم» را در ستون
+       ابلاغ دارد و رسیدگی ندارد، همان مرحلهٔ تنظیم حساب می‌شود */
+    if(!st && r && typeof r === 'object'){
+      const isSt = Object.prototype.hasOwnProperty.call(r, 'نوع ابلاغ');
+      const isCt = Object.prototype.hasOwnProperty.call(r, 'عنوان قرارداد');
+      if((isSt && exact(r, 'نوع ابلاغ') === RV_DRAFT) || (isCt && exact(r, 'وضعیت ابلاغ') === RV_DRAFT))
+        return RV_DRAFT;
+    }
     if(!/^رد/.test(st)) return st;
     const lg = stageLogOf(r);
     let rejAt = -1, restartAt = -1, rejDate = '';
@@ -24998,6 +25130,7 @@
      این مقدارها همراه خودِ مرحله ذخیره می‌شوند. */
   const RV_OUTSIDE = ['بررسی کارفرما','رد کارفرما','تایید شده'];
   const NOTIFY_BY_REVIEW = {
+    'در حال تنظیم':'درون‌سازمانی',
     'بررسی داخلی':'درون‌سازمانی', 'تأیید داخلی':'درون‌سازمانی', 'رد داخلی':'درون‌سازمانی',
     'بررسی پیمانکار':'برون‌سازمانی', 'تأیید پیمانکار':'برون‌سازمانی', 'رد پیمانکار':'برون‌سازمانی',
     'بررسی کارفرما':'برون‌سازمانی', 'رد کارفرما':'برون‌سازمانی', 'تایید شده':'برون‌سازمانی'
@@ -25034,7 +25167,7 @@
        «تأیید داخلی» تاریخ دور اول را نگه می‌داشت و مدتی که صرف دور
        دوم شده در هیچ عددی دیده نمی‌شد. تاریخ ورودِ اولیه دست نمی‌خورد
        و تاریخچهٔ کامل هم در stage_log می‌ماند. */
-    const RV_ORDER = ['بررسی داخلی','تأیید داخلی','بررسی پیمانکار',
+    const RV_ORDER = [RV_DRAFT, 'بررسی داخلی','تأیید داخلی','بررسی پیمانکار',
                       'تأیید پیمانکار','بررسی کارفرما','تایید شده'];
     const RV_BACK_TO = {'رد داخلی':'بررسی داخلی','رد پیمانکار':'بررسی پیمانکار',
                         'رد کارفرما':'بررسی کارفرما'};
@@ -28031,7 +28164,7 @@
     warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></svg>',
     chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
   };
-  const AR_STAGES = ['بررسی داخلی','تأیید داخلی','بررسی پیمانکار','تأیید پیمانکار','بررسی کارفرما','تایید شده'];
+  const AR_STAGES = ['در حال تنظیم','بررسی داخلی','تأیید داخلی','بررسی پیمانکار','تأیید پیمانکار','بررسی کارفرما','تایید شده'];
   const arReview = r => String((typeof effectiveReview === 'function' ? effectiveReview(r) : pick(r,AD.review)) || '');
   const arIsDone = (k, r) => (k === 'minute')
     ? (String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true)
@@ -31857,7 +31990,9 @@
   /* ====== تغییر سریع وضعیت روی خود کارت، بدون ورود به ویرایش ====== */
   function fastMenuHtml(what, kind, id, cur){
     const opts = (what === 'notify')
-      ? Object.keys(NOTIFY_EMOJI).map(v => ({v, cls:notifyCls(v)}))
+      ? Object.keys(NOTIFY_EMOJI)
+          .filter(v => !((kind === 'statement' || kind === 'contract') && v === RV_DRAFT))
+          .map(v => ({v, cls:notifyCls(v)}))
       : (what === 'pay')
         ? PAY_STATES.map(v => ({v, cls:payCls(v)}))
         : REVIEW_STATES.map(x => ({v:x.v, cls:reviewCls(x.v)}));
@@ -33316,9 +33451,12 @@
           + (v === 'اداری' ? 'اداری — در لیست فعالیت اداری' : 'اجرایی — در لیست فعالیت اجرایی')
           + '</option>').join('')
       + '</select></div>';
+    /* صورت وضعیت و قرارداد «در حال تنظیم» را در رسیدگی دارند، نه در ابلاغ */
+    const noDraft = (kind === 'statement' || kind === 'contract');
     const notifySel = (cls, cur) => '<div class="field" style="margin-bottom:8px;"><label>وضعیت ابلاغ</label>'
       + '<select class="'+cls+'">'
-      + ['','درون‌سازمانی','برون‌سازمانی','در حال تنظیم','Hold'].map(v =>
+      + ['','درون‌سازمانی','برون‌سازمانی','در حال تنظیم','Hold']
+          .filter(v => !(noDraft && v === RV_DRAFT && cur !== RV_DRAFT)).map(v =>
           '<option value="'+esc(v)+'"'+(cur === v ? ' selected' : '')+'>'+(v ? esc(notifyText(v)) : 'انتخاب کنید')+'</option>').join('')
       + '</select></div>';
     const buttons = '<div class="row-act" style="margin-top:8px;justify-content:flex-start;">'
@@ -36600,6 +36738,158 @@
     return h;
   }
 
+  /* ====== نمودارهای رسیدگی گزارش مالی و اداری ======
+     هم‌زبان با خط زمانی کارت‌ها: هر مرحله رنگ خودش را دارد و مدت‌ها با
+     همان سقف‌های MS_LIMIT سنجیده می‌شوند. «در حال تنظیم» اولین مرحلهٔ
+     رسیدگی است، نه یکی از وضعیت‌های ابلاغ. */
+  const AR_STAGE_K = {'در حال تنظیم':'td', 'بررسی داخلی':'i', 'تأیید داخلی':'i2',
+    'بررسی پیمانکار':'p', 'تأیید پیمانکار':'p2', 'بررسی کارفرما':'c', 'تایید شده':'ok'};
+  const AR_REJ_OF = {'رد داخلی':'بررسی داخلی', 'رد پیمانکار':'بررسی پیمانکار', 'رد کارفرما':'بررسی کارفرما'};
+  const AR_LIMIT_K = {td:'td', i:'i', i2:'i', p:'p', p2:'p', c:'c', ok:'ok'};
+
+  /* ۱) مسیر رسیدگی: هر مرحله یک ایستگاه روی خط؛ اندازهٔ حباب به نسبت
+     تعداد سندهای همان مرحله، زیرش میانگین روزِ ماندن تا امروز، و
+     بالایش تعداد ردشده‌هایی که به همان مرحله برگشته‌اند. */
+  function arPipelineHtml(docs){
+    const n = AR_STAGES.map(() => 0), days = AR_STAGES.map(() => []), rej = AR_STAGES.map(() => 0);
+    docs.forEach(r => {
+      let rv = arReview(r);
+      if(AR_REJ_OF[rv]){ const j = AR_STAGES.indexOf(AR_REJ_OF[rv]); if(j !== -1) rej[j]++; rv = AR_REJ_OF[rv]; }
+      const i = AR_STAGES.indexOf(rv);
+      if(i === -1) return;
+      n[i]++;
+      let d = reviewStageDays(r);
+      if(d == null && rv === RV_DRAFT) d = daysSince(exact(r, 'تاریخ ارسال') || exact(r, 'تاریخ'));
+      if(d != null && d >= 0) days[i].push(d);
+    });
+    const max = Math.max(1, ...n);
+    const last = AR_STAGES.length - 1;
+    let neck = -1;
+    n.slice(0, last).forEach((v, i) => { if(v && (neck === -1 || v > n[neck])) neck = i; });
+    const inFlow = n.slice(0, last).reduce((a, b) => a + b, 0);
+
+    const nodes = AR_STAGES.map((st, i) => {
+      const k = AR_STAGE_K[st] || 'td';
+      const avg = days[i].length ? Math.round(days[i].reduce((a, b) => a + b, 0) / days[i].length) : null;
+      const tone = (i === last || avg == null) ? '' : msTone(AR_LIMIT_K[k], avg);
+      const size = n[i] ? (30 + 26 * Math.sqrt(n[i] / max)) : 20;
+      return (i ? '<span class="arp-ln' + (n[i] || n[i - 1] ? ' on' : '') + '" '
+                  + 'style="--a:var(--ar-' + (AR_STAGE_K[AR_STAGES[i - 1]] || 'td') + ');--b:var(--ar-' + k + ');--i:' + i + '"></span>' : '')
+        + '<div class="arp-st' + (n[i] ? '' : ' zero') + (i === neck ? ' neck' : '') + (i === last ? ' fin' : '')
+        +   (tone ? ' t-' + tone : '') + '" style="--c:var(--ar-' + k + ');--s:' + size.toFixed(0) + 'px;--i:' + i + '">'
+        +   (rej[i] ? '<em class="arp-rej" title="' + toFa(rej[i]) + ' سند رد شده و به این مرحله برگشته">✕ ' + toFa(rej[i]) + '</em>' : '<em></em>')
+        +   '<span class="arp-dot"><b>' + toFa(n[i]) + '</b></span>'
+        +   '<u>' + esc(st) + '</u>'
+        +   (avg != null && i !== last
+              ? '<small>' + (tone === 'bad' ? '<i>!</i>' : '') + '~' + toFa(avg) + ' روز</small>' : '<small></small>')
+        + '</div>';
+    }).join('');
+
+    return '<div class="arc arc-wide arc-pipe"><div class="arc-h"><b>مسیر رسیدگی</b>'
+      + '<span>صورت وضعیت و قرارداد، هر سند در مرحلهٔ فعلی‌اش · ' + toFa(inFlow) + ' سند در جریان</span></div>'
+      + '<div class="arp">' + nodes + '</div>'
+      + '<div class="flow-note">'
+      + (neck !== -1 ? AR_I.warn + '<span>بیشترین انباشت: <b>' + esc(AR_STAGES[neck]) + '</b> با ' + toFa(n[neck]) + ' سند</span>'
+                     : '<span>سندی در جریان رسیدگی نیست.</span>')
+      + (rej.some(Boolean) ? '<i class="rej">' + toFa(rej.reduce((a, b) => a + b, 0)) + ' رد شده</i>' : '')
+      + '</div></div>';
+  }
+
+  /* ۲) زمان هر مرحله: میانگین روزهای ماندن در هر مرحله (فقط مرحله‌های
+     تمام‌شده) در برابر سقف زرد و قرمز همان مرحله، و طولانی‌ترین مورد
+     بازی که الان در آن مرحله است. */
+  function arStageTimeHtml(docs){
+    const ST = [
+      {k:'td', t:'تنظیم تا گردش داخلی', from:'n', to:'i'},
+      {k:'i',  t:'گردش داخلی',          from:'i', to:'p'},
+      {k:'p',  t:'گردش پیمانکار',       from:'p', to:'c'},
+      {k:'c',  t:'گردش کارفرما',        from:'c', to:'ok'}
+    ];
+    const acc = ST.map(() => ({sum:0, n:0, open:0}));
+    docs.forEach(r => {
+      const d = {n: exact(r, 'تاریخ ارسال'), i: rvStartOf(r, 'rvIS'), p: rvStartOf(r, 'rvPS'),
+                 c: rvStartOf(r, 'rvCS'), ok: exact(r, 'rvCOk')};
+      const order = ['n','i','p','c','ok'].filter(k => d[k] && faToDate(d[k]));
+      ST.forEach((s, j) => {
+        const a = order.indexOf(s.from);
+        if(a === -1) return;
+        const next = order[a + 1];
+        if(next){
+          const g = faDiff(d[s.from], d[next]);
+          if(g != null && g >= 0){ acc[j].sum += g; acc[j].n++; }
+        }else if(!(isPaid(r)) && s.from !== 'ok'){
+          const g = daysSince(d[s.from]);
+          if(g != null && g > acc[j].open) acc[j].open = g;
+        }
+      });
+    });
+    const rows = ST.map((s, j) => {
+      const L = MS_LIMIT[s.k] || [7, 14];
+      const avg = acc[j].n ? Math.round(acc[j].sum / acc[j].n) : null;
+      return {s, L, avg, open: acc[j].open, n: acc[j].n};
+    });
+    const scale = Math.max(10, ...rows.map(x => Math.max(x.avg || 0, x.open || 0, x.L[1] * 1.15)));
+    const pct = v => (Math.min(v, scale) / scale * 100).toFixed(1);
+    return '<div class="arc arc-stime"><div class="arc-h"><b>زمان هر مرحله</b>'
+      + '<span class="leg"><i class="avg"></i>میانگین<i class="open"></i>طولانی‌ترین باز</span></div>'
+      + rows.map((x, j) => {
+          const tone = x.avg == null ? '' : msTone(x.s.k, x.avg);
+          const tOpen = msTone(x.s.k, x.open);
+          return '<div class="ast' + (tone ? ' t-' + tone : '') + '" style="--c:var(--ar-' + x.s.k + ');--k:' + j + '">'
+            + '<span class="ast-n">' + esc(x.s.t) + '</span>'
+            + '<span class="ast-tr">'
+            +   '<i class="z w" style="inset-inline-start:' + pct(x.L[0]) + '%" title="سقف زرد: ' + toFa(x.L[0]) + ' روز"></i>'
+            +   '<i class="z b" style="inset-inline-start:' + pct(x.L[1]) + '%" title="سقف قرمز: ' + toFa(x.L[1]) + ' روز"></i>'
+            +   (x.avg != null ? '<i class="avg" style="width:' + pct(x.avg) + '%"></i>' : '')
+            +   (x.open ? '<i class="open' + (tOpen ? ' t-' + tOpen : '') + '" style="inset-inline-start:' + pct(x.open) + '%" '
+                  + 'title="طولانی‌ترین باز: ' + toFa(x.open) + ' روز"></i>' : '')
+            + '</span>'
+            + '<b>' + (x.avg != null ? toFa(x.avg) + '<u>روز</u>' : '—') + '</b>'
+            + '</div>';
+        }).join('')
+      + '<div class="ast-note">خط زرد و قرمز: سقف هر مرحله · عدد: میانگین موارد تمام‌شده</div>'
+      + '</div>';
+  }
+
+  /* ۳) رسیدگی و ابلاغ: صورت وضعیت و قرارداد به تفکیک مرحلهٔ رسیدگی
+     (با «در حال تنظیم» و ردها)، نامه و اسناد طراحی به تفکیک ابلاغ. */
+  function arStatusHtml(A){
+    const stmts = A.statements || [], conts = A.contracts || [];
+    const lets = A.letters || [], des = A.designs || [];
+    const RV_SEG = AR_STAGES.map(st => ({v:st, c:'var(--ar-' + (AR_STAGE_K[st] || 'td') + ')', lb:st}))
+      .concat([{v:'__rej', c:'var(--ar-bad)', lb:'رد شده'}]);
+    const NT_SEG = [
+      {v:'برون‌سازمانی', c:'#2f6f8f', lb:'برون‌سازمانی'}, {v:'درون‌سازمانی', c:'#3f7a52', lb:'درون‌سازمانی'},
+      {v:'در حال تنظیم', c:'#a9822f', lb:'در حال تنظیم'}, {v:'Hold', c:'#8a8f98', lb:'بن‌بست'}
+    ];
+    const row = (label, list, segs, valOf) => {
+      const total = list.length;
+      const cnt = segs.map(s => ({s, n: list.filter(r => valOf(r) === s.v).length}));
+      const none = total - cnt.reduce((a, c) => a + c.n, 0);
+      return '<div class="ars-row">'
+        + '<div class="ars-h"><b>' + label + '</b><span>' + toFa(total) + ' مورد</span></div>'
+        + '<div class="ars-bar">'
+        +   (total ? cnt.filter(c => c.n).map((c, j) =>
+              '<i style="flex:' + c.n + ';--c:' + c.s.c + ';--k:' + j + '" title="' + esc(c.s.lb) + ': ' + toFa(c.n) + '">'
+              + (c.n / total > .12 ? '<b>' + toFa(c.n) + '</b>' : '') + '</i>').join('')
+              + (none > 0 ? '<i class="none" style="flex:' + none + '" title="بدون وضعیت: ' + toFa(none) + '"></i>' : '')
+            : '<i class="none" style="flex:1"></i>')
+        + '</div>'
+        + '<div class="ars-leg">'
+        +   cnt.filter(c => c.n).map(c => '<span><i style="--c:' + c.s.c + '"></i>' + esc(c.s.lb) + ' <b>' + toFa(c.n) + '</b></span>').join('')
+        +   (none > 0 ? '<span><i class="none"></i>بدون وضعیت <b>' + toFa(none) + '</b></span>' : '')
+        + '</div></div>';
+    };
+    const rvOf = r => { const v = arReview(r); return AR_REJ_OF[v] ? '__rej' : v; };
+    return '<div class="arc arc-wide arc-status"><div class="arc-h"><b>رسیدگی و ابلاغ</b>'
+      + '<span>صورت وضعیت و قرارداد بر اساس مرحلهٔ رسیدگی؛ نامه و اسناد طراحی بر اساس ابلاغ</span></div>'
+      + row('صورت وضعیت‌ها', stmts, RV_SEG, rvOf)
+      + row('قراردادها', conts, RV_SEG, rvOf)
+      + row('نامه‌ها', lets, NT_SEG, r => admNotify('letter', r) || '')
+      + (des.length ? row('اسناد طراحی', des, NT_SEG, r => admNotify('design', r) || '') : '')
+      + '</div>';
+  }
+
   function adminChartsHtml(A){
     const stmts = A.statements || [], conts = A.contracts || [];
     const mins = A.minutes || [], lets = A.letters || [];
@@ -36639,9 +36929,7 @@
       const d = reviewStageDays(r);
       if(d != null) stageDays[i].push(d);
     });
-    const inFlow = stageN.slice(0, 5).reduce((x, y) => x + y, 0);
-    let neck = -1;
-    stageN.slice(0, 5).forEach((n, i) => { if(n && (neck === -1 || n > stageN[neck])) neck = i; });
+    const inFlow = stageN.slice(0, AR_STAGES.length - 1).reduce((x, y) => x + y, 0);
 
     // ---- موعدها ----
     const dueB = {late:[], week:[], later:[], none:0};
@@ -36708,25 +36996,9 @@
           : '<div class="empty">صورت وضعیتی با مبلغ ثبت نشده است.</div>')
       + '</div>';
 
-    // ---- ۳) گلوگاه رسیدگی ----
-    const maxS = Math.max(1, ...stageN);
-    h += '<div class="arc arc-flow"><div class="arc-h"><b>گلوگاه رسیدگی</b><span>صورت وضعیت و قرارداد، هر سند در مرحلهٔ فعلی‌اش</span></div>'
-      + '<div class="flow">'
-      + AR_STAGES.map((st, i) => {
-          const d = stageDays[i];
-          const avg = d.length ? Math.round(d.reduce((x, y) => x + y, 0) / d.length) : null;
-          return '<div class="fl' + (i === neck ? ' neck' : '') + (i === 5 ? ' fin' : '') + (stageN[i] ? '' : ' zero') + '" style="--k:' + i + '">'
-            + '<span class="fl-bar"><i style="--h:' + (stageN[i] / maxS * 100).toFixed(1) + '%"></i></span>'
-            + '<b>' + toFa(stageN[i]) + '</b>'
-            + '<u>' + esc(st) + '</u>'
-            + (avg != null ? '<em>~' + toFa(avg) + ' روز</em>' : '<em></em>')
-            + '</div>';
-        }).join('')
-      + '</div>'
-      + '<div class="flow-note">'
-      + (neck !== -1 ? AR_I.warn + '<span>بیشترین انباشت: <b>' + esc(AR_STAGES[neck]) + '</b> با ' + toFa(stageN[neck]) + ' سند</span>' : '<span>سندی در جریان رسیدگی نیست.</span>')
-      + (rejN ? '<i class="rej">' + toFa(rejN) + ' رد شده</i>' : '')
-      + '</div></div>';
+    // ---- ۳) مسیر رسیدگی (تمام‌عرض) و زمان هر مرحله ----
+    h += arPipelineHtml(stmts.concat(conts));
+    h += arStageTimeHtml(stmts.concat(conts));
 
     // ---- ۴) موعدها ----
     const seg = (n, cls) => n ? '<i class="' + cls + '" style="flex:' + n + '"></i>' : '';
@@ -36755,10 +37027,9 @@
     const tmp = document.createElement('div');
     tmp.innerHTML = legacy;
     const charts = tmp.querySelector('.charts');
-    const notify = Array.from(tmp.querySelectorAll(':scope > .chart')).find(c => /وضعیت ابلاغ/.test((c.querySelector('h4') || {}).textContent || ''));
     h += '<div class="ar-charts ar-more">'
       + (charts ? Array.from(charts.children).map(c => '<div class="arc arc-old">' + c.innerHTML + '</div>').join('') : '')
-      + (notify ? '<div class="arc arc-old arc-wide">' + notify.innerHTML + '</div>' : '')
+      + arStatusHtml(A)
       + '</div>';
     return h;
   }
@@ -38146,6 +38417,14 @@
         values = (want === 'done')
           ? {'مبلغ پرداختی': as.dataset.amount || ''}
           : {'مبلغ پرداختی': ''};
+      }else if(k === 'contract'){
+        /* قرارداد: «در حال تنظیم» مرحلهٔ رسیدگی است نه ابلاغ؛ «انجام شده»
+           یعنی تأیید نهایی. مرحلهٔ جاری فقط وقتی رسیدگی خالی است عوض می‌شود. */
+        const cur = rowMap.get(id);
+        const hasRv = !!(cur && String(pick(cur,AD.review) || '').trim());
+        values = (want === 'done') ? {'وضعیت رسیدگی':'تایید شده', 'وضعیت ابلاغ':'برون‌سازمانی'}
+          : (want === 'todo') ? {'وضعیت ابلاغ':'Hold'}
+          : (hasRv ? {} : {'وضعیت رسیدگی': RV_DRAFT, 'وضعیت ابلاغ':'درون‌سازمانی'});
       }else{
         const v = want === 'done' ? 'برون‌سازمانی'
                 : (want === 'todo' ? 'Hold' : 'در حال تنظیم');
@@ -43080,7 +43359,7 @@
           REVIEW_OK.indexOf(v) !== -1 ? 'done' : (REVIEW_BAD.indexOf(v) !== -1 ? 'bad' : 'info'),
           rvNow === v)), rvNow || 'ثبت نشده'));
       const ntNow = row ? String(admNotify(kind, row) || '') : '';
-      rows.push(dkGroup('ابلاغ', DK_NOTIFY.map(v =>
+      rows.push(dkGroup('ابلاغ', DK_NOTIFY.filter(v => v !== RV_DRAFT).map(v =>
         dkBtn(notifyLabel(v), 'data-dk-notify="' + i + '" data-v="' + esc(v) + '"',
           v === 'برون‌سازمانی' ? 'done' : (v === 'Hold' ? 'bad' : 'info'), ntNow === v)),
         notifyLabel(ntNow) || 'ثبت نشده'));
