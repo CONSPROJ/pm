@@ -39179,7 +39179,7 @@
           فاصله‌اش از بالای صفحه نگه داشته می‌شود؛
      و بعد از ساخت دوباره، همه برمی‌گردد و همان مورد دقیقاً سر جای قبلی‌اش
      می‌نشیند و لحظه‌ای برجسته می‌شود. */
-  const KP_TOGGLE = '.tcal, .foldable, .subsec, .adm-grp, .adm-sec, .nf, .tk-cat, .rv[data-id]';
+  const KP_TOGGLE = '.tcal, .foldable, .subsec, .adm-grp, .adm-sec, .nf, .tk-cat, .rv[data-id], [data-afr], .tfr-item';
   const KP_ARROWS = ':scope > button .tt-arrow, :scope > button .tg-ar, :scope > button .nf-ar, '
     + ':scope > button .eng-ar, :scope > button .ss-ar, :scope > .eng-head .eng-ar, :scope > .subsec-head .ss-ar';
   const KP_VOLATILE = /^(open|on|flash|kp-.+|hot|warm|late|done|has-alert|st-.+|cat-in|open-cat|show|busy|fold-anim)$/;
@@ -39201,7 +39201,7 @@
   function kpOwn(el){
     if(el.id) return '#' + el.id;
     const d = el.dataset || {};
-    const v = d.id || d.taskId || d.admcat || d.who || d.person || d.k || d.key || d.grp || d.sec || d.newKind;
+    const v = d.id || d.taskId || d.afr || d.afrbody || d.admcat || d.who || d.person || d.k || d.key || d.grp || d.sec || d.newKind;
     if(v) return kpSig(el) + '=' + v;
     const lb = kpLabel(el);
     if(lb) return kpSig(el) + '~' + lb;
@@ -39251,6 +39251,10 @@
     root.querySelectorAll(KP_TOGGLE + ', .open').forEach(el => {
       const want = snap.state.get(kpKey(el, root));
       if(want == null || el.classList.contains('open') === want) return;
+      // سطر فهرستی و کارت فعالیت، محتوای بازشان را خودشان می‌سازند
+      if(el.dataset.afr != null){ try{ if(want) wrkOpenFastRow(el, true); else wrkOpenFastRow(el); }catch(e){} return; }
+      if(el.dataset.afrbody != null) return;
+      if(el.classList.contains('tfr-item')){ try{ tfrToggle(el, want); }catch(e){} return; }
       el.classList.toggle('open', want);
       el.querySelectorAll(KP_ARROWS).forEach(ar => { ar.textContent = want ? '▴' : '▾'; });
     });
