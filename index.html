@@ -2319,6 +2319,17 @@
                0 2px 8px color-mix(in srgb, var(--c) 45%, transparent);
   }
 
+  /* نقطهٔ ابلاغ با عکس مسئول */
+  .adm-ms .ms-pt.has-ava{flex-basis:26px;width:26px;height:26px;margin-top:-6px;}
+  .adm-ms .ms-pt i.ms-ava{
+    inset:0;background:none;display:block;
+    box-shadow:0 0 0 2.5px var(--surface), 0 0 0 4px color-mix(in srgb, var(--c) 45%, transparent),
+               0 3px 10px rgba(20,25,45,.2);
+    border-radius:50%;
+  }
+  .adm-ms .ms-pt i.ms-ava .ava{width:26px !important;height:26px !important;min-width:0;flex:0 0 26px;font-size:9.5px;margin:0;border:none;}
+  .adm-ms .ms-pt.has-ava u{top:33px;}
+  .adm-ms .ms-pt.has-ava b{top:49px;}
   /* برچسب و تاریخ، آویزان زیر نقطه */
   .adm-ms .ms-pt u, .adm-ms .ms-pt b{
     position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;text-decoration:none;
@@ -2402,7 +2413,10 @@
 
   /* کارت فعالیت: جمع‌وجورتر */
   .adm-ms.tk-ms{margin-top:8px;padding:8px 10px 4px;}
-  .adm-ms.tk-ms .ms-track{padding:24px 28px 38px;margin:0 -10px;}
+  .adm-ms.tk-ms .ms-track{padding:24px 28px 50px;margin:0 -10px;}
+  .adm-ms .ms-track:has(.has-ava){padding-bottom:50px;}
+  /* پنجرهٔ کارت‌های فعالیت */
+  .dk-tl .adm-ms{margin-top:6px;}
 
   @keyframes ms-in{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
   @keyframes ms-grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
@@ -32038,8 +32052,11 @@
       /* در صفحهٔ باریک پیشوند برچسب و سالِ تاریخ (داخل <s>) پنهان می‌شوند */
       return '<span class="ms-pt ms-' + x.k + (x.now ? ' now' : '') + (x.rej ? ' rej' : '')
         + (x.ahead ? ' ahead' : '') + (x.ghost ? ' ghost' : '') + (x.last ? ' last' : '')
+        + (x.ava ? ' has-ava' : '')
         + (x.due ? ' due' + (x.tone ? ' t-' + x.tone : '') : '') + '" style="--i:' + i + '">'
-        + '<i></i>'
+        /* نقطهٔ ابلاغ: عکس مسئول به‌جای دایره */
+        + (x.ava ? '<i class="ms-ava" title="مسئول: ' + esc(x.ava) + '">' + avatarHtml(x.ava, '', true) + '</i>'
+                 : '<i></i>')
         + '<u>' + (x.pre ? '<s>' + x.pre + '</s>' : '') + esc(x.t) + '</u>'
         + (dt ? '<b><s>' + esc(dt.slice(0, 5)) + '</s>' + esc(dt.slice(5)) + '</b>'
               : (x.txt ? '<b class="ms-nowtxt">' + esc(x.txt) + '</b>' : ''))
@@ -32081,7 +32098,7 @@
 
     /* تطبیق دقیق: pick نبودِ «تاریخ ارسال» را با «تاریخ» ثبت پر می‌کرد */
     const pts = [
-      {k:'n',   t:'ابلاغ',    d: exact(r, 'تاریخ ارسال')},
+      {k:'n',   t:'ابلاغ',    d: exact(r, 'تاریخ ارسال'), ava: pick(r, AD_OWNER[kind]) || ''},
       {k:'i',   t:'داخلی',    d: rvStartOf(r, 'rvIS'), pre:'گردش '},
       {k:'p',   t:'پیمانکار', d: rvStartOf(r, 'rvPS'), pre:'گردش '},
       {k:'c',   t:'کارفرما',  d: rvStartOf(r, 'rvCS'), pre:'گردش '},
@@ -32201,7 +32218,8 @@
     const late = !done && left != null && left < 0;
 
     const pts = [];
-    if(start) pts.push({k:'n', t:'ابلاغ', d:start});
+    if(start) pts.push({k:'n', t:'ابلاغ', d:start,
+      ava: String(pick(r,T.m1) || pick(r,T.m2) || '').trim()});
     const mid = done
       ? {k:'ok', t:'انجام', d:doneD, last:true}
       : {k: late ? 'bad' : 'i', t:'امروز', d:'', now:true, txt: st.label, isToday:true};
@@ -32782,11 +32800,7 @@
       +   '<span class="chip-set">'
       /* مسئولِ خودِ مورد، جدا از مسئولین بررسی داخلی: عکس و نامش
          همیشه پیداست، چه در مرحلهٔ بررسی باشد چه نباشد. */
-      +     (owner
-            ? '<span class="stat-chip own-chip" title="مسئول این مورد">'
-              + '<u>مسئول</u>' + avatarHtml(owner, '', true)
-              + '<b>' + esc(owner) + '</b></span>'
-            : '')
+      /* کپسول «مسئول» حذف شد: عکس مسئول روی نقطهٔ ابلاغ خط زمانی است */
       +     statChip({live: editable && id, what:'notify', id:id, kind:kind,
                       cls: notify ? notifyCls(notify) : 'off',
                       cap:'ابلاغ', txt: notifyLabel(notify) || 'ثبت نشده'})
@@ -42494,6 +42508,15 @@
   }
   function deckTimesHtml(x, kind, row){
     if(!row) return '';
+    /* صورت وضعیت، قرارداد و فعالیت: همان خط زمانی کارت‌ها به‌جای دایره‌ها */
+    if(kind === 'statement' || kind === 'contract'){
+      const tl = admMilestonesHtml(kind, row);
+      if(tl) return '<div class="dk-tl">' + tl + '</div>';
+    }
+    if(kind === 'task'){
+      const tl = taskTimelineHtml(row);
+      if(tl) return '<div class="dk-tl">' + tl + '</div>';
+    }
     const r = [];
     if(kind === 'task'){
       const s1 = daysSince(pick(row,T.start));
@@ -42777,23 +42800,13 @@
     if(!st) return '';
     /* بیرون از مرحلهٔ داخلی، فهرست مسئولین بررسی داخلی معنا ندارد */
     const internal = (st === 'بررسی داخلی' || st === 'رد داخلی');
-    if(!internal){
-      const d = (st === 'بررسی کارفرما') ? rvEmployerDays(row) : null;
-      return '<div class="dk-rv"><span class="dk-rvcap">' + esc(st)
-        + (d != null ? ' · ' + toFa(d) + ' روز' : '') + '</span></div>';
-    }
+    /* مرحله و دورها روی خط زمانی آمده‌اند؛ اینجا فقط تیک بررسی‌کنندگان می‌ماند */
+    if(!internal) return '';
     const all = reviewersOf(row);
     const done = reviewersDoneOf(row);
     const rounds = reviewRoundsOf(row);
-    const pastHtml = rounds.filter(rd => !rd.open && rd.n < rounds.length).map(rd =>
-      '<div class="dk-rvold"><b>دور ' + toFa(rd.n) + '</b>'
-      + '<span>' + esc(rd.who.join('، ')) + '</span>'
-      + (rd.days != null ? '<u>' + toFa(rd.days) + ' روز</u>' : '')
-      + (rd.done.length ? '<i>✓ ' + toFa(rd.done.length) + '/' + toFa(rd.who.length) + '</i>' : '')
-      + '</div>').join('');
-    if(!all.length) return '<div class="dk-rv"><span class="dk-rvcap">' + esc(st) + '</span></div>' + pastHtml;
-    return (pastHtml ? '<div class="dk-rvrounds">' + pastHtml + '</div>' : '')
-      + '<div class="dk-rv">'
+    if(!all.length) return '';
+    return '<div class="dk-rv">'
       + '<span class="dk-rvcap">' + esc(st) + (rounds.length > 1 ? ' · دور ' + toFa(rounds.length) : '') + '</span>'
       + '<div class="dk-rvp">'
       +   all.map(n => {
