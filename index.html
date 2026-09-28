@@ -2450,6 +2450,15 @@
   }
   @keyframes ms-blink{50%{opacity:.45;}}
 
+  /* ====== لیست فعالیت: کاشی پنجره‌ها ====== */
+  .tk-tiles{margin:2px 0 14px;}
+  #panelTasks .task-div{display:none !important;}
+  #panelTasks[data-tkw="tasks"] #taskCal{display:none !important;}
+  #panelTasks[data-tkw="cal"] #taskView,
+  #panelTasks[data-tkw="cal"] #taskJumpBar{display:none !important;}
+  /* نوار پرش فقط وقتی پنجرهٔ فعالیت‌ها باز است */
+  #panelTasks:has(#taskView .tcal.tpanel:not(.open)) #taskJumpBar{display:none !important;}
+
   /* لیست فعالیت به تفکیک نفر: پرسنل و خارج سازمان */
   .tk-grp-h{
     display:flex;align-items:center;gap:8px;margin:14px 4px 8px;
@@ -2521,14 +2530,21 @@
   .adm-xtg svg{width:15px;height:15px;color:var(--ok);}
   .adm-xtg i{font-style:normal;font-size:10px;}
   .adm-xtg[aria-expanded="true"]{color:var(--ink);border-color:color-mix(in srgb, var(--ink) 25%, var(--line));}
-  .adm-xbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;}
-  .adm-xbar[hidden]{display:none;}
-  /* فقط background-color: خلاصهٔ background تکرارِ فلش کشویی را روشن می‌کرد
-     و کادر هاشورخورده می‌شد */
-  .adm-xsel{
-    width:auto;height:30px;padding:0 12px 0 28px;border-radius:999px;border:1px solid var(--line);
-    background-color:var(--surface);color:var(--ink);font-family:var(--f);font-size:11.5px;font-weight:600;
+  .adm-xbar{
+    display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(100%, 560px);
+    padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);
+    box-shadow:0 14px 30px -24px rgba(15,20,35,.55);animation:ms-in .3s both;
   }
+  .adm-xbar[hidden]{display:none;}
+  .adm-xchips{display:flex;flex-wrap:wrap;gap:6px;}
+  .adm-xchip{
+    height:30px;padding:0 12px;border-radius:999px;cursor:pointer;
+    font-family:var(--f);font-size:11.5px;font-weight:700;color:var(--muted);
+    border:1px solid var(--line);background:var(--field);transition:background .2s, color .2s, border-color .2s;
+  }
+  .adm-xchip:hover{color:var(--ink);}
+  .adm-xchip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+  .adm-xgo{display:flex;gap:6px;justify-content:flex-end;}
   .adm-xbtn{
     display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:999px;cursor:pointer;
     font-family:var(--f);font-size:11px;font-weight:700;
@@ -14789,6 +14805,8 @@
   .lc2-x{position:absolute;top:0;bottom:0;width:0;border-inline-start:1.5px dashed color-mix(in srgb, var(--ink) 40%, transparent);pointer-events:none;}
   .lc2-x[hidden], .lc2-tip[hidden]{display:none;}
   .lc2-hits{position:absolute;inset:0;display:flex;flex-direction:row;}
+  /* نمودار چپ‌به‌راست: نوار لمس هم باید از چپ شروع شود تا راهنما با نقطهٔ درست جور باشد */
+  .lc2.ltr .lc2-hits{direction:ltr;}
   .lc2-hit{flex:1 1 0;cursor:crosshair;}
   .lc2-tip{position:absolute;top:6px;transform:translateX(-50%);z-index:3;min-width:118px;padding:8px 10px;border-radius:12px;pointer-events:none;
     background:var(--ink);color:var(--surface);box-shadow:0 14px 30px -14px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:3px;font-size:11px;}
@@ -15710,7 +15728,16 @@
     </div>
   </div>
 
-  <div class="panel" id="panelTasks" role="tabpanel" aria-labelledby="tabTasks" hidden>
+  <div class="panel" id="panelTasks" role="tabpanel" aria-labelledby="tabTasks" data-tkw="tasks" hidden>
+    <!-- پنجره‌های لیست فعالیت به شکل کاشی، مثل دفتر فنی و گزارش‌ها -->
+    <div class="rk-cards tk-tiles" id="tkTiles" role="tablist" aria-label="بخش‌های لیست فعالیت">
+      <button type="button" class="rk c-daily on" data-tkw="tasks" role="tab" aria-selected="true">
+        <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2.5 2.5L11 5M4 17l2.5 2.5L11 15M14 7h6M14 17h6"/></svg></span>
+        <span class="rk-tx"><b>فعالیت‌ها</b><small id="tkwTasksSub">کارهای باز و تکمیل‌شده</small></span></button>
+      <button type="button" class="rk c-admin" data-tkw="cal" role="tab" aria-selected="false">
+        <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3M8 17h6"/></svg></span>
+        <span class="rk-tx"><b>تقویم موعدها و ابلاغ‌ها</b><small id="tkwCalSub">موعدهای این ماه</small></span></button>
+    </div>
     <div class="jump-bar" id="taskJumpBar"></div>
     <div class="block" id="taskToolsBlock">
       <div class="toolbar filterbox" id="taskWhoBar">
@@ -26612,7 +26639,7 @@
     const every = n > 16 ? 5 : (n > 10 ? 2 : 1);
     const ticks = [0, 0.5, 1].map(f => Math.round(max * f));
     const hiI = tot.indexOf(Math.max(...tot));
-    return '<div class="lc2' + (opt.single ? ' single' : '') + (opt.cls ? ' ' + opt.cls : '') + '" data-lc2="1"' + (opt.single ? ' data-single="1"' : '') + '>'
+    return '<div class="lc2' + (opt.single ? ' single' : '') + (opt.ltr ? ' ltr' : '') + (opt.cls ? ' ' + opt.cls : '') + '" data-lc2="1"' + (opt.single ? ' data-single="1"' : '') + '>'
       + '<div class="lc2-plot">'
       +   ticks.map(v => '<span class="lc2-gl" style="top:' + (yAt(v) / H * 100).toFixed(2) + '%"><u>' + toFa(v) + '</u></span>').join('')
       +   '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
@@ -28479,6 +28506,8 @@
     const t = arMoneyShort(n); const i = t.lastIndexOf(' ');
     return i > 0 ? t.slice(0, i) + '<em>' + t.slice(i + 1) + '</em>' : t;
   }
+  // مبلغ ریالی، کوتاه‌شده به تومان (برای گزارش مالی)
+  const arToman = n => arMoneyShort((n || 0) / 10);
   function arMoneyShort(n){
     n = Math.round(n || 0);
     const cut = (v, u) => { let t = v.toFixed(v >= 100 ? 0 : 1).replace(/\.0$/, ''); return toFa(t) + ' ' + u; };
@@ -29091,7 +29120,7 @@
         box.innerHTML = '<div class="jump-bar" id="jumpBar"></div>'
           + hrFilterBarHtml()
           + hrReportHtml(rows, lastAdminDay,
-              rangeCache.dates || rangeDates(d, rangeMode), d);
+              rangeMode === 'day' ? [d] : (rangeCache.dates || rangeDates(d, rangeMode)), d);
         // فیلتر و جست‌وجو، هرکدام در کشوی بستهٔ خودشان
         const hd = wrapFilterDrawer('hrFilter', 'hrFilterDrawer', 'فیلتر نیروی انسانی');
         makeSearchDrawer(hd, 'hrSearchDrawer', 'نام پیمانکار، تخصص، قرارداد…',
@@ -29252,10 +29281,12 @@
     b.classList.add('on'); b.setAttribute('aria-selected', 'true');
     const rc = document.getElementById('rangeCaps');
     /* گزارش کارگری هم بازه دارد: تایم‌شیت یک‌روزه معنی ندارد. */
+    /* نیروی انسانی هم بازه دارد (روزانه، هفتگی، ماهانه)؛ ورودِ تازه
+       به آن هفتگی شروع می‌شود و بعد با کپسول‌ها عوض می‌شود. */
     if(rc) rc.style.display =
-      (b.dataset.kind === 'daily' || b.dataset.kind === 'crew') ? 'flex' : 'none';
+      (b.dataset.kind === 'daily' || b.dataset.kind === 'crew' || b.dataset.kind === 'hr') ? 'flex' : 'none';
     if(b.dataset.kind === 'crew' && rangeMode === 'day') rangeMode = 'week';
-    if(b.dataset.kind === 'hr') rangeMode = 'week';       // همیشه بازهٔ هفتگی
+    if(b.dataset.kind === 'hr' && sel.value !== 'hr') rangeMode = 'week';
     if(b.dataset.kind === 'admin') rangeMode = 'day';
     syncRangeCaps();
     syncMonthCaps();
@@ -33376,7 +33407,7 @@
       +     (meta ? '<span class="rp-meta">' + meta + '</span>' : '')
       +   '</div>'
       +   (amount
-            ? '<div class="rp-amt"><b>' + moneyFa(amount) + '</b><u>ریال</u></div>' : '')
+            ? '<div class="rp-amt"><b>' + toFa(Math.round(moneyNum2(amount) / 10).toLocaleString('en-US')) + '</b><u>تومان</u></div>' : '')
       + '</div>'
 
       + '<div class="rp-state">'
@@ -36357,16 +36388,27 @@
       + '<button type="button" class="adm-xtg" data-admxtg="1" aria-expanded="false">'
       +   XLS_ICON + '<span>خروجی Excel / PDF</span><i>▾</i></button>'
       + '<div class="adm-xbar" hidden>'
-      +   '<select class="adm-xsel" id="admXSel" aria-label="بخش خروجی">'
-      +     '<option value="all">همهٔ بخش‌ها</option>'
-      +     ADM_ORDER.map(k => '<option value="' + k + '">' + esc(KIND_LABEL[k]) + '</option>').join('')
-      +   '</select>'
+      /* انتخاب بخش با کپسول، نه فهرست کشویی */
+      +   '<span class="adm-xchips" role="radiogroup" aria-label="بخش خروجی">'
+      +     [['all', 'همهٔ بخش‌ها']].concat(ADM_ORDER.map(k => [k, KIND_LABEL[k]])).map(([k, lb]) =>
+              '<button type="button" class="adm-xchip' + (k === 'all' ? ' on' : '') + '" data-admxk="' + k + '" '
+              + 'role="radio" aria-checked="' + (k === 'all' ? 'true' : 'false') + '">' + esc(lb) + '</button>').join('')
+      +   '</span>'
+      +   '<span class="adm-xgo">'
       +   '<button type="button" class="adm-xbtn xls" data-admx="xls" title="دانلود Excel">'
       +     XLS_ICON + '<span>Excel</span></button>'
       +   '<button type="button" class="adm-xbtn pdf" data-admx="pdf" title="دانلود PDF">'
       +     PDF_ICON + '<span>PDF</span></button>'
+      +   '</span>'
       + '</div></div>';
   }
+  document.addEventListener('click', e => {
+    const c = e.target.closest('.adm-xchip');
+    if(!c) return;
+    c.parentElement.querySelectorAll('.adm-xchip').forEach(x => {
+      x.classList.toggle('on', x === c); x.setAttribute('aria-checked', x === c ? 'true' : 'false');
+    });
+  });
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-admxtg]');
     if(!t) return;
@@ -36380,8 +36422,8 @@
     const b = e.target.closest('[data-admx]');
     if(!b) return;
     e.preventDefault(); e.stopPropagation();
-    const sel = document.getElementById('admXSel');
-    const which = (sel && sel.value) || 'all';
+    const ch = document.querySelector('.adm-xchip.on');
+    const which = (ch && ch.dataset.admxk) || 'all';
     if(b.getAttribute('data-admx') === 'xls') admExportXls(which);
     else admExportPdf(which);
   });
@@ -36667,7 +36709,8 @@
     const n = parseFloat(toEn(String(v || '')).replace(/[^\d.\-]/g, ''));
     return isNaN(n) ? 0 : n;
   };
-  const money = n => toFa(Math.round(n).toLocaleString('en-US')) + ' ریال';
+  // گزارش مالی به تومان است؛ مبالغ ثبت‌شده ریالی‌اند
+  const money = n => toFa(Math.round(n / 10).toLocaleString('en-US')) + ' تومان';
 
   // «1405-05-21 00:00:00» یا «۱۴۰۵/۰۵/۲۱» → «۱۴۰۵/۰۵/۲۱»
   function admDate(v){
@@ -36857,8 +36900,8 @@
         +   '<span class="rc2-n">' + esc(x.party) + '<small>' + toFa(x.count) + ' سند'
         +     (x.open ? ' · ' + toFa(x.open) + ' باز' : '') + '</small></span>'
         +   '<span class="rc2-bar" title="' + toFa(pct) + '٪ پرداخت شده"><i style="width:' + pct + '%"></i></span>'
-        +   '<span class="rc2-v"><b>' + (x.rest ? arMoneyShort(x.rest) : 'تسویه شده') + '</b>'
-        +     '<u>' + (x.rest ? 'ریال مانده' : arMoneyShort(x.amount) + ' ریال') + '</u></span>'
+        +   '<span class="rc2-v"><b>' + (x.rest ? arToman(x.rest) : 'تسویه شده') + '</b>'
+        +     '<u>' + (x.rest ? 'تومان مانده' : arToman(x.amount) + ' تومان') + '</u></span>'
         +   '<span class="rc2-d">' + ((x.rest && x.maxDelay) ? toFa(x.maxDelay) + ' روز' : '—') + '</span>'
         +   '<span class="rc2-ar">' + AR_I.chev + '</span>'
         + '</button>'
@@ -36866,7 +36909,7 @@
         + '<div class="recv-head">'
         +   '<span class="rh-cap">' + esc(x.party) + '</span>'
         +   '<span class="rh-amt">' + esc(money(x.rest || x.amount))
-        +     '<u>' + (x.rest ? 'ریال بستانکاری' : 'ریال، تسویه شده') + '</u></span>'
+        +     '<u>' + (x.rest ? 'بستانکاری' : 'تسویه شده') + '</u></span>'
         + '</div>'
         + ((x.rest && x.maxDelay)
             ? '<div class="recv-age">'
@@ -37325,10 +37368,10 @@
     const tile = (cls, ic, lbl, big, sub) => '<div class="ark ' + cls + '"><span class="ark-ic">' + ic + '</span>'
       + '<span class="ark-l">' + lbl + '</span><b>' + big + '</b><small>' + sub + '</small></div>';
     let h = '<div class="ar-kpis">'
-      + tile('', AR_I.money, 'مبلغ صورت وضعیت‌ها', arMoneyHtml(tAmount), toFa(stmts.length) + ' صورت وضعیت · ریال')
-      + tile('ok', AR_I.paid, 'پرداخت‌شده', toFa(pctPaid) + '٪', arMoneyShort(tPaid) + ' ریال')
-      + tile(tRest ? 'bad' : 'ok', AR_I.money, 'بستانکاری', arMoneyHtml(tRest), toFa(openSt) + ' سند در انتظار پرداخت')
-      + tile('', AR_I.doc, 'قراردادها', toFa(conts.length), cAmount ? arMoneyShort(cAmount) + ' ریال' : 'بدون مبلغ')
+      + tile('', AR_I.money, 'مبلغ صورت وضعیت‌ها', arMoneyHtml(tAmount / 10), toFa(stmts.length) + ' صورت وضعیت · تومان')
+      + tile('ok', AR_I.paid, 'پرداخت‌شده', toFa(pctPaid) + '٪', arToman(tPaid) + ' تومان')
+      + tile(tRest ? 'bad' : 'ok', AR_I.money, 'بستانکاری', arMoneyHtml(tRest / 10), toFa(openSt) + ' سند در انتظار پرداخت')
+      + tile('', AR_I.doc, 'قراردادها', toFa(conts.length), cAmount ? arToman(cAmount) + ' تومان' : 'بدون مبلغ')
       + tile(inFlow ? 'warm' : '', AR_I.flow, 'در جریان رسیدگی', toFa(inFlow), rejN ? toFa(rejN) + ' رد شده' : 'صورت وضعیت و قرارداد')
       + tile(dueB.late.length ? 'bad' : 'ok', AR_I.due, 'موعد گذشته', toFa(dueB.late.length), toFa(dueB.week.length) + ' مورد تا یک هفته')
       + '</div>';
@@ -37361,7 +37404,7 @@
               + '<span class="pty-n">' + esc(x.party) + '</span>'
               + '<span class="pty-bar" style="--w:' + (x.amount / maxA * 100).toFixed(1) + '%">'
               +   '<i class="p" style="flex:' + (x.paid || 0) + '"></i><i class="r" style="flex:' + (x.rest || 0) + '"></i></span>'
-              + '<span class="pty-v' + (x.rest ? '' : ' ok') + '">' + (x.rest ? arMoneyShort(x.rest) : 'تسویه') + '</span>'
+              + '<span class="pty-v' + (x.rest ? '' : ' ok') + '">' + (x.rest ? arToman(x.rest) + ' تومان' : 'تسویه') + '</span>'
               + (x.delay ? '<span class="pty-d' + (x.delay > 10 ? ' hot' : (x.delay > 5 ? ' warm' : '')) + '">' + toFa(x.delay) + ' روز</span>'
                          : '<span class="pty-d none"></span>')
               + '</button>').join('')
@@ -38406,6 +38449,48 @@
         + '<div class="eng-body">' + personOpenDoneHtml(items) + '</div></div>';
     }
   }
+
+  /* کاشی‌های لیست فعالیت: فعالیت‌ها / تقویم. فقط پنجرهٔ انتخاب‌شده دیده
+     می‌شود؛ نوار پرش فقط کنار پنجرهٔ باز فعالیت‌ها می‌آید (CSS). */
+  (function tkTilesInit(){
+    const pn = document.getElementById('panelTasks');
+    const tiles = document.getElementById('tkTiles');
+    if(!pn || !tiles) return;
+    const set = w => {
+      pn.dataset.tkw = w;
+      tiles.querySelectorAll('[data-tkw]').forEach(b => {
+        const on = b.dataset.tkw === w;
+        b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      // پنجرهٔ انتخاب‌شده باز باشد
+      const win = w === 'cal' ? document.querySelector('#taskCal .tcal') : document.querySelector('#taskView .tcal.tpanel');
+      if(win && !win.classList.contains('open')){
+        const tg = win.querySelector(':scope > .tcal-toggle, :scope > button');
+        if(tg) tg.click(); else win.classList.add('open');
+      }
+      try{ localStorage.setItem('tkWin', w); }catch(e){}
+    };
+    tiles.addEventListener('click', e => {
+      const b = e.target.closest('[data-tkw]');
+      if(b && b.dataset.tkw !== pn.dataset.tkw) set(b.dataset.tkw);
+    });
+    try{ const w0 = localStorage.getItem('tkWin'); if(w0 === 'cal' || w0 === 'tasks') pn.dataset.tkw = w0; }catch(e){}
+    tiles.querySelectorAll('[data-tkw]').forEach(b => b.classList.toggle('on', b.dataset.tkw === pn.dataset.tkw));
+    // زیرنویس کاشی‌ها از شمارنده‌های خود پنجره‌ها
+    let t = 0;
+    const sync = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const a = document.getElementById('tasksCount');
+        const c = document.querySelector('#taskCal .tcal-toggle .tt-n');
+        const sa = document.getElementById('tkwTasksSub'), sc = document.getElementById('tkwCalSub');
+        if(sa && a && a.textContent.trim()) sa.textContent = a.textContent.trim();
+        if(sc && c && c.textContent.trim()) sc.textContent = c.textContent.trim();
+      }, 60);
+    };
+    try{ new MutationObserver(sync).observe(pn, {childList:true, subtree:true}); }catch(e){}
+    sync();
+  })();
 
   // حالت انتخاب نام: جدول چک‌لیست
   function renderTasksTable(list, who){
