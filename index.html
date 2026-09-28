@@ -2243,47 +2243,124 @@
   .adm-more .adm-sum .sm u{font-size:10px;}
   .adm-more .adm-sum .sm b{font-size:14px;}
   .adm-hist{margin-top:11px;padding-top:9px;}
-  /* چهار تاریخ کلیدی: نقطه‌ها روی یک خط، فاصلهٔ روزها روی خط رابط */
+  /* ====== خط زمانی گردش سند ======
+     نقطه‌ها در ستون‌های هم‌عرض؛ خط رابط از مرکز نقطهٔ قبلی می‌آید و
+     فاصلهٔ روزها بالای آن نوشته می‌شود. */
   .adm-ms{
-    display:flex;margin-bottom:11px;padding:22px 6px 11px;border-radius:12px;
+    --c-n:var(--muted); --c-i:var(--sky); --c-p:var(--warn); --c-c:#6d5bb5;
+    --c-ok:var(--ok); --c-pay:var(--ok); --c-due:var(--muted);
+    display:flex;margin-top:9px;padding:22px 4px 10px;border-radius:12px;
     background:var(--surface);border:1px solid var(--glass-line);
     box-shadow:0 1px 2px rgba(20,25,45,.04);
+    overflow-x:auto;scrollbar-width:none;
   }
+  .adm-ms::-webkit-scrollbar{display:none;}
+  [data-theme="dark"] .adm-ms{background:rgba(255,255,255,.05);--c-c:#a898e6;}
   .adm-ms .ms-pt{
-    --c:var(--muted);
-    flex:1 1 0;min-width:0;position:relative;
+    --c:var(--c-n);
+    flex:1 1 0;min-width:60px;position:relative;
     display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;
+    animation:ms-in .45s cubic-bezier(.2,.7,.3,1) both;
+    animation-delay:calc(var(--i) * 70ms);
   }
-  /* خط رابط: از مرکز نقطهٔ قبلی تا مرکز همین نقطه */
+  .adm-ms .ms-i{--c:var(--c-i);}
+  .adm-ms .ms-p{--c:var(--c-p);}
+  .adm-ms .ms-c{--c:var(--c-c);}
+  .adm-ms .ms-ok{--c:var(--c-ok);}
+  .adm-ms .ms-pay{--c:var(--c-pay);}
+  .adm-ms .ms-due{--c:var(--c-due);}
+  .adm-ms .ms-due.t-warn{--c:var(--warn);}
+  .adm-ms .ms-due.t-bad{--c:var(--alert);}
+
+  /* خط رابط: از مرکز نقطهٔ قبلی تا مرکز همین نقطه، با پر شدن تدریجی */
   .adm-ms .ms-pt + .ms-pt::before{
     content:"";position:absolute;top:5px;height:2px;border-radius:2px;
-    inset-inline-start:calc(-50% + 12px);inset-inline-end:calc(50% + 12px);
-    background:var(--line);
+    inset-inline-start:calc(-50% + 11px);inset-inline-end:calc(50% + 11px);
+    background:color-mix(in srgb, var(--c) 55%, var(--line));
+    transform-origin:right center;
+    animation:ms-grow .5s ease-out both;animation-delay:calc(var(--i) * 70ms);
   }
+  /* جلوتر از مرحلهٔ فعلی: خط‌چینِ روان به سمت مقصد */
+  .adm-ms .ms-pt.ahead::before{
+    background:repeating-linear-gradient(to left,
+      color-mix(in srgb, var(--c) 45%, var(--line)) 0 5px, transparent 5px 9px);
+    background-size:18px 2px;
+    animation:ms-grow .5s ease-out both, ms-flow 1s linear infinite;
+    animation-delay:calc(var(--i) * 70ms), 0s;
+  }
+
   .adm-ms .ms-pt em{
     position:absolute;top:-17px;inset-inline-start:-50%;inset-inline-end:50%;
-    font-style:normal;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;
+    font-style:normal;font-size:9.5px;font-weight:600;color:var(--muted);white-space:nowrap;
   }
+  .adm-ms .ms-due.t-bad em{color:var(--alert);}
+  .adm-ms .ms-due.t-warn em{color:var(--warn);}
+
   .adm-ms .ms-pt i{
     width:12px;height:12px;border-radius:50%;margin-bottom:5px;box-sizing:border-box;
-    background:var(--surface);border:2.5px solid var(--c);
+    background:var(--c);border:2.5px solid var(--c);position:relative;z-index:1;
   }
-  .adm-ms .ms-pt.last i{
-    background:var(--c);
-    box-shadow:0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent);
+  .adm-ms .ms-pt.ahead i{background:var(--surface);}
+  .adm-ms .ms-pt.ghost i{background:transparent;border-style:dashed;border-width:2px;opacity:.7;}
+  .adm-ms .ms-pt.ghost u, .adm-ms .ms-pt.ghost b{opacity:.55;}
+  /* موعد: لوزی به جای دایره */
+  .adm-ms .ms-due i{border-radius:2px;transform:rotate(45deg) scale(.85);background:var(--surface);}
+  /* مرحلهٔ فعلی: تپش */
+  .adm-ms .ms-pt.now i{
+    width:14px;height:14px;margin-top:-1px;margin-bottom:4px;
+    animation:ms-pulse 1.8s ease-out infinite;
   }
+  .adm-ms .ms-pt.now.rej{--c:var(--alert);}
+  .adm-ms .ms-pt.now u{color:var(--c);font-weight:700;}
+  .adm-ms .ms-pt.last i{box-shadow:0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent);}
+
   .adm-ms .ms-pt u{text-decoration:none;font-size:10.5px;font-weight:500;color:var(--muted);white-space:nowrap;}
-  .adm-ms .ms-pt u s{text-decoration:none;}
-  .adm-ms .ms-pt b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;}
-  .adm-ms .ms-i{--c:var(--sky);}
-  .adm-ms .ms-p{--c:var(--warn);}
-  .adm-ms .ms-c{--c:var(--ok);}
-  [data-theme="dark"] .adm-ms{background:rgba(255,255,255,.05);}
+  .adm-ms .ms-pt u s, .adm-ms .ms-pt b s{text-decoration:none;}
+  .adm-ms .ms-pt b{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .adm-ms .ms-pt b.ms-nowtxt{font-size:10px;font-weight:600;color:var(--c);}
+
+  /* بررسی‌کنندگان گردش داخلی */
+  .adm-ms .ms-ppl{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:4px;}
+  .adm-ms .ms-avs{display:flex;align-items:center;}
+  .adm-ms .ms-av{position:relative;margin-inline-start:-6px;}
+  .adm-ms .ms-av:first-child{margin-inline-start:0;}
+  .adm-ms .ms-av .ava{
+    width:22px;height:22px;flex:0 0 22px;font-size:8.5px;
+    border:2px solid var(--surface);box-sizing:border-box;
+  }
+  .adm-ms .ms-av.ok::after{
+    content:"✓";position:absolute;bottom:-2px;inset-inline-end:-3px;
+    width:11px;height:11px;border-radius:50%;display:grid;place-items:center;
+    background:var(--ok);color:#fff;font-size:7.5px;font-weight:800;
+    border:1.5px solid var(--surface);
+  }
+  .adm-ms .ms-more{
+    margin-inline-start:-6px;width:22px;height:22px;border-radius:50%;
+    display:grid;place-items:center;font-size:9px;font-weight:700;
+    background:var(--field);color:var(--muted);border:2px solid var(--surface);box-sizing:border-box;
+  }
+  .adm-ms .ms-cnt{font-size:9.5px;color:var(--muted);white-space:nowrap;}
+
+  @keyframes ms-in{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @keyframes ms-grow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+  @keyframes ms-flow{to{background-position:-18px 0;}}
+  @keyframes ms-pulse{
+    0%  {box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}
+    70% {box-shadow:0 0 0 8px color-mix(in srgb, var(--c) 0%, transparent);}
+    100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 0%, transparent);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .adm-ms .ms-pt, .adm-ms .ms-pt::before, .adm-ms .ms-pt.now i{animation:none !important;}
+  }
   @media(max-width:520px){
-    .adm-ms{padding:21px 2px 10px;}
-    .adm-ms .ms-pt u s{display:none;}
+    .adm-ms{padding:21px 0 9px;}
+    .adm-ms .ms-pt{min-width:42px;}
+    .adm-ms .ms-av .ava, .adm-ms .ms-more{width:19px;height:19px;flex-basis:19px;font-size:7.5px;}
+    .adm-ms .ms-pt u s, .adm-ms .ms-pt b s{display:none;}
     .adm-ms .ms-pt u{font-size:9.5px;}
     .adm-ms .ms-pt b{font-size:11px;}
+    .adm-ms .ms-pt em{font-size:8.5px;}
+    .adm-ms .ms-cnt{font-size:8.5px;}
   }
   [data-theme="dark"] .adm-more .kv,
   [data-theme="dark"] .adm-more .adm-sum .sm{background:rgba(255,255,255,.05);}
@@ -31856,29 +31933,120 @@
       + body + '</div>';
   }
 
-  /* ====== چهار تاریخ کلیدی در پنجرهٔ باز ======
-     ابلاغ، گردش داخلی، گردش پیمانکار و گردش کارفرما روی یک خط
-     زمانی کوچک. هر تاریخی که ثبت نشده اصلاً نمی‌آید و اگر هیچ‌کدام
-     نباشد، کل نوار نمایش داده نمی‌شود. روی خط میان دو نقطه، فاصلهٔ
-     روزها نوشته می‌شود. */
+  /* ====== خط زمانی گردش سند ======
+     روی خودِ کارت، بدون نیاز به «جزئیات بیشتر»:
+       ابلاغ ← گردش داخلی ← گردش پیمانکار ← گردش کارفرما ← تأیید ← پرداخت
+     - هر مرحله‌ای که تاریخ ندارد نمی‌آید، مگر اینکه مورد الان در همان
+       مرحله باشد. مرحلهٔ فعلی با تپش نشان داده می‌شود.
+     - تا کار تمام نشده، از آخرین مرحله تا مقصد (تأیید قرارداد یا
+       پرداخت صورت وضعیت) خط‌چینِ روان کشیده می‌شود.
+     - موعد اتمام به ترتیب تاریخ روی همین خط می‌نشیند.
+     - روی گردش داخلی، عکس بررسی‌کنندگانِ دور جاری و شمارهٔ دور. */
+  const MS_STAGE = {
+    'بررسی داخلی':'i', 'رد داخلی':'i', 'تأیید داخلی':'i',
+    'بررسی پیمانکار':'p', 'رد پیمانکار':'p', 'تأیید پیمانکار':'p',
+    'بررسی کارفرما':'c', 'رد کارفرما':'c', 'تایید شده':'ok'
+  };
   function admMilestonesHtml(kind, r){
     if(kind !== 'statement' && kind !== 'contract') return '';
-    const pts = [
-      /* تطبیق دقیق: pick نبودِ «تاریخ ارسال» را با «تاریخ» ثبت پر می‌کرد */
-      {t:'ابلاغ',         d: exact(r, 'تاریخ ارسال'), c:'ms-n'},
-      {t:'داخلی',         d: rvStartOf(r, 'rvIS'), c:'ms-i'},
-      {t:'پیمانکار', d: rvStartOf(r, 'rvPS'), c:'ms-p'},
-      {t:'کارفرما',  d: rvStartOf(r, 'rvCS'), c:'ms-c'}
-    ].filter(x => x.d && faToDate(x.d));
+    const isSt = kind === 'statement';
+    const paid = isSt && isPaid(r);
+    const rv = String(effectiveReview(r) || '');
+    const now = paid ? 'pay' : (MS_STAGE[rv] || '');
+    const bad = /^رد/.test(rv);
+
+    /* تطبیق دقیق: pick نبودِ «تاریخ ارسال» را با «تاریخ» ثبت پر می‌کرد */
+    const stages = [
+      {k:'n',   t:'ابلاغ',    d: exact(r, 'تاریخ ارسال')},
+      {k:'i',   t:'داخلی',    d: rvStartOf(r, 'rvIS'), pre:'گردش '},
+      {k:'p',   t:'پیمانکار', d: rvStartOf(r, 'rvPS'), pre:'گردش '},
+      {k:'c',   t:'کارفرما',  d: rvStartOf(r, 'rvCS'), pre:'گردش '},
+      {k:'ok',  t:'تأیید',    d: exact(r, 'rvCOk')},
+      {k:'pay', t:'پرداخت',   d: paid ? exact(r, 'تاریخ پرداخت') : ''}
+    ];
+    const pts = stages.filter(x => (x.d && faToDate(x.d)) || x.k === now)
+      .map(x => Object.assign({}, x, {d: (x.d && faToDate(x.d)) ? x.d : ''}));
     if(!pts.length) return '';
-    return '<div class="adm-ms">'
+
+    // آخرین مرحلهٔ رسیده: مرحلهٔ فعلی، وگرنه آخرین نقطهٔ تاریخ‌دار
+    let reached = pts.findIndex(x => x.k === now);
+    if(reached === -1) reached = pts.length - 1;
+    const finished = paid || (!isSt && now === 'ok');
+
+    // مقصدِ نرسیده، کم‌رنگ
+    if(!finished){
+      const goal = isSt ? {k:'pay', t:'پرداخت'} : {k:'ok', t:'تأیید'};
+      if(!pts.some(x => x.k === goal.k)) pts.push(Object.assign({ghost:true, d:''}, goal));
+    }
+
+    // موعد اتمام، به ترتیب تاریخ
+    const dueRaw = exact(r, 'موعد اتمام');
+    const due = faToDate(dueRaw);
+    if(due){
+      let at = pts.findIndex((x, i) => i > 0 && (x.ghost || !x.d || faToDate(x.d) > due));
+      if(at === -1) at = pts.length;
+      if(at === 0) at = 1;
+      if(at <= reached) reached++;
+      const left = -daysSince(dueRaw);
+      const inHand = ['n','i','p',''].indexOf(now) !== -1;
+      pts.splice(at, 0, {k:'due', t:'موعد', d:dueRaw, due:true,
+        tone: (!finished && inHand) ? (left < 0 ? 'bad' : (left <= 3 ? 'warn' : '')) : 'flat',
+        left: left});
+    }
+
+    // دورهای گردش داخلی و افرادش
+    let people = '';
+    try{
+      const rounds = reviewRoundsOf(r);
+      const last = rounds[rounds.length - 1];
+      if(last && last.who.length){
+        const doneSet = new Set((last.done || []).map(nameKey));
+        const shown = last.who.slice(0, 3);
+        const tip = rounds.map(x => 'دور ' + toFa(x.n) + ': ' + x.who.join('، ')).join(' — ');
+        people = '<span class="ms-ppl" title="' + esc(tip) + '">'
+          + '<span class="ms-avs">' + shown.map(n =>
+              '<span class="ms-av' + (doneSet.has(nameKey(n)) ? ' ok' : '') + '">'
+              + avatarHtml(n, '', true) + '</span>').join('')
+          + (last.who.length > 3 ? '<span class="ms-more">+' + toFa(last.who.length - 3) + '</span>' : '')
+          + '</span>'
+          + '<span class="ms-cnt">' + toFa(last.who.length) + ' نفر'
+          + (rounds.length > 1 ? ' · دور ' + toFa(rounds.length) : '') + '</span>'
+          + '</span>';
+      }
+    }catch(e){}
+
+    const today = todayShamsi();
+    return '<div class="adm-ms' + (finished ? ' done' : '') + '">'
       + pts.map((x, i) => {
-          const gap = i ? faDiff(pts[i - 1].d, x.d) : null;
-          return '<span class="ms-pt ' + x.c + (i === pts.length - 1 ? ' last' : '') + '">'
-            +   (gap != null && gap >= 0 ? '<em>' + toFa(gap) + ' روز</em>' : '')
-            /* در صفحهٔ باریک «گردش» تکراری حذف می‌شود تا برچسب‌ها به هم نچسبند */
-            +   '<i></i><u>' + (x.c !== 'ms-n' ? '<s>گردش </s>' : '') + esc(x.t) + '</u>'
-            +   '<b>' + esc(admDate(x.d)) + '</b>'
+          const ahead = i > reached;
+          let prevD = '';
+          for(let q = i - 1; q >= 0; q--) if(pts[q].d && !pts[q].due){ prevD = pts[q].d; break; }
+          let gap = '';
+          if(x.due){
+            if(ahead && x.tone !== 'flat')
+              gap = x.left < 0 ? toFa(-x.left) + ' روز گذشته' : toFa(x.left) + ' روز مانده';
+          }else if(x.d && prevD){
+            const g = faDiff(prevD, x.d);
+            if(g != null && g >= 0) gap = toFa(g) + ' روز';
+          }else if(i === reached && !x.d && prevD){
+            const g = faDiff(prevD, today);
+            if(g != null && g >= 0) gap = toFa(g) + ' روز تاکنون';
+          }
+          const dateTxt = x.d ? admDate(x.d) : '';
+          const cls = 'ms-pt ms-' + x.k
+            + (i === reached && !finished ? ' now' + (bad ? ' rej' : '') : '')
+            + (i === reached && finished ? ' last' : '')
+            + (ahead ? ' ahead' : '') + (x.ghost ? ' ghost' : '')
+            + (x.due ? ' due' + (x.tone ? ' t-' + x.tone : '') : '');
+          /* در صفحهٔ باریک «گردش» و سالِ تاریخ پنهان می‌شوند (داخل <s>) */
+          return '<span class="' + cls + '" style="--i:' + i + '">'
+            + (gap ? '<em>' + gap + '</em>' : '')
+            + '<i></i>'
+            + '<u>' + (x.pre ? '<s>' + x.pre + '</s>' : '') + esc(x.t) + '</u>'
+            + (dateTxt
+                ? '<b><s>' + esc(dateTxt.slice(0, 5)) + '</s>' + esc(dateTxt.slice(5)) + '</b>'
+                : (i === reached && !finished ? '<b class="ms-nowtxt">' + esc(rv || 'اکنون') + '</b>' : ''))
+            + (x.k === 'i' ? people : '')
             + '</span>';
         }).join('')
       + '</div>';
@@ -32450,6 +32618,9 @@
       +   '</span>'
       + '</div>'
 
+      // خط زمانی گردش سند، همیشه دیده می‌شود
+      + admMilestonesHtml(kind, r)
+
       // شرح بند صورتجلسه، در حالت بسته هم دیده می‌شود
       + ((kind === 'minute' && head.note)
           ? '<div class="band-txt">'
@@ -32498,7 +32669,6 @@
 
       // ---- جزئیات کامل (فقط بعد از باز شدن) ----
       + '<div class="adm-more">'
-      +   admMilestonesHtml(kind, r)
       +   sumHtml
       +   '<div class="kv-grid">' + head.rows + dueRow + '</div>'
       +   reviewFlowHtml(kind, r)
