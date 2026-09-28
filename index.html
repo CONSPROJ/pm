@@ -4669,6 +4669,7 @@
   #adminView #secAdmcontract {--sc:#3f7a52;}
   #adminView #secAdmminute   {--sc:var(--warn);}
   #adminView #secAdmletter   {--sc:#2a8a86;}
+  #adminView #secAdmdesign   {--sc:#6d5bb5;}
   #adminView #secAdmchore    {--sc:#6b7a8f;}
 
   #adminView .adm-sec{margin-bottom:14px;}
@@ -14124,9 +14125,9 @@
   .acat{--c:var(--sky);position:relative;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 10px;
     padding:13px 13px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:start;
     box-shadow:0 10px 24px -24px rgba(15,20,35,.6);transition:transform .2s var(--ease-out, ease), border-color .2s, box-shadow .2s, background .2s;outline:none;}
-  .acat.c-statement{--c:#2f6f8f;} .acat.c-contract{--c:#3f7a52;} .acat.c-minute{--c:#a9622f;} .acat.c-letter{--c:#2a8a86;} .acat.c-chore{--c:#5b6474;}
+  .acat.c-statement{--c:#2f6f8f;} .acat.c-contract{--c:#3f7a52;} .acat.c-minute{--c:#a9622f;} .acat.c-letter{--c:#2a8a86;} .acat.c-design{--c:#6d5bb5;} .acat.c-chore{--c:#5b6474;}
   [data-theme="dark"] .acat.c-statement{--c:#6aa9c9;} [data-theme="dark"] .acat.c-contract{--c:#6fbf8a;} [data-theme="dark"] .acat.c-minute{--c:#e0915a;}
-  [data-theme="dark"] .acat.c-letter{--c:#5cc2bd;} [data-theme="dark"] .acat.c-chore{--c:#9aa3b2;}
+  [data-theme="dark"] .acat.c-letter{--c:#5cc2bd;} [data-theme="dark"] .acat.c-design{--c:#a898e6;} [data-theme="dark"] .acat.c-chore{--c:#9aa3b2;}
   .acat:hover{transform:translateY(-2px);border-color:color-mix(in srgb, var(--c) 40%, var(--line));}
   .acat:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 30%, transparent);}
   .acat.on{background:color-mix(in srgb, var(--c) 9%, var(--surface));border-color:var(--c);box-shadow:0 14px 28px -22px var(--c);}
@@ -14152,6 +14153,7 @@
   #adminView[data-cat="contract"]:not(.searching) > #secAdmcontract,
   #adminView[data-cat="minute"]:not(.searching) > #secAdmminute,
   #adminView[data-cat="letter"]:not(.searching) > #secAdmletter,
+  #adminView[data-cat="design"]:not(.searching) > #secAdmdesign,
   #adminView[data-cat="chore"]:not(.searching) > #secAdmchore{display:block;}
   #adminView:not(.searching) > .adm-sec > .adm-sec-head .sec-ar{display:none;}
   #adminView:not(.searching) > .adm-sec > .adm-sec-body{display:block !important;}
@@ -29614,7 +29616,7 @@
     const j = await getJSON(SCRIPT_URL + '?bundle=1' + (d ? '&date=' + encodeURIComponent(d) : ''));
     const data = {
       day: (j && j.day) ? j.day : {rows:[], issues:[], machines:[]},
-      admin: (j && j.admin) ? j.admin : {statements:[], contracts:[], minutes:[], letters:[]},
+      admin: (j && j.admin) ? j.admin : {statements:[], contracts:[], minutes:[], letters:[], designs:[]},
       tasks: Array.isArray(j && j.tasks) ? j.tasks : [],
       lists: (j && j.lists) || null,
       avatars: (j && j.avatars) || null
@@ -29827,7 +29829,7 @@
   const SUPA_TABLE = {
     activity:'activities', issue:'issues', machine:'machines',
     statement:'statements', contract:'contracts', minute:'minutes',
-    letter:'letters', task:'tasks', nudge:'nudges', comment:'nudges'
+    letter:'letters', design:'designs', task:'tasks', nudge:'nudges', comment:'nudges'
   };
 
   // نگاشت نام ستون‌های فارسی به ستون‌های پایگاه‌داده
@@ -29868,6 +29870,11 @@
       'تاریخ ارسال':'sent_date','موعد اتمام':'due_date','وضعیت ابلاغ':'notify','وضعیت رسیدگی':'review','مسئول':'owner',
       'شماره الحاقیه':'addendum_no',
       'تاریخچهٔ ارسال':'send_history','لینک':'link'},
+    /* اسناد طراحی (دفتر فنی): جدول designs — سکوی ساخت آن در design_docs.sql */
+    designs:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
+      'عنوان مدرک':'title','شماره مدرک':'number','رشته':'discipline','ویرایش':'revision','طراح':'party',
+      'تاریخ ارسال':'sent_date','وضعیت مدرک':'status','وضعیت ابلاغ':'notify','موعد اتمام':'due_date',
+      'مسئول':'owner','لینک':'link','توضیحات':'note','تاریخچهٔ ارسال':'send_history'},
     minutes:{'شناسه':'id','شناسه جلسه':'meeting_id','زمان ثبت':'created_at','تاریخ':'date_fa',
       'پروژه':'project','مهندس':'engineer','موضوع صورتجلسه':'subject','تاریخ صورتجلسه':'meet_date','نوع بند':'category',
       'مسئول':'owner','تاریخ اقدام':'action_date','ردیف بند':'idx','شرح بند':'text','لینک':'link',
@@ -29994,6 +30001,7 @@
   let heavyCache = {t:0, data:null};
   const HEAVY_TTL = 4 * 60 * 1000;
 
+  let designsOff = false;   // جدول اسناد طراحی هنوز ساخته نشده
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
 
@@ -30029,9 +30037,17 @@
         try{ syncWriteCaps(); }catch(e2){}
       }, 0);
     }catch(e){}
+    /* اسناد طراحی در bundle2 نیستند؛ جدا خوانده می‌شوند. اگر جدول هنوز
+       ساخته نشده باشد، فهرست خالی می‌ماند و بقیهٔ برنامه کار می‌کند. */
+    let designsRaw = [];
+    if(!designsOff){
+      try{ designsRaw = await supaFetch('designs?select=*&order=created_at.desc', {prefer:'return=representation'}) || []; }
+      catch(e){ designsOff = true; designsRaw = []; }
+    }
     const heavy = {
       admin: {statements: map('statements', j.statements), contracts: map('contracts', j.contracts),
-              minutes: map('minutes', j.minutes), letters: map('letters', j.letters)},
+              minutes: map('minutes', j.minutes), letters: map('letters', j.letters),
+              designs: map('designs', designsRaw)},
       tasks: map('tasks', j.tasks),
       nudges: map('nudges', j.nudges),
       lists,
@@ -30090,6 +30106,12 @@
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
           subject:x.subject, number:x.number, party:x.party, sent_date:x.sentDate,
           due_date:x.dueDate || null, notify:x.notify, owner:x.owner, link:x.link
+        }]));
+        (payload.designs || []).forEach(x => jobs.push(['designs', {
+          date_fa: payload.date, project: payload.project, engineer: payload.engineer,
+          title:x.title, number:x.number, discipline:x.discipline, revision:x.revision, party:x.party,
+          sent_date:x.sentDate, status:x.status, notify:x.notify,
+          due_date:x.dueDate || null, owner:x.owner, link:x.link, note:x.note
         }]));
 
         const byTable = {};
@@ -31042,10 +31064,23 @@
     mDate:['تاریخ اقدام'], mIdx:['ردیف بند'], mText:['شرح بند'], mCat:['نوع بند'],
     lSubject:['موضوع نامه'], lNo:['شماره نامه'], lParty:['طرف مقابل'],
     lDate:['تاریخ ارسال'], lNotify:['وضعیت ابلاغ'],
+    dTitle:['عنوان مدرک'], dNo:['شماره مدرک'], dDisc:['رشته'], dRev:['ویرایش'], dParty:['طراح'],
+    dDate:['تاریخ ارسال'], dStatus:['وضعیت مدرک'], dNotify:['وضعیت ابلاغ'], dNote:['توضیحات'],
     due:['موعد اتمام'],
     link:['لینک']
   };
-  const KIND_LABEL = {statement:'صورت وضعیت', contract:'قرارداد', minute:'صورتجلسه', letter:'نامه'};
+  const KIND_LABEL = {statement:'صورت وضعیت', contract:'قرارداد', minute:'صورتجلسه', letter:'نامه', design:'اسناد طراحی'};
+  // نام مفرد هر دسته، برای «ثبت ... تازه» و شناسهٔ کارت
+  const KIND_ONE = k => (k === 'design' ? 'سند طراحی' : KIND_LABEL[k]);
+  /* اسناد طراحی: رشته‌ها و وضعیت‌های مدرک */
+  const DESIGN_DISC = ['معماری','سازه','تأسیسات مکانیکی','تأسیسات برقی','محوطه','نما','سایر'];
+  const DESIGN_STATES = ['در حال بررسی','نیاز به اصلاح','تأیید مشروط','تأیید شده','برای اجرا'];
+  const DESIGN_CLS = {'در حال بررسی':'st-info','نیاز به اصلاح':'st-bad','تأیید مشروط':'st-warn',
+                      'تأیید شده':'st-ok','برای اجرا':'st-ok'};
+  const DESIGN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+    + 'stroke-linecap="round" stroke-linejoin="round">'
+    + '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/>'
+    + '<path d="M11.5 13h6M11.5 16.5h4"/></svg>';
   const SVG_HEAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" '
                  + 'stroke-linecap="round" stroke-linejoin="round">';
   const KIND_ICON = {
@@ -31059,7 +31094,9 @@
     minute:    SVG_HEAD + '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>'
              + '<path d="M9 13h7M9 17h5"/></svg>',
     // نامه: پاکت
-    letter:    SVG_HEAD + '<path d="M3 6h18v13H3z"/><path d="M3 7l9 6.5L21 7"/></svg>'
+    letter:    SVG_HEAD + '<path d="M3 6h18v13H3z"/><path d="M3 7l9 6.5L21 7"/></svg>',
+    // اسناد طراحی: برگهٔ نقشه با جدول مشخصات
+    design:    DESIGN_ICON_SVG
   };
 
   // مبلغ‌ها با جداکنندهٔ سه‌رقمی
@@ -31084,7 +31121,7 @@
       t.value = raw ? Number(raw).toLocaleString('en-US') : '';
     }
   }, true);
-  const AD_OWNER = {statement:['مسئول'], contract:['مسئول'], minute:['مسئول'], letter:['مسئول']};
+  const AD_OWNER = {statement:['مسئول'], contract:['مسئول'], minute:['مسئول'], letter:['مسئول'], design:['مسئول']};
 
   /* ویرایش و حذف در بخش اداری فقط برای:
      ادمین، تهیه‌کنندهٔ همان گزارش، و مسئول همان مورد */
@@ -31104,6 +31141,7 @@
     if(kind === 'statement') return pick(r,AD.sDate);
     if(kind === 'contract')  return pick(r,AD.cDate);
     if(kind === 'letter')    return pick(r,AD.lDate);
+    if(kind === 'design')    return exact(r,'تاریخ ارسال');
     return pick(r,AD.mDate);
   }
   const NOTIFY_ORDER = ['برون‌سازمانی','درون‌سازمانی','در حال تنظیم','Hold',''];
@@ -31137,6 +31175,11 @@
     return nums.reduce((acc, n) => acc * 10000 + (+n), 0);
   }
 
+  function designNoRank(r){
+    const nums = toEn(String(pick(r,AD.dNo) || '')).match(/\d+/g);
+    return (nums && nums.length) ? nums.reduce((acc, n) => acc * 10000 + (+n), 0) : -1;
+  }
+
   /* یک قاعده برای هر چهار دسته: اول تاریخ از تازه به قدیم، بعد
      ترتیب ثبت (تازه‌ترین بالا)، و در نهایت شماره سند.
      قبلاً قرارداد و نامه بر اساس شماره مرتب می‌شدند و تاریخ نقشی
@@ -31152,7 +31195,8 @@
 
   function sortAdmin(kind, list){
     const noRank = r => kind === 'contract' ? contractNoRank(r)
-      : (kind === 'letter' ? letterNoRank(r) : 0);
+      : (kind === 'letter' ? letterNoRank(r)
+      : (kind === 'design' ? designNoRank(r) : 0));
 
     /* ترتیب ورودی به‌عنوان آخرین معیار نگه داشته می‌شود: اگر نه زمان
        ثبت باشد و نه شناسهٔ عددی، دست‌کم ترتیب پایدار می‌ماند و
@@ -31261,6 +31305,7 @@
     if(kind === 'statement') return pick(r,AD.sParty);
     if(kind === 'contract')  return pick(r,AD.cParty);
     if(kind === 'letter')    return pick(r,AD.lParty);
+    if(kind === 'design')    return pick(r,AD.dParty);
     return pick(r,AD.mOwner);
   }
   function admNotify(kind, r){
@@ -31268,11 +31313,18 @@
     if(kind === 'contract')  return pick(r,AD.cNotify);
     if(kind === 'letter')    return pick(r,AD.lNotify);
     if(kind === 'minute')    return pick(r,AD.mNotify);
+    if(kind === 'design')    return exact(r,'وضعیت ابلاغ');
     return '';
   }
 
   // وضعیت انجام هر مورد اداری
   function admDoneState(kind, r){
+    if(kind === 'design'){
+      const ds = exact(r,'وضعیت مدرک');
+      if(ds === 'تأیید شده' || ds === 'برای اجرا') return {emoji:'✅', label: ds, cls:'ok'};
+      if(ds === 'نیاز به اصلاح') return {emoji:'✏️', label: ds, cls:'warn'};
+      if(ds) return {emoji:'⏳', label: ds, cls:'warn'};
+    }
     if(kind === 'statement')
       return isPaid(r)
         ? {emoji:'✅', label:'تسویه شده', cls:'ok'}
@@ -31299,8 +31351,10 @@
     const id = String(pick(r,AD.id) || '');
     const no = (kind === 'statement') ? pick(r,AD.sNo)
              : (kind === 'contract')  ? pick(r,AD.cNo)
-             : (kind === 'letter')    ? pick(r,AD.lNo) : pick(r,AD.mIdx);
-    const rawTitle = (kind === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
+             : (kind === 'letter')    ? pick(r,AD.lNo)
+             : (kind === 'design')    ? pick(r,AD.dNo) : pick(r,AD.mIdx);
+    const rawTitle = (kind === 'design') ? (pick(r,AD.dTitle) || 'سند طراحی')
+                   : (kind === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
                    : (kind === 'contract')  ? ((pick(r,AD.cAdd) ? 'الحاقیه ' + toFa(pick(r,AD.cAdd)) + ' — ' : '') + (pick(r,AD.cTitle) || 'قرارداد'))
                    : (kind === 'letter')    ? (pick(r,AD.lSubject) || 'نامه')
                    : (pick(r,AD.mSubject) || pick(r,AD.mText) || 'صورتجلسه');
@@ -31475,6 +31529,7 @@
 
   /* نشان هر دستهٔ اداری، کنار عنوانش */
   const ADM_SEC_ICON = {
+    design: DESIGN_ICON_SVG,
     statement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
       + 'stroke-linecap="round" stroke-linejoin="round">'
       + '<path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/>'
@@ -32034,7 +32089,7 @@
   /* همان قاعدهٔ زنگوله، این بار روی خودِ کارت اداری */
   function admAlertOf(kind, r){
     // نامه‌ها و هر موردی که کارش تمام شده، هشدار نمی‌گیرند
-    if(kind === 'letter' || kind === 'minute') return null;
+    if(kind === 'letter' || kind === 'minute' || kind === 'design') return null;
     try{ if(admDoneState(kind, r).cls === 'ok') return null; }catch(e){}
     let dl = null, why = '';
     if(kind === 'statement'){
@@ -32777,6 +32832,16 @@
         title: pick(r,AD.lSubject) || 'نامه',
         rows: kv('تاریخ ابلاغ', pick(r,AD.lDate) ? admDate(pick(r,AD.lDate)) : ''),
         note: ''
+      }),
+      design: () => ({
+        title: pick(r,AD.dTitle) || 'سند طراحی',
+        rows: kv('شمارهٔ مدرک', pick(r,AD.dNo))
+            + kv('رشته', pick(r,AD.dDisc))
+            + kv('ویرایش', pick(r,AD.dRev) ? toFa(pick(r,AD.dRev)) : '')
+            + kv('طراح / مشاور', pick(r,AD.dParty))
+            + kv('تاریخ دریافت', exact(r,'تاریخ ارسال') ? admDate(exact(r,'تاریخ ارسال')) : '')
+            + kv('وضعیت مدرک', exact(r,'وضعیت مدرک')),
+        note: exact(r,'توضیحات')
       })
     }[kind]();
 
@@ -32786,7 +32851,7 @@
     (function(){
       const kl = KIND_LABEL[kind] || '';
       const t = String(head.title || '').trim();
-      if(!kl || !t) return;
+      if(!kl || !t || kind === 'design') return;
       if(t.indexOf(kl) === 0) return;        // از قبل با نوع شروع شده
       if(t === kl) return;                   // عنوانی جز نوع ندارد
       head.title = kl + ' ' + t;
@@ -32830,6 +32895,9 @@
       minute:    [['تاریخ جلسه', pick(r,AD.mMeet) ? admDate(pick(r,AD.mMeet)) : '', ''],
                   ['تاریخ اقدام', pick(r,AD.mDate) ? admDate(pick(r,AD.mDate)) : '', ''],
                   ['نوع بند', pick(r,AD.mCat) || 'اداری', '']],
+      design:    [['رشته', pick(r,AD.dDisc), ''],
+                  ['ویرایش', pick(r,AD.dRev) ? toFa(pick(r,AD.dRev)) : '', ''],
+                  ['تاریخ دریافت', exact(r,'تاریخ ارسال') ? admDate(exact(r,'تاریخ ارسال')) : '', '']],
       letter:    [['تاریخ ابلاغ', pick(r,AD.lDate) ? admDate(pick(r,AD.lDate)) : '', ''],
                   ['موعد', dueRaw ? admDate(dueRaw) : '', ''],
                   ['طرف مقابل', pick(r,AD.lParty), '']]
@@ -32848,7 +32916,7 @@
     // شمارهٔ سند کنار برچسب شاخه (نامه و قرارداد و صورت وضعیت)
     const docNo = {
       statement: pick(r,AD.sNo), contract: pick(r,AD.cNo),
-      letter: pick(r,AD.lNo), minute: pick(r,AD.mIdx)
+      letter: pick(r,AD.lNo), minute: pick(r,AD.mIdx), design: pick(r,AD.dNo)
     }[kind];
 
     const reviewBadge = (kind === 'statement' || kind === 'contract')
@@ -32916,7 +32984,7 @@
          قرارداد، مبلغ، وضعیت ابلاغ و اگر موعد گذشته، هشدار موعد. */
       + (function(){
           const bits = [];
-          bits.push('<span class="mi-k">' + esc(KIND_LABEL[kind] || '')
+          bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
           if(party) bits.push('<span class="cl-p">' + esc(party) + '</span>');
           const amt2 = (kind === 'statement') ? pick(r,AD.sAmount)
@@ -32961,7 +33029,7 @@
          که تنها عددِ تصمیم‌ساز است. */
       + (function(){
           const bits = [];
-          bits.push('<span class="mi-k">' + esc(KIND_LABEL[kind] || '')
+          bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
           if(party) bits.push('<button type="button" class="mi-p" '
             + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
@@ -32994,6 +33062,12 @@
                         cls: pick(r,AD.review) ? reviewCls(pick(r,AD.review)) : 'off',
                         cap:'رسیدگی', txt: pick(r,AD.review) || 'ثبت نشده',
                         extra: stageDayDot(r)})
+            : '')
+      +     ((kind === 'design')
+            ? '<span class="stat-chip ' + (DESIGN_CLS[exact(r,'وضعیت مدرک')] || 'off') + '"><u>وضعیت مدرک</u>'
+              + '<b>' + esc(exact(r,'وضعیت مدرک') || 'ثبت نشده') + '</b></span>'
+              + (pick(r,AD.dDisc) ? '<span class="stat-chip"><u>رشته</u><b>' + esc(pick(r,AD.dDisc)) + '</b></span>' : '')
+              + (pick(r,AD.dRev) ? '<span class="stat-chip"><u>ویرایش</u><b>' + esc(toFa(pick(r,AD.dRev))) + '</b></span>' : '')
             : '')
       +     reviewersChip(kind, r, editable)
       /* کپسول «بررسی پیمانکار/کارفرما» حذف شد: خط زمانی همین را نشان می‌دهد */
@@ -33043,7 +33117,7 @@
           if(kind !== 'minute' && age != null){
             const extDone = (kind === 'letter')
               && String(pick(r,AD.lNotify) || '') === 'برون‌سازمانی';
-            t.push(cap('از ابلاغ', toFa(age) + ' روز',
+            t.push(cap(kind === 'design' ? 'از دریافت' : 'از ابلاغ', toFa(age) + ' روز',
               extDone ? 'done' : (age > 30 ? 'bad' : (age > 15 ? 'warn' : 'ok'))));
           }
 
@@ -33210,6 +33284,26 @@
             : f('a-mText','شرح بند', pick(r,AD.mText), true)
               )
         + buttons;
+    }
+    if(kind === 'design'){
+      const sel = (cls, lbl, opts, cur) => '<div class="field" style="margin-bottom:8px;"><label>' + lbl + '</label>'
+        + '<select class="' + cls + '">'
+        + [''].concat(opts).map(v => '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>'
+            + (v || 'انتخاب کنید') + '</option>').join('')
+        + '</select></div>';
+      return '<div class="edit-grid">'
+        + f('a-dTitle','عنوان مدرک', pick(r,AD.dTitle))
+        + f('a-dNo','شمارهٔ مدرک / نقشه', pick(r,AD.dNo))
+        + sel('a-dDisc','رشته', DESIGN_DISC, pick(r,AD.dDisc))
+        + f('a-dRev','ویرایش', pick(r,AD.dRev))
+        + f('a-dParty','طراح / مشاور', pick(r,AD.dParty), false, 'contractPartyList')
+        + fd('a-dDate','تاریخ دریافت', exact(r,'تاریخ ارسال'))
+        + sel('a-dStatus','وضعیت مدرک', DESIGN_STATES, exact(r,'وضعیت مدرک'))
+        + fd('a-due','موعد اتمام', pick(r,AD.due))
+        + fo('a-owner','مسئول', pick(r,AD_OWNER.design))
+        + '</div>' + notifySel('a-dNotify', exact(r,'وضعیت ابلاغ'))
+        + f('a-dNote','توضیحات', exact(r,'توضیحات'), true)
+        + flink(pick(r,AD.link)) + buttons;
     }
     return '<div class="edit-grid">'
       + f('a-lSubject','موضوع نامه', pick(r,AD.lSubject), false, 'contractSubjectList')
@@ -33392,6 +33486,11 @@
         actionDate: bval(b,'a-mBandDate')
       })).filter(x => x.text);
       if(blocks.length) o.__bands = blocks;
+    }else if(kind === 'design'){
+      put(o,'عنوان مدرک','a-dTitle'); put(o,'شماره مدرک','a-dNo'); put(o,'رشته','a-dDisc');
+      put(o,'ویرایش','a-dRev'); put(o,'طراح','a-dParty'); put(o,'تاریخ ارسال','a-dDate');
+      put(o,'وضعیت مدرک','a-dStatus'); put(o,'وضعیت ابلاغ','a-dNotify'); put(o,'موعد اتمام','a-due');
+      put(o,'مسئول','a-owner'); put(o,'توضیحات','a-dNote'); put(o,'لینک','a-link');
     }else{
       put(o,'موضوع نامه','a-lSubject'); put(o,'شماره نامه','a-lNo'); put(o,'طرف مقابل','a-lParty');
       put(o,'تاریخ ارسال','a-lDate'); put(o,'موعد اتمام','a-due');
@@ -33423,6 +33522,10 @@
       add('موضوع', x.subject); add('تاریخ جلسه', x.meetDate && admDate(x.meetDate));
       add('نوع بند', x.category); add('مسئول', x.owner);
       if(x.items && x.items.length) add('بندها', toFa(x.items.length) + ' بند');
+    }else if(x.kind === 'design'){
+      add('عنوان', x.title); add('شماره', x.number); add('رشته', x.discipline);
+      add('ویرایش', x.revision); add('طراح', x.party); add('وضعیت', x.status);
+      add('تاریخ دریافت', x.sentDate && admDate(x.sentDate)); add('مسئول', x.owner);
     }else{
       add('موضوع', x.subject); add('شماره', x.number); add('طرف مقابل', x.party);
       add('تاریخ ابلاغ', x.sentDate && admDate(x.sentDate));
@@ -33442,7 +33545,7 @@
     const label = KIND_LABEL[cur.target] || cur.target;
     const row = rowMap.get(id) || {};
     const title = pick(row,AD.sName) || pick(row,AD.cTitle)
-                || pick(row,AD.mSubject) || pick(row,AD.lSubject) || '—';
+                || pick(row,AD.mSubject) || pick(row,AD.lSubject) || pick(row,AD.dTitle) || '—';
     if(cur.del)
       return '<div class="pv-item del">'
         + '<div class="pv-top"><span class="pv-tag del">حذف</span>'
@@ -33514,7 +33617,7 @@
 
     // موارد تازه
     for(const rec of pendingNewAdmin.slice()){
-      const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters'}[rec.kind];
+      const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[rec.kind];
       const payload = {
         type:'admin',
         date: normDate(dateInput.value) || todayShamsi(),
@@ -33548,7 +33651,7 @@
   async function saveNewAdmin(host, saveBtn){
     const kind = host.dataset.newKind;
     const v = admValues(kind, host);
-    const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters'}[kind];
+    const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[kind];
     const item = {};
     if(kind === 'statement'){
       Object.assign(item, {contractName:v['نام قرارداد'], party:v['طرف قرارداد'], contractNo:v['شماره قرارداد'],
@@ -33567,6 +33670,10 @@
         owner:v['مسئول'], actionDate:v['تاریخ اقدام'],
         items: v.__bands || (v['شرح بند'] ? [{text:v['شرح بند'], owner:v['مسئول'],
           actionDate:v['تاریخ اقدام']}] : []), link:v['لینک']});
+    }else if(kind === 'design'){
+      Object.assign(item, {title:v['عنوان مدرک'], number:v['شماره مدرک'], discipline:v['رشته'],
+        revision:v['ویرایش'], party:v['طراح'], sentDate:v['تاریخ ارسال'], status:v['وضعیت مدرک'],
+        notify:v['وضعیت ابلاغ'], dueDate:v['موعد اتمام'], owner:v['مسئول'], link:v['لینک'], note:v['توضیحات']});
     }else{
       Object.assign(item, {subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک']});
@@ -33591,6 +33698,8 @@
       addPair('شماره قرارداد', item.number); addPair('تهیه‌کننده', item.owner);
     }else if(kind === 'letter'){
       addPair('طرف قرارداد', item.party); addPair('موضوع نامه', item.subject);
+      addPair('تهیه‌کننده', item.owner);
+    }else if(kind === 'design'){
       addPair('تهیه‌کننده', item.owner);
     }else if(kind === 'minute'){
       addPair('موضوع صورتجلسه', item.subject);
@@ -33784,18 +33893,18 @@
   wireAdminNew(document.getElementById('adminView'));
 
   // فرم‌های خالی بلافاصله نشان داده می‌شوند تا کاربر معطل دریافت داده نماند
-  const ADM_ORDER = ['statement','contract','minute','letter'];
+  const ADM_ORDER = ['statement','contract','minute','letter','design'];
 
   function newFormHead(k){
     return '<button type="button" class="nf-toggle">'
       + '<span class="nf-plus">+</span>'
-      + '<b>ثبت ' + KIND_LABEL[k] + ' تازه</b>'
+      + '<b>ثبت ' + KIND_ONE(k) + ' تازه</b>'
       + '<span class="nf-hint">برای وارد کردن اطلاعات باز کنید</span>'
       + '<span class="nf-ar">▾</span></button>';
   }
   const addMoreBtn = k =>
     '<button type="button" class="add ghost add-more" data-addkind="'+k+'">'
-    + '+ افزودن ' + esc(KIND_LABEL[k]) + ' دیگر</button>';
+    + '+ افزودن ' + esc(KIND_ONE(k)) + ' دیگر</button>';
 
   function admNewFormHtml(k){
     /* بدون اجازهٔ «ثبت مورد اداری تازه»، فرم خالی هم نمی‌آید */
@@ -34335,7 +34444,7 @@
   window.admSetCat = admSetCat;
   /* آخرین شمارهٔ هر دسته: جدیدترین سند بر اساس تاریخ و بعد شماره */
   function admLastOf(kind, L){
-    const F2 = {statement:[AD.sDate, AD.sNo, 'شمارهٔ '], contract:[AD.cDate, AD.cNo, 'شمارهٔ '], letter:[AD.lDate, AD.lNo, 'شمارهٔ '], minute:[AD.mMeet, null, '']}[kind];
+    const F2 = {statement:[AD.sDate, AD.sNo, 'شمارهٔ '], contract:[AD.cDate, AD.cNo, 'شمارهٔ '], letter:[AD.lDate, AD.lNo, 'شمارهٔ '], design:[AD.dDate, AD.dNo, 'شمارهٔ '], minute:[AD.mMeet, null, '']}[kind];
     if(!F2 || !L.length) return '';
     const dk = r => { const n = normDate(pick(r, F2[0]) || pick(r, AD.date) || ''); return n ? toEn(n) : ''; };
     const nk = r => { const v = F2[1] ? toEn(String(pick(r, F2[1]) || '')) : ''; const m = v.match(/\d+/g); return m ? +m.join('') : -1; };
@@ -35229,6 +35338,11 @@
       if(parties) parts.push(toFa(parties) + ' طرف قرارداد');
     }else if(kind === 'letter'){
       if(parties) parts.push(toFa(parties) + ' طرف مکاتبه');
+    }else if(kind === 'design'){
+      const need = list.filter(r => exact(r,'وضعیت مدرک') === 'نیاز به اصلاح').length;
+      const ok2 = list.filter(r => ['تأیید شده','برای اجرا'].indexOf(exact(r,'وضعیت مدرک')) !== -1).length;
+      if(ok2) parts.push(toFa(ok2) + ' تأییدشده');
+      if(need) parts.push(toFa(need) + ' نیاز به اصلاح');
     }
     const dates = list.map(r => admSentDate(kind, r)).filter(Boolean)
       .sort((a, b) => { const x = faToDate(a), y = faToDate(b); return (y ? y.getTime() : 0) - (x ? x.getTime() : 0); });
@@ -35304,6 +35418,8 @@
         const n = String(pick(x.row,AD.lNotify) || '');
         return n === 'برون‌سازمانی' || n === 'درون‌سازمانی';
       }
+      if(x.kind === 'design')
+        return ['تأیید شده','برای اجرا'].indexOf(exact(x.row,'وضعیت مدرک')) !== -1;
       return false;
     };
 
@@ -35483,10 +35599,10 @@
     const base = admOwnerFilter(adminFilters.apply(adminAll));
     renderAdminList(base.filter(x => rowMatches([
       pick(x.row,AD.sName), pick(x.row,AD.cTitle),
-      pick(x.row,AD.mSubject), pick(x.row,AD.lSubject),
+      pick(x.row,AD.mSubject), pick(x.row,AD.lSubject), pick(x.row,AD.dTitle), pick(x.row,AD.dDisc),
       admParty(x.kind, x.row),
       pick(x.row, AD_OWNER[x.kind] || ['مسئول']),
-      pick(x.row,AD.sNo), pick(x.row,AD.cNo), pick(x.row,AD.lNo),
+      pick(x.row,AD.sNo), pick(x.row,AD.cNo), pick(x.row,AD.lNo), pick(x.row,AD.dNo),
       pick(x.row,AD.mText), pick(x.row,AD.sNote)], qAdmin)));
   }
 
@@ -35542,6 +35658,13 @@
         ['تاریخ اقدام', g('تاریخ اقدام')], ['وضعیت ابلاغ', r => notifyLabel(exact(r, 'وضعیت ابلاغ'))],
         ['انجام شده', r => isOne(exact(r, 'انجام شده')) ? 'بله' : ''], ['تاریخ تکمیل', g('تاریخ تکمیل')],
         ['تهیه‌کننده', g('مهندس')], ['پیوست', g('لینک')]
+      ],
+      design: [
+        ['شماره مدرک', g('شماره مدرک')], ['عنوان مدرک', g('عنوان مدرک')], ['رشته', g('رشته')],
+        ['ویرایش', g('ویرایش')], ['طراح / مشاور', g('طراح')], ['تاریخ دریافت', g('تاریخ ارسال')],
+        ['وضعیت مدرک', g('وضعیت مدرک')], ['وضعیت ابلاغ', r => notifyLabel(exact(r, 'وضعیت ابلاغ'))],
+        ['موعد اتمام', g('موعد اتمام')], ['روز از دریافت', age], ['مسئول', g('مسئول')],
+        ['تهیه‌کننده', g('مهندس')], ['توضیحات', g('توضیحات')], ['پیوست', g('لینک')]
       ],
       letter: [
         ['شماره نامه', g('شماره نامه')], ['موضوع نامه', g('موضوع نامه')], ['طرف مقابل', g('طرف مقابل')],
@@ -35769,7 +35892,8 @@
         .concat(a.statements.map(r => ({kind:'statement', row:r})))
         .concat(a.contracts.map(r => ({kind:'contract', row:r})))
         .concat(a.minutes.map(r => ({kind:'minute', row:r})))
-        .concat(a.letters.map(r => ({kind:'letter', row:r})));
+        .concat(a.letters.map(r => ({kind:'letter', row:r})))
+        .concat((a.designs || []).map(r => ({kind:'design', row:r})));
       adminAll.forEach(x => { const id = pick(x.row,AD.id); if(id) rowMap.set(id, x.row); });
       // حالت پنجره‌ها و محل اسکرول بعد از رندر برمی‌گردد
       setTimeout(() => { try{ admRestore(snap); }catch(e){} }, 0);
