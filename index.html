@@ -8800,6 +8800,50 @@
   .cm-ops .cm-reply-btn{margin-inline-start:4px;}
   @media (hover:none) and (pointer:coarse){ .cm-ops .cm-react{height:30px;padding:0 10px;} }
 
+  /* واکنش با شکلک (نظرها، کارت‌های فعالیت، گفتگو) */
+  .rx-set{display:contents;}
+  .cm-react .rx-e{font-style:normal;font-size:13px;line-height:1;}
+  .cm-react.emo.on{background:color-mix(in srgb, var(--warn, #c98a1b) 14%, transparent) !important;color:var(--ink) !important;border-color:color-mix(in srgb, var(--warn, #c98a1b) 35%, transparent) !important;}
+  .rx-addw{position:relative;display:inline-flex;}
+  .rx-add{
+    display:inline-grid;place-items:center;width:24px;height:24px;border-radius:999px;padding:0;
+    background:none;border:1px dashed var(--line);color:var(--muted);cursor:pointer;
+  }
+  .rx-add svg{width:14px;height:14px;}
+  .rx-add:focus:not(:focus-visible){outline:none;}
+  .rx-add:hover,.rx-addw.open .rx-add{background:var(--field);color:var(--ink);border-style:solid;}
+  .rx-pop{
+    position:absolute;bottom:calc(100% + 6px);inset-inline-start:-4px;z-index:60;display:none;gap:2px;
+    padding:4px;border-radius:999px;background:var(--surface);border:1px solid var(--line);
+    box-shadow:0 10px 28px -8px rgba(0,0,0,.28);white-space:nowrap;
+  }
+  .rx-addw.open .rx-pop{display:flex;animation:rxIn .14s ease-out;}
+  .rx-addw.down .rx-pop{bottom:auto;top:calc(100% + 6px);}
+  .rx-pop button{
+    width:32px;height:32px;border-radius:50%;border:0;background:none;cursor:pointer;
+    font-size:19px;line-height:1;padding:0;transition:transform .12s;
+  }
+  .rx-pop button:hover{transform:scale(1.22);background:var(--field);}
+  .rx-pop button.on{background:var(--sky-soft);}
+  @keyframes rxIn{from{opacity:0;}to{opacity:1;}}
+  .b-rx{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:5px;}
+  .b-rx .cm-react{
+    display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 7px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;
+    font-family:var(--f);font-size:10px;font-weight:700;
+  }
+  .b-rx .cm-react svg{width:12px;height:12px;}
+  .b-rx .cm-react.like.on{background:var(--sky-soft);color:var(--sky);}
+  .b-rx .cm-react.dislike.on{background:var(--alert-soft);color:var(--alert);}
+  .b-rx .cm-react:not(:has(span)){display:none;}   /* در گفتگو فقط واکنش‌های ثبت‌شده */
+  .b-rx .rx-add{width:22px;height:22px;opacity:.55;}
+  .bubble:hover .b-rx .rx-add,.b-rx .rx-addw.open .rx-add{opacity:1;}
+  @media (hover:none) and (pointer:coarse){
+    .rx-add{width:30px;height:30px;}
+    .b-rx .rx-add{width:26px;height:26px;opacity:.8;}
+    .rx-pop button{width:36px;height:36px;font-size:21px;}
+  }
+
   /* نام پیمانکار روی کارت اداری: پیوند قابل کلیک */
   .adm-meta .mi-p{cursor:pointer;color:var(--sky);text-decoration:underline;text-decoration-style:dotted;
     text-underline-offset:3px;background:none;border:none;padding:0;font:inherit;}
@@ -9780,6 +9824,9 @@
   [data-theme="dark"] .rv::after,
   [data-theme="dark"] .eng::after,
   [data-theme="dark"] .rv.adm-k::after{display:none !important;}
+  /* در حالت روز هم: لایهٔ تابش با mix-blend screen روی متن می‌افتاد و
+     نیمهٔ بالای کارت (مثلاً گزارش هر نفر در گزارش روزانه) کمرنگ می‌شد */
+  .eng::after, .rv.adm-k::after{display:none !important;}
 
   /* کارت بستهٔ نیروی انسانی: هم‌ارتفاع کارت‌های سطح ۲ (حدود ۵۴) */
   #reportView .hr-card > .hr-head{
@@ -12069,6 +12116,10 @@
   .a2hs-steps b{font-size:12.5px;font-weight:600;color:var(--ink);} .a2hs-steps b b{font-weight:900;}
   .a2hs-steps small{font-size:10.5px;color:var(--muted);}
   .a2hs-ok{height:42px;border-radius:13px;font-size:13px;}
+  .a2hs-btns{display:flex;gap:8px;}
+  .a2hs-btns .mini{flex:1;height:42px;border-radius:13px;font-size:13px;}
+  .a2hs-btns .a2hs-later{flex:0 0 34%;background:var(--field);color:var(--ink);border:1px solid var(--line);}
+  .a2hs-note{display:block;text-align:center;color:var(--muted);font-size:10.5px;margin-top:-4px;}
   /* ====== پروفایل: زیربخش‌ها ====== */
   .pf3-nav{position:sticky;top:0;z-index:4;display:flex;gap:4px;padding:4px;margin:14px 0 14px;border-radius:14px;
     background:color-mix(in srgb, var(--field) 92%, transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
@@ -15305,6 +15356,26 @@
     .acat{flex:0 0 168px;scroll-snap-align:start;padding:11px;}
   }
   @media(prefers-reduced-motion:reduce){ #adminView .adm-sec.cat-in{animation:none;} .acat:hover{transform:none;} }
+  /* گوشی: به‌جای ردیف اسکرولی کاشی‌های بزرگ، شبکهٔ دوستونهٔ جمع‌وجور تا
+     همهٔ بخش‌ها یک‌جا دیده شوند */
+  @media(max-width:640px){
+    .adm-cats{display:grid !important;grid-template-columns:1fr 1fr !important;overflow:visible !important;margin:0 0 14px !important;padding:0 !important;gap:8px !important;}
+    .adm-cats .acat{flex:none !important;padding:10px !important;border-radius:15px !important;min-width:0;
+      grid-template-columns:auto 1fr auto !important;grid-template-rows:auto auto !important;
+      grid-template-areas:"ic tx n" "last last add" !important;gap:8px 8px !important;}
+    .adm-cats .acat .acat-ic{grid-area:ic !important;grid-row:auto !important;width:34px !important;height:34px !important;border-radius:11px !important;}
+    .adm-cats .acat .acat-ic svg{width:17px;height:17px;}
+    .adm-cats .acat .acat-tx{grid-area:tx !important;min-width:0;}
+    .adm-cats .acat .acat-tx b{font-size:12.5px !important;white-space:normal !important;overflow:visible !important;line-height:1.35;}
+    .adm-cats .acat .acat-tx small{font-size:10px !important;}
+    .adm-cats .acat .acat-n{grid-area:n !important;font-size:17px !important;align-self:start;}
+    .adm-cats .acat .acat-last{grid-area:last !important;min-width:0;font-size:10px !important;padding:5px 8px !important;border-radius:9px !important;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex !important;align-items:center;gap:4px;}
+    .adm-cats .acat .acat-last:empty{visibility:hidden;}
+    .adm-cats .acat .acat-last b{font-size:11px !important;overflow:hidden;text-overflow:ellipsis;}
+    .adm-cats .acat .acat-add{grid-area:add !important;width:30px !important;height:30px !important;border-radius:10px !important;align-self:center;}
+    .adm-cats .acat .acat-tx small:has(.acat-hot){gap:2px 4px;}
+  }
 
   .acat{grid-template-columns:auto 1fr auto !important;grid-template-rows:auto auto !important;grid-template-areas:"ic . n" "tx tx add";gap:10px 8px !important;}
   .acat-ic{grid-area:ic;grid-row:auto !important;}
@@ -16066,7 +16137,14 @@
     background:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;}
   .pf3-nav.tiles button{--tc:var(--sky);position:relative;height:auto;justify-content:flex-start;gap:10px;padding:12px;border-radius:16px;text-align:start;
     background:var(--surface);border:1px solid var(--line);white-space:normal;transition:transform .15s, border-color .2s, box-shadow .2s, background .2s;}
-  .pf3-nav.tiles button.c-bad{--tc:var(--alert);} .pf3-nav.tiles button.c-ok{--tc:var(--ok);} .pf3-nav.tiles button.c-warn{--tc:var(--warn);}
+.pf3-nav.tiles button.c-bad{--tc:var(--alert);} .pf3-nav.tiles button.c-ok{--tc:var(--ok);} .pf3-nav.tiles button.c-warn{--tc:var(--warn);}
+  .pf3-nav.tiles button.c-vio{--tc:#6d5bb5;} .pf3-nav.tiles button.c-ink{--tc:var(--emp);}
+  /* پنل مدیریتی: عددها، گزارش‌ها و بخش‌ها همه یک شکل */
+  .mg2-kpis{grid-template-columns:repeat(3, minmax(0,1fr)) !important;}
+  .mg2-k{border-radius:16px !important;background:var(--surface) !important;border:1px solid var(--line) !important;}
+  [data-theme="dark"] .pf3-nav.tiles button, [data-theme="dark"] .mg2-reps.mg3 .mg-cap, [data-theme="dark"] .mg2-k{background:rgba(255,255,255,.035) !important;border-color:rgba(255,255,255,.09) !important;}
+  [data-theme="dark"] .pf3-nav.tiles button.on{background:color-mix(in srgb, var(--tc) 16%, transparent) !important;border-color:color-mix(in srgb, var(--tc) 55%, transparent) !important;}
+  [data-theme="dark"] .p3-tx b, [data-theme="dark"] .mgc-tx b{color:#eef1f5;}
   .pf3-nav.tiles button:hover{transform:translateY(-2px);}
   .pf3-nav.tiles button.on{background:linear-gradient(160deg, color-mix(in srgb, var(--tc) 12%, var(--surface)), var(--surface) 75%);
     border-color:color-mix(in srgb, var(--tc) 45%, var(--line));box-shadow:0 12px 26px -20px var(--tc);}
@@ -16119,6 +16197,11 @@
   #mgCritBody .mg-why{font-size:10.5px;font-weight:700;color:var(--alert);background:color-mix(in srgb, var(--alert) 10%, var(--surface));padding:1px 8px;border-radius:99px;}
   /* فضای دکمهٔ بستن کنار تب‌های چسبان */
   #profileModal.pf2 .pf2-tabs{padding-inline-end:62px !important;}
+  /* روی گوشی دکمهٔ بستن روی عکس کاور است، نه کنار تب‌ها؛ آن فضا سمت چپ
+     تب‌ها را خالی می‌گذاشت */
+  @media (max-width: 640px){
+    #profileModal.pf2 .pf2-tabs{padding-inline-end:14px !important;display:grid !important;grid-template-columns:repeat(auto-fit, minmax(0, 1fr));}
+  }
 
   /* لیست فعالیت همیشه باز است؛ بخش‌های بیرون از صفحه چیده نمی‌شوند */
   #taskView .eng.foldable > .eng-body .tfr-item, #taskView .eng.foldable > .eng-body .subsec{content-visibility:auto;contain-intrinsic-size:auto 64px;}
@@ -17478,6 +17561,7 @@
     if(typeof saveDraft === 'function') saveDraft();
     applyLoginGate();
     if(currentUser) setTimeout(() => { try{ uiMaybeTour(); }catch(e){} }, 900);
+    if(currentUser) setTimeout(() => { try{ maybeA2hs(); }catch(e){} }, 2500);
   }
 
   // ---------- رمز عبور ----------
@@ -19460,6 +19544,7 @@
   async function loadMessages(force){
     try{
       allMessages = await loadAllNudges(force);
+      try{ buildReactCache(allMessages); }catch(e){}
       refreshUnreadMap();
       const me = activeUserName();
       const seenM = new Set();
@@ -19691,9 +19776,20 @@
     }
   });
 
-  let reactCache = new Map();          // شناسهٔ نظر ← {like:Map(نام→ردیف), dislike:Map}
+  /* واکنش‌ها: پسند، نپسند، و شکلک (پیام «e:❤️»). هر نفر روی هر
+     نظر یا پیام فقط یک واکنش دارد؛ تازه‌ترین ردیفش حساب است. */
+  const RX_EMOJIS = ['❤️','😂','😮','😢','🙏','👏','🔥','✅'];
+  let reactCache = new Map();          // شناسه ← {like:Map(نام→ردیف), dislike:Map, emo:Map(شکلک→Map)}
+  const rxEmpty = () => ({like:new Map(), dislike:new Map(), emo:new Map()});
+  const rxType = t => t === 'like' || t === 'dislike' || /^e:.+/.test(t);
+  function rxMapOf(x, type, make){
+    if(type === 'like' || type === 'dislike') return x[type];
+    const e = type.slice(2);
+    if(!x.emo.has(e) && make) x.emo.set(e, new Map());
+    return x.emo.get(e);
+  }
   function buildReactCache(all){
-    const latest = new Map();          // نظر|نفر ← ردیف
+    const latest = new Map();          // شناسه|نفر ← ردیف
     (all || []).filter(isReactRow).forEach(r => {
       const cid = String(pick(r,N.itemId) || '');
       const who = nameKey(pick(r,N.from));
@@ -19705,30 +19801,66 @@
     const m = new Map();
     latest.forEach(r => {
       const t = String(pick(r,N.msg) || '').trim();
-      if(t !== 'like' && t !== 'dislike') return;
+      if(!rxType(t)) return;
       const cid = String(pick(r,N.itemId));
-      if(!m.has(cid)) m.set(cid, {like:new Map(), dislike:new Map()});
-      m.get(cid)[t].set(pick(r,N.from), r);
+      if(!m.has(cid)) m.set(cid, rxEmpty());
+      rxMapOf(m.get(cid), t, true).set(pick(r,N.from), r);
     });
     reactCache = m;
   }
   function reactOpsHtml(cid){
     const me = activeUserName();
-    const rc = reactCache.get(String(cid)) || {like:new Map(), dislike:new Map()};
+    const rc = reactCache.get(String(cid)) || rxEmpty();
     const has = (mp) => Array.from(mp.keys()).some(n => nameKey(n) === nameKey(me));
     const names = mp => Array.from(mp.keys()).join('، ');
-    const btn = (type, mp, icon, label) =>
-      '<button type="button" class="cm-react ' + type + (has(mp) ? ' on' : '') + '" '
-      + 'data-cm-react="' + type + '" data-cid="' + esc(cid) + '" '
+    const btn = (type, mp, icon, label, cls) =>
+      '<button type="button" class="cm-react ' + cls + (has(mp) ? ' on' : '') + '" '
+      + 'data-cm-react="' + esc(type) + '" data-cid="' + esc(cid) + '" '
       + 'aria-pressed="' + has(mp) + '" '
       + 'title="' + esc(label + (mp.size ? ' — ' + names(mp) : '')) + '">'
       + icon + (mp.size ? '<span>' + toFa(mp.size) + '</span>' : '') + '</button>';
-    return btn('like', rc.like,
+    const emo = Array.from(rc.emo.entries()).filter(([, mp]) => mp.size)
+      .sort((a, b) => b[1].size - a[1].size)
+      .map(([e, mp]) => btn('e:' + e, mp, '<i class="rx-e">' + esc(e) + '</i>', e, 'emo')).join('');
+    return '<span class="rx-set">'
+      + btn('like', rc.like,
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9h3z"/><path d="M7 11l4-7c1.1 0 2 .9 2 2v4h5.2a2 2 0 0 1 2 2.3l-1.2 6.4A2 2 0 0 1 17 20H7"/></svg>',
-        'پسند')
+        'پسند', 'like')
       + btn('dislike', rc.dislike,
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V4h3v9h-3z"/><path d="M17 13l-4 7c-1.1 0-2-.9-2-2v-4H5.8a2 2 0 0 1-2-2.3L5 5.3A2 2 0 0 1 7 4h10"/></svg>',
-        'نپسند');
+        'نپسند', 'dislike')
+      + emo
+      + '<span class="rx-addw"><button type="button" class="rx-add" data-rx-add aria-label="افزودن شکلک" title="واکنش با شکلک">'
+      +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="12" r="8"/><path d="M8 14.2c.8 1 1.8 1.5 3 1.5s2.2-.5 3-1.5"/><path d="M8.5 9.5h.01M13.5 9.5h.01"/><path d="M20 3v4M18 5h4"/></svg></button>'
+      +   '<span class="rx-pop" role="menu">'
+      +     RX_EMOJIS.map(e => '<button type="button" role="menuitem" data-cm-react="e:' + esc(e) + '" data-cid="' + esc(cid) + '"'
+              + (has(rc.emo.get(e) || new Map()) ? ' class="on"' : '') + '>' + esc(e) + '</button>').join('')
+      +   '</span></span>'
+      + '</span>';
+  }
+  // باز و بسته کردن جعبهٔ شکلک
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-rx-add]');
+    document.querySelectorAll('.rx-addw.open').forEach(w => { if(!a || w !== a.parentElement) w.classList.remove('open'); });
+    if(!a) return;
+    e.preventDefault(); e.stopPropagation();
+    const w = a.parentElement;
+    w.classList.toggle('open');
+    if(w.classList.contains('open')){
+      // اگر جعبه از لبهٔ صفحه بیرون بزند، به سمت دیگر می‌رود
+      const pop = w.querySelector('.rx-pop');
+      pop.style.transform = '';
+      const p = pop.getBoundingClientRect();
+      const dx = p.left < 8 ? 8 - p.left : (p.right > innerWidth - 8 ? innerWidth - 8 - p.right : 0);
+      if(dx) pop.style.transform = 'translateX(' + Math.round(dx) + 'px)';
+      w.classList.remove('down');
+      const sc = w.closest('.chat-wrap, .cm-panel, .modal-body');
+      const topLim = sc ? sc.getBoundingClientRect().top : 0;
+      if(p.top < topLim + 4) w.classList.add('down');
+    }
+  }, true);
+  function rxRowById(cid){
+    return cmRowById(cid) || (allMessages || []).find(x => String(pick(x,N.id)) === String(cid));
   }
   let reactBusy = false;
   document.addEventListener('click', async e => {
@@ -19737,41 +19869,45 @@
     e.preventDefault(); e.stopPropagation();
     if(reactBusy) return;
     const me = activeUserName();
-    if(!me){ showDialog('warn','ابتدا وارد شوید','برای واکنش به نظرها باید نام کاربری انتخاب شده باشد.'); return; }
+    if(!me){ showDialog('warn','ابتدا وارد شوید','برای واکنش باید نام کاربری انتخاب شده باشد.'); return; }
     const cid = b.dataset.cid, type = b.dataset.cmReact;
-    const other = type === 'like' ? 'dislike' : 'like';
-    const rc = reactCache.get(String(cid)) || {like:new Map(), dislike:new Map()};
-    const mineOf = mp => { for(const [n, r] of mp) if(nameKey(n) === nameKey(me)) return r; return null; };
-    const same = mineOf(rc[type]), opp = mineOf(rc[other]);
-    const row = cmRowById(cid);
+    if(!rxType(type)) return;
+    const rc = reactCache.get(String(cid)) || rxEmpty();
+    const mineOf = mp => { for(const [n, r] of (mp || [])) if(nameKey(n) === nameKey(me)) return r; return null; };
+    const same = mineOf(rxMapOf(rc, type, false));
+    const olds = [rc.like, rc.dislike, ...rc.emo.values()].map(mineOf).filter(Boolean);
+    const row = rxRowById(cid);
     const box = b.closest('.cm-panel');
+    const inChat = !!b.closest('#msgList');
+    const set = b.closest('.rx-set');
 
     // نمایش فوری، بعد ثبت
-    const optimistic = () => {
-      if(!reactCache.has(String(cid))) reactCache.set(String(cid), {like:new Map(), dislike:new Map()});
-      const x = reactCache.get(String(cid));
-      [x.like, x.dislike].forEach(mp => { for(const n of Array.from(mp.keys())) if(nameKey(n) === nameKey(me)) mp.delete(n); });
-      if(!same) x[type].set(me, {__tmp:true});
-      const ops = b.parentElement;
-      if(ops) ops.querySelectorAll('.cm-react').forEach(el => el.remove());
-      if(ops) ops.insertAdjacentHTML('afterbegin', reactOpsHtml(cid));
-    };
-    optimistic();
+    if(!reactCache.has(String(cid))) reactCache.set(String(cid), rxEmpty());
+    const x = reactCache.get(String(cid));
+    [x.like, x.dislike, ...x.emo.values()].forEach(mp => { for(const n of Array.from(mp.keys())) if(nameKey(n) === nameKey(me)) mp.delete(n); });
+    if(!same) rxMapOf(x, type, true).set(me, {__tmp:true});
+    if(set) set.outerHTML = reactOpsHtml(cid);
 
     reactBusy = true;
     try{
-      for(const old of [same, opp]){
-        const oid = old && pick(old,N.id);
+      for(const old of olds){
+        const oid = pick(old,N.id);
         if(oid) await sendAction({action:'delete', target:'nudge', id: oid});
       }
       if(!same){
         await sendAction({action:'nudge', from: me, to: row ? (pick(row,N.from) || me) : me,
           kind: 'واکنش', itemId: cid, title: 'REACT', message: type, date: todayShamsi()});
       }
-      await loadComments(true);
-      if(box){
-        const kk = String(box.dataset.cmp || '').split(CM_SEP);
-        if(kk[1]){ box.__cmHtml = ''; cmRedraw(box, kk[0], kk[1]); }
+      if(inChat){
+        await loadMessages(true);
+        lastChatSig = '';
+        renderMessages(document.getElementById('msgTo').value || '');
+      }else{
+        await loadComments(true);
+        if(box){
+          const kk = String(box.dataset.cmp || '').split(CM_SEP);
+          if(kk[1]){ box.__cmHtml = ''; cmRedraw(box, kk[0], kk[1]); }
+        }
       }
     }catch(err){
       showDialog('warn','واکنش ثبت نشد', friendlyErr(err));
@@ -20669,6 +20805,8 @@
       + (String(pick(r,N.msg) || '') === MSG_DELETED
           ? '<div class="b-text gone">' + esc(MSG_DELETED) + '</div>'
           : '<div class="b-text">' + esc(pick(r,N.msg) || '') + '</div>')
+      + (String(pick(r,N.msg) || '') !== MSG_DELETED && pick(r,N.id)
+          ? '<div class="b-rx">' + reactOpsHtml(pick(r,N.id)) + '</div>' : '')
       + (!mine && String(pick(r,N.msg) || '') !== MSG_DELETED
           ? '<button type="button" class="b-reply" data-reply-to="'+esc(pick(r,N.from) || '')+'" '
           + 'data-reply-title="'+esc(title || '')+'">پاسخ</button>' : '')
@@ -20754,7 +20892,9 @@
 
     // اگر چیزی عوض نشده، صفحه دست‌نخورده می‌ماند (بدون پرش و لرزش)
     const sig = String(withName || '*') + '#' + list.length + '#'
-      + list.map(r => String(pick(r,N.id)) + (pick(r,N.state) === 'خوانده‌شده' ? '1' : '0')).join(',');
+      + list.map(r => String(pick(r,N.id)) + (pick(r,N.state) === 'خوانده‌شده' ? '1' : '0')).join(',')
+      + '#' + list.map(r => { const x = reactCache.get(String(pick(r,N.id)));
+          return x ? [x.like.size, x.dislike.size, ...Array.from(x.emo, ([k, m]) => k + m.size)].join('.') : ''; }).join(',');
     const had = box.querySelector('.chat-wrap');
     if(had && sig === lastChatSig) return;
 
@@ -23784,8 +23924,29 @@
     try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }catch(e){ return false; }
   }
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  async function showInstallGuide(){
-    if(a2hsEvt){
+  /* پیشنهاد افزودن به صفحهٔ اصلی: برای هر کاربر یک بار، پس از ورود.
+     اگر برنامه از قبل نصب شده باشد یا پنجرهٔ دیگری باز باشد، صبر می‌کند. */
+  const A2HS_SEEN_KEY = 'siteLogM.a2hsSeen.v1';
+  function a2hsSeenList(){ try{ return JSON.parse(localStorage.getItem(A2HS_SEEN_KEY) || '[]') || []; }catch(e){ return []; } }
+  function maybeA2hs(tries){
+    const me = activeUserName();
+    if(!me || appInstalled()) return;
+    const k = nameKey(me);
+    if(a2hsSeenList().includes(k)) return;
+    const um = document.getElementById('userModal');
+    const busy = document.documentElement.classList.contains('locked') || (um && !um.hidden)
+      || document.querySelector('.ix, .tour-welcome, .tour-card, #a2hsModal')
+      || Array.from(document.querySelectorAll('.modal-bg')).some(m => !m.hidden && m.offsetParent !== null);
+    if(busy){
+      if((tries || 0) < 90) setTimeout(() => maybeA2hs((tries || 0) + 1), 2000);
+      return;
+    }
+    try{ localStorage.setItem(A2HS_SEEN_KEY, JSON.stringify(a2hsSeenList().concat(k))); }catch(e){}
+    showInstallGuide({auto:true});
+  }
+  async function showInstallGuide(opts){
+    const auto = !!(opts && opts.auto);
+    if(a2hsEvt && !auto){
       a2hsEvt.prompt();
       try{ await a2hsEvt.userChoice; }catch(e){}
       a2hsEvt = null;
@@ -23812,21 +23973,33 @@
       + (ios && !/safari/i.test(navigator.userAgent.replace(/crios|fxios|edgios/i, 'x')) ? '<div class="a2hs-warn">در آیفون فقط از مرورگر <b>Safari</b> می‌شود این کار را کرد.</div>' : '')
       + '<ol class="a2hs-steps">' + steps.map(([ic, t, d], i) =>
           '<li style="--i:' + i + '"><span class="a2hs-ic">' + ic + '</span><span><b>' + t + '</b>' + (d ? '<small>' + d + '</small>' : '') + '</span></li>').join('') + '</ol>'
-      + '<button type="button" class="mini go a2hs-ok">متوجه شدم</button>'
+      + (auto
+          ? '<div class="a2hs-btns">'
+            + (a2hsEvt ? '<button type="button" class="mini go a2hs-inst">نصب برنامه</button>' : '<button type="button" class="mini go a2hs-ok">متوجه شدم</button>')
+            + '<button type="button" class="mini a2hs-ok a2hs-later">بعداً</button></div>'
+            + '<small class="a2hs-note">هر زمان از «پروفایل ← تنظیمات» هم در دسترس است.</small>'
+          : '<button type="button" class="mini go a2hs-ok">متوجه شدم</button>')
       + '</div>';
     document.body.appendChild(bg);
     bg.hidden = false;
-    bg.addEventListener('click', e => { if(e.target === bg || e.target.closest('.a2hs-ok')) bg.remove(); });
+    bg.addEventListener('click', async e => {
+      if(e.target.closest('.a2hs-inst')){
+        bg.remove();
+        if(a2hsEvt){ a2hsEvt.prompt(); try{ await a2hsEvt.userChoice; }catch(err){} a2hsEvt = null; }
+        return;
+      }
+      if(e.target === bg || e.target.closest('.a2hs-ok')) bg.remove();
+    });
   }
 
   const pf3Sub = {};
   function pf3NavHtml(tab, subs){
-    if(!subs.some(x => x[0] === pf3Sub[tab])) pf3Sub[tab] = subs[0][0];
+    if(!subs.some(x => x[0] === pf3Sub[tab] && !x[6])) pf3Sub[tab] = subs[0][0];
     /* با آیکون و توضیح، به شکل کاشی؛ بدون آن، نوار کپسولی */
     const tiles = subs.some(x => x[3]);
     return '<div class="pf3-nav' + (tiles ? ' tiles' : '') + '" role="tablist" data-pf3="' + tab + '">'
-      + subs.map(([k, t, n, ic, d, c]) => '<button type="button" role="tab" data-pf3go="' + k + '"'
-        + ' class="' + (pf3Sub[tab] === k ? 'on' : '') + (c ? ' c-' + c : '') + '">'
+      + subs.map(([k, t, n, ic, d, c, act]) => '<button type="button" role="tab" ' + (act ? 'data-pfq="' + act + '"' : 'data-pf3go="' + k + '"')
+        + ' class="' + (!act && pf3Sub[tab] === k ? 'on' : '') + (c ? ' c-' + c : '') + (act ? ' act' : '') + '">'
         + (tiles
             ? '<span class="p3-ic">' + (ic || '') + '</span><span class="p3-tx"><b>' + t + '</b>' + (d ? '<small>' + d + '</small>' : '') + '</span>'
               + (n ? '<i>' + toFa(n) + '</i>' : '')
@@ -24083,17 +24256,11 @@
         +   k(engN, 'گزارش‌دهندهٔ امروز', '', 'rep')
         +   k(menN, 'نفرات کارگاه', '', 'rep')
         +   k(openT.length, 'فعالیت باز', '', 'tasks')
-        +   k(critN, 'مورد بحرانی', critN ? 'bad' : 'ok', 'crit')
         + '</div>';
 
       const q = (go, ic, t, d, cls) => '<button type="button" class="mg2-q' + (cls ? ' ' + cls : '') + '" data-pfq="' + go + '">'
         + '<span class="ic">' + ic + '</span><span class="tx"><b>' + t + '</b><small>' + d + '</small></span></button>';
-      h += '<div class="mg2-qs">'
-        +   (canSendGeneral() ? q('gen', PF_I.mega, 'ابلاغ فعالیت', 'یک کار برای چند نفر', 'sky') : '')
-        +   q('rem', PF_I.log, 'یادآور تازه', 'در زنگولهٔ گیرنده', 'warn')
-        +   q('deck', SEC_ICON.adm, 'کارت‌های فعالیت', 'مرور کارت‌به‌کارت همه', 'ok')
-        +   ((isAdminUser() || can('users.manage')) ? q('bc', PF_I.msg, 'پیام گروهی', 'به همهٔ کاربران', 'vio') : '')
-        + '</div>';
+      void q;   /* کارهای سریع دیگر جدا نیستند؛ همه در کاشی‌های «بخش‌ها» آمده‌اند */
       /* ====== پنل مدیریتی v3: زیربخش‌ها ======
          به‌جای شش بخش پشت‌سرهم، هر بار یک بخش؛ کارهای سریع و عددهای
          امروز بالای همه می‌مانند. */
@@ -24103,6 +24270,9 @@
                                 ['news', 'اخبار و تغییرات', 0, NEWS_IC, 'دو هفتهٔ اخیر', 'sky']);
       if(canSendGeneral()) subs.push(['gen', 'ابلاغ فعالیت', 0, PF_I.mega, 'ثبت و فهرست ابلاغ‌ها', 'ok']);
       subs.push(['rem', 'یادآورها', 0, PF_I.log, 'ثبت و فهرست یادآورها', 'warn']);
+      /* این دو بخشی در پنل ندارند و مستقیم باز می‌شوند */
+      subs.push(['deck', 'کارت‌های فعالیت', 0, SEC_ICON.adm, 'مرور کارت‌به‌کارت همه', 'vio', 'deck']);
+      if(isAdminUser() || can('users.manage')) subs.push(['bc', 'پیام گروهی', 0, PF_I.msg, 'به همهٔ کاربران', 'ink', 'bc']);
       if(isMgrView()) h += '<div class="mg3-h">گزارش‌ها</div><div class="mg2-reps mg3">' + mgLinksHtml() + '</div>';
       h += '<div class="mg3-h">بخش‌ها</div>';
       h += pf3NavHtml('general', subs);
