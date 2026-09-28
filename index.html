@@ -8801,10 +8801,17 @@
   @media (hover:none) and (pointer:coarse){ .cm-ops .cm-react{height:30px;padding:0 10px;} }
 
   /* واکنش با شکلک (نظرها، کارت‌های فعالیت، گفتگو) */
-  .rx-set{display:contents;}
+  /* بارگذاری دوبارهٔ فهرست بعد از ثبت: فهرست سر جایش می‌ماند */
+  .kp-busy [data-id]{transition:opacity .2s;}
+  #adminView.kp-busy, #panelTasks.kp-busy{cursor:progress;}
+  #adminView.kp-busy [data-id], #panelTasks.kp-busy [data-id], #panelTasks.kp-busy [data-task-id]{opacity:.6;}
+  .kp-flash{animation:kpFlash 1.5s ease-out;}
+  @keyframes kpFlash{0%,35%{box-shadow:0 0 0 3px color-mix(in srgb, var(--sky) 55%, transparent);}100%{box-shadow:0 0 0 3px transparent;}}
+  .rx-set{display:contents !important;}
   .cm-react .rx-e{font-style:normal;font-size:13px;line-height:1;}
+  .dk-cmrow .cm-react span{display:inline;line-height:1;color:inherit;opacity:1;}
   .cm-react.emo.on{background:color-mix(in srgb, var(--warn, #c98a1b) 14%, transparent) !important;color:var(--ink) !important;border-color:color-mix(in srgb, var(--warn, #c98a1b) 35%, transparent) !important;}
-  .rx-addw{position:relative;display:inline-flex;}
+  .rx-addw{position:relative;display:inline-flex !important;opacity:1 !important;}
   .rx-add{
     display:inline-grid;place-items:center;width:24px;height:24px;border-radius:999px;padding:0;
     background:none;border:1px dashed var(--line);color:var(--muted);cursor:pointer;
@@ -8813,11 +8820,11 @@
   .rx-add:focus:not(:focus-visible){outline:none;}
   .rx-add:hover,.rx-addw.open .rx-add{background:var(--field);color:var(--ink);border-style:solid;}
   .rx-pop{
-    position:absolute;bottom:calc(100% + 6px);inset-inline-start:-4px;z-index:60;display:none;gap:2px;
+    position:absolute;bottom:calc(100% + 6px);inset-inline-start:-4px;z-index:60;display:none !important;gap:2px;
     padding:4px;border-radius:999px;background:var(--surface);border:1px solid var(--line);
-    box-shadow:0 10px 28px -8px rgba(0,0,0,.28);white-space:nowrap;
+    box-shadow:0 10px 28px -8px rgba(0,0,0,.28);white-space:nowrap;opacity:1 !important;line-height:1;
   }
-  .rx-addw.open .rx-pop{display:flex;animation:rxIn .14s ease-out;}
+  .rx-addw.open .rx-pop{display:flex !important;animation:rxIn .14s ease-out;}
   .rx-addw.down .rx-pop{bottom:auto;top:calc(100% + 6px);}
   .rx-pop button{
     width:32px;height:32px;border-radius:50%;border:0;background:none;cursor:pointer;
@@ -21388,6 +21395,7 @@
   /* تا ۴ ثانیه صبر می‌کند تا مورد رندر شود، همهٔ پنجره‌های بالایش را
      باز می‌کند و فقط وقتی واقعاً روی صفحه دیده می‌شود برمی‌گردد. */
   async function revealItem(id, rootSel, beforeTry){
+    try{ kpCancelAt = Date.now(); }catch(e){}
     const t0 = Date.now();
     let last = null;
     while(Date.now() - t0 < 4000){
@@ -23923,6 +23931,7 @@
   function appInstalled(){
     try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }catch(e){ return false; }
   }
+  const isHandheld = () => isIOS() || /android|mobile|iphone|ipod/i.test(navigator.userAgent);
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /* پیشنهاد افزودن به صفحهٔ اصلی: برای هر کاربر یک بار، پس از ورود.
      اگر برنامه از قبل نصب شده باشد یا پنجرهٔ دیگری باز باشد، صبر می‌کند. */
@@ -23930,7 +23939,8 @@
   function a2hsSeenList(){ try{ return JSON.parse(localStorage.getItem(A2HS_SEEN_KEY) || '[]') || []; }catch(e){ return []; } }
   function maybeA2hs(tries){
     const me = activeUserName();
-    if(!me || appInstalled()) return;
+    // فقط گوشی و تبلت؛ نه مرورگر رایانه، نه وقتی از صفحهٔ اصلی باز شده
+    if(!me || appInstalled() || !isHandheld()) return;
     const k = nameKey(me);
     if(a2hsSeenList().includes(k)) return;
     const um = document.getElementById('userModal');
@@ -39158,6 +39168,134 @@
     };
   }
 
+  /* ====== حفظ جای کاربر بعد از هر ثبت ======
+     هر ثبتی در دفتر فنی یا لیست فعالیت، فهرست را از داده‌های تازه از نو
+     می‌سازد. پیش‌تر در این فاصله فهرست با «در حال دریافت…» پاک می‌شد،
+     کارت شخص و زیربخش‌ها بسته می‌شدند و موردی که همین حالا ویرایش شده
+     بود از جلوی چشم می‌رفت. اینجا پیش از بارگذاری:
+       ۱) وضعیت باز/بسته‌ی همهٔ پنجره‌ها، کارت‌ها و گروه‌ها با کلیدی پایدار
+          (شناسه، یا عنوانِ بدون عدد، یا ترتیب) برداشته می‌شود؛
+       ۲) آخرین موردی که کاربر لمس کرده (یا بالاترین مورد دیده‌شده) با
+          فاصله‌اش از بالای صفحه نگه داشته می‌شود؛
+     و بعد از ساخت دوباره، همه برمی‌گردد و همان مورد دقیقاً سر جای قبلی‌اش
+     می‌نشیند و لحظه‌ای برجسته می‌شود. */
+  const KP_TOGGLE = '.tcal, .foldable, .subsec, .adm-grp, .adm-sec, .nf, .tk-cat, .rv[data-id]';
+  const KP_ARROWS = ':scope > button .tt-arrow, :scope > button .tg-ar, :scope > button .nf-ar, '
+    + ':scope > button .eng-ar, :scope > button .ss-ar, :scope > .eng-head .eng-ar, :scope > .subsec-head .ss-ar';
+  const KP_VOLATILE = /^(open|on|flash|kp-.+|hot|warm|late|done|has-alert|st-.+|cat-in|open-cat|show|busy|fold-anim)$/;
+  const KP_ITEM = '[data-id], [data-task-id]';
+  const kpIdOf = el => (el && el.dataset) ? (el.dataset.id || el.dataset.taskId || '') : '';
+  let kpLastEl = null, kpLastAt = 0, kpCancelAt = 0;
+  document.addEventListener('pointerdown', e => {
+    const it = e.target.closest && e.target.closest('#adminView [data-id], #adminView [data-task-id], #panelTasks [data-id], #panelTasks [data-task-id]');
+    if(it){ kpLastEl = it; kpLastAt = Date.now(); }
+  }, true);
+
+  function kpSig(el){
+    return el.tagName + '.' + Array.from(el.classList).filter(c => !KP_VOLATILE.test(c)).sort().join('.');
+  }
+  function kpLabel(el){
+    const h = el.querySelector(':scope > button, :scope > .eng-head, :scope > .subsec-head, :scope > .tcal-toggle');
+    return h ? String(h.textContent || '').replace(/[0-9۰-۹٫,،\s▴▾]+/g, '').slice(0, 40) : '';
+  }
+  function kpOwn(el){
+    if(el.id) return '#' + el.id;
+    const d = el.dataset || {};
+    const v = d.id || d.taskId || d.admcat || d.who || d.person || d.k || d.key || d.grp || d.sec || d.newKind;
+    if(v) return kpSig(el) + '=' + v;
+    const lb = kpLabel(el);
+    if(lb) return kpSig(el) + '~' + lb;
+    return '';
+  }
+  function kpKey(el, root){
+    const parts = [];
+    let cur = el;
+    while(cur && cur !== root){
+      let k = kpOwn(cur);
+      if(!k){
+        const sig = kpSig(cur);
+        const sib = Array.from(cur.parentElement ? cur.parentElement.children : []).filter(x => kpSig(x) === sig);
+        k = sig + ':' + sib.indexOf(cur);
+      }
+      parts.unshift(k);
+      if(k[0] === '#') break;
+      cur = cur.parentElement;
+    }
+    return parts.join('>');
+  }
+  const kpVisible = el => !!(el && el.isConnected && el.offsetParent !== null && el.getClientRects().length);
+
+  function kpSnap(rootSel){
+    const root = document.querySelector(rootSel);
+    if(!root || !root.querySelector(KP_ITEM + ', .open')) return null;
+    const state = new Map();
+    root.querySelectorAll(KP_TOGGLE).forEach(el => state.set(kpKey(el, root), el.classList.contains('open')));
+    root.querySelectorAll('.open').forEach(el => state.set(kpKey(el, root), true));
+    // نقطهٔ اتکا: موردی که همین حالا لمس شده، وگرنه بالاترین مورد دیده‌شده
+    let a = (kpVisible(kpLastEl) && root.contains(kpLastEl) && Date.now() - kpLastAt < 10 * 60 * 1000) ? kpLastEl : null;
+    const touched = !!a;
+    if(!a){
+      a = Array.from(root.querySelectorAll(KP_ITEM)).find(el => {
+        if(!kpVisible(el)) return false;
+        const r = el.getBoundingClientRect();
+        return r.bottom > 70 && r.top < innerHeight;
+      }) || null;
+    }
+    return {at: Date.now(), state, touched, y: window.scrollY,
+      aId: kpIdOf(a), aSig: a ? kpSig(a) : '',
+      aTop: a ? a.getBoundingClientRect().top : 0};
+  }
+  function kpApplyState(rootSel, snap){
+    const root = document.querySelector(rootSel);
+    if(!root || !snap) return;
+    root.querySelectorAll(KP_TOGGLE + ', .open').forEach(el => {
+      const want = snap.state.get(kpKey(el, root));
+      if(want == null || el.classList.contains('open') === want) return;
+      el.classList.toggle('open', want);
+      el.querySelectorAll(KP_ARROWS).forEach(ar => { ar.textContent = want ? '▴' : '▾'; });
+    });
+  }
+  function kpFind(rootSel, snap){
+    const root = document.querySelector(rootSel);
+    if(!root || !snap || !snap.aId) return null;
+    const all = Array.from(root.querySelectorAll(KP_ITEM)).filter(el => kpIdOf(el) === snap.aId && kpVisible(el));
+    return all.find(el => kpSig(el) === snap.aSig) || all[0] || null;
+  }
+  function kpAnchor(rootSel, snap){
+    if(!snap || kpCancelAt > snap.at) return;       // «رفتن به مورد» خودش جای صفحه را تعیین می‌کند
+    const el = kpFind(rootSel, snap);
+    if(!el){
+      if(Math.abs(window.scrollY - snap.y) > 2) window.scrollTo(0, snap.y);
+      return;
+    }
+    const d = el.getBoundingClientRect().top - snap.aTop;
+    if(Math.abs(d) > 2) window.scrollBy(0, d);
+  }
+  function keepPlace(rootSel, fn){
+    return async function(){
+      const snap = kpSnap(rootSel);
+      const root = document.querySelector(rootSel);
+      if(snap && root) root.classList.add('kp-busy');
+      let r;
+      try{ r = await fn.apply(this, arguments); }
+      finally{ if(root) root.classList.remove('kp-busy'); }
+      if(snap){
+        kpApplyState(rootSel, snap);
+        kpAnchor(rootSel, snap);
+        // بعضی بخش‌ها با کمی تأخیر کشیده می‌شوند؛ دوباره هم بررسی می‌شود
+        [60, 220, 520].forEach(ms => setTimeout(() => {
+          if(kpCancelAt > snap.at) return;
+          kpApplyState(rootSel, snap); kpAnchor(rootSel, snap);
+        }, ms));
+        if(snap.touched) setTimeout(() => {
+          const el = kpFind(rootSel, snap);
+          if(el && kpCancelAt <= snap.at){ el.classList.add('kp-flash'); setTimeout(() => el.classList.remove('kp-flash'), 1600); }
+        }, 80);
+      }
+      return r;
+    };
+  }
+
   async function loadAdmin(){
     const snap = admSnapshot();
     const btn = document.getElementById('loadAdmin');
@@ -39165,7 +39303,9 @@
     if(!document.getElementById('admList-statement')) renderAdminSkeleton();
     ADM_ORDER.forEach(k => {
       const el = document.getElementById('admList-' + k);
-      if(el) el.innerHTML = '<div class="empty" style="margin:10px 0 14px;">در حال دریافت موارد ثبت‌شده...</div>';
+      // فهرستی که محتوا دارد پاک نمی‌شود تا صفحه نپرد؛ فقط بار اول پیام می‌آید
+      if(el && !el.querySelector('[data-id]'))
+        el.innerHTML = '<div class="empty" style="margin:10px 0 14px;">در حال دریافت موارد ثبت‌شده...</div>';
     });
     try{
       const a = (await fetchBundle(normDate(dateInput.value) || todayShamsi())).admin;
@@ -41012,7 +41152,7 @@
     try{ listNames().forEach(n => staff.add(nameKey(n))); }catch(e){}
     try{ Object.keys(ROLE_OF).forEach(n => staff.add(nameKey(n))); }catch(e){}
     const isOut = p => p !== 'بدون مسئول' && (p === 'کارفرما'
-      || (!staff.has(nameKey(p)) && (people.get(p) || []).some(r => r.__outside)));
+      || (!staff.has(nameKey(p)) && (people.get(p) || []).some(r => r.__offsite)));
     const byName = (a,b) => a.localeCompare(b,'fa');
     const inNames  = Array.from(people.keys()).filter(p => !isOut(p)).sort(byName);
     const outNames = Array.from(people.keys()).filter(isOut)
@@ -41964,7 +42104,7 @@
       if(st === 'بررسی کارفرما') return 'کارفرما';
       return '';
     };
-    const mkOut = () => { const o = out[out.length - 1]; if(o) o.__outside = true; };
+    const mkOut = () => { const o = out[out.length - 1]; if(o) o.__offsite = true; };
 
     (A.statements || []).forEach(r => {
       const ow = outsideOwner(r, AD.sParty);
@@ -42081,7 +42221,7 @@
 
   /* توابع بارگذاری با پوششِ حفظ اسکرول جایگزین می‌شوند. بعد از
      تعریفشان انجام می‌شود تا همه‌جای برنامه نسخهٔ پوشیده را صدا بزند. */
-  loadAdmin = keepScroll(loadAdmin);
+  loadAdmin = keepPlace('#adminView', loadAdmin);
 
   let tasksLoading = null;   // اگر بارگذاری در جریان است، همان را برمی‌گرداند
 
@@ -42092,14 +42232,14 @@
     finally{ tasksLoading = null; }
   }
 
-  loadTasks = keepScroll(loadTasks);
+  loadTasks = keepPlace('#panelTasks', loadTasks);
 
   async function doLoadTasks(){
     const box = document.getElementById('taskView');
     stashTaskFilters();   // وگرنه نوار مسئول و فیلترها با پاک شدن پنجره از بین می‌روند
     const btn = document.getElementById('loadTasks');
     if(btn) btn.disabled = true;
-    box.innerHTML = '<div class="empty">در حال دریافت فعالیت‌ها...</div>';
+    if(!box.querySelector('[data-id], [data-task-id]')) box.innerHTML = '<div class="empty">در حال دریافت فعالیت‌ها...</div>';
     try{
       const bundle = await fetchBundle(normDate(dateInput.value) || todayShamsi());
       // بدون این، ستون مسئولین بررسی خالی است و ردیف‌های بررسی داخلی ساخته نمی‌شوند
