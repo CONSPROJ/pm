@@ -8817,6 +8817,45 @@
   #adminView.kp-busy, #panelTasks.kp-busy{cursor:progress;}
   #adminView.kp-busy [data-id], #panelTasks.kp-busy [data-id], #panelTasks.kp-busy [data-task-id]{opacity:.6;}
   .kp-flash{animation:kpFlash 1.5s ease-out;}
+  /* ====== موانع فعالیت ====== */
+  .tb-sec{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--field);border:1px solid var(--line);}
+  .tb-sec.has{background:color-mix(in srgb, var(--alert) 6%, var(--surface));border-color:color-mix(in srgb, var(--alert) 22%, var(--line));}
+  .tb-h{display:flex;align-items:center;gap:8px;}
+  .tb-h b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .tb-n{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .tb-n.bad{background:var(--alert-soft);color:var(--alert);}
+  .tb-n.ok{background:color-mix(in srgb, var(--ok, #2f7a4b) 12%, transparent);color:var(--ok, #2f7a4b);}
+  .tb-add{margin-inline-start:auto;height:28px;padding:0 11px;border-radius:999px;border:1px dashed color-mix(in srgb, var(--ink) 30%, var(--line));
+    background:var(--surface);color:var(--ink);font-family:var(--f);font-size:11.5px;font-weight:700;cursor:pointer;}
+  .tb-it{margin-top:8px;padding:9px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--line);
+    display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;}
+  .tb-it.open{border-inline-start:3px solid var(--alert);}
+  .tb-it.done{border-inline-start:3px solid var(--ok, #2f7a4b);opacity:.92;}
+  .tb-top{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;min-width:0;}
+  .tb-k{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;background:var(--field);
+    font-size:10.5px;font-weight:700;color:var(--ink);flex:0 0 auto;}
+  .tb-k svg{width:13px;height:13px;}
+  .tb-tx{font-size:12.5px;line-height:1.75;color:var(--ink);overflow-wrap:anywhere;}
+  .tb-it.done .tb-tx{text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--muted) 60%, transparent);}
+  .tb-meta{grid-column:1;display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:var(--muted);}
+  .tb-meta .ok{color:var(--ok, #2f7a4b);} .tb-meta .bad{color:var(--alert);}
+  .tb-act{grid-column:2;grid-row:1 / span 2;}
+  .tb-act .mini{height:32px;}
+  .tb-hist{margin-top:8px;}
+  .tb-hist summary{cursor:pointer;font-size:11.5px;font-weight:700;color:var(--muted);padding:4px 0;list-style:none;}
+  .tb-hist summary::before{content:'▸ ';}
+  .tb-hist[open] summary::before{content:'▾ ';}
+  .tb-form{margin-top:8px;padding:10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .tb-kinds{display:flex;flex-wrap:wrap;gap:6px;}
+  .tb-kc{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface);color:var(--muted);font-family:var(--f);font-size:11.5px;font-weight:600;cursor:pointer;}
+  .tb-kc svg{width:14px;height:14px;}
+  .tb-kc.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+  .tb-in{width:100%;box-sizing:border-box;min-height:56px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);
+    background:var(--field);color:var(--ink);font-family:var(--f);font-size:13px;resize:vertical;}
+  .tb-fa{display:flex;gap:8px;}
+  .task-note-txt{margin-top:8px;padding:8px 11px;border-radius:12px;background:var(--field);font-size:12.5px;line-height:1.8;color:var(--ink);}
+  .task-note-txt b{display:block;font-size:10.5px;color:var(--muted);font-weight:700;}
   @keyframes kpFlash{0%,35%{box-shadow:0 0 0 3px color-mix(in srgb, var(--sky) 55%, transparent);}100%{box-shadow:0 0 0 3px transparent;}}
   .rx-set{display:contents !important;}
   .cm-react .rx-e{font-style:normal;font-size:13px;line-height:1;}
@@ -18414,7 +18453,7 @@
     return (all || []).filter(r => {
       if(nameKey(pick(r,N.to)) !== nameKey(me)) return false;
       const k = pick(r,N.kind);
-      if(k === MSG_KIND || k === COMMENT_KIND || isReactRow(r)) return false;
+      if(k === MSG_KIND || k === COMMENT_KIND || isReactRow(r) || isTbRow(r)) return false;
       // اعلان گزارش‌نفرستاده‌ای که گزارشش بعداً ثبت شده، نمایش داده نمی‌شود
       if(k === MISS_KIND && typeof missResolved !== 'undefined'
          && missResolved.has(String(pick(r,N.title) || ''))) return false;
@@ -18562,7 +18601,7 @@
          می‌خورد — همان جمله‌ای که همه‌جا تکرار می‌شد. */
       const kk = pick(r,N.kind);
       if(kk === MSG_KIND || kk === COMMENT_KIND || kk === MISS_KIND
-         || isReactRow(r) || isRemindRow(r)) return;
+         || isReactRow(r) || isRemindRow(r) || isTbRow(r)) return;
       if(pick(r,N.state) === 'خوانده‌شده') return;
       const id = String(pick(r,N.itemId) || '').trim();
       if(id) set.add(id);
@@ -20109,7 +20148,7 @@
       if(String(pick(r,N.itemId) || '') !== String(id)) return;
       const k = pick(r,N.kind);
       if(k === COMMENT_KIND || k === MSG_KIND) return;
-      if(typeof isReactRow === 'function' && isReactRow(r)) return;
+      if((typeof isReactRow === 'function' && isReactRow(r)) || (typeof isTbRow === 'function' && isTbRow(r))) return;
       if(typeof isRemindRow === 'function' && isRemindRow(r)) return;
       // تگ‌کردن در نظر، تلنگر نیست
       if(String(pick(r,N.title) || '').indexOf(CM_SEP + 'TAG') !== -1) return;
@@ -20977,7 +21016,7 @@
     const me = activeUserName();
     let list;
     // اعلان‌های خودکار سامانه فقط در زنگوله دیده می‌شوند، نه در پیام‌ها
-    const notSystem = r => pick(r,N.kind) !== MISS_KIND && pick(r,N.kind) !== COMMENT_KIND && !isReactRow(r) && !isRemindRow(r);
+    const notSystem = r => pick(r,N.kind) !== MISS_KIND && pick(r,N.kind) !== COMMENT_KIND && !isReactRow(r) && !isRemindRow(r) && !isTbRow(r);
     if(withName === PUBLIC_ROOM){
       list = allMessages.filter(r => pick(r,N.to) === PUBLIC_ROOM && notSystem(r));
     }else{
@@ -24242,7 +24281,7 @@
     body.innerHTML = profileHeader(name) + '<div class="empty">در حال دریافت…</div>';
 
     let b = null;
-    try{ b = await fetchBundle(profileState.date); }catch(e){}
+    try{ [b] = await Promise.all([fetchBundle(profileState.date), loadTaskBlockers().catch(() => null)]); }catch(e){}
     // جریمه‌های در انتظار، برای سرپرست کارگاه و ادمین
     if(me && wrkFineApprover()){ try{ await wrkLoadPending(); }catch(e){} }
     const day = (b && b.day) || {rows:[], issues:[], machines:[]};
@@ -40482,31 +40521,225 @@
     'قراردادی':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>'
   };
 
+  /* ====== موانع فعالیت: قابل رفع، با تاریخچه ======
+     هر مانع یک ردیف جداست (در همان جدول nudges، با نوع «مانع» و شناسهٔ
+     فعالیت) — پس چند مانع هم‌زمان ممکن است و هیچ‌کدام روی دیگری نوشته
+     نمی‌شود. «رفع شد» و «بازگشایی» هم هرکدام یک ردیف تازه است (نوع
+     «مانع-رخداد» با شناسهٔ همان مانع)؛ یعنی تاریخچه کامل می‌ماند: چه
+     کسی، کی ثبت کرد، کی و با چه توضیحی رفع شد.
+     ستون «موانع فعلی» خودِ فعالیت فقط خلاصهٔ موانعِ باز است و خودکار
+     به‌روز می‌شود تا گزارش‌ها و کارت‌ها مثل قبل کار کنند.
+     برای فعالیت عمومی و کار اداری همان ستون «توضیحات» است، نه مانع. */
+  const TB_KIND = 'مانع', TB_EV_KIND = 'مانع-رخداد';
+  const isTbRow = r => { const k = pick(r,N.kind); return k === TB_KIND || k === TB_EV_KIND; };
+  const isNoteSide = r => {
+    const sd = String(pick(r,T.side) || '').trim();
+    return sd === 'فعالیت عمومی' || sd === 'کار اداری';
+  };
+  const taskBlockText = r => (r && !r.__adm && !isNoteSide(r)) ? String(pick(r,T.blockers) || '').trim() : '';
+  const taskNoteText = r => (r && isNoteSide(r)) ? String(pick(r,T.blockers) || '').trim() : '';
+  let tbCache = {t: 0, items: new Map()};   // شناسهٔ فعالیت ← [مانع‌ها]
+  let tbLoading = null;
+  async function loadTaskBlockers(force){
+    if(tbLoading) return tbLoading;
+    if(!force && tbCache.t && Date.now() - tbCache.t < 60000) return tbCache.items;
+    tbLoading = (async () => {
+      try{
+        const q = 'nudges?select=' + NUDGE_COLS + '&kind=in.(' + encodeURIComponent('"' + TB_KIND + '","' + TB_EV_KIND + '"')
+          + ')&order=created_at.asc&limit=10000';
+        const raw = await supaFetch(q, {prefer:'return=representation'}) || [];
+        const rows = raw.map(x => fromSupa('nudges', x));
+        const byId = new Map(), items = new Map();
+        rows.filter(r => pick(r,N.kind) === TB_KIND).forEach(r => {
+          const it = {id: String(pick(r,N.id)), task: String(pick(r,N.itemId) || ''), kind: String(pick(r,N.title) || ''),
+            text: String(pick(r,N.msg) || ''), by: pick(r,N.from) || '', at: pick(r,N.time) || '', date: pick(r,N.date) || '',
+            open: true, events: []};
+          byId.set(it.id, it);
+          if(!items.has(it.task)) items.set(it.task, []);
+          items.get(it.task).push(it);
+        });
+        rows.filter(r => pick(r,N.kind) === TB_EV_KIND).forEach(r => {
+          const it = byId.get(String(pick(r,N.itemId) || ''));
+          if(!it) return;
+          const ev = {type: String(pick(r,N.title) || ''), by: pick(r,N.from) || '', at: pick(r,N.time) || '',
+            date: pick(r,N.date) || '', note: String(pick(r,N.msg) || '')};
+          it.events.push(ev);
+          if(ev.type === 'رفع') it.open = false;
+          if(ev.type === 'بازگشایی') it.open = true;
+        });
+        tbCache = {t: Date.now(), items};
+      }catch(e){ /* بار قبلی سر جایش می‌ماند */ }
+      return tbCache.items;
+    })();
+    try{ return await tbLoading; }finally{ tbLoading = null; }
+  }
+  const tbOf = id => (tbCache.items.get(String(id)) || []);
+  /* خلاصهٔ موانع باز روی خودِ فعالیت (ستون «موانع فعلی» و «نوع مانع») */
+  async function tbSync(taskId){
+    const open = tbOf(taskId).filter(x => x.open);
+    const text = open.map(x => x.text).filter(Boolean).join('؛ ');
+    const kinds = Array.from(new Set(open.map(x => x.kind).filter(k => BLOCKERS.indexOf(k) !== -1)));
+    try{
+      await supaFetch('tasks?id=eq.' + encodeURIComponent(taskId), {method:'PATCH',
+        body:{blockers: text || null, blocker_kind: kinds.join('|') || null}});
+    }catch(e){}
+    const row = taskById(taskId);
+    if(row){ setCell(row, 'موانع فعلی', text); setCell(row, 'نوع مانع', kinds.join('|')); }
+    clearNetCache();
+  }
+  const tbWhen = it => {
+    const d = it.date || '';
+    const c = (typeof clockOf === 'function') ? (clockOf(it.at) || '') : '';
+    return toFa(taskDate(d) || d) + (c ? ' · ' + toFa(c) : '');
+  };
+  function blockerSectionHtml(r, opts){
+    if(!r || r.__adm || isNoteSide(r)) return '';
+    const id = pick(r,T.id);
+    if(!id) return '';
+    const o = opts || {};
+    const all = tbOf(id);
+    const legacy = !all.length ? taskBlockText(r) : '';
+    const open = all.filter(x => x.open), done = all.filter(x => !x.open);
+    const kindChip = k => k ? '<span class="tb-k">' + (BLOCK_ICO[k] || '') + esc(k) + '</span>' : '';
+    const item = it => '<div class="tb-it' + (it.open ? ' open' : ' done') + '">'
+      + '<div class="tb-top">' + kindChip(it.kind)
+      +   '<span class="tb-tx">' + esc(it.text || '—') + '</span></div>'
+      + '<div class="tb-meta"><span>ثبت: ' + esc(it.by || '—') + ' · ' + tbWhen(it) + '</span>'
+      +   it.events.map(ev => '<span class="' + (ev.type === 'رفع' ? 'ok' : 'bad') + '">'
+            + (ev.type === 'رفع' ? '✓ رفع شد' : '↺ دوباره باز شد') + ': ' + esc(ev.by || '—') + ' · ' + tbWhen(ev)
+            + (ev.note ? ' — ' + esc(ev.note) : '') + '</span>').join('')
+      + '</div>'
+      + (it.open
+          ? '<div class="tb-act"><button type="button" class="mini go" data-tbres="' + esc(it.id) + '" data-tbtask="' + esc(id) + '">رفع شد</button></div>'
+          : '<div class="tb-act"><button type="button" class="mini" data-tbreopen="' + esc(it.id) + '" data-tbtask="' + esc(id) + '">بازگشایی</button></div>')
+      + '</div>';
+    return '<div class="tb-sec' + (open.length || legacy ? ' has' : '') + '" data-tbsec="' + esc(id) + '">'
+      + '<div class="tb-h"><b>موانع و مشکلات</b>'
+      +   (open.length || legacy ? '<span class="tb-n bad">' + toFa(open.length + (legacy ? 1 : 0)) + ' باز</span>' : '<span class="tb-n ok">بدون مانع باز</span>')
+      +   '<button type="button" class="tb-add" data-tbadd="' + esc(id) + '">+ مانع جدید</button></div>'
+      + (legacy
+          ? '<div class="tb-it open"><div class="tb-top"><span class="tb-tx">' + esc(legacy) + '</span></div>'
+            + '<div class="tb-meta"><span>ثبت پیش از این نسخه</span></div>'
+            + '<div class="tb-act"><button type="button" class="mini go" data-tblegacy="' + esc(id) + '">رفع شد</button></div></div>'
+          : '')
+      + open.map(item).join('')
+      + (done.length
+          ? '<details class="tb-hist"' + (o.histOpen ? ' open' : '') + '><summary>تاریخچه · ' + toFa(done.length) + ' مانعِ رفع‌شده</summary>'
+            + done.slice().reverse().map(item).join('') + '</details>'
+          : '')
+      + '</div>';
+  }
+  function tbRepaint(taskId){
+    const row = taskById(taskId);
+    document.querySelectorAll('[data-tbsec="' + CSS.escape(String(taskId)) + '"]').forEach(sec => {
+      const hist = !!(sec.querySelector('details.tb-hist') && sec.querySelector('details.tb-hist').open);
+      const html = blockerSectionHtml(row || {[T.id[0]]: taskId}, {histOpen: hist});
+      if(html) sec.outerHTML = html;
+    });
+  }
+  async function tbAdd(taskId, kind, text){
+    const me = activeUserName();
+    const row = taskById(taskId);
+    await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: me,
+      to_name: row ? (pick(row,T.m1) || me) : me, kind: TB_KIND, item_id: String(taskId),
+      title: kind || '', message: text, seen: true}]});
+    await loadTaskBlockers(true);
+    await tbSync(taskId);
+  }
+  async function tbEvent(blockerId, taskId, type, note){
+    await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: activeUserName(),
+      to_name: activeUserName(), kind: TB_EV_KIND, item_id: String(blockerId),
+      title: type, message: note || '', seen: true}]});
+    await loadTaskBlockers(true);
+    await tbSync(taskId);
+  }
+  /* مانعِ ثبت‌شده در نسخهٔ قبلی (فقط متن روی فعالیت): با «رفع شد» یک ردیف
+     کامل در تاریخچه می‌سازد و از خلاصه پاک می‌شود */
+  async function tbResolveLegacy(taskId, note){
+    const row = taskById(taskId);
+    const text = taskBlockText(row) || 'مانع ثبت‌شده';
+    const kinds = row ? blockersOf(row) : [];
+    const me = activeUserName();
+    const made = await supaFetch('nudges', {method:'POST', prefer:'return=representation', body:[{date_fa: todayShamsi(), from_name: me,
+      to_name: me, kind: TB_KIND, item_id: String(taskId), title: kinds[0] || '', message: text, seen: true}]});
+    let bid = made && made[0] && made[0].id;
+    if(!bid){
+      // اگر پایگاه‌داده ردیف تازه را برنگرداند، از فهرست تازه پیدا می‌شود
+      await loadTaskBlockers(true);
+      const hit = tbOf(taskId).filter(x => x.open && x.text === text).pop();
+      bid = hit && hit.id;
+    }
+    if(bid) await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: me, to_name: me,
+      kind: TB_EV_KIND, item_id: String(bid), title: 'رفع', message: note || '', seen: true}]});
+    await loadTaskBlockers(true);
+    await tbSync(taskId);
+  }
+  /* فرم کوچکِ «مانع جدید» و «توضیح رفع» زیر همان بخش */
+  function tbOpenForm(sec, mode, data){
+    const old = sec.querySelector('.tb-form'); if(old) old.remove();
+    const f = document.createElement('div');
+    f.className = 'tb-form';
+    f.innerHTML = mode === 'add'
+      ? '<div class="tb-kinds">' + BLOCKERS.concat(['سایر']).map((k, i) => '<button type="button" class="tb-kc' + (i === BLOCKERS.length ? ' on' : '') + '" data-tbk="' + esc(k) + '">'
+          + (BLOCK_ICO[k] || '') + esc(k) + '</button>').join('') + '</div>'
+        + '<textarea class="tb-in" rows="2" placeholder="شرح مانع یا مشکل…"></textarea>'
+        + '<div class="tb-fa"><button type="button" class="mini go" data-tbsave="1">ثبت مانع</button><button type="button" class="mini" data-tbcancel="1">انصراف</button></div>'
+      : '<textarea class="tb-in" rows="2" placeholder="چطور رفع شد؟ (اختیاری)"></textarea>'
+        + '<div class="tb-fa"><button type="button" class="mini go" data-tbsave="1">ثبت رفع مانع</button><button type="button" class="mini" data-tbcancel="1">انصراف</button></div>';
+    f.dataset.mode = mode;
+    Object.keys(data || {}).forEach(k => { f.dataset[k] = data[k]; });
+    const anchor = mode === 'add' ? sec.querySelector('.tb-h') : (data.anchor || sec.querySelector('.tb-h'));
+    anchor.after(f);
+    const ta = f.querySelector('textarea'); if(ta) setTimeout(() => ta.focus({preventScroll:true}), 30);
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target;
+    const add = t.closest('[data-tbadd]');
+    const res = t.closest('[data-tbres], [data-tblegacy]');
+    const reo = t.closest('[data-tbreopen]');
+    const kc = t.closest('.tb-kc');
+    const sv = t.closest('[data-tbsave]');
+    const cn = t.closest('[data-tbcancel]');
+    if(!add && !res && !reo && !kc && !sv && !cn) return;
+    e.preventDefault(); e.stopPropagation();
+    const sec = t.closest('.tb-sec');
+    if(!sec) return;
+    const taskId = sec.dataset.tbsec;
+    if(kc){ kc.parentElement.querySelectorAll('.tb-kc').forEach(x => x.classList.toggle('on', x === kc)); return; }
+    if(cn){ const f = t.closest('.tb-form'); if(f) f.remove(); return; }
+    if(add){ tbOpenForm(sec, 'add', {}); return; }
+    if(res){
+      tbOpenForm(sec, 'res', {bid: res.dataset.tbres || '', legacy: res.dataset.tblegacy ? '1' : '', anchor: res.closest('.tb-it')});
+      return;
+    }
+    if(reo){
+      reo.disabled = true;
+      try{ await tbEvent(reo.dataset.tbreopen, taskId, 'بازگشایی', ''); tbRepaint(taskId); }
+      catch(err){ reo.disabled = false; showDialog('err','انجام نشد', friendlyErr(err)); }
+      return;
+    }
+    if(sv){
+      const f = t.closest('.tb-form');
+      const txt = String((f.querySelector('.tb-in') || {}).value || '').trim();
+      sv.disabled = true;
+      try{
+        if(f.dataset.mode === 'add'){
+          if(!txt){ sv.disabled = false; showDialog('warn','شرح لازم است','شرح مانع را بنویسید.'); return; }
+          const k = (f.querySelector('.tb-kc.on') || {}).dataset;
+          await tbAdd(taskId, k && k.tbk !== 'سایر' ? k.tbk : '', txt);
+        }else if(f.dataset.legacy === '1'){
+          await tbResolveLegacy(taskId, txt);
+        }else{
+          await tbEvent(f.dataset.bid, taskId, 'رفع', txt);
+        }
+        tbRepaint(taskId);
+      }catch(err){ sv.disabled = false; showDialog('err','ثبت نشد', friendlyErr(err)); }
+    }
+  }, true);
+
   function blockersOf(r){
     return String(pick(r,T.bkind) || '').split('|')
       .map(x => x.trim()).filter(Boolean);
-  }
-
-  /* فقط برای فعالیت‌های اجرایی و غیراداری: مورد اداری گردش بررسی
-     خودش را دارد و مانعش آنجا معنا می‌شود. */
-  function blockerRowHtml(r){
-    if(r.__adm) return '';
-    {
-      const sd = String(pick(r,T.side) || '').trim();
-      if(sd === 'فعالیت عمومی' || sd === 'کار اداری') return '';   // مانع ندارد
-    }
-    const id = pick(r,T.id);
-    if(!id) return '';
-    const on = new Set(blockersOf(r));
-    return '<div class="blk-wrap">'
-      + '<span class="blk-cap">نوع مشکل</span>'
-      + '<span class="blk-set">'
-      + BLOCKERS.map(b =>
-          '<button type="button" class="blk' + (on.has(b) ? ' on' : '') + '" '
-          + 'data-blk="' + esc(id) + '" data-blkv="' + esc(b) + '" '
-          + 'title="' + (on.has(b) ? 'برداشتن مانع ' : 'ثبت مانع ') + esc(b) + '">'
-          + BLOCK_ICO[b] + '<u>' + b + '</u></button>').join('')
-      + '</span></div>';
   }
 
   function statusCell(r){
@@ -40665,7 +40898,7 @@
               left >= 0 ? '' : 'warn'))
       + '</div>'
       + (pick(r,T.blockers)
-          ? '<div class="db-note">' + esc(pick(r,T.blockers)) + '</div>' : '')
+          ? '<div class="db-note">' + (isNoteSide(r) ? 'توضیحات: ' : 'مانع: ') + esc(pick(r,T.blockers)) + '</div>' : '')
       + '</div>';
   }
 
@@ -41205,11 +41438,9 @@
       /* ====== سطر چهار: خط زمانی ابلاغ، امروز، موعد و انجام ====== */
       + taskTimelineHtml(r)
 
-      /* ====== سطر پنج: نوع مانع ====== */
-      + blockerRowHtml(r)
-      + (pick(r,T.blockers) ? '<div class="task-blk-txt">مانع: '
-          + esc(pick(r,T.blockers)) + '</div>' : '')
-      + (r.__adm ? '' : taskControls(r))
+      /* ====== سطر پنج: موانع (قابل رفع، با تاریخچه) یا توضیحات ابلاغ ====== */
+      + (taskNoteText(r) ? '<div class="task-note-txt"><b>توضیحات</b>' + esc(taskNoteText(r)) + '</div>' : '')
+      + blockerSectionHtml(r)
       + commentBarHtml(r.__admKind || 'task', pick(r,T.id) || r.__admId || '',
           pick(r,T.title) || 'فعالیت', {
             owner: pick(r,T.m1) || pick(r,T.m2) || '',
@@ -41219,8 +41450,7 @@
               'وضعیت: ' + st.label,
               pick(r,T.due) ? 'موعد: ' + taskDate(pick(r,T.due)) : '',
               pick(r,T.blockers)
-                ? ((['فعالیت عمومی','کار اداری'].indexOf(String(pick(r,T.side) || '').trim()) !== -1
-                    ? 'توضیحات: ' : 'مانع: ') + String(pick(r,T.blockers)).slice(0,140))
+                ? ((isNoteSide(r) ? 'توضیحات: ' : 'مانع: ') + String(pick(r,T.blockers)).slice(0,140))
                 : ''
             ].filter(Boolean).join('\n')
           })
@@ -41501,8 +41731,8 @@
           })() + '</td>'
         + '<td class="c">' + esc(taskDate(pick(r,T.start)) || '—') + '</td>'
         + '<td class="c">' + esc(taskDate(pick(r,T.due)) || '—') + (late ? '<br><span class="blk" style="font-size:11px;">گذشته</span>' : '') + '</td>'
-        + '<td class="blk">' + esc(pick(r,T.blockers) || '—')
-        + (id ? '<br><button type="button" class="mini" data-tblk="' + esc(id) + '" style="margin-top:5px;">ویرایش مانع</button>' : '')
+        + '<td class="blk">' + (isNoteSide(r) ? (pick(r,T.blockers) ? '<small>توضیحات: </small>' + esc(pick(r,T.blockers)) : '—') : esc(pick(r,T.blockers) || '—'))
+        + (id && !isNoteSide(r) && !r.__adm ? '<br><button type="button" class="mini" data-tblk="' + esc(id) + '" style="margin-top:5px;">موانع</button>' : '')
         + '</td>'
         + '</tr>';
     }).join('');
@@ -41516,12 +41746,6 @@
   }
 
   // دکمه‌های تغییر وضعیت و ثبت مانع
-  function taskControls(r){
-    const id = pick(r,T.id);
-    if(!id) return '';
-    return '<div class="st-btns"><button type="button" class="mini" data-tblk="' + esc(id) + '">ثبت مانع</button></div>';
-  }
-
   function taskById(id){
     const pools = [lastTasks && lastTasks.all, typeof profileState !== 'undefined' && profileState.calList, tasksAll];
     for(const p of pools){
@@ -41922,25 +42146,13 @@
     const btn = e.target.closest('button[data-tblk]');
     if(!btn) return;
     if(btn.dataset.tblk){
+      /* نمای جدولی: همان بخش موانعِ کارت، زیر دکمه باز می‌شود */
       const id = btn.dataset.tblk;
       const r = taskById(id);
-      const holder = btn.closest('.st-btns') || btn.parentElement;
-      const box = document.createElement('div');
-      box.className = 'blk-edit';
-      box.innerHTML = '<textarea class="blk-text" placeholder="شرح مانع یا مشکل فعلی">'
-        + esc(r ? pick(r,T.blockers) : '') + '</textarea>'
-        + '<div class="row-act" style="margin-top:8px;justify-content:flex-start;">'
-        + '<button type="button" class="mini go" data-blk-save="' + esc(id) + '">ذخیره</button>'
-        + '<button type="button" class="mini" data-blk-cancel="1">انصراف</button></div>';
-      holder.after(box);
-      btn.disabled = true;
-      box.querySelector('textarea').focus();
-      box.addEventListener('click', ev => {
-        const sv = ev.target.closest('button[data-blk-save]');
-        const cn = ev.target.closest('button[data-blk-cancel]');
-        if(sv){ setTaskBlockers(sv.dataset.blkSave, box.querySelector('.blk-text').value.trim()); box.remove(); }
-        else if(cn){ box.remove(); btn.disabled = false; }
-      });
+      const nx = btn.nextElementSibling;
+      if(nx && nx.classList && nx.classList.contains('tb-sec')){ nx.remove(); return; }
+      await loadTaskBlockers();
+      btn.insertAdjacentHTML('afterend', blockerSectionHtml(r || {}));
     }
   };
   document.getElementById('taskView').addEventListener('click', taskActionClick);
@@ -42467,7 +42679,8 @@
     if(btn) btn.disabled = true;
     if(!box.querySelector('[data-id], [data-task-id]')) box.innerHTML = '<div class="empty">در حال دریافت فعالیت‌ها...</div>';
     try{
-      const bundle = await fetchBundle(normDate(dateInput.value) || todayShamsi());
+      const [bundle] = await Promise.all([fetchBundle(normDate(dateInput.value) || todayShamsi()),
+        loadTaskBlockers().catch(() => null)]);
       // بدون این، ستون مسئولین بررسی خالی است و ردیف‌های بررسی داخلی ساخته نمی‌شوند
       try{ await mergeReviewCols(bundle.admin); }catch(e){}
       // wireFastEdit سطر را از rowMap می‌گیرد؛ بدون این، چیپ‌ها بی‌اثرند
@@ -42757,7 +42970,7 @@
         + '<td class="c">' + esc(st.label) + '</td>'
         + '<td class="c">' + esc(taskDate(pick(r,T.start)) || '—') + '</td>'
         + '<td class="c">' + esc(taskDate(pick(r,T.due)) || '—') + (late ? ' *' : '') + '</td>'
-        + '<td>' + esc(pick(r,T.blockers) || '—') + '</td>'
+        + '<td>' + (pick(r,T.blockers) ? (isNoteSide(r) ? 'توضیحات: ' : '') + esc(pick(r,T.blockers)) : '—') + '</td>'
         + '</tr>';
     }).join('');
 
@@ -47270,7 +47483,7 @@
           d != null && d > 0 ? 'bad' : 'ok'));
       }
       const blk = pick(row,T.blockers);
-      if(blk) chips.push(chip('مانع', String(blk).slice(0, 40), 'bad'));
+      if(blk) chips.push(chip(isNoteSide(row) ? 'توضیحات' : 'مانع', String(blk).slice(0, 40), isNoteSide(row) ? '' : 'bad'));
     }else if(row){
       const nt = admNotify(kind, row);
       chips.push(chip('ابلاغ', notifyLabel(nt) || 'ثبت نشده', nt ? notifyCls(nt) : ''));
@@ -47841,25 +48054,8 @@
       return '<div class="dk-due ' + tone + '"><b>' + txt + '</b><span>موعد: '
         + esc(taskDate(due)) + '</span></div>';
     }
-    const id = pick(row,T.id);
-    if(!id) return '';
-    const txt = String(pick(row,T.blockers) || '').trim();
-    const on = new Set((typeof blockersOf === 'function') ? blockersOf(row) : []);
-    const can = deckCanEdit('task', row);
-    return '<div class="dk-blk' + (txt ? ' has' : '') + '">'
-      + (txt ? '<div class="dk-blktx"><b>مانع فعلی</b><span>' + esc(txt) + '</span></div>' : '')
-      + '<div class="dk-blkset">'
-      +   BLOCKERS.map(bk => '<button type="button" class="dk-blkc' + (on.has(bk) ? ' on' : '') + '" '
-            + (can ? 'data-dk-blk="' + i + '" data-v="' + esc(bk) + '"' : 'disabled')
-            + ' title="' + (on.has(bk) ? 'برداشتن' : 'ثبت') + ' مانع ' + esc(bk) + '">'
-            + (BLOCK_ICO[bk] || '') + '<u>' + esc(bk) + '</u></button>').join('')
-      + '</div>'
-      + (can ? '<div class="dk-blkin">'
-          + '<input type="text" class="dk-blktxt" data-dk-i="' + i + '" '
-          +   'placeholder="شرح مانع…" value="' + esc(txt) + '">'
-          + '<button type="button" class="dk-send sm" data-dk-blktx="' + i + '">ثبت مانع</button>'
-          + '</div>' : '')
-      + '</div>';
+    /* همان بخش موانعِ لیست فعالیت: چند مانع، «رفع شد» و تاریخچه */
+    return blockerSectionHtml(row);
   }
 
   /* یک خط اطلاعات: طرف قرارداد، تاریخ، و مبلغ اگر بود */
@@ -48390,6 +48586,7 @@
      loadTasks و loadAdmin کارهای اضافه دارند (ادغام ستون‌های بررسی،
      کشیدن دوبارهٔ برگه‌ها) و همان‌ها «موارد اجرایی» را کند می‌کردند. */
   async function deckPrime(){
+    try{ await loadTaskBlockers(); }catch(e){}
     const needT = !(tasksAll || []).length;
     const needA = !(adminAll || []).length;
     if(!needT && !needA) return;
