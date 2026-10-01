@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script defer crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   /* تا دسترسی‌ها نرسیده و زبانهٔ درست انتخاب نشده، صفحهٔ «ثبت گزارش» نشان
      داده نمی‌شود؛ پیش‌تر برای کسی که اجازهٔ ثبت ندارد چند لحظه فرم
@@ -18374,7 +18374,11 @@
       clearTimeout(hideT);
       hideT = setTimeout(() => { bar.hidden = true; }, 8000);
     };
-    window.addEventListener('error', e => showOnce(e.message || 'خطای ناشناخته'));
+    /* «Script error.» بی هیچ نشانی، خطای اسکریپتی بیرون از برنامه است
+       (پرکن خودکار iOS، افزونهٔ مرورگر، کتابخانهٔ بیرونی) و ربطی به کار
+       کاربر ندارد؛ نوار قرمز برایش نشان داده نمی‌شود. */
+    window.__opaqueErr = e => !!e && !e.error && !e.lineno && /^script error\.?$/i.test(String(e.message || '').trim());
+    window.addEventListener('error', e => { if(window.__opaqueErr(e)) return; showOnce(e.message || 'خطای ناشناخته'); });
     window.addEventListener('unhandledrejection', e =>
       showOnce((e.reason && e.reason.message) || 'خطا در دریافت داده'));
   })();
@@ -22775,6 +22779,7 @@
   /* اگر خطایی رخ داد، به‌جای سکوت، متنش را نشان می‌دهیم */
   window.addEventListener('error', ev => {
     try{
+      if(window.__opaqueErr && window.__opaqueErr(ev)) return;
       const bar = document.getElementById('errBar');
       if(!bar) return;
       bar.hidden = false;
@@ -24224,6 +24229,7 @@
   function umSplitName(n){
     let x = String(n || '').replace(/\s+/g, ' ').trim(), t = '';
     for(const tt of UM_TITLES.filter(Boolean).sort((a, b) => b.length - a.length)){
+      if(x === tt){ t = tt; x = ''; break; }
       if(x.indexOf(tt + ' ') === 0){ t = tt; x = x.slice(tt.length + 1).trim(); break; }
     }
     const parts = x.split(' ');
