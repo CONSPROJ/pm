@@ -16427,6 +16427,31 @@
     .rv.adm-k > .adm-head > .adm-titlewrap .adm-title{word-break:normal;overflow-wrap:anywhere;}
     .rv.adm-k > .adm-head .adm-crit{display:inline-flex;flex-wrap:wrap;gap:4px;max-width:100%;}
   }
+  /* پیمانکار: افزایش/کاهش نیرو و موانع */
+  .hrd-chs{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:6px;}
+  @media(max-width:520px){ .hrd-chs{grid-template-columns:1fr;} }
+  .hrd-ch{padding:9px 11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:2px;}
+  .hrd-ch u{text-decoration:none;font-size:10.5px;color:var(--muted);font-weight:700;}
+  .hrd-ch b{font-size:16px;font-weight:900;font-family:var(--m);color:var(--ink);} .hrd-ch b i{font-style:normal;font-size:10px;color:var(--muted);margin-inline-start:4px;font-family:var(--f);}
+  .hrd-ch small{font-size:9.5px;color:var(--muted);line-height:1.6;}
+  .hrd-ch.up{border-color:color-mix(in srgb, var(--ok) 40%, var(--line));} .hrd-ch.up b{color:var(--ok);}
+  .hrd-ch.down{border-color:color-mix(in srgb, var(--alert) 40%, var(--line));} .hrd-ch.down b{color:var(--alert);}
+  .hr-iss{display:flex;flex-direction:column;gap:6px;}
+  .hri-z{display:flex;flex-wrap:wrap;gap:5px;}
+  .hri-z span{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:var(--alert-soft);color:var(--alert);font-size:11px;font-weight:700;}
+  .hri-z b{font-family:var(--m);}
+  .hri-r{display:grid;grid-template-columns:8px 1fr;column-gap:8px;padding:7px 10px;border-radius:10px;background:var(--field);font-size:11.5px;line-height:1.8;}
+  .hri-r i{width:7px;height:7px;border-radius:50%;background:var(--alert);margin-top:8px;}
+  .hri-r small{grid-column:2;font-size:10px;color:var(--muted);}
+  /* مدیریت کاربران: نام جدا و رمز */
+  .um-nameset{grid-column:1 / -1;display:grid;grid-template-columns:120px 1fr 1fr;gap:8px;}
+  @media(max-width:520px){ .um-nameset{grid-template-columns:1fr 1fr;} .um-nameset .um-f-ttl{grid-column:1 / -1;} }
+  .um-pass{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--field);display:flex;flex-direction:column;gap:7px;}
+  .um-pass > b{display:inline-flex;align-items:center;gap:6px;font-size:12px;} .um-pass > b svg{width:15px;height:15px;}
+  .um-pass-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .um-pass-row input[type=password]{flex:1 1 180px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:0 10px;font:13px var(--f);color:var(--ink);}
+  .um-chk{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+  .um-pass small{font-size:10.5px;color:var(--muted);}
   /* دکمهٔ بازگشت شناور */
   #navBack{position:fixed;z-index:120;bottom:calc(env(safe-area-inset-bottom) + 96px);left:50%;transform:translateX(-50%);max-width:calc(100vw - 150px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-flex;align-items:center;gap:6px;
     height:38px;padding:0 14px 0 10px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb, var(--surface) 92%, transparent);
@@ -23841,6 +23866,50 @@
   /* وضعیت پنل کاربران؛ بیرون از تابع تا بعد از هر ذخیره و رندر دوباره
      تب، جست‌وجو و ردیف‌های باز همان‌طور بمانند. */
   const umState = {tab:'users', q:'', f:'all', add:false, open:new Set()};
+  /* نام و نام خانوادگی جدا: عنوان (آقای/خانم/مهندس…) + نام + نام خانوادگی؛
+     همان رشتهٔ کامل ذخیره می‌شود تا با همهٔ رکوردهای قبلی سازگار بماند */
+  const UM_TITLES = ['آقای', 'خانم', 'آقای مهندس', 'خانم مهندس', 'مهندس', 'دکتر', ''];
+  function umSplitName(n){
+    let x = String(n || '').replace(/\s+/g, ' ').trim(), t = '';
+    for(const tt of UM_TITLES.filter(Boolean).sort((a, b) => b.length - a.length)){
+      if(x.indexOf(tt + ' ') === 0){ t = tt; x = x.slice(tt.length + 1).trim(); break; }
+    }
+    const parts = x.split(' ');
+    return {t, f: parts.shift() || '', l: parts.join(' ')};
+  }
+  const umJoinName = (t, f, l) => [t, f, l].map(v => String(v || '').trim()).filter(Boolean).join(' ');
+  document.addEventListener('input', e => {
+    const r = e.target.closest && e.target.closest('.um-nameset');
+    if(!r || e.target.classList.contains('u-name')) return;
+    const hid = r.querySelector('.u-name');
+    hid.value = umJoinName((r.querySelector('.u-ttl') || {}).value, (r.querySelector('.u-fn') || {}).value, (r.querySelector('.u-ln') || {}).value);
+    hid.dispatchEvent(new Event('input', {bubbles:true}));
+  }, true);
+  document.addEventListener('change', e => {
+    if(!e.target.classList || !e.target.classList.contains('u-ttl')) return;
+    e.target.dispatchEvent(new Event('input', {bubbles:true}));
+  }, true);
+  /* ادمین برای هر کاربر رمز تعیین می‌کند */
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-u-setpass]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if(!(isAdminUser() || can('users.manage'))) return;
+    const row = b.closest('.um-row');
+    const pass = String((row.querySelector('.u-pass') || {}).value || '').trim();
+    const must = !!(row.querySelector('.u-pass-must') || {}).checked;
+    if(pass.length < 4){ showDialog('warn','رمز کوتاه است','رمز باید حداقل ۴ نویسه باشد.'); return; }
+    if(pass === '0000' && !must){ showDialog('warn','رمز ساده','رمز ۰۰۰۰ فقط به‌عنوان رمز اولیه (با تعویض در ورود بعد) مجاز است.'); return; }
+    b.disabled = true;
+    try{
+      const h = await sha256(pass);
+      await savePerson(b.dataset.uSetpass, {password_hash: h, must_change: must});
+      row.querySelector('.u-pass').value = '';
+      showDialog('ok','رمز تعیین شد', b.dataset.uSetpass + ' از این پس با این رمز وارد می‌شود' + (must ? ' و بار اول باید آن را عوض کند.' : '.'));
+      try{ await loadPeople(true); }catch(e2){}
+    }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); }
+    finally{ b.disabled = false; }
+  }, true);
   function umApplyFilter(box){
     box = box || document.getElementById('adminPanel');
     if(!box) return;
@@ -23969,8 +24038,12 @@
     const addForm = '<div class="um-new u-new"' + (umState.add ? '' : ' hidden') + '>'
       + '<div class="um-new-h"><b>افزودن کاربر تازه</b><small>با رمز ۰۰۰۰ وارد می‌شود و بار اول رمز تازه می‌گذارد.</small></div>'
       + '<div class="um-grid">'
-      +   '<div class="field um-f um-f-name"><label for="unName">نام و نام خانوادگی</label>'
-      +     '<input type="text" id="unName" autocomplete="off" placeholder="مثلاً آقای رضا مرادی"></div>'
+      +   '<div class="um-nameset um-f-name">'
+      +     '<div class="field um-f um-f-ttl"><label>عنوان</label><select class="u-ttl">' + UM_TITLES.map(t => '<option value="' + esc(t) + '">' + esc(t || 'بدون عنوان') + '</option>').join('') + '</select></div>'
+      +     '<div class="field um-f"><label>نام</label><input type="text" class="u-fn" autocomplete="off" placeholder="مثلاً رضا"></div>'
+      +     '<div class="field um-f"><label>نام خانوادگی</label><input type="text" class="u-ln" autocomplete="off" placeholder="مثلاً مرادی"></div>'
+      +     '<input type="hidden" id="unName" class="u-name">'
+      +   '</div>'
       +   '<div class="field um-f"><label for="unRole">سمت</label>' + roleSel('', 'unRole').replace(' class="u-role"', '') + '</div>'
       +   '<div class="field um-f"><label for="unLvl">سطح دسترسی</label>' + lvlSel(3, 'unLvl').replace(' class="u-level"', '') + '</div>'
       + '</div>'
@@ -24012,8 +24085,17 @@
         + '<div class="um-b">'
         +   '<div class="um-grid">'
         +     (u.ct || isAdminName(n) ? ''
-              : '<div class="field um-f um-f-name"><label>نام و نام خانوادگی</label>'
-                + '<input type="text" class="u-name" value="' + esc(n) + '" data-orig="' + esc(n) + '" autocomplete="off"></div>')
+              : (function(){
+                  const sp = umSplitName(n);
+                  return '<div class="um-nameset">'
+                    + '<div class="field um-f um-f-ttl"><label>عنوان</label><select class="u-ttl">'
+                    +   UM_TITLES.map(t => '<option value="' + esc(t) + '"' + (t === sp.t ? ' selected' : '') + '>' + esc(t || 'بدون عنوان') + '</option>').join('')
+                    + '</select></div>'
+                    + '<div class="field um-f"><label>نام</label><input type="text" class="u-fn" value="' + esc(sp.f) + '" autocomplete="off" placeholder="مثلاً رضا"></div>'
+                    + '<div class="field um-f"><label>نام خانوادگی</label><input type="text" class="u-ln" value="' + esc(sp.l) + '" autocomplete="off" placeholder="مثلاً مرادی"></div>'
+                    + '<input type="hidden" class="u-name" value="' + esc(n) + '" data-orig="' + esc(n) + '">'
+                    + '</div>';
+                })())
         +     '<div class="field um-f"><label>سمت</label>' + roleSel(u.role) + '</div>'
         +     '<div class="field um-f"><label>سطح دسترسی</label>' + lvlSel(u.L, '', isAdminName(n)) + '</div>'
         +   '</div>'
@@ -24022,6 +24104,11 @@
         +   '<div class="um-lvnote lvl-now">' + esc(LEVEL_LABEL[u.L] || LEVEL_LABEL[3]) + '</div>'
         +   '<div class="um-meta"><span>' + UM_I.key + PASS_T[u.pass] + '</span>'
         +     '<span class="' + (u.active ? 'ok' : 'bad') + '"><i></i>' + (u.active ? 'حساب فعال' : 'حساب غیرفعال') + '</span></div>'
+        +   (u.ct ? '' : '<div class="um-pass"><b>' + UM_I.key + 'رمز ورود</b>'
+              + '<div class="um-pass-row"><input type="password" class="u-pass" placeholder="رمز تازه (حداقل ۴ نویسه)" autocomplete="new-password">'
+              + '<label class="um-chk"><input type="checkbox" class="u-pass-must" checked><span>بار اول خودش عوض کند</span></label>'
+              + '<button type="button" class="mini go" data-u-setpass="' + esc(n) + '">تعیین رمز</button></div>'
+              + '<small>وضعیت فعلی: ' + PASS_T[u.pass] + ' · «بازنشانی» رمز را ۰۰۰۰ می‌کند.</small></div>')
         +   '<div class="um-acts">'
         +     '<button type="button" class="mini go um-save" data-u-save="' + esc(n) + '" disabled>' + UM_I.save + 'ذخیرهٔ تغییرات</button>'
         +     '<button type="button" class="mini" data-u-reset="' + esc(n) + '">' + UM_I.key + 'بازنشانی رمز</button>'
@@ -29550,6 +29637,13 @@
   }
 
   function hrReportHtml(rows, admin, dates, endFa){
+    if(hrIssuesCtx == null){
+      try{ hrIssuesCtx = ((dates && dates.length > 1) ? (rangeCache.issues || []) : (lastIssues || allIssues || [])); }catch(e){ hrIssuesCtx = []; }
+      try{ return hrReportHtmlIn(rows, admin, dates, endFa); }finally{ hrIssuesCtx = null; }
+    }
+    return hrReportHtmlIn(rows, admin, dates, endFa);
+  }
+  function hrReportHtmlIn(rows, admin, dates, endFa){
     const days = dates || [];
     const A = admin || {};
     const list = k => Array.isArray(A[k]) ? A[k] : [];
@@ -29871,6 +29965,45 @@
                           due > 0 ? (dueDays != null && dueDays > 10 ? 'bad' : 'warm') : 'ok')
                      : tile('وضعیت مالی', 'بدون سند', 'صورت وضعیتی نیست', 'dim'))
               + '</div>'
+              + (o.onlyAdm ? '' : (() => {
+                  /* افزایش و کاهش نیرو: روز به روز، هفته به هفته و دو نیمهٔ بازه */
+                  const avgOf2 = a2 => a2.length ? a2.reduce((t, x) => t + x.men, 0) / a2.length : 0;
+                  const work = series.filter(x => !isFridayFa(x.d));
+                  const chip = (lb, dv, sub) => {
+                    if(dv == null) return '';
+                    const v = Math.round(dv);
+                    const cls = v > 0 ? 'up' : (v < 0 ? 'down' : 'flat');
+                    return '<div class="hrd-ch ' + cls + '"><u>' + lb + '</u><b>' + (v > 0 ? '▲ ' : (v < 0 ? '▼ ' : '')) + toFa(Math.abs(v)) + '<i>نفر' + (v > 0 ? ' بیشتر' : (v < 0 ? ' کمتر' : '، بدون تغییر')) + '</i></b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+                  };
+                  const L = work.length;
+                  const dD = L >= 2 ? work[L - 1].men - work[L - 2].men : null;
+                  const dW = L >= 12 ? avgOf2(work.slice(-6)) - avgOf2(work.slice(-12, -6)) : null;
+                  const dM = L >= 20 ? avgOf2(work.slice(Math.floor(L / 2))) - avgOf2(work.slice(0, Math.floor(L / 2))) : null;
+                  const h2 = chip('روزانه', dD, L >= 2 ? dayLabel2(work[L - 1].d) + ' نسبت به ' + dayLabel2(work[L - 2].d) : '')
+                    + chip('هفتگی', dW, 'میانگین ۶ روز کاری اخیر نسبت به ۶ روز قبل')
+                    + chip('ماهانه', dM, 'نیمهٔ دوم بازه نسبت به نیمهٔ اول');
+                  return h2 ? '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hrd-chs">' + h2 + '</div>'
+                    : '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hr-note">برای مقایسه، بازهٔ «۷ روز» یا «۳۰ روز» را انتخاب کنید.</div>';
+                })())
+              + (() => {
+                  /* موانع مربوط به همین پیمانکار در بازه (از گزارش‌های روزانه) */
+                  const nn = normName(name);
+                  const rel = (hrIssuesCtx || []).filter(r => {
+                    const w = String(pick(r,I.who) || '').trim();
+                    const t = String(pick(r,I.text) || '');
+                    return (w && sameEntity(w, name)) || (nn && nn.length > 2 && normName(t).indexOf(nn) !== -1);
+                  });
+                  if(!rel.length) return '<div class="rc-title">موانع مربوطه</div><div class="hr-note">در این بازه مانعی برای این پیمانکار ثبت نشده است. ✓</div>';
+                  const byZ = new Map();
+                  rel.forEach(r => { const z = String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
+                  const recent = rel.slice().sort((x, y) => String(pick(y,F.date) || '').localeCompare(String(pick(x,F.date) || ''))).slice(0, 4);
+                  return '<div class="rc-title">موانع مربوطه<span class="n">' + toFa(rel.length) + '</span></div>'
+                    + '<div class="hr-iss"><div class="hri-z">' + Array.from(byZ).sort((a2, b2) => b2[1] - a2[1]).slice(0, 5).map(([z, c]) =>
+                        '<span>' + esc(z) + '<b>' + toFa(c) + '</b></span>').join('') + '</div>'
+                    + recent.map(r => '<div class="hri-r"><i></i><span>' + esc(String(pick(r,I.text) || '—')) + '</span>'
+                        + '<small>' + esc(toFa(stampFa(pick(r,F.date)) || pick(r,F.date) || '')) + (pick(r,I.zone) ? ' · ' + esc(pick(r,I.zone)) : '') + '</small></div>').join('')
+                    + '</div>';
+                })()
               + (o.onlyAdm ? '<div class="hr-note">در این بازه گزارش کارگاهی برای این پیمانکار ثبت نشده؛ فقط پروندهٔ اداری دارد.</div>'
                   : '<div class="rc-title">نفرات هر روز</div>' + cal)
               + '<div class="rc-title">پروندهٔ اداری</div>' + docTiles;
@@ -30066,19 +30199,23 @@
   }
 
   /* کارت یک پیمانکار برای یک بازهٔ دلخواه (امروز، ۷ یا ۳۰ روز) */
+  let hrIssuesCtx = null;       // موانع بازهٔ جاری برای کارت‌های پیمانکار
   async function hrCardFor(name, mode, ref){
     /* ref: تاریخ پایان بازه. کارت پیمانکار (پنجره) مستقل از روزِ انتخاب‌شده
        در گزارش، همیشه تا امروز حساب می‌شود. */
     const d = ref || lastDate || normDate(dateInput.value) || todayShamsi();
     let adm = lastAdminDay;
     if(!adm){ try{ adm = (await fetchBundle(d)).admin; }catch(e){} }
-    let rows = [], dates = rangeDates(d, mode);
+    let rows = [], dates = rangeDates(d, mode), iss = [];
     try{
-      if(mode === 'day'){ const b = await fetchBundle(d); rows = (b.day && b.day.rows) || []; dates = [d]; }
-      else { const rc = await fetchRange(d, mode); rows = rc.rows || []; dates = rc.dates || dates; }
+      if(mode === 'day'){ const b = await fetchBundle(d); rows = (b.day && b.day.rows) || []; iss = (b.day && b.day.issues) || []; dates = [d]; }
+      else { const rc = await fetchRange(d, mode); rows = rc.rows || []; iss = rc.issues || []; dates = rc.dates || dates; }
     }catch(e){}
     const tmp = document.createElement('div');
-    try{ tmp.innerHTML = hrReportHtml(rows, adm, dates, d); }catch(e){ return null; }
+    const keepIss = hrIssuesCtx;
+    hrIssuesCtx = iss;
+    try{ tmp.innerHTML = hrReportHtml(rows, adm, dates, d); }catch(e){ hrIssuesCtx = keepIss; return null; }
+    hrIssuesCtx = keepIss;
     return Array.from(tmp.querySelectorAll('.hr-card')).find(c => sameEntity(c.dataset.hr || '', name)) || null;
   }
   /* بازهٔ هر کارت در گزارش نیروی انسانی: فقط همان کارت عوض می‌شود و
