@@ -12713,6 +12713,19 @@
   #wrkBody .wf-chip:active{transform:scale(.95);}
   #wrkBody .wf-chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
   #wrkBody .wf-chip.on b{background:rgba(255,255,255,.18);color:inherit;}
+  /* کپسول کشوییِ مهندسان: خودِ select شفاف روی کپسول می‌نشیند */
+  #wrkBody .wf-eng{position:relative;max-width:210px;}
+  #wrkBody .w-who .w-edited, #wrkBody .w-who .w-lock{display:inline-flex;align-items:center;gap:3px;margin-top:3px;width:max-content;max-width:100%;
+    font-style:normal;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;}
+  #wrkBody .w-who .w-edited{background:color-mix(in srgb, var(--warn, #c98a1b) 14%, transparent);color:var(--warn, #a0700f);}
+  #wrkBody .w-who .w-lock{background:var(--field);color:var(--muted);}
+  #wrkBody .wrow.locked .w-fields input{background:var(--field);color:var(--muted);cursor:not-allowed;}
+  #wrkBody .wrow.locked .w-state[disabled]{opacity:.7;cursor:default;}
+  #wrkBody .w-t.bad{border-color:var(--alert) !important;box-shadow:0 0 0 3px color-mix(in srgb, var(--alert) 18%, transparent);}
+  #wrkBody .wf-eng > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  #wrkBody .wf-eng .wf-ar{font-style:normal;font-size:9px;opacity:.7;}
+  #wrkBody .wf-eng select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;
+    font-size:16px;appearance:none;-webkit-appearance:none;border:0;}
   [data-theme="dark"] #wrkBody .wf-chip.on b{background:rgba(0,0,0,.18);}
 
   /* فهرست */
@@ -17859,8 +17872,9 @@
           // توابع نیستند؛ مسیر قدیمی
           await savePerson(loginName, {password_hash: newHash, must_change:false});
         }
-        if(roleOf(loginName) || row.role){
-          try{ await savePerson(loginName, {role: roleOf(loginName) || row.role}); }catch(e){}
+        // سمتی که ادمین ثبت کرده دست نمی‌خورد؛ فقط اگر خالی است پر می‌شود
+        if(!row.role && roleOf(loginName)){
+          try{ await savePerson(loginName, {role: roleOf(loginName)}); }catch(e){}
         }
       }
 
@@ -17953,6 +17967,10 @@
      d:'صورت وضعیت، قرارداد، نامه، صورتجلسه', def:[1]},
     {g:'کارگری', k:'crew.manage', t:'مدیریت کارگران',
      d:'افزودن، حذف، تغییر سمت و دریافتی', def:[1,2,5]},
+    {g:'اعلان‌ها', k:'notif.missing', t:'دیدن نقص گزارش دیگران',
+     d:'اعلان «گزارش ثبت‌نشده» مهندسان؛ سمت مدیریت پروژه و سرپرست کارگاه همیشه می‌بینند', def:[1,2]},
+    {g:'کارگری', k:'crew.editAny', t:'ویرایش گزارش کارگری دیگران',
+     d:'روزانه و اضافه کاری؛ تغییر با نام ویرایش‌کننده روی سطر دیده می‌شود', def:[1,2,5]},
     {g:'کارگری', k:'crew.instant', t:'تغییر کارگری بدون تأیید ادمین',
      d:'وگرنه تغییر در صف تأیید می‌نشیند', def:[1,5]},
     {g:'گزارش‌ها', k:'rep.hr', t:'گزارش نیروی انسانی', d:'', def:[1,2,3,5]},
@@ -18021,7 +18039,17 @@
   const myLevel = () => { const v = rawLevel(); return v === 5 ? 3 : v; };
   const isCrewBoss = () => { try{ return rawLevel() === 5; }catch(e){ return false; } };
 
+  /* سمتِ ثبت‌شده در پنل مدیریت (جدول people) همیشه مقدم است. پیش‌تر
+     فقط فهرست ثابتِ داخل کد خوانده می‌شد؛ برای همین تغییر سمت در پنل،
+     در پروفایل، گزارش‌ها و پرینت‌ها دیده نمی‌شد و با هر ورود یا عوض
+     کردن عکس، سمت قدیمی دوباره روی پایگاه‌داده نوشته می‌شد. */
   function roleOf(name){
+    try{
+      const row = (typeof personRow === 'function') ? personRow(name) : null;
+      const r = row && String(row.role || '').trim();
+      if(r && r !== '—') return r;
+      if(row && r === '—') return '';
+    }catch(e){}
     const k = nameKey(name);
     const hit = Object.keys(ROLE_OF).find(n => nameKey(n) === k);
     return hit ? ROLE_OF[hit] : '';
@@ -18337,6 +18365,11 @@
       // اعلان گزارش‌نفرستاده‌ای که گزارشش بعداً ثبت شده، نمایش داده نمی‌شود
       if(k === MISS_KIND && typeof missResolved !== 'undefined'
          && missResolved.has(String(pick(r,N.title) || ''))) return false;
+      // نقص گزارشِ قدیمی‌تر از سه روز دیگر نمی‌آید
+      if(k === MISS_KIND){
+        const ago = daysSince(String(pick(r,N.title) || '').split(' — ')[1] || '');
+        if(ago == null || ago > MISS_BACK_DAYS) return false;
+      }
       return true;
     });
   }
@@ -19034,14 +19067,22 @@
       .filter(r => pick(r,N.kind) === MISS_KIND
         && !(typeof missResolved !== 'undefined'
              && missResolved.has(String(pick(r,N.title) || ''))));
-    /* فقط یک روز بررسی می‌شود — تازه‌ترین روزی که ردیف دارد. قبلاً
-       ردیف‌های همهٔ روزهای گذشته روی هم جمع می‌شدند و فهرست را پر
-       می‌کردند بدون اینکه دیگر قابل اقدام باشند. */
-    if(missRows.length){
-      const dayOf = r => dayKey(String(pick(r,N.title) || '').split(' — ')[1] || '');
-      const newest = missRows.map(dayOf).filter(Boolean).sort().pop();
-      if(newest) missRows = missRows.filter(r => dayOf(r) === newest);
-    }
+    /* فقط گزارش‌های سه روز اخیر. نقص گزارشِ قدیمی‌تر دیگر قابل اقدام
+       نیست و نه در زنگوله می‌آید نه در کارت‌های فعالیت. */
+    missRows = missRows.filter(r => {
+      const d0 = String(pick(r,N.title) || '').split(' — ')[1] || '';
+      const ago = daysSince(d0);
+      return ago != null && ago >= 0 && ago <= MISS_BACK_DAYS;
+    });
+    /* چه کسی نقص گزارش دیگران را می‌بیند: سطح‌های مجاز (پیش‌فرض ۱ و ۲)
+       و هر کسی با سمت مدیریت پروژه یا سرپرست کارگاه — حتی اگر سطحش در
+       پنل چیز دیگری ثبت شده باشد. پیش‌تر سرپرست کارگاه این اعلان‌ها را
+       نمی‌دید. */
+    const missMgr = (() => {
+      try{ if(can('notif.missing')) return true; }catch(e){}
+      const rl = String(roleOf(me) || '');
+      return /مدیریت پروژه|سرپرست کارگاه/.test(rl) || mgr;
+    })();
 
     /* یک اعلانِ «گزارش نفرستاده» برای خودِ شخص و برای هر مدیر یک ردیف جدا
        دارد. اینجا بر اساس عنوان (تاریخ + نام) یکتا می‌شود تا تکرار نشود. */
@@ -19054,7 +19095,7 @@
       if(!subject || !isRequired(subject)) return;
       const to = pick(r,N.to) || '';
       const mineMiss = nameKey(subject) === nameKey(me);
-      if(!mineMiss && !mgr) return;
+      if(!mineMiss && !missMgr) return;
       // کلید یکتا: روز + نام. دو ردیف با نگارش متفاوتِ عنوان هم یکی می‌شوند.
       const uk = dayKey(parts[1] || '') + '|' + nameKey(subject);
       // اگر بعداً گزارش داده، اعلان اصلاً نمایش داده نمی‌شود
@@ -19072,7 +19113,7 @@
         seen: lseen.has('ms:' + uk)
               || (mineMiss && pick(r,N.state) === 'خوانده‌شده'),
         goto:null,
-        canRemind: mgr && !mineMiss,
+        canRemind: missMgr && !mineMiss,
         remindWho: subject || to, remindDate: parts[1] || '',
         mine: mineMiss
       });
@@ -22179,6 +22220,60 @@
     return {n, errs};
   }
 
+  /* ====== تغییر نام یک کاربر ======
+     ردیف خودِ شخص (با رمز و عکس) و هر ستونی که نام اعضای پروژه در آن
+     است عوض می‌شود. فهرست‌های چندنفره (مسئولین بررسی) جداگانه بازنویسی
+     می‌شوند. */
+  const PERSON_COLS = [
+    ['activities','engineer'], ['issues','engineer'], ['machines','engineer'],
+    ['statements','engineer'], ['statements','owner'], ['contracts','engineer'], ['contracts','owner'],
+    ['designs','engineer'], ['designs','owner'], ['minutes','engineer'], ['minutes','owner'],
+    ['letters','engineer'], ['letters','owner'],
+    ['tasks','created_by'], ['tasks','owner1'], ['tasks','owner2'],
+    ['nudges','from_name'], ['nudges','to_name'],
+    ['worker_daily','engineer'], ['worker_ot','engineer'],
+    ['material_move','owner'], ['material_move','expert']
+  ];
+  const PERSON_LIST_COLS = [['statements','reviewers'], ['statements','reviewers_done'],
+    ['contracts','reviewers'], ['contracts','reviewers_done']];
+  async function renamePerson(oldName, newName){
+    const from = String(oldName || '').trim(), to = String(newName || '').trim();
+    const errs = [];
+    if(!from || !to || from === to) return {errs};
+    // خودِ ردیف شخص؛ اگر این نشد، بقیه انجام نمی‌شود
+    await supaFetch('people?name=eq.' + encodeURIComponent(from), {method:'PATCH', body:{name: to}});
+    for(const [tbl, col] of PERSON_COLS){
+      try{
+        const patch = {}; patch[col] = to;
+        await supaFetch(tbl + '?' + col + '=eq.' + encodeURIComponent(from), {method:'PATCH', body: patch});
+      }catch(e){
+        const m = String(e && e.message || e);
+        if(!/404|400|42703|PGRST/.test(m)) errs.push(tbl + '.' + col + ': ' + m);
+      }
+    }
+    for(const [tbl, col] of PERSON_LIST_COLS){
+      try{
+        const rows = await supaFetch(tbl + '?' + col + '=ilike.' + encodeURIComponent('*' + from + '*')
+          + '&select=id,' + col + '&limit=2000', {prefer:'return=representation'});
+        for(const r of (rows || [])){
+          const v = String(r[col] == null ? '' : r[col]);
+          const nv = v.split(/([|،,])/).map(t => (t.trim() === from ? t.replace(from, to) : t)).join('');
+          if(nv !== v && r.id){
+            const patch = {}; patch[col] = nv;
+            await supaFetch(tbl + '?id=eq.' + encodeURIComponent(r.id), {method:'PATCH', body: patch});
+          }
+        }
+      }catch(e){
+        const m = String(e && e.message || e);
+        if(!/404|400|42703|PGRST/.test(m)) errs.push(tbl + '.' + col + ': ' + m);
+      }
+    }
+    // اگر خودِ کاربر فعلی بود، با نام تازه وارد بماند
+    try{ if(nameKey(activeUserName()) === nameKey(from)) applyUser(to); }catch(e){}
+    clearNetCache();
+    return {errs};
+  }
+
   async function renameEverywhere(oldName, newName){
     const from = String(oldName || '').trim(), to = String(newName || '').trim();
     if(!from || !to || from === to) return {n:0, errs:[], hit:{}};
@@ -23138,6 +23233,9 @@
         + '</button>'
         + '<div class="um-b">'
         +   '<div class="um-grid">'
+        +     (u.ct || isAdminName(n) ? ''
+              : '<div class="field um-f um-f-name"><label>نام و نام خانوادگی</label>'
+                + '<input type="text" class="u-name" value="' + esc(n) + '" data-orig="' + esc(n) + '" autocomplete="off"></div>')
         +     '<div class="field um-f"><label>سمت</label>' + roleSel(u.role) + '</div>'
         +     '<div class="field um-f"><label>سطح دسترسی</label>' + lvlSel(u.L, '', isAdminName(n)) + '</div>'
         +   '</div>'
@@ -23183,22 +23281,28 @@
     try{
       if(!mtAllRows) mtLoadAllNames().then(() => { try{ ensureMatchList(); }catch(e){} });
     }catch(e){}
+    function umMarkDirty(row){
+      const sv = row && row.querySelector('.um-save');
+      if(!sv) return;
+      const nm = row.querySelector('.u-name');
+      const dirty = Array.from(row.querySelectorAll('.u-role, .u-level'))
+        .some(x => x.value !== (Array.from(x.options).find(o => o.defaultSelected) || x.options[0] || {}).value)
+        || !!(nm && nm.value.trim() && nm.value.trim() !== nm.dataset.orig);
+      sv.disabled = !dirty;
+      row.classList.toggle('dirty', dirty);
+    }
     if(box.dataset.wired !== '1'){
     box.dataset.wired = '1';
     box.addEventListener('input', e => {
       if(e.target.id === 'umQ'){ umState.q = e.target.value; umApplyFilter(box); return; }
+      if(e.target.classList.contains('u-name')) umMarkDirty(e.target.closest('.um-row'));
     });
     /* دکمهٔ ذخیره فقط وقتی چیزی عوض شده روشن می‌شود */
     box.addEventListener('change', e => {
       const sel = e.target.closest('.um-row .u-role, .um-row .u-level');
       if(!sel) return;
       const row = sel.closest('.um-row');
-      const sv = row && row.querySelector('.um-save');
-      if(!sv) return;
-      const dirty = Array.from(row.querySelectorAll('.u-role, .u-level'))
-        .some(x => x.value !== (Array.from(x.options).find(o => o.defaultSelected) || x.options[0] || {}).value);
-      sv.disabled = !dirty;
-      row.classList.toggle('dirty', dirty);
+      umMarkDirty(row);
       if(sel.classList.contains('u-level')){
         const nt = row.querySelector('.um-lvnote');
         if(nt) nt.textContent = LEVEL_LABEL[parseInt(sel.value, 10)] || '';
@@ -23524,23 +23628,42 @@
 
       try{
         if(save){
+          const nmIn = host.querySelector('.u-name');
+          const newName = nmIn ? nmIn.value.replace(/\s+/g, ' ').trim() : name;
+          let name2 = name;
+          if(newName && newName !== name){
+            if((peopleRows || []).some(p => nameKey(p.name) === nameKey(newName) && nameKey(p.name) !== nameKey(name))){
+              showDialog('warn','این نام هست','کاربری با نام «' + newName + '» از قبل وجود دارد.');
+              return;
+            }
+            const okR = await askConfirm('تغییر نام',
+              'نام «' + name + '» به «' + newName + '» عوض شود؟\n\n'
+              + 'نام در همهٔ گزارش‌ها، فعالیت‌ها، اسناد دفتر فنی، پیام‌ها و گزارش کارگری هم عوض می‌شود. رمز و عکس سر جایش می‌ماند.',
+              'تغییر نام');
+            if(!okR) return;
+            const rr = await renamePerson(name, newName);
+            name2 = newName;
+            if(rr.errs.length) showDialog('warn','بخشی عوض نشد', rr.errs.join('\n'));
+          }
           const sel = host.querySelector('.u-role');
           const lvl = host.querySelector('.u-level');
           const patch = {role: sel ? sel.value : null};
           if(lvl) patch.level = parseInt(lvl.value, 10);
           try{
-            await savePerson(name, patch);
+            await savePerson(name2, patch);
           }catch(e1){
             // اگر ستون سطح دسترسی هنوز ساخته نشده باشد
             delete patch.level;
-            await savePerson(name, patch);
+            await savePerson(name2, patch);
             showDialog('warn','سطح ذخیره نشد',
               'سمت ثبت شد ولی ستون «level» در جدول people وجود ندارد. فایل SQL را اجرا کنید.');
             await loadPeople(); renderAdminPanel();
             return;
           }
-          showDialog('ok','ثبت شد','سمت و سطح دسترسی ' + name + ' به‌روزرسانی شد.');
+          showDialog('ok','ثبت شد', (name2 !== name ? 'نام به «' + name2 + '» عوض شد و ' : '')
+            + 'سمت و سطح دسترسی ' + name2 + ' به‌روزرسانی شد.');
           await loadPeople();
+          try{ if(name2 !== name) renderAdminPanel(); }catch(e3){}
         }
         if(lvlBtn){
           const lvl = host.querySelector('.u-level');
@@ -27301,7 +27424,7 @@
      یک اعلان برای خود گزارش‌دهنده و برای سطح ۱ و ۲ فرستاده می‌شود.
      تا وقتی گزارش ثبت نشود، هر روز تکرار می‌شود. */
   const MISS_KIND = 'missing';
-  const MISS_BACK_DAYS = 7;
+  const MISS_BACK_DAYS = 3;          // اعلان نقص گزارش فقط تا سه روز قبل
   /* اعلان‌های «گزارش ثبت‌نشده» که صاحبشان بعداً گزارش داده است */
   const missResolved = new Set();
   /* «روز|نام» هرکسی که واقعاً گزارش داده — برای اینکه اعلانِ اشتباه دیده نشود */
@@ -43221,6 +43344,45 @@
     return n;
   }
   const wrkCanManage = () => { try{ return can('crew.manage'); }catch(e){ return false; } };
+  /* هر کس فقط سطرهای گزارش خودش را عوض می‌کند. ادمین، مدیریت و مدیریت
+     کارگری سطر دیگران را هم می‌توانند، ولی نامشان روی سطر می‌ماند. */
+  const wrkCanEditAny = () => { try{ return can('crew.editAny'); }catch(e){ return false; } };
+  function wrkCanEditRow(cur){
+    const eng = cur && cur.engineer;
+    if(!eng) return true;                               // سطر بی‌مسئول: هر کس برش دارد
+    if(nameKey(eng) === nameKey(wrkMe())) return true;
+    return wrkCanEditAny();
+  }
+  /* «ثبت‌کننده» با این نشانه یعنی کسی جز خودِ مهندس سطر را عوض کرده.
+     ردیف‌های قدیمی این نشانه را ندارند، پس به‌اشتباه علامت نمی‌خورند. */
+  const WRK_EDIT_MARK = 'تغییر: ';
+  const wrkEditorOf = cur => {
+    const v = String((cur && cur.by) || '');
+    return v.indexOf(WRK_EDIT_MARK) === 0 ? v.slice(WRK_EDIT_MARK.length) : '';
+  };
+  const wrkDirty = {daily: new Set(), ot: new Set()};
+  const wrkGone = {daily: new Set(), ot: new Set()};   // سطرهای ثبت‌شده‌ای که برداشته شدند
+  function wrkTouch(kind, key){
+    if(!wrkDirty[kind]) return;
+    wrkDirty[kind].add(key);
+    const cur = wrkData[kind].get(key);
+    if(cur && cur.engineer) wrkGone[kind].delete(key);
+  }
+  /* ساعت همیشه به شکل ۰۰:۰۰ ثبت می‌شود: «17» ← ۱۷:۰۰، «730» ← ۰۷:۳۰،
+     «7.5» یا «7/30» ← ۰۷:۳۰. ورودی بی‌معنا خالی می‌شود. */
+  function wrkNormTime(v){
+    let x = toEn(String(v == null ? '' : v)).trim().replace(/[٫،,./\\\-\s]+/g, ':');
+    if(!x) return '';
+    let h, m = 0, mm;
+    if((mm = x.match(/^(\d{1,2}):(\d{1,2})(?::\d{1,2})?$/))){ h = +mm[1]; m = +mm[2]; if(mm[2].length === 1) m = (mm[2] === '5') ? 30 : m * 10; }
+    else if((mm = x.match(/^(\d{1,2})$/))){ h = +mm[1]; }
+    else if((mm = x.match(/^(\d{1,2})(\d{2})$/))){ h = +mm[1]; m = +mm[2]; }
+    else if((mm = x.match(/^(\d{1,2}):$/))){ h = +mm[1]; }
+    else return '';
+    if(h === 24 && m === 0) h = 0;
+    if(h > 23 || m > 59) return '';
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
   /* سطح «مدیریت کارگران» هم تغییرهایش بی‌واسطه اعمال می‌شود */
   const wrkIsAdmin = () => { try{ return can('crew.instant'); }catch(e){ return false; } };
 
@@ -43515,6 +43677,64 @@
     return out;
   }
 
+  /* ====== شاگرد همراه استادش ======
+     در فهرست، سمتِ شاگرد «شاگرد <نام استاد>» است (بنا، جوشکار، کارگر
+     فنی و …). هر چه برای استاد نوشته شود — مسئول، شرح، محل، ساعت و
+     وضعیت — برای شاگردش هم نوشته می‌شود؛ مگر شاگرد جدا به مهندس
+     دیگری سپرده شده باشد. */
+  const WRK_KID_RE = /^\s*شاگرد\s+(.+)$/;
+  function wrkKidsOf(w){
+    if(!w || WRK_KID_RE.test(String(w.role || ''))) return [];
+    return (workersLive || []).filter(k => {
+      const m = String(k.role || '').match(WRK_KID_RE);
+      return m && nameKey(m[1]) === nameKey(w.name);
+    });
+  }
+  function wrkSyncKids(kind, masterKey, prevEng){
+    const w = (workersLive || []).find(x => (x.code || x.name) === masterKey);
+    const kids = wrkKidsOf(w);
+    if(!kids.length) return [];
+    const m = wrkData[kind].get(masterKey) || {};
+    const changed = [];
+    kids.forEach(k => {
+      const kk = k.code || k.name;
+      const c = wrkData[kind].get(kk) || {activity:'', engineer:'', zone:'', state:'ok', t1:'', t2:''};
+      const follows = !c.engineer || nameKey(c.engineer) === nameKey(prevEng || '')
+        || nameKey(c.engineer) === nameKey(m.engineer || '');
+      if(!follows || !wrkCanEditRow(c)) return;
+      if(!m.engineer){
+        if(c.id) wrkGone[kind].add(kk);
+        c.engineer = '';
+      }else{
+        c.engineer = m.engineer; c.activity = m.activity || ''; c.zone = m.zone || '';
+        c.state = m.state || 'ok'; c.t1 = m.t1 || ''; c.t2 = m.t2 || '';
+        wrkGone[kind].delete(kk);
+      }
+      wrkData[kind].set(kk, c);
+      wrkDirty[kind].add(kk);
+      changed.push(kk);
+    });
+    return changed;
+  }
+  /* هنگام تایپ، خانه‌های سطر شاگرد هم بی‌آنکه فهرست از نو کشیده شود پر می‌شوند */
+  function wrkPaintKids(kind, keys){
+    const box = document.getElementById('wrkListBox');
+    if(!box) return false;
+    let need = false;
+    keys.forEach(kk => {
+      const row = box.querySelector('.wrow[data-wcode="' + CSS.escape(kk) + '"]');
+      const c = wrkData[kind].get(kk) || {};
+      if(!row) return;
+      if(!!c.engineer !== row.classList.contains('on') || !row.querySelector('.w-fields')){ need = true; return; }
+      const set = (sel, v) => { const el = row.querySelector(sel); if(el && document.activeElement !== el) el.value = v; };
+      set('[data-wact]', c.activity || ''); set('[data-wzone]', c.zone || '');
+      set('[data-wt1]', wrkFaTime(c.t1)); set('[data-wt2]', wrkFaTime(c.t2));
+      const dur = row.querySelector('[data-wdur]'); const h = wrkHours(c.t1, c.t2);
+      if(dur) dur.textContent = (h != null) ? toFa(h) + ' ساعت' : '';
+    });
+    return need;
+  }
+
   let wrkDayAt = '';          // تاریخی که داده‌اش خوانده شده
   async function wrkLoadDay(force){
     const d = wrkDateVal();
@@ -43523,13 +43743,14 @@
     if(!force && wrkDayAt === d) return;
     wrkDayAt = d;
     wrkData.daily = new Map(); wrkData.ot = new Map(); wrkMat = [];
+    ['daily', 'ot'].forEach(k => { wrkDirty[k].clear(); wrkGone[k].clear(); });
     const q = '&date_fa=eq.' + encodeURIComponent(d);
     try{
       const rows = await supaFetch('worker_daily?select=*' + q, {prefer:'return=representation'});
       (rows || []).forEach(r => wrkData.daily.set(String(r.worker_code || r.worker_name), {
         activity: r.activity || '', engineer: r.engineer || '',
         zone: r.zone || '', state: r.state || 'ok', note: r.note || '',
-        t1: r.t_in || '', t2: r.t_out || '', id: r.id
+        t1: r.t_in || '', t2: r.t_out || '', id: r.id, by: r.created_by || ''
       }));
     }catch(e){}
     try{
@@ -43537,7 +43758,7 @@
       (rows || []).forEach(r => wrkData.ot.set(String(r.worker_code || r.worker_name), {
         activity: r.activity || '', engineer: r.engineer || '',
         zone: r.zone || '', state: 'ok',
-        t1: r.t_start || '', t2: r.t_end || '', id: r.id
+        t1: r.t_start || '', t2: r.t_end || '', id: r.id, by: r.created_by || ''
       }));
     }catch(e){}
     try{
@@ -43602,26 +43823,32 @@
     const open = on && !off;
     const mine = on && nameKey(eng) === nameKey(wrkMe());
     const canPick = wrkCanManage();
-    const cls = 'wrow' + (on ? ' on' : '') + (open ? ' open' : '') + (mine ? ' mine' : '')
+    const canEdit = wrkCanEditRow(cur);
+    const ro = canEdit ? '' : ' readonly aria-readonly="true"';
+    const editor = wrkEditorOf(cur);
+    const cls = 'wrow' + (on ? ' on' : '') + (open ? ' open' : '') + (mine ? ' mine' : '') + (canEdit ? '' : ' locked')
       + (night ? ' night' : '') + (away ? ' away ' + stt.cls : '')
       + (key === wrkJustKey ? ' w-just' : '');
     return '<div class="' + cls + '" data-wcode="' + esc(key) + '">'
       + '<span class="w-id" title="کد پرسنلی">' + esc(toFa(w.pno || w.code || '—')) + '</span>'
       + '<span class="w-who"><b>' + esc(w.name) + '</b><u>' + esc(w.role || '')
-      +   nightTag + '</u></span>'
+      +   nightTag + '</u>'
+      +   (editor ? '<i class="w-edited" title="این سطر را ' + esc(editor) + ' تغییر داده است">✎ تغییر: ' + esc(editor) + '</i>' : '')
+      +   (on && !canEdit ? '<i class="w-lock">فقط ' + esc(eng) + ' می‌تواند تغییر دهد</i>' : '')
+      + '</span>'
       + '<span class="w-side">'
       +   (kind === 'daily'
             ? '<button type="button" class="w-state ' + (stt.cls || 'ok') + '" '
-              + 'data-wstate="' + esc(key) + '" title="وضعیت حضور">'
+              + (canEdit ? 'data-wstate="' + esc(key) + '"' : 'disabled') + ' title="وضعیت حضور">'
               + '<i class="w-dot"></i>' + stt.t + '</button>' : '')
       +   (on
             ? '<span class="w-eng" title="مسئول: ' + esc(eng) + '">'
               + avatarHtml(eng, '', true)
               + '<b>' + esc(eng) + '</b></span>'
-              + '<button type="button" class="w-assign on" data-wassign="' + esc(key) + '" '
+              + (canEdit ? '<button type="button" class="w-assign on" data-wassign="' + esc(key) + '" '
               +   'title="برداشتن از گزارش" aria-label="برداشتن از گزارش">'
               +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
-              +     'stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>'
+              +     'stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>' : '')
             : (off ? ''
                : '<button type="button" class="w-assign" data-wassign="' + esc(key) + '">'
                  + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" '
@@ -43638,20 +43865,20 @@
       + (open
           ? '<div class="w-fields">'
             + '<label class="w-f w-f-act"><span>' + (kind === 'ot' ? 'شرح اضافه کار *' : 'شرح فعالیت')
-            +   '</span><input type="text" class="w-act" data-wact="' + esc(key) + '" '
+            +   '</span><input type="text" class="w-act" data-wact="' + esc(key) + '"' + ro + ' '
             +   'placeholder="' + (kind === 'ot' ? 'مثلاً بتن‌ریزی شبانهٔ سقف' : 'مثلاً آرماتوربندی سقف')
             +   '" value="' + esc(cur.activity || '') + '"></label>'
             + '<label class="w-f w-f-zone"><span>محل کارکرد</span>'
-            +   '<input type="text" class="w-zone" data-wzone="' + esc(key) + '" '
-            +   'data-list="zoneList" autocomplete="off" placeholder="بلوک / طبقه" '
+            +   '<input type="text" class="w-zone" data-wzone="' + esc(key) + '"' + ro + ' '
+            +   (canEdit ? 'data-list="zoneList" ' : '') + 'autocomplete="off" placeholder="بلوک / طبقه" '
             +   'value="' + esc(cur.zone || '') + '"></label>'
             + '<div class="w-f w-f-time"><span>ساعت</span><div class="w-range">'
-            +   '<input type="text" class="w-t" data-wt1="' + esc(key) + '" inputmode="numeric" '
-            +     'data-list="timeList" autocomplete="off" aria-label="از ساعت" '
+            +   '<input type="text" class="w-t" data-wt1="' + esc(key) + '"' + ro + ' inputmode="numeric" '
+            +     (canEdit ? 'data-list="timeList" ' : '') + 'autocomplete="off" aria-label="از ساعت" '
             +     'placeholder="' + ph1 + '" value="' + esc(wrkFaTime(t1)) + '">'
             +   '<i class="w-arrow" aria-hidden="true">←</i>'
-            +   '<input type="text" class="w-t" data-wt2="' + esc(key) + '" inputmode="numeric" '
-            +     'data-list="timeList" autocomplete="off" aria-label="تا ساعت" '
+            +   '<input type="text" class="w-t" data-wt2="' + esc(key) + '"' + ro + ' inputmode="numeric" '
+            +     (canEdit ? 'data-list="timeList" ' : '') + 'autocomplete="off" aria-label="تا ساعت" '
             +     'placeholder="' + ph2 + '" value="' + esc(wrkFaTime(t2)) + '">'
             +   '<span class="w-dur" data-wdur="' + esc(key) + '">'
             +     (hrs != null ? toFa(hrs) + ' ساعت' : '') + '</span>'
@@ -43662,7 +43889,7 @@
   }
 
   let wrkOnlyPicked = false;
-  let wrkFilter = 'all';          // all | mine | picked | free | away
+  let wrkFilter = 'all';          // all | mine | picked | free | away | eng:<نام مهندس>
   let wrkRingLast = 0;            // برای انیمیشن حلقهٔ پیشرفت از مقدار قبلی
 
   function wrkCounts(kind){
@@ -43679,6 +43906,19 @@
     return c;
   }
 
+  /* مهندس‌هایی که امروز کارگر برداشته‌اند، با تعدادشان */
+  function wrkEngsOf(kind){
+    const m = new Map();
+    workersLive.forEach(w => {
+      const cur = wrkData[kind].get(w.code || w.name) || {};
+      if(!cur.engineer) return;
+      if(kind === 'daily' && String(cur.state || 'ok') === 'off') return;
+      const k = nameKey(cur.engineer);
+      if(!m.has(k)) m.set(k, {nm: cur.engineer, n: 0});
+      m.get(k).n++;
+    });
+    return Array.from(m.values()).sort((a, b) => b.n - a.n || a.nm.localeCompare(b.nm, 'fa'));
+  }
   function wrkSumHtml(kind){
     const c = wrkCounts(kind);
     /* نیروی امروز = همه منهای غایب‌ها؛ حلقه نشان می‌دهد چند نفرشان تکلیفشان روشن است */
@@ -43707,8 +43947,24 @@
       +   chip('all', 'همه', c.all)
       +   chip('mine', 'با من', c.mine)
       +   chip('picked', 'در گزارش', c.picked)
-      +   chip('free', 'بی‌مسئول', c.free)
+      +   chip('free', 'بدون مسئول', c.free)
       +   chip('away', 'غایب', c.away)
+      +   (function(){
+            /* فهرست کشوییِ مهندس‌هایی که امروز گزارش گذاشته‌اند */
+            const engs = wrkEngsOf(kind);
+            if(!engs.length) return '';
+            const cur = wrkFilter.indexOf('eng:') === 0 ? wrkFilter.slice(4) : '';
+            const hit = cur ? engs.find(x => nameKey(x.nm) === nameKey(cur)) : null;
+            return '<label class="wf-chip wf-eng' + (hit ? ' on' : '') + '">'
+              + '<span>' + esc(hit ? hit.nm : 'مهندسان') + '</span>'
+              + '<b>' + toFa(hit ? hit.n : engs.length) + '</b>'
+              + '<i class="wf-ar" aria-hidden="true">▾</i>'
+              + '<select id="wrkEngSel" aria-label="گزارش هر مهندس">'
+              +   '<option value="">همهٔ مهندسان</option>'
+              +   engs.map(x => '<option value="' + esc(x.nm) + '"' + (hit && hit.nm === x.nm ? ' selected' : '') + '>'
+                    + esc(x.nm) + ' — ' + toFa(x.n) + ' نفر</option>').join('')
+              + '</select></label>';
+          })()
       + '</div>'
       + '</div>';
   }
@@ -43717,8 +43973,11 @@
     const q = String((document.getElementById('wrkSearch') || {}).value || '').trim();
     const nk = v => normKey(v).replace(/‌/g,'');
     const me = nameKey(wrkMe());
+    /* جست‌وجوی نام مهندس، کارگرانی را می‌آورد که در گزارش او هستند */
+    const engOf = w => String((wrkData[kind].get(w.code || w.name) || {}).engineer || '');
     const list = workersLive.filter(w => !q
       || nk(w.name).indexOf(nk(q)) !== -1
+      || (engOf(w) && nk(engOf(w)).indexOf(nk(q)) !== -1)
       || nk(w.role).indexOf(nk(q)) !== -1
       || nk(w.pno || '').indexOf(nk(toEn(q))) !== -1
       || nk(w.code).indexOf(nk(q)) !== -1);
@@ -43732,6 +43991,7 @@
       if(f === 'picked') return !!c.engineer;
       if(f === 'mine') return !!c.engineer && nameKey(c.engineer) === me;
       if(f === 'free') return !c.engineer;
+      if(f.indexOf('eng:') === 0) return !!c.engineer && nameKey(c.engineer) === nameKey(f.slice(4));
       return true;
     });
     const empty = {
@@ -43740,7 +44000,7 @@
       picked: 'هنوز کسی در گزارش امروز نیست.',
       free: 'همه مسئول دارند. 👏',
       away: 'امروز غایبی ثبت نشده است.'
-    }[f] || 'موردی نیست.';
+    }[f] || (f.indexOf('eng:') === 0 ? 'این مهندس امروز کارگری در گزارش ندارد.' : 'موردی نیست.');
     const out = wrkSumHtml(kind)
       + (list2.length
           ? '<div class="wrk-list">' + list2.map(w => wrkRowHtml(w, kind)).join('') + '</div>'
@@ -43762,7 +44022,7 @@
     return '<div class="wk-top">'
       + '<label class="wk-search">' + ic.search
       +   '<input type="text" class="wrk-search" id="wrkSearch" '
-      +   'placeholder="جست‌وجوی نام، سمت یا کد پرسنلی" autocomplete="off"></label>'
+      +   'placeholder="جست‌وجوی نام، سمت، کد یا نام مهندس" autocomplete="off"></label>'
       + '<div class="wk-tools" role="group" aria-label="خروجی و ورودی">'
       +   '<button type="button" class="wk-tool" data-wdl="' + kind + '" title="دانلود اکسل">' + ic.dl + '<span>اکسل</span></button>'
       +   '<button type="button" class="wk-tool" data-wup="' + kind + '" title="آپلود اکسل">' + ic.up + '<span>بارگذاری</span></button>'
@@ -44384,19 +44644,35 @@
     const tbl = (kind === 'ot') ? 'worker_ot' : 'worker_daily';
     const rows = [];
     let missing = 0;
+    /* فقط سطرهایی که در همین صفحه عوض شده‌اند فرستاده می‌شوند. پیش‌تر
+       همهٔ سطرها دوباره فرستاده می‌شد و ثبت هر نفر، گزارش بقیه را هم به
+       نام خودش بازنویسی می‌کرد. */
+    const gone = [];
+    wrkGone[kind].forEach(key => {
+      const c0 = wrkData[kind].get(key);
+      if(c0 && c0.engineer) return;
+      const w0 = workersLive.find(x => (x.code || x.name) === key);
+      gone.push(w0 ? (w0.code || w0.name) : key);
+    });
     workersLive.forEach(w => {
       const key = w.code || w.name;
       const c = wrkData[kind].get(key);
       if(!c || !c.engineer) return;
+      if(!wrkDirty[kind].has(key) && !c.auto) return;
+      if(!wrkCanEditRow(c) && !c.auto) return;
       if(kind === 'ot' && !String(c.activity || '').trim()){ missing++; return; }
+      c.t1 = wrkNormTime(c.t1) || ''; c.t2 = wrkNormTime(c.t2) || '';
       if(kind === 'daily' && (c.state || 'ok') !== 'ok'){
         /* غایب و انضباطی و جریمه بدون شرح فعالیت هم ثبت می‌شوند */
       }
       const base = {
         date_fa: d, project: proj, worker_code: w.code || '', worker_name: w.name,
         worker_role: w.role || '', activity: String(c.activity || '').trim(),
-        zone: String(c.zone || '').trim(), engineer: c.engineer, created_by: me
+        zone: String(c.zone || '').trim(), engineer: c.engineer,
+        /* اگر کسی جز خودِ مهندس سطر را عوض کرد، نامش با نشانه می‌ماند */
+        created_by: (c.auto || nameKey(c.engineer) === nameKey(me)) ? c.engineer : (WRK_EDIT_MARK + me)
       };
+      c.by = base.created_by;
       if(kind === 'ot'){
         base.t_start = toEn(c.t1 || ''); base.t_end = toEn(c.t2 || '');
         base.hours = wrkHours(c.t1, c.t2);
@@ -44406,17 +44682,22 @@
       }
       rows.push(base);
     });
-    if(!rows.length){
+    if(!rows.length && !gone.length){
       showDialog('warn', 'چیزی برای ثبت نیست',
         missing ? 'برای اضافه کاری، شرح فعالیت الزامی است.'
-                : 'اول دست‌کم یک کارگر را انتخاب کنید.');
+                : 'تغییری برای ثبت نیست. اول کارگری را اضافه یا سطری را ویرایش کنید.');
       return;
     }
     wrkBusy = true;
     try{
-      await supaFetch(tbl + '?on_conflict=date_fa,worker_code', {
+      if(rows.length) await supaFetch(tbl + '?on_conflict=date_fa,worker_code', {
         method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: rows
       });
+      for(const code of gone){
+        await supaFetch(tbl + '?date_fa=eq.' + encodeURIComponent(d) + '&worker_code=eq.' + encodeURIComponent(code),
+          {method:'DELETE'});
+      }
+      wrkDirty[kind].clear(); wrkGone[kind].clear();
       clearNetCache(); wrkForce = true;
       try{ crewCache.clear(); }catch(e){}
       showDialog('ok','ثبت شد', toFa(rows.length) + ' کارگر برای '
@@ -44741,8 +45022,9 @@
       const st = wrkStateOf(c.state || 'ok');
       const none = !c.engineer;
       /* ستون وضعیت برداشته شد؛ حالتِ غیرعادی زیر نام می‌نشیند */
-      const tag = (kind === 'daily' && !none && st.k !== 'ok')
-        ? '<u class="pr-tag">' + esc(st.t) + '</u>' : '';
+      const tag = ((kind === 'daily' && !none && st.k !== 'ok')
+        ? '<u class="pr-tag">' + esc(st.t) + '</u>' : '')
+        + (wrkEditorOf(c) && !isAdminName(wrkEditorOf(c)) ? '<u class="pr-tag">تغییر: ' + esc(wrkEditorOf(c)) + '</u>' : '');
       return '<tr' + (none ? ' class="pr-none-row"' : '') + '>'
         + '<td class="idx">' + toFa(i + 1) + '</td>'
         + '<td class="c">' + esc(toFa(x.w.pno || x.w.code || '')) + '</td>'
@@ -44835,7 +45117,7 @@
        باشد، دو کادر نمی‌گیرد؛ هر دو نقش روی یک کادر می‌آید. */
     const seen = [];
     (engs || []).filter(n => n && !isAdminName(n)).forEach(n => {
-      if(!seen.some(x => nameKey(x.nm) === nameKey(n))) seen.push({nm: n, roles:['مهندس اجرا']});
+      if(!seen.some(x => nameKey(x.nm) === nameKey(n))) seen.push({nm: n, roles:[roleOf(n) || 'مهندس اجرا']});
     });
     return '<div class="pr-signwrap">'
       + '<div class="pr-signttl">تأیید و امضا</div>'
@@ -45072,10 +45354,23 @@
         || (nm && nameKey(x.name) === nameKey(nm)));
       if(!w) return;
       const act = cAct >= 0 ? String(r[cAct] || '').trim() : '';
-      const t1 = c1 >= 0 ? String(r[c1] || '').trim() : '';
-      const t2 = c2 >= 0 ? String(r[c2] || '').trim() : '';
-      const eng = cEng >= 0 ? String(r[cEng] || '').trim() : '';
+      /* ساعت در اکسل ممکن است تاریخ، کسری از روز یا متن باشد */
+      const xt = v => {
+        if(v instanceof Date) return String(v.getHours()).padStart(2, '0') + ':' + String(v.getMinutes()).padStart(2, '0');
+        if(typeof v === 'number' && v > 0 && v < 1){ const mi = Math.round(v * 1440); return wrkNormTime(Math.floor(mi / 60) + ':' + (mi % 60)); }
+        return wrkNormTime(v);
+      };
+      const t1 = c1 >= 0 ? xt(r[c1]) : '';
+      const t2 = c2 >= 0 ? xt(r[c2]) : '';
+      let eng = cEng >= 0 ? String(r[cEng] || '').trim() : '';
       if(!act && !t1 && !eng) return;
+      // بدون اجازهٔ ویرایش گزارش دیگران، فایل فقط سطرهای خود شخص را پر می‌کند
+      if(!wrkCanEditAny()){
+        const was = wrkData[kind].get(w.code || w.name);
+        if(was && !wrkCanEditRow(was)) return;
+        eng = me;
+      }
+      wrkDirty[kind].add(w.code || w.name);
       const def = wrkDefTimes(wrkDateVal(), w);
       const stTx = cSt >= 0 ? String(r[cSt] || '').trim() : '';
       const stK = (WRK_STATES.find(x => x.t === stTx) || {k:'ok'}).k;
@@ -45168,6 +45463,8 @@
       const key = t.dataset.wact || t.dataset.wt1 || t.dataset.wt2 || t.dataset.wzone;
       if(key && wrkTab !== 'mat' && wrkTab !== 'man'){
         const cur = wrkData[wrkTab].get(key) || {activity:'', engineer:'', zone:'', state:'ok', t1:'', t2:''};
+        if(!wrkCanEditRow(cur)) return;
+        wrkDirty[wrkTab].add(key);
         if(t.dataset.wact  != null) cur.activity = t.value;
         if(t.dataset.wzone != null) cur.zone = t.value;
         if(t.dataset.wt1   != null) cur.t1 = t.value;
@@ -45188,7 +45485,9 @@
                 + '<b>' + esc(cur.engineer) + '</b></span>');
           }
         }
+        const prevEng0 = cur.engineer;
         wrkData[wrkTab].set(key, cur);
+        try{ if(wrkPaintKids(wrkTab, wrkSyncKids(wrkTab, key, prevEng0))) body.__kidRedraw = true; }catch(e2){}
         {
           const dur = body.querySelector('[data-wdur="' + CSS.escape(key) + '"]');
           const h = wrkHours(cur.t1, cur.t2);
@@ -45221,6 +45520,40 @@
       }
     });
 
+    body.addEventListener('focusout', () => {
+      if(!body.__kidRedraw) return;
+      body.__kidRedraw = false;
+      setTimeout(() => {
+        const bx = document.getElementById('wrkListBox');
+        if(bx && !bx.contains(document.activeElement)) bx.innerHTML = wrkListHtml(wrkTab);
+      }, 120);
+    });
+    body.addEventListener('change', e => {
+      const tt = e.target;
+      if(tt && (tt.dataset.wt1 != null || tt.dataset.wt2 != null) && wrkTab !== 'mat' && wrkTab !== 'man'){
+        const key = tt.dataset.wt1 || tt.dataset.wt2;
+        const cur = wrkData[wrkTab].get(key);
+        if(!cur || !wrkCanEditRow(cur)) return;
+        const raw = String(tt.value || '').trim();
+        const v = wrkNormTime(raw);
+        if(raw && !v) tt.classList.add('bad'); else tt.classList.remove('bad');
+        if(raw && !v) return;
+        if(tt.dataset.wt1 != null) cur.t1 = v; else cur.t2 = v;
+        tt.value = wrkFaTime(v);
+        wrkDirty[wrkTab].add(key);
+        try{ wrkPaintKids(wrkTab, wrkSyncKids(wrkTab, key, cur.engineer)); }catch(e2){}
+        const dur = body.querySelector('[data-wdur="' + CSS.escape(key) + '"]');
+        const h = wrkHours(cur.t1, cur.t2);
+        if(dur) dur.textContent = (h != null) ? toFa(h) + ' ساعت' : '';
+        return;
+      }
+      if(e.target && e.target.id === 'wrkEngSel'){
+        wrkFilter = e.target.value ? 'eng:' + e.target.value : 'all';
+        wrkOnlyPicked = false;
+        const bxe = document.getElementById('wrkListBox');
+        if(bxe) bxe.innerHTML = wrkListHtml(wrkTab);
+      }
+    });
     body.addEventListener('click', async e => {
       /* فیلترهای بالای فهرست */
       const wf = e.target.closest('[data-wfilter]');
@@ -45258,11 +45591,15 @@
       if(ss){
         const key = ss.dataset.wsset, k = ss.dataset.k;
         const cur = wrkData[wrkTab].get(key) || {activity:'', engineer:'', zone:'', t1:'', t2:''};
+        if(!wrkCanEditRow(cur)) return;
         cur.state = k;
+        wrkDirty[wrkTab].add(key);
         /* غایب یعنی ساعتی نبوده؛ ولی انضباطی و جریمه ساعت دارند */
         if(k === 'off'){ cur.t1 = ''; cur.t2 = ''; }
+        const prevS = cur.engineer;
         if(!cur.engineer) cur.engineer = wrkMe();
         wrkData[wrkTab].set(key, cur);
+        wrkSyncKids(wrkTab, key, prevS);
         wrkJustKey = key;
         const box3 = document.getElementById('wrkListBox');
         if(box3) box3.innerHTML = wrkListHtml(wrkTab);
@@ -45270,6 +45607,10 @@
       }
       const sd = e.target.closest('[data-wsdel]');
       if(sd){
+        const old0 = wrkData[wrkTab].get(sd.dataset.wsdel);
+        if(old0 && !wrkCanEditRow(old0)) return;
+        if(old0 && old0.id) wrkGone[wrkTab].add(sd.dataset.wsdel);
+        wrkDirty[wrkTab].delete(sd.dataset.wsdel);
         wrkData[wrkTab].delete(sd.dataset.wsdel);
         const box3 = document.getElementById('wrkListBox');
         if(box3) box3.innerHTML = wrkListHtml(wrkTab);
@@ -45302,12 +45643,17 @@
         const key = eg.dataset.weng, nm = eg.dataset.n || '';
         const w2 = workersLive.find(x => (x.code || x.name) === key);
         const cur = wrkData[wrkTab].get(key) || {activity:'', engineer:'', zone:'', state:'ok', t1:'', t2:''};
+        if(!wrkCanEditRow(cur)) return;
+        if(!nm && cur.id) wrkGone[wrkTab].add(key);
+        const prevE = cur.engineer;
         cur.engineer = nm;
+        wrkDirty[wrkTab].add(key);
         if(nm && w2 && wrkTab !== 'ot' && !cur.t1){
           const def2 = wrkDefTimes(wrkDateVal(), w2);
           cur.t1 = def2[0]; cur.t2 = def2[1];
         }
         wrkData[wrkTab].set(key, cur);
+        wrkSyncKids(wrkTab, key, prevE);
         wrkJustKey = key;
         const box3 = document.getElementById('wrkListBox');
         if(box3) box3.innerHTML = wrkListHtml(wrkTab);
@@ -45318,8 +45664,12 @@
         const key = as.dataset.wassign;
         const w = workersLive.find(x => (x.code || x.name) === key);
         const cur = wrkData[wrkTab].get(key) || {activity:'', engineer:'', zone:'', state:'ok', t1:'', t2:''};
-        if(cur.engineer){ cur.engineer = ''; }
+        if(!wrkCanEditRow(cur)) return;
+        wrkDirty[wrkTab].add(key);
+        const prevA = cur.engineer;
+        if(cur.engineer){ cur.engineer = ''; if(cur.id) wrkGone[wrkTab].add(key); }
         else{
+          wrkGone[wrkTab].delete(key);
           cur.engineer = wrkMe();
           if(w && wrkTab !== 'ot' && !cur.t1){
             const def = wrkDefTimes(wrkDateVal(), w);
@@ -45327,6 +45677,7 @@
           }
         }
         wrkData[wrkTab].set(key, cur);
+        wrkSyncKids(wrkTab, key, prevA);
         wrkJustKey = key;
         const box2 = document.getElementById('wrkListBox');
         if(box2){
