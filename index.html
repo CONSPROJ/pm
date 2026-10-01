@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +24,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  /* تا دسترسی‌ها نرسیده و زبانهٔ درست انتخاب نشده، صفحهٔ «ثبت گزارش» نشان
+     داده نمی‌شود؛ پیش‌تر برای کسی که اجازهٔ ثبت ندارد چند لحظه فرم
+     گزارش پیمانکاری می‌آمد و بعد صفحه عوض می‌شد. */
+  html.tabs-pending #panelWrite{visibility:hidden;}
+
   :root{
     color-scheme:light;
     --canvas:#f4f5f7;
@@ -16380,6 +16385,95 @@
   .pf2-row.danger .ic{color:var(--alert);background:color-mix(in srgb, var(--alert) 11%, var(--surface));}
   .pf2-row.danger .tx b{color:var(--alert);}
   .pf2-card{padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--surface);margin-bottom:10px;}
+  /* مرکز داده و نام‌ها */
+  .dc{display:flex;flex-direction:column;gap:12px;}
+  .dc-hero{display:flex;align-items:center;gap:11px;padding:14px;border-radius:18px;border:1px solid var(--line);
+    background:linear-gradient(135deg, color-mix(in srgb, var(--sky) 10%, var(--surface)), var(--surface) 65%);}
+  .dc-hic{width:42px;height:42px;flex:0 0 42px;border-radius:13px;display:grid;place-items:center;color:var(--sky-deep, var(--sky));
+    background:color-mix(in srgb, var(--sky) 14%, var(--surface));}
+  .dc-hic svg{width:22px;height:22px;}
+  .dc-htx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .dc-htx b{font-size:15px;font-weight:900;color:var(--ink);} .dc-htx small{font-size:11px;color:var(--muted);line-height:1.7;}
+  .dc-kpis{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:6px;}
+  .dc-kpis > div{padding:9px 6px;border-radius:12px;background:var(--field);text-align:center;display:flex;flex-direction:column;gap:2px;}
+  .dc-kpis b{font-size:17px;font-weight:900;font-family:var(--m);color:var(--ink);} .dc-kpis u{text-decoration:none;font-size:10px;color:var(--muted);}
+  .dc-kpis .warn{background:var(--warn-soft);} .dc-kpis .warn b{color:var(--warn);}
+  @media(max-width:520px){ .dc-kpis{grid-template-columns:repeat(3, minmax(0,1fr));} }
+  .dc-tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--field);border:1px solid var(--line);overflow-x:auto;}
+  .dc-tab{flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 12px;border:0;border-radius:10px;
+    background:transparent;color:var(--muted);font:700 12px var(--f);cursor:pointer;white-space:nowrap;transition:background .2s, color .2s;}
+  .dc-tab svg{width:16px;height:16px;} .dc-tab i{font-style:normal;font-size:10px;padding:1px 7px;border-radius:999px;background:var(--surface);}
+  .dc-tab i.bad{background:var(--alert);color:#fff;}
+  .dc-tab.on{background:var(--surface);color:var(--ink);box-shadow:0 4px 14px -8px rgba(15,20,35,.5);}
+  .dc-pane{display:none;flex-direction:column;gap:10px;} .dc-pane.on{display:flex;}
+  .dc-sg{padding:12px;border-radius:16px;border:1px solid color-mix(in srgb, var(--warn) 35%, var(--line));background:color-mix(in srgb, var(--warn) 6%, var(--surface));display:flex;flex-direction:column;gap:8px;}
+  .dc-sg.ok{border-color:var(--line);background:var(--surface);} .dc-sg.ok b{font-size:12px;color:var(--ok);}
+  .dc-sgh{display:flex;flex-direction:column;gap:1px;} .dc-sgh b{font-size:13px;color:var(--ink);} .dc-sgh small{font-size:10.5px;color:var(--muted);}
+  .dc-sgr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);}
+  .dc-pair{display:inline-flex;align-items:center;gap:6px;flex:1 1 220px;min-width:0;flex-wrap:wrap;}
+  .dc-pair b{font-size:12px;} .dc-pair i{display:inline-grid;color:var(--muted);} .dc-pair i svg{width:14px;height:14px;}
+  .dc-pair em{font-style:normal;font-size:10px;font-family:var(--m);padding:1px 7px;border-radius:999px;background:var(--field);color:var(--muted);}
+  .dc-btns{display:inline-flex;flex-wrap:wrap;gap:6px;}
+  .dc-btns .mini{display:inline-flex;align-items:center;gap:5px;height:32px;} .dc-btns .mini svg{width:14px;height:14px;}
+  .dc-tools{display:flex;gap:8px;}
+  .dc-q{flex:1;display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--muted);}
+  .dc-q svg{width:17px;height:17px;flex:0 0 17px;} .dc-q input{flex:1;min-width:0;border:0;background:none;font:13px var(--f);color:var(--ink);outline:none;}
+  .dc-fs{display:flex;flex-wrap:wrap;gap:6px;}
+  .dc-f{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);font:700 11.5px var(--f);cursor:pointer;}
+  .dc-f u{text-decoration:none;font-family:var(--m);font-size:10.5px;}
+  .dc-f.on{background:var(--ink);border-color:var(--ink);color:var(--surface);}
+  .dc-list{display:flex;flex-direction:column;gap:6px;}
+  .dc-row{border-radius:14px;border:1px solid var(--line);background:var(--surface);overflow:hidden;transition:border-color .2s, box-shadow .2s;}
+  .dc-row.open{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));box-shadow:0 10px 24px -18px rgba(15,20,35,.6);}
+  .dc-row.is-al{background:color-mix(in srgb, var(--sky) 5%, var(--surface));}
+  .dc-rh{width:100%;display:flex;align-items:center;gap:10px;padding:9px 11px;border:0;background:none;cursor:pointer;text-align:start;font-family:var(--f);color:var(--ink);}
+  .dc-av{width:32px;height:32px;flex:0 0 32px;border-radius:50%;display:grid;place-items:center;background:var(--field);font-size:11px;font-weight:800;color:var(--muted);}
+  .dc-nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .dc-nm b{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dc-nm small{display:flex;flex-wrap:wrap;gap:4px;}
+  .dc-nm em{font-style:normal;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--field);color:var(--muted);}
+  .dc-nm em.t-ctr{background:color-mix(in srgb, var(--warn) 14%, var(--surface));color:var(--warn);}
+  .dc-nm em.t-party{background:color-mix(in srgb, #7a5cc4 14%, var(--surface));color:#7a5cc4;}
+  .dc-nm em.t-alias, .dc-nm em.t-has{background:color-mix(in srgb, var(--sky) 16%, var(--surface));color:var(--sky-deep, var(--sky));}
+  .dc-c{display:flex;flex-direction:column;align-items:center;font-family:var(--m);font-weight:800;font-size:13px;color:var(--ink);min-width:44px;}
+  .dc-c u{text-decoration:none;font-family:var(--f);font-size:9.5px;font-weight:600;color:var(--muted);}
+  .dc-act{padding:4px 12px 12px;display:flex;flex-direction:column;gap:9px;border-top:1px dashed var(--line);}
+  .dc-to{display:flex;flex-direction:column;gap:4px;margin-top:8px;} .dc-to span{font-size:10.5px;color:var(--muted);font-weight:700;}
+  .dc-to input{height:40px;border-radius:11px;border:1px solid var(--line);background:var(--field);padding:0 11px;font:13px var(--f);color:var(--ink);}
+  .dc-help, .dc-note{font-size:10.5px;color:var(--muted);line-height:1.9;} .dc-help b{color:var(--ink);} .dc-note{margin-top:8px;}
+  .dc-kids{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:11px;} .dc-kids u{text-decoration:none;color:var(--muted);font-size:10.5px;width:100%;}
+  .dc-kids span{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 9px;border-radius:999px;background:var(--field);}
+  .dc-kids button{border:0;background:var(--surface);width:20px;height:20px;border-radius:50%;cursor:pointer;color:var(--alert);font-weight:800;}
+  /* گزارش‌دهندگان موظف */
+  .rpt{display:flex;flex-direction:column;gap:10px;}
+  .rpt-hd{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
+  .rpt-hd b{font-size:13.5px;font-weight:800;color:var(--ink);}
+  .rpt-hd small{font-size:11px;color:var(--muted);line-height:1.8;}
+  .rpt-picks{display:flex;flex-wrap:wrap;gap:6px;}
+  .rpt-p{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px 0 4px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);font:600 11.5px var(--f);cursor:pointer;}
+  .rpt-p .ava{width:26px;height:26px;flex:0 0 26px;font-size:10px;}
+  .rpt-p em{font-style:normal;color:var(--muted);font-weight:800;}
+  .rpt-p.on{background:color-mix(in srgb, var(--ok) 12%, var(--surface));border-color:color-mix(in srgb, var(--ok) 40%, var(--line));}
+  .rpt-p.on em{color:var(--ok);}
+  .rpt-leg{display:flex;gap:12px;font-size:10.5px;color:var(--muted);}
+  .rpt-leg span{display:inline-flex;align-items:center;gap:5px;}
+  .rpt-leg i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .rpt-leg i.ok, .rpt-c.ok{background:color-mix(in srgb, var(--ok) 22%, var(--surface));}
+  .rpt-leg i.miss, .rpt-c.miss{background:var(--alert);}
+  .rpt-leg i.ex, .rpt-c.ex{background:color-mix(in srgb, var(--sky) 45%, var(--surface));}
+  .rpt-row{padding:10px;border-radius:14px;border:1px solid var(--line);background:var(--surface);}
+  .rpt-who{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .rpt-who .ava{width:28px;height:28px;flex:0 0 28px;font-size:10px;}
+  .rpt-who b{font-size:12.5px;flex:1;min-width:0;}
+  .rpt-n{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;}
+  .rpt-n.bad{background:var(--alert-soft);color:var(--alert);} .rpt-n.ok{background:var(--ok-soft);color:var(--ok);}
+  .rpt-days{display:grid;grid-template-columns:repeat(auto-fill, minmax(28px, 1fr));gap:4px;}
+  .rpt-c{height:30px;border:0;border-radius:8px;cursor:pointer;display:grid;place-items:center;font-family:var(--m);}
+  .rpt-c i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink);}
+  .rpt-c.miss i{color:#fff;} .rpt-c.ok{cursor:default;}
+  .rpt-c:not(:disabled):hover{outline:2px solid var(--ink);outline-offset:1px;}
   .pf2-ch{display:flex;align-items:center;gap:11px;}
   .pf2-ch .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, var(--surface));}
   .pf2-ch .ic svg{width:18px;height:18px;}
@@ -18388,6 +18482,8 @@
       const note = document.getElementById('userPassNote');
       const pass = document.getElementById('userPassInput').value.trim();
       if(!pass){ note.textContent = 'رمز را وارد کنید.'; return; }
+      // نام مستعار با همان حساب نام اصلی وارد می‌شود
+      try{ loginName = canonicalName(loginName); }catch(e){}
 
       btn.disabled = true;
       await loadPeople();
@@ -22375,16 +22471,20 @@
     const key = String(v == null ? '' : v);
     const hit = NORM_CACHE.get(key);
     if(hit !== undefined) return hit;
+    let out = normNameRaw(key);
+    if(NORM_ALIAS.size && NORM_ALIAS.has(out)) out = NORM_ALIAS.get(out);
+    if(NORM_CACHE.size > 4000) NORM_CACHE.clear();
+    NORM_CACHE.set(key, out);
+    return out;
+  }
+  function normNameRaw(key){
     let x = toEn(key);
     x = x.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/ۀ|ة/g,'ه')
          .replace(/[\u200c\u200f\u200e]/g,' ')
          .replace(/[^\u0600-\u06FF\w\s]/g,' ')
          .replace(/\s+/g,' ').trim().toLowerCase();
     const words = x.split(' ').filter(w => w && NAME_NOISE.indexOf(w) === -1);
-    const out = words.join(' ').trim();
-    if(NORM_CACHE.size > 4000) NORM_CACHE.clear();
-    NORM_CACHE.set(key, out);
-    return out;
+    return words.join(' ').trim();
   }
   const nameTokens = v => normName(v).split(' ').filter(Boolean);
 
@@ -23772,6 +23872,7 @@
         ? pendingMatches(pools.contractors, pools.parties).length : 0;
     }catch(e){}
     if((umState.tab === 'perm' || umState.tab === 'db' || umState.tab === 'up') && !isAdm) umState.tab = 'users';
+    if(isAdm && (umState.tab === 'match' || umState.tab === 'db')) umState.tab = 'users';
 
     const hero = '<div class="um-hero">'
       + '<div class="um-ht"><span class="um-hic">' + UM_I.users + '</span>'
@@ -23805,10 +23906,9 @@
       +   UM_I.users + 'کاربران' + (pend.length ? '<i class="bad">' + toFa(pend.length) + '</i>' : '<i>' + toFa(U.length) + '</i>') + '</button>'
       + (isAdm ? '<button type="button" data-umtab="perm"' + (umState.tab === 'perm' ? ' class="on"' : '') + '>'
       +   UM_I.perm + 'دسترسی‌ها</button>' : '')
-      + '<button type="button" data-umtab="match"' + (umState.tab === 'match' ? ' class="on"' : '') + '>'
-      +   UM_I.match + 'تطبیق نام‌ها' + (mtPend ? '<i class="bad">' + toFa(mtPend) + '</i>' : '') + '</button>'
-      + (isAdm ? '<button type="button" data-umtab="db"' + (umState.tab === 'db' ? ' class="on"' : '') + '>'
-      +   DBX_I.db + 'پایگاه داده</button>' : '')
+      /* تطبیق نام‌ها و پایگاه داده به زبانهٔ «داده و نام‌ها» رفتند */
+      + (!isAdm ? '<button type="button" data-umtab="match"' + (umState.tab === 'match' ? ' class="on"' : '') + '>'
+      +   UM_I.match + 'تطبیق نام‌ها' + (mtPend ? '<i class="bad">' + toFa(mtPend) + '</i>' : '') + '</button>' : '')
       + (isAdm ? '<button type="button" data-umtab="up"' + (umState.tab === 'up' ? ' class="on"' : '') + '>'
       +   UP_I.up + 'محل آپلود</button>' : '')
       + '</div>';
@@ -23897,11 +23997,11 @@
       +   '<div class="um-none" id="umNone" hidden>کاربری با این جست‌وجو پیدا نشد.</div>'
       + '</div>'
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'perm' ? ' on' : '') + '" data-umpane="perm">' + permPanelHtml() + '</div>' : '')
-      + '<div class="um-pane' + (umState.tab === 'match' ? ' on' : '') + '" data-umpane="match">' + matchPanelHtml() + '</div>'
-      + (isAdm ? '<div class="um-pane' + (umState.tab === 'db' ? ' on' : '') + '" data-umpane="db">' + dbxLaunchHtml() + '</div>' : '')
+      + (!isAdm ? '<div class="um-pane' + (umState.tab === 'match' ? ' on' : '') + '" data-umpane="match">' + matchPanelHtml() + '</div>' : '')
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'up' ? ' on' : '') + '" data-umpane="up">' + upCfgHtml() + '</div>' : '')
       + '</div>';
     umApplyFilter(box);
+    try{ if(document.getElementById('dataCenter')) renderDataCenter(); }catch(e){}
 
     try{ ensureMatchList(); }catch(e){}
     /* فهرست کامل نام‌ها در پس‌زمینه می‌آید و بعد کادرها تازه می‌شوند */
@@ -23935,7 +24035,7 @@
         if(nt) nt.textContent = LEVEL_LABEL[parseInt(sel.value, 10)] || '';
       }
     });
-    box.addEventListener('click', async e => {
+    const umClick = async e => {
       const ut = e.target.closest('[data-umtab]');
       if(ut){
         umState.tab = ut.dataset.umtab;
@@ -24357,7 +24457,10 @@
         showDialog('err','انجام نشد', friendlyErr(err));
       }
       await renderAdminPanel();
-    });
+    };
+    window.__umClick = umClick;
+    box.addEventListener('click', umClick);
+    { const dc0 = document.getElementById('dataCenter'); if(dc0 && dc0.dataset.umw !== '1'){ dc0.dataset.umw = '1'; dc0.addEventListener('click', umClick); } };
     }
   }
 
@@ -24784,6 +24887,331 @@
     pf3Show(b.closest('.pf3-nav').parentElement, b.dataset.pf3go);
   });
 
+  /* ====== مرکز داده و نام‌ها (فقط ادمین) ======
+     همهٔ نام‌های سامانه (کاربران، مهندس‌های گزارش‌دهنده، پیمانکاران و
+     طرف‌های قرارداد) یک‌جا، با شمار رکوردها. برای هر نام سه راه هست:
+       • نام مستعار: هر دو نام با یک کاربری/پرونده کار می‌کنند، رکوردی عوض نمی‌شود.
+       • جایگزینی کامل: نام قدیمی در همهٔ جدول‌ها به نام تازه تبدیل می‌شود.
+       • جدا هستند: پیشنهاد تکراری دیگر نشان داده نمی‌شود.
+     تطبیق پیمانکار با طرف قرارداد و ویرایشگر پایگاه داده هم زبانه‌های همین مرکزند. */
+  const dcState = {tab:'names', q:'', f:'all', open:'', busy:false};
+  let dcNames = null;              // Map نام → {types:Set, n}
+  async function dcLoad(force){
+    if(dcNames && !force) return dcNames;
+    const m = new Map();
+    const add = (n, t, k) => {
+      n = String(n || '').replace(/\s+/g, ' ').trim();
+      if(!n || n.length > 80) return;
+      if(!m.has(n)) m.set(n, {types:new Set(), n:0});
+      const x = m.get(n); x.types.add(t); x.n += (k || 0);
+    };
+    try{ await loadPeople(); }catch(e){}
+    (peopleRows || []).forEach(p => add(p.name, 'person', 0));
+    try{
+      const PAGE = 1000;
+      for(let off = 0; off < 80000; off += PAGE){
+        const rw = await supaFetch('activities?select=engineer,contractor&order=id.desc&limit=' + PAGE + '&offset=' + off);
+        if(!rw || !rw.length) break;
+        rw.forEach(r => { add(r.engineer, 'person', 1); if(r.contractor) add(r.contractor, 'ctr', 1); });
+        if(rw.length < PAGE) break;
+      }
+    }catch(e){
+      (allRows || []).forEach(r => { add(pick(r,F.engineer), 'person', 1); add(pick(r,F.contractor), 'ctr', 1); });
+    }
+    try{ namePools().parties.forEach(n => add(n, 'party', 1)); }catch(e){}
+    aliasPairs.forEach(x => { add(x.a, 'alias', 0); add(x.b, 'person', 0); });
+    dcNames = m;
+    return m;
+  }
+  const DC_T = {person:'فرد', ctr:'پیمانکار', party:'طرف قرارداد', alias:'مستعار'};
+  const DC_I = {
+    names:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M3 20c.7-3.4 3.2-5.2 6-5.2s5.3 1.8 6 5.2"/><path d="M16 11h5M18.5 8.5v5"/></svg>',
+    link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+    swap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>',
+    split:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    db:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/></svg>',
+    search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
+  };
+  function dcSuggest(m){
+    /* نام‌های نزدیک به هم، از یک نوع؛ جفت‌هایی که «جدا هستند» خورده‌اند یا
+       مستعارند کنار می‌روند */
+    const links = loadLinks();
+    const names = Array.from(m.keys()).filter(n => !NAME_ALIAS.has(nameKeyRaw(n)));
+    const out = [];
+    for(let i = 0; i < names.length && out.length < 60; i++){
+      for(let j = i + 1; j < names.length && out.length < 60; j++){
+        const a = names[i], b = names[j];
+        const ta = m.get(a).types, tb = m.get(b).types;
+        const same = Array.from(ta).some(t => tb.has(t));
+        if(!same) continue;
+        if(nameKey(a) === nameKey(b) && a !== b){ out.push({a, b, sim:1}); continue; }
+        if(links[linkId(a, b)] === false) continue;
+        let sim = 0; try{ sim = nameSim(a, b); }catch(e){}
+        if(sim >= 0.84) out.push({a, b, sim});
+      }
+    }
+    return out.sort((x, y) => y.sim - x.sim).map(x => {
+      const na = m.get(x.a).n, nb = m.get(x.b).n;
+      return na >= nb ? x : {a: x.b, b: x.a, sim: x.sim};      // a = نام پرکاربردتر (اصلی)
+    });
+  }
+  async function renderDataCenter(force){
+    const box = document.getElementById('dataCenter');
+    if(!box || !isAdminUser()) return;
+    if(window.__umClick && box.dataset.umw !== '1'){ box.dataset.umw = '1'; box.addEventListener('click', window.__umClick); }
+    const m = await dcLoad(force);
+    const all = Array.from(m.entries()).map(([n, x]) => ({n, types: x.types, c: x.n, al: NAME_ALIAS.get(nameKeyRaw(n)) || null}));
+    const sugg = dcSuggest(m);
+    let mtPend = 0;
+    try{ const pools = namePools(); mtPend = (pools.contractors.length && pools.parties.length) ? pendingMatches(pools.contractors, pools.parties).length : 0; }catch(e){}
+    const cnt = t => all.filter(x => x.types.has(t)).length;
+    const tab = (k, ic, t, n, bad) => '<button type="button" class="dc-tab' + (dcState.tab === k ? ' on' : '') + '" data-dctab="' + k + '">'
+      + ic + '<span>' + t + '</span>' + (n ? '<i' + (bad ? ' class="bad"' : '') + '>' + toFa(n) + '</i>' : '') + '</button>';
+    const chip = (k, t, n) => '<button type="button" class="dc-f' + (dcState.f === k ? ' on' : '') + '" data-dcf="' + k + '">' + t + '<u>' + toFa(n) + '</u></button>';
+    const q = String(dcState.q || '').trim();
+    const shown = all.filter(x => {
+      if(dcState.f === 'alias') { if(!x.al) return false; }
+      else if(dcState.f !== 'all' && !x.types.has(dcState.f)) return false;
+      if(q && String(x.n).indexOf(q) === -1 && nameKeyRaw(x.n).indexOf(nameKeyRaw(q)) === -1) return false;
+      return true;
+    }).sort((a2, b2) => b2.c - a2.c || String(a2.n).localeCompare(String(b2.n), 'fa')).slice(0, 300);
+    const aliasesOf = n => aliasPairs.filter(x => nameKey(x.b) === nameKey(n) && nameKeyRaw(x.a) !== nameKeyRaw(n));
+    const rowHtml = x => {
+      const op = dcState.open === x.n;
+      const kids = aliasesOf(x.n);
+      return '<div class="dc-row' + (op ? ' open' : '') + (x.al ? ' is-al' : '') + '" data-dcn="' + esc(x.n) + '">'
+        + '<button type="button" class="dc-rh" data-dcrow="' + esc(x.n) + '">'
+        +   '<span class="dc-av">' + esc(initialsOf(x.n)) + '</span>'
+        +   '<span class="dc-nm"><b>' + esc(x.n) + '</b><small>'
+        +     Array.from(x.types).filter(t => t !== 'alias').map(t => '<em class="t-' + t + '">' + DC_T[t] + '</em>').join('')
+        +     (x.al ? '<em class="t-alias">مستعارِ ' + esc(x.al.n) + '</em>' : '')
+        +     (kids.length ? '<em class="t-has">' + toFa(kids.length) + ' نام مستعار</em>' : '')
+        +   '</small></span>'
+        +   '<span class="dc-c">' + (x.c ? toFa(x.c) + '<u>رکورد</u>' : '<u>بی‌رکورد</u>') + '</span>'
+        + '</button>'
+        + (op ? '<div class="dc-act">'
+            + (x.al
+                ? '<div class="dc-note">این نام، نام مستعارِ «' + esc(x.al.n) + '» است و همهٔ رکوردهایش به حساب آن نوشته می‌شود.</div>'
+                  + '<div class="dc-btns"><button type="button" class="mini" data-dcunal="' + esc(x.n) + '">' + DC_I.split + 'برداشتن نام مستعار</button>'
+                  + '<button type="button" class="mini go" data-dcrep="' + esc(x.n) + '" data-to="' + esc(x.al.n) + '">' + DC_I.swap + 'جایگزینی کامل با «' + esc(x.al.n) + '»</button></div>'
+                : '<label class="dc-to"><span>نام مقصد</span><input type="text" class="dc-in" list="dcAllNames" placeholder="نام اصلی یا املای درست…" autocomplete="off"></label>'
+                  + '<div class="dc-btns">'
+                  +   '<button type="button" class="mini go" data-dcal="' + esc(x.n) + '" title="هر دو نام با یک کاربری کار می‌کنند؛ رکوردی عوض نمی‌شود">' + DC_I.link + 'نام مستعارِ مقصد شود</button>'
+                  +   '<button type="button" class="mini" data-dcrep="' + esc(x.n) + '" title="نام در همهٔ جدول‌ها عوض می‌شود">' + DC_I.swap + 'جایگزینی کامل با مقصد</button>'
+                  + '</div>'
+                  + '<div class="dc-help"><b>نام مستعار</b>: «' + esc(x.n) + '» و نام مقصد یکی حساب می‌شوند، با هر دو می‌شود وارد شد و گزارش‌ها یک‌جا جمع می‌شوند. <b>جایگزینی کامل</b>: «' + esc(x.n) + '» در همهٔ رکوردها به نام مقصد تغییر می‌کند (برگشت‌ناپذیر).</div>')
+            + (kids.length ? '<div class="dc-kids"><u>نام‌های مستعار این نام</u>' + kids.map(k2 =>
+                '<span>' + esc(k2.a) + '<button type="button" data-dcunal="' + esc(k2.a) + '" title="برداشتن">×</button></span>').join('') + '</div>' : '')
+            + '</div>' : '')
+        + '</div>';
+    };
+    const suggHtml = sugg.length
+      ? '<div class="dc-sg"><div class="dc-sgh"><b>احتمالاً یک نفر/یک پیمانکار</b><small>' + toFa(sugg.length) + ' پیشنهاد — نام پرکاربردتر سمت راست است</small></div>'
+        + sugg.slice(0, 12).map(x =>
+          '<div class="dc-sgr"><span class="dc-pair"><b>' + esc(x.a) + '</b><i>' + DC_I.link + '</i><b>' + esc(x.b) + '</b><em>' + toFa(Math.round(x.sim * 100)) + '٪</em></span>'
+          + '<span class="dc-btns">'
+          +   '<button type="button" class="mini go" data-dcsal="' + esc(x.b) + '" data-to="' + esc(x.a) + '">نام مستعار</button>'
+          +   '<button type="button" class="mini" data-dcrep="' + esc(x.b) + '" data-to="' + esc(x.a) + '">جایگزینی</button>'
+          +   '<button type="button" class="mini" data-dcno="' + esc(x.a) + '" data-b="' + esc(x.b) + '">جدا هستند</button>'
+          + '</span></div>').join('') + '</div>'
+      : '<div class="dc-sg ok"><b>نام تکراری مشکوکی پیدا نشد ✓</b></div>';
+    box.innerHTML = '<div class="dc">'
+      + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>داده و نام‌ها</b>'
+      +   '<small>یکسان‌سازی نام‌ها، نام مستعار، تطبیق پیمانکار و ویرایش مستقیم پایگاه داده</small></span>'
+      +   '<button type="button" class="mini" data-dcreload="1">بازخوانی</button></div>'
+      + '<div class="dc-kpis">'
+      +   '<div><b>' + toFa(all.length) + '</b><u>نام</u></div>'
+      +   '<div><b>' + toFa(cnt('person')) + '</b><u>فرد</u></div>'
+      +   '<div><b>' + toFa(cnt('ctr')) + '</b><u>پیمانکار</u></div>'
+      +   '<div class="' + (sugg.length ? 'warn' : '') + '"><b>' + toFa(sugg.length) + '</b><u>مشکوک به تکرار</u></div>'
+      +   '<div><b>' + toFa(aliasPairs.length) + '</b><u>نام مستعار</u></div>'
+      + '</div>'
+      + '<div class="dc-tabs">'
+      +   tab('names', DC_I.names, 'نام‌ها', sugg.length, true)
+      +   tab('match', DC_I.link, 'پیمانکار و طرف قرارداد', mtPend, true)
+      +   tab('db', DC_I.db, 'پایگاه داده', 0)
+      + '</div>'
+      + '<div class="dc-pane' + (dcState.tab === 'names' ? ' on' : '') + '">'
+      +   suggHtml
+      +   '<div class="dc-tools"><label class="dc-q">' + DC_I.search + '<input type="search" id="dcQ" placeholder="جست‌وجوی نام…" value="' + esc(dcState.q) + '" autocomplete="off"></label></div>'
+      +   '<div class="dc-fs">' + chip('all', 'همه', all.length) + chip('person', 'افراد', cnt('person')) + chip('ctr', 'پیمانکاران', cnt('ctr'))
+      +     chip('party', 'طرف قرارداد', cnt('party')) + chip('alias', 'مستعارها', aliasPairs.length) + '</div>'
+      +   '<datalist id="dcAllNames">' + all.filter(x => !x.al).map(x => '<option value="' + esc(x.n) + '">').join('') + '</datalist>'
+      +   '<div class="dc-list">' + (shown.length ? shown.map(rowHtml).join('') : '<div class="empty">نامی پیدا نشد.</div>') + '</div>'
+      + '</div>'
+      + '<div class="dc-pane' + (dcState.tab === 'match' ? ' on' : '') + '">' + matchPanelHtml() + '</div>'
+      + '<div class="dc-pane' + (dcState.tab === 'db' ? ' on' : '') + '">' + dbxLaunchHtml() + '</div>'
+      + '</div>';
+    if(box.dataset.dcw !== '1'){
+      box.dataset.dcw = '1';
+      box.addEventListener('input', e => {
+        if(e.target.id !== 'dcQ') return;
+        dcState.q = e.target.value;
+        clearTimeout(box.__qt);
+        box.__qt = setTimeout(() => { renderDataCenter().then(() => { const i = document.getElementById('dcQ'); if(i){ i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); }, 250);
+      });
+      box.addEventListener('click', dcClick);
+    }
+  }
+  async function dcClick(e){
+    const t = e.target;
+    const tb = t.closest('[data-dctab]'); if(tb){ dcState.tab = tb.dataset.dctab; return renderDataCenter(); }
+    const fb = t.closest('[data-dcf]'); if(fb){ dcState.f = fb.dataset.dcf; return renderDataCenter(); }
+    const rr = t.closest('[data-dcrow]'); if(rr){ dcState.open = dcState.open === rr.dataset.dcrow ? '' : rr.dataset.dcrow; return renderDataCenter(); }
+    if(t.closest('[data-dcreload]')){ dcNames = null; return renderDataCenter(true); }
+    const targetOf = btn => {
+      if(btn.dataset.to) return btn.dataset.to;
+      const row = btn.closest('.dc-row'); const inp = row && row.querySelector('.dc-in');
+      return inp ? String(inp.value || '').replace(/\s+/g, ' ').trim() : '';
+    };
+    const al = t.closest('[data-dcal], [data-dcsal]');
+    if(al){
+      const from = al.dataset.dcal || al.dataset.dcsal, to = targetOf(al);
+      if(!to){ showDialog('warn','نام مقصد لازم است','نام اصلی را در کادر بنویسید یا از فهرست انتخاب کنید.'); return; }
+      if(nameKeyRaw(to) === nameKeyRaw(from)){ showDialog('warn','همان نام است','نام مقصد با همین نام یکی است.'); return; }
+      if(NAME_ALIAS.has(nameKeyRaw(to))){ showDialog('warn','مقصد خودش مستعار است','«' + to + '» نام مستعارِ «' + canonicalName(to) + '» است؛ نام اصلی را انتخاب کنید.'); return; }
+      const ok = await askConfirm('نام مستعار', '«' + from + '» نام مستعارِ «' + to + '» شود؟\n\nهر دو نام یکی حساب می‌شوند، با هر دو می‌شود وارد شد و رکوردی تغییر نمی‌کند. هر وقت بخواهید برمی‌گردد.', 'ثبت نام مستعار');
+      if(!ok) return;
+      /* مستعارهای نام قدیمی هم به نام اصلی تازه وصل می‌شوند */
+      aliasPairs = aliasPairs.filter(x => nameKeyRaw(x.a) !== nameKeyRaw(from))
+        .map(x => nameKeyRaw(x.b) === nameKeyRaw(from) ? {a: x.a, b: to} : x);
+      aliasPairs.push({a: from, b: to});
+      try{ await aliasSave(); }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); return; }
+      dcState.open = '';
+      showDialog('ok','ثبت شد','از این پس «' + from + '» همان «' + to + '» است.');
+      return renderDataCenter();
+    }
+    const un = t.closest('[data-dcunal]');
+    if(un){
+      const a = un.dataset.dcunal;
+      aliasPairs = aliasPairs.filter(x => nameKeyRaw(x.a) !== nameKeyRaw(a));
+      try{ await aliasSave(); }catch(err){ showDialog('err','انجام نشد', friendlyErr(err)); return; }
+      return renderDataCenter();
+    }
+    const rp = t.closest('[data-dcrep]');
+    if(rp){
+      const from = rp.dataset.dcrep, to = targetOf(rp);
+      if(!to){ showDialog('warn','نام مقصد لازم است','نام تازه را در کادر بنویسید یا از فهرست انتخاب کنید.'); return; }
+      if(to === from) return;
+      const ok = await askConfirm('جایگزینی کامل', '«' + from + '» در همهٔ گزارش‌ها، فعالیت‌ها، اسناد اداری، کارگری و فهرست‌ها به «' + to + '» تغییر کند؟\n\nاین کار برگشت‌پذیر نیست.', 'جایگزین کن');
+      if(!ok) return;
+      rp.disabled = true; const l0 = rp.innerHTML; rp.textContent = 'در حال جایگزینی…';
+      try{
+        const r = await renameEverywhere(from, to);
+        try{ await savePersonRename(from, to); }catch(e2){}
+        aliasPairs = aliasPairs.filter(x => nameKeyRaw(x.a) !== nameKeyRaw(from)).map(x => nameKeyRaw(x.b) === nameKeyRaw(from) ? {a: x.a, b: to} : x);
+        try{ await aliasSave(); }catch(e2){}
+        dcNames = null; dcState.open = '';
+        showDialog('ok','جایگزین شد', r.n ? toFa(r.n) + ' رکورد از «' + from + '» به «' + to + '» تغییر کرد.' + ((r.errs || []).length ? '\n\n' + r.errs.join('\n') : '')
+          : 'رکوردی با نام «' + from + '» پیدا نشد.');
+      }catch(err){ showDialog('err','جایگزین نشد', friendlyErr(err)); rp.disabled = false; rp.innerHTML = l0; return; }
+      return renderDataCenter(true);
+    }
+    const no = t.closest('[data-dcno]');
+    if(no){
+      try{ saveLink(no.dataset.dcno, no.dataset.b, false); await commitDecisions(); }catch(err){}
+      return renderDataCenter();
+    }
+  }
+  /* اگر نام قدیمی یک کاربر سامانه است، ردیف کاربری‌اش هم تغییر نام می‌دهد */
+  async function savePersonRename(from, to){
+    const old = (peopleRows || []).find(p => p.name === from);
+    if(!old) return;
+    const exists = (peopleRows || []).some(p => p.name === to);
+    if(exists) return;
+    await supaFetch('people?name=eq.' + encodeURIComponent(from), {method:'PATCH', body:{name: to}});
+    try{ await loadPeople(true); }catch(e){}
+  }
+
+  /* ====== گزارش‌دهندگان موظف و رفع ایراد ======
+     ادمین تعیین می‌کند چه کسانی هر روز باید گزارش بدهند، و برای روزی
+     که کسی گزارش نداده (مرخصی، تعطیلی کارگاه، …) «رفع ایراد» می‌زند تا
+     دیگر نقص گزارش حساب نشود. */
+  const RPT_DAYS = 14;
+  let rptSeen = null;           // Set «روز|نام» از گزارش‌های واقعی
+  async function rptLoadSeen(days){
+    const vars = [];
+    days.forEach(d => { vars.push(d); const f2 = toFa(d); if(f2 !== d) vars.push(f2); const e2 = toEn(d); if(e2 !== d) vars.push(e2); });
+    const q = 'activities?date_fa=in.(' + encodeURIComponent(vars.map(v => '"' + v + '"').join(',')) + ')&select=date_fa,engineer&limit=20000';
+    const rows = await supaFetch(q).catch(() => []);
+    const st = new Set();
+    (rows || []).forEach(r => { if(r.engineer) st.add(dayKey(r.date_fa) + '|' + nameKey(r.engineer)); });
+    return st;
+  }
+  function rptDays(){
+    const out = []; let d = todayShamsi();
+    for(let i = 0; i < RPT_DAYS + 6 && out.length < RPT_DAYS; i++){
+      d = faMinusDay(d);
+      if(!d) break;
+      if(!isFridayFa(d)) out.push(d);
+    }
+    return out;
+  }
+  async function renderRptPanel(force){
+    const box = document.getElementById('rptPanel');
+    if(!box) return;
+    const days = rptDays();
+    if(!rptSeen || force) rptSeen = await rptLoadSeen(days);
+    const cands = Array.from(new Set(listNames().concat(REQUIRED_REPORTERS))).filter(Boolean)
+      .filter(n => !isContractorPerson(n))
+      .sort((a2, b2) => (REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(b2)) - REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(a2)))
+        || String(a2).localeCompare(String(b2), 'fa'));
+    const isReq = n => REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(n));
+    const cell = (d, w) => {
+      const done = rptSeen.has(dayKey(d) + '|' + nameKey(w));
+      const ex = rptExcused(d, w);
+      const cls = done ? 'ok' : (ex ? 'ex' : 'miss');
+      const t = done ? 'گزارش داده' : (ex ? 'رفع ایراد شده' : 'گزارش نداده');
+      return '<button type="button" class="rpt-c ' + cls + '" data-rptx="' + esc(d + '|' + w) + '"' + (done ? ' disabled' : '')
+        + ' title="' + esc(w + ' — ' + toFa(d) + ': ' + t + (done ? '' : ex ? ' (برای لغو بزنید)' : ' (برای رفع ایراد بزنید)')) + '">'
+        + '<i>' + toFa(String(d).slice(-2)) + '</i></button>';
+    };
+    const req = REQUIRED_REPORTERS.slice();
+    const missTot = req.reduce((t, w) => t + days.filter(d => !rptSeen.has(dayKey(d) + '|' + nameKey(w)) && !rptExcused(d, w)).length, 0);
+    box.innerHTML = '<div class="rpt">'
+      + '<div class="rpt-hd"><b>گزارش‌دهندگان موظف</b><small>این افراد هر روز (جز جمعه) باید گزارش بدهند؛ تراز نیروی کارگری هم به‌محض تکمیل گزارش همهٔ آن‌ها ساخته می‌شود.</small></div>'
+      + '<div class="rpt-picks">' + cands.map(n =>
+          '<button type="button" class="rpt-p' + (isReq(n) ? ' on' : '') + '" data-rptp="' + esc(n) + '">'
+          + avatarHtml(n, '', true) + '<span>' + esc(n) + '</span><em>' + (isReq(n) ? '✓' : '+') + '</em></button>').join('') + '</div>'
+      + '<div class="rpt-hd"><b>' + toFa(RPT_DAYS) + ' روز کاری اخیر</b>'
+      +   '<small>' + (missTot ? toFa(missTot) + ' روزِ بدون گزارش؛ روی روز قرمز بزنید تا «رفع ایراد» شود.' : 'همه گزارش داده‌اند یا رفع ایراد شده‌اند ✓') + '</small></div>'
+      + '<div class="rpt-leg"><span><i class="ok"></i>گزارش داده</span><span><i class="miss"></i>گزارش نداده</span><span><i class="ex"></i>رفع ایراد</span></div>'
+      + (req.length ? req.map(w => {
+          const miss = days.filter(d => !rptSeen.has(dayKey(d) + '|' + nameKey(w)) && !rptExcused(d, w)).length;
+          return '<div class="rpt-row"><div class="rpt-who">' + avatarHtml(w, '', true) + '<b>' + esc(w) + '</b>'
+            + (miss ? '<span class="rpt-n bad">' + toFa(miss) + ' روز</span>' : '<span class="rpt-n ok">کامل</span>') + '</div>'
+            + '<div class="rpt-days">' + days.slice().reverse().map(d => cell(d, w)).join('') + '</div></div>';
+        }).join('') : '<div class="empty">کسی انتخاب نشده است.</div>')
+      + '</div>';
+  }
+  document.addEventListener('click', async e => {
+    const p = e.target.closest('#rptPanel [data-rptp]');
+    const x = e.target.closest('#rptPanel [data-rptx]');
+    if(!p && !x) return;
+    if(!isAdminUser()) return;
+    try{
+      if(p){
+        const n = p.dataset.rptp;
+        const i = REQUIRED_REPORTERS.findIndex(y => nameKey(y) === nameKey(n));
+        if(i === -1) REQUIRED_REPORTERS.push(n); else REQUIRED_REPORTERS.splice(i, 1);
+        await rptCfgSave();
+      }else{
+        const [d, w] = x.dataset.rptx.split('|');
+        const ex = (rptCfg.ex || []).slice();
+        const k = ex.findIndex(y => { const q = String(y).split('|'); return dayKey(q[0]) === dayKey(d) && nameKey(q[1]) === nameKey(w); });
+        if(k === -1){
+          const ok = await askConfirm('رفع ایراد', 'گزارش ' + toFa(d) + ' برای ' + w + ' گزارش‌داده حساب شود؟', 'رفع ایراد');
+          if(!ok) return;
+          ex.push(d + '|' + w + '|' + activeUserName() + '|' + todayShamsi());
+        }else ex.splice(k, 1);
+        rptCfg.ex = ex.slice(-400);
+        await rptCfgSave();
+        try{ lastMissCheck = 0; scheduleMissCheck(true); }catch(e2){}
+      }
+      renderRptPanel();
+    }catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); }
+  });
+
   async function renderProfile(){
     const name = profileState.name;
     const body = document.getElementById('profileBody');
@@ -24852,7 +25280,9 @@
         + '<span class="ic">' + ic + '</span><span class="tx"><b>' + t + '</b>' + (d ? '<small>' + d + '</small>' : '') + '</span>'
         + (extra || '<span class="ar">' + PF_I.next + '</span>') + '</button>';
       const admTools = me && (isAdminUser() || can('users.manage'));
-      if(admTools) h += pf3NavHtml('settings', [['acc', 'حساب کاربری', 0], ['users', 'کاربران و دسترسی', 0], ['bc', 'پیام گروهی', 0], ['log', 'لاگ کاربران', 0]]);
+      if(admTools) h += pf3NavHtml('settings', [['acc', 'حساب کاربری', 0], ['users', 'کاربران و دسترسی', 0],
+        ...(isAdminUser() ? [['data', 'داده و نام‌ها', 0], ['rpt', 'گزارش‌دهندگان', 0]] : []),
+        ['bc', 'پیام گروهی', 0], ['log', 'لاگ کاربران', 0]]);
       h += (admTools ? '<div class="pf3-pane" data-pf3p="acc">' : '')
         + '<div class="pf2-list">'
         +   row('pfAva', PF_I.cam, avatarOf(name) ? 'تغییر عکس پروفایل' : 'افزودن عکس پروفایل', 'عکس برای همه دیده می‌شود')
@@ -24880,6 +25310,11 @@
           + '</div></div>';
 
         h += '<div class="pf3-pane" data-pf3p="users"><div id="adminPanel" class="um-host"><div class="empty">در حال دریافت فهرست کاربران…</div></div></div>';
+        if(isAdminUser()){
+          h += '<div class="pf3-pane" data-pf3p="data"><div id="dataCenter" class="dc-host"><div class="empty">در حال آماده‌سازی…</div></div></div>';
+          h += '<div class="pf3-pane" data-pf3p="rpt"><div id="rptPanel" class="rpt-host"><div class="empty">در حال دریافت گزارش‌ها…</div></div></div>';
+          setTimeout(() => { try{ renderRptPanel(); }catch(e){} try{ renderDataCenter(); }catch(e){} }, 30);
+        }
       }
     }
 
@@ -26370,6 +26805,7 @@
   const TAB_PERM = {write:'tab.write', view:'tab.view', tasks:'tab.tasks', admin:'tab.admin'};
   /* زبانه‌هایی که این سطح اجازه ندارد، اصلاً دیده نمی‌شوند */
   function syncTabs(){
+    document.documentElement.classList.remove('tabs-pending');
     let first = '';
     Object.keys(TABS).forEach(k => {
       const btn = document.getElementById(TABS[k].btn);
@@ -28030,11 +28466,74 @@
     return '';
   };
 
-  // گزارش‌دهندگان اصلی که هر روز باید گزارش بدهند
+  // گزارش‌دهندگان اصلی که هر روز باید گزارش بدهند. ادمین در پنل مدیریت
+  // فهرست را عوض می‌کند و برای روزهای خاص «رفع ایراد» می‌زند.
   const REQUIRED_REPORTERS = ['آقای مهدی اسلامی','آقای سامین خواجه‌زاده','آقای عرفان حیدری'];
+  const RPT_KIND = 'گزارش‌دهندگان';
+  let rptCfg = {req: null, ex: []};            // ex: «روز|نام|ثبت‌کننده|تاریخ ثبت»
+  function rptCfgLoad(lists){
+    const raw = (lists && lists[RPT_KIND]) || [];
+    if(!raw.length) return;
+    try{ rptCfg = Object.assign({req:null, ex:[]}, JSON.parse(raw[0]) || {}); }catch(e){ return; }
+    if(Array.isArray(rptCfg.req)) REQUIRED_REPORTERS.splice(0, REQUIRED_REPORTERS.length, ...rptCfg.req);
+  }
+  async function rptCfgSave(){
+    rptCfg.req = REQUIRED_REPORTERS.slice();
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(RPT_KIND), {method:'DELETE'}); }catch(e){}
+    await supaFetch('lists?on_conflict=kind,value', {
+      method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
+      body:[{kind: RPT_KIND, value: JSON.stringify(rptCfg)}]});
+    clearNetCache();
+  }
+  /* روزی که ادمین برای این نفر «رفع ایراد» زده، گزارش‌داده حساب می‌شود */
+  function rptExcused(dateFa, who){
+    const dk = dayKey(dateFa), nk = nameKey(who);
+    return (rptCfg.ex || []).some(x => { const p = String(x).split('|'); return dayKey(p[0]) === dk && nameKey(p[1]) === nk; });
+  }
   const REPORT_DEADLINE_HOUR = 17;
 
+  /* ====== نام مستعار ======
+     ادمین می‌تواند بگوید «نام الف همان نام ب است» بی‌آنکه رکوردی عوض
+     شود. همهٔ مقایسه‌ها (nameKey و normName) نام مستعار را به نام اصلی
+     برمی‌گردانند؛ پس هر دو نام با همان کاربری و همان پرونده کار می‌کنند. */
+  const ALIAS_KIND = 'نام مستعار';
+  const ALIAS_SEP = '⇢';
+  const NAME_ALIAS = new Map();      // کلید خام نام مستعار → {n: نام اصلی، k: کلید خام اصلی}
+  const NORM_ALIAS = new Map();      // normName خام مستعار → normName خام اصلی
+  let aliasPairs = [];               // [{a, b}]
+  function aliasLoad(lists){
+    const raw = (lists && lists[ALIAS_KIND]) || [];
+    aliasPairs = raw.map(v => { const p = String(v).split(ALIAS_SEP); return {a: (p[0] || '').trim(), b: (p[1] || '').trim()}; })
+      .filter(x => x.a && x.b);
+    aliasRebuild();
+  }
+  function aliasRebuild(){
+    NAME_ALIAS.clear(); NORM_ALIAS.clear();
+    try{ NORM_CACHE.clear(); }catch(e){}
+    aliasPairs.forEach(x => {
+      NAME_ALIAS.set(nameKeyRaw(x.a), {n: x.b, k: nameKeyRaw(x.b)});
+      try{ NORM_ALIAS.set(normNameRaw(x.a), normNameRaw(x.b)); }catch(e){}
+    });
+    try{ NORM_CACHE.clear(); }catch(e){}
+  }
+  async function aliasSave(){
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(ALIAS_KIND), {method:'DELETE'}).catch(() => {});
+    if(aliasPairs.length) await supaFetch('lists?on_conflict=kind,value', {
+      method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
+      body: aliasPairs.map(x => ({kind: ALIAS_KIND, value: x.a + ALIAS_SEP + x.b}))});
+    aliasRebuild();
+    clearNetCache();
+  }
+  function canonicalName(n){
+    const hit = NAME_ALIAS.get(nameKeyRaw(n));
+    return hit ? hit.n : n;
+  }
   function nameKey(n){
+    const x = nameKeyRaw(n);
+    const al = NAME_ALIAS.size ? NAME_ALIAS.get(x) : null;
+    return al ? al.k : x;
+  }
+  function nameKeyRaw(n){
     let x = String(n || '')
       .replace(/[\u200c\u200e\u200f\s]/g, '')
       .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
@@ -28134,6 +28633,10 @@
       }
       // اگر خواندن نشد، نه اعلانی ساخته می‌شود نه چیزی پاک — چون «نمی‌دانیم»
       if(!queryOk) return;
+      // روزهای «رفع ایراد»شده مثل گزارش‌داده حساب می‌شوند
+      days.forEach(d3 => REQUIRED_REPORTERS.forEach(w => {
+        if(rptExcused(d3, w)) seen.add(dayKey(d3) + '|' + nameKey(w));
+      }));
 
       // اعلان‌های موجود، تا تکراری فرستاده نشود
       const olds = await supaFetch('nudges?kind=eq.' + MISS_KIND
@@ -31012,7 +31515,15 @@
      روز یا یک بازهٔ چندروزه. */
   async function withBalanceRows(rows, dates){
     const real = (rows || []).filter(r => !isBalRow(r));
-    const due = (dates || []).filter(balanceDue);
+    /* به‌محض اینکه همهٔ گزارش‌دهندگان موظف (جز رفع‌ایرادشده‌ها) گزارش آن
+       روز را گذاشتند، تراز نیرو اضافه می‌شود؛ وگرنه همان قاعدهٔ ساعت ۱۴ */
+    const allFiled = d => {
+      if(!REQUIRED_REPORTERS.length) return false;
+      const dk = dayKey(d);
+      const by = new Set(real.filter(r => dayKey(pick(r,F.date) || d) === dk).map(r => nameKey(pick(r,F.engineer))));
+      return REQUIRED_REPORTERS.every(w => by.has(nameKey(w)) || rptExcused(d, w));
+    };
+    const due = (dates || []).filter(d => balanceDue(d) || allFiled(d));
     if(!due.length) return real;
     await workerDayBreakdown(due);
     const proj = real.length ? (pick(real[0],F.project) || '') : '';
@@ -33860,6 +34371,8 @@
     try{
       permLoad(lists);
       try{ upCfgLoad(lists); }catch(e2){}
+      try{ rptCfgLoad(lists); }catch(e2){}
+      try{ aliasLoad(lists); }catch(e2){}
       setTimeout(() => {
         try{ syncTabs(); }catch(e2){}
         try{ syncKindCaps(); }catch(e2){}
@@ -48695,7 +49208,8 @@
   /* ====== شروع ====== */
   dateInput.value = yesterdayShamsi();
   addCrew(); addIssue(); addMachine();
-  if(restore()) msg('warn','پیش‌نویس ذخیره‌شده در این دستگاه بازیابی شد.');
+  restore();   // پیش‌نویس بی‌صدا برمی‌گردد
+  setTimeout(() => document.documentElement.classList.remove('tabs-pending'), 3500);
   if(!document.getElementById('projectName').value.trim())
     document.getElementById('projectName').value = 'رویال آدرس رزیدنس';
   viewDate.value = dateInput.value;
