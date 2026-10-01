@@ -2623,6 +2623,22 @@
   .adm-ms .ms-td{--c:var(--c-td);}
   /* نقطهٔ بازگشت به مرحلهٔ قبل */
   .adm-ms .ms-pt.back u::before{content:"↩ ";font-weight:700;}
+  .ms-pedit{display:inline-flex;align-items:center;gap:5px;margin-inline-start:8px;padding:4px 10px;border-radius:999px;
+    border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11px;cursor:pointer;}
+  .ms-pedit:hover{color:var(--sky);border-color:var(--sky);}
+  .ms-pedit svg{width:13px;height:13px;}
+  #pathEditModal{z-index:210;align-items:center;justify-content:center;}
+  #pathEditModal .pe-modal{width:min(96vw, 620px);max-height:90vh;overflow:auto;}
+  .pe-lead{margin:0 0 10px;font-size:12px;line-height:1.9;color:var(--muted);}
+  .pe-head, .pe-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 34px;gap:6px;align-items:center;}
+  .pe-head{font-size:11px;color:var(--muted);margin-bottom:4px;padding:0 2px;}
+  .pe-row{margin-bottom:6px;}
+  .pe-row select, .pe-row input{width:100%;min-width:0;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--field);font:inherit;font-size:12.5px;color:var(--ink);}
+  .pe-del{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--alert);font-size:18px;cursor:pointer;}
+  .pe-add{margin-top:4px;}
+  .pe-acts{display:flex;gap:8px;margin-top:12px;} .pe-acts .send{flex:1 1 auto;}
+  @media (max-width:520px){ .pe-head{display:none;} .pe-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;}
+    .pe-row .pe-by{grid-column:1 / 3;} }
   /* درصد پیشرفت صورت وضعیت و قرارداد */
   .adm-pct{display:flex;align-items:center;gap:10px;margin:6px 0 4px;}
   .adm-pct > b{flex:0 0 auto;min-width:40px;font-size:13px;font-weight:900;color:var(--sky-deep, var(--sky));}
@@ -18260,6 +18276,8 @@
      d:'وگرنه فقط گزارش خودش', def:[1]},
     {g:'ویرایش', k:'adm.editAny', t:'ویرایش موارد ادارىِ دیگران',
      d:'صورت وضعیت، قرارداد، نامه، صورتجلسه', def:[1]},
+    {g:'ویرایش', k:'adm.path', t:'ویرایش مسیر گردش اسناد',
+     d:'اصلاح مراحل، تاریخ‌ها و ردها/تأییدهای ثبت‌شدهٔ صورت وضعیت و قرارداد', def:[1]},
     {g:'کارگری', k:'crew.manage', t:'مدیریت کارگران',
      d:'افزودن، حذف، تغییر سمت و دریافتی', def:[1,2,5]},
     {g:'اعلان‌ها', k:'notif.missing', t:'دیدن نقص گزارش دیگران',
@@ -35870,9 +35888,22 @@
     logEv.forEach(e => ev.push({k: LOG_K[e.to], d: e.date}));
     /* ردیف‌های قدیمی که تاریخچه ندارند: از ستون‌های تاریخ */
     const inLog = new Set(logEv.map(e => LOG_K[e.to]));
+    /* تاریخِ ستون‌ها فقط وقتی جایی دارد که با تاریخچه نخواند:
+       - بدون تاریخچه: همه، مثل قبل؛
+       - با تاریخچه: تاریخ مرحلهٔ «فعلی» فقط اگر بعد از آخرین رویداد باشد
+         (وگرنه یک «گردش کارفرما»ی قدیمی جلوتر از بازگشت به داخلی می‌نشست)،
+         و بقیه فقط اگر پیش از اولین رویداد تاریخچه باشند. */
+    const logDates = logEv.map(e => faToDate(e.date)).filter(Boolean);
+    const firstLog = logDates.length ? Math.min.apply(null, logDates) : null;
+    const lastLog = logDates.length ? Math.max.apply(null, logDates) : null;
+    let curColDate = '';
     [['i', rvStartOf(r, 'rvIS')], ['p', rvStartOf(r, 'rvPS')], ['c', rvStartOf(r, 'rvCS')],
      ['ok', exact(r, 'rvCOk')], ['pay', paid ? exact(r, 'تاریخ پرداخت') : '']].forEach(([k, d]) => {
-      if(ok(d) && !inLog.has(k)) ev.push({k, d});
+      if(!ok(d) || inLog.has(k)) return;
+      if(!logEv.length){ ev.push({k, d}); return; }
+      const t = faToDate(d);
+      if(k === stage){ if(t >= lastLog) ev.push({k, d}); else curColDate = d; return; }
+      if(t <= firstLog) ev.push({k, d});
     });
     ev = ev.map((x, i) => Object.assign(x, {_i: i}));
     ev.sort((a, b) => a.k === 'n' ? -1 : b.k === 'n' ? 1
@@ -35902,7 +35933,8 @@
     const curK = stage || (rv === RV_DRAFT ? 'td' : '');
     /* مرحلهٔ فعلی اگر در تاریخچه نیامده، بی‌تاریخ به آخر اضافه می‌شود */
     if(stage && (!pts.length || pts[pts.length - 1].k !== stage))
-      pts.push({k:stage, t:LBL[stage] || rv, d:'', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
+      pts.push({k:stage, t:LBL[stage] || rv, d:'', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : '',
+        txt: curColDate ? 'تاریخ نامعلوم' : ''});
     if(!pts.length) return '';
 
     // هنوز گردشی شروع نشده (یا به تنظیم برگشته): تا امروز
@@ -36062,7 +36094,7 @@
     }
     const pill = paid ? 'تسویه شده' : (rv || notifyLabel(notify) || '');
     const pillK = bad ? 'bad' : (stage || 'td');
-    return msTrackHtml(msHeadHtml('گردش ' + (KIND_LABEL[kind] || ''), pill, pillK, total) + admPctHtml(kind, r), items);
+    return msTrackHtml(msHeadHtml('گردش ' + (KIND_LABEL[kind] || ''), pill, pillK, total).replace(/<\/div>$/, pathEditBtn(kind, r) + '</div>') + admPctHtml(kind, r), items);
   }
 
   /* ====== درصد پیشرفت صورت وضعیت و قرارداد ======
@@ -36083,6 +36115,145 @@
     if(kind === 'contract' && (rv === 'تایید شده' || rv === RV_PAID)) return 100;
     return ADM_PCT[rv] != null ? ADM_PCT[rv] : 10;
   }
+
+  /* ====== ویرایش مسیر گردش (ادمین) ======
+     اگر کسی اشتباهی رد یا تأیید زده، یا تاریخی غلط ثبت شده، ادمین کل
+     مسیر را می‌بیند و اصلاح می‌کند: مرحله، تاریخ و ثبت‌کنندهٔ هر گام،
+     افزودن و حذف گام. با ذخیره، تاریخچه (stage_log)، وضعیت فعلی و
+     ستون‌های تاریخ و مدت هر مرحله همه از روی همین مسیر از نو ساخته
+     می‌شوند تا هیچ‌جا ناسازگار نماند. دورهای بررسی داخلی (افراد و
+     تأییدهایشان) دست نمی‌خورند. */
+  const PATH_STAGES = [RV_DRAFT, 'بررسی داخلی', 'رد داخلی', 'تأیید داخلی', 'بررسی پیمانکار', 'رد پیمانکار',
+                       'تأیید پیمانکار', 'بررسی کارفرما', 'رد کارفرما', 'تایید شده', 'پرداخت شده'];
+  function pathEditBtn(kind, r){
+    if(kind !== 'statement' && kind !== 'contract') return '';
+    try{ if(!can('adm.path')) return ''; }catch(e){ return ''; }
+    const id = pick(r, AD.id);
+    if(!id) return '';
+    return '<button type="button" class="ms-pedit" data-pathedit="' + esc(id) + '" data-pkind="' + kind + '" title="اصلاح مراحل و تاریخ‌های گردش">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>'
+      + '<span>ویرایش مسیر</span></button>';
+  }
+  /* مسیر ویرایش‌شده ← مقدارهای ذخیره */
+  function pathToValues(kind, row, steps){
+    const ORDER = [RV_DRAFT, 'بررسی داخلی', 'تأیید داخلی', 'بررسی پیمانکار', 'تأیید پیمانکار', 'بررسی کارفرما', 'تایید شده', RV_PAID];
+    const BACK = {'رد داخلی':'بررسی داخلی', 'رد پیمانکار':'بررسی پیمانکار', 'رد کارفرما':'بررسی کارفرما'};
+    const keep = stageLogOf(row).filter(e => e && (e.type || e.t === 'notify'));
+    let prev = '';
+    const stageLog = steps.map(x => { const e = {from: prev, to: x.to, date: x.date, by: x.by || '', fix: activeUserName()}; prev = x.to; return e; });
+    const out = {};
+    /* ستون تاریخ هر مرحله: ورود به آن مرحله؛ برگشت به عقب، تاریخ مراحل بعدی را پاک می‌کند */
+    const col = {};
+    let lastAt = -1;
+    steps.forEach(x => {
+      const at = ORDER.indexOf(BACK[x.to] || x.to);
+      if(at !== -1 && at < lastAt) ORDER.slice(at + 1).forEach(st => { delete col[st]; });
+      if(at !== -1) lastAt = at;
+      if(!col[x.to]) col[x.to] = x.date;      // اولین ورود از آخرین برگشت
+    });
+    Object.keys(RV_DATE_FIELD).forEach(st => {
+      const f = RV_DATE_FIELD[st];
+      if(f === 'تاریخ پرداخت') return;
+      out[f] = col[st] || '';
+    });
+    const span = (a, b) => { const d = faDiff(a, b); return (d != null && d >= 0) ? d : ''; };
+    out['rvIDays'] = span(out.rvISent, out.rvIOk);
+    out['rvPDays'] = span(out.rvPSent, out.rvPOk);
+    out['rvCDays'] = span(out.rvCSent, out.rvCOk);
+    out['rvTotalDays'] = span(out.rvISent || out.rvPSent || out.rvCSent, out.rvCOk || out.rvPOk || out.rvIOk);
+    out['rvStageLog'] = keep.concat(stageLog);
+    const cur = steps.length ? steps[steps.length - 1].to : RV_DRAFT;
+    out['وضعیت رسیدگی'] = cur;
+    try{ Object.assign(out, stageSideValues(kind, row, cur)); }catch(e){}
+    if(kind === 'statement'){
+      if(cur === RV_PAID){
+        out['وضعیت پرداخت'] = RV_PAID;
+        out['تاریخ پرداخت'] = steps[steps.length - 1].date;
+      }else if(String(exact(row, 'وضعیت پرداخت') || '') === RV_PAID){
+        out['وضعیت پرداخت'] = 'پرداخت نشده'; out['تاریخ پرداخت'] = '';
+      }
+    }
+    return out;
+  }
+  function pathRowHtml(x){
+    return '<div class="pe-row">'
+      + '<select class="pe-st">' + PATH_STAGES.map(v => '<option' + (v === x.to ? ' selected' : '') + '>' + esc(v) + '</option>').join('')
+      +   (x.to && PATH_STAGES.indexOf(x.to) === -1 ? '<option selected>' + esc(x.to) + '</option>' : '') + '</select>'
+      + '<input type="text" class="pe-dt date-in" inputmode="text" placeholder="۱۴۰۵/۰۷/۰۱" value="' + esc(x.date ? toFa(normDate(x.date) || x.date) : '') + '">'
+      + '<input type="text" class="pe-by" placeholder="ثبت‌کننده" value="' + esc(x.by || '') + '">'
+      + '<button type="button" class="pe-del" title="حذف این گام" aria-label="حذف">×</button>'
+      + '</div>';
+  }
+  function openPathEditor(kind, id){
+    const row = rowMap.get(id);
+    if(!row){ showDialog('warn','پیدا نشد','این مورد پیدا نشد؛ صفحه را تازه کنید.'); return; }
+    let steps = stageLogOf(row).filter(e => e && !e.type && e.t !== 'notify' && e.to)
+      .map(e => ({to: String(e.to), date: e.date || '', by: e.by || ''}));
+    /* ردیف قدیمی بدون تاریخچه: از ستون‌های تاریخ ساخته می‌شود */
+    if(!steps.length){
+      Object.keys(RV_DATE_FIELD).forEach(st => {
+        const d = exact(row, RV_DATE_FIELD[st]);
+        if(d && normDate(d)) steps.push({to: st, date: d, by: ''});
+      });
+      steps.sort((a, b) => faToDate(a.date) - faToDate(b.date));
+      const cur = String(pick(row, AD.review) || '');
+      if(cur && (!steps.length || steps[steps.length - 1].to !== cur)) steps.push({to: cur, date: '', by: ''});
+    }
+    const old = document.getElementById('pathEditModal');
+    if(old) old.remove();
+    const bg = document.createElement('div');
+    bg.id = 'pathEditModal'; bg.className = 'modal-bg';
+    bg.innerHTML = '<div class="modal pe-modal" role="dialog" aria-modal="true" aria-label="ویرایش مسیر گردش">'
+      + '<div class="modal-head"><b>ویرایش مسیر گردش</b><button type="button" class="x" data-pecancel="1" aria-label="بستن">×</button></div>'
+      + '<div class="modal-body">'
+      + '<p class="pe-lead">گام‌ها به ترتیب تاریخ ذخیره می‌شوند. آخرین گام، وضعیت فعلی است. تاریخ و مدت هر مرحله از روی همین مسیر از نو حساب می‌شود.</p>'
+      + '<div class="pe-head"><span>مرحله</span><span>تاریخ</span><span>ثبت‌کننده</span><span></span></div>'
+      + '<div class="pe-list">' + steps.map(pathRowHtml).join('') + '</div>'
+      + '<button type="button" class="mini pe-add">+ افزودن گام</button>'
+      + '<div class="auth-note pe-note"></div>'
+      + '<div class="pe-acts"><button type="button" class="send pe-save">ذخیرهٔ مسیر</button>'
+      +   '<button type="button" class="mini" data-pecancel="1">انصراف</button></div>'
+      + '</div></div>';
+    document.body.appendChild(bg);
+    bg.hidden = false;
+    const list = bg.querySelector('.pe-list');
+    const note = bg.querySelector('.pe-note');
+    bg.addEventListener('click', async ev => {
+      if(ev.target === bg || ev.target.closest('[data-pecancel]')){ bg.remove(); return; }
+      const del = ev.target.closest('.pe-del');
+      if(del){ del.closest('.pe-row').remove(); return; }
+      if(ev.target.closest('.pe-add')){
+        const lastSt = (list.querySelector('.pe-row:last-child .pe-st') || {}).value || '';
+        const nx = PATH_STAGES[Math.min(PATH_STAGES.length - 1, PATH_STAGES.indexOf(lastSt) + 1)] || 'بررسی داخلی';
+        list.insertAdjacentHTML('beforeend', pathRowHtml({to: nx, date: todayShamsi(), by: activeUserName()}));
+        return;
+      }
+      const sv = ev.target.closest('.pe-save');
+      if(!sv) return;
+      const rows = Array.from(list.querySelectorAll('.pe-row')).map((el, i) => ({
+        to: el.querySelector('.pe-st').value, date: normDate(el.querySelector('.pe-dt').value), by: el.querySelector('.pe-by').value.trim(), _i: i,
+        raw: el.querySelector('.pe-dt').value.trim()}));
+      const badRow = rows.find(x => !x.date);
+      if(badRow){ note.textContent = 'تاریخ گام ' + toFa(badRow._i + 1) + ' نامعتبر است (مثل ۱۴۰۵/۰۷/۰۱).'; return; }
+      rows.sort((a, b) => (faToDate(a.date) - faToDate(b.date)) || (a._i - b._i));
+      const values = pathToValues(kind, row, rows.map(x => ({to: x.to, date: x.date, by: x.by})));
+      sv.disabled = true; note.textContent = '';
+      const ok = await sendAction({action:'update', target:kind, id:id, values:values});
+      sv.disabled = false;
+      if(!ok){ note.textContent = lastServerError || 'ذخیره نشد؛ دوباره تلاش کنید.'; lastServerError = ''; return; }
+      bg.remove();
+      clearNetCache();
+      showDialog('ok','مسیر اصلاح شد','مسیر گردش و وضعیت فعلی («' + values['وضعیت رسیدگی'] + '») ذخیره شد.');
+      setTimeout(() => { try{ loadAdmin(); }catch(e){} try{ if(typeof loadTasks === 'function') loadTasks(); }catch(e){} }, 400);
+    });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-pathedit]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if(!can('adm.path')){ showDialog('warn','اجازه ندارید','ویرایش مسیر گردش فقط برای ادمین است.'); return; }
+    openPathEditor(b.dataset.pkind, b.dataset.pathedit);
+  }, true);
   function admPctHtml(kind, r){
     const p = admPct(kind, r);
     if(p == null) return '';
