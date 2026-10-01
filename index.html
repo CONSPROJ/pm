@@ -4302,6 +4302,15 @@
       max-width:23mm;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     }
     .pr-signwrap{margin-top:8mm;page-break-inside:avoid;}
+    /* پی‌دی‌اف کل: چند فرم مهندس روی یک برگه */
+    #printArea section.pf3-page + section.pf3-page{break-before:page;page-break-before:always;}
+    .pf3{break-inside:avoid;page-break-inside:avoid;margin-bottom:5mm;padding-bottom:4mm;border-bottom:1.2px dashed #999;}
+    .pf3:last-child{border-bottom:0;margin-bottom:0;}
+    .pf3-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:1mm 5mm;margin-bottom:2mm;font-size:8.5pt;color:#333;}
+    .pf3-h b{font-size:10.5pt;font-weight:800;color:#000;}
+    .pf3-h i{font-style:normal;font-weight:800;color:#000;}
+    .pr-sign.pf3-sign{grid-template-columns:repeat(2, minmax(0, 62mm));margin-top:3mm;justify-content:start;}
+    .pr-sign.pf3-sign .ps-box{height:22mm;}
     .pr-signttl{font-size:9.5pt;font-weight:700;margin-bottom:3mm;
       border-bottom:1px solid #000;padding-bottom:2mm;}
     .pr-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;}
@@ -12713,6 +12722,24 @@
   #wrkBody .wf-chip:active{transform:scale(.95);}
   #wrkBody .wf-chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
   #wrkBody .wf-chip.on b{background:rgba(255,255,255,.18);color:inherit;}
+  #wrkBody.wk-busy > *{opacity:.55;transition:opacity .18s;pointer-events:none;}
+  .fine-list{display:flex;flex-direction:column;gap:8px;}
+  .fine-it{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 14px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--line);border-inline-start:3px solid var(--alert);}
+  .fine-it .fi-h{display:flex;flex-direction:column;gap:2px;}
+  .fine-it .fi-h b{font-size:13.5px;color:var(--ink);} .fine-it .fi-h span{font-size:11px;color:var(--muted);}
+  .fine-it .fi-v{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  .fine-it .fi-new{font-weight:800;color:var(--alert);font-size:13px;}
+  .fine-it .fi-old{font-size:10.5px;color:var(--muted);}
+  .fine-it .fi-m{grid-column:1 / -1;font-size:11px;color:var(--muted);}
+  .fine-it .fi-a{grid-column:1 / -1;display:flex;gap:8px;}
+  .fine-it .fi-a .mini{flex:1;height:36px;}
+  #wrkBody .wk-skel{display:flex;flex-direction:column;gap:8px;padding:4px 0;}
+  #wrkBody .wk-skel i{display:block;height:58px;border-radius:16px;background:linear-gradient(90deg, var(--field) 0%, var(--surface) 50%, var(--field) 100%);
+    background-size:200% 100%;animation:wkSk 1.2s linear infinite;}
+  #wrkBody .wk-skel i:first-child{height:96px;}
+  @keyframes wkSk{from{background-position:200% 0;}to{background-position:-200% 0;}}
+  @media (prefers-reduced-motion: reduce){ #wrkBody .wk-skel i{animation:none;} }
   /* کپسول کشوییِ مهندسان: خودِ select شفاف روی کپسول می‌نشیند */
   #wrkBody .wf-eng{position:relative;max-width:210px;}
   #wrkBody .w-who .w-edited, #wrkBody .w-who .w-lock{display:inline-flex;align-items:center;gap:3px;margin-top:3px;width:max-content;max-width:100%;
@@ -17627,18 +17654,44 @@
     }catch(e){ srvAuthOff = true; return null; }
   }
 
-  let peopleRows = [];
-  async function loadPeople(){
-    try{
-      /* password_hash عمداً در این فهرست نیست. تا حالا هش رمز همهٔ
-         کاربران روی مرورگر هر کسی که سایت را باز می‌کرد دانلود
-         می‌شد. مقایسه و تغییر رمز حالا با تابع سمت سرور انجام
-         می‌شود و هیچ هشی از پایگاه‌داده بیرون نمی‌آید. */
-      peopleRows = await supaFetch('people?select=name,role,level,avatar_url,must_change,active',
-        {prefer:'return=representation'}) || [];
-    }catch(e){ peopleRows = []; }
-    return peopleRows;
+  /* فهرست اعضا (نام، سمت، سطح، عکس) روی دستگاه هم نگه داشته می‌شود تا
+     از همان لحظهٔ باز شدن برنامه درست باشد. پیش‌تر برای کاربری که از
+     قبل وارد شده بود این فهرست اصلاً خوانده نمی‌شد و پیام‌ها، سمت‌ها و
+     عکس‌ها از فهرست قدیمیِ داخل کد می‌آمدند؛ برای همین افراد تازه گاهی
+     در فهرست پیام‌ها بودند و گاهی نه. */
+  const PEOPLE_CACHE_KEY = 'siteLogM.people.v1';
+  let peopleRows = (() => {
+    try{ const v = JSON.parse(localStorage.getItem(PEOPLE_CACHE_KEY) || '[]'); return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  })();
+  let peopleAt = 0, peopleLoading = null;
+  async function loadPeople(force){
+    if(peopleLoading) return peopleLoading;
+    // بیشتر از هر ۲۰ ثانیه یک بار لازم نیست، مگر صریحاً خواسته شود
+    if(force === false && peopleAt && Date.now() - peopleAt < 20000) return peopleRows;
+    peopleLoading = (async () => {
+      try{
+        /* password_hash عمداً در این فهرست نیست. مقایسه و تغییر رمز با
+           تابع سمت سرور انجام می‌شود و هیچ هشی از پایگاه‌داده بیرون نمی‌آید. */
+        const got = await supaFetch('people?select=name,role,level,avatar_url,must_change,active,pending',
+          {prefer:'return=representation'}).catch(() =>
+            supaFetch('people?select=name,role,level,avatar_url,must_change,active', {prefer:'return=representation'}));
+        if(Array.isArray(got) && got.length){
+          peopleRows = got;
+          peopleAt = Date.now();
+          try{
+            localStorage.setItem(PEOPLE_CACHE_KEY, JSON.stringify(got.map(p => ({
+              name: p.name, role: p.role || '', level: p.level, avatar_url: p.avatar_url || '',
+              active: p.active, pending: p.pending || false}))));
+          }catch(e){}
+        }
+      }catch(e){ /* فهرست قبلی سر جایش می‌ماند */ }
+      return peopleRows;
+    })();
+    try{ return await peopleLoading; }finally{ peopleLoading = null; }
   }
+  // بلافاصله بعد از باز شدن برنامه، فهرست تازه از پایگاه‌داده
+  setTimeout(() => { loadPeople().then(() => { try{ if(typeof refreshWhoChip === 'function') refreshWhoChip(); }catch(e){} }); }, 300);
   const personRow = n => peopleRows.find(p => nameKey(p.name) === nameKey(n));
 
   async function savePerson(name, patch){
@@ -21071,7 +21124,7 @@
         + '</button>';
     };
 
-    box.innerHTML =
+    const html =
       '<button type="button" class="p-card public'+(pubUnread ? ' has-new' : '')+'" '
       + 'data-person-pick="'+esc(PUBLIC_ROOM)+'">'
       + '<span class="pc-ava"><span class="ava lg cm-pub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0"/><path d="M16 4.6a3.2 3.2 0 010 6.2M18 20a6 6 0 00-2.5-4.9"/></svg></span></span>'
@@ -21089,6 +21142,15 @@
             + '<span class="n">'+toFa(noChat.length)+'</span></div>'
             + noChat.map(n => cardHtml(n, false)).join('')
           : '');
+    /* فقط اگر چیزی عوض شده دوباره کشیده می‌شود؛ وگرنه فهرست بی‌پرش
+       سر جایش می‌ماند و انتخاب و جست‌وجو هم از دست نمی‌رود */
+    if(box.__pp !== html){
+      const st = box.scrollTop;
+      box.innerHTML = html;
+      box.__pp = html;
+      box.scrollTop = st;
+    }
+    try{ cmPaintSide(); }catch(e){}
   }
 
   function cmPaintSide(){
@@ -21151,7 +21213,9 @@
     const bg = document.getElementById('chatModal');
     bg.hidden = false;
     document.getElementById('msgTo').value = withName || '';
-    await loadMessages();
+    // اول با همان چیزی که داریم، بی‌درنگ؛ بعد تازه‌سازی بی‌صدا
+    renderPeoplePicker('');
+    await Promise.all([loadMessages(), loadPeople(false)]);
     renderPeoplePicker('');
     showChatWith(withName || '');
   }
@@ -21484,6 +21548,12 @@
   }
 
   async function gotoAdminItem(kind, id, gotoWho){
+    // اعلان جریمه: پنل خودِ شخص، بخش «جریمه‌ها»
+    if(kind === 'جریمه'){
+      try{ pf3Sub.general = 'fine'; }catch(e){}
+      await openProfile(activeUserName());
+      return null;
+    }
     // ابلاغ فعالیت عمومی → لیست فعالیت همان شخص
     if(kind === 'general'){
       const who = gotoWho || activeUserName();
@@ -24173,6 +24243,8 @@
 
     let b = null;
     try{ b = await fetchBundle(profileState.date); }catch(e){}
+    // جریمه‌های در انتظار، برای سرپرست کارگاه و ادمین
+    if(me && wrkFineApprover()){ try{ await wrkLoadPending(); }catch(e){} }
     const day = (b && b.day) || {rows:[], issues:[], machines:[]};
     const tasks = (b && b.tasks) || [];
     const adm = (b && b.admin) || null;
@@ -24405,6 +24477,10 @@
                                 ['news', 'اخبار و تغییرات', 0, NEWS_IC, 'دو هفتهٔ اخیر', 'sky']);
       if(canSendGeneral()) subs.push(['gen', 'ابلاغ فعالیت', 0, PF_I.mega, 'ثبت و فهرست ابلاغ‌ها', 'ok']);
       subs.push(['rem', 'یادآورها', 0, PF_I.log, 'ثبت و فهرست یادآورها', 'warn']);
+      if(wrkFineApprover()){
+        const nF = (wrkPending || []).filter(isFineReq).length;
+        subs.push(['fine', 'جریمه‌ها', nF, TD_I.warn, nF ? 'در انتظار تأیید شما' : 'جریمهٔ تازه‌ای نیست', nF ? 'bad' : 'ink']);
+      }
       /* این دو بخشی در پنل ندارند و مستقیم باز می‌شوند */
       subs.push(['deck', 'کارت‌های فعالیت', 0, SEC_ICON.adm, 'مرور کارت‌به‌کارت همه', 'vio', 'deck']);
       if(isAdminUser() || can('users.manage')) subs.push(['bc', 'پیام گروهی', 0, PF_I.msg, 'به همهٔ کاربران', 'ink', 'bc']);
@@ -24431,6 +24507,10 @@
           +   '<div class="tcal-body"><div id="mgChanges" class="mg-changes">'
           +     '<div class="empty">در حال دریافت…</div></div></div>'
           + '</div></div>';
+      }
+      if(wrkFineApprover()){
+        h += '<div class="pf3-pane" data-pf3p="fine"><div class="mg3-h">جریمه‌های در انتظار تأیید</div>'
+          + '<div data-fine-pane="1">' + wrkFinePaneHtml() + '</div></div>';
       }
       if(canSendGeneral()){
         h += '<div id="mgGen" class="pf3-pane" data-pf3p="gen">'
@@ -43344,6 +43424,91 @@
     return n;
   }
   const wrkCanManage = () => { try{ return can('crew.manage'); }catch(e){ return false; } };
+  /* ====== جریمه با تأیید سرپرست کارگاه ======
+     ثبت یا تغییر جریمهٔ یک کارگر مستقیم اعمال نمی‌شود: یک درخواست
+     جداگانه می‌سازد که سرپرست کارگاه باید تأییدش کند، اعلانش به او
+     می‌رود و در پنلش «جریمه‌های در انتظار تأیید» دیده می‌شود. اگر
+     خودِ سرپرست جریمه را ثبت کند، بی‌واسطه اعمال می‌شود. */
+  const FINE_KIND = 'جریمه';
+  const isSiteSup = n => /سرپرست کارگاه/.test(String(roleOf(n) || ''));
+  const siteSups = () => (peopleRows || []).filter(p => p.active !== false && isSiteSup(p.name)).map(p => p.name);
+  const wrkFineApprover = () => isSiteSup(wrkMe()) || isAdminUser();
+  const isFineReq = c => !!(c && c.payload && c.payload.sup);
+  async function wrkFineRequest(w, fineV, code, nm){
+    const me = wrkMe();
+    const body = {requested_by: me, state:'pending', date_fa: todayShamsi(), kind:'role',
+      worker_id: (w && w.id) || null, worker_code: (w && w.code) || code || '', worker_name: (w && w.name) || nm || '',
+      old_role: (w && w.role) || '', new_role: (w && w.role) || '',
+      payload: {fine: fineV, old: w ? (w.fine == null ? '' : w.fine) : '', sup: true}};
+    if(isSiteSup(me)){ await wrkApply(body); return 'done'; }
+    await supaFetch('worker_changes', {method:'POST', body:[body]});
+    const sups = siteSups();
+    if(sups.length){
+      const who = body.worker_name;
+      try{
+        await supaFetch('nudges', {method:'POST', body: sups.map(sp => ({
+          date_fa: todayShamsi(), from_name: me, to_name: sp, kind: FINE_KIND, item_id: '',
+          title: 'تأیید جریمه — ' + who,
+          message: 'جریمهٔ ' + (fineV === '' ? 'برداشتن' : toFa(fineV) + ' روز') + ' برای ' + who
+            + ' ثبت شده و منتظر تأیید شماست.', seen: false}))});
+        if(typeof invalidateNudges === 'function') invalidateNudges();
+      }catch(e){}
+    }
+    return 'pending';
+  }
+  async function wrkFineDecide(id, ok){
+    const c = (wrkPending || []).find(x => String(x.id) === String(id));
+    if(!c) return false;
+    if(!wrkFineApprover()){ showDialog('warn','اجازه ندارید','جریمه را فقط سرپرست کارگاه یا ادمین تأیید می‌کند.'); return false; }
+    if(ok) await wrkApply(c);
+    await supaFetch('worker_changes?id=eq.' + encodeURIComponent(id), {method:'PATCH',
+      body:{state: ok ? 'approved' : 'rejected', decided_by: wrkMe(), decided_at: new Date().toISOString()}});
+    try{
+      if(c.requested_by && nameKey(c.requested_by) !== nameKey(wrkMe()))
+        await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: wrkMe(), to_name: c.requested_by,
+          kind: FINE_KIND, item_id:'', title: (ok ? 'جریمه تأیید شد — ' : 'جریمه رد شد — ') + (c.worker_name || ''),
+          message: 'درخواست جریمهٔ ' + (c.worker_name || '') + (ok ? ' تأیید شد.' : ' رد شد.'), seen:false}]});
+    }catch(e){}
+    await wrkLoadPending();
+    try{ await wrkLoadWorkers(true); }catch(e){}
+    return true;
+  }
+  function wrkFinePaneHtml(){
+    const list = (wrkPending || []).filter(isFineReq);
+    if(!list.length) return '<div class="empty">جریمه‌ای در انتظار تأیید نیست. ✓</div>';
+    const can0 = wrkFineApprover();
+    return '<div class="fine-list">' + list.map(c => {
+      const p2 = c.payload || {};
+      return '<div class="fine-it" data-fine-id="' + esc(c.id) + '">'
+        + '<div class="fi-h"><b>' + esc(c.worker_name || '') + '</b><span>' + esc(c.old_role || '') + '</span></div>'
+        + '<div class="fi-v"><span class="fi-new">' + (p2.fine === '' || p2.fine == null ? 'برداشتن جریمه' : 'جریمه ' + toFa(p2.fine) + ' روز') + '</span>'
+        +   (p2.old !== '' && p2.old != null ? '<span class="fi-old">قبلی: ' + toFa(p2.old) + ' روز</span>' : '') + '</div>'
+        + '<div class="fi-m">درخواست ' + esc(c.requested_by || '—') + (c.date_fa ? ' · ' + esc(toFa(c.date_fa)) : '') + '</div>'
+        + (can0 ? '<div class="fi-a"><button type="button" class="mini go" data-fineok="' + esc(c.id) + '">تأیید</button>'
+                 + '<button type="button" class="mini" data-fineno="' + esc(c.id) + '">رد</button></div>'
+               : '<div class="fi-m">در انتظار تأیید سرپرست کارگاه</div>')
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-fineok], [data-fineno]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const ok = !!b.dataset.fineok;
+    const id = b.dataset.fineok || b.dataset.fineno;
+    b.disabled = true;
+    try{
+      if(await wrkFineDecide(id, ok)){
+        document.querySelectorAll('[data-fine-pane]').forEach(x => { x.innerHTML = wrkFinePaneHtml(); });
+        const n = (wrkPending || []).filter(isFineReq).length;
+        document.querySelectorAll('[data-pf3go="fine"] i').forEach(x => { x.textContent = n ? toFa(n) : ''; if(!n) x.remove(); });
+        showDialog('ok', ok ? 'تأیید شد' : 'رد شد', ok ? 'جریمه روی کارگر اعمال شد.' : 'درخواست جریمه رد شد.');
+        if(document.getElementById('wrkBody') && wrkTab === 'man') wrkRender();
+      }
+    }catch(err){ showDialog('err','انجام نشد', friendlyErr(err)); }
+    finally{ b.disabled = false; }
+  }, true);
+
   /* هر کس فقط سطرهای گزارش خودش را عوض می‌کند. ادمین، مدیریت و مدیریت
      کارگری سطر دیگران را هم می‌توانند، ولی نامشان روی سطر می‌ماند. */
   const wrkCanEditAny = () => { try{ return can('crew.editAny'); }catch(e){ return false; } };
@@ -43764,12 +43929,16 @@
     try{
       const rows = await supaFetch('material_move?select=*' + q + '&order=created_at.asc',
         {prefer:'return=representation'});
-      wrkMat = (rows || []).map(r => ({
-        id: r.id, material: r.material || '', qty: r.qty == null ? '' : r.qty,
-        unit: r.unit || '', src: r.src || '', dst: r.dst || '',
-        party: r.party || '', note: r.note || '', expert: r.expert || '',
-        who: r.owner || ''
-      }));
+      wrkMat = (rows || []).map(r => {
+        const sp = matSplitNote(r.note, r.method);
+        return {
+          id: r.id, material: r.material || '', qty: r.qty == null ? '' : r.qty,
+          unit: r.unit || '', src: r.src || '', dst: r.dst || '',
+          party: r.party || '', note: sp.note, method: sp.method, expert: r.expert || '',
+          who: r.owner || ''
+        };
+      });
+      if((rows || []).some(r => 'method' in r)) matMethodCol = true;
     }catch(e){}
     if(!wrkMat.length) wrkMat = [{material:'', qty:'', unit:'', src:'', dst:'', party:'', note:'', expert:'', who: wrkMe()}];
     wrkPrePick();
@@ -44067,6 +44236,7 @@
         dAct: d ? (d.activity || '') : '', dZone: d ? (d.zone || '') : '',
         dEng: d ? (d.engineer || '') : '',
         o1: o ? o.t1 : '', o2: o ? o.t2 : '', oh: oh || 0,
+        span: wrkSpan(st === 'off' ? '' : t1, st === 'off' ? '' : t2, o ? o.t1 : '', o ? o.t2 : ''),
         oAct: o ? (o.activity || '') : '', oEng: o ? (o.engineer || '') : '',
         pay: w.pay || '', fine: w.fine || ''
       });
@@ -44077,7 +44247,51 @@
   const WRK_HRS_COLS = ['ردیف','کد پرسنلی','نام و نام خانوادگی','سمت','وضعیت',
     'ورود','خروج','ساعت کارکرد','شرح فعالیت روزانه','محل کارکرد','مسئول روزانه',
     'شروع اضافه کاری','پایان اضافه کاری','ساعت اضافه کاری','شرح اضافه کاری','مسئول اضافه کاری',
-    'جمع ساعت','دریافتی روزانه','جریمه (روز)'];
+    'جمع ساعت','دریافتی روزانه','جریمه (روز)',
+    'شروع کارکرد','پایان کارکرد','بازهٔ کارکرد'];
+  // شمارهٔ ستون‌های ساعت و کد در WRK_HRS_COLS (برای نوع خانه در اکسل)
+  const WRK_HRS_TIME_COLS = [5, 6, 11, 12, 19, 20];
+  const WRK_HRS_CODE_COL = 1;
+
+  /* بازهٔ پیوستهٔ کارکرد: اگر اضافه کاری درست از پایان کار روزانه شروع
+     شده (یا درست به شروعش ختم شده)، یک بازه حساب می‌شود؛
+     ۰۸:۰۰–۱۷:۰۰ و ۱۷:۰۰–۲۰:۰۰ ← ۰۸:۰۰–۲۰:۰۰. */
+  function wrkSpan(d1, d2, o1, o2){
+    const a1 = wrkNormTime(d1), a2 = wrkNormTime(d2), b1 = wrkNormTime(o1), b2 = wrkNormTime(o2);
+    if(a1 && a2 && b1 && b2){
+      if(b1 === a2) return [a1, b2];
+      if(b2 === a1) return [b1, a2];
+      return [a1, a2];
+    }
+    if(a1 && a2) return [a1, a2];
+    if(b1 && b2) return [b1, b2];
+    return ['', ''];
+  }
+  /* در اکسل: کد پرسنلیِ عددی به‌صورت عدد و ساعت‌ها به‌صورت «زمان»
+     واقعی (hh:mm) نوشته می‌شوند، نه متن — تا مرتب‌سازی، جمع و فرمول
+     درست کار کند. */
+  function wrkXlsTypes(sh, timeCols, codeCols, headRow){
+    if(!sh || !sh['!ref']) return;
+    const R = XLSX.utils.decode_range(sh['!ref']);
+    for(let r = headRow + 1; r <= R.e.r; r++){
+      timeCols.forEach(c => {
+        const ad = XLSX.utils.encode_cell({r, c});
+        const cell = sh[ad];
+        if(!cell || cell.v == null || cell.v === '') return;
+        const t = wrkNormTime(cell.v);
+        if(!t) return;
+        const [h, m] = t.split(':').map(Number);
+        sh[ad] = {t:'n', v: (h * 60 + m) / 1440, z:'hh:mm'};
+      });
+      codeCols.forEach(c => {
+        const ad = XLSX.utils.encode_cell({r, c});
+        const cell = sh[ad];
+        if(!cell || cell.v == null || cell.v === '') return;
+        const v = toEn(String(cell.v)).trim();
+        if(/^\d{1,15}$/.test(v)) sh[ad] = {t:'n', v: Number(v), z:'0'};
+      });
+    }
+  }
 
   let wrkHrsMode = 'day';      // day | month
   function wrkHrsHtml(){
@@ -44114,7 +44328,7 @@
       + '<div id="wrkBal" class="wrk-bal">در حال مقایسه با گزارش روزانه…</div>'
       + (rows.length
           ? '<div class="hrs-wrap"><table class="hrs"><thead><tr>'
-            + ['کد','نام','سمت','وضعیت','کارکرد','اضافه','شرح روزانه','شرح اضافه کاری']
+            + ['کد','نام','سمت','وضعیت','بازهٔ کارکرد','کارکرد','اضافه','شرح روزانه','شرح اضافه کاری']
                 .map(c => '<th>' + c + '</th>').join('')
             + '</tr></thead><tbody>'
             + rows.map(x => '<tr' + (x.auto ? ' class="hrs-auto"' : '') + '>'
@@ -44123,6 +44337,7 @@
                 + '<td>' + esc(x.role) + '</td>'
                 + '<td class="c' + (x.state === 'غایب' ? ' bad' : '') + '">'
                 +   esc(x.state) + (x.auto ? '<u title="ردیفی ثبت نشده">*</u>' : '') + '</td>'
+                + '<td class="c">' + (x.span[0] && x.span[1] ? toFa(x.span[0]) + ' تا ' + toFa(x.span[1]) : '') + '</td>'
                 + '<td class="c">' + (x.dh ? toFa(x.dh) : (x.state === 'غایب' ? '—' : '')) + '</td>'
                 + '<td class="c">' + (x.oh ? toFa(x.oh) : '') + '</td>'
                 + '<td>' + esc(x.dAct) + '</td>'
@@ -44230,7 +44445,8 @@
       toEn(x.t1 || ''), toEn(x.t2 || ''), x.dh || '', x.dAct, x.dZone, x.dEng,
       toEn(x.o1 || ''), toEn(x.o2 || ''), x.oh || '', x.oAct, x.oEng,
       Math.round(((x.dh || 0) + (x.oh || 0)) * 100) / 100,
-      x.pay || '', x.fine || ''
+      x.pay || '', x.fine || '',
+      x.span[0], x.span[1], (x.span[0] && x.span[1]) ? (wrkHours(x.span[0], x.span[1]) || '') : ''
     ]));
     return aoa;
   }
@@ -44242,6 +44458,7 @@
     if(!rows.length){ showDialog('warn','داده‌ای نیست','برای این تاریخ کارکردی ثبت نشده است.'); return; }
     const wb = XLSX.utils.book_new();
     const sh = XLSX.utils.aoa_to_sheet(wrkHrsAoa(rows, d));
+    wrkXlsTypes(sh, WRK_HRS_TIME_COLS, [WRK_HRS_CODE_COL], 2);
     sh['!cols'] = WRK_HRS_COLS.map((c, i) => ({wch: (i === 2 ? 22 : (i === 8 || i === 14 ? 38 : 13))}));
     XLSX.utils.book_append_sheet(wb, sh, 'کارکرد');
     XLSX.writeFile(wb, 'کارکرد کارگران - ' + toFa(d).replace(/\//g,'-') + '.xlsx');
@@ -44263,13 +44480,13 @@
     try{
       for(const dd of days){
         let dr = [], orr = [];
+        /* تاریخ گاهی با رقم فارسی و گاهی لاتین ذخیره شده؛ هر دو پرسیده می‌شود */
+        const dq = 'date_fa=in.(' + encodeURIComponent(Array.from(new Set([toEn(dd), toFa(dd)])).map(x => '"' + x + '"').join(',')) + ')';
         try{
-          dr = await supaFetch('worker_daily?select=*&date_fa=eq.' + encodeURIComponent(dd),
-            {prefer:'return=representation'}) || [];
+          dr = await supaFetch('worker_daily?select=*&' + dq, {prefer:'return=representation'}) || [];
         }catch(e){}
         try{
-          orr = await supaFetch('worker_ot?select=*&date_fa=eq.' + encodeURIComponent(dd),
-            {prefer:'return=representation'}) || [];
+          orr = await supaFetch('worker_ot?select=*&' + dq, {prefer:'return=representation'}) || [];
         }catch(e){}
         const om = new Map();
         orr.forEach(r => om.set(String(r.worker_code || r.worker_name), r));
@@ -44283,17 +44500,23 @@
             r.activity || '', r.zone || '', r.engineer || '',
             o ? toEn(o.t_start || '') : '', o ? toEn(o.t_end || '') : '', oh,
             o ? (o.activity || '') : '', o ? (o.engineer || '') : '',
-            Math.round((dh + oh) * 100) / 100, '', '']);
+            Math.round((dh + oh) * 100) / 100, '', ''].concat((() => {
+              const sp = wrkSpan(String(r.state || 'ok') === 'off' ? '' : r.t_in, String(r.state || 'ok') === 'off' ? '' : r.t_out,
+                o ? o.t_start : '', o ? o.t_end : '');
+              return [sp[0], sp[1], (sp[0] && sp[1]) ? (wrkHours(sp[0], sp[1]) || '') : ''];
+            })()));
         });
         om.forEach(o => {
           const oh = wrkHours(o.t_start, o.t_end) || 0;
           all.push([dd, all.length - 2, o.worker_code || '', o.worker_name || '', o.worker_role || '',
             '', '', '', 0, '', '', '', toEn(o.t_start || ''), toEn(o.t_end || ''), oh,
-            o.activity || '', o.engineer || '', oh, '', '']);
+            o.activity || '', o.engineer || '', oh, '', '',
+            wrkNormTime(o.t_start), wrkNormTime(o.t_end), oh || '']);
         });
       }
       const wb = XLSX.utils.book_new();
       const sh = XLSX.utils.aoa_to_sheet(all);
+      wrkXlsTypes(sh, WRK_HRS_TIME_COLS.map(c => c + 1), [WRK_HRS_CODE_COL + 1], 2);
       sh['!cols'] = [{wch:12}].concat(WRK_HRS_COLS.map((c, i) =>
         ({wch: (i === 2 ? 22 : (i === 8 || i === 14 ? 34 : 12))})));
       XLSX.utils.book_append_sheet(wb, sh, 'کارکرد ماه');
@@ -44306,6 +44529,17 @@
   }
 
   /* ---------- انتقال مصالح ---------- */
+  /* نحوهٔ انتقال بار. اگر ستون method هنوز در جدول نیست (فایل
+     supabase_material_method.sql اجرا نشده)، در توضیحات با یک نشانه
+     نگه داشته می‌شود و موقع خواندن دوباره جدا می‌شود. */
+  const MAT_METHODS = ['تاور', 'آسانسور', 'نفر'];
+  const MAT_M_RE = /\s*\[روش انتقال: ([^\]]+)\]\s*$/;
+  let matMethodCol = null;           // null: نمی‌دانیم، true/false بعد از اولین ثبت
+  const matSplitNote = (note, method) => {
+    const m = String(note || '').match(MAT_M_RE);
+    return m ? {note: String(note).replace(MAT_M_RE, ''), method: method || m[1]}
+             : {note: String(note || ''), method: method || ''};
+  };
   function wrkMatRowHtml(r, i){
     /* هر خانه برچسب دارد: بدون برچسب، در دو ستونِ موبایل معلوم نبود
        کدام خانه مبدأ است و کدام مقصد. */
@@ -44340,6 +44574,12 @@
       + f('src', 'مبدأ انتقال', r.src)
       + f('dst', 'مقصد انتقال', r.dst)
       + f('party', 'طرف انتقال', r.party)
+      + '<label class="mat-f"><span>نحوهٔ انتقال بار</span>'
+      +   '<select data-mat="' + i + '" data-matk="method">'
+      +     '<option value="">انتخاب کنید</option>'
+      +     MAT_METHODS.concat(r.method && MAT_METHODS.indexOf(r.method) === -1 ? [r.method] : [])
+              .map(m => '<option' + (r.method === m ? ' selected' : '') + '>' + esc(m) + '</option>').join('')
+      +   '</select></label>'
       + f('note', 'توضیحات', r.note, true)
       + '</div>';
   }
@@ -44420,7 +44660,7 @@
       ? '<div class="rc-title">درخواست‌های در انتظار تأیید <span class="wrk-stat">'
         + toFa(wrkPending.length) + '</span></div>'
         + wrkPending.map(c => '<div class="wman-pend"><b>'
-            + esc(c.kind === 'role' ? 'تغییر مشخصات کارگر'
+            + esc(isFineReq(c) ? 'جریمه (تأیید سرپرست کارگاه)' : c.kind === 'role' ? 'تغییر مشخصات کارگر'
                 : c.kind === 'add' ? 'افزودن کارگر'
                 : c.kind === 'remove' ? 'جدا شدن کارگر'
                 : c.kind === 'back' ? 'برگرداندن کارگر' : 'جایگزینی فهرست') + '</b>'
@@ -44428,7 +44668,12 @@
             +   '<br>درخواست ' + esc(c.requested_by || '—')
             +   (c.date_fa ? ' · ' + esc(c.date_fa) : '')
             + '</div>'
-            + (admin
+            + (isFineReq(c)
+                ? (wrkFineApprover()
+                    ? '<div class="wp-acts"><button type="button" class="mini go" data-fineok="' + esc(c.id) + '">تأیید</button>'
+                      + '<button type="button" class="mini" data-fineno="' + esc(c.id) + '">رد</button></div>'
+                    : '<div class="wp-meta">در انتظار تأیید سرپرست کارگاه</div>')
+              : admin
                 ? '<div class="wp-acts">'
                   + '<button type="button" class="mini go" data-wok="' + esc(c.id) + '">تأیید</button>'
                   + '<button type="button" class="mini" data-wno="' + esc(c.id) + '">رد</button>'
@@ -44587,19 +44832,41 @@
       + '<div id="wmRows"' + (isOld ? ' class="ro"' : '') + '>' + rows + goneRows + '</div>';
   }
 
+  /* جابه‌جایی بین زبانه‌ها بی‌پرش: محتوای قبلی تا آماده شدن بعدی سر
+     جایش می‌ماند (کمی کم‌رنگ)، ارتفاع ناگهان صفر نمی‌شود، و اگر پشت
+     سر هم زبانه عوض شود فقط آخرین درخواست نقاشی می‌شود — پیش‌تر نتیجهٔ
+     درخواست کندترِ قبلی گاهی روی زبانهٔ تازه می‌نشست. */
+  let wrkRenderTok = 0, wrkRenderedTab = '';
   async function wrkRender(){
     const box = document.getElementById('wrkBody');
     if(!box) return;
-    box.innerHTML = '<div class="empty">در حال دریافت…</div>';
+    const tok = ++wrkRenderTok;
+    const tab0 = wrkTab;
+    const had = box.firstElementChild && !box.querySelector(':scope > .empty');
+    if(had){
+      box.style.minHeight = box.offsetHeight + 'px';
+      box.classList.add('wk-busy');
+    }else{
+      box.innerHTML = '<div class="wk-skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';
+    }
+    const stale = () => tok !== wrkRenderTok;
+    const paint = html => {
+      if(stale()) return false;
+      box.innerHTML = html;
+      box.classList.remove('wk-busy');
+      requestAnimationFrame(() => { box.style.minHeight = ''; });
+      return true;
+    };
     const cap = document.getElementById('wrkManCap');
     if(cap){
       cap.hidden = !wrkCanManage();
-      /* نشانِ درخواست‌های در انتظار، روی خود زبانه */
+      /* نشانِ درخواست‌های در انتظار روی خود زبانه؛ منتظرش نمی‌مانیم */
       if(!cap.hidden){
-        try{ await wrkLoadPending(); }catch(e){}
-        cap.textContent = 'مدیریت کارگران'
-          + (wrkPending.length ? ' (' + toFa(wrkPending.length) + ')' : '');
-        cap.classList.toggle('has-pend', wrkPending.length > 0);
+        wrkLoadPending().then(() => {
+          cap.textContent = 'مدیریت کارگران'
+            + (wrkPending.length ? ' (' + toFa(wrkPending.length) + ')' : '');
+          cap.classList.toggle('has-pend', wrkPending.length > 0);
+        }).catch(() => {});
       }
     }
     const cap2 = document.getElementById('wrkHrsCap');
@@ -44608,15 +44875,17 @@
     if(lbl) lbl.textContent = wrkDayLabel(wrkDateVal());
     try{
       await wrkLoadWorkers();
-      if(wrkTab === 'man'){
+      if(stale()) return;
+      if(tab0 === 'man'){
         await wrkLoadPending();
-        box.innerHTML = wrkManHtml();
+        if(paint(wrkManHtml())) wrkRenderedTab = tab0;
         return;
       }
-      if(wrkTab === 'hrs'){
+      if(tab0 === 'hrs'){
         await wrkLoadDay(wrkForce); wrkForce = false;
         wrkRefreshLive();
-        box.innerHTML = wrkHrsHtml();
+        if(!paint(wrkHrsHtml())) return;
+        wrkRenderedTab = tab0;
         if(wrkHrsMode === 'month') wrkHrsMonthFill();
         else wrkBalanceLine();
         return;
@@ -44624,14 +44893,18 @@
       await wrkLoadDay(wrkForce);
       wrkForce = false;
       wrkRefreshLive();
-      box.innerHTML = (wrkTab === 'mat') ? wrkMatHtml() : wrkFormHtml(wrkTab);
-      /* ورود پلکانیِ سطرها، فقط وقتی فرم تازه باز می‌شود */
-      if(!uiReduced()){
+      const first = wrkRenderedTab !== tab0;
+      if(!paint((tab0 === 'mat') ? wrkMatHtml() : wrkFormHtml(tab0))) return;
+      wrkRenderedTab = tab0;
+      /* ورود پلکانیِ سطرها، فقط وقتی زبانه تازه باز می‌شود، نه بعد از هر ثبت */
+      if(first && !uiReduced()){
         box.classList.remove('wk-enter'); void box.offsetWidth; box.classList.add('wk-enter');
         clearTimeout(box.__wkT);
         box.__wkT = setTimeout(() => box.classList.remove('wk-enter'), 900);
       }
     }catch(e){
+      if(stale()) return;
+      box.classList.remove('wk-busy'); box.style.minHeight = '';
       box.innerHTML = '<div class="empty">دریافت اطلاعات انجام نشد.</div>';
     }
   }
@@ -44714,18 +44987,39 @@
     const d = wrkDateVal(), proj = wrkProjVal();
     const me = wrkMe();
     const expert = String((document.getElementById('matExpert') || {}).value || '').trim();
-    const rows = wrkMat.filter(r => String(r.material || '').trim()).map(r => ({
-      date_fa: d, day_name: wrkDayLabel(d).split(' —')[0], project: proj, expert: expert,
-      material: String(r.material).trim(),
-      qty: r.qty === '' ? null : Number(toEn(String(r.qty)).replace(/[^\d.-]/g,'')) || null,
-      unit: r.unit || '', src: r.src || '', dst: r.dst || '',
-      party: r.party || '', note: r.note || '', owner: r.who || '', created_by: me
-    }));
+    const mk = withCol => wrkMat.filter(r => String(r.material || '').trim()).map(r => {
+      const o = {
+        date_fa: d, day_name: wrkDayLabel(d).split(' —')[0], project: proj, expert: expert,
+        material: String(r.material).trim(),
+        qty: r.qty === '' ? null : Number(toEn(String(r.qty)).replace(/[^\d.-]/g,'')) || null,
+        unit: r.unit || '', src: r.src || '', dst: r.dst || '',
+        party: r.party || '', note: r.note || '', owner: r.who || '', created_by: me
+      };
+      if(withCol) o.method = r.method || null;
+      else if(r.method) o.note = (o.note ? o.note + ' ' : '') + '[روش انتقال: ' + r.method + ']';
+      return o;
+    });
+    let rows = mk(matMethodCol !== false);
     if(!rows.length){ showDialog('warn','چیزی برای ثبت نیست','دست‌کم نوع یک مصالح را بنویسید.'); return; }
     wrkBusy = true;
     try{
-      await supaFetch('material_move?date_fa=eq.' + encodeURIComponent(d), {method:'DELETE'});
-      await supaFetch('material_move', {method:'POST', body: rows});
+      /* اول ردیف‌های تازه ثبت می‌شوند، بعد ردیف‌های قبلی همین فرم پاک
+         می‌شوند. پیش‌تر اول همه پاک می‌شد؛ اگر ثبت شکست می‌خورد، مصالح
+         آن روز از دست می‌رفت. */
+      const oldIds = wrkMat.map(r => r.id).filter(Boolean);
+      try{
+        await supaFetch('material_move', {method:'POST', body: rows});
+        if(matMethodCol === null) matMethodCol = true;
+      }catch(e1){
+        if(matMethodCol === false || !/method|PGRST204|column/i.test(String(e1 && e1.message || e1))) throw e1;
+        matMethodCol = false;
+        rows = mk(false);
+        await supaFetch('material_move', {method:'POST', body: rows});
+      }
+      for(let i2 = 0; i2 < oldIds.length; i2 += 40){
+        await supaFetch('material_move?id=in.(' + oldIds.slice(i2, i2 + 40).map(encodeURIComponent).join(',') + ')',
+          {method:'DELETE'});
+      }
       clearNetCache(); wrkForce = true;
       try{ crewCache.clear(); }catch(e){}
       showDialog('ok','ثبت شد', toFa(rows.length) + ' ردیف انتقال مصالح ثبت شد.');
@@ -45096,6 +45390,94 @@
       + '</section>';
   }
 
+  /* ====== پی‌دی‌اف کل: یک فرم برای هر مهندس ======
+     هر مهندس فرم خودش را دارد — سرتیتر کوتاه، کارگرانِ خودش، و زیرش
+     جای امضای خودش (با سمتِ ثبت‌شده) و سرپرست کارگاه. فرم‌ها تا جایی
+     که جا هست کنار هم روی یک برگه می‌نشینند: حداکثر سه فرم در هر A4،
+     بسته به تعداد سطرهای هرکدام. کارگرانِ بی‌مسئول در فرم آخر می‌آیند. */
+  function wrkPdfAllHtml(kind){
+    const d = wrkDateVal(), proj = wrkProjVal();
+    const ttl = (kind === 'ot') ? 'فرم اضافه کاری کارگران' : 'گزارش روزانهٔ کارگران';
+    const shown = nm => (nm && !isAdminName(nm)) ? nm : '';
+    const all = workersLive.map(w => ({w, c: wrkData[kind].get(w.code || w.name) || null}));
+    const groups = new Map();
+    const free = [];
+    all.forEach(x => {
+      if(!x.c || !x.c.engineer){ if(kind === 'daily') free.push(x); return; }
+      // سطرهای ادمین (نگهبان و نظافت) زیر «بدون مسئول» می‌آیند، بی‌نام او
+      const e = shown(x.c.engineer);
+      if(!e){ free.push(x); return; }
+      const k = nameKey(e);
+      if(!groups.has(k)) groups.set(k, {nm: e, rows: []});
+      groups.get(k).rows.push(x);
+    });
+    if(!groups.size) return '';
+    const dayNm = wrkDayLabel(d).split(' —')[0];
+    const hrs = c => { const h = wrkHours(c && c.t1, c && c.t2); return (h != null) ? toFa(h) : ''; };
+    const cols = kind === 'ot'
+      ? ['#','کد','نام و نام خانوادگی','سمت','شرح اضافه کار','محل','شروع','پایان','مدت']
+      : ['#','کد','نام و نام خانوادگی','سمت','شرح فعالیت روزانه','محل','ورود','خروج'];
+    const wid = kind === 'ot'
+      ? ['5%','7%','19%','13%','27%','11%','6%','6%','6%']
+      : ['5%','7%','20%','14%','30%','12%','6%','6%'];
+    const row = (x, i) => {
+      const c = x.c || {};
+      const st = wrkStateOf(c.state || 'ok');
+      const ed = wrkEditorOf(c);
+      const tag = ((kind === 'daily' && c.engineer && st.k !== 'ok') ? '<u class="pr-tag">' + esc(st.t) + '</u>' : '')
+        + (ed && !isAdminName(ed) ? '<u class="pr-tag">تغییر: ' + esc(ed) + '</u>' : '');
+      return '<tr' + (c.engineer ? '' : ' class="pr-none-row"') + '>'
+        + '<td class="idx">' + toFa(i + 1) + '</td>'
+        + '<td class="c">' + esc(toFa(x.w.pno || x.w.code || '')) + '</td>'
+        + '<td class="pr-nm">' + esc(x.w.name) + tag + '</td>'
+        + '<td>' + esc(x.w.role || '') + '</td>'
+        + '<td>' + esc(c.activity || '') + '</td>'
+        + '<td>' + esc(c.zone || '') + '</td>'
+        + '<td class="c">' + esc(toFa(c.t1 || '')) + '</td>'
+        + '<td class="c">' + esc(toFa(c.t2 || '')) + '</td>'
+        + (kind === 'ot' ? '<td class="c">' + hrs(c) + '</td>' : '')
+        + '</tr>';
+    };
+    const box = (nm, role) => {
+      const img = nm ? avatarOf(nm) : '';
+      return '<div class="ps-box">'
+        + '<div class="ps-top">'
+        +   (nm ? (img ? '<img class="ps-ava" src="' + esc(img) + '" alt="">'
+                       : '<span class="ps-ava ph">' + esc(initialsOf(nm)) + '</span>')
+                : '<span class="ps-ava ph"></span>')
+        +   '<span class="ps-nm"><b>' + esc(nm || role) + '</b><u>' + esc(nm ? role : 'نام و نام خانوادگی') + '</u></span>'
+        + '</div><span class="ps-line">امضا و تأیید</span></div>';
+    };
+    const form = (g, signed) => {
+      const tOt = kind === 'ot' ? g.rows.reduce((t, x) => t + ((x.c && wrkHours(x.c.t1, x.c.t2)) || 0), 0) : 0;
+      return '<div class="pf3">'
+        + '<div class="pf3-h"><b>' + ttl + '</b>'
+        +   '<span>' + (g.nm ? 'مهندس: <i>' + esc(g.nm) + '</i>' + (roleOf(g.nm) ? ' · ' + esc(roleOf(g.nm)) : '') : '<i>بدون مسئول</i>') + '</span>'
+        +   '<span>' + esc(proj || '') + ' · ' + esc(dayNm) + ' ' + esc(d) + ' · ' + toFa(g.rows.length) + ' نفر'
+        +     (kind === 'ot' ? ' · ' + toFa(Math.round(tOt * 10) / 10) + ' ساعت' : '') + '</span></div>'
+        + '<table class="pr wrk"><colgroup>' + wid.map(w => '<col style="width:' + w + '">').join('') + '</colgroup>'
+        +   '<thead><tr>' + cols.map((c, i) => '<th' + (i === 0 ? ' class="idx"' : (i >= 6 ? ' class="c"' : '')) + '>' + c + '</th>').join('') + '</tr></thead>'
+        +   '<tbody>' + g.rows.map(row).join('') + '</tbody></table>'
+        + (signed ? '<div class="pr-sign pf3-sign">' + box(g.nm, roleOf(g.nm) || 'مهندس اجرا') + box('', 'سرپرست کارگاه') + '</div>' : '')
+        + '</div>';
+    };
+    const list = Array.from(groups.values()).sort((a, b) => a.nm.localeCompare(b.nm, 'fa')).map(g => ({g, signed: true}));
+    if(free.length) list.push({g: {nm: '', rows: free}, signed: false});
+    /* چیدن روی برگه‌ها با تخمین ارتفاع (میلی‌متر): سرتیتر + سطرها + امضا */
+    const PAGE_MM = 262;
+    const hOf = it => 14 + 7 + it.g.rows.length * 5.6 + (it.signed ? 30 : 4) + 6;
+    const pages = [];
+    let cur = [], used = 0;
+    list.forEach(it => {
+      const h = hOf(it);
+      const nSigned = cur.filter(x => x.signed).length;
+      if(cur.length && ((it.signed && nSigned >= 3) || used + h > PAGE_MM)){ pages.push(cur); cur = []; used = 0; }
+      cur.push(it); used += h;
+    });
+    if(cur.length) pages.push(cur);
+    return pages.map(pg => '<section class="pf3-page">' + pg.map(it => form(it.g, it.signed)).join('') + '</section>').join('');
+  }
+
   /* نوار امضا: هر مهندسی که کارگر انتخاب کرده، با عکس و نامش، و جای
      امضای سرپرست کارگاه. */
   function wrkSignHtml(engs){
@@ -45170,6 +45552,7 @@
       + fld('طرف انتقال', r.party)
       + fld('مبدأ انتقال', r.src, 'half')
       + fld('مقصد انتقال', r.dst, 'half')
+      + fld('نحوهٔ انتقال بار', r.method)
       + fld('توضیحات', r.note, 'wide')
       + '</div>';
 
@@ -45213,7 +45596,7 @@
       return;
     }
     const me = wrkMe();
-    const html = wrkPdfHtml(kind, onlyMine ? me : '');
+    const html = onlyMine ? wrkPdfHtml(kind, me) : wrkPdfAllHtml(kind);
     if(!html){
       showDialog('warn','چیزی برای چاپ نیست',
         onlyMine ? 'هنوز کارگری به نام شما انتخاب نشده است.' : 'هنوز کارگری انتخاب نشده است.');
@@ -45227,7 +45610,7 @@
   const WRK_XLS = {
     daily: {sheet:'روزانه', cols:['کد پرسنلی','ردیف','نام و نام خانوادگی','سمت','شرح فعالیت روزانه','محل کارکرد','ورود','خروج','وضعیت','مسئول']},
     ot:    {sheet:'اضافه کاری', cols:['کد پرسنلی','ردیف','نام و نام خانوادگی','سمت','شرح اضافه کار','محل کارکرد','شروع','پایان','مدت','مسئول']},
-    mat:   {sheet:'انتقال مصالح', cols:['نوع مصالح','مقدار','واحد','مبدأ انتقال','مقصد انتقال','طرف انتقال','توضیحات']},
+    mat:   {sheet:'انتقال مصالح', cols:['نوع مصالح','مقدار','واحد','مبدأ انتقال','مقصد انتقال','طرف انتقال','نحوهٔ انتقال بار','توضیحات']},
     man:   {sheet:'کارگران', cols:['کد پرسنلی','ردیف','نام و نام خانوادگی','سمت','از تاریخ','تا تاریخ','دریافتی روزانه','جریمه (روز)']}
   };
   function wrkXlsDownload(kind){
@@ -45236,7 +45619,7 @@
     const d = wrkDateVal();
     let aoa = [cfg.cols];
     if(kind === 'mat'){
-      wrkMat.forEach(r => aoa.push([r.material, r.qty, r.unit, r.src, r.dst, r.party, r.note]));
+      wrkMat.forEach(r => aoa.push([r.material, r.qty, r.unit, r.src, r.dst, r.party, r.method || '', r.note]));
       if(aoa.length === 1) aoa.push(['','','','','','','']);
     }else if(kind === 'man'){
       workersAll.forEach(w => aoa.push([w.pno || '', w.sort, w.name, w.role,
@@ -45254,6 +45637,10 @@
     }
     const wb = XLSX.utils.book_new();
     const sh = XLSX.utils.aoa_to_sheet([[cfg.sheet + ' — ' + d]].concat([[]]).concat(aoa));
+    if(kind === 'daily' || kind === 'ot' || kind === 'man'){
+      const tc = cfg.cols.map((c, i) => (/^(ورود|خروج|شروع|پایان)$/.test(c) ? i : -1)).filter(i => i >= 0);
+      wrkXlsTypes(sh, tc, [cfg.cols.indexOf('کد پرسنلی')], 2);
+    }
     sh['!cols'] = cfg.cols.map((c, i) => ({wch: i === 2 ? 22 : (i === 4 ? 40 : 12)}));
     XLSX.utils.book_append_sheet(wb, sh, cfg.sheet);
     XLSX.writeFile(wb, (kind === 'ot' ? 'اضافه کاری کارگران - '
@@ -45289,6 +45676,7 @@
         src: String(r[col('مبدأ انتقال')] || '').trim(),
         dst: String(r[col('مقصد انتقال')] || '').trim(),
         party: String(r[col('طرف انتقال')] || '').trim(),
+        method: col('نحوهٔ انتقال بار') >= 0 ? String(r[col('نحوهٔ انتقال بار')] || '').trim() : '',
         note: String(r[col('توضیحات')] || '').trim()
       })).filter(x => x.material);
       if(!wrkMat.length) wrkMat = [{material:'', qty:'', unit:'', src:'', dst:'', party:'', note:'', who: wrkMe()}];
@@ -45922,18 +46310,26 @@
           : (pno || ('X' + String(workersAll.length + 1).padStart(3,'0')));
         try{
           let st;
-          const pl = {pno: pno, join: jd, leave: ld, pay: payV, fine: fineV, periods: pers};
+          /* جریمه جدا می‌رود، برای تأیید سرپرست کارگاه */
+          const fineOld = w ? String(w.fine == null ? '' : w.fine) : '';
+          const fineChanged = String(fineV) !== fineOld && !(w == null && fineV === '');
+          const pl = {pno: pno, join: jd, leave: ld, pay: payV, periods: pers};
+          if(!fineChanged && w) pl.fine = fineV;
           if(!w) st = await wrkRequest({kind:'add', worker_code:code, worker_name:nm,
               new_role:role, payload: pl});
           else if(String(w.role || '') !== role || nameKey(w.name) !== nameKey(nm)
                   || String(w.pno || '') !== pno
                   || String(w.joinDate || '') !== jd || String(w.leftDate || '') !== ld
                   || JSON.stringify(wrkPeriodsOf(w)) !== JSON.stringify(pers)
-                  || String(w.pay == null ? '' : w.pay) !== String(payV)
-                  || String(w.fine == null ? '' : w.fine) !== String(fineV))
+                  || String(w.pay == null ? '' : w.pay) !== String(payV))
             st = await wrkRequest({kind:'role', worker_id: w.id || null, worker_code: w.code || code,
               worker_name: nm, old_role: w.role || '', new_role: role, payload: pl});
-          else { showDialog('ok','تغییری نبود','چیزی عوض نشده است.'); return; }
+          else if(!fineChanged){ showDialog('ok','تغییری نبود','چیزی عوض نشده است.'); return; }
+          let fineSt = '';
+          if(fineChanged){
+            fineSt = await wrkFineRequest(w, fineV, code, nm);
+            if(!st) st = fineSt;
+          }
           const said = [
             jd ? 'از ' + jd : '',
             ld ? 'تا ' + ld : '',
@@ -45942,6 +46338,7 @@
           ].filter(Boolean).join(' · ');
           showDialog('ok', st === 'done' ? 'اعمال شد' : 'ثبت شد',
             (st === 'done' ? 'تغییر ثبت شد.' : 'درخواست برای تأیید ادمین ثبت شد.')
+            + (fineSt === 'pending' ? '\nجریمه برای تأیید سرپرست کارگاه فرستاده شد.' : '')
             + (said ? '\n' + said : ''));
           if(st === 'done') await wrkLoadWorkers(true);
           await wrkRender();
@@ -45986,6 +46383,7 @@
         const id = (ok2 || no2).dataset.wok || (ok2 || no2).dataset.wno;
         const c = wrkPending.find(x => String(x.id) === String(id));
         if(!c) return;
+        if(isFineReq(c)){ await wrkFineDecide(id, !!ok2); await wrkRender(); return; }
         const me = wrkMe();
         try{
           if(ok2) await wrkApply(c);
