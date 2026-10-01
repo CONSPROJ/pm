@@ -1996,7 +1996,10 @@
   #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-head > b{font-size:12.5px !important;font-weight:900;color:var(--ink) !important;}
   #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-head .n{margin:0 !important;background:var(--field) !important;color:var(--muted) !important;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;border:none;}
   #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-head .ss-ar{display:inline-block !important;margin-inline-start:auto;color:var(--muted);font-size:11px;}
-  #panelTasks #taskView .eng.open > .eng-body > .done-cat:not(.open) > .subsec-body{display:none !important;}
+  /* «تکمیل‌شده» مثل «فعالیت‌های باز» همیشه باز است؛ سرتیترش فقط عنوان است */
+  #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-body{display:grid !important;}
+  #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-head{pointer-events:none;cursor:default;}
+  #panelTasks #taskView .eng.open > .eng-body > .done-cat > .subsec-head .ss-ar{display:none !important;}
 
   /* پایین صفحه، مثل نوار بخش اداری: نه جلوی محتوا را می‌گیرد، نه
      برای رسیدن به دکمه باید تا بالای فهرست اسکرول کرد. */
@@ -8687,6 +8690,11 @@
   .adm-grp-head .grp-ar{margin-inline-start:auto;font-size:10px;color:var(--muted);}
   .adm-grp-body{display:none;padding:4px 10px 10px;border-top:1px solid var(--line-soft);}
   .adm-grp.open > .adm-grp-body{display:block;}
+  /* زیرپنجرهٔ وضعیت بررسی داخل هر وضعیت ابلاغ: سبک‌تر و تو رفته */
+  .adm-grp.adm-sub{margin:8px 0 0;border-radius:12px;background:var(--surface);}
+  .adm-grp.adm-sub > .adm-grp-head{min-height:40px !important;padding:6px 10px !important;}
+  .adm-grp.adm-sub > .adm-grp-head b{font-size:12px !important;}
+  .adm-grp.adm-sub > .adm-grp-body{padding:2px 6px 8px;}
   .adm-grp.open > .adm-grp-head{box-shadow:inset 3px 0 0 var(--gc);}
   .adm-grp-body > .adm-list-grid:first-child,
   .adm-grp-body > .zone-head:first-child{margin-top:8px;}
@@ -9001,7 +9009,9 @@
   .pgx-sl span:last-child{transform:translateX(70%);}
   .pgx-m{margin-top:6px;font-size:10.5px;color:var(--muted);}
   .pgx .tp-hist{margin-top:6px;}
-  @container (max-width: 400px){ .pgx-sl span:not(.on):not(:last-child){opacity:0;} .pgx-v{font-size:18px;} }
+  /* زیر دایره‌ها فقط درصد؛ کوتاه است و همه دیده می‌شوند */
+  .pgx-sl span{font-family:var(--m);font-size:10px;}
+  @container (max-width: 400px){ .pgx-v{font-size:18px;} }
   /* موانع روی خود نمودار گردش */
   .adm-ms .ms-tb{--c:var(--alert);position:absolute;top:-2px;z-index:4;width:18px;height:18px;margin-inline-start:-9px;padding:0;
     border-radius:7px;display:grid;place-items:center;cursor:pointer;color:#fff;background:var(--c);
@@ -13083,6 +13093,9 @@
   }
   #wrkBody .wk-ring b u{text-decoration:none;font-size:9px;color:var(--muted);margin-inline-start:1px;}
   #wrkBody .wk-sum-tx{grid-area:tx;display:flex;flex-direction:column;gap:3px;min-width:0;}
+  /* «مسئولان امروز» هم تمام‌عرض زیر فیلترهاست؛ پیش‌تر در ستون حلقه می‌نشست و
+     متن کنار حلقه را باریک و پنجره را بلند می‌کرد */
+  #wrkBody .wk-sum > *:not(.wk-ring):not(.wk-sum-tx){grid-column:1 / -1;min-width:0;}
   #wrkBody .wk-sum-tx b{font-size:14px;font-weight:800;letter-spacing:-.2px;color:var(--ink);}
   #wrkBody .wk-sum-tx span{font-size:11.5px;color:var(--muted);}
   #wrkBody .wk-filters{
@@ -36153,12 +36166,12 @@
        دو طرف موعد یک بازه‌اند: یک برچسب، یک رنگ و یک درخشش سراسری. */
     /* تاریخ زیر دورِ بررسی وقتی همان تاریخِ نقطهٔ پیش از آن است، تکراری
        است و روی برچسب همان نقطه می‌افتاد */
-    items = items.map((x, q) => {
-      const pv = items[q - 1];
-      if(x && x.ln && x.round && x.from && pv && !pv.ln && pv.d
-         && admDate(pv.d) === admDate(x.from)) return Object.assign({}, x, {hideRdt:true});
-      return x;
-    });
+    const dk = v => toEn(faDateOf(v) || String(v || ''));
+    const ptDates = new Set(items.filter(x => x && !x.ln && x.d).map(x => dk(x.d)));
+    const hideRd = x => (x && x.ln && x.round && x.from && ptDates.has(dk(x.from)))
+      ? Object.assign({}, x, {hideRdt:true}) : x;
+    items = items.map(x => (x && x.grp && Array.isArray(x.items))
+      ? Object.assign({}, x, {items: x.items.map(hideRd)}) : hideRd(x));
     const merged = [];
     for(let q = 0; q < items.length; q++){
       const a = items[q], d = items[q + 1], b2 = items[q + 2];
@@ -36749,7 +36762,7 @@
       +   (o.editId ? '<button type="button" class="pgx-e tp-edit" data-tpedit="' + esc(o.editId) + '">ویرایش</button>' : '')
       + '</div>'
       + '<div class="pgx-bar"><i class="pgx-f" style="width:' + fillAt.toFixed(2) + '%"></i>' + steps.map(tick).join('') + '</div>'
-      + (steps.length ? '<div class="pgx-sl">' + steps.map((x, i) => '<span class="' + (p >= x[1] ? 'on' : '') + '" style="inset-inline-start:' + posOf(i).toFixed(2) + '%">' + esc(x[0]) + '</span>').join('') + '</div>' : '')
+      + (steps.length ? '<div class="pgx-sl">' + steps.map((x, i) => '<span class="' + (p >= x[1] ? 'on' : '') + '" style="inset-inline-start:' + posOf(i).toFixed(2) + '%">' + toFa(x[1]) + '٪</span>').join('') + '</div>' : '')
       + (o.meta ? '<div class="pgx-m">' + o.meta + '</div>' : '')
       + (o.hist || '')
       + '</div>';
@@ -40011,37 +40024,62 @@
     return rows.slice().sort((a, b) =>
       (admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0));
   }
+  /* صورت وضعیت، قرارداد و نامه: زیرپنجره‌ها بر اساس «وضعیت بررسی»،
+     به ترتیب مسیر گردش (تنظیم ← داخلی ← پیمانکار ← کارفرما ← تأیید ←
+     پرداخت، و ردها در انتها). بقیه همان وضعیت ابلاغ. */
+  const ADM_BY_REVIEW = ['statement', 'contract', 'letter'];
+  const RV_GRP_ORDER = ['در حال تنظیم','بررسی داخلی','تأیید داخلی','بررسی پیمانکار','تأیید پیمانکار',
+    'بررسی کارفرما','تایید شده','پرداخت شده','رد داخلی','رد پیمانکار','رد کارفرما'];
+  const rvGrpMeta = v => {
+    if(!v) return {t:'بدون وضعیت بررسی', c:'off'};
+    if(REVIEW_BAD.indexOf(v) !== -1) return {t:v, c:'bad'};
+    if(REVIEW_OK.indexOf(v) !== -1) return {t:v === 'تایید شده' ? 'تأیید نهایی' : v, c:'ok'};
+    if(v === RV_DRAFT) return {t:v, c:'warn'};
+    return {t:v, c:'info'};
+  };
   function admGroupsHtml(kind, rows, bodyHtml){
     rows = admSortDoneLast(kind, rows);
-    const byN = new Map();
-    rows.forEach(row => {
-      const v = String(admNotify(kind, row) || '').trim();
-      if(!byN.has(v)) byN.set(v, []);
-      byN.get(v).push(row);
-    });
-    // مقدارهای ناشناخته، پیش از «بدون وضعیت»
-    const extra = Array.from(byN.keys()).filter(v => ADM_FLOW.indexOf(v) === -1);
-    const keys = ADM_FLOW.slice(0, -1).concat(extra, ['']).filter(v => byN.has(v));
-
+    const byRv = ADM_BY_REVIEW.indexOf(kind) !== -1;
+    const groupBy = (list, valOf, FLOW) => {
+      const m = new Map();
+      list.forEach(row => {
+        const v = String(valOf(row) || '').trim();
+        if(!m.has(v)) m.set(v, []);
+        m.get(v).push(row);
+      });
+      // مقدارهای ناشناخته، پیش از «بدون وضعیت»
+      const extra = Array.from(m.keys()).filter(v => FLOW.indexOf(v) === -1);
+      return FLOW.slice(0, -1).concat(extra, ['']).filter(v => m.has(v)).map(v => [v, m.get(v)]);
+    };
     const narrowing = !!(qAdmin || elVal('fAdmOwner') || elVal('fAdmParty') || elVal('fAdmNotify'));
-    return keys.map(v => {
-      const list = byN.get(v);
-      const meta = ADM_FLOW_META[v] || {t: notifyLabel(v) || v, c:'off'};
-      const key = kind + '|' + v;
+    const grpHtml = (key, meta, list, inner, sub) => {
       /* در نمای کارتی پیش‌فرض بسته است؛ در فهرست سریع باز، چون همان
-         «همه را یک‌جا ببینم» دلیلِ وجودِ این نماست. */
-      const open = (narrowing || admView === 'fast')
+         «همه را یک‌جا ببینم» دلیلِ وجودِ این نماست. زیرپنجره‌های وضعیت
+         بررسی پیش‌فرض بازند تا یک لایه کلیکِ اضافه نسازند. */
+      const open = (sub || narrowing || admView === 'fast')
         ? (admGrpOpen.get(key) !== false)
         : (admGrpOpen.get(key) === true);
-      return '<div class="adm-grp g-' + meta.c + (open ? ' open' : '') + '" data-grp="' + esc(key) + '">'
+      return '<div class="adm-grp' + (sub ? ' adm-sub' : '') + ' g-' + meta.c + (open ? ' open' : '') + '" data-grp="' + esc(key) + '">'
         + '<button type="button" class="adm-grp-head" aria-expanded="' + open + '">'
         +   '<i class="gd" aria-hidden="true"></i>'
         +   '<span class="g-tx"><b>' + esc(meta.t) + '</b></span>'
         +   '<span class="gn">' + toFa(list.length) + ' مورد</span>'
         +   '<span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>'
         + '</button>'
-        + '<div class="adm-grp-body">' + admByPartyHtml(kind, list, bodyHtml) + '</div>'
+        + '<div class="adm-grp-body">' + inner + '</div>'
         + '</div>';
+    };
+    /* لایهٔ اصلی همیشه وضعیت ابلاغ است (درون‌سازمانی، برون‌سازمانی …).
+       در صورت وضعیت، قرارداد و نامه، داخل هر کدام زیرپنجره‌های «وضعیت
+       بررسی» می‌آیند و داخل آن‌ها طرف قرارداد. */
+    return groupBy(rows, row => admNotify(kind, row), ADM_FLOW).map(([v, list]) => {
+      const meta = ADM_FLOW_META[v] || {t: notifyLabel(v) || v, c:'off'};
+      const key = kind + '|' + v;
+      const inner = byRv
+        ? groupBy(list, row => effectiveReview(row), RV_GRP_ORDER.concat([''])).map(([rv, l2]) =>
+            grpHtml(key + '|rv:' + rv, rvGrpMeta(rv), l2, admByPartyHtml(kind, l2, bodyHtml), true)).join('')
+        : admByPartyHtml(kind, list, bodyHtml);
+      return grpHtml(key, meta, list, inner, false);
     }).join('');
   }
   /* داخل هر زیرپنجرهٔ وضعیت، موارد به تفکیک طرف قرارداد (پیمانکار)
@@ -43051,7 +43089,7 @@
     return '<div class="tk-cat open-cat"><div class="tk-cath"><span class="ic">' + OP + '</span><b>فعالیت‌های باز</b><u>' + toFa(op.length) + '</u></div>'
       + (op.length ? personSectionsHtml(op) : '<div class="tk-catnone">کار بازی نمانده است.</div>') + '</div>'
       + (dn.length
-          ? '<div class="subsec tk-cat done-cat">'
+          ? '<div class="subsec tk-cat done-cat open">'
             + '<button type="button" class="subsec-head"><span class="ss-ico">' + CK + '</span><b>تکمیل‌شده</b>'
             + '<span class="n">' + toFa(dn.length) + ' مورد</span><span class="ss-ar">▾</span></button>'
             + '<div class="subsec-body">' + personSectionsHtml(dn) + '</div></div>'
