@@ -2496,7 +2496,8 @@
   .adm-ms .ms-i{--c:var(--c-i);} .adm-ms .ms-p{--c:var(--c-p);} .adm-ms .ms-c{--c:var(--c-c);}
   .adm-ms .ms-ok{--c:var(--c-ok);} .adm-ms .ms-pay{--c:var(--c-pay);} .adm-ms .ms-bad{--c:var(--c-bad);}
   .adm-ms .ms-due{--c:var(--c-due);}
-  .adm-ms .ms-due.t-warn{--c:var(--warn);} .adm-ms .ms-due.t-bad{--c:var(--c-bad);}
+  .adm-ms .ms-due.t-warn{--c:var(--warn);} .adm-ms .ms-due.t-bad{--c:var(--c-bad);} .adm-ms .ms-due.t-ok{--c:var(--c-ok);}
+  .adm-ms .ms-pt.due.t-flat small{color:var(--muted);font-weight:600;}
   .adm-ms .ms-pt.rej{--c:var(--c-bad);}
   .adm-ms .ms-pt i{
     position:absolute;inset:1px;border-radius:50%;
@@ -2544,7 +2545,7 @@
 
   /* خط */
   .adm-ms .ms-ln{
-    flex:1 1 0;min-width:56px;height:14px;position:relative;z-index:1;
+    flex:1 1 0;min-width:64px;height:14px;position:relative;z-index:1;
     animation:ms-in .5s ease-out both;animation-delay:calc(var(--i) * 45ms);
   }
   .adm-ms .ms-bar{
@@ -2626,6 +2627,8 @@
   .ms-pedit{display:inline-flex;align-items:center;gap:5px;margin-inline-start:8px;padding:4px 10px;border-radius:999px;
     border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11px;cursor:pointer;}
   .ms-pedit:hover{color:var(--sky);border-color:var(--sky);}
+  .ms-pedit{white-space:nowrap;flex:0 0 auto;}
+  @container (max-width: 400px){ .ms-pedit span{display:none;} .ms-pedit{padding:5px 7px;} }
   .ms-pedit svg{width:13px;height:13px;}
   #pathEditModal{z-index:210;align-items:center;justify-content:center;}
   #pathEditModal .pe-modal{width:min(96vw, 620px);max-height:90vh;overflow:auto;}
@@ -2639,20 +2642,8 @@
   .pe-acts{display:flex;gap:8px;margin-top:12px;} .pe-acts .send{flex:1 1 auto;}
   @media (max-width:520px){ .pe-head{display:none;} .pe-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;}
     .pe-row .pe-by{grid-column:1 / 3;} }
-  /* درصد پیشرفت صورت وضعیت و قرارداد */
-  .adm-pct{display:flex;align-items:center;gap:10px;margin:6px 0 4px;}
-  .adm-pct > b{flex:0 0 auto;min-width:40px;font-size:13px;font-weight:900;color:var(--sky-deep, var(--sky));}
-  .adm-pct .ap-bar{position:relative;flex:1 1 auto;height:8px;border-radius:8px;background:color-mix(in srgb, var(--line) 80%, transparent);overflow:visible;}
-  .adm-pct .ap-bar > i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:8px;
     background:linear-gradient(90deg, var(--sky), var(--sky-deep, var(--sky)));transition:width .5s ease;}
-  .adm-pct.full .ap-bar > i{background:linear-gradient(90deg, var(--ok), var(--c-pay, var(--ok)));}
-  .adm-pct.full > b{color:var(--ok);}
-  .adm-pct.rej .ap-bar > i{background:linear-gradient(90deg, var(--warn), var(--alert));}
-  .adm-pct.rej > b{color:var(--alert);}
-  .adm-pct .ap-bar > s{position:absolute;top:50%;width:6px;height:6px;margin-inline-start:-3px;transform:translateY(-50%);
     border-radius:50%;background:var(--surface);border:1.5px solid var(--line);box-sizing:border-box;}
-  .adm-pct .ap-bar > s.on{border-color:var(--surface);background:rgba(255,255,255,.85);}
-  .adm-pct .ap-bar > s:last-child{display:none;}
 
   /* خطِ طولانی‌تر از سقف مرحله: زرد و قرمز، با درخشش ملایم */
   .adm-ms .ms-ln.t-warn .ms-bar{
@@ -2821,16 +2812,17 @@
   .adm-ms .ms-span.live::after{content:"";position:absolute;inset-inline:0;top:4.5px;height:5px;border-radius:3px;z-index:1;pointer-events:none;
     background:linear-gradient(to left, transparent 0%, rgba(255,255,255,.85) 50%, transparent 100%);
     background-size:30% 100%;background-repeat:no-repeat;animation:ms-shine 2.4s ease-in-out infinite;}
-  @container (max-width: 400px){ .adm-ms .ms-span{min-width:88px;} .adm-ms .ms-span > .ms-ln{min-width:22px;} }
-  /* کارت باریک (موبایل): مقصدِ نیامده («پرداخت» خط‌چین) کنار می‌رود تا
-     مسیر در کارت جا شود و بریده نشود */
+  /* کارت باریک (موبایل): هیچ مرحله‌ای پنهان نمی‌شود و خط‌ها آن‌قدر
+     فشرده نمی‌شوند که برچسب‌ها روی هم بروند؛ اگر جا نشد، مسیر افقی
+     اسکرول می‌خورد و خودش روی مرحلهٔ فعلی می‌ایستد. */
   .adm-ms{container-type:inline-size;}
   @container (max-width: 400px){
-    .adm-ms .ms-pt.ghost, .adm-ms .ms-ln.ahead:has(+ .ms-pt.ghost){display:none;}
-    .adm-ms .ms-track, .adm-ms.tk-ms .ms-track{padding-inline:22px;}
-    .adm-ms .ms-track .ms-rds{min-width:calc(var(--n, 2) * 54px);}
-    .adm-ms .ms-track .ms-ln.rd{min-width:50px;}
-    .adm-ms .ms-track .ms-ln:not(.rd){min-width:26px;}
+    .adm-ms .ms-track, .adm-ms.tk-ms .ms-track{padding-inline:30px;}
+    .adm-ms .ms-track .ms-rds{min-width:calc(var(--n, 2) * 64px);flex-shrink:0;}
+    .adm-ms .ms-track .ms-ln.rd{min-width:62px;}
+    .adm-ms .ms-track .ms-ln:not(.rd){min-width:66px;flex-shrink:0;}
+    .adm-ms .ms-track .ms-span{min-width:140px;flex-shrink:0;}
+    .adm-ms .ms-track .ms-span > .ms-ln{min-width:50px;}
     .adm-ms .ms-rsum{inset-inline:18px;}
     .adm-ms .ms-rsum span{font-size:9px;padding:1px 6px;}
     .adm-ms .ms-rsum span b{font-size:10px;}
@@ -8886,6 +8878,43 @@
   .tp-meta{margin-top:6px;font-size:10.5px;color:var(--muted);}
   .tp-hrow{display:flex;justify-content:space-between;gap:8px;padding:4px 2px;font-size:11.5px;border-bottom:1px dashed var(--line);}
   .tp-hrow b{font-family:var(--m);}
+  /* نوار پیشرفت یکپارچه */
+  .pgx{--pc:var(--sky);margin-top:10px;padding:11px 12px 10px;border-radius:14px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--pc) 6%, var(--surface)), var(--surface));
+    border:1px solid color-mix(in srgb, var(--pc) 18%, var(--line));}
+  .pgx.t-ok{--pc:var(--ok);} .pgx.t-low{--pc:var(--warn, #c98a1b);} .pgx.t-rej{--pc:var(--alert);}
+  .adm-ms > .pgx{margin:2px -2px 6px;}
+  .pgx-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .pgx-l{font-size:11px;font-weight:700;color:var(--muted);}
+  .pgx-v{font-family:var(--m);font-size:20px;font-weight:900;line-height:1;color:var(--pc);letter-spacing:-.5px;}
+  .pgx-v small{font-size:12px;font-weight:800;margin-inline-start:1px;}
+  .pgx-s{font-size:11px;font-weight:700;color:var(--ink);padding:2px 9px;border-radius:999px;
+    background:color-mix(in srgb, var(--pc) 12%, transparent);}
+  .pgx-a{font-size:10px;color:var(--muted);border:1px dashed var(--line);padding:1px 7px;border-radius:999px;}
+  .pgx-e{margin-inline-start:auto;height:26px;padding:0 11px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);font-family:var(--f);font-size:11px;font-weight:700;cursor:pointer;align-self:center;}
+  .pgx-e:hover{border-color:var(--pc);color:var(--pc);}
+  .pgx-bar{position:relative;margin:12px 6px 0;height:8px;border-radius:999px;
+    background:color-mix(in srgb, var(--ink) 8%, transparent);}
+  .pgx-f{position:absolute;inset-block:0;inset-inline-start:0;border-radius:999px;
+    background:linear-gradient(to left, color-mix(in srgb, var(--pc) 60%, #fff), var(--pc));
+    box-shadow:0 2px 10px -2px color-mix(in srgb, var(--pc) 60%, transparent);transition:width .5s cubic-bezier(.3,.7,.3,1);}
+  .pgx-t{position:absolute;top:50%;width:12px;height:12px;margin-inline-start:-6px;transform:translateY(-50%);padding:0;
+    border-radius:50%;background:var(--surface);border:2px solid color-mix(in srgb, var(--ink) 18%, transparent);box-sizing:border-box;z-index:1;}
+  .pgx-t.on{border-color:var(--pc);background:color-mix(in srgb, var(--pc) 25%, var(--surface));}
+  .pgx-t.cur{width:16px;height:16px;margin-inline-start:-8px;background:var(--pc);border-color:var(--surface);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--pc) 28%, transparent);}
+  button.pgx-t{cursor:pointer;transition:transform .15s;}
+  button.pgx-t:hover{transform:translateY(-50%) scale(1.25);}
+  .pgx.busy{opacity:.6;pointer-events:none;}
+  .pgx-sl{position:relative;height:16px;margin:6px 6px 0;}
+  .pgx-sl span{position:absolute;top:0;transform:translateX(50%);font-size:9.5px;color:var(--muted);white-space:nowrap;}
+  .pgx-sl span.on{color:var(--ink);font-weight:700;}
+  .pgx-sl span:first-child{transform:translateX(30%);}
+  .pgx-sl span:last-child{transform:translateX(70%);}
+  .pgx-m{margin-top:6px;font-size:10.5px;color:var(--muted);}
+  .pgx .tp-hist{margin-top:6px;}
+  @container (max-width: 400px){ .pgx-sl span:not(.on):not(:last-child){opacity:0;} .pgx-v{font-size:18px;} }
   .tp-form{margin-top:10px;padding:10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
   .tp-range{width:100%;accent-color:var(--sky);}
   .tp-qs{display:flex;gap:6px;flex-wrap:wrap;}
@@ -8895,6 +8924,9 @@
   .tp-show{font-family:var(--m);font-weight:800;font-size:15px;margin-inline-end:auto;}
   /* ====== موانع فعالیت ====== */
   .tb-sec{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--field);border:1px solid var(--line);}
+  /* بدون مانع باز: یک سطر کم‌جا، نه یک پنجرهٔ کامل */
+  .tb-sec:not(.has){padding:6px 10px;background:transparent;border-style:dashed;}
+  .tb-sec:not(.has) .tb-h b{font-size:11.5px;font-weight:700;color:var(--muted);}
   .tb-sec.has{background:color-mix(in srgb, var(--alert) 6%, var(--surface));border-color:color-mix(in srgb, var(--alert) 22%, var(--line));}
   .tb-h{display:flex;align-items:center;gap:8px;}
   .tb-h b{font-size:12.5px;font-weight:800;color:var(--ink);}
@@ -13788,7 +13820,7 @@
   }
   #panelTasks #taskView .line.has-age > *:not(.line-rail){grid-column:1 / -1;min-width:0;}
   #panelTasks #taskView .line.has-age > .st-btns{margin-top:8px;}
-  #panelTasks #taskView .line.has-age:hover{transform:translateY(-1px);box-shadow:0 16px 30px -24px rgba(15,20,35,.6);}
+  #panelTasks #taskView .line.has-age:hover{box-shadow:0 16px 30px -24px rgba(15,20,35,.6);}
   @media(min-width:760px){
     #panelTasks #taskView .line.has-age{padding-left:66px !important;}
     #panelTasks #taskView .line.has-age > .top{padding-left:0 !important;}
@@ -15845,7 +15877,13 @@
   .lc2-l.am{stroke:var(--ok);stroke-width:2;}
   .lc2-l.pe{stroke:var(--sky);stroke-width:2;}
   .lc2-avg{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;opacity:.8;}
-  .lc2-avgl{position:absolute;left:4px;transform:translateY(-120%);font-size:9.5px;font-weight:700;color:var(--muted);background:var(--canvas);padding:0 4px;border-radius:5px;pointer-events:none;}
+  .lc2-avgk{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin:0 0 4px;font-size:10px;font-weight:600;color:var(--muted);}
+  .lc2-avgk i{width:14px;border-top:1.5px dashed color-mix(in srgb, var(--ink) 45%, transparent);}
+  .lc2-avgk b{font-family:var(--m);color:var(--ink);font-weight:800;}
+  .lc2-gl.lc2-gavg{border-top-color:transparent;}
+  /* جایی که راهنمای «میانگین» از قبل بالای نمودار هست، تکرار نشود */
+  .rc-legend:has(.lg.avg) + .lc2 .lc2-avgk, .rc-legend:has(.lg.avg) ~ .lc2 .lc2-avgk{display:none;}
+  .lc2-gl.lc2-gavg u{font-weight:800;color:var(--ink);background:var(--canvas);border-radius:4px;padding:0 2px;}
   .lc2-dot{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--surface);border:2px solid var(--ink);pointer-events:none;transition:transform .15s;}
   .lc2-dot.hi{border-color:var(--sky);background:var(--sky);}
   .lc2-dot.on{transform:scale(1.6);background:var(--ink);}
@@ -16223,7 +16261,7 @@
   .lc2.single .lc2-dot.on{background:var(--sky);}
   .lc2-dot.z{border-color:var(--alert) !important;background:var(--alert) !important;width:6px;height:6px;margin:-3px 0 0 -3px;}
   .lc2.lc2-mini .lc2-plot{height:160px;}
-  .lc2.lc2-mini .lc2-avgl{display:none;}
+  .lc2.lc2-mini .lc2-avgk{display:none;}
   @media (max-width: 640px){ .lc2.lc2-mini .lc2-plot{height:130px;} }
 
   .um2{--lvC:#b0703a;}
@@ -28177,8 +28215,12 @@
     const ticks = [0, 0.5, 1].map(f => Math.round(max * f));
     const hiI = tot.indexOf(Math.max(...tot));
     return '<div class="lc2' + (opt.single ? ' single' : '') + (opt.ltr ? ' ltr' : '') + (opt.cls ? ' ' + opt.cls : '') + '" data-lc2="1"' + (opt.single ? ' data-single="1"' : '') + '>'
+      /* میانگین بیرون از نمودار: عددش روی محور کنار خط‌چین، و راهنمایش بالای نمودار — روی نقطه‌ها نمی‌افتد */
+      + (avg ? '<div class="lc2-avgk"><i></i>میانگین <b>' + toFa(avg) + '</b></div>' : '')
       + '<div class="lc2-plot">'
-      +   ticks.map(v => '<span class="lc2-gl" style="top:' + (yAt(v) / H * 100).toFixed(2) + '%"><u>' + toFa(v) + '</u></span>').join('')
+      +   ticks.filter(v => !avg || Math.abs(yAt(v) - yAt(avg)) > H * 0.07)
+            .map(v => '<span class="lc2-gl" style="top:' + (yAt(v) / H * 100).toFixed(2) + '%"><u>' + toFa(v) + '</u></span>').join('')
+      +   (avg ? '<span class="lc2-gl lc2-gavg" style="top:' + (yAt(avg) / H * 100).toFixed(2) + '%"><u>' + toFa(avg) + '</u></span>' : '')
       +   '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
       +     '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">'
       +       '<stop offset="0" stop-color="var(--sky)" stop-opacity=".28"/><stop offset="1" stop-color="var(--sky)" stop-opacity="0"/>'
@@ -28189,7 +28231,6 @@
       +       '<path class="lc2-l am" d="' + pathOf(split.map(x => x.am)) + '"/>')
       +     '<path class="lc2-l tot" d="' + pathOf(tot) + '"/>'
       +   '</svg>'
-      +   (avg ? '<span class="lc2-avgl" style="top:' + (yAt(avg) / H * 100).toFixed(2) + '%">میانگین ' + toFa(avg) + '</span>' : '')
       +   split.map((x, i) => (tot[i] || opt.zeros)
             ? '<i class="lc2-dot' + (i === hiI ? ' hi' : '') + (tot[i] ? '' : ' z') + '" data-i="' + i + '" style="left:' + xAt(i).toFixed(2) + '%;top:' + (yAt(tot[i]) / H * 100).toFixed(2) + '%"></i>'
             : '').join('')
@@ -29179,8 +29220,10 @@
   }
 
   /* کارت یک پیمانکار برای یک بازهٔ دلخواه (امروز، ۷ یا ۳۰ روز) */
-  async function hrCardFor(name, mode){
-    const d = lastDate || normDate(dateInput.value) || todayShamsi();
+  async function hrCardFor(name, mode, ref){
+    /* ref: تاریخ پایان بازه. کارت پیمانکار (پنجره) مستقل از روزِ انتخاب‌شده
+       در گزارش، همیشه تا امروز حساب می‌شود. */
+    const d = ref || lastDate || normDate(dateInput.value) || todayShamsi();
     let adm = lastAdminDay;
     if(!adm){ try{ adm = (await fetchBundle(d)).admin; }catch(e){} }
     let rows = [], dates = rangeDates(d, mode);
@@ -29258,8 +29301,11 @@
     function onEsc(ev){ if(ev.key === 'Escape') close(); }
     document.addEventListener('keydown', onEsc);
 
+    /* مستقل از بازه و روزِ باز در گزارش: پیش‌فرض ۳۰ روزِ منتهی به امروز */
+    const ctRef = todayShamsi();
     let card = null;
-    try{ card = await findHrCard(name); }catch(e){ card = null; }
+    try{ card = await hrCardFor(name, 'month', ctRef); }catch(e){ card = null; }
+    if(!card){ try{ card = await findHrCard(name); }catch(e){ card = null; } }
     if(!document.body.contains(bg)) return;      // کاربر زودتر بسته است
 
     const body = bg.querySelector('.ct-body');
@@ -29270,7 +29316,7 @@
 
     /* بازهٔ کارکرد: امروز، ۷ روز یا ۳۰ روز. کارت با دادهٔ همان بازه از
        نو ساخته می‌شود و زبانهٔ باز (خلاصه، کارکرد، مالی) سر جایش می‌ماند. */
-    let ctMode = (typeof rangeMode !== 'undefined' && (rangeMode === 'week' || rangeMode === 'month')) ? rangeMode : 'day';
+    let ctMode = 'month';
     const rangeBar = () => '<div class="ct-range" role="group" aria-label="بازهٔ کارکرد">'
       + '<u>بازهٔ کارکرد</u>'
       + [['day','امروز'],['week','۷ روز'],['month','۳۰ روز']].map(([m, lb]) =>
@@ -29292,7 +29338,7 @@
     };
     paint(card);
 
-    const cardFor = mode => hrCardFor(name, mode);
+    const cardFor = mode => hrCardFor(name, mode, ctRef);
     if(body) body.addEventListener('click', async ev => {
       const rb = ev.target.closest('[data-ctrange]');
       if(!rb || rb.classList.contains('on')) return;
@@ -30730,7 +30776,8 @@
         const k = zoneKey(pick(r,F.zone));
         taken.set(k, (taken.get(k) || 0) + num(pick(r,F.ostad)) + num(pick(r,F.shagerd)));
       });
-      groups.forEach((g, i) => {
+      /* گذر اول: نیروی امانیِ مهندس‌ها از همان محل کم می‌شود */
+      const gs = groups.map((g, i) => {
         let o = g.o, s = g.s;
         const k = zoneKey(g.zone);
         let t = taken.get(k) || 0;
@@ -30740,7 +30787,24 @@
           const co = Math.min(o, t); o -= co; t -= co;
           taken.set(k, t);
         }
-        const cut = t0 - t;
+        return {g, i, o, s, cut: t0 - t};
+      });
+      /* گذر دوم: امانی‌ای که مهندس با نام محل دیگری نوشته (و در گذر اول
+         جفت نشد) هم از جمع همان روز کم می‌شود؛ وگرنه در گزارش هفتگی و
+         ماهانه همان نفرات دو بار شمرده می‌شدند. اول از «محل ثبت نشده»،
+         بعد از بزرگ‌ترین گروه‌ها. جمع امانی روز = بیشینهٔ گزارش کارگری و
+         گزارش مهندس‌ها. */
+      let left = Array.from(taken.values()).reduce((a, b) => a + b, 0);
+      if(left > 0){
+        const order = gs.slice().sort((x, y) => ((y.g.zone === 'محل ثبت نشده') - (x.g.zone === 'محل ثبت نشده')) || ((y.o + y.s) - (x.o + x.s)));
+        for(const x of order){
+          if(left <= 0) break;
+          const cs = Math.min(x.s, left); x.s -= cs; left -= cs;
+          const co = Math.min(x.o, left); x.o -= co; left -= co;
+          x.cut += cs + co;
+        }
+      }
+      gs.forEach(({g, i, o, s, cut}) => {
         if(!(o + s)) return;
         const mix = Array.from(g.roles, ([rl, n]) => toFa(n) + ' ' + rl).join('، ');
         out.push({
@@ -35724,7 +35788,7 @@
       + '</span>';
   }
 
-  function msTrackHtml(head, items, extraCls){
+  function msTrackHtml(head, items, extraCls, foot){
     let n = 0;
     const lnHtml = x => {
       const i = n++;
@@ -35808,7 +35872,7 @@
       return ptHtml(x);
     }).join('');
     return '<div class="adm-ms' + (extraCls ? ' ' + extraCls : '') + '">' + head
-      + '<div class="ms-track">' + body + '</div></div>';
+      + '<div class="ms-track">' + body + '</div>' + (foot || '') + '</div>';
   }
 
   /* مسیرهایی که از کارت بزرگ‌ترند: نشانِ ovf برای محو شدن لبه */
@@ -35818,7 +35882,17 @@
       t.classList.toggle('ovf', o);
       t.classList.toggle('at-end', o && Math.abs(t.scrollLeft) >= t.scrollWidth - t.clientWidth - 4);
     };
-    const scan = () => document.querySelectorAll('.adm-ms .ms-track').forEach(mark);
+    /* بار اول، اگر مسیر اسکرول دارد، مرحلهٔ فعلی وسط دیده شود */
+    const toNow = t => {
+      if(t.dataset.msc) return;
+      t.dataset.msc = '1';
+      if(t.scrollWidth - t.clientWidth <= 4) return;
+      const now = t.querySelector('.ms-pt.now') || t.querySelector('.ms-pt.last');
+      if(!now) return;
+      const a = now.getBoundingClientRect(), b = t.getBoundingClientRect();
+      t.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2);
+    };
+    const scan = () => document.querySelectorAll('.adm-ms .ms-track').forEach(t => { mark(t); toNow(t); mark(t); });
     let tm = 0;
     new MutationObserver(() => { clearTimeout(tm); tm = setTimeout(scan, 120); })
       .observe(document.body, {childList:true, subtree:true});
@@ -35963,10 +36037,24 @@
       if(at === 0) at = 1;
       if(at <= reached) reached++;
       const left = -daysSince(dueRaw);
-      const inHand = ['n','i','p',''].indexOf(stage) !== -1;
-      const tone = (!finished && inHand) ? (left < 0 ? 'bad' : (left <= 3 ? 'warn' : '')) : 'flat';
-      pts.splice(at, 0, {k:'due', t:'موعد', d:dueRaw, due:true, tone:tone,
-        sub: tone === 'flat' ? '' : (left < 0 ? toFa(-left) + ' روز گذشته' : toFa(left) + ' روز مانده')});
+      const inHand = ['n','i','p','','td'].indexOf(stage) !== -1;
+      /* موعد واقعی: کارِ تمام‌شده با روزِ تمام شدنش سنجیده می‌شود (به‌موقع یا
+         چند روز دیرتر)، کارِ در دستِ ما با امروز، و سندی که نزد کارفرماست
+         خاکستری — شمارشش هست، ولی هشدارِ ما نیست. */
+      let tone, sub;
+      if(finished){
+        const endD = (pts.filter(x => x.d && !x.due && !x.ghost).pop() || {}).d;
+        const late = endD ? faDiff(dueRaw, endD) : null;
+        tone = late == null ? 'flat' : (late > 0 ? 'bad' : 'ok');
+        sub = late == null ? '' : (late > 0 ? toFa(late) + ' روز دیرتر' : 'به‌موقع');
+      }else if(inHand){
+        tone = left < 0 ? 'bad' : (left <= 3 ? 'warn' : '');
+        sub = left < 0 ? toFa(-left) + ' روز گذشته' : (left === 0 ? 'امروز' : toFa(left) + ' روز مانده');
+      }else{
+        tone = 'flat';
+        sub = 'نزد ' + (stage === 'c' ? 'کارفرما' : 'دیگران') + (left < 0 ? ' · ' + toFa(-left) + ' روز گذشته' : '');
+      }
+      pts.splice(at, 0, {k:'due', t:'موعد', d:dueRaw, due:true, tone:tone, sub:sub});
     }
 
     pts.forEach((x, i) => {
@@ -36094,7 +36182,7 @@
     }
     const pill = paid ? 'تسویه شده' : (rv || notifyLabel(notify) || '');
     const pillK = bad ? 'bad' : (stage || 'td');
-    return msTrackHtml(msHeadHtml('گردش ' + (KIND_LABEL[kind] || ''), pill, pillK, total).replace(/<\/div>$/, pathEditBtn(kind, r) + '</div>') + admPctHtml(kind, r), items);
+    return msTrackHtml(msHeadHtml('گردش ' + (KIND_LABEL[kind] || ''), pill, pillK, total).replace(/<\/div>$/, pathEditBtn(kind, r) + '</div>'), items, '', admPctHtml(kind, r));
   }
 
   /* ====== درصد پیشرفت صورت وضعیت و قرارداد ======
@@ -36254,19 +36342,45 @@
     if(!can('adm.path')){ showDialog('warn','اجازه ندارید','ویرایش مسیر گردش فقط برای ادمین است.'); return; }
     openPathEditor(b.dataset.pkind, b.dataset.pathedit);
   }, true);
+
+  /* ====== نوار پیشرفت یکپارچه (دفتر فنی و فعالیت‌های اجرایی) ======
+     زیر نمودار گردش می‌نشیند: درصد، نام مرحله، نواری با پله‌ها و
+     برچسب پله‌ها. در فعالیت اجرایی پله‌ها دکمه‌اند: با لمس هر پله همان
+     درصد ثبت می‌شود و «ویرایش» درصد دقیق را می‌گیرد. */
+  function pgxHtml(o){
+    const p = Math.max(0, Math.min(100, Math.round(+o.p || 0)));
+    const tone = o.rej ? 'rej' : (p >= 100 ? 'ok' : (p >= 50 ? 'mid' : 'low'));
+    const steps = o.steps || [];
+    const tick = x => {
+      const on = p >= x[1];
+      const cur = steps.filter(y => p >= y[1]).pop() === x;
+      const attrs = ' style="inset-inline-start:' + x[1] + '%" title="' + esc(x[0] + ' — ' + toFa(x[1]) + '٪') + '"';
+      return o.editId
+        ? '<button type="button" class="pgx-t' + (on ? ' on' : '') + (cur ? ' cur' : '') + '" data-tpq-direct="' + x[1] + '"' + attrs + ' aria-label="' + esc(x[0] + ' ' + toFa(x[1]) + '٪') + '"></button>'
+        : '<i class="pgx-t' + (on ? ' on' : '') + (cur ? ' cur' : '') + '"' + attrs + '></i>';
+    };
+    return '<div class="pgx tp-sec t-' + tone + (o.cls ? ' ' + o.cls : '') + '"' + (o.editId ? ' data-tpsec="' + esc(o.editId) + '"' : '') + '>'
+      + '<div class="pgx-h">'
+      +   '<span class="pgx-l">پیشرفت</span>'
+      +   '<b class="pgx-v">' + toFa(p) + '<small>٪</small></b>'
+      +   (o.stage ? '<span class="pgx-s">' + esc(o.stage) + '</span>' : '')
+      +   (o.auto ? '<span class="pgx-a" title="هنوز درصدی ثبت نشده؛ از روی وضعیت">خودکار</span>' : '')
+      +   (o.editId ? '<button type="button" class="pgx-e tp-edit" data-tpedit="' + esc(o.editId) + '">ویرایش</button>' : '')
+      + '</div>'
+      + '<div class="pgx-bar"><i class="pgx-f" style="width:' + p + '%"></i>' + steps.map(tick).join('') + '</div>'
+      + (steps.length ? '<div class="pgx-sl">' + steps.map(x => '<span class="' + (p >= x[1] ? 'on' : '') + '" style="inset-inline-start:' + x[1] + '%">' + esc(x[0]) + '</span>').join('') + '</div>' : '')
+      + (o.meta ? '<div class="pgx-m">' + o.meta + '</div>' : '')
+      + (o.hist || '')
+      + '</div>';
+  }
   function admPctHtml(kind, r){
     const p = admPct(kind, r);
     if(p == null) return '';
     const rv = String(effectiveReview(r) || '');
-    const bad = /^رد/.test(rv);
     const steps = kind === 'contract'
-      ? ADM_PCT_STEPS.filter(x => x[0] !== 'پرداخت').map(x => x[0] === 'تأیید' ? ['تأیید', 100] : x)
-      : ADM_PCT_STEPS;
-    return '<div class="adm-pct' + (p >= 100 ? ' full' : '') + (bad ? ' rej' : '') + '" title="درصد پیشرفت بر اساس مرحلهٔ رسیدگی">'
-      + '<b>' + toFa(p) + '٪</b>'
-      + '<span class="ap-bar"><i style="width:' + p + '%"></i>'
-      +   steps.map(x => '<s class="' + (p >= x[1] ? 'on' : '') + '" style="inset-inline-start:' + x[1] + '%" title="' + esc(x[0] + ' — ' + toFa(x[1]) + '٪') + '"></s>').join('')
-      + '</span></div>';
+      ? [['تنظیم',10], ['داخلی',25], ['پیمانکار',50], ['کارفرما',75], ['تأیید',100]]
+      : [['تنظیم',10], ['داخلی',25], ['پیمانکار',50], ['کارفرما',75], ['تأیید',90], ['پرداخت',100]];
+    return pgxHtml({p, steps, rej: /^رد/.test(rv), stage: (kind === 'statement' && isPaid(r)) ? 'پرداخت شده' : (rv || RV_DRAFT)});
   }
 
   /* ====== خط زمانی کارت فعالیت ======
@@ -36296,8 +36410,12 @@
     const mid = done
       ? {k:'ok', t:'انجام', d:doneD, last:true}
       : {k: late ? 'bad' : 'i', t:'امروز', d:'', now:true, txt: st.label, isToday:true};
+    /* موعد واقعی: کار انجام‌شده با روز انجامش سنجیده می‌شود */
+    const doneLate = (done && doneD && dueRaw) ? faDiff(dueRaw, doneD) : null;
     const dueP = dueRaw ? {k:'due', t:'موعد', d:dueRaw, due:true,
-      tone: done ? 'flat' : (late ? 'bad' : (left <= 3 ? 'warn' : ''))} : null;
+      tone: done ? (doneLate == null ? 'flat' : (doneLate > 0 ? 'bad' : 'ok')) : (late ? 'bad' : (left <= 3 ? 'warn' : '')),
+      sub: done ? (doneLate == null ? '' : (doneLate > 0 ? toFa(doneLate) + ' روز دیرتر' : 'به‌موقع'))
+                : (late ? toFa(-left) + ' روز گذشته' : (left === 0 ? 'امروز' : ''))} : null;
     const midDate = faToDate(mid.d || today);
     if(dueP && midDate && faToDate(dueRaw) < midDate){ pts.push(dueP); pts.push(mid); }
     else{ pts.push(mid); if(dueP){ dueP.ahead = !done; pts.push(dueP); } }
@@ -41470,26 +41588,27 @@
     const hit = tpOf(id).slice().reverse().find(x => x.p >= 100);
     return hit ? faDateOf(hit.date) : '';
   }
+  const TP_STEPS = [['شروع',10], ['۲۵٪',25], ['نیمه',50], ['۷۵٪',75], ['انجام',100]];
   function taskProgressHtml(r){
     if(!r || r.__adm || isNoteSide(r)) return '';
     const id = pick(r,T.id);
     if(!id) return '';
     const st = taskStatus(r);
     const cur = tpNow(id);
-    const p = cur ? cur.p : (st.cls === 'done' ? 100 : 0);
+    /* بدون درصد ثبت‌شده، از روی وضعیت: انجام‌شده ۱۰۰، در حال اجرا ۱۰ (شروع)، بقیه صفر */
+    const auto = !cur;
+    const p = cur ? cur.p : (st.cls === 'done' ? 100 : (st.cls === 'doing' ? 10 : 0));
     const hist = tpOf(id);
-    const tone = p >= 100 ? 'ok' : (p >= 50 ? 'mid' : 'low');
-    return '<div class="tp-sec" data-tpsec="' + esc(id) + '">'
-      + '<div class="tp-h"><b>درصد تکمیل</b><span class="tp-v ' + tone + '">' + toFa(p) + '٪</span>'
-      +   '<button type="button" class="tp-edit" data-tpedit="' + esc(id) + '">ویرایش</button></div>'
-      + '<div class="tp-bar"><i class="' + tone + '" style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></div>'
-      + (cur ? '<div class="tp-meta">آخرین به‌روزرسانی: ' + esc(cur.by || '—') + ' · ' + toFa(faDateOf(cur.date) || '') + '</div>' : '')
-      + (hist.length > 1
-          ? '<details class="tb-hist tp-hist"><summary>تاریخچهٔ درصد · ' + toFa(hist.length) + ' تغییر</summary>'
-            + hist.slice().reverse().map(x => '<div class="tp-hrow"><b>' + toFa(x.p) + '٪</b><span>' + esc(x.by || '—') + ' · '
-                + toFa(faDateOf(x.date) || '') + '</span></div>').join('') + '</details>'
-          : '')
-      + '</div>';
+    const stage = (TP_STEPS.filter(x => p >= x[1]).pop() || ['شروع نشده'])[0];
+    return pgxHtml({p, steps: TP_STEPS, editId: id, auto,
+      stage: st.cls === 'done' ? 'انجام شده' : (p ? stage : 'شروع نشده'),
+      cls: 'pgx-task',
+      meta: cur ? 'آخرین ثبت: ' + esc(cur.by || '—') + ' · ' + toFa(faDateOf(cur.date) || '') : '',
+      hist: hist.length > 1
+        ? '<details class="tb-hist tp-hist"><summary>تاریخچهٔ درصد · ' + toFa(hist.length) + ' تغییر</summary>'
+          + hist.slice().reverse().map(x => '<div class="tp-hrow"><b>' + toFa(x.p) + '٪</b><span>' + esc(x.by || '—') + ' · '
+              + toFa(faDateOf(x.date) || '') + '</span></div>').join('') + '</details>'
+        : ''});
   }
   async function tpSet(taskId, pct){
     const p = Math.max(0, Math.min(100, Math.round(+pct || 0)));
@@ -41511,7 +41630,8 @@
     const sv = e.target.closest('[data-tpsave]');
     const cn = e.target.closest('[data-tpcancel]');
     const qk = e.target.closest('[data-tpq]');
-    if(!ed && !sv && !cn && !qk) return;
+    const qd = e.target.closest('[data-tpq-direct]');
+    if(!ed && !sv && !cn && !qk && !qd) return;
     e.preventDefault(); e.stopPropagation();
     const sec = e.target.closest('.tp-sec');
     if(!sec) return;
@@ -41531,6 +41651,24 @@
       return;
     }
     if(qk){ const rg = sec.querySelector('.tp-range'); rg.value = qk.dataset.tpq; rg.dispatchEvent(new Event('input')); return; }
+    /* لمسِ یک پله روی نوار: همان درصد بی‌درنگ ثبت می‌شود */
+    if(qd){
+      if(sec.classList.contains('busy')) return;
+      const v = +qd.dataset.tpqDirect;
+      const cur = tpNow(id);
+      if(cur && cur.p === v) return;
+      sec.classList.add('busy');
+      try{
+        const pv = await tpSet(id, v);
+        tpRepaint(id);
+        if(pv >= 100){
+          const row = taskById(id);
+          if(row && taskStatus(row).cls !== 'done')
+            showDialog('ok','۱۰۰٪ ثبت شد','اگر کار تمام شده، وضعیتش را هم «انجام شد» بزنید تا روز تکمیل ثبت شود.');
+        }
+      }catch(err){ sec.classList.remove('busy'); showDialog('err','ثبت نشد', friendlyErr(err)); }
+      return;
+    }
     if(cn){ const f = sec.querySelector('.tp-form'); if(f) f.remove(); return; }
     if(sv){
       sv.disabled = true;
@@ -42097,6 +42235,20 @@
   const TFR_AR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   function tfrDue(r, st){
     if(st.cls === 'done') return {t:'', c:''};
+    /* سند اداری‌ای که نزد پیمانکار یا کارفرماست، از دست ما خارج است؛
+       شمارش معکوس تا موعد اینجا گمراه‌کننده بود («۱۷۰ روز مانده» برای
+       سندی که مدت‌هاست نزد کارفرماست). مدت ماندن نزد آن‌ها نشان داده می‌شود. */
+    if(r && r.__admRow && (r.__admKind === 'statement' || r.__admKind === 'contract')){
+      let rv = '';
+      try{ rv = String(effectiveReview(r.__admRow) || ''); }catch(e){}
+      const sk = MS_STAGE[rv] || '';
+      if(sk === 'c' || sk === 'p'){
+        const since = rvStartOf(r.__admRow, sk === 'c' ? 'rvCS' : 'rvPS');
+        const g = since ? daysSince(since) : null;
+        return {t: 'نزد ' + (sk === 'c' ? 'کارفرما' : 'پیمانکار') + (g != null && g >= 0 ? ' ' + toFa(g) + ' روز' : ''), c: 'mute'};
+      }
+      if(sk === 'ok' || sk === 'pay') return {t:'', c:''};
+    }
     const due = pick(r,T.due);
     const dl = due ? daysSince(due) : null;
     if(dl == null){
@@ -42245,11 +42397,14 @@
             + '</div>'
           : '')
       /* ====== سطر چهار: خط زمانی ابلاغ، امروز، موعد و انجام ====== */
-      + taskTimelineHtml(r)
+      /* درصد پیشرفت، درست زیر نمودار و داخل همان قاب */
+      + (function(){
+          const tl = taskTimelineHtml(r), pg = taskProgressHtml(r);
+          return tl ? (pg ? tl.replace(/<\/div>$/, pg + '</div>') : tl) : pg;
+        })()
 
       /* ====== سطر پنج: موانع (قابل رفع، با تاریخچه) یا توضیحات ابلاغ ====== */
       + (taskNoteText(r) ? '<div class="task-note-txt"><b>توضیحات</b>' + esc(taskNoteText(r)) + '</div>' : '')
-      + taskProgressHtml(r)
       + blockerSectionHtml(r)
       + commentBarHtml(r.__admKind || 'task', pick(r,T.id) || r.__admId || '',
           pick(r,T.title) || 'فعالیت', {
@@ -42510,8 +42665,11 @@
         const a = document.getElementById('tasksCount');
         const c = document.querySelector('#taskCal .tcal-toggle .tt-n');
         const sa = document.getElementById('tkwTasksSub'), sc = document.getElementById('tkwCalSub');
-        if(sa && a && a.textContent.trim()) sa.textContent = a.textContent.trim();
-        if(sc && c && c.textContent.trim()) sc.textContent = c.textContent.trim();
+        /* فقط اگر عوض شده: نوشتنِ همان متن خودش جهشی در پنل است و این
+           ناظر را دوباره صدا می‌زد — هر ۶۰ میلی‌ثانیه، بی‌پایان. */
+        const ta = a && a.textContent.trim(), tc = c && c.textContent.trim();
+        if(sa && ta && sa.textContent !== ta) sa.textContent = ta;
+        if(sc && tc && sc.textContent !== tc) sc.textContent = tc;
       }, 60);
     };
     try{ new MutationObserver(sync).observe(pn, {childList:true, subtree:true}); }catch(e){}
