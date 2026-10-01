@@ -17208,6 +17208,10 @@
         <button type="button" class="avs" data-admview="fast">فهرست سریع</button>
         <button type="button" class="avs" data-admview="card">کارتی</button>
       </div>
+      <div class="admview-seg" role="group" aria-label="دسته‌بندی دفتر فنی">
+        <button type="button" class="avs" data-admgroup="flat">فقط ابلاغ</button>
+        <button type="button" class="avs" data-admgroup="nested">ابلاغ + وضعیت بررسی</button>
+      </div>
       <span class="admview-hint">فهرست سریع همهٔ موارد را در یک نگاه نشان می‌دهد.</span>
     </div>
     <div id="adminView"><div class="empty">برای دیدن موارد دفتر فنی، دکمهٔ «نمایش» را بزنید.</div></div>
@@ -35181,6 +35185,12 @@
      مرحلهٔ رسیدگی، عکس مسئولین بررسی، و مدت/موعد. با کلیک، همان
      کارت کاملِ همیشگی زیرش باز می‌شود تا برای کار کردن روی مورد
      لازم نباشد نما عوض شود. */
+  /* دسته‌بندی: «فقط ابلاغ» (حالت قبلی) یا «ابلاغ + وضعیت بررسی» (تو در تو) */
+  let admGroupMode = 'nested';
+  try{
+    const sg = localStorage.getItem('admGroupMode');
+    if(sg === 'flat' || sg === 'nested') admGroupMode = sg;
+  }catch(e){}
   let admView = 'fast';   // حالت پایه: فهرست سریع
   try{
     const sv = localStorage.getItem('admView');
@@ -40039,7 +40049,7 @@
   };
   function admGroupsHtml(kind, rows, bodyHtml){
     rows = admSortDoneLast(kind, rows);
-    const byRv = ADM_BY_REVIEW.indexOf(kind) !== -1;
+    const byRv = admGroupMode === 'nested' && ADM_BY_REVIEW.indexOf(kind) !== -1;
     const groupBy = (list, valOf, FLOW) => {
       const m = new Map();
       list.forEach(row => {
@@ -40914,10 +40924,23 @@
   (function admViewBarInit(){
     const bar = document.getElementById('admViewBar');
     if(!bar) return;
-    const paint = () => bar.querySelectorAll('[data-admview]').forEach(b =>
-      b.classList.toggle('on', b.dataset.admview === admView));
+    const paint = () => {
+      bar.querySelectorAll('[data-admview]').forEach(b =>
+        b.classList.toggle('on', b.dataset.admview === admView));
+      bar.querySelectorAll('[data-admgroup]').forEach(b =>
+        b.classList.toggle('on', b.dataset.admgroup === admGroupMode));
+    };
     paint();
     bar.addEventListener('click', e => {
+      const gb = e.target.closest('[data-admgroup]');
+      if(gb){
+        if(gb.dataset.admgroup === admGroupMode) return;
+        admGroupMode = gb.dataset.admgroup;
+        try{ localStorage.setItem('admGroupMode', admGroupMode); }catch(e2){}
+        paint();
+        try{ applyAdminFilters(); }catch(e2){}
+        return;
+      }
       const b = e.target.closest('[data-admview]');
       if(!b || b.dataset.admview === admView) return;
       admView = b.dataset.admview;
@@ -44257,9 +44280,15 @@
     const save = (extra) => {
       if(!document.getElementById('adminView')) return;
       const snap = admSnapshot();
-      const rows = Array.from(document.querySelectorAll('#adminView [data-afr].open')).map(fr => fr.dataset.afr).filter(Boolean);
       const prev = read() || {};
-      write(Object.assign({open: snap.open, rows, at: Date.now(), last: prev.last || null}, extra || {}));
+      /* اگر کاربر همان موردِ تغییرکرده را خودش بست، دیگر باز نشود */
+      let last = prev.last || null;
+      if(last && last.id){
+        const fr = document.querySelector('#adminView [data-afr="' + CSS.escape(String(last.id)) + '"]');
+        if(fr && !fr.classList.contains('open')) last = null;
+      }
+      const secs = snap.open.filter(k => !document.querySelector('#adminView .rv[data-id="' + CSS.escape(k) + '"]'));
+      write(Object.assign({open: secs, rows: [], at: Date.now(), last}, extra || {}));
     };
     // آخرین موردی که دستش خورده
     window.__admMarkEdited = (kind, id) => { const prev = read() || {}; prev.last = {kind, id: String(id), at: Date.now()}; write(prev); };
@@ -44275,9 +44304,17 @@
         restored = true;
         const st = read();
         if(st && Date.now() - (st.at || 0) < 7 * 864e5){
-          try{ admRestore({open: st.open || []}); }catch(e){}
-          const ids = new Set((st.rows || []).map(String));
-          if(st.last && st.last.id) ids.add(String(st.last.id));
+          /* فقط پنجره‌های بخش‌ها برمی‌گردند، نه کارت‌های باز */
+          const secOnly = k => !!(document.getElementById(k)
+            || document.querySelector('#adminView .nf[data-new-kind="' + CSS.escape(k) + '"]'));
+          try{ admRestore({open: (st.open || []).filter(secOnly)}); }catch(e){}
+          /* فقط همان موردی که تازه (۳۰ دقیقهٔ اخیر) تغییر کرده، و فقط یک
+             بار باز می‌شود. پیش‌تر هر سطری که روزی باز شده بود، و آخرین
+             مورد تغییرکرده تا یک روز، بعد از هر تازه‌سازی باز می‌ماند. */
+          const fresh = st.last && st.last.id && Date.now() - (st.last.at || 0) < 30 * 60000;
+          const ids = new Set(fresh ? [String(st.last.id)] : []);
+          if(!fresh) st.last = null;
+          write(Object.assign({}, st, {rows: [], last: null}));
           ids.forEach(id => {
             const fr = document.querySelector('#adminView [data-afr="' + CSS.escape(id) + '"]');
             if(!fr) return;
@@ -44289,7 +44326,7 @@
             }
             try{ wrkOpenFastRow(fr, true); }catch(e){}
           });
-          if(st.last && st.last.id && Date.now() - (st.last.at || 0) < 864e5){
+          if(fresh){
             setTimeout(() => {
               const el = document.querySelector('#adminView [data-afr="' + CSS.escape(st.last.id) + '"]')
                 || document.querySelector('#adminView .rv[data-id="' + CSS.escape(st.last.id) + '"]');
