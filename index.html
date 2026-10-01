@@ -12548,6 +12548,33 @@
   .wm2-f .wm-del{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--alert-line);background:var(--alert-soft);color:var(--alert);
     font-family:var(--f);font-size:11.5px;font-weight:700;cursor:pointer;}
   .wman-pend{padding:12px 14px;border-radius:14px;margin-bottom:8px;background:var(--warn-soft);border:1px solid var(--warn-line);}
+  #wrkBody .w-chg{grid-column:1 / -1;flex:1 1 100%;width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;border-radius:11px;border:1px dashed color-mix(in srgb, var(--warn) 45%, var(--line));
+    background:color-mix(in srgb, var(--warn) 6%, var(--surface));font-size:11px;}
+  #wrkBody .wc-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;}
+  #wrkBody .wc-h b{font-size:11.5px;color:var(--warn);} #wrkBody .wc-h span{color:var(--muted);font-size:10.5px;}
+  #wrkBody .wc-btn{margin-inline-start:auto;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+    font:700 10.5px var(--f);color:var(--ink);cursor:pointer;}
+  #wrkBody .wc-btn.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+  #wrkBody .wc-tx{margin-top:4px;line-height:1.9;color:var(--ink);}
+  #wrkBody .w-prev{margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface);}
+  #wrkBody .w-prev .wp-h, #wrkBody .w-prev .wp-r{display:grid;grid-template-columns:70px 1fr 1fr;gap:6px;padding:5px 9px;}
+  #wrkBody .w-prev .wp-h{background:var(--field);font-weight:800;color:var(--muted);font-size:10px;}
+  #wrkBody .w-prev .wp-r{border-top:1px solid var(--line-soft);}
+  #wrkBody .w-prev .wp-r.ch{background:color-mix(in srgb, var(--warn) 10%, var(--surface));}
+  #wrkBody .w-prev .wp-r.ch span:nth-child(2){text-decoration:line-through;color:var(--muted);}
+  #wrkBody .w-prev .wp-r.ch span:nth-child(3){font-weight:800;color:var(--ink);}
+  #wrkBody .w-prev .wp-old{padding:8px 10px;color:var(--muted);}
+  #wrkBody .wc-all{margin-top:6px;display:flex;flex-direction:column;gap:3px;color:var(--muted);}
+  .wman-pbox{margin-bottom:10px;border-radius:14px;border:1px solid var(--warn-line);background:color-mix(in srgb, var(--warn) 7%, var(--surface));overflow:hidden;}
+  .wman-pbox > summary{list-style:none;display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;}
+  .wman-pbox > summary::-webkit-details-marker{display:none;}
+  .wman-pbox .wpb-ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--warn);color:#fff;font-weight:900;font-size:12px;}
+  .wman-pbox summary b{font-size:12.5px;flex:1;}
+  .wman-pbox summary em{font-style:normal;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--alert-soft);color:var(--alert);}
+  .wman-pbox .wpb-ar{font-style:normal;color:var(--muted);transition:transform .2s;}
+  .wman-pbox[open] .wpb-ar{transform:rotate(180deg);}
+  .wman-pbox .wpb-body{padding:0 10px 4px;}
+  .wman-pbox .wman-pend{padding:9px 11px;margin-bottom:6px;}
   .wman-pend > b{font-size:12.5px;color:var(--ink);}
   @media(max-width:700px){
     .wm2-h{flex-wrap:wrap;gap:10px;}
@@ -25470,7 +25497,7 @@
       if(canSendGeneral()) subs.push(['gen', 'ابلاغ فعالیت', 0, PF_I.mega, 'ثبت و فهرست ابلاغ‌ها', 'ok']);
       subs.push(['rem', 'یادآورها', 0, PF_I.log, 'ثبت و فهرست یادآورها', 'warn']);
       if(wrkFineApprover()){
-        const nF = (wrkPending || []).filter(isFineReq).length;
+        const nF = (wrkPending || []).filter(isFineAny).length;
         subs.push(['fine', 'جریمه‌ها', nF, TD_I.warn, nF ? 'در انتظار تأیید شما' : 'جریمهٔ تازه‌ای نیست', nF ? 'bad' : 'ink']);
       }
       /* این دو بخشی در پنل ندارند و مستقیم باز می‌شوند */
@@ -31210,9 +31237,9 @@
     /* هرچه در «مدیریت کارگران» ثبت شده مبناست: کد پرسنلی، نام و سمتِ
        تازه باید همین‌جا دیده شود، نه آنچه موقع ثبتِ آن روز نوشته شده. */
     const grab = r => {
-      const k = String(r.worker_code || r.worker_name || '');
+      const k = wrkRowKey(r);
       if(!by.has(k)){
-        const w = workerOf(k);
+        const w = wrkResolve(r) || workerOf(k);
         by.set(k, {code: k,
           pno: (w && String(w.pno || '').trim()) || '',
           name: (w && w.name) || r.worker_name || '',
@@ -31239,7 +31266,7 @@
       const d0 = g.byDay.get(r.date_fa) || {h:0, o:0, st:''};
       d0.h += h; d0.st = st;
       g.byDay.set(r.date_fa, d0);
-      seen.add(r.date_fa + '¦' + String(r.worker_code || r.worker_name || ''));
+      seen.add(r.date_fa + '¦' + wrkRowKey(r));
     });
     dates.forEach(d => {
       (workersAll || []).forEach(w => {
@@ -31468,7 +31495,7 @@
       (rs || []).forEach(x => {
         const d = normDate(x.date_fa) || x.date_fa;
         if(!byDay.has(d)) byDay.set(d, new Map());
-        byDay.get(d).set(String(x.worker_code || x.worker_name || ''), x);
+        byDay.get(d).set(wrkRowKey(x), x);
       });
     }catch(e){ return; }        // خوانده نشد: چیزی در کش نمی‌ماند تا دفعهٔ بعد دوباره تلاش شود
     need.forEach(d => {
@@ -45801,6 +45828,28 @@
   const wrkStateOf = k => WRK_STATES.find(x => x.k === k) || WRK_STATES[0];
 
   let workersAll = [];        // همه، شامل جدا شده‌ها
+  /* ردیف روزانه/اضافه‌کاری → کارگرِ امروزِ «مدیریت کارگران».
+     کد داخلی کارگر ممکن است بعداً عوض شده باشد (بارگذاری اکسل، اصلاح
+     کد)؛ پس اول با کد، بعد با کد پرسنلی و در آخر با نام پیدا می‌شود تا
+     همه‌جا کد پرسنلی، نام و سمتِ درست بنشیند. */
+  let wrkIdx = null, wrkIdxOf = null;
+  function wrkResolve(r){
+    if(!r) return null;
+    if(wrkIdxOf !== workersAll){
+      wrkIdxOf = workersAll;
+      wrkIdx = {code:new Map(), pno:new Map(), name:new Map()};
+      (workersAll || []).forEach(w => {
+        if(w.code != null && w.code !== '') wrkIdx.code.set(String(w.code), w);
+        if(w.pno) wrkIdx.pno.set(String(toEn(w.pno)), w);
+        if(w.name && !wrkIdx.name.has(nameKey(w.name))) wrkIdx.name.set(nameKey(w.name), w);
+      });
+    }
+    const code = String(r.worker_code == null ? '' : r.worker_code);
+    return (code && (wrkIdx.code.get(code) || wrkIdx.pno.get(toEn(code))))
+      || (r.worker_name ? wrkIdx.name.get(nameKey(r.worker_name)) : null) || null;
+  }
+  const wrkRowKey = r => { const w = wrkResolve(r); return w ? String(w.code) : String(r.worker_code || r.worker_name || ''); };
+  const wrkRowPno = r => { const w = wrkResolve(r); return w ? String(w.pno || w.code || '') : String(r.worker_code || ''); };
   let workersLive = [];       // فقط کسانی که الان در پروژه‌اند
   let workersFromDb = false;
   let wrkTab = 'daily';
@@ -45839,6 +45888,10 @@
   const siteSups = () => (peopleRows || []).filter(p => p.active !== false && isSiteSup(p.name)).map(p => p.name);
   const wrkFineApprover = () => isSiteSup(wrkMe()) || isAdminUser();
   const isFineReq = c => !!(c && c.payload && c.payload.sup);
+  /* هر درخواستی که جریمه در آن عوض می‌شود — چه جریمهٔ مستقیم (تأیید
+     سرپرست) چه تغییر مشخصاتی که جریمه هم دارد (تأیید ادمین) */
+  const isFineAny = c => isFineReq(c) || !!(c && c.kind === 'role' && c.payload
+    && c.payload.fine !== '' && c.payload.fine != null);
   async function wrkFineRequest(w, fineV, code, nm){
     const me = wrkMe();
     const body = {requested_by: me, state:'pending', date_fa: todayShamsi(), kind:'role',
@@ -45889,7 +45942,7 @@
     if(!wrkFineLoading) wrkFineLoading = wrkLoadPending().finally(() => { wrkFineLoading = null; });
     await wrkFineLoading;
     document.querySelectorAll('[data-fine-pane]').forEach(x => { x.innerHTML = wrkFinePaneHtml(); });
-    const n = (wrkPending || []).filter(isFineReq).length;
+    const n = (wrkPending || []).filter(isFineAny).length;
     document.querySelectorAll('[data-pf3go="fine"]').forEach(b => {
       let i = b.querySelector(':scope > i');
       if(n){ if(!i){ i = document.createElement('i'); b.appendChild(i); } i.textContent = toFa(n); b.classList.add('c-bad'); }
@@ -45916,7 +45969,7 @@
     }, 0);
   });
   function wrkFinePaneHtml(){
-    const list = (wrkPending || []).filter(isFineReq);
+    const list = (wrkPending || []).filter(isFineAny);
     if(!list.length) return '<div class="empty">جریمه‌ای در انتظار تأیید نیست. ✓</div>';
     const can0 = wrkFineApprover();
     return '<div class="fine-list">' + list.map(c => {
@@ -45926,7 +45979,13 @@
         + '<div class="fi-v"><span class="fi-new">' + (p2.fine === '' || p2.fine == null ? 'برداشتن جریمه' : 'جریمه ' + toFa(p2.fine) + ' روز') + '</span>'
         +   (p2.old !== '' && p2.old != null ? '<span class="fi-old">قبلی: ' + toFa(p2.old) + ' روز</span>' : '') + '</div>'
         + '<div class="fi-m">درخواست ' + esc(c.requested_by || '—') + (c.date_fa ? ' · ' + esc(toFa(c.date_fa)) : '') + '</div>'
-        + (can0 ? '<div class="fi-a"><button type="button" class="mini go" data-fineok="' + esc(c.id) + '">تأیید</button>'
+        + (!isFineReq(c)
+            /* تغییر مشخصاتی که جریمه دارد: تأییدش با ادمین است */
+            ? ((wrkIsAdmin() ? '<div class="fi-a"><button type="button" class="mini go" data-rqok="' + esc(c.id) + '">تأیید</button>'
+                 + '<button type="button" class="mini" data-rqno="' + esc(c.id) + '">رد</button></div>'
+               : '<div class="fi-m">در انتظار تأیید ادمین</div>')
+               + '<div class="fi-m">همراه با تغییر مشخصات کارگر</div>')
+          : can0 ? '<div class="fi-a"><button type="button" class="mini go" data-fineok="' + esc(c.id) + '">تأیید</button>'
                  + '<button type="button" class="mini" data-fineno="' + esc(c.id) + '">رد</button></div>'
                : '<div class="fi-m">در انتظار تأیید سرپرست کارگاه</div>')
         + '</div>';
@@ -45942,11 +46001,32 @@
     try{
       if(await wrkFineDecide(id, ok)){
         document.querySelectorAll('[data-fine-pane]').forEach(x => { x.innerHTML = wrkFinePaneHtml(); });
-        const n = (wrkPending || []).filter(isFineReq).length;
+        const n = (wrkPending || []).filter(isFineAny).length;
         document.querySelectorAll('[data-pf3go="fine"] i').forEach(x => { x.textContent = n ? toFa(n) : ''; if(!n) x.remove(); });
         showDialog('ok', ok ? 'تأیید شد' : 'رد شد', ok ? 'جریمه روی کارگر اعمال شد.' : 'درخواست جریمه رد شد.');
         if(document.getElementById('wrkBody') && wrkTab === 'man') wrkRender();
       }
+    }catch(err){ showDialog('err','انجام نشد', friendlyErr(err)); }
+    finally{ b.disabled = false; }
+  }, true);
+
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-rqok], [data-rqno]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const ok = !!b.dataset.rqok, id = b.dataset.rqok || b.dataset.rqno;
+    const c = (wrkPending || []).find(x => String(x.id) === String(id));
+    if(!c || !wrkIsAdmin()) return;
+    b.disabled = true;
+    try{
+      if(ok) await wrkApply(c);
+      await supaFetch('worker_changes?id=eq.' + encodeURIComponent(id), {method:'PATCH',
+        body:{state: ok ? 'approved' : 'rejected', decided_by: wrkMe(), decided_at: new Date().toISOString()}});
+      await wrkLoadWorkers(true);
+      try{ await wrkFineRefreshUI(); }catch(e2){}
+      document.querySelectorAll('[data-fine-pane]').forEach(x => { x.innerHTML = wrkFinePaneHtml(); });
+      showDialog('ok', ok ? 'تأیید شد' : 'رد شد', ok ? 'تغییرات روی کارگر اعمال شد.' : 'درخواست رد شد.');
+      if(document.getElementById('wrkBody') && wrkTab === 'man') wrkRender();
     }catch(err){ showDialog('err','انجام نشد', friendlyErr(err)); }
     finally{ b.disabled = false; }
   }, true);
@@ -45974,6 +46054,7 @@
   const WRK_LOG_KIND = 'تغییر کارگری';
   let wrkLog = new Map();
   const wrkLogKey = (kind, key) => kind + '|' + key;
+  const WRK_PREV_SEP = '\n⟦قبلی⟧';     // بعد از متن تغییر، فرمِ پیش از تغییر (JSON)
   function wrkDiffText(kind, o, c){
     if(!o) return '';
     const bits = [];
@@ -45987,6 +46068,46 @@
     });
     return bits.join('؛ ');
   }
+  /* زیر هر سطرِ تغییرکرده: چه کسی، کِی، دقیقاً چه چیزی را عوض کرد؛ و
+     دکمهٔ «فرم قبلی» که مقدارهای پیش از تغییر را کنار مقدار فعلی نشان می‌دهد */
+  const wrkPrevOpen = new Set();
+  function wrkChgHtml(kind, w, key){
+    const hs = wrkLog.get(wrkLogKey(kind, w.code || w.name)) || [];
+    if(!hs.length) return '';
+    const last = hs[hs.length - 1];
+    const k2 = kind + '|' + key;
+    const op = wrkPrevOpen.has(k2);
+    const when = (typeof clockOf === 'function' ? toFa(clockOf(last.at) || '') : '');
+    const cur = wrkData[kind].get(key) || {};
+    const lab = {engineer:'مسئول', state:'وضعیت', t1: kind === 'ot' ? 'شروع' : 'ورود', t2: kind === 'ot' ? 'پایان' : 'خروج', zone:'محل', activity:'شرح'};
+    const fmt = (f, v) => { v = String(v == null ? '' : v); if(f === 'state') return wrkStateOf(v || 'ok').t; if(f === 't1' || f === 't2') return toFa(wrkNormTime(v) || v); return v; };
+    const prevTbl = last.prev
+      ? '<div class="w-prev"><div class="wp-h"><span>فیلد</span><span>پیش از تغییر</span><span>الان</span></div>'
+        + Object.keys(lab).map(f => {
+            const a = fmt(f, last.prev[f]), b2 = fmt(f, cur[f]);
+            return '<div class="wp-r' + (a !== b2 ? ' ch' : '') + '"><span>' + lab[f] + '</span><span>' + esc(a || '—') + '</span><span>' + esc(b2 || '—') + '</span></div>';
+          }).join('') + '</div>'
+      : '<div class="w-prev"><div class="wp-old">فرم قبلیِ این تغییر ذخیره نشده (تغییر پیش از این نسخه)؛ فقط شرح تغییر در دست است.</div></div>';
+    return '<div class="w-chg">'
+      + '<div class="wc-h"><b>✎ ' + esc(last.by || '—') + '</b>' + (when ? '<span>' + when + '</span>' : '')
+      +   (hs.length > 1 ? '<span>' + toFa(hs.length) + ' تغییر در این روز</span>' : '')
+      +   '<button type="button" class="wc-btn' + (op ? ' on' : '') + '" data-wprev="' + esc(k2) + '">' + (op ? 'بستن فرم قبلی' : 'فرم قبلی') + '</button></div>'
+      + '<div class="wc-tx">' + esc(last.text || '') + '</div>'
+      + (op ? prevTbl
+          + (hs.length > 1 ? '<div class="wc-all">' + hs.slice(0, -1).reverse().map(h =>
+              '<div><b>' + esc(h.by || '—') + '</b>' + (typeof clockOf === 'function' ? ' · ' + toFa(clockOf(h.at) || '') : '') + ': ' + esc(h.text) + '</div>').join('') + '</div>' : '')
+          : '')
+      + '</div>';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-wprev]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = b.dataset.wprev;
+    if(wrkPrevOpen.has(k)) wrkPrevOpen.delete(k); else wrkPrevOpen.add(k);
+    const box = document.getElementById('wrkListBox');
+    if(box) box.innerHTML = wrkListHtml(wrkTab);
+  }, true);
   const wrkGone = {daily: new Set(), ot: new Set()};   // سطرهای ثبت‌شده‌ای که برداشته شدند
   function wrkTouch(kind, key){
     if(!wrkDirty[kind]) return;
@@ -46391,14 +46512,18 @@
       lg.map(x => fromSupa('nudges', x)).forEach(r => {
         const k = String(pick(r,N.itemId) || '');
         if(!wrkLog.has(k)) wrkLog.set(k, []);
-        wrkLog.get(k).push({by: pick(r,N.from) || '', at: pick(r,N.time) || '', text: String(pick(r,N.msg) || '')});
+        const raw = String(pick(r,N.msg) || '');
+        const ix = raw.indexOf(WRK_PREV_SEP);
+        let prev = null;
+        if(ix !== -1){ try{ prev = JSON.parse(raw.slice(ix + WRK_PREV_SEP.length)); }catch(e2){} }
+        wrkLog.get(k).push({by: pick(r,N.from) || '', at: pick(r,N.time) || '', text: ix === -1 ? raw : raw.slice(0, ix), prev});
       });
       wrkLog.forEach(a => a.sort((x, y) => String(x.at).localeCompare(String(y.at))));
     }catch(e){}
     const q = '&date_fa=eq.' + encodeURIComponent(d);
     try{
       const rows = await supaFetch('worker_daily?select=*' + q, {prefer:'return=representation'});
-      (rows || []).forEach(r => wrkData.daily.set(String(r.worker_code || r.worker_name), {
+      (rows || []).forEach(r => wrkData.daily.set(wrkRowKey(r), {
         activity: r.activity || '', engineer: r.engineer || '',
         zone: r.zone || '', state: r.state || 'ok', note: r.note || '',
         t1: r.t_in || '', t2: r.t_out || '', id: r.id, by: r.created_by || '',
@@ -46407,7 +46532,7 @@
     }catch(e){}
     try{
       const rows = await supaFetch('worker_ot?select=*' + q, {prefer:'return=representation'});
-      (rows || []).forEach(r => wrkData.ot.set(String(r.worker_code || r.worker_name), {
+      (rows || []).forEach(r => wrkData.ot.set(wrkRowKey(r), {
         activity: r.activity || '', engineer: r.engineer || '',
         zone: r.zone || '', state: 'ok',
         t1: r.t_start || '', t2: r.t_end || '', id: r.id, by: r.created_by || '',
@@ -46496,8 +46621,7 @@
       +   (function(){
             const hs = wrkLog.get(wrkLogKey(kind, w.code || w.name)) || [];
             if(!hs.length) return editor ? '<i class="w-edited" title="این سطر را ' + esc(editor) + ' تغییر داده است">✎ تغییر: ' + esc(editor) + '</i>' : '';
-            return '<i class="w-edited" title="' + esc(hs.map(h => h.by + ': ' + h.text).join('\n')) + '">✎ '
-              + toFa(hs.length) + ' تغییر · آخری: ' + esc(hs[hs.length - 1].by) + '</i>';
+            return '<i class="w-edited">✎ ' + toFa(hs.length) + ' تغییر</i>';
           })()
       +   (on && !canEdit ? '<i class="w-lock">فقط ' + esc(eng) + ' می‌تواند تغییر دهد</i>' : '')
       + '</span>'
@@ -46532,6 +46656,7 @@
               +   '<path d="M3.5 19.5a6.5 6.5 0 0113 0"/><path d="M18 8v6M15 11h6"/></svg></button>'
             : '')
       + '</span>'
+      + wrkChgHtml(kind, w, key)
       + ((open && sealed)
           ? '<div class="w-sum">'
             + '<span class="ws-act">' + (cur.activity ? esc(cur.activity) : '<i>شرح فعالیت ننوشته</i>') + '</span>'
@@ -46876,9 +47001,9 @@
         return by.get(k);
       };
       const dMap = new Map(), oMap = new Map();
-      (daily || []).forEach(r => dMap.set(r.date_fa + '¦' + String(r.worker_code || ''), r));
+      (daily || []).forEach(r => dMap.set(r.date_fa + '¦' + wrkRowKey(r), r));
       (ot || []).forEach(r => {
-        const k = r.date_fa + '¦' + String(r.worker_code || '');
+        const k = r.date_fa + '¦' + wrkRowKey(r);
         oMap.set(k, (oMap.get(k) || 0) + (wrkHours(r.t_start, r.t_end) || 0));
       });
       dates.forEach(d => {
@@ -46962,21 +47087,118 @@
     return aoa;
   }
 
+  /* ====== اکسل کارکرد ======
+     هر روز یک برگه که نامش خودِ تاریخ است؛ ردیف‌ها به ترتیب کد پرسنلی.
+     بازه‌های کارکرد: اگر اضافه‌کاری به کار روزانه چسبیده، یک بازهٔ کامل؛
+     اگر جدا بوده، هر دو بازه کنار هم در انتهای ردیف. یک برگهٔ جدا هم
+     فقط بازه‌ها را دارد تا بشود یک‌بازه‌ای‌ها و دوبازه‌ای‌ها را مرتب کرد. */
+  const XLS_HRS_COLS = ['ردیف','کد پرسنلی','نام و نام خانوادگی','سمت','وضعیت',
+    'ورود','خروج','ساعت کارکرد','شرح فعالیت روزانه','محل کارکرد','مسئول روزانه',
+    'شروع اضافه‌کاری','پایان اضافه‌کاری','ساعت اضافه‌کاری','شرح اضافه‌کاری','مسئول اضافه‌کاری',
+    'جمع ساعت','تعداد بازه','شروع بازهٔ ۱','پایان بازهٔ ۱','شروع بازهٔ ۲','پایان بازهٔ ۲',
+    'دریافتی روزانه','جریمه (روز)'];
+  const XLS_HRS_TIME = [5, 6, 11, 12, 18, 19, 20, 21];
+  const XLS_HRS_W = [5, 10, 24, 14, 9, 8, 8, 9, 34, 18, 18, 9, 9, 9, 30, 18, 9, 8, 9, 9, 9, 9, 12, 9];
+  const XLS_SPAN_COLS = ['ردیف','کد پرسنلی','نام و نام خانوادگی','سمت','نوع بازه',
+    'شروع بازهٔ ۱','پایان بازهٔ ۱','ساعت بازهٔ ۱','شروع بازهٔ ۲','پایان بازهٔ ۲','ساعت بازهٔ ۲','جمع ساعت'];
+  const XLS_SPAN_TIME = [5, 6, 8, 9];
+  /* بازه‌ها: یک بازهٔ پیوسته یا دو بازهٔ جدا */
+  function wrkSpans(off, t1, t2, o1, o2){
+    const a1 = off ? '' : wrkNormTime(t1), a2 = off ? '' : wrkNormTime(t2);
+    const b1 = wrkNormTime(o1), b2 = wrkNormTime(o2);
+    const A = (a1 && a2), B = (b1 && b2);
+    if(A && B){
+      if(b1 === a2) return [[a1, b2]];
+      if(b2 === a1) return [[b1, a2]];
+      return a1 <= b1 ? [[a1, a2], [b1, b2]] : [[b1, b2], [a1, a2]];
+    }
+    if(A) return [[a1, a2]];
+    if(B) return [[b1, b2]];
+    return [];
+  }
+  const pnoNum = v => { const n = parseInt(toEn(String(v || '')).replace(/[^\d]/g, ''), 10); return isNaN(n) ? Infinity : n; };
+  const byPno = (a, b) => (pnoNum(a.pno) - pnoNum(b.pno)) || String(a.pno || '').localeCompare(String(b.pno || ''))
+    || String(a.name || '').localeCompare(String(b.name || ''), 'fa');
+  /* یک روز → اقلام یک‌دست (هم از فرم امروز، هم از پایگاه‌داده) */
+  function wrkDayItems(day, dMap, oMap){
+    const out = [];
+    (workersAll || []).forEach(w => {
+      if(!wrkOnDay(w, day)) return;
+      const k = String(w.code || w.name);
+      const d = dMap.get(k) || null, o = oMap.get(k) || null;
+      const st = d ? String(d.state || 'ok') : 'ok';
+      const def = wrkDefTimes(day, w) || [];
+      const t1 = (d && (d.t_in || d.t1)) || (st === 'off' ? '' : (def[0] || ''));
+      const t2 = (d && (d.t_out || d.t2)) || (st === 'off' ? '' : (def[1] || ''));
+      const o1 = o ? (o.t_start || o.t1 || '') : '', o2 = o ? (o.t_end || o.t2 || '') : '';
+      const dh = st === 'off' ? 0 : (wrkDayHours(t1, t2) || 0);
+      const oh = (o1 || o2) ? (wrkHours(o1, o2) || 0) : 0;
+      out.push({pno: w.pno || w.code || '', name: w.name, role: w.role || '', state: wrkStateOf(st).t,
+        t1, t2, dh, dAct: d ? (d.activity || '') : '', dZone: d ? (d.zone || '') : '', dEng: d ? (d.engineer || '') : '',
+        o1, o2, oh, oAct: o ? (o.activity || '') : '', oEng: o ? (o.engineer || '') : '',
+        pay: w.pay || '', fine: w.fine || '', spans: wrkSpans(st === 'off', t1, t2, o1, o2)});
+    });
+    return out.sort(byPno);
+  }
+  function wrkSheetOf(items, title){
+    const aoa = [[title], [], XLS_HRS_COLS];
+    items.forEach((x, i) => {
+      const s1 = x.spans[0] || ['', ''], s2 = x.spans[1] || ['', ''];
+      aoa.push([i + 1, x.pno, x.name, x.role, x.state,
+        toEn(x.t1 || ''), toEn(x.t2 || ''), x.dh || '', x.dAct, x.dZone, x.dEng,
+        toEn(x.o1 || ''), toEn(x.o2 || ''), x.oh || '', x.oAct, x.oEng,
+        Math.round(((x.dh || 0) + (x.oh || 0)) * 100) / 100,
+        x.spans.length ? (x.spans.length === 1 ? 'یک بازه' : 'دو بازه') : '—',
+        s1[0], s1[1], s2[0], s2[1], x.pay || '', x.fine || '']);
+    });
+    const sh = XLSX.utils.aoa_to_sheet(aoa);
+    wrkXlsTypes(sh, XLS_HRS_TIME, [1], 2);
+    sh['!cols'] = XLS_HRS_W.map(w => ({wch: w}));
+    sh['!merges'] = [{s:{r:0, c:0}, e:{r:0, c:XLS_HRS_COLS.length - 1}}];
+    sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:2, c:0}, e:{r:2 + items.length, c:XLS_HRS_COLS.length - 1}})};
+    return sh;
+  }
+  function wrkSpanSheetOf(perDay){
+    const multi = perDay.length > 1;
+    const head = (multi ? ['تاریخ'] : []).concat(XLS_SPAN_COLS);
+    const aoa = [['بازه‌های کارکرد — یک‌بازه‌ای‌ها و دوبازه‌ای‌ها'], [], head];
+    let n = 0;
+    perDay.forEach(([day, items]) => {
+      /* اول یک‌بازه‌ای‌ها، بعد دوبازه‌ای‌ها؛ داخل هر کدام به ترتیب کد پرسنلی */
+      items.filter(x => x.spans.length).slice().sort((a, b) => (a.spans.length - b.spans.length) || byPno(a, b)).forEach(x => {
+        const s1 = x.spans[0] || ['', ''], s2 = x.spans[1] || ['', ''];
+        const h1 = (s1[0] && s1[1]) ? (wrkDayHours(s1[0], s1[1]) || '') : '';
+        const h2 = (s2[0] && s2[1]) ? (wrkHours(s2[0], s2[1]) || '') : '';
+        aoa.push((multi ? [toFa(day)] : []).concat([++n, x.pno, x.name, x.role, x.spans.length === 1 ? 'یک بازه' : 'دو بازه',
+          s1[0], s1[1], h1, s2[0], s2[1], h2, Math.round(((+h1 || 0) + (+h2 || 0)) * 100) / 100]));
+      });
+    });
+    const sh = XLSX.utils.aoa_to_sheet(aoa);
+    const off = multi ? 1 : 0;
+    wrkXlsTypes(sh, XLS_SPAN_TIME.map(c => c + off), [1 + off], 2);
+    sh['!cols'] = (multi ? [{wch:12}] : []).concat([5, 10, 24, 14, 10, 10, 10, 9, 10, 10, 9, 9].map(w => ({wch: w})));
+    sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:2, c:0}, e:{r:2 + n, c:head.length - 1}})};
+    return sh;
+  }
+  const xlsSheetName = d => toFa(d).replace(/\//g, '-');
+  function xlsBookRtl(wb){ wb.Workbook = wb.Workbook || {}; wb.Workbook.Views = [{RTL: true}]; }
+
   function wrkHrsExcel(){
     if(!window.XLSX){ showDialog('err','اکسل در دسترس نیست','کتابخانهٔ اکسل بارگذاری نشده.'); return; }
     const d = wrkDateVal();
-    const rows = wrkHrsRows();
-    if(!rows.length){ showDialog('warn','داده‌ای نیست','برای این تاریخ کارکردی ثبت نشده است.'); return; }
-    const wb = XLSX.utils.book_new();
-    const sh = XLSX.utils.aoa_to_sheet(wrkHrsAoa(rows, d));
-    wrkXlsTypes(sh, WRK_HRS_TIME_COLS, [WRK_HRS_CODE_COL], 2);
-    sh['!cols'] = WRK_HRS_COLS.map((c, i) => ({wch: (i === 2 ? 22 : (i === 8 || i === 14 ? 38 : 13))}));
-    XLSX.utils.book_append_sheet(wb, sh, 'کارکرد');
-    XLSX.writeFile(wb, 'کارکرد کارگران - ' + toFa(d).replace(/\//g,'-') + '.xlsx');
+    const dMap = new Map(), oMap = new Map();
+    wrkData.daily.forEach((v, k) => dMap.set(k, v));
+    wrkData.ot.forEach((v, k) => oMap.set(k, v));
+    const items = wrkDayItems(d, dMap, oMap);
+    if(!items.length){ showDialog('warn','داده‌ای نیست','برای این تاریخ کارکردی ثبت نشده است.'); return; }
+    const wb = XLSX.utils.book_new(); xlsBookRtl(wb);
+    XLSX.utils.book_append_sheet(wb, wrkSheetOf(items, 'کارکرد کارگران — ' + toFa(d)), xlsSheetName(d));
+    XLSX.utils.book_append_sheet(wb, wrkSpanSheetOf([[d, items]]), 'بازه‌ها');
+    XLSX.writeFile(wb, 'کارکرد کارگران - ' + xlsSheetName(d) + '.xlsx');
   }
 
-  /* یک ماه کارکرد: سی روز منتهی به تاریخ انتخابی، هر روز یک برگه
-     نیست — همه در یک برگه با ستون تاریخ، تا جمع‌بستن ساده باشد. */
+  /* یک ماه کارکرد: سی روز منتهی به تاریخ انتخابی؛ هر روز برگهٔ خودش
+     با نام تاریخ، به‌علاوهٔ برگهٔ بازه‌ها برای کل ماه */
   async function wrkHrsExcelMonth(){
     if(!window.XLSX){ showDialog('err','اکسل در دسترس نیست','کتابخانهٔ اکسل بارگذاری نشده.'); return; }
     const end = wrkDateVal();
@@ -46986,52 +47208,26 @@
     days.reverse();
     const btn = document.getElementById('wrkHrsXlsM');
     if(btn){ btn.disabled = true; btn.textContent = 'در حال گرفتن…'; }
-    const all = [['کارکرد کارگران — ' + days[0] + ' تا ' + end], [],
-                 ['تاریخ'].concat(WRK_HRS_COLS)];
     try{
+      const wb = XLSX.utils.book_new(); xlsBookRtl(wb);
+      const perDay = [];
       for(const dd of days){
-        let dr = [], orr = [];
-        /* تاریخ گاهی با رقم فارسی و گاهی لاتین ذخیره شده؛ هر دو پرسیده می‌شود */
         const dq = 'date_fa=in.(' + encodeURIComponent(Array.from(new Set([toEn(dd), toFa(dd)])).map(x => '"' + x + '"').join(',')) + ')';
-        try{
-          dr = await supaFetch('worker_daily?select=*&' + dq, {prefer:'return=representation'}) || [];
-        }catch(e){}
-        try{
-          orr = await supaFetch('worker_ot?select=*&' + dq, {prefer:'return=representation'}) || [];
-        }catch(e){}
-        const om = new Map();
-        orr.forEach(r => om.set(String(r.worker_code || r.worker_name), r));
-        dr.forEach(r => {
-          const o = om.get(String(r.worker_code || r.worker_name)) || null;
-          om.delete(String(r.worker_code || r.worker_name));
-          const dh = (String(r.state || 'ok') === 'off') ? 0 : (wrkDayHours(r.t_in, r.t_out) || 0);
-          const oh = o ? (wrkHours(o.t_start, o.t_end) || 0) : 0;
-          all.push([dd, all.length - 2, r.worker_code || '', r.worker_name || '', r.worker_role || '',
-            wrkStateOf(r.state || 'ok').t, toEn(r.t_in || ''), toEn(r.t_out || ''), dh,
-            r.activity || '', r.zone || '', r.engineer || '',
-            o ? toEn(o.t_start || '') : '', o ? toEn(o.t_end || '') : '', oh,
-            o ? (o.activity || '') : '', o ? (o.engineer || '') : '',
-            Math.round((dh + oh) * 100) / 100, '', ''].concat((() => {
-              const sp = wrkSpan(String(r.state || 'ok') === 'off' ? '' : r.t_in, String(r.state || 'ok') === 'off' ? '' : r.t_out,
-                o ? o.t_start : '', o ? o.t_end : '');
-              return [sp[0], sp[1], (sp[0] && sp[1]) ? (wrkDayHours(sp[0], sp[1]) || '') : ''];
-            })()));
-        });
-        om.forEach(o => {
-          const oh = wrkHours(o.t_start, o.t_end) || 0;
-          all.push([dd, all.length - 2, o.worker_code || '', o.worker_name || '', o.worker_role || '',
-            '', '', '', 0, '', '', '', toEn(o.t_start || ''), toEn(o.t_end || ''), oh,
-            o.activity || '', o.engineer || '', oh, '', '',
-            wrkNormTime(o.t_start), wrkNormTime(o.t_end), oh || '']);
-        });
+        let dr = [], orr = [];
+        try{ dr = await supaFetch('worker_daily?select=*&' + dq, {prefer:'return=representation'}) || []; }catch(e){}
+        try{ orr = await supaFetch('worker_ot?select=*&' + dq, {prefer:'return=representation'}) || []; }catch(e){}
+        const dMap = new Map(), oMap = new Map();
+        dr.forEach(r => dMap.set(wrkRowKey(r), r));
+        orr.forEach(r => oMap.set(wrkRowKey(r), r));
+        const items = wrkDayItems(dd, dMap, oMap);
+        if(!items.length || isFridayFa(dd) && !dr.length && !orr.length) continue;
+        perDay.push([dd, items]);
       }
-      const wb = XLSX.utils.book_new();
-      const sh = XLSX.utils.aoa_to_sheet(all);
-      wrkXlsTypes(sh, WRK_HRS_TIME_COLS.map(c => c + 1), [WRK_HRS_CODE_COL + 1], 2);
-      sh['!cols'] = [{wch:12}].concat(WRK_HRS_COLS.map((c, i) =>
-        ({wch: (i === 2 ? 22 : (i === 8 || i === 14 ? 34 : 12))})));
-      XLSX.utils.book_append_sheet(wb, sh, 'کارکرد ماه');
-      XLSX.writeFile(wb, 'کارکرد کارگران - ماه منتهی به ' + toFa(end).replace(/\//g,'-') + '.xlsx');
+      if(!perDay.length){ showDialog('warn','داده‌ای نیست','در این بازه کارکردی پیدا نشد.'); return; }
+      XLSX.utils.book_append_sheet(wb, wrkSpanSheetOf(perDay), 'بازه‌ها');
+      perDay.forEach(([dd, items]) =>
+        XLSX.utils.book_append_sheet(wb, wrkSheetOf(items, 'کارکرد کارگران — ' + toFa(dd)), xlsSheetName(dd)));
+      XLSX.writeFile(wb, 'کارکرد کارگران - ماه منتهی به ' + xlsSheetName(end) + '.xlsx');
     }catch(err){
       showDialog('err','گرفته نشد', friendlyErr(err));
     }finally{
@@ -47149,6 +47345,8 @@
       + '</div>';
   }
 
+  let wrkPendOpen = false;
+  document.addEventListener('toggle', e => { if(e.target && e.target.classList && e.target.classList.contains('wman-pbox')) wrkPendOpen = e.target.open; }, true);
   function wrkManHtml(){
     const admin = wrkIsAdmin();
     const pendWhat = c => {
@@ -47168,9 +47366,13 @@
       return esc(c.worker_name || '')
         + (bits.length ? '<br>' + esc(bits.join(' · ')) : '');
     };
+    /* درخواست‌ها جمع‌شده‌اند؛ با لمس باز می‌شوند. جریمه‌ها جدا در بخش
+       «جریمه‌ها»ی پنل ادمین و سرپرست کارگاه هم هستند. */
+    const nFine = wrkPending.filter(isFineAny).length;
     const pend = wrkPending.length
-      ? '<div class="rc-title">درخواست‌های در انتظار تأیید <span class="wrk-stat">'
-        + toFa(wrkPending.length) + '</span></div>'
+      ? '<details class="wman-pbox"' + (wrkPendOpen ? ' open' : '') + '><summary><span class="wpb-ic">!</span>'
+        + '<b>' + toFa(wrkPending.length) + ' درخواست در انتظار تأیید</b>'
+        + (nFine ? '<em>' + toFa(nFine) + ' جریمه</em>' : '') + '<i class="wpb-ar">▾</i></summary><div class="wpb-body">'
         + wrkPending.map(c => '<div class="wman-pend"><b>'
             + esc(isFineReq(c) ? 'جریمه (تأیید سرپرست کارگاه)' : c.kind === 'role' ? 'تغییر مشخصات کارگر'
                 : c.kind === 'add' ? 'افزودن کارگر'
@@ -47191,7 +47393,7 @@
                   + '<button type="button" class="mini" data-wno="' + esc(c.id) + '">رد</button>'
                   + '</div>'
                 : '<div class="wp-meta">در انتظار تأیید ادمین</div>')
-            + '</div>').join('')
+            + '</div>').join('') + '</div></details>'
       : '';
     /* ====== کارت کارگر v2 ======
        سربرگ جمع‌وجور (نام، سمت، کد، دور حضور، دریافتی) و یک پنل ویرایش
@@ -47482,8 +47684,10 @@
         const c = wrkData[kind].get(key);
         if(!c || !c.id || !c.orig || !wrkDirty[kind].has(key)) return;
         const tx = wrkDiffText(kind, c.orig, c);
+        const o = c.orig || {};
+        const prevJ = JSON.stringify({engineer: o.engineer || '', state: o.state || 'ok', t1: o.t1 || '', t2: o.t2 || '', zone: o.zone || '', activity: o.activity || ''});
         if(tx) logs.push({date_fa: todayShamsi(), from_name: me, to_name: c.engineer || me, kind: WRK_LOG_KIND,
-          item_id: wrkLogKey(kind, w.code || key), title: toEn(d), message: tx, seen: true});
+          item_id: wrkLogKey(kind, w.code || key), title: toEn(d), message: tx + WRK_PREV_SEP + prevJ, seen: true});
       });
       gone.forEach(code => {
         logs.push({date_fa: todayShamsi(), from_name: me, to_name: me, kind: WRK_LOG_KIND,
