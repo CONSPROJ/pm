@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14171c" media="(prefers-color-scheme: dark)">
@@ -18639,6 +18639,16 @@
   .am2-hist span.last{background:var(--ink);color:var(--surface);}
   .am2-hist > i{width:8px;height:1.5px;background:var(--line);}
   .am2-empty{font-size:11.5px;color:var(--muted);text-align:center;padding:8px;}
+  /* مطالبات: گروه‌های نزد کارفرما / درون‌سازمانی / تسویه‌شده */
+  .rc2-sec{display:flex;flex-direction:column;gap:8px;}
+  .rc2-sec + .rc2-sec{margin-top:10px;}
+  .rc2-sh{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:6px 4px 2px;}
+  .rc2-sh i{width:10px;height:10px;border-radius:3px;background:#b39ddb;}
+  .rc2-sec.in .rc2-sh i{background:#5fa8d3;} .rc2-sec.ok .rc2-sh i{background:var(--ok);}
+  .rc2-sh b{font-size:13.5px;font-weight:900;color:var(--ink);}
+  .rc2-sh small{font-size:10.5px;color:var(--muted);}
+  .rc2-sh span{margin-inline-start:auto;font-size:11px;font-weight:800;color:var(--muted);}
+  .rcs-one{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
   /* ===== گفتگو v3: نظرها، تلنگرها، نام‌بردن و فیلد نوشتن ===== */
   .cm-panel:has(> .cm3){padding:0 !important;overflow:hidden;border-radius:20px !important;background:var(--surface) !important;border:1px solid var(--line) !important;box-shadow:0 14px 34px -26px rgba(0,0,0,.5) !important;}
   [data-theme="dark"] .cm-panel:has(> .cm3){background:rgba(255,255,255,.03) !important;border-color:rgba(255,255,255,.08) !important;}
@@ -23995,6 +24005,17 @@
       + '</div></div></div>';
   }
 
+  /* به‌روزرسانی متن پیام. اگر ستون «تاریخچه ویرایش» (edit_log) در پایگاه
+     داده نباشد سرور ۴۰۰ می‌دهد؛ آن‌وقت بدون تاریخچه دوباره فرستاده می‌شود. */
+  async function msgUpdate(id, text, log){
+    let ok = await sendAction({action:'update', target:'nudge', id: id,
+      values:{'پیام': text, 'تاریخچه ویرایش': log}});
+    if(!ok){
+      lastServerError = '';
+      ok = await sendAction({action:'update', target:'nudge', id: id, values:{'پیام': text}});
+    }
+    return ok;
+  }
   /* ====== ویرایش و حذف پیام ======
      قاعده: هر کس پیام خودش را تا یک روز می‌تواند عوض کند یا بردارد.
      ادمین بی‌محدودیت زمانی و برای همه.
@@ -24398,11 +24419,7 @@
         dl.disabled = true; dl.textContent = '...';
         const row0 = (allMessages || []).find(x =>
           String(pick(x,N.id)) === String(dl.dataset.msgDel)) || {};
-        const ok = await sendAction({action:'update', target:'nudge',
-          id: dl.dataset.msgDel, values:{
-            'پیام': MSG_DELETED,
-            'تاریخچه ویرایش': msgLogPush(row0, pick(row0,N.msg))
-          }});
+        const ok = await msgUpdate(dl.dataset.msgDel, MSG_DELETED, msgLogPush(row0, pick(row0,N.msg)));
         if(!ok){
           dl.disabled = false; dl.textContent = 'حذف';
           showDialog('err','حذف نشد', lastServerError || 'دوباره تلاش کنید.');
@@ -24464,11 +24481,7 @@
           const tx = bub.querySelector('.b-text'); if(tx) tx.hidden = false;
           return;
         }
-        const ok = await sendAction({action:'update', target:'nudge',
-          id: sv.dataset.msgSave, values:{
-            'پیام': val,
-            'تاریخچه ویرایش': msgLogPush(row1, pick(row1,N.msg))
-          }});
+        const ok = await msgUpdate(sv.dataset.msgSave, val, msgLogPush(row1, pick(row1,N.msg)));
         if(!ok){
           sv.disabled = false; sv.textContent = 'ثبت';
           showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.');
@@ -24928,6 +24941,41 @@
     });
   })();
 
+
+  /* ====== لایه‌بندی پنجره‌ها ======
+     هر پنجره‌ای که باز می‌شود روی پنجره‌های بازِ قبلی می‌نشیند. پیش‌تر
+     پروفایل یا کارت تماس که از داخل کارت پیمانکار یا کارت فعالیت باز
+     می‌شد، z-index کمتری داشت و پشت آن پنهان می‌ماند. */
+  (function(){
+    if(typeof MutationObserver !== 'function') return;
+    const zOf = el => { const z = parseInt(getComputedStyle(el).zIndex, 10); return isNaN(z) ? 0 : z; };
+    const lift = el => {
+      if(!el || el.hidden || !el.classList || !el.classList.contains('modal-bg')) return;
+      let top = 0;
+      document.querySelectorAll('.modal-bg').forEach(o => { if(o !== el && !o.hidden && getComputedStyle(o).display !== 'none') top = Math.max(top, zOf(o)); });
+      if(top >= zOf(el)){
+        if(el.dataset.zKeep === undefined) el.dataset.zKeep = el.style.zIndex || '';
+        el.style.zIndex = String(top + 1);
+      }
+    };
+    const drop = el => {
+      if(!el || !el.dataset || el.dataset.zKeep === undefined) return;
+      el.style.zIndex = el.dataset.zKeep; delete el.dataset.zKeep;
+    };
+    const obs = new MutationObserver(muts => {
+      muts.forEach(m => {
+        if(m.type === 'attributes'){
+          const el = m.target;
+          if(!el.classList || !el.classList.contains('modal-bg')) return;
+          if(el.hidden) drop(el); else lift(el);
+        }else{
+          m.addedNodes.forEach(n => { if(n.nodeType === 1 && n.classList.contains('modal-bg') && !n.hidden) lift(n); });
+        }
+      });
+    });
+    const start = () => obs.observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['hidden']});
+    if(document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  })();
   /* ====== پروفایل کاربر ====== */
   (function(){
     const bg = document.getElementById('profileModal');
@@ -46904,8 +46952,12 @@
     const all = statements || [];
     if(!all.length) return '<div class="empty">صورت وضعیتی ثبت نشده است.</div>';
 
-    const byParty = new Map();
+    /* گروه‌بندی بر اساس مرحلهٔ فعلی هر سند (نه تاریخ‌های گذشته):
+       نزد کارفرما، درون‌سازمانی، تسویه‌شده. پیش‌تر هر سندی که روزی
+       تأیید داخلی/پیمانکار گرفته بود «دست کارفرما» حساب می‌شد. */
+    const G = {cl: new Map(), in: new Map(), ok: new Map()};
     let tAmount = 0, tPaid = 0, tRest = 0;
+    const stageOf = r => String((typeof effectiveReview === 'function' ? effectiveReview(r) : '') || pick(r,AD.review) || '');
 
     all.forEach(r => {
       const party = pick(r,AD.sParty) || pick(r,AD.sName) || 'نامشخص';
@@ -46913,40 +46965,36 @@
       const paid = paidOf(r);
       const done = isPaid(r);
       const rest = done ? 0 : Math.max(amount - paid, 0);
-      // مبنای تطویل: تاریخ ورود به بررسی کارفرما
-      const cs = clientStart(r);
-      const dl = (done || !cs) ? null : daysSince(cs);
+      const st = stageOf(r);
+      const atCl = !done && (AT_CLIENT.indexOf(st) !== -1 || atClientNow(r));
+      const grp = (done || !rest) ? 'ok' : (atCl ? 'cl' : 'in');
+      // تطویل فقط برای سندی که الان نزد کارفرماست
+      const cs = atCl ? clientStart(r) : '';
+      const dl = cs ? daysSince(cs) : null;
 
       tAmount += amount; tPaid += paid; tRest += rest;
-      if(!byParty.has(party))
-        byParty.set(party, {party, amount:0, paid:0, rest:0, count:0,
-                            open:0, maxDelay:0, atClient:0, oldest:'', docs:[]});
-      const o = byParty.get(party);
-      /* سندهای باز این پیمانکار، جدا: دست کارفرما یا هنوز داخل */
-      if(!done && rest > 0) o.docs.push({id: pick(r,AD.id), no: pick(r,AD.sNo), rest, dl,
-        client: !!(cs || atClientNow(r)), stage: String(effectiveReview ? (effectiveReview(r) || '') : (pick(r,AD.review) || '')) || 'ثبت اولیه'});
+      const M = G[grp];
+      if(!M.has(party))
+        M.set(party, {party, amount:0, paid:0, rest:0, count:0,
+                      open:0, maxDelay:0, atClient:0, oldest:'', docs:[]});
+      const o = M.get(party);
+      if(rest > 0) o.docs.push({id: pick(r,AD.id), no: pick(r,AD.sNo), rest, dl, client: atCl, stage: st || 'ثبت اولیه'});
       o.amount += amount; o.paid += paid; o.rest += rest; o.count++;
       if(!done) o.open++;
-      if(!done && (cs || atClientNow(r))) o.atClient++;
+      if(atCl) o.atClient++;
       if(dl != null && dl > o.maxDelay){ o.maxDelay = dl; o.oldest = cs; }
     });
 
-    /* ترتیب: تطویل بیشتر اول (بحرانی‌ها بالا)، بعد مطالبات بزرگ‌تر،
-       و تسویه‌شده‌ها ته فهرست. پیش‌تر فقط مبلغ ملاک بود و موردی که ۳۰
-       روز دست کارفرما مانده بود، پایین‌تر از یک مطالبات تازه می‌افتاد. */
-    const list = Array.from(byParty.values()).sort((a, b) => {
-      const sa = a.rest ? 0 : 1, sb = b.rest ? 0 : 1;
-      if(sa !== sb) return sa - sb;
-      if((b.maxDelay || 0) !== (a.maxDelay || 0)) return (b.maxDelay || 0) - (a.maxDelay || 0);
-      return b.rest - a.rest;
-    });
-    /* آستانهٔ تطویل: بیش از ۱۰ روز بحرانی، بیش از ۵ روز هشدار.
-       عددها پایین آمدند چون در این پروژه ده روز تأخیر کارفرما
-       واقعاً بحرانی است، نه نود روز. */
     const tone = x => !x.rest ? 'settled'
       : (x.maxDelay > 10 ? 'hot' : (x.maxDelay > 5 ? 'warm' : 'open'));
+    const docsHtml = x => !x.docs.length ? '' : '<div class="rcs-one">' + x.docs
+      .sort((a, b) => (b.dl || 0) - (a.dl || 0) || b.rest - a.rest)
+      .map(d => '<button type="button" class="rcs-d" data-goto-kind="statement" data-goto-id="' + esc(String(d.id || '')) + '">'
+        + '<span><b>' + (d.no ? 'شمارهٔ ' + esc(toFa(d.no)) : 'بی‌شماره') + '</b><small>'
+        + (d.client ? (d.dl != null ? toFa(d.dl) + ' روز نزد کارفرما' : 'تاریخ ارسال ثبت نشده') : esc(d.stage)) + '</small></span>'
+        + '<i>' + esc(arToman(d.rest)) + '</i></button>').join('') + '</div>';
 
-    const cards = list.map(x => {
+    const card = (x, grp) => {
       const pct = x.amount ? Math.min(100, Math.round(x.paid / x.amount * 100)) : 0;
       return '<div class="rc2 ' + tone(x) + '" data-rcparty="' + esc(x.party) + '">'
         + '<button type="button" class="rc2-h" aria-expanded="false">'
@@ -46955,7 +47003,7 @@
         +   '<span class="rc2-bar" title="' + toFa(pct) + '٪ پرداخت شده"><i style="width:' + pct + '%"></i></span>'
         +   '<span class="rc2-v"><b>' + (x.rest ? arToman(x.rest) : 'تسویه شده') + '</b>'
         +     '<u>' + (x.rest ? 'تومان مانده' : arToman(x.amount) + ' تومان') + '</u></span>'
-        +   '<span class="rc2-d">' + ((x.rest && x.maxDelay) ? toFa(x.maxDelay) + ' روز' : '—') + '</span>'
+        +   '<span class="rc2-d">' + ((grp === 'cl' && x.maxDelay) ? toFa(x.maxDelay) + ' روز' : '—') + '</span>'
         +   '<span class="rc2-ar">' + AR_I.chev + '</span>'
         + '</button>'
         + '<div class="rc2-b"><div class="rc2-in"><div class="recv-card ' + tone(x) + '">'
@@ -46964,19 +47012,15 @@
         +   '<span class="rh-amt">' + esc(money(x.rest || x.amount))
         +     '<u>' + (x.rest ? 'مطالبات' : 'تسویه شده') + '</u></span>'
         + '</div>'
-        + ((x.rest && x.maxDelay)
+        + ((grp === 'cl' && x.maxDelay)
             ? '<div class="recv-age">'
               + '<span class="ra-n">' + toFa(x.maxDelay) + '</span>'
               + '<span class="ra-t">روز تطویل، از ارسال به بررسی کارفرما</span>'
               + '</div>'
               + (x.oldest ? delayCalHtml(x.oldest) : '')
-            : (x.rest
-                ? '<div class="recv-age quiet">'
-                  + '<span class="ra-t">'
-                  + (x.atClient
-                      ? 'دست کارفرماست، ولی تاریخ ارسالش ثبت نشده'
-                      : 'هنوز به بررسی کارفرما نرفته')
-                  + '</span></div>' : ''))
+            : (grp === 'cl'
+                ? '<div class="recv-age quiet"><span class="ra-t">نزد کارفرماست، ولی تاریخ ارسالش ثبت نشده</span></div>'
+                : (grp === 'in' ? '<div class="recv-age quiet"><span class="ra-t">هنوز درون‌سازمانی است و به کارفرما نرفته</span></div>' : '')))
         + '<div class="recv-bar" title="' + toFa(pct) + '٪ پرداخت شده">'
         +   '<i style="width:' + pct + '%"></i>'
         + '</div>'
@@ -46985,15 +47029,29 @@
         +   '<span><u>پرداخت‌شده</u><b>' + esc(money(x.paid))
         +     ' <em>' + toFa(pct) + '٪</em></b></span>'
         + '</div>'
-        + rcSplitHtml(x)
+        + docsHtml(x)
         + '<div class="recv-foot">'
         +   '<span><u>تعداد اسناد</u><b>' + toFa(x.count)
         +     (x.open ? ' <em>' + toFa(x.open) + ' باز</em>' : '') + '</b></span>'
-        +   (x.atClient
-              ? '<span><u>دست کارفرما</u><b>' + toFa(x.atClient) + ' سند</b></span>' : '')
         + '</div>'
         + '</div></div></div></div>';
-    }).join('');
+    };
+    const sorted = (M, grp) => Array.from(M.values()).sort((a, b) =>
+      grp === 'cl' ? ((b.maxDelay || 0) - (a.maxDelay || 0) || b.rest - a.rest)
+      : grp === 'in' ? (b.rest - a.rest) : (b.amount - a.amount));
+    const sumRest = M => Array.from(M.values()).reduce((t, x) => t + x.rest, 0);
+    const sec = (grp, title, sub) => {
+      const L = sorted(G[grp], grp);
+      if(!L.length) return '';
+      const tot = grp === 'ok' ? Array.from(G.ok.values()).reduce((t, x) => t + x.amount, 0) : sumRest(G[grp]);
+      return '<div class="rc2-sec ' + grp + '"><div class="rc2-sh"><i></i><b>' + title + '</b>'
+        + '<small>' + sub + '</small>'
+        + '<span>' + toFa(L.length) + ' پیمانکار · ' + esc(arToman(tot)) + ' تومان</span></div>'
+        + L.map(x => card(x, grp)).join('') + '</div>';
+    };
+    const cards = sec('cl', 'نزد کارفرما', 'به ترتیب بیشترین تطویل')
+      + sec('in', 'درون‌سازمانی', 'هنوز به کارفرما نرفته')
+      + sec('ok', 'تسویه‌شده', '');
 
     const pctAll = tAmount ? Math.min(100, Math.round(tPaid / tAmount * 100)) : 0;
     const head = '<div class="recv-sum">'
