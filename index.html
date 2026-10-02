@@ -11338,12 +11338,14 @@
   .dk-card .dk-text{font-size:11.5px !important;margin:0 !important;}
   .dk-card .dk-xbtn{height:30px !important;}
   .dk-card .dk-edit2 .dk-ehead{min-height:36px !important;}
-  .dk-peek{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:7px;width:100%;padding:6px 9px;border-radius:11px;background:var(--field);font:400 11.5px var(--f);color:var(--ink);}
-  .dk-peek .ava{width:22px;height:22px;flex:0 0 22px;font-size:8.5px;}
-  .dk-peek span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .dk-peek span b{font-weight:800;margin-inline-end:5px;}
-  .dk-peek em{font-style:normal;font-size:10px;font-weight:800;color:var(--sky);flex:none;}
-  [data-theme="dark"] .dk-peek{background:rgba(255,255,255,.05);}
+
+  /* پیشرفت در کارت فعالیت، برای همهٔ نوع‌ها یک شکل: قاب خنثی، فقط رنگ نوار از وضعیت */
+  .dk-card .dk-adm .pgx{background:var(--surface) !important;border:1px solid var(--line) !important;}
+  [data-theme="dark"] .dk-card .dk-adm .pgx{background:rgba(255,255,255,.03) !important;}
+  .dk-card .dk-adm .pgx .pgx-l{color:var(--muted) !important;font-weight:700;}
+  .dk-card .dk-adm .pgx .pgx-v{color:var(--ink) !important;font-weight:900;}
+  .dk-card .dk-cmlist{margin:0;}
+  .dk-card .dk-cmrow span{white-space:normal !important;overflow:visible !important;-webkit-line-clamp:unset !important;display:block;}
   /* انتخاب شخص با فهرست بازشو */
   .dk-pwrap{position:relative;width:100%;}
   .dk-pbtn{
@@ -55323,12 +55325,6 @@
     return bits.length ? '<div class="dk-info">' + bits.join('<i class="dot"></i>') + '</div>' : '';
   }
 
-  document.addEventListener('click', e => {
-    const p = e.target.closest('[data-dk-peek]');
-    if(!p) return;
-    const c = p.closest('.dk-card'); const b = c && c.querySelector('.cm-open');
-    if(b) b.click();
-  });
   const dkMoreBtn = t => '<button type="button" class="dk-xbtn" data-dk-x="1"><span>' + t + '</span>'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></button>';
   document.addEventListener('click', e => {
@@ -55372,22 +55368,14 @@
       + commentBarHtml('task', id, title, {owner: owner, shareBody: ['فعالیت', owner ? 'مسئول: ' + owner : '', 'وضعیت: ' + st.label, due ? 'موعد: ' + taskDate(due) : ''].filter(Boolean).join('\n')})
       + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
       + '</div></div>'
-      + dkCmPeek(x)
+      + dkCmPeek(x, i)
       + blk
       + (more ? dkMoreBtn('جزئیات' + (nb ? ' · ' + toFa(nb) + ' مانع' : '')) + '<div class="dk-xbody">' + more + '</div>' : '');
   }
-  /* خلاصهٔ نظرها مثل قبل: آخرین نظر در یک خط، با شمار کل؛ لمس، نظرها را باز می‌کند */
-  function dkCmPeek(x){
-    const id = x.goto && x.goto.id;
-    if(!id) return '';
-    const rows = (commentCache.rows || []).filter(r => String(pick(r,N.itemId)) === String(id))
-      .sort((a, b) => String(pick(a,N.time)).localeCompare(String(pick(b,N.time))));
-    if(!rows.length) return '';
-    const r = rows[rows.length - 1];
-    const who = pick(r,N.from) || '';
-    return '<button type="button" class="dk-peek" data-dk-peek="1">' + avatarHtml(who, '', true)
-      + '<span><b>' + esc(String(who).replace(/^(آقای|خانم|مهندس)\s+/, '')) + '</b>' + esc(String(cmParts(r).text || pick(r,N.msg) || '')) + '</span>'
-      + '<em>' + toFa(rows.length) + ' نظر</em></button>';
+  /* آخرین نظرها کامل، مثل قبل: دو نظر آخر با متن کامل و پسند؛ «دیدن همه» بقیه را باز می‌کند */
+  function dkCmPeek(x, i){
+    const h = deckCommentsHtml(x, i);
+    return /dk-cmlist empty/.test(h) ? '' : h;
   }
   /* شل عمومی برای بقیهٔ موردها (نقص گزارش، صورتجلسه، طراحی و…) تا هم‌شکل بقیه باشند */
   function dkGenShellHtml(x, row, kind, i){
@@ -55408,7 +55396,7 @@
       + (x.goto && x.goto.id ? commentBarHtml(kind || 'task', x.goto.id, x.title || '', {owner: owner}) : '')
       + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
       + '</div></div>'
-      + dkCmPeek(x)
+      + dkCmPeek(x, i)
       + (x.text ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
       + (more ? dkMoreBtn('جزئیات') + '<div class="dk-xbody">' + more + '</div>' : '');
   }
@@ -55429,7 +55417,7 @@
       /* صورت وضعیت، قرارداد و نامه: دقیقاً همان کارت دفتر فنی (با نظرات،
          تلنگر و اشتراک)، نه نسخهٔ خلاصهٔ جدا */
       + (dkSameCard ? '<div class="dk-adm adm-host">' + admCard(kind, row, false) + '</div>'
-          + dkCmPeek(x) : '')
+          + dkCmPeek(x, i) : '')
       + (dkTask ? dkTaskShellHtml(x, row, i) : '')
       + ((dkSameCard || dkTask) ? '' : dkGenShellHtml(x, row, kind, i))
       + '<div class="dk-bottom">'
