@@ -18330,6 +18330,13 @@
   .rs-sta i{font-style:normal;font-size:10px;font-weight:700;padding:1px 8px;border-radius:99px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);margin-top:2px;}
   .rs-st.cl .rs-sta i{background:rgba(179,157,219,.2);color:#d1c4f0;} .rs-st.ok .rs-sta i{background:rgba(95,192,138,.18);color:#8fe0b0;}
   @media (max-width: 520px){ .rs-mny.three span{padding:9px 10px;} .rs-mny.three b{font-size:14px;} }
+
+  /* کاشی گزارش تصویری تمام‌عرض، تا ردیف آخر خالی نماند */
+  #viewKindCaps .rk-show{grid-column:1 / -1;}
+  /* قراردادها در نمایش */
+  .rs-st.ct{border-inline-start-color:#b39ddb;}
+  .rs-cp{display:block;height:4px;margin-top:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;width:min(220px, 100%);}
+  .rs-cp i{display:block;height:100%;width:var(--p);border-radius:99px;background:linear-gradient(90deg, #b39ddb, #7e6bc4);transform-origin:right;animation:rsW .9s calc(.5s + var(--j) * .09s) cubic-bezier(.22,.8,.2,1) both;}
   /* دکمهٔ نمایش گزارش روی کارتابل */
   .kt-show{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:11px 14px;border-radius:16px;
     background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.25);font:800 13px var(--f);color:#fff;position:relative;overflow:hidden;}
@@ -29197,6 +29204,24 @@
       + '<div class="rs-bld"><div class="rs-roof"></div>' + fl + '</div>'
       + (tot > mapped ? '<p class="rs-note">' + toFa(Math.round(tot - mapped)) + ' نفر در محل‌هایی بیرون از تفکیک طبقات کار کرده‌اند.</p>' : '')};
   }
+  /* قراردادها: تعداد، جمع مبلغ، پرداخت‌شده، مانده؛ و بزرگ‌ترین قراردادها با درصد پرداخت و مرحله */
+  function rsContractSlide(cs){
+    if(!cs.length) return null;
+    const amtOf = r => moneyNum(pick(r,AD.cAmount)), paidC = r => moneyNum(pick(r,AD.cPaid));
+    const tot = cs.reduce((t, r) => t + amtOf(r), 0), pd = cs.reduce((t, r) => t + paidC(r), 0);
+    const open = cs.filter(r => { const v = String(pick(r,AD.review) || ''); return v !== 'تایید شده' && v !== RV_PAID; }).length;
+    const L = cs.slice().sort((a, b) => amtOf(b) - amtOf(a)).slice(0, 4);
+    const k = (v, l) => '<div class="rs-k"><b>' + v + '</b><u>' + l + '</u></div>';
+    return {key:'ctr2', h: '<div class="rs-h"><span class="rs-tag">قراردادها</span><h2>' + rsCU(cs.length) + ' <small>قرارداد · ' + esc(arToman(tot)) + ' تومان</small></h2></div>'
+      + '<div class="rs-two">' + rsRing(tot ? pd / tot * 100 : 0, 'پرداخت‌شده', '#b39ddb')
+      + '<div class="rs-ks v">' + k(rsCU(open), 'در جریان بررسی') + k(rsCU(cs.length - open), 'تأییدشده') + k(esc(arToman(Math.max(tot - pd, 0))), 'ماندهٔ قراردادها') + '</div></div>'
+      + '<div class="rs-sts"><span class="rs-stc">بزرگ‌ترین قراردادها</span>' + L.map((r, j) => {
+          const a = amtOf(r), p = a ? Math.round(paidC(r) / a * 100) : 0, rv = String(effectiveReview(r) || pick(r,AD.review) || '') || 'ثبت اولیه';
+          return '<div class="rs-st ct" style="--j:' + j + ';--p:' + Math.min(100, p) + '%"><span class="rs-stn"><b>' + esc(admParty('contract', r) || pick(r,AD.cTitle) || '—') + '</b>'
+            + '<small>' + (pick(r,AD.cNo) ? esc(toFa(pick(r,AD.cNo))) + ' · ' : '') + esc(String(pick(r,AD.cTitle) || '').slice(0, 40)) + '</small><em class="rs-cp"><i></i></em></span>'
+            + '<span class="rs-sta"><b>' + esc(arToman(a)) + '</b><i>' + toFa(p) + '٪ پرداخت · ' + esc(rv) + '</i></span></div>';
+        }).join('') + '</div>'};
+  }
   function rsCount(sec){
     if(!sec) return;
     const red = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29263,18 +29288,19 @@
       + '<div class="rs-ks v">' + k(toFa(st.length), 'صورت وضعیت') + k(toFa(atCl), 'نزد کارفرما', maxDl ? '<em class="dn">قدیمی‌ترین ' + toFa(maxDl) + ' روز</em>' : '') + k(toFa(inRev), 'در بررسی') + '</div></div>'
       + '<div class="rs-mny three"><span><u>جمع صورت وضعیت‌ها</u><b>' + esc(arToman(amt)) + '</b></span><span><u>پرداخت‌شده</u><b>' + esc(arToman(paid)) + '</b></span><span class="due"><u>مطالبات</u><b>' + esc(arToman(rest)) + '</b></span></div>'
       + (function(){
-          /* آخرین صورت وضعیت‌ها: پیمانکار، شماره، مبلغ و جایی که الان هست */
-          const L = st.slice().map(r => ({r, d: faToDate(admSentDate('statement', r) || pick(r,AD.date) || '')}))
-            .sort((a, b) => (b.d ? b.d.getTime() : 0) - (a.d ? a.d.getTime() : 0)).slice(0, 4);
+          /* بیشترین مطالبهٔ پرداخت‌نشده: پیمانکار، شماره، مانده و جایی که الان هست */
+          const L = st.filter(r => !isPaid(r)).map(r => ({r, rest: Math.max(moneyNum(pick(r,AD.sAmount)) - paidOf(r), 0)}))
+            .filter(x => x.rest > 0).sort((a, b) => b.rest - a.rest).slice(0, 4);
           if(!L.length) return '';
-          return '<div class="rs-sts"><span class="rs-stc">آخرین صورت وضعیت‌ها</span>' + L.map(({r}, j) => {
+          return '<div class="rs-sts"><span class="rs-stc">بیشترین مطالبات پرداخت‌نشده</span>' + L.map(({r, rest: rr}, j) => {
             const done = isPaid(r), rv = String(effectiveReview(r) || '') || 'ثبت اولیه';
             const cls = done ? 'ok' : (atClientNow(r) ? 'cl' : 'in');
             return '<div class="rs-st ' + cls + '" style="--j:' + j + '"><span class="rs-stn"><b>' + esc(pick(r,AD.sParty) || pick(r,AD.sName) || '—') + '</b>'
               + '<small>' + (pick(r,AD.sNo) ? 'شمارهٔ ' + esc(toFa(pick(r,AD.sNo))) + ' · ' : '') + esc(admDate(admSentDate('statement', r) || pick(r,AD.date) || '') || '') + '</small></span>'
-              + '<span class="rs-sta"><b>' + esc(arToman(moneyNum(pick(r,AD.sAmount)))) + '</b><i>' + esc(done ? 'پرداخت شده' : rv) + '</i></span></div>';
+              + '<span class="rs-sta"><b>' + esc(arToman(rr)) + '</b><i>' + esc(done ? 'پرداخت شده' : rv) + '</i></span></div>';
           }).join('') + '</div>';
         })()});
+    { const cs = rsContractSlide(D.admin.contracts || []); if(cs) S.push(cs); }
     S.push({key:'iss', h: '<div class="rs-h"><span class="rs-tag">موانع هفته</span><h2>' + toFa(iss.length) + ' <small>مانع</small></h2></div>'
       + (iss.length ? rsBars(Array.from(byW.entries()).sort((a, b) => b[1] - a[1]), 5, 'bad')
         + '<div class="rs-list">' + iss.slice(0, 3).map((r, j) => '<div class="rs-li bad" style="--j:' + j + '"><b>' + esc(pick(r,I.text) || '—') + '</b><small>' + [pick(r,I.zone), pick(r,I.who)].filter(Boolean).map(esc).join(' · ') + '</small></div>').join('') + '</div>'
