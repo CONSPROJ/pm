@@ -18334,9 +18334,8 @@
   /* کاشی گزارش تصویری تمام‌عرض، تا ردیف آخر خالی نماند */
   #viewKindCaps .rk-show{grid-column:1 / -1;}
   /* قراردادها در نمایش */
-  .rs-st.ct{border-inline-start-color:#b39ddb;}
-  .rs-cp{display:block;height:4px;margin-top:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;width:min(220px, 100%);}
-  .rs-cp i{display:block;height:100%;width:var(--p);border-radius:99px;background:linear-gradient(90deg, #b39ddb, #7e6bc4);transform-origin:right;animation:rsW .9s calc(.5s + var(--j) * .09s) cubic-bezier(.22,.8,.2,1) both;}
+  .rs-st.ct{border-inline-start-color:var(--sc);} .rs-st.ct .rs-sta i{background:color-mix(in srgb, var(--sc) 22%, transparent);color:var(--sc);}
+  .rs-mix{animation:rsSpin 1.2s cubic-bezier(.22,.8,.2,1) both;}
   /* دکمهٔ نمایش گزارش روی کارتابل */
   .kt-show{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:11px 14px;border-radius:16px;
     background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.25);font:800 13px var(--f);color:#fff;position:relative;overflow:hidden;}
@@ -29205,21 +29204,33 @@
       + (tot > mapped ? '<p class="rs-note">' + toFa(Math.round(tot - mapped)) + ' نفر در محل‌هایی بیرون از تفکیک طبقات کار کرده‌اند.</p>' : '')};
   }
   /* قراردادها: تعداد، جمع مبلغ، پرداخت‌شده، مانده؛ و بزرگ‌ترین قراردادها با درصد پرداخت و مرحله */
+  /* قراردادها، هم‌شکل اسلاید مطالبات ولی بر پایهٔ وضعیت (بی‌پرداخت):
+     دونات چندرنگ سهم هر وضعیت، کادرهای شمارش، نمودار میله‌ای وضعیت‌ها و
+     فهرست قراردادها با وضعیت فعلی */
   function rsContractSlide(cs){
     if(!cs.length) return null;
-    const amtOf = r => moneyNum(pick(r,AD.cAmount)), paidC = r => moneyNum(pick(r,AD.cPaid));
-    const tot = cs.reduce((t, r) => t + amtOf(r), 0), pd = cs.reduce((t, r) => t + paidC(r), 0);
-    const open = cs.filter(r => { const v = String(pick(r,AD.review) || ''); return v !== 'تایید شده' && v !== RV_PAID; }).length;
+    const amtOf = r => moneyNum(pick(r,AD.cAmount));
+    const stOf = r => String(effectiveReview(r) || pick(r,AD.review) || '') || 'در حال تنظیم';
+    const grp = v => /رد/.test(v) ? 'rj' : (/تای?ی?ید شده|تأیید شده/.test(v) ? 'ok' : (/کارفرما/.test(v) ? 'cl' : (/پیمانکار/.test(v) ? 'pe' : (/داخلی/.test(v) ? 'in' : 'dr'))));
+    const G = {dr:['در حال تنظیم','#8fa3b8'], in:['بررسی داخلی','#5fa8d3'], pe:['نزد پیمانکار','#f0b35a'], cl:['نزد کارفرما','#b39ddb'], ok:['تأیید شده','#5fc08a'], rj:['رد شده','#ec7b7b']};
+    const cnt = {}; cs.forEach(r => { const g = grp(stOf(r)); cnt[g] = (cnt[g] || 0) + 1; });
+    const order = ['dr','in','pe','cl','ok','rj'].filter(g => cnt[g]);
+    let acc = 0;
+    const cone = order.map(g => { const a0 = acc; acc += cnt[g] / cs.length * 100; return G[g][1] + ' ' + a0.toFixed(2) + '% ' + acc.toFixed(2) + '%'; }).join(', ');
+    const ok = cnt.ok || 0;
+    const k = (v, l, c) => '<div class="rs-k"><b style="color:' + c + '">' + v + '</b><u>' + l + '</u></div>';
+    const tot = cs.reduce((t, r) => t + amtOf(r), 0);
     const L = cs.slice().sort((a, b) => amtOf(b) - amtOf(a)).slice(0, 4);
-    const k = (v, l) => '<div class="rs-k"><b>' + v + '</b><u>' + l + '</u></div>';
-    return {key:'ctr2', h: '<div class="rs-h"><span class="rs-tag">قراردادها</span><h2>' + rsCU(cs.length) + ' <small>قرارداد · ' + esc(arToman(tot)) + ' تومان</small></h2></div>'
-      + '<div class="rs-two">' + rsRing(tot ? pd / tot * 100 : 0, 'پرداخت‌شده', '#b39ddb')
-      + '<div class="rs-ks v">' + k(rsCU(open), 'در جریان بررسی') + k(rsCU(cs.length - open), 'تأییدشده') + k(esc(arToman(Math.max(tot - pd, 0))), 'ماندهٔ قراردادها') + '</div></div>'
-      + '<div class="rs-sts"><span class="rs-stc">بزرگ‌ترین قراردادها</span>' + L.map((r, j) => {
-          const a = amtOf(r), p = a ? Math.round(paidC(r) / a * 100) : 0, rv = String(effectiveReview(r) || pick(r,AD.review) || '') || 'ثبت اولیه';
-          return '<div class="rs-st ct" style="--j:' + j + ';--p:' + Math.min(100, p) + '%"><span class="rs-stn"><b>' + esc(admParty('contract', r) || pick(r,AD.cTitle) || '—') + '</b>'
-            + '<small>' + (pick(r,AD.cNo) ? esc(toFa(pick(r,AD.cNo))) + ' · ' : '') + esc(String(pick(r,AD.cTitle) || '').slice(0, 40)) + '</small><em class="rs-cp"><i></i></em></span>'
-            + '<span class="rs-sta"><b>' + esc(arToman(a)) + '</b><i>' + toFa(p) + '٪ پرداخت · ' + esc(rv) + '</i></span></div>';
+    const bars = order.map((g, j) => '<div class="rs-bar" style="--j:' + j + '"><span class="rs-bn">' + G[g][0] + '</span><span class="rs-bt"><i style="--w:' + Math.max(4, Math.round(cnt[g] / cs.length * 100)) + '%;background:' + G[g][1] + '"></i></span><b>' + toFa(cnt[g]) + '</b></div>').join('');
+    return {key:'ctr2', h: '<div class="rs-h"><span class="rs-tag">قراردادها</span><h2>' + rsCU(cs.length) + ' <small>قرارداد' + (tot ? ' · ' + esc(arToman(tot)) + ' تومان' : '') + '</small></h2></div>'
+      + '<div class="rs-two"><div class="rs-ring rs-mix" style="background:conic-gradient(' + cone + ')"><span><b>' + toFa(Math.round(ok / cs.length * 100)) + '٪</b><u>تأیید شده</u></span></div>'
+      + '<div class="rs-ks v">' + k(rsCU(cs.length - ok - (cnt.rj || 0)), 'در جریان', '#5fa8d3') + k(rsCU(cnt.cl || 0), 'نزد کارفرما', '#b39ddb') + k(rsCU(ok), 'تأیید شده', '#5fc08a') + '</div></div>'
+      + '<div class="rs-bars">' + bars + '</div>'
+      + '<div class="rs-sts"><span class="rs-stc">بزرگ‌ترین قراردادها و وضعیتشان</span>' + L.map((r, j) => {
+          const v = stOf(r), g = grp(v);
+          return '<div class="rs-st ct" style="--j:' + j + ';--sc:' + G[g][1] + '"><span class="rs-stn"><b>' + esc(admParty('contract', r) || pick(r,AD.cTitle) || '—') + '</b>'
+            + '<small>' + (pick(r,AD.cNo) ? esc(toFa(pick(r,AD.cNo))) + ' · ' : '') + esc(String(pick(r,AD.cTitle) || '').slice(0, 40)) + '</small></span>'
+            + '<span class="rs-sta">' + (amtOf(r) ? '<b>' + esc(arToman(amtOf(r))) + '</b>' : '') + '<i>' + esc(v) + '</i></span></div>';
         }).join('') + '</div>'};
   }
   function rsCount(sec){
