@@ -18288,6 +18288,26 @@
   .rs-gnd::before{content:"";position:absolute;inset-inline:0;top:50%;height:2px;background:repeating-linear-gradient(90deg, #b98a5a 0 8px, transparent 8px 12px);}
   .rs-gnd span{position:relative;font-size:9.5px;color:#d8a874;background:#0f2335;padding:0 6px;margin-inline-start:62px;}
   @media (prefers-reduced-motion: reduce){ .rs-fl, .rs-fb i{animation:none !important;opacity:1;} }
+
+  /* نشانه‌های بیشینه/کمینه/آخرین روی روند، بیرون از SVG */
+  .rs-trend{position:relative;}
+  .rs-mks{position:absolute;left:0;right:0;top:10px;height:clamp(160px, 30vh, 240px);pointer-events:none;}
+  .rs-mk{position:absolute;transform:translate(-50%, -50%);display:flex;flex-direction:column-reverse;align-items:center;gap:4px;opacity:0;}
+  .rs-s.on .rs-mk{animation:rsFadeIn .4s 2s ease forwards;}
+  .rs-mk i{width:12px;height:12px;border-radius:50%;background:#0f2335;border:3px solid #fff;box-sizing:border-box;flex:none;}
+  .rs-mk b{font:800 12px var(--f);white-space:nowrap;padding:2px 8px;border-radius:99px;background:rgba(10,20,32,.75);transform:translateY(-2px);}
+  .rs-mk{flex-direction:column-reverse;} .rs-mk b{order:0;}
+  .rs-mk:not(.dn){transform:translate(-50%, calc(-100% + 6px));}
+  .rs-mk.dn{flex-direction:column;transform:translate(-50%, -6px);}
+  .rs-mk.mx i{border-color:#5fc08a;} .rs-mk.mx b{color:#7fe0a6;}
+  .rs-mk.mn i{border-color:#ec7b7b;} .rs-mk.mn b{color:#f5a3a3;}
+  .rs-mk.ls i{border-color:#f0b35a;} .rs-mk.ls b{color:#f0b35a;}
+  /* ساختمان در نمایش: باریک‌تر و وسط، نوار نازک‌تر و ردیف‌ها بازتر */
+  .rs-bld{max-width:420px;width:100%;margin:0 auto;box-sizing:border-box;gap:4px !important;}
+  .rs-fl{grid-template-columns:70px 1fr 30px !important;}
+  .rs-fb{height:8px !important;align-self:center;}
+  .rs-fl.peak .rs-fb{height:10px !important;}
+  .rs-fn{font-size:10.5px !important;}
   /* دکمهٔ نمایش گزارش روی کارتابل */
   .kt-show{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:11px 14px;border-radius:16px;
     background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.25);font:800 13px var(--f);color:#fff;position:relative;overflow:hidden;}
@@ -29095,8 +29115,14 @@
     const half = Math.floor(vs.length / 2), a1 = vs.slice(0, half), a2 = vs.slice(half);
     const m1 = a1.reduce((a, b) => a + b, 0) / Math.max(1, a1.length), m2 = a2.reduce((a, b) => a + b, 0) / Math.max(1, a2.length);
     const tr = m1 ? Math.round((m2 - m1) / m1 * 100) : 0;
-    const dot = (i, cls, t) => '<g class="rs-pt ' + cls + '" style="--x:' + (X(i) / W * 100).toFixed(2) + '%"><circle cx="' + X(i).toFixed(1) + '" cy="' + Y(vs[i]).toFixed(1) + '" r="6"/></g>'
-      + '<text x="' + X(i).toFixed(1) + '" y="' + (Y(vs[i]) - 13).toFixed(1) + '" class="rs-pl ' + cls + '">' + t + '</text>';
+    /* نشانه‌ها بیرون از SVG کشیده می‌شوند تا با کش آمدن نمودار، دایره بیضی و
+       نوشته کج نشود؛ اگر نقطه بالای نمودار است، برچسب زیرش می‌نشیند */
+    const marks = [];
+    const dot = (i, cls, t) => {
+      const x = Math.max(4, Math.min(96, X(i) / W * 100)), y = Y(vs[i]) / H * 100;
+      marks.push('<span class="rs-mk ' + cls + (y < 26 ? ' dn' : '') + '" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%"><i></i><b>' + t + '</b></span>');
+      return '';
+    };
     return {key:'trend', h: '<div class="rs-h"><span class="rs-tag">روند ۳۰ روز</span><h2>' + rsCU(avg) + ' <small>میانگین نفرات روزانه</small></h2>'
         + '<div class="rs-mvs"><span class="' + (tr >= 0 ? 'up' : 'dn') + '">' + (tr >= 0 ? '▲ ' : '▼ ') + toFa(Math.abs(tr)) + '٪ نیمهٔ دوم نسبت به نیمهٔ اول</span></div></div>'
       + '<div class="rs-trend"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" dir="ltr">'
@@ -29104,7 +29130,7 @@
       + '<line x1="0" x2="' + W + '" y1="' + Y(avg).toFixed(1) + '" y2="' + Y(avg).toFixed(1) + '" class="rs-avg"/>'
       + '<path d="' + area + '" class="rs-ar" fill="url(#rsTg)"/><path d="' + line + '" class="rs-ln" pathLength="1"/>'
       + dot(iMax, 'mx', 'بیشینه ' + toFa(mx)) + (iMin !== iMax ? dot(iMin, 'mn', 'کمینه ' + toFa(mn)) : '') + (last !== iMax && last !== iMin ? dot(last, 'ls', toFa(vs[last])) : '')
-      + '</svg><div class="rs-tx" dir="ltr"><span>' + esc(taskDate(pts[0].d) || toFa(pts[0].d)) + '</span><span>' + esc(taskDate(pts[last].d) || toFa(pts[last].d)) + '</span></div></div>'
+      + '</svg><div class="rs-mks" dir="ltr">' + marks.join('') + '</div><div class="rs-tx" dir="ltr"><span>' + esc(taskDate(pts[0].d) || toFa(pts[0].d)) + '</span><span>' + esc(taskDate(pts[last].d) || toFa(pts[last].d)) + '</span></div></div>'
       + '<p class="rs-note">خط‌چین، میانگین سی روز است؛ روزهای بدون گزارش حذف شده‌اند.</p>'};
   }
   /* پراکندگی نیرو در کارگاه: هر محل یک کاشی، اندازه و رنگ به نسبت نفرات */
