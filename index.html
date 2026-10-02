@@ -13450,6 +13450,33 @@
   #wrkBody .w-who .w-lock{background:var(--field);color:var(--muted);}
   #wrkBody .w-who button.w-edited{border:0;cursor:pointer;font-family:var(--f);}
   #wrkBody .w-who button.w-edited:hover{background:var(--warn);color:#fff;}
+  #wrkBody .w-who button.w-edited.on{background:var(--warn);color:#fff;}
+  #wrkBody .wcx{grid-column:1 / -1;margin-top:8px;padding:12px;border-radius:14px;background:color-mix(in srgb, var(--warn) 5%, var(--field));
+    border:1px solid color-mix(in srgb, var(--warn) 22%, var(--line));animation:wcxIn .25s ease both;min-width:0;}
+  @keyframes wcxIn{from{opacity:0;transform:translateY(-4px);}}
+  #wrkBody .wcx-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;}
+  #wrkBody .wcx-top b{font-size:12px;font-weight:800;color:var(--ink);} #wrkBody .wcx-top span{font-size:10.5px;color:var(--muted);}
+  #wrkBody .wcx-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+  #wrkBody .wcx-i{display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:10px;position:relative;padding-bottom:12px;}
+  #wrkBody .wcx-i:last-child{padding-bottom:0;}
+  #wrkBody .wcx-i:not(:last-child)::after{content:"";position:absolute;top:28px;bottom:2px;inset-inline-start:12.5px;width:1px;background:var(--line);}
+  #wrkBody .wcx-d{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--warn-soft);color:var(--warn);}
+  #wrkBody .wcx-d svg{width:13px;height:13px;}
+  #wrkBody .wcx-i.t-rm .wcx-d, #wrkBody .wcx-i.t-fine .wcx-d{background:var(--alert-soft);color:var(--alert);}
+  #wrkBody .wcx-i.t-bonus .wcx-d{background:var(--ok-soft);color:var(--ok);}
+  #wrkBody .wcx-c{min-width:0;display:flex;flex-direction:column;gap:5px;padding-top:3px;}
+  #wrkBody .wcx-h{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;}
+  #wrkBody .wcx-h b{font-size:11.5px;font-weight:800;color:var(--ink);} #wrkBody .wcx-h span{font-size:10.5px;color:var(--muted);font-family:var(--m);}
+  #wrkBody .wcx-h em{font-style:normal;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;}
+  #wrkBody .wcx-h em.p{background:var(--warn-soft);color:var(--warn);} #wrkBody .wcx-h em.k{background:var(--ok-soft);color:var(--ok);}
+  #wrkBody .wcx-c p{margin:0;font-size:11.5px;line-height:1.9;color:var(--ink);overflow-wrap:anywhere;}
+  #wrkBody .wcx-c p.wcx-why{color:var(--warn);font-weight:700;font-size:11px;}
+  #wrkBody .wcx-diff{border-radius:10px;border:1px solid var(--line);background:var(--surface);overflow:hidden;}
+  #wrkBody .wcx-r{display:grid;grid-template-columns:44px minmax(0,1fr) 12px minmax(0,1fr);gap:6px;align-items:center;padding:6px 9px;font-size:11.5px;}
+  #wrkBody .wcx-r + .wcx-r{border-top:1px solid var(--line-soft);}
+  #wrkBody .wcx-r span{color:var(--muted);font-size:10px;font-weight:700;}
+  #wrkBody .wcx-r s{color:var(--muted);overflow-wrap:anywhere;text-decoration-color:color-mix(in srgb, var(--alert) 60%, transparent);}
+  #wrkBody .wcx-r i{font-style:normal;color:var(--muted);text-align:center;} #wrkBody .wcx-r b{font-weight:800;overflow-wrap:anywhere;color:var(--ink);}
   #wrkBody .w-evs{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;} #wrkBody .w-evs:empty{display:none;}
   .w-ev{display:inline-flex;align-items:center;white-space:nowrap;font-style:normal;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;line-height:1.6;}
   .w-ev.fine{background:var(--alert-soft);color:var(--alert);} .w-ev.bonus{background:var(--ok-soft);color:var(--ok);}
@@ -13742,7 +13769,7 @@
   #wrkBody .wk-tool span{white-space:nowrap;}
   @media(max-width:640px){
     /* گوشی: نوار ثبت فقط خودِ دکمه است، تمام‌عرض */
-    #wrkBody .wk-savebar{padding:6px;border-radius:16px;}
+    #wrkBody .wk-savebar{padding:0;border-radius:16px;background:transparent;border:0;box-shadow:none;}
     #wrkBody .wk-sb-tx{display:none;}
     #wrkBody .wk-save{flex:1 1 auto;justify-content:center;height:46px;}
     #wrkBody .wk-save span{font-size:12.5px;}
@@ -50403,98 +50430,38 @@
     });
     return out.join('');
   }
-  function wrkHistCount(kind){
-    let n = 0, p = 0;
-    wrkLog.forEach((a, k) => { if(k.indexOf(kind + '|') !== 0 || !a.length) return; n += a.length; p++; });
-    return {n, p};
-  }
-  function wrkHistBarHtml(kind){
-    const c = wrkHistCount(kind);
-    if(!c.n) return '';
-    return '<button type="button" class="wk-histbtn" data-whist="">' + WSH_I.hist
-      + '<span><b>تاریخچهٔ تغییرات این روز</b><u>' + toFa(c.n) + ' مورد روی ' + toFa(c.p) + ' نفر</u></span><i>‹</i></button>';
-  }
-  let whFilter = 'all';
-  function wrkHistHtml(kind, focusKey){
-    const people = [];
-    wrkLog.forEach((a, k) => {
-      if(k.indexOf(kind + '|') !== 0 || !a.length) return;
-      const code = k.slice(kind.length + 1);
-      const w = (workersLive || []).find(x => String(x.code || x.name) === code)
-        || (workersAll || []).find(x => String(x.code || x.name) === code) || {code, name: code};
-      people.push({w, a, key: w.code || w.name});
-    });
-    people.sort((x, y) => String(y.a[y.a.length - 1].at).localeCompare(String(x.a[x.a.length - 1].at)));
+  /* تاریخچهٔ هر کارگر، زیر همان سطر: با «جزئیات» باز و بسته می‌شود.
+     هر خط: چه کسی، چه ساعتی، و هر خانه «قبل ← بعد». */
+  const wrkHistOpen = new Set();
+  function wrkRowHistHtml(kind, w, key){
+    const a = wrkHs(kind, w);
+    if(!a.length) return '';
     const lab = WRK_LAB(kind);
-    const cnt = {all: people.length, chg: 0, ev: 0, gone: 0};
-    people.forEach(p => {
-      if(p.a.some(h => !h.ev && h.prev)) cnt.chg++;
-      if(p.a.some(h => h.ev)) cnt.ev++;
-      if(!wrkData[kind].get(p.key) || !(wrkData[kind].get(p.key) || {}).engineer) cnt.gone++;
-    });
-    const show = p => whFilter === 'all' ? true
-      : whFilter === 'chg' ? p.a.some(h => !h.ev && h.prev)
-      : whFilter === 'ev' ? p.a.some(h => h.ev)
-      : !(wrkData[kind].get(p.key) || {}).engineer;
-    const chip = (k, t) => '<button type="button" class="wh-chip' + (whFilter === k ? ' on' : '') + '" data-whf="' + k + '">' + t + '<b>' + toFa(cnt[k]) + '</b></button>';
-    const card = p => {
-      const cur = wrkData[kind].get(p.key) || {};
-      const st = wrkStateOf(cur.state || 'ok');
-      const gone = !cur.engineer;
-      const entries = p.a.map((h, i) => {
-        const when = toFa(clockOf(h.at) || '');
-        if(h.ev){
-          const e = h.ev;
-          return '<div class="wh-e ev ' + esc(e.t || '') + '"><span class="wh-dot">' + (e.t === 'bonus' ? WSH_I.bonus : WSH_I.fine) + '</span>'
-            + '<div class="wh-b"><div class="wh-m"><b>' + esc(h.by || '—') + '</b><span>' + when + '</span>'
-            + (e.st === 'pending' ? '<em class="pend">در انتظار تأیید</em>' : '<em>اعمال شد</em>') + '</div>'
-            + '<div class="wh-t">' + esc(h.text) + '</div></div></div>';
-        }
-        /* «پس از» هر تغییر = «پیش از» تغییرِ بعدی؛ برای آخری، همین حالا */
-        let nx = null;
-        for(let j = i + 1; j < p.a.length; j++) if(!p.a[j].ev && p.a[j].prev){ nx = p.a[j].prev; break; }
-        const after = nx || (gone ? null : cur);
-        const rm = /برداشته شد/.test(h.text) && !h.prev;
-        const rows = h.prev ? Object.keys(lab).map(f => {
-            const a = wrkFmtF(f, h.prev[f]), b = after ? wrkFmtF(f, after[f]) : '—';
-            if(a === b) return '';
-            return '<div class="wh-r"><span>' + lab[f] + '</span><s>' + esc(a || '—') + '</s><i>←</i><b>' + esc(b || '—') + '</b></div>';
-          }).join('') : '';
-        return '<div class="wh-e' + (rm ? ' rm' : '') + '"><span class="wh-dot">' + (rm ? WSH_I.del : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>') + '</span>'
-          + '<div class="wh-b"><div class="wh-m"><b>' + esc(h.by || '—') + '</b><span>' + when + '</span></div>'
-          + (rows ? '<div class="wh-diff">' + rows + '</div>' : '<div class="wh-t">' + esc(h.text) + '</div>')
-          + (rows && /دلیل:/.test(h.text) ? '<div class="wh-why">' + esc(h.text.slice(h.text.indexOf('دلیل:'))) + '</div>' : '')
-          + '</div></div>';
-      }).reverse().join('');
-      return '<div class="wh-card' + (String(p.key) === String(focusKey) ? ' focus' : '') + (gone ? ' gone' : '') + '" data-whkey="' + esc(p.key) + '">'
-        + '<div class="wh-head"><span class="w-id">' + esc(toFa(p.w.pno || p.w.code || '—')) + '</span>'
-        +   '<span class="wh-who"><b>' + esc(p.w.name || '') + '</b><u>' + esc(wrkRole(p.w) || p.w.role || '') + '</u></span>'
-        +   (gone ? '<span class="wh-st gone">برداشته شده</span>'
-              : (kind === 'daily' ? '<span class="wh-st ' + (st.cls || 'ok') + '"><i></i>' + st.t + '</span>' : '')
-                + '<span class="wh-eng">' + avatarHtml(cur.engineer, '', true) + '<b>' + esc(cur.engineer) + '</b></span>')
-        + '</div>'
-        + (!gone ? '<div class="wh-now"><span>' + esc(cur.activity || '—') + '</span>' + (cur.zone ? '<span class="z">' + esc(cur.zone) + '</span>' : '')
-            + (cur.t1 || cur.t2 ? '<span class="t">' + esc(toFa(cur.t1 || '')) + ' – ' + esc(toFa(cur.t2 || '')) + '</span>' : '') + '</div>' : '')
-        + '<div class="wh-list">' + entries + '</div></div>';
-    };
-    const list = people.filter(show);
-    return '<div class="wh-top"><span class="wh-ic">' + WSH_I.hist + '</span><div><b>تاریخچهٔ تغییرات</b><u>'
-      + esc((wrkDayLabel(wrkDateVal()).split(' —')[0] || '') + ' ' + toFa(wrkDateVal())) + ' · ' + (kind === 'ot' ? 'اضافه کاری' : 'گزارش روزانه') + '</u></div>'
-      + '<button type="button" class="wh-x" data-whclose="1" aria-label="بستن">' + WSH_I.x + '</button></div>'
-      + '<div class="wh-chips">' + chip('all', 'همه') + chip('chg', 'ویرایش') + chip('ev', 'جریمه و تشویق') + chip('gone', 'حذف‌شده') + '</div>'
-      + '<div class="wh-body">' + (list.length ? list.map(card).join('') : '<div class="wk-empty">موردی در این دسته نیست.</div>') + '</div>';
-  }
-  function wrkHistOpen(focusKey){
-    let ov = document.getElementById('whOv');
-    if(!ov){ ov = document.createElement('div'); ov.id = 'whOv'; ov.className = 'wsh-ov'; document.body.appendChild(ov); }
-    ov.innerHTML = '<div class="wsh wh" role="dialog" aria-label="تاریخچهٔ تغییرات">' + wrkHistHtml(wrkTab, focusKey) + '</div>';
-    ov.dataset.focus = focusKey || '';
-    requestAnimationFrame(() => ov.classList.add('on'));
-    document.documentElement.classList.add('wsh-lock');
-    if(focusKey){
-      const c = ov.querySelector('.wh-card.focus');
-      if(c) setTimeout(() => c.scrollIntoView({block:'start', behavior:'smooth'}), 120);
-    }
+    const cur = wrkData[kind].get(key) || {};
+    const gone = !cur.engineer;
+    const pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+    const items = a.map((h, i) => {
+      const when = toFa(clockOf(h.at) || '');
+      const who = '<div class="wcx-h"><b>' + esc(h.by || '—') + '</b><span>' + when + '</span>';
+      if(h.ev){
+        const e = h.ev;
+        return '<li class="wcx-i t-' + (e.t === 'bonus' ? 'bonus' : 'fine') + '"><span class="wcx-d">' + (e.t === 'bonus' ? WSH_I.bonus : WSH_I.fine) + '</span><div class="wcx-c">'
+          + who + '<em class="' + (e.st === 'pending' ? 'p' : 'k') + '">' + (e.st === 'pending' ? 'منتظر تأیید' : 'اعمال شد') + '</em></div>'
+          + '<p>' + esc(h.text) + '</p></div></li>';
+      }
+      let nx = null;
+      for(let j = i + 1; j < a.length; j++) if(!a[j].ev && a[j].prev){ nx = a[j].prev; break; }
+      const after = nx || (gone ? null : cur);
+      const rm = /برداشته شد/.test(h.text) && !h.prev;
+      const rows = h.prev ? Object.keys(lab).map(f => {
+          const x = wrkFmtF(f, h.prev[f]), y = after ? wrkFmtF(f, after[f]) : '—';
+          return x === y ? '' : '<div class="wcx-r"><span>' + lab[f] + '</span><s>' + esc(x || '—') + '</s><i>←</i><b>' + esc(y || '—') + '</b></div>';
+        }).join('') : '';
+      const why = /دلیل:/.test(h.text) ? '<p class="wcx-why">' + esc(h.text.slice(h.text.indexOf('دلیل:'))) + '</p>' : '';
+      return '<li class="wcx-i' + (rm ? ' t-rm' : '') + '"><span class="wcx-d">' + (rm ? WSH_I.del : pen) + '</span><div class="wcx-c">'
+        + who + '</div>' + (rows ? '<div class="wcx-diff">' + rows + '</div>' + why : '<p>' + esc(h.text) + '</p>') + '</div></li>';
+    }).reverse().join('');
+    return '<div class="wcx"><div class="wcx-top"><b>تاریخچهٔ تغییرات ' + esc(w.name || '') + '</b><span>' + toFa(a.length) + ' مورد در این روز</span></div><ol class="wcx-l">' + items + '</ol></div>';
   }
   function wshClose(ov){
     if(!ov) return;
@@ -50679,7 +50646,17 @@
   }
   document.addEventListener('click', e => {
     const hb = e.target.closest('[data-whist]');
-    if(hb){ e.preventDefault(); e.stopPropagation(); wrkHistOpen(hb.dataset.whist); return; }
+    if(hb){
+      e.preventDefault(); e.stopPropagation();
+      const k = wrkTab + '|' + hb.dataset.whist;
+      if(wrkHistOpen.has(k)) wrkHistOpen.delete(k); else wrkHistOpen.add(k);
+      const so = document.getElementById('wshOv');
+      if(so && hb.closest('#wshOv')){ wshClose(so); wsh = null; }
+      wrkRepaintList();
+      const row = document.querySelector('#wrkListBox .wrow[data-wcode="' + CSS.escape(hb.dataset.whist) + '"]');
+      if(row && hb.closest('.wsh-ov')) row.scrollIntoView({block:'center', behavior:'smooth'});
+      return;
+    }
     const ov = e.target.closest('.wsh-ov');
     if(!ov) {
       const sb = e.target.closest('[data-wsheet]');
@@ -50687,8 +50664,6 @@
       return;
     }
     if(e.target === ov || e.target.closest('[data-whclose], [data-wshx]')){ wshClose(ov); if(ov.id === 'wshOv') wsh = null; return; }
-    const hf = e.target.closest('[data-whf]');
-    if(hf){ whFilter = hf.dataset.whf; ov.querySelector('.wsh').innerHTML = wrkHistHtml(wrkTab, ov.dataset.focus); return; }
     if(!wsh || ov.id !== 'wshOv') return;
     const s = wsh;
     let b;
@@ -51137,6 +51112,7 @@
     wrkData.daily = new Map(); wrkData.ot = new Map(); wrkMat = []; wrkMatGone = new Set();
     ['daily', 'ot'].forEach(k => { wrkDirty[k].clear(); wrkGone[k].clear(); wrkWhy[k].clear(); });
     wrkEditing = new Set();
+    wrkHistOpen.clear();
     wrkLog = new Map();
     try{
       const lg = await supaFetch('nudges?select=' + NUDGE_COLS + '&kind=eq.' + encodeURIComponent(WRK_LOG_KIND)
@@ -51256,9 +51232,10 @@
       + '<span class="w-who"><b>' + esc(w.name) + '</b><u>' + esc(wrkRole(w) || '')
       +   nightTag + '</u>'
       +   (function(){
-            const hs = wrkChgs(kind, w);
+            const hs = wrkHs(kind, w);
             if(!hs.length) return editor ? '<i class="w-edited" title="این سطر را ' + esc(editor) + ' تغییر داده است">✎ تغییر: ' + esc(editor) + '</i>' : '';
-            return '<button type="button" class="w-edited" data-whist="' + esc(key) + '" title="دیدن تاریخچهٔ تغییرات">✎ ' + toFa(hs.length) + ' تغییر ‹</button>';
+            const op = wrkHistOpen.has(kind + '|' + key);
+            return '<button type="button" class="w-edited' + (op ? ' on' : '') + '" data-whist="' + esc(key) + '" aria-expanded="' + op + '">✎ ' + toFa(hs.length) + ' تغییر · ' + (op ? 'بستن' : 'جزئیات') + ' ' + (op ? '▴' : '▾') + '</button>';
           })()
       +   '<span class="w-evs">' + wrkEvChips(kind, w, cur) + '</span>'
       +   (on && !canEdit ? '<i class="w-lock">فقط ' + esc(eng) + ' می‌تواند تغییر دهد</i>' : '')
@@ -51294,6 +51271,7 @@
               +   '<path d="M3.5 19.5a6.5 6.5 0 0113 0"/><path d="M18 8v6M15 11h6"/></svg></button>'
             : '')
       + '</span>'
+      + (wrkHistOpen.has(kind + '|' + key) ? wrkRowHistHtml(kind, w, key) : '')
       + ((open && sealed)
           ? '<div class="w-sum">'
             + '<span class="ws-act">' + (cur.activity ? esc(cur.activity) : '<i>شرح فعالیت ننوشته</i>') + '</span>'
@@ -51441,7 +51419,7 @@
       free: 'همه مسئول دارند. 👏',
       away: 'امروز غایبی ثبت نشده است.'
     }[f] || (f.indexOf('eng:') === 0 ? 'این مهندس امروز کارگری در گزارش ندارد.' : 'موردی نیست.');
-    const out = wrkSumHtml(kind) + wrkHistBarHtml(kind)
+    const out = wrkSumHtml(kind)
       + (list2.length
           ? '<div class="wrk-list">' + list2.map(w => wrkRowHtml(w, kind)).join('') + '</div>'
           : '<div class="wk-empty">' + empty + '</div>');
