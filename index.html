@@ -19864,7 +19864,7 @@
                 </svg>
               </span>
               <input type="password" id="userPassNew1" autocomplete="new-password"
-                     placeholder="حداقل ۴ نویسه">
+                     placeholder="حداقل ۸ نویسه">
               <button type="button" class="pw-eye" data-pw-toggle="userPassNew1"
                       aria-label="نمایش رمز">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -20133,6 +20133,40 @@
     const bg = document.getElementById('userModal');
     if(bg && on) bg.hidden = false;
   }
+  /* ====== نگهبان نشست ======
+     ۱) اگر رمز عوض شده یا «خروج از همهٔ دستگاه‌ها» زده شده باشد،
+        شمارهٔ نشست روی سرور بالا رفته و این دستگاه خارج می‌شود.
+     ۲) بعد از چند روز بی‌استفاده بودن، دوباره رمز خواسته می‌شود. */
+  function forceLogout(msg){
+    try{ localStorage.removeItem('siteLogM.userEpoch.v1'); }catch(e){}
+    applyUser('');
+    try{ openUserModal(); }catch(e){}
+    if(msg) setTimeout(() => { try{ showDialog('warn','دوباره وارد شوید', msg); }catch(e){} }, 300);
+  }
+  async function sessionGuard(){
+    if(!currentUser || typeof BACKEND === 'undefined' || BACKEND !== 'supabase') return;
+    try{
+      const last = +(localStorage.getItem('siteLogM.userSeen.v1') || 0);
+      if(last && Date.now() - last > 7 * 86400000){
+        forceLogout('مدتی از سامانه استفاده نشده بود؛ برای امنیت، دوباره وارد شوید.');
+        return;
+      }
+      localStorage.setItem('siteLogM.userSeen.v1', String(Date.now()));
+    }catch(e){}
+    try{
+      const rows = await supaFetch('people?select=session_epoch&name=eq.' + encodeURIComponent(currentUser) + '&limit=1',
+        {prefer:'return=representation'});
+      const ep = rows && rows[0] ? +(rows[0].session_epoch || 0) : null;
+      if(ep == null) return;
+      const mine = localStorage.getItem('siteLogM.userEpoch.v1');
+      if(mine === null){ localStorage.setItem('siteLogM.userEpoch.v1', String(ep)); return; }   // نشست قدیمی: یک بار ثبت می‌شود
+      if(ep > +mine) forceLogout('رمز این حساب عوض شده یا از همهٔ دستگاه‌ها خارج شده است؛ لطفاً دوباره وارد شوید.');
+    }catch(e){ /* ستون هنوز ساخته نشده یا شبکه قطع است */ }
+  }
+  setTimeout(sessionGuard, 2500);
+  setInterval(sessionGuard, 5 * 60000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) sessionGuard(); });
+
   function applyUser(name){
     currentUser = String(name || '').trim();
     try{ currentUser ? localStorage.setItem(USER_KEY, currentUser) : localStorage.removeItem(USER_KEY); }catch(e){}
@@ -20170,34 +20204,33 @@
   }
 
   /* ====== بررسی و تغییر رمز روی سرور ======
-     اگر توابع هنوز در پایگاه‌داده ساخته نشده باشند، srvAuthOff روشن
-     می‌شود و برنامه به روش قدیمی برمی‌گردد تا کسی پشت در نماند. */
-  let srvAuthOff = false;
-
+     همهٔ مقایسه‌ها و تغییر رمزها فقط روی سرور انجام می‌شود (bcrypt،
+     قفل موقت بعد از ۵ تلاش ناموفق). هیچ هشی به مرورگر نمی‌آید و
+     مسیر قدیمیِ خواندن هش از جدول کاربران حذف شده است. */
+  const PW_MIN = 8;
+  const USER_EPOCH_KEY = 'siteLogM.userEpoch.v1';
+  const USER_SEEN_KEY  = 'siteLogM.userSeen.v1';
+  const IDLE_LOGOUT_DAYS = 7;
   async function supaRpc(fn, args){
     return await supaFetch('rpc/' + fn, {
       method:'POST', prefer:'return=representation', body: args || {}
     });
   }
-
-  async function loginCheck(name, hash){
-    if(srvAuthOff) return null;
+  async function authRpc(fn, args){
     try{
-      const r = await supaRpc('login_check', {p_name: name, p_hash: hash});
-      if(r && typeof r === 'object') return r;
-      srvAuthOff = true; return null;
-    }catch(e){ srvAuthOff = true; return null; }
+      const r = await supaRpc(fn, args);
+      return (r && typeof r === 'object') ? r : null;
+    }catch(e){ return null; }
   }
-
-  async function changePass(name, oldHash, newHash){
-    if(srvAuthOff) return null;
-    try{
-      const r = await supaRpc('change_pass',
-        {p_name: name, p_old: oldHash || '', p_new: newHash});
-      if(r && typeof r === 'object') return r;
-      srvAuthOff = true; return null;
-    }catch(e){ srvAuthOff = true; return null; }
+  const loginCheck  = (name, hash) => authRpc('login_check', {p_name: name, p_hash: hash});
+  const changePass  = (name, oldHash, newHash) => authRpc('change_pass', {p_name: name, p_old: oldHash || '', p_new: newHash});
+  function pwWeakMsg(p){
+    if(String(p || '').length < PW_MIN) return 'رمز باید حداقل ' + toFa(PW_MIN) + ' نویسه باشد.';
+    if(/^(\d)\1+$/.test(p) || /^(0123|1234|2345|3456|4567|5678|6789)/.test(p) || p === '00000000' || p === '12345678')
+      return 'این رمز خیلی ساده است؛ ترکیب دیگری انتخاب کنید.';
+    return '';
   }
+  function setSessionEpoch(ep){ try{ localStorage.setItem(USER_EPOCH_KEY, String(ep || 0)); }catch(e){} }
 
   /* فهرست اعضا (نام، سمت، سطح، عکس) روی دستگاه هم نگه داشته می‌شود تا
      از همان لحظهٔ باز شدن برنامه درست باشد. پیش‌تر برای کاربری که از
@@ -20423,38 +20456,34 @@
       const row = personRow(loginName) || {};
       const hash = await sha256(pass);
 
-      // مسیر اصلی: مقایسه روی سرور
+      // مقایسه فقط روی سرور
       const chk = await loginCheck(loginName, hash);
-      let first, okPass;
-      if(chk){
-        okPass = chk.ok === true;
-        first  = chk.first === true;
-        if(!okPass && chk.reason === 'inactive'){
-          btn.disabled = false;
-          note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
-          return;
-        }
-      }else{
-        // توابع هنوز ساخته نشده‌اند؛ روش قدیمی، فقط برای همین کاربر
-        let mine = null;
-        try{
-          const rows = await supaFetch('people?select=password_hash,must_change,active&name=eq.'
-            + encodeURIComponent(loginName) + '&limit=1', {prefer:'return=representation'});
-          mine = (rows && rows[0]) || null;
-        }catch(e){ mine = null; }
-        first  = !(mine && mine.password_hash);
-        okPass = first ? (pass === '0000') : (mine.password_hash === hash);
-        if(mine && mine.active === false){
-          btn.disabled = false;
-          note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
-          return;
-        }
-        if(mine) row.must_change = mine.must_change;
+      if(!chk){
+        btn.disabled = false;
+        note.textContent = 'اتصال به سرور برقرار نشد؛ کمی بعد دوباره تلاش کنید.';
+        return;
       }
-
+      const okPass = chk.ok === true;
+      const first  = chk.first === true;
+      if(!okPass && chk.reason === 'inactive'){
+        btn.disabled = false;
+        note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
+        return;
+      }
+      if(!okPass && chk.reason === 'locked'){
+        btn.disabled = false;
+        note.textContent = 'به‌خاطر چند تلاش ناموفق، ورود این حساب ' + toFa(chk.minutes || 15) + ' دقیقه قفل است.';
+        return;
+      }
+      if(!okPass && chk.reason === 'notfound'){
+        btn.disabled = false;
+        note.textContent = 'این نام در فهرست کاربران نیست.';
+        return;
+      }
       if(!okPass){
         btn.disabled = false;
-        note.textContent = first ? 'رمز اولیه ۰۰۰۰ است.' : 'رمز درست نیست.';
+        note.textContent = first ? 'رمز اولیه ۰۰۰۰ است.'
+          : ('رمز درست نیست.' + (chk.left ? ' ' + toFa(chk.left) + ' تلاش دیگر تا قفل موقت.' : ''));
         return;
       }
       if(row.active === false){
@@ -20463,8 +20492,7 @@
         return;
       }
 
-      const needsChange = first
-        || (chk ? chk.must_change !== false : row.must_change !== false);
+      const needsChange = first || chk.must_change === true;
       const newBox = document.getElementById('userPassNew');
       if(needsChange && newBox.hidden){
         newBox.hidden = false;
@@ -20475,20 +20503,19 @@
       if(needsChange){
         const n1 = document.getElementById('userPassNew1').value.trim();
         const n2 = document.getElementById('userPassNew2').value.trim();
-        if(n1.length < 4){ note.textContent = 'رمز تازه حداقل ۴ نویسه باشد.'; btn.disabled = false; return; }
+        const wk = pwWeakMsg(n1);
+        if(wk){ note.textContent = wk; btn.disabled = false; return; }
         if(n1 !== n2){ note.textContent = 'دو رمز یکسان نیستند.'; btn.disabled = false; return; }
         if(n1 === '0000'){ note.textContent = 'رمز تازه نباید ۰۰۰۰ باشد.'; btn.disabled = false; return; }
         const newHash = await sha256(n1);
         const res = await changePass(loginName, first ? '' : hash, newHash);
-        if(res && res.ok !== true){
-          note.textContent = 'تغییر رمز انجام نشد؛ دوباره تلاش کنید.';
+        if(!res || res.ok !== true){
+          note.textContent = (res && res.reason === 'weak') ? 'این رمز قابل قبول نیست؛ رمز دیگری انتخاب کنید.'
+            : 'تغییر رمز انجام نشد؛ دوباره تلاش کنید.';
           btn.disabled = false;
           return;
         }
-        if(!res){
-          // توابع نیستند؛ مسیر قدیمی
-          await savePerson(loginName, {password_hash: newHash, must_change:false});
-        }
+        chk.epoch = res.epoch;
         // سمتی که ادمین ثبت کرده دست نمی‌خورد؛ فقط اگر خالی است پر می‌شود
         if(!row.role && roleOf(loginName)){
           try{ await savePerson(loginName, {role: roleOf(loginName)}); }catch(e){}
@@ -20496,6 +20523,7 @@
       }
 
       btn.disabled = false;
+      setSessionEpoch(chk.epoch);
       applyUser(loginName);
       bg.hidden = true;
       showLoginStep('');
@@ -27371,12 +27399,13 @@
     const row = b.closest('.um-row');
     const pass = String((row.querySelector('.u-pass') || {}).value || '').trim();
     const must = !!(row.querySelector('.u-pass-must') || {}).checked;
-    if(pass.length < 4){ showDialog('warn','رمز کوتاه است','رمز باید حداقل ۴ نویسه باشد.'); return; }
-    if(pass === '0000' && !must){ showDialog('warn','رمز ساده','رمز ۰۰۰۰ فقط به‌عنوان رمز اولیه (با تعویض در ورود بعد) مجاز است.'); return; }
+    const wk = pwWeakMsg(pass);
+    if(wk){ showDialog('warn','رمز مناسب نیست', wk); return; }
     b.disabled = true;
     try{
       const h = await sha256(pass);
-      await savePerson(b.dataset.uSetpass, {password_hash: h, must_change: must});
+      const r = await authRpc('admin_set_pass', {p_name: b.dataset.uSetpass, p_new: h, p_must: must});
+      if(!r || r.ok !== true) throw new Error('سرور رمز را ثبت نکرد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
       row.querySelector('.u-pass').value = '';
       showDialog('ok','رمز تعیین شد', b.dataset.uSetpass + ' از این پس با این رمز وارد می‌شود' + (must ? ' و بار اول باید آن را عوض کند.' : '.'));
       try{ await loadPeople(true); }catch(e2){}
@@ -27578,7 +27607,7 @@
         +   '<div class="um-meta"><span>' + UM_I.key + PASS_T[u.pass] + '</span>'
         +     '<span class="' + (u.active ? 'ok' : 'bad') + '"><i></i>' + (u.active ? 'حساب فعال' : 'حساب غیرفعال') + '</span></div>'
         +   (u.ct ? '' : '<div class="um-pass"><b>' + UM_I.key + 'رمز ورود</b>'
-              + '<div class="um-pass-row"><input type="password" class="u-pass" placeholder="رمز تازه (حداقل ۴ نویسه)" autocomplete="new-password">'
+              + '<div class="um-pass-row"><input type="password" class="u-pass" placeholder="رمز تازه (حداقل ۸ نویسه)" autocomplete="new-password">'
               + '<label class="um-chk"><input type="checkbox" class="u-pass-must" checked><span>بار اول خودش عوض کند</span></label>'
               + '<button type="button" class="mini go" data-u-setpass="' + esc(n) + '">تعیین رمز</button></div>'
               + '<small>وضعیت فعلی: ' + PASS_T[u.pass] + ' · «بازنشانی» رمز را ۰۰۰۰ می‌کند.</small></div>')
@@ -28009,16 +28038,10 @@
         }
         if(reset){
           if(confirm('رمز ' + name + ' به ۰۰۰۰ بازنشانی شود؟')){
-            let done = false;
-            if(!srvAuthOff){
-              try{
-                const r = await supaRpc('reset_pass', {p_name: name});
-                done = !!(r && r.ok === true);
-              }catch(e){ srvAuthOff = true; }
-            }
-            // اگر تابع نبود، مسیر قدیمی
-            if(!done) await savePerson(name, {password_hash: null, must_change: true});
-            showDialog('ok','رمز بازنشانی شد', name + ' در ورود بعدی با ۰۰۰۰ وارد می‌شود و باید رمز تازه بگذارد.');
+            const r = await authRpc('admin_reset_pass', {p_name: name});
+            if(r && r.ok === true)
+              showDialog('ok','رمز بازنشانی شد', name + ' از همهٔ دستگاه‌ها خارج شد و در ورود بعدی با ۰۰۰۰ وارد می‌شود و باید رمز تازه بگذارد.');
+            else showDialog('err','بازنشانی نشد', 'سرور پاسخ نداد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
           }
         }
         if(tog){
@@ -30106,6 +30129,7 @@
         +   (me ? row('pfTour', PF_I.help, 'راهنمای برنامه', 'معرفی بخش‌ها و راهنمای گام‌به‌گام') : '')
         +   (me && !appInstalled() ? row('pfInstall', A2HS_ICON,'افزودن به صفحهٔ اصلی', 'سامانه مثل یک برنامه با لوگوی خودش روی گوشی باز می‌شود') : '')
         +   (me ? row('pfSwitch', PF_I.swap, 'تغییر کاربر', 'ورود با نام دیگری روی همین دستگاه') : '')
+        +   (me ? row('pfLogoutAll', PF_I.out, 'خروج از همهٔ دستگاه‌ها', 'اگر روی گوشی یا رایانهٔ دیگری وارد شده‌اید، همه خارج می‌شوند') : '')
         +   (me ? row('pfLogout', PF_I.out, 'خروج از حساب', 'نام شما از این دستگاه پاک می‌شود', 'danger') : '')
         + '</div>' + (admTools ? '</div>' : '');
 
@@ -30604,6 +30628,17 @@
       applyUser('');
       document.getElementById('profileModal').hidden = true;
       openUserModal();
+    });
+
+    const la = document.getElementById('pfLogoutAll');
+    if(la) la.addEventListener('click', async () => {
+      const pass = prompt('برای خروج از همهٔ دستگاه‌ها، رمز خود را وارد کنید:');
+      if(!pass) return;
+      const r = await authRpc('logout_all', {p_name: activeUserName(), p_hash: await sha256(pass)});
+      if(r && r.ok === true){
+        setSessionEpoch(r.epoch);
+        showDialog('ok','انجام شد','از همهٔ دستگاه‌های دیگر خارج شدید. این دستگاه وارد می‌ماند.');
+      }else showDialog('err','انجام نشد', (r && r.reason === 'bad') ? 'رمز درست نیست.' : 'سرور پاسخ نداد؛ دوباره تلاش کنید.');
     });
 
     const sw = document.getElementById('pfSwitch');
@@ -38655,8 +38690,14 @@
     dbx.cols = cols; dbx.kinds = kinds; dbx.pk = pk;
   }
   const dbxQv = v => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  /* ستون‌های رمز روی سرور بسته‌اند؛ select=* روی آن جدول خطای دسترسی می‌دهد */
+  const dbxSel = () => {
+    const c = (dbx.cols || []).filter(x => !DBX_SECRET.test(x) && !/^(fail_count|locked_until)$/.test(x));
+    if(c.length) return 'select=' + c.map(encodeURIComponent).join(',');
+    return dbx.t === 'people' ? 'select=name,role,level,avatar_url,must_change,active' : 'select=*';
+  };
   function dbxQuery(withPage){
-    const p = ['select=*'];
+    const p = [dbxSel()];
     if(dbx.sort) p.push('order=' + encodeURIComponent(dbx.sort.c) + '.' + dbx.sort.d + '.nullslast');
     else if(dbx.cols.indexOf('created_at') !== -1) p.push('order=created_at.desc.nullslast');
     const q = String(dbx.q || '').trim();
@@ -38709,7 +38750,7 @@
     DBX_TABLES.forEach(g => g[1].forEach(([t]) => all.push(t)));
     await Promise.all(all.map(async t => {
       try{
-        const r = await dbxReq(t + '?select=*&limit=1', {headers:{'Prefer':'count=exact'}});
+        const r = await dbxReq(t + '?select=' + (t === 'people' ? 'name' : '*') + '&limit=1', {headers:{'Prefer':'count=exact'}});
         dbx.counts[t] = r.total != null ? r.total : (Array.isArray(r.data) ? r.data.length : 0);
       }catch(e){ if(e.status === 404) dbx.missing[t] = true; }
     }));
