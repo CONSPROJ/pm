@@ -11292,6 +11292,12 @@
   .dk-tabs .dk-pbtn.on{background:var(--surface);border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);}
   .dk-tabs .dk-prow-wrap{flex:1 0 100%;order:5;}
   .dk-bg:not(.cats-mode):not(.list-mode) .dk-dots{padding:2px 16px 4px !important;}
+  .dk-dots.bar{display:block !important;}
+  .dk-pbar{display:block;height:4px;border-radius:99px;background:color-mix(in srgb, var(--ink) 10%, transparent);overflow:hidden;}
+  .dk-pbar b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg, var(--alert), color-mix(in srgb, var(--alert) 70%, var(--warn)));margin-inline-start:0;transition:width .35s cubic-bezier(.22,.8,.2,1);}
+  .dk-dots:not(.bar) i{height:4px !important;border-radius:99px;}
+  .dk-dots:not(.bar) i:has(~ i.on){background:color-mix(in srgb, var(--ink) 35%, transparent);}
+  .dk-dots:not(.bar) i.hot:has(~ i.on){background:color-mix(in srgb, var(--alert) 70%, transparent);}
 
   /* ===== کارت فعالیت جمع‌وجور (همهٔ بخش‌ها یک پوسته) ===== */
   #deckModal .dk-head{padding:10px 14px 8px !important;gap:9px;}
@@ -41641,7 +41647,9 @@
     /* پله‌ها با فاصلهٔ برابر چیده می‌شوند (نه به نسبت درصدشان)، تا با کم
        و زیاد شدن پله‌ها (مثلاً بی‌پیمانکار) فاصله‌ها به‌هم نریزد؛ پرشدگی
        نوار هم روی همین پله‌ها نگاشته می‌شود. */
-    const posOf = i => steps.length > 1 ? (i / (steps.length - 1)) * 100 : 100;
+    /* هر پله دقیقاً سرِ درصد خودش: ۵۰٪ وسط نوار، ۲۵٪ یک‌چهارم و… */
+    const lo = steps.length ? Math.min(...steps.map(x => +x[1])) : 0, hi = steps.length ? Math.max(...steps.map(x => +x[1])) : 100;
+    const posOf = i => steps.length > 1 && hi > lo ? ((+steps[i][1] - lo) / (hi - lo)) * 100 : 100;
     const fillAt = (() => {
       if(!steps.length) return p;
       if(p <= steps[0][1]) return steps[0][1] ? (p / steps[0][1]) * posOf(0) : 0;
@@ -47176,13 +47184,13 @@
     if(!id) return '';
     const st = taskStatus(r);
     const cur = tpNow(id);
-    /* بدون درصد ثبت‌شده، از روی وضعیت: انجام‌شده ۱۰۰، در حال اجرا ۱۰ (شروع)، بقیه صفر */
+    /* بدون درصد ثبت‌شده، از روی وضعیت: انجام‌شده ۱۰۰، هرچه انجام نشده صفر */
     const auto = !cur;
-    const p = cur ? cur.p : (st.cls === 'done' ? 100 : (st.cls === 'doing' ? 10 : 0));
+    const p = cur ? cur.p : (st.cls === 'done' ? 100 : 0);
     const hist = tpOf(id);
     const stage = (TP_STEPS.filter(x => p >= x[1]).pop() || ['شروع نشده'])[0];
     return pgxHtml({p, steps: TP_STEPS, editId: id, auto,
-      stage: st.cls === 'done' ? 'انجام شده' : (p ? stage : 'شروع نشده'),
+      stage: st.cls === 'done' ? 'انجام شده' : (p ? stage : (st.cls === 'doing' ? 'در حال اجرا' : 'شروع نشده')),
       cls: 'pgx-task',
       meta: cur ? 'آخرین ثبت: ' + esc(cur.by || '—') + ' · ' + toFa(faDateOf(cur.date) || '') : '',
       hist: hist.length > 1
@@ -55354,8 +55362,10 @@
     else if(owners.length > 1) bits.push('<span class="mi-p">' + owners.map(esc).join('، ') + '</span>');
     const due = taskDue(row); if(due) bits.push('<span class="mi-t">موعد ' + esc(taskDate(due)) + '</span>');
     let tl = ''; try{ tl = taskTlBlockHtml(row); }catch(e){ tl = ''; }
-    const more = deckBlockHtml(x, 'task', row, i) + deckReviewHtml('task', row) + (x.genAll && x.genAll.length > 1 ? deckInfoHtml(x, 'task', row) : '');
-    const nb = (more.match(/class="tb-it open"/g) || []).length;
+    /* موانع همیشه پیدا؛ فقط بررسی و فهرست افراد پشت «جزئیات» */
+    const blk = deckBlockHtml(x, 'task', row, i);
+    const more = deckReviewHtml('task', row) + (x.genAll && x.genAll.length > 1 ? deckInfoHtml(x, 'task', row) : '');
+    const nb = 0;
     return '<div class="dk-adm adm-host"><div class="rv adm-k adm-task" data-id="' + esc(id) + '">'
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
       +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
@@ -55363,8 +55373,8 @@
       + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
       + '</div></div>'
       + dkCmPeek(x)
-      + ((x.text && !crit) ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
-      + dkMoreBtn('جزئیات' + (nb ? ' · ' + toFa(nb) + ' مانع' : '') + '') + (more ? '<div class="dk-xbody">' + more + '</div>' : '');
+      + blk
+      + (more ? dkMoreBtn('جزئیات' + (nb ? ' · ' + toFa(nb) + ' مانع' : '')) + '<div class="dk-xbody">' + more + '</div>' : '');
   }
   /* خلاصهٔ نظرها مثل قبل: آخرین نظر در یک خط، با شمار کل؛ لمس، نظرها را باز می‌کند */
   function dkCmPeek(x){
@@ -55419,9 +55429,7 @@
       /* صورت وضعیت، قرارداد و نامه: دقیقاً همان کارت دفتر فنی (با نظرات،
          تلنگر و اشتراک)، نه نسخهٔ خلاصهٔ جدا */
       + (dkSameCard ? '<div class="dk-adm adm-host">' + admCard(kind, row, false) + '</div>'
-          + dkCmPeek(x)
-          + (x.text ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
-          + dkMoreBtn('جزئیات و وضعیت‌ها') : '')
+          + dkCmPeek(x) : '')
       + (dkTask ? dkTaskShellHtml(x, row, i) : '')
       + ((dkSameCard || dkTask) ? '' : dkGenShellHtml(x, row, kind, i))
       + '<div class="dk-bottom">'
@@ -55773,9 +55781,15 @@
           + '</article>').join('')
       : '<article class="dk-card calm"><h3 class="dk-title">موردی در این دسته نیست</h3>'
         + '<div class="dk-acts"><button type="button" class="mini go" data-dk-cats="1">دسته‌ها</button></div></article>';
-    if(dots) dots.innerHTML = n > 1
-      ? deckView.map((x, i) => '<i class="' + (i === 0 ? 'on ' : '')
-          + (x.level === 'hot' ? 'hot' : '') + '" data-dk-dot="' + i + '"></i>').join('') : '';
+    /* تا ۱۲ مورد: یک تکه برای هر کارت. بیشتر از آن تکه‌ها ریز و خالی‌نما
+       می‌شدند؛ پس یک نوار پیوسته که تا کارتِ جاری پر می‌شود */
+    if(dots){
+      dots.classList.toggle('bar', n > 12);
+      dots.innerHTML = n > 12
+        ? '<span class="dk-pbar"><b style="width:' + (100 / n).toFixed(2) + '%"></b></span>'
+        : (n > 1 ? deckView.map((x, i) => '<i class="' + (i === 0 ? 'on ' : '')
+            + (x.level === 'hot' ? 'hot' : '') + '" data-dk-dot="' + i + '"></i>').join('') : '');
+    }
   }
   function deckShowCards(i, g, quiet){
     if(g && g !== deckGrp){ deckGrp = g; }
@@ -55824,7 +55838,11 @@
   }
   function deckSyncDots(){
     const dots = document.getElementById('deckDots');
-    if(dots) Array.from(dots.children).forEach((d, i) => d.classList.toggle('on', i === deckIdx));
+    if(dots){
+      const pb = dots.querySelector('.dk-pbar b');
+      if(pb) pb.style.width = (((deckIdx + 1) / Math.max(1, deckView.length)) * 100).toFixed(2) + '%';
+      else Array.from(dots.children).forEach((d, i) => d.classList.toggle('on', i === deckIdx));
+    }
     const cnt = document.getElementById('deckPos');
     if(cnt && deckMode === 'cards'){
       /* به‌جای شمارنده، نشان شدتِ همین مورد */
