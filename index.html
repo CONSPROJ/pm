@@ -11269,6 +11269,29 @@
   :is(#adminView, .adm-host) .gen-group .gen-foot,
   :is(#adminView, .adm-host) .gen-group > .act{font-size:10px;color:var(--muted);margin-top:6px;}
 
+
+  /* نوار بالای کارت‌ها، یک‌خطی: دسته‌ها به‌شکل نوار تکه‌ای افقی و فیلتر شخص
+     یک دکمهٔ گرد در انتهای همان خط؛ دیگر کارت‌ها را پایین نمی‌راند */
+  .dk-bg:not(.cats-mode):not(.list-mode) .dk-tabs{display:flex !important;flex-wrap:wrap !important;align-items:center;gap:8px !important;padding:8px 14px 6px !important;overflow:visible !important;}
+  .dk-seg{flex:1 1 0;min-width:0;display:flex;gap:3px;padding:3px;border-radius:14px;background:var(--field);overflow-x:auto;scrollbar-width:none;}
+  .dk-seg::-webkit-scrollbar{display:none;} .dk-seg.empty{background:none;padding:0;}
+  [data-theme="dark"] .dk-seg{background:rgba(255,255,255,.05);}
+  .dk-seg .dk-tab{flex:1 0 auto;height:32px !important;padding:0 11px !important;border:0 !important;border-radius:11px !important;background:transparent;color:var(--muted);
+    font:700 11.5px var(--f);white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:background .2s, color .2s, box-shadow .2s;}
+  .dk-seg .dk-tab span{min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;background:color-mix(in srgb, var(--ink) 8%, transparent);color:inherit;}
+  .dk-seg .dk-tab.on{background:var(--surface) !important;color:var(--ink) !important;box-shadow:0 2px 8px -3px rgba(0,0,0,.25);}
+  .dk-seg .dk-tab.on span{background:var(--ink);color:var(--surface);}
+  [data-theme="dark"] .dk-seg .dk-tab.on{background:rgba(255,255,255,.12) !important;}
+  .dk-tabs .dk-pwrap{display:contents;}
+  .dk-tabs .dk-pbtn{flex:none;width:38px;height:38px;padding:0 !important;justify-content:center;border-radius:13px;position:relative;}
+  .dk-tabs .dk-pbtn > span:not(.ava){display:none;}
+  .dk-seg.ovf{-webkit-mask-image:linear-gradient(to left, transparent 0, #000 26px);mask-image:linear-gradient(to left, transparent 0, #000 26px);}
+  .dk-seg.ovf.at-end{-webkit-mask-image:none;mask-image:none;}
+  .dk-tabs .dk-pbtn .dk-pic{width:18px;height:18px;}
+  .dk-tabs .dk-pbtn .ava{width:30px;height:30px;flex:0 0 30px;font-size:10px;}
+  .dk-tabs .dk-pbtn.on{background:var(--surface);border-color:var(--ink);box-shadow:0 0 0 2px var(--ink);}
+  .dk-tabs .dk-prow-wrap{flex:1 0 100%;order:5;}
+  .dk-bg:not(.cats-mode):not(.list-mode) .dk-dots{padding:2px 16px 4px !important;}
   /* انتخاب شخص با فهرست بازشو */
   .dk-pwrap{position:relative;width:100%;}
   .dk-pbtn{
@@ -55488,10 +55511,11 @@
        بالای کارت‌ها اسکرول افقی دارد و کشو زیرش بریده می‌شد و انتخاب
        ممکن نبود. */
     return '<div class="dk-pwrap">'
-      + '<button type="button" class="dk-pbtn' + (deckWho ? ' on' : '') + '" data-dk-popen="1">'
-      +   (deckWho ? avatarHtml(deckWho, '', true) : '<span class="dk-pico">👥</span>')
+      + '<button type="button" class="dk-pbtn' + (deckWho ? ' on' : '') + '" data-dk-popen="1" title="' + (deckWho ? esc(deckWho) : 'فیلتر بر اساس شخص') + '" aria-label="فیلتر بر اساس شخص">'
+      +   (deckWho ? avatarHtml(deckWho, '', true)
+          : '<svg class="dk-pic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.3"/><path d="M3 19.5a6 6 0 0112 0"/><path d="M16 4.6a3.3 3.3 0 010 6.6M18 13.8a6 6 0 013 5.7"/></svg>')
       +   '<span>' + (deckWho ? esc(deckWho) : 'همهٔ افراد') + '</span>'
-      +   '<i>▾</i></button>'
+      +   '</button>'
       + '<div class="dk-prow-wrap" hidden id="deckPeopleWrap">'
       + '<button type="button" class="dk-parrow r" data-dk-pscroll="1" aria-label="راست">›</button>'
       + '<div class="dk-prow-h" id="deckPeople">'
@@ -55515,9 +55539,12 @@
     if(full.length < 2) return '';
     return full.map(z => {
       const arr = deckGrpAll(z.g);
+      /* برچسب کوتاه در نوار تکه‌ای؛ نام کامل در راهنما */
+      const sh = ({'نیازمند پیگیری':'پیگیری', 'فعالیت‌های اجرایی':'اجرایی', 'اسناد دفتر فنی':'اسناد', 'تسویه و پرداخت':'تسویه', 'رد شده‌ها':'رد شده'})[z.t]
+        || String(z.t).replace(/‌?های (اجرایی|دفتر فنی)$/, '');
       return '<button type="button" class="dk-tab' + (z.g === deckGrp ? ' on' : '')
-        + '" data-dk-tab="' + z.g + '">'
-        + esc(z.t) + '<span>' + toFa(arr.length) + '</span></button>';
+        + '" data-dk-tab="' + z.g + '" title="' + esc(z.t) + '">'
+        + esc(sh) + '<span>' + toFa(arr.length) + '</span></button>';
     }).join('');
   }
   function deckRowHtml(x, i){
@@ -55635,7 +55662,16 @@
     const wrap = document.getElementById('deckTrack');
     const dots = document.getElementById('deckDots');
     const tabs = document.getElementById('deckTabs');
-    if(tabs) tabs.innerHTML = deckTabsHtml() + deckPeopleHtml();
+    if(tabs){
+      const th = deckTabsHtml();
+      tabs.innerHTML = (th ? '<div class="dk-seg">' + th + '</div>' : '<div class="dk-seg empty"></div>') + deckPeopleHtml();
+      const on = tabs.querySelector('.dk-tab.on');
+      const sg = tabs.querySelector('.dk-seg');
+      /* لبهٔ محو فقط وقتی هنوز تکه‌ای پنهان مانده */
+      const ovf = () => { if(!sg) return; const mx = sg.scrollWidth - sg.clientWidth; sg.classList.toggle('ovf', mx > 4); sg.classList.toggle('at-end', Math.abs(sg.scrollLeft) >= mx - 4); };
+      if(sg) sg.addEventListener('scroll', ovf, {passive:true});
+      requestAnimationFrame(() => { try{ if(on) on.scrollIntoView({block:'nearest', inline:'center'}); }catch(e){} ovf(); });
+    }
     if(!wrap) return;
     const n = deckView.length;
     /* فقط کارت‌های نزدیک ساخته می‌شوند؛ بقیه قالب خالی‌اند و هنگام
