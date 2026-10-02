@@ -10554,7 +10554,7 @@
   .dk-go2.ic svg{width:17px;height:17px;}
   .dk-go2.ic:hover{transform:translateY(-1px);}
   .dk-card:not(.dk-x) .dk-xbody{display:none;}
-  .dk-card.dk-same:not(.dk-x) .dk-adm :is(.adm-tags, .adm-ms, .adm-more, .adm-toggle){display:none !important;}
+  .dk-card:not(.dk-x) .dk-adm :is(.adm-tags, .adm-more, .adm-toggle, .adm-times, .pgx, .tp-sec){display:none !important;}
   .dk-xbody{display:flex;flex-direction:column;gap:9px;animation:dkxIn .28s ease both;}
   @keyframes dkxIn{from{opacity:0;transform:translateY(-4px);}}
   .dk-xbtn{align-self:stretch;display:flex;align-items:center;justify-content:center;gap:6px;height:36px;border-radius:12px;border:1px dashed var(--line);
@@ -17742,8 +17742,31 @@
   .ktc-ar{color:var(--muted);} .ktc-ar svg{width:16px;height:16px;}
   .ktc-more{text-align:center;font-size:11px;color:var(--muted);padding:6px;}
   /* کارت‌های فعالیت: همان کارت دفتر فنی */
-  .dk-card.dk-same .dk-adm{margin:6px 0 4px;text-align:start;}
-  .dk-card.dk-same .dk-adm .rv.adm-k{margin:0;box-shadow:none;}
+  /* یک پوسته برای هر دو نوع کارت (دفتر فنی و اجرایی): کارت داخلی تخت
+     می‌شود و خودِ کارت عرشه قاب است؛ سربرگ، خط مشخصات، نوار نظر و خط
+     زمانی در هر دو یک‌اندازه و یک‌جا هستند. */
+  .dk-card .dk-adm{margin:4px 0 0;text-align:start;}
+  .dk-card .dk-adm .rv.adm-k{margin:0;padding:0 !important;border:0 !important;background:transparent !important;box-shadow:none !important;display:flex;flex-direction:column;gap:10px;}
+  .dk-card .dk-adm .rv.adm-k::before, .dk-card .dk-adm .rv.adm-k::after{display:none !important;}
+  .dk-card .dk-adm .rv.adm-k{overflow:hidden !important;}
+  .dk-card .dk-adm .adm-head{padding:5px 7px 0;}
+  .dk-card .dk-adm .adm-head .nudge-flag{margin-inline-end:6px !important;}
+  .dk-card .dk-adm .adm-head{display:flex;align-items:flex-start;gap:10px;order:1;}
+  .dk-card .dk-adm .adm-head .ava.rail{position:static !important;margin:3px !important;width:40px !important;height:40px !important;flex:0 0 40px !important;font-size:13px !important;box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px color-mix(in srgb, var(--ink) 12%, transparent);}
+  .dk-card .dk-adm .adm-head .nudge-flag{order:3;position:relative !important;inset:auto !important;margin:4px 0 0 !important;width:30px;height:30px;flex:0 0 30px;}
+  .dk-card .dk-adm .adm-titlewrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+  .dk-card .dk-adm .adm-title{margin:0;font-size:16px !important;font-weight:800 !important;line-height:1.6;color:var(--ink);-webkit-line-clamp:unset;display:block;}
+  .dk-card .dk-adm .adm-crit{display:inline-flex !important;align-self:flex-start;margin:0;height:24px;padding:0 9px 0 3px;padding-inline:3px 9px;border-radius:999px;
+    background:var(--alert-soft);font-size:11px;font-weight:700;gap:7px;}
+  .dk-card .dk-adm .adm-crit i{height:18px;}
+  .dk-card .dk-adm .adm-crit.warn{background:var(--warn-soft);color:var(--warn);} .dk-card .dk-adm .adm-crit.warn i{background:var(--warn);}
+  .dk-card .dk-adm .adm-acts{display:none;}
+  .dk-card .dk-adm .adm-body{order:2;display:flex !important;flex-direction:column;gap:10px;margin:0 !important;padding:0 !important;border:0 !important;}
+  .dk-card .dk-adm .adm-meta{padding:8px 12px;border-radius:12px;background:var(--field);margin:0;}
+  [data-theme="dark"] .dk-card .dk-adm .adm-meta{background:rgba(255,255,255,.04);}
+  .dk-card .dk-adm .cm-bar{order:3;margin:0;padding:6px 0 0;border-top:1px solid var(--line-soft);}
+  .dk-card .dk-adm .cm-panel{order:4;}
+  .dk-card .dk-adm .adm-line{display:none !important;}
   /* ====== ابلاغ v2 ====== */
   .ab{display:flex;flex-direction:column;gap:12px;}
   .ab-types{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:8px;}
@@ -55233,6 +55256,42 @@
     const c = b.closest('.dk-card');
     if(c) c.classList.toggle('dk-x');
   });
+  /* پوستهٔ کارت فعالیت، هم‌شکل کارت دفتر فنی: سربرگ با عکس مسئول و نشان
+     بحرانی، خط مشخصات، نوار نظر/تلنگر/اشتراک و خط زمانی؛ موانع و بررسی
+     و درصد در «جزئیات» */
+  function dkTaskShellHtml(x, row, i){
+    const id = pick(row,T.id) || (x.goto && x.goto.id) || '';
+    const title = pick(row,T.title) || x.title || 'فعالیت';
+    const owners = [pick(row,T.m1), pick(row,T.m2)].filter(Boolean);
+    const owner = owners[0] || x.who || '';
+    const st = taskStatus(row);
+    const emp = x.side === 'employer' || x.who === 'کارفرما';
+    /* دلیل بحرانی، مثل کارت دفتر فنی: فاصله تا موعد یا گذشته از آن */
+    const due0 = taskDue(row), dd = due0 ? daysSince(due0) : null;
+    const why = dd != null && st.cls !== 'done'
+      ? (dd > 0 ? toFa(dd) + ' روز از موعد گذشته' : dd === 0 ? 'موعد امروز' : toFa(-dd) + ' روز تا موعد') : (x.text || '');
+    const crit = x.done ? ''
+      : x.level === 'hot' ? '<span class="adm-crit' + (emp ? ' emp' : '') + '"><i>' + (emp ? 'بحرانی کارفرما' : 'بحرانی') + '</i>' + esc(why) + '</span>'
+      : x.level === 'warm' ? '<span class="adm-crit warn"><i>نزدیک موعد</i>' + esc(why) + '</span>' : '';
+    let grp = ''; try{ grp = taskGroupOf(row) || ''; }catch(e){}
+    const bits = ['<span class="mi-k">فعالیت' + (grp ? ' <b>' + esc(grp) + '</b>' : '') + '</span>'];
+    const pos = pick(row,T.pos); if(pos) bits.push('<span class="mi-p">' + esc(pos) + '</span>');
+    if(x.genAll && x.genAll.length > 1)
+      bits.push('<span class="mi-a">' + toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length) + ' انجام</span>');
+    else if(owners.length > 1) bits.push('<span class="mi-p">' + owners.map(esc).join('، ') + '</span>');
+    const due = taskDue(row); if(due) bits.push('<span class="mi-t">موعد ' + esc(taskDate(due)) + '</span>');
+    let tl = ''; try{ tl = taskTlBlockHtml(row); }catch(e){ tl = ''; }
+    const more = deckBlockHtml(x, 'task', row, i) + deckReviewHtml('task', row) + (x.genAll && x.genAll.length > 1 ? deckInfoHtml(x, 'task', row) : '');
+    const nb = (more.match(/class="tb-it open"/g) || []).length;
+    return '<div class="dk-adm adm-host"><div class="rv adm-k adm-task" data-id="' + esc(id) + '">'
+      + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
+      +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
+      + commentBarHtml('task', id, title, {owner: owner, shareBody: ['فعالیت', owner ? 'مسئول: ' + owner : '', 'وضعیت: ' + st.label, due ? 'موعد: ' + taskDate(due) : ''].filter(Boolean).join('\n')})
+      + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
+      + '</div></div>'
+      + ((x.text && !crit) ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
+      + dkMoreBtn('جزئیات' + (nb ? ' · ' + toFa(nb) + ' مانع' : '') + '') + (more ? '<div class="dk-xbody">' + more + '</div>' : '');
+  }
   function deckCardHtml(x, i, n){
     const m = DECK_META[x.cat] || {t:'مورد', ico:'•'};
     const lvl = x.level === 'hot' ? 'hot' : (x.level === 'warm' ? 'warm' : 'calm');
@@ -55240,6 +55299,8 @@
     const row = deckRowOf(x, kind);
     const kindLabel = kind ? (KIND_LABEL[kind] || (kind === 'task' ? 'فعالیت' : '')) : '';
     const dkSameCard = !!(row && ['statement', 'contract', 'letter'].indexOf(kind) !== -1 && typeof admCard === 'function');
+    /* فعالیت اجرایی هم همان پوستهٔ کارت دفتر فنی را می‌گیرد تا دو نوع کارت یکدست باشند */
+    const dkTask = !!(row && kind === 'task' && !dkSameCard);
     return '<article class="dk-card ' + lvl + (dkSameCard ? ' dk-same' : '') + (x.done ? ' fin' : '') + '" data-dk="' + i + '">'
       /* سربرگ جمع‌وجور: یک کپسول «دسته › نوع» و یک نشان سطح؛ رفتن به سند با آیکن */
       + '<div class="dk-top dk-top2">'
@@ -55259,8 +55320,9 @@
          تلنگر و اشتراک)، نه نسخهٔ خلاصهٔ جدا */
       + (dkSameCard ? '<div class="dk-adm adm-host">' + admCard(kind, row, false) + '</div>'
           + (x.text ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
-          + dkMoreBtn('نمودار و جزئیات') : '')
-      + (dkSameCard ? '' : '<div class="dk-tw"><span class="dk-bar"></span>'
+          + dkMoreBtn('جزئیات و وضعیت‌ها') : '')
+      + (dkTask ? dkTaskShellHtml(x, row, i) : '')
+      + (dkSameCard || dkTask ? '' : '<div class="dk-tw"><span class="dk-bar"></span>'
       +   '<h3 class="dk-title">' + esc(x.title || 'مورد باز') + '</h3></div>'
       + deckTimesHtml(x, kind, row)
       + (x.text ? '<p class="dk-text">' + esc(x.text) + '</p>' : '')
@@ -55281,7 +55343,7 @@
             + '<textarea class="dk-cmin" rows="1" placeholder="متن تلنگر…" data-dk-i="' + i + '"></textarea>'
             + '<button type="button" class="dk-send" data-dk-nudge="' + i + '">تلنگر</button>'
             + '</div>' : '')
-      +   ((x.goto && x.goto.id && !dkSameCard)
+      +   ((x.goto && x.goto.id && !dkSameCard && !dkTask)
           ? '<div class="dk-cm">'
             + '<textarea class="dk-cmin" rows="1" placeholder="نظر یا یادداشت…" data-dk-i="' + i + '"></textarea>'
             + '<button type="button" class="dk-ic" data-dk-tag="' + i + '" title="تگ کردن افراد" aria-label="تگ">@</button>'
