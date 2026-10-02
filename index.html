@@ -17810,6 +17810,7 @@
   .kt-s.bad{--ac:#ff8f80;border-color:rgba(255,150,135,.32);} .kt-s.bad b{color:#ffb4a8;}
   .kt-s.warn{--ac:#ffc777;border-color:rgba(255,210,140,.3);} .kt-s.warn b{color:#ffd99a;}
   .kt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .kt-chips:empty{display:none;}
   .kt-c{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 11px;border-radius:99px;
     font:700 11px var(--f);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);}
   .kt-c svg{width:14px;height:14px;flex:0 0 14px;}
@@ -29035,7 +29036,9 @@
     const stat = (n, l, cls, go) => '<button type="button" class="kt-s' + (cls ? ' ' + cls : '') + '" data-ktgo="' + go + '"><b>' + toFa(n) + '</b><u>' + l + '</u></button>';
     const chip = (cls, ic, t, go) => '<button type="button" class="kt-c ' + cls + '" data-ktgo="' + go + '">' + ic + '<span>' + t + '</span></button>';
     let chips = '';
-    chips += myRows.length
+    /* وضعیت گزارش فقط برای کسانی که گزارش روزانه می‌دهند */
+    const isRep = myRows.length || ktIsReporter(name);
+    if(isRep) chips += myRows.length
       ? chip('ok', KT_I.rep, 'گزارش ' + (isToday ? 'امروز' : toFa(profileState.date)) + ': ' + toFa(myRows.length) + ' ردیف ثبت شد', 'rep')
       : chip(isToday ? 'warn' : 'mut', KT_I.rep, 'گزارش ' + (isToday ? 'امروز' : toFa(profileState.date)) + ' هنوز ثبت نشده', 'rep');
     if(onLeave) chips += chip('vio', LV_I.sun, 'امروز در مرخصی هستید', 'leave');
@@ -29540,11 +29543,11 @@
     const stat = (n, l, cls, go) => '<button type="button" class="kt-s' + (cls ? ' ' + cls : '') + '" data-ktgo="' + go + '"><b>' + toFa(n) + '</b><u>' + l + '</u></button>';
     const chip = (cls, ic, t, go) => '<button type="button" class="kt-c ' + cls + '"' + (go ? ' data-ktgo="' + go + '"' : '') + '>' + ic + '<span>' + t + '</span></button>';
     const ago = lastRep ? daysSince(lastRep) : null;
-    let chips = myRows.length
+    let chips = !(myRows.length || ktIsReporter(name)) ? '' : myRows.length
       ? chip('ok', KT_I.rep, 'گزارش امروز: ' + toFa(myRows.length) + ' ردیف، ' + toFa(men) + ' نفر', 'rep')
       : chip(ago != null && ago > 2 ? 'bad' : 'warn', KT_I.rep, lastRep ? 'آخرین گزارش ' + (ago === 1 ? 'دیروز' : toFa(ago) + ' روز پیش') : 'گزارش امروز ثبت نشده', 'rep').replace('<button ', '<button data-pklast="' + esc(name) + '" ');
     /* تاریخ آخرین گزارش از خود پایگاه داده (نه فقط داده‌های بازشده) */
-    if(!myRows.length && BACKEND === 'supabase') setTimeout(async () => {
+    if(!myRows.length && ktIsReporter(name) && BACKEND === 'supabase') setTimeout(async () => {
       try{
         const r = await supaFetch('activities?select=date_fa&engineer=eq.' + encodeURIComponent(name) + '&order=date_fa.desc&limit=1', {prefer:'return=representation'});
         const d = r && r[0] && normDate(r[0].date_fa);
@@ -42898,6 +42901,13 @@
     return out.length ? out.join('') : '<div class="am2-empty">جزئیات دیگری ثبت نشده است.</div>';
   }
 
+  /* گزارش‌دهندهٔ روزانه: در فهرست موظف‌ها، یا کسی که در ۶۰ روز اخیر گزارش داده */
+  function ktIsReporter(name){
+    const k = nameKey(name);
+    try{ if((REQUIRED_REPORTERS || []).some(x => nameKey(x) === k)) return true; }catch(e){}
+    try{ for(const x of reportedSet){ if(String(x).split('|')[1] === k) return true; } }catch(e){}
+    return false;
+  }
   function admCard(kind, r, editableIn){
     const editable = (editableIn === false) ? false : canEditAdm(kind, r);
     const id = pick(r,AD.id);
