@@ -20648,6 +20648,41 @@
       });
     });
 
+    /* ابلاغ مشترک: برای هر گیرنده یک فعالیت جدا ساخته می‌شود، پس موعدِ
+       گذشته برای هر نفر یک اعلان می‌ساخت. موارد هم‌عنوان و هم‌دلیل از
+       نوع فعالیت یک کارت می‌شوند، با عکس و نام همهٔ مسئول‌ها. */
+    (function(){
+      const TK = ['task','tasks','activity','فعالیت','general',''];
+      const groups = new Map(), keep = [];
+      out.forEach(x => {
+        if(x.cat !== 'due' || TK.indexOf(String((x.goto && x.goto.kind) || '')) === -1){ keep.push(x); return; }
+        const k = [normName(x.title || ''), String(x.text || ''), x.level, x.side || ''].join('|');
+        if(!groups.has(k)){ groups.set(k, x); keep.push(x); return; }
+        const g = groups.get(k);
+        if(!g.__members) g.__members = [g];
+        g.__members.push(x);
+      });
+      keep.forEach(g => {
+        if(!g.__members) return;
+        const ms = g.__members;
+        const names = [];
+        ms.forEach(m => (m.avatars && m.avatars.length ? m.avatars : [m.who]).forEach(n => { if(n && !names.some(y => nameKey(y) === nameKey(n))) names.push(n); }));
+        /* «من» اگر بین مسئول‌ها باشم، کارت به مورد خودم می‌رود */
+        const mineM = ms.find(m => m.mine);
+        const base = mineM || g;
+        g.avatars = names; g.who = names[0] || g.who;
+        g.goto = base.goto; g.mine = ms.some(m => m.mine);
+        g.fid = 'due:' + todayShamsi() + ':grp:' + ms.map(m => String(m.goto && m.goto.id)).sort().join(',');
+        g.seen = ms.every(m => m.seen) || lseen.has(g.fid);
+        const others = names.filter(n => nameKey(n) !== nameKey(me));
+        g.canRemind = mgr && others.length > 0;
+        g.remindWho = others.join('|');
+        g.text = g.text;
+        delete g.__members;
+      });
+      out = keep;
+    })();
+
     // ---- ۲) تلنگرهایی که به من زده‌اند ----
     (notifCache.nudges || []).forEach(r => {
       if(pick(r,N.kind) === MISS_KIND) return;
@@ -20824,7 +20859,8 @@
                     + avas.slice(0,3).map(n => avatarHtml(n, 'xs', true)).join('')
                     + (avas.length > 3 ? '<span class="fz-more">+' + toFa(avas.length - 3) + '</span>' : '')
                     + '</span>'
-                    + (avas.length === 1 ? '<span class="fz-nm">' + esc(shortNm(avas[0])) + '</span>' : '')
+                    + (avas.length === 1 ? '<span class="fz-nm">' + esc(shortNm(avas[0])) + '</span>'
+                       : avas.length <= 3 ? '<span class="fz-nm">' + esc(avas.map(shortNm).join('، ')) + '</span>' : '')
                   : '')
               + (x.side === 'employer'
                   ? '<span class="emp-tag" title="تأخیر در زمین کارفرماست">بحرانی کارفرما</span>' : '')
@@ -21131,8 +21167,16 @@
         e.stopPropagation();
         if(window.__closeNotif) window.__closeNotif();
         else document.getElementById('notifModal').hidden = true;   // پشتیبان
-        openNudge(frm.dataset.fremind, frm.dataset.fkind || 'task',
+        /* کارت گروهی: تلنگر به نفر اول، بقیه از پیش انتخاب‌شده */
+        const rw = String(frm.dataset.fremind || '').split('|').filter(Boolean);
+        openNudge(rw[0], frm.dataset.fkind || 'task',
                   frm.dataset.fid2 || '', frm.dataset.ftitle || '');
+        if(rw.length > 1){
+          nudgeExtra = new Set(rw.slice(1));
+          const pk = document.getElementById('nudgePicks');
+          if(pk){ pk.innerHTML = nudgePicksHtml(rw[0]); pk.hidden = false; }
+          const mb = document.getElementById('nudgeMoreBtn'); if(mb) mb.classList.add('on');
+        }
         const box = document.getElementById('nudgeMsg');
         if(box) box.value = 'یادآوری: لطفاً وضعیت این مورد را مشخص کنید.';
         return;
