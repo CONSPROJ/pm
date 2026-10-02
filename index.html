@@ -18596,6 +18596,40 @@
   :root:not([data-theme="dark"]) .kt-show > i{color:#1b2024;}
   [data-theme="dark"] .kt-show{background:linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.03));border-color:rgba(255,255,255,.12);}
   [data-theme="dark"] .kt-show > i{color:#12171b;}
+
+  /* ===== کارت شناسهٔ سند (جای خط نقطه‌چین) ===== */
+  .adm-info{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:6px;margin-top:10px;min-width:0;}
+  .adm-info .ai-c{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 10px;border-radius:14px;background:var(--field);border:1px solid var(--line-soft);}
+  [data-theme="dark"] .adm-info .ai-c{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06);}
+  .adm-info .ai-c > i{flex:0 0 30px;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--surface);color:var(--muted);box-shadow:0 1px 0 rgba(0,0,0,.04);}
+  [data-theme="dark"] .adm-info .ai-c > i{background:rgba(255,255,255,.06);}
+  .adm-info .ai-c > i svg{width:16px;height:16px;}
+  .adm-info .ai-c > span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .adm-info u{text-decoration:none;font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .adm-info b{font-size:13px;font-weight:900;color:var(--ink);font-family:var(--m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .adm-info .ai-c.p .mi-p{all:unset;cursor:pointer;font:800 12.5px var(--f);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+    text-decoration:underline dotted color-mix(in srgb, var(--ink) 30%, transparent);text-underline-offset:4px;}
+  .adm-info .ai-c.p .mi-p:hover{color:var(--sky);}
+  .adm-info .ai-c.a{background:color-mix(in srgb, var(--ok) 7%, var(--surface));border-color:color-mix(in srgb, var(--ok) 20%, transparent);}
+  [data-theme="dark"] .adm-info .ai-c.a{background:color-mix(in srgb, var(--ok) 10%, transparent);}
+  .adm-info .ai-c.a > i{color:var(--ok);}
+  .adm-info .ai-c.a b{font-size:15.5px;display:flex;align-items:baseline;gap:4px;}
+  .adm-info .ai-c.a b small{font:700 10px var(--f);color:var(--muted);}
+  .adm-info .ai-c.a em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted);font-family:var(--m);}
+  .adm-info .ai-c.wide, .adm-info.n1 .ai-c{grid-column:1 / -1;}
+  .adm-info:not(:has(.ai-c.t)) .ai-c.no{grid-column:1 / -1;}
+  .adm-info .ai-c.t b, .adm-info .ai-c.no b{font-size:12px;letter-spacing:-.2px;overflow:visible;}
+  @media (max-width: 430px){
+    .adm-info .ai-c{gap:7px;padding:8px;}
+    .adm-info .ai-c > i{flex-basis:26px;width:26px;height:26px;border-radius:9px;}
+    .adm-info .ai-c > i svg{width:14px;height:14px;}
+  }
+  .ai-att{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;}
+  @media (min-width: 700px){
+    .adm-info{grid-template-columns:repeat(4, minmax(0,1fr));}
+    .adm-info .ai-c.wide{grid-column:span 2;}
+    .adm-info:not(:has(.ai-c.t)) .ai-c.no{grid-column:auto;}
+  }
   /* ===== گفتگو v3: نظرها، تلنگرها، نام‌بردن و فیلد نوشتن ===== */
   .cm-panel:has(> .cm3){padding:0 !important;overflow:hidden;border-radius:20px !important;background:var(--surface) !important;border:1px solid var(--line) !important;box-shadow:0 14px 34px -26px rgba(0,0,0,.5) !important;}
   [data-theme="dark"] .cm-panel:has(> .cm3){background:rgba(255,255,255,.03) !important;border-color:rgba(255,255,255,.08) !important;}
@@ -42944,23 +42978,33 @@
       /* یک خط، یک وزن: نوع سند و شماره کنار هم به‌عنوان شناسه، بعد
          نام پیمانکار، و مبلغ ته خط. همه هم‌اندازه و هم‌رنگ، جز مبلغ
          که تنها عددِ تصمیم‌ساز است. */
+      /* ====== کارت شناسه: چند خانهٔ برچسب‌دار به‌جای یک خط نقطه‌چین ======
+         شماره، طرف، مبلغ و تاریخ هرکدام خانهٔ خودشان را دارند تا با یک
+         نگاه خوانده شوند؛ مبلغ پررنگ‌تر و معادل تومانی زیرش. */
       + (function(){
-          const bits = [];
-          bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
-            + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
-          if(party) bits.push('<button type="button" class="mi-p" '
-            + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
-            + esc(party) + '</button>');
-          if(pick(r,AD.link)) bits.push(attachChipsHtml(pick(r,AD.link), 2));
-          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : '';
-          if(amt) bits.push('<span class="mi-a">' + moneyFa(amt) + '<u>ریال</u></span>');
-          /* تاریخ سند هم در همین خط: برای صورتجلسه تاریخ جلسه، برای
-             بقیه تاریخ ارسال. بدون آن، تاریخ فقط در جزئیات بود. */
+          const IC = {
+            no:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg>',
+            p:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1-3.6 3.8-5.5 7-5.5s6 1.9 7 5.5"/></svg>',
+            a:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>',
+            t:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
+          };
+          const cell = (k, cap, val, cls) => '<div class="ai-c ' + k + (cls ? ' ' + cls : '') + '"><i>' + IC[k] + '</i><span><u>' + cap + '</u>' + val + '</span></div>';
+          const cells = [];
+          cells.push(cell('no', esc(KIND_ONE(kind) || 'سند'), '<b>' + (docNo ? esc(toFa(docNo)) : '—') + '</b>'));
           const dt = (kind === 'minute')
             ? (pick(r,AD.mMeet) || pick(r,AD.date))
             : (admSentDate(kind, r) || pick(r,AD.date));
-          if(dt) bits.push('<span class="mi-t">' + esc(admDate(dt)) + '</span>');
-          return '<div class="adm-meta">' + bits.join('<i></i>') + '</div>';
+          if(dt) cells.push(cell('t', kind === 'minute' ? 'تاریخ جلسه' : 'تاریخ ارسال', '<b>' + esc(admDate(dt)) + '</b>'));
+          if(party) cells.push(cell('p', kind === 'letter' ? 'طرف مکاتبه' : 'طرف قرارداد',
+            '<button type="button" class="mi-p" data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">' + esc(party) + '</button>', 'wide'));
+          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : '';
+          if(amt){
+            const n = (typeof amtNum === 'function') ? amtNum(amt) : 0;
+            cells.push(cell('a', 'مبلغ', '<b>' + moneyFa(amt) + '<small>ریال</small></b>'
+              + (n >= 10 ? '<em>' + moneyFa(Math.round(n / 10)) + ' تومان</em>' : ''), 'wide'));
+          }
+          const att = pick(r,AD.link) ? '<div class="ai-att">' + attachChipsHtml(pick(r,AD.link), 2) + '</div>' : '';
+          return '<div class="adm-info n' + cells.length + '">' + cells.join('') + '</div>' + att;
         })()
 
       /* ====== سطر وضعیت: تنها عناصر رنگی و کلیک‌پذیر کارت ====== */
