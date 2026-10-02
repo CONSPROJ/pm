@@ -1058,7 +1058,7 @@
   :is(#confirmModal,#askConfirmModal) .mc-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
   :is(#confirmModal,#askConfirmModal) .mc-ic{font-size:19px;line-height:1;}
   :is(#confirmModal,#askConfirmModal) .mc-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
-  :is(#confirmModal,#askConfirmModal) .mc-text{font-size:13px;line-height:2;color:var(--muted);margin-bottom:15px;}
+  :is(#confirmModal,#askConfirmModal) .mc-text{font-size:13px;line-height:2;color:var(--muted);margin-bottom:15px;white-space:pre-line;}
   :is(#confirmModal,#askConfirmModal) .mc-acts{display:flex;gap:8px;}
   :is(#confirmModal,#askConfirmModal) .mc-acts .add{
     flex:1 1 auto;margin:0;padding:11px;border:none;
@@ -16771,6 +16771,22 @@
   .ctd-h{width:100%;display:flex;align-items:center;gap:10px;padding:0;border:0;background:none;cursor:pointer;text-align:start;font-family:var(--f);color:var(--ink);}
   .ctd-n{flex:1;min-width:0;display:flex;flex-direction:column;} .ctd-n b{font-size:13px;font-weight:800;} .ctd-n small{font-size:10.5px;color:var(--muted);}
   .ctd-e{font-size:11px;font-weight:700;color:var(--sky-deep, var(--sky));}
+  /* دکمهٔ کوچک تماس روی کارت پیمانکار */
+  .ctc-mini{position:relative;display:inline-flex;margin-inline-start:auto;}
+  .ctc-mb{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:99px;border:1px solid var(--line);background:none;
+    font:700 10.5px var(--f);color:var(--muted);cursor:pointer;max-width:130px;transition:color .15s, border-color .15s, background .15s;}
+  .ctc-mb svg{width:12px;height:12px;flex:0 0 12px;}
+  .ctc-mb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ctc-mb:hover, .ctc-mini.open .ctc-mb{color:var(--ok);border-color:color-mix(in srgb, var(--ok) 45%, var(--line));background:color-mix(in srgb, var(--ok) 7%, transparent);}
+  .ctc-mb.add{border-style:dashed;opacity:.75;}
+  .ctc-pop{position:absolute;top:calc(100% + 6px);inset-inline-end:0;z-index:30;width:min(320px, 86vw);display:none;}
+  .ctc-mini.open .ctc-pop{display:block;animation:ctcPop .16s ease;}
+  @keyframes ctcPop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+  .ctc-pop .ctc-bar{margin:0;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);background:var(--surface);}
+  [data-theme="dark"] .ctc-pop .ctc-bar{background:#1d2026;}
+  .ctd-xl{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .ctd-xl .mx-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+  .ctd-xl svg{width:15px;height:15px;}
   .ctd-r .ctc-bar{margin:8px 0;} .ctd-r .ctc-bar .ctc-b.ic{display:none;} .ctd-r .ctc-bar.none{display:none;} .ctd-r:not(.open){padding-bottom:10px;}
   /* ====== پنجرهٔ اشتراک‌گذاری ====== */
   .shr-modal{max-width:460px;}
@@ -23750,7 +23766,11 @@
     }
     try{ localStorage.setItem('siteLogM.ctrContacts.v1', JSON.stringify(Array.from(ctrContacts.values()))); }catch(e){}
     clearNetCache();
-    document.querySelectorAll('.ctc-bar[data-ctc]').forEach(b => { if(normName(ctrCanon(b.dataset.ctc)) === normName(canon)) b.outerHTML = ctcBarHtml(b.dataset.ctc); });
+    ctcRefreshDom(canon);
+  }
+  function ctcRefreshDom(canon){
+    document.querySelectorAll('[data-ctcmini]').forEach(b => { if(!canon || normName(ctrCanon(b.dataset.ctc)) === normName(canon)) b.outerHTML = ctcMiniHtml(b.dataset.ctc); });
+    document.querySelectorAll('.ctc-bar[data-ctc]').forEach(b => { if(b.closest('.ctc-mini')) return; if(!canon || normName(ctrCanon(b.dataset.ctc)) === normName(canon)) b.outerHTML = ctcBarHtml(b.dataset.ctc); });
   }
   const telOf = v => toEn(String(v || '')).replace(/[^\d+]/g, '');
   const waOf = v => { let t = telOf(v).replace(/^\+/, ''); if(/^0\d{10}$/.test(t)) t = '98' + t.slice(1); else if(/^9\d{9}$/.test(t)) t = '98' + t; return t; };
@@ -23767,7 +23787,28 @@
     link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>',
     chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>'
   };
-  /* نوار تماس روی کارت پیمانکار */
+  /* روی کارت پیمانکار فقط یک دکمهٔ کوچک با نام کوتاه؛ با زدنش اطلاعات
+     کامل تماس باز می‌شود تا کارت شلوغ نشود. */
+  function ctcMiniHtml(name){
+    const c = ctrContactOf(name);
+    const ed = can('ctr.contact');
+    if(!c && !ed) return '';
+    const who = c ? String(c.c || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '').split(/\s+/).slice(0, 2).join(' ') : '';
+    return '<span class="ctc-mini' + (c ? '' : ' none') + '" data-ctc="' + esc(name) + '" data-ctcmini="1">'
+      + (c ? '<button type="button" class="ctc-mb" data-ctctog="1" aria-expanded="false" title="اطلاعات تماس">' + CTC_I.tel + '<span>' + esc(who || 'تماس') + '</span></button>'
+             + '<span class="ctc-pop" role="dialog">' + ctcBarHtml(name) + '</span>'
+           : '<button type="button" class="ctc-mb add" data-ctcedit="' + esc(name) + '" title="افزودن اطلاعات تماس">' + CTC_I.tel + '<span>+ تماس</span></button>')
+      + '</span>';
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-ctctog]');
+    document.querySelectorAll('.ctc-mini.open').forEach(m => { if(!t || m !== t.parentElement){ m.classList.remove('open'); const b = m.querySelector('[data-ctctog]'); if(b) b.setAttribute('aria-expanded', 'false'); } });
+    if(!t) return;
+    e.preventDefault(); e.stopPropagation();
+    const m = t.parentElement, on = m.classList.toggle('open');
+    t.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }, true);
+  /* نوار تماس کامل (داخل دفترچه و پنجرهٔ کوچک کارت) */
   function ctcBarHtml(name){
     const c = ctrContactOf(name);
     const ed = can('ctr.contact');
@@ -23844,13 +23885,123 @@
   }, true);
   /* ====== دفترچهٔ تماس پیمانکاران ====== */
   const ctdState = {q:'', f:'all', open:''};
-  function ctcRepaint(focusId){
-    const box = document.getElementById('ctDir');
-    if(!box) return;
+  /* ====== اکسل دفترچهٔ تماس ======
+     دانلود: همهٔ پیمانکاران (با و بی اطلاعات) در یک جدول، تا همان فایل
+     پر شود و برگردد. بارگذاری: هر سطر با نام پیمانکار؛ خانهٔ پر جایگزین
+     می‌شود و خانهٔ خالی اطلاعات قبلی را پاک نمی‌کند. */
+  const CTD_XI = {
+    down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+    up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></svg>'
+  };
+  const CTD_COLS = ['نام پیمانکار', 'نماینده / مسئول', 'تلفن همراه', 'تلفن دیگر', 'واتساپ', 'ایمیل', 'نشانی', 'یادداشت'];
+  function ctdEntities(){
     let ents = [];
     try{ ents = kxEntities(kxStats()); }catch(e){}
     const seen = new Set(ents.map(e => e.k));
     ctrContacts.forEach((c, k) => { if(!seen.has(k)) ents.push({canon: c.name, k, n:0, docs:0, members:[], skills:new Map()}); });
+    return ents;
+  }
+  function ctdExport(){
+    if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره بزنید.'); return; }
+    const ents = ctdEntities().sort((a, b) => a.canon.localeCompare(b.canon, 'fa'));
+    const aoa = [CTD_COLS].concat(ents.map(e => { const c = ctrContactOf(e.canon) || {}; const p = c.p || [];
+      return [e.canon, c.c || '', p[0] || '', p.slice(1).join(' / '), c.w || '', c.e || '', c.a || '', c.n || '']; }));
+    const sh = XLSX.utils.aoa_to_sheet(aoa);
+    sh['!cols'] = [{wch:28}, {wch:20}, {wch:15}, {wch:18}, {wch:15}, {wch:26}, {wch:30}, {wch:30}];
+    sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:aoa.length - 1, c:CTD_COLS.length - 1}})};
+    /* تلفن‌ها متن بمانند تا صفرِ اول نیفتد */
+    for(let r = 1; r < aoa.length; r++) [2, 3, 4].forEach(c => { const ad = XLSX.utils.encode_cell({r, c}); if(sh[ad]) sh[ad] = {t:'s', v: String(sh[ad].v)}; });
+    const wb = XLSX.utils.book_new(); try{ xlsBookRtl(wb); }catch(e){}
+    XLSX.utils.book_append_sheet(wb, sh, 'تماس پیمانکاران');
+    XLSX.writeFile(wb, 'تماس پیمانکاران - ' + toFa(todayShamsi()).replace(/\//g, '-') + '.xlsx');
+  }
+  /* ستون‌ها از روی سرتیتر پیدا می‌شوند، پس ترتیب یا ستون اضافه مهم نیست */
+  function ctdParseRows(aoa){
+    const norm = v => String(v == null ? '' : v).replace(/[\s\u200c]+/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
+    let hr = aoa.findIndex(r => (r || []).some(v => /نام|پیمانکار/.test(norm(v))));
+    if(hr === -1) hr = 0;
+    const H = (aoa[hr] || []).map(norm);
+    const col = (...keys) => H.findIndex(h => keys.some(k => h.indexOf(norm(k)) !== -1));
+    const ci = {n: col('نامپیمانکار', 'پیمانکار', 'نام'), c: col('نماینده', 'مسئول'), p1: col('تلفنهمراه', 'موبایل', 'همراه'),
+      p2: col('تلفندیگر', 'تلفن۲', 'ثابت'), w: col('واتساپ'), e: col('ایمیل', 'email', 'mail'), a: col('نشانی', 'آدرس'), no: col('یادداشت', 'توضیح')};
+    if(ci.p1 === -1) ci.p1 = col('تلفن', 'شماره');
+    if(ci.n === -1) return {rows: [], err:'ستون «نام پیمانکار» پیدا نشد.'};
+    const cell = (r, i) => i === -1 ? '' : String(r[i] == null ? '' : r[i]).trim();
+    const rows = [];
+    aoa.slice(hr + 1).forEach((r, i) => {
+      if(!r) return;
+      const name = cell(r, ci.n); if(!name) return;
+      const ph = [cell(r, ci.p1)].concat(cell(r, ci.p2).split(/[\/،,]+/)).map(x => x.trim()).filter(Boolean)
+        .map(x => /^9\d{9}$/.test(toEn(x)) ? '0' + toEn(x) : x);
+      rows.push({line: hr + i + 2, name, o: {c: cell(r, ci.c), p: ph, w: cell(r, ci.w), e: cell(r, ci.e), a: cell(r, ci.a), n: cell(r, ci.no)}});
+    });
+    return {rows};
+  }
+  async function ctdImport(file){
+    if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره امتحان کنید.'); return; }
+    let aoa = [];
+    try{ const wb = XLSX.read(await file.arrayBuffer(), {type:'array'}); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''}); }
+    catch(e){ showDialog('err','فایل خوانده نشد','این فایل اکسل یا CSV معتبری نیست.'); return; }
+    const {rows, err} = ctdParseRows(aoa);
+    if(err){ showDialog('warn','ستون نام نیست', err + ' سطر اول فایل باید سرتیتر باشد؛ بهتر است اول «دانلود اکسل» را بگیرید و همان را پر کنید.'); return; }
+    const known = new Set(ctdEntities().map(e => e.k));
+    const plan = new Map(), bad = [];
+    rows.forEach(x => {
+      let canon = x.name; try{ canon = ctrCanon(canonicalName(x.name)); }catch(e){}
+      const o = x.o;
+      if(o.e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.e)){ bad.push('سطر ' + toFa(x.line) + ': ایمیل «' + o.e + '»'); o.e = ''; }
+      o.p = o.p.filter(v => { if(telOf(v).replace(/^\+/, '').length >= 7) return true; bad.push('سطر ' + toFa(x.line) + ': تلفن «' + v + '»'); return false; });
+      if(o.w && telOf(o.w).replace(/^\+/, '').length < 7){ bad.push('سطر ' + toFa(x.line) + ': واتساپ «' + o.w + '»'); o.w = ''; }
+      const old = ctrContactOf(canon) || {};
+      const prev = plan.get(normName(canon));
+      const base = prev ? prev.o : old;
+      const m = {c: o.c || base.c || '', p: o.p.length ? Array.from(new Set(o.p)) : (base.p || []), w: o.w || base.w || '', e: o.e || base.e || '', a: o.a || base.a || '', n: o.n || base.n || ''};
+      const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '']);
+      if(same && !prev) return;
+      plan.set(normName(canon), {canon, o: m, isNew: !ctrContactOf(canon), unknown: !known.has(normName(canon))});
+    });
+    const items = Array.from(plan.values());
+    if(!items.length){ showDialog('ok','تغییری نیست', 'همهٔ ' + toFa(rows.length) + ' سطر فایل با اطلاعات فعلی یکی است.' + (bad.length ? '\n' + bad.slice(0, 6).join('\n') : '')); return; }
+    const nNew = items.filter(x => x.isNew).length, nUnk = items.filter(x => x.unknown).length;
+    const msg = toFa(rows.length) + ' سطر خوانده شد.\n'
+      + '• ' + toFa(nNew) + ' پیمانکار اطلاعات تماس تازه می‌گیرد\n'
+      + '• ' + toFa(items.length - nNew) + ' پیمانکار به‌روز می‌شود\n'
+      + (nUnk ? '• ' + toFa(nUnk) + ' نام در گزارش‌ها نیست و جدا ذخیره می‌شود\n' : '')
+      + (bad.length ? '• ' + toFa(bad.length) + ' خانهٔ نادرست کنار گذاشته شد:\n   ' + bad.slice(0, 5).join('\n   ') + (bad.length > 5 ? '\n   …' : '') + '\n' : '')
+      + 'خانه‌های خالی اطلاعات قبلی را پاک نمی‌کنند.';
+    if(!(await askConfirm('بارگذاری اکسل تماس‌ها', msg, 'ذخیره'))) return;
+    const btn = document.querySelector('[data-ctdxl="in"]'); if(btn){ btn.disabled = true; btn.lastChild.textContent = 'در حال ذخیره…'; }
+    let fail = 0;
+    try{
+      /* ردیف‌های قبلیِ همین نام‌ها پاک و همه با یک درخواست نوشته می‌شوند */
+      const olds = items.map(x => ctrContactOf(x.canon)).filter(c => c && c.name);
+      for(let i = 0; i < olds.length; i += 8)
+        await Promise.all(olds.slice(i, i + 8).map(c => supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(c.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => { fail++; })));
+      const body = items.map(x => { const cl = {}; Object.keys(x.o).forEach(k => { const v = x.o[k]; if(Array.isArray(v) ? v.length : v) cl[k] = v; }); x.clean = cl; return {kind: CTR_CONTACT_KIND, value: x.canon + '\u00a6' + JSON.stringify(cl)}; });
+      for(let i = 0; i < body.length; i += 200)
+        await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body: body.slice(i, i + 200)});
+      olds.forEach(c => ctrContacts.delete(normName(c.name)));
+      items.forEach(x => ctrContacts.set(normName(x.canon), Object.assign({}, x.clean, {name: x.canon})));
+      try{ localStorage.setItem('siteLogM.ctrContacts.v1', JSON.stringify(Array.from(ctrContacts.values()))); }catch(e){}
+      clearNetCache();
+      ctcRepaint(); ctcRefreshDom('');
+      showDialog(fail ? 'warn' : 'ok', 'بارگذاری شد', 'اطلاعات تماس ' + toFa(items.length) + ' پیمانکار ذخیره شد.' + (fail ? ' (' + toFa(fail) + ' پاک‌سازی قبلی ناموفق بود)' : ''));
+    }catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); ctcRepaint(); }
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ctdxl]');
+    if(!b) return;
+    if(b.dataset.ctdxl === 'out') ctdExport();
+    else if(can('ctr.contact')){ const f = document.getElementById('ctdFile'); if(f){ f.value = ''; f.click(); } }
+  });
+  document.addEventListener('change', e => {
+    if(!e.target || e.target.id !== 'ctdFile' || !e.target.files || !e.target.files[0]) return;
+    ctdImport(e.target.files[0]);
+  });
+  function ctcRepaint(focusId){
+    const box = document.getElementById('ctDir');
+    if(!box) return;
+    const ents = ctdEntities();
     const q = String(ctdState.q || '').trim();
     const nWith = ents.filter(e => ctrContactOf(e.canon)).length;
     const list = ents.filter(e => {
@@ -23862,8 +24013,12 @@
     }).sort((a, b) => (!!ctrContactOf(b.canon) - !!ctrContactOf(a.canon)) || (b.n + b.docs) - (a.n + a.docs));
     const ed = can('ctr.contact');
     const chip = (k, t, n) => '<button type="button" class="dc-f' + (ctdState.f === k ? ' on' : '') + '" data-ctdf="' + k + '">' + t + '<u>' + toFa(n) + '</u></button>';
-    box.innerHTML = '<div class="ctd-hero"><span class="ctd-ic">' + CTC_I.tel + '</span><span><b>تماس پیمانکاران</b><small>تلفن، واتساپ، ایمیل و نمایندهٔ هر پیمانکار؛ روی کارت پیمانکار و در اشتراک‌گذاری هم استفاده می‌شود.</small></span></div>'
+    box.innerHTML = '<div class="ctd-hero"><span class="ctd-ic">' + CTC_I.tel + '</span><span><b>تماس پیمانکاران</b><small>تلفن، واتساپ، ایمیل و نمایندهٔ هر پیمانکار؛ روی کارت پیمانکار و در اشتراک‌گذاری هم استفاده می‌شود. برای ورود انبوه، اکسل را دانلود و پر کنید و دوباره بارگذاری کنید.</small></span></div>'
       + '<div class="ctd-kpi"><div><b>' + toFa(ents.length) + '</b><u>پیمانکار</u></div><div class="ok"><b>' + toFa(nWith) + '</b><u>با اطلاعات تماس</u></div><div class="' + (ents.length - nWith ? 'warn' : '') + '"><b>' + toFa(ents.length - nWith) + '</b><u>بدون اطلاعات</u></div></div>'
+      + '<div class="ctd-xl">'
+      +   '<button type="button" class="mx-btn" data-ctdxl="out">' + CTD_XI.down + 'دانلود اکسل</button>'
+      +   (ed ? '<button type="button" class="mx-btn" data-ctdxl="in">' + CTD_XI.up + 'بارگذاری اکسل</button><input type="file" id="ctdFile" accept=".xlsx,.xls,.csv" hidden>' : '')
+      + '</div>'
       + '<label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، نماینده، تلفن یا ایمیل…" value="' + esc(q) + '" autocomplete="off"></label>'
       + '<div class="dc-fs">' + chip('all', 'همه', ents.length) + chip('with', 'با اطلاعات', nWith) + chip('none', 'بدون اطلاعات', ents.length - nWith) + '</div>'
       + '<div class="ctd-list">' + (list.length ? list.slice(0, 300).map(e => {
@@ -32199,8 +32354,8 @@
               + '<div class="ct-range hr-rng" role="group" aria-label="بازهٔ کارکرد"><u>بازه</u>'
               +   [['day','امروز'],['week','۷ روز'],['month','۳۰ روز']].map(([m, lb]) =>
                     '<button type="button" class="ctr' + (rMode === m ? ' on' : '') + '" data-ctrange="' + m + '">' + lb + '</button>').join('')
+              + ctcMiniHtml(name)
               + '</div>'
-              + ctcBarHtml(name)
               + '<div class="hr-tabs" role="tablist">'
               +   '<button type="button" class="on" data-hrtab="sum">خلاصه</button>'
               +   '<button type="button" data-hrtab="work">کارکرد' + (o.onlyAdm ? '' : '<i>' + toFa(present) + '</i>') + '</button>'
