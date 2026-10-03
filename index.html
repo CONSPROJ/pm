@@ -18731,6 +18731,28 @@
   .sd2.open > .sd-chips{display:none;}
   [data-theme="dark"] .sd2 .sd-row .sd-in{background:rgba(255,255,255,.05) !important;}
   @media (max-width:640px){ .sd2 .sd-row .sd-in{height:46px !important;font-size:16px !important;} .sd2 .sd-row .sd-clear{top:8px;} }
+  /* ===== نوار ابزار جست‌وجو + فیلتر (همهٔ برگه‌ها) ===== */
+  .sd-open > .fd-toggle, .sd-open > .sd-chips{display:none !important;}
+  .sd-open > .fd-body{display:flex !important;padding:0 !important;background:none !important;border:0 !important;box-shadow:none !important;animation:none !important;}
+  .sd-open .sd-row .sd-in{background:var(--surface) !important;border:1px solid var(--line) !important;}
+  .sd-open .sd-row .sd-in:focus{border-color:color-mix(in srgb, var(--ink) 30%, var(--line)) !important;}
+  [data-theme="dark"] .sd-open .sd-row .sd-in{background:rgba(255,255,255,.04) !important;border-color:rgba(255,255,255,.1) !important;}
+  .ftb{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;margin:10px 0 0;}
+  .ftb > *{margin:0 !important;min-width:0;}
+  .ftb > .sd2{grid-column:1;grid-row:1;order:0 !important;}
+  .ftb > .fdrawer:not(.sd2){display:contents !important;}
+  .ftb > .fdrawer[style*="none"]{display:none !important;}
+  .ftb > .fdrawer[style*="none"] > *{display:none !important;}
+  .ftb:not(:has(> .fdrawer:not(.sd2):not([style*="none"]))) > .sd2{grid-column:1 / -1;}
+  .ftb:empty, .ftb:not(:has(> :not([style*="none"]))){display:none;}
+  .ftb > .fdrawer:not(.sd2) > .fd-toggle{grid-column:2;grid-row:1;align-self:stretch;min-height:48px !important;}
+  .ftb > .fdrawer:not(.sd2) > .fd-chips{grid-column:1 / -1;}
+  .ftb > .fdrawer:not(.sd2) > .fd-body{grid-column:1 / -1;}
+  @media (max-width:640px){
+    .ftb > .fdrawer:not(.sd2) > .fd-toggle{min-height:46px !important;padding:0 8px !important;}
+    .ftb > .fdrawer:not(.sd2) > .fd-toggle > b{display:none;}
+    .ftb > .fdrawer:not(.sd2) > .fd-toggle .fd-ar{display:none;}
+  }
   /* دسته‌بندی لیست فعالیت: پرسنل / پیمانکار / طبقه */
   .tk-grpseg{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:13px;background:var(--field);margin-inline-start:auto;}
   [data-theme="dark"] .tk-grpseg{background:rgba(255,255,255,.05);}
@@ -37231,9 +37253,13 @@
   function placeViewDrawers(){
     const rv = document.getElementById('reportView');
     if(!rv || !rv.parentNode) return;
-    ['filterBarDrawer','reportSearch','admFilterDrawer'].forEach(id => {
+    /* جست‌وجو و فیلترها در یک نوار ابزار: کادر جست‌وجو و کنارش دکمهٔ فیلتر */
+    let tb = document.getElementById('viewTb');
+    if(!tb){ tb = document.createElement('div'); tb.id = 'viewTb'; tb.className = 'ftb'; }
+    rv.parentNode.insertBefore(tb, rv);
+    ['reportSearch','filterBarDrawer','admFilterDrawer'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) rv.parentNode.insertBefore(el, rv);
+      if(el) tb.appendChild(el);
     });
   }
   /* کدام کشوها در این نما دیده شوند */
@@ -52063,6 +52089,15 @@
       + '<div class="sd-foot"><div class="sd-rec"></div><span class="sd-hint">چند کلمه را با فاصله بنویسید؛ مواردی می‌آیند که همه را داشته باشند.</span></div>'
       + '</div>';
     afterEl.parentNode.insertBefore(d, afterEl.nextSibling);
+    /* همه‌جا یک‌شکل: کادر جست‌وجو همیشه باز است و دکمهٔ فیلتر کنارش در همان
+       ردیف؛ برچسب‌ها و پنل فیلتر زیر هر دو، تمام‌عرض. */
+    d.classList.add('sd-open');
+    if(afterEl.classList && afterEl.classList.contains('fdrawer') && !d.closest('#taskFiltersHost')){
+      const tb = document.createElement('div');
+      tb.className = 'ftb';
+      afterEl.parentNode.insertBefore(tb, afterEl);
+      tb.appendChild(d); tb.appendChild(afterEl);
+    }
 
     const btn = d.querySelector('.fd-toggle');
     const inp = d.querySelector('.sd-in');
