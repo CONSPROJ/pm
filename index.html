@@ -16562,6 +16562,14 @@
   @media(max-width:640px){
     .modal.dk-modal{width:100% !important;max-width:none !important;border-radius:26px 26px 0 0 !important;}
   }
+  /* اندازهٔ ثابت در نمای کارت‌ها: پنجره با رفتن از کارتی به کارت دیگر
+     کوچک و بزرگ نمی‌شود؛ کارتِ بلندتر داخل خودش اسکرول می‌خورد */
+  .dk-bg:not(.cats-mode):not(.list-mode) .modal.dk-modal{height:min(780px, calc(100dvh - 48px)) !important;max-height:none !important;}
+  .dk-bg:not(.cats-mode):not(.list-mode) .modal.dk-modal .dk-track{flex:1 1 0 !important;min-height:0 !important;}
+  .dk-bg:not(.cats-mode):not(.list-mode) .modal.dk-modal .dk-card{height:100%;max-height:100%;}
+  @media(max-width:640px){
+    .dk-bg:not(.cats-mode):not(.list-mode) .modal.dk-modal{height:calc(100dvh - 24px) !important;}
+  }
 
   .dk-cap, .dk-cap.hot, .dk-cap.warm, .dk-cap.dk-br{background-image:none !important;}
   .dk-cap.hot{background:linear-gradient(90deg, var(--surface) 60%, color-mix(in srgb, var(--alert) 5%, var(--surface))) !important;}
@@ -41715,6 +41723,27 @@
     const seen = new Set();
     return out.filter(n => { const k = nameKey(n); if(seen.has(k)) return false; seen.add(k); return true; });
   }
+  /* سندِ تازه‌ای که همان موقع ثبت «بررسی کارفرما» یا «پرداخت شده» است:
+     ثبتِ تازه از مسیر sendAction نمی‌گذرد، پس اعلان و پنجرهٔ پرداخت
+     اینجا جدا انجام می‌شود */
+  async function admNewMilestones(cr, item){
+    if(!cr || !cr.id || !item) return;
+    const kind = cr.kind;
+    if(kind !== 'statement' && kind !== 'contract') return;
+    const rv = String(item.review || '');
+    const before = (kind === 'statement')
+      ? {'شماره صورت وضعیت': item.number || '', 'طرف قرارداد': item.party || '', 'نام قرارداد': item.contractName || '', 'مبلغ صورت وضعیت': item.amount || ''}
+      : {'شماره قرارداد': item.number || '', 'عنوان قرارداد': item.title || '', 'طرف قرارداد': item.party || ''};
+    if(rv === 'بررسی کارفرما') await notifyAdmMilestone(kind, cr.id, before, {'وضعیت رسیدگی': rv});
+    if(rv !== RV_PAID) return;
+    if(kind !== 'statement'){ await notifyAdmMilestone(kind, cr.id, before, {'وضعیت رسیدگی': RV_PAID}); return; }
+    const ans = await pyAsk(cr.id, before, item.sentDate || '');
+    const ans2 = ans || {amount: amtNum(item.amount), date: todayShamsi(), fin: true};
+    const vals = pyApply(before, {'وضعیت رسیدگی': RV_PAID}, ans2);
+    if(!ans2.fin) vals['وضعیت رسیدگی'] = 'تایید شده';
+    await sendActionRaw({action:'update', target: kind, id: cr.id, values: vals});
+    await notifyAdmMilestone(kind, cr.id, before, vals, ans2);
+  }
   async function notifyAdmMilestone(kind, id, before, values, payInfo){
     const prevRv = String(pick(before,AD.review) || '');
     const prevPay = String(exact(before,'وضعیت پرداخت') || '');
@@ -41747,6 +41776,7 @@
       }
     }
     try{ if(typeof invalidateNudges === 'function') invalidateNudges(); }catch(e){}
+    try{ if(typeof syncInbox === 'function') syncInbox(); }catch(e){}
   }
   async function sendActionRaw(obj){
     if(obj && ['nudge','nudgeRead','update','delete'].indexOf(obj.action) !== -1
@@ -46660,7 +46690,10 @@
       if(rec.learn && rec.learn.length) payload.listPairs = rec.learn;
       const r = await post(payload);
       if(r.state === 'failed') failed++;
-      else if(r.created && r.created.length) newDocs.push(r.created[0]);
+      else if(r.created && r.created.length){
+        newDocs.push(r.created[0]);
+        try{ await admNewMilestones(r.created[0], rec.item); }catch(e){}
+      }
     }
     pendingNewAdmin.length = 0;
     for(const [id, ch] of items){
