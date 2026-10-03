@@ -18844,6 +18844,30 @@
   .tx-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
   .tx-body > b{font-size:13px;font-weight:800;color:var(--ink);}
   .tx-body > small{font-size:10.5px;color:var(--muted);}
+  /* ====== زنجیرهٔ تأیید داخلی ====== */
+  .rvc{display:flex;flex-direction:column;gap:12px;}
+  .rvc-flow, .rf-chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .rvc-flow > i, .rf-chain > i{font-style:normal;color:var(--muted);font-weight:900;}
+  .rvc-n{display:inline-flex;flex-direction:column;gap:1px;padding:7px 12px;border-radius:12px;background:var(--field);border:1px solid var(--line);}
+  .rvc-n b{font-size:12px;font-weight:900;color:var(--ink);} .rvc-n small{font-size:10px;color:var(--muted);}
+  .rvc-n.base{background:color-mix(in srgb, var(--sky) 10%, var(--surface));} .rvc-n.end{background:var(--ok-soft);} .rvc-n.end b{color:var(--ok);}
+  .rvc-list{display:flex;flex-direction:column;gap:8px;}
+  .rvc-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);}
+  [data-theme="dark"] .rvc-row{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.09);}
+  .rvc-i{flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--surface);font-size:12px;font-weight:900;}
+  .rvc-av .ava{width:32px;height:32px;}
+  .rvc-fs{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .rvc-fs select, .rvc-fs input{width:100%;box-sizing:border-box;min-width:0;}
+  .rvc-acts{display:flex;gap:4px;}
+  .rvc-acts button{all:unset;cursor:pointer;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--field);color:var(--ink);font-weight:900;}
+  .rvc-acts button:disabled{opacity:.35;cursor:default;} .rvc-acts button.del{color:var(--alert);}
+  .rvc-empty{margin:0;font-size:12px;color:var(--muted);}
+  .rvc-foot{display:flex;gap:8px;justify-content:space-between;}
+  .rf-chain{padding:8px 10px;border-radius:12px;background:var(--surface);font-size:11px;}
+  .rf-chain > u{text-decoration:none;color:var(--muted);font-weight:800;}
+  .rf-chain span{display:inline-flex;flex-direction:column;font-weight:900;color:var(--ink);} .rf-chain span small{font-size:9.5px;font-weight:700;color:var(--muted);}
+  .rf-chain span.end{color:var(--ok);}
+  @media (max-width:520px){ .rvc-fs{grid-template-columns:1fr;} .rvc-row{align-items:flex-start;} }
   /* ====== برگهٔ گردش رسیدگی ====== */
   .rf{max-width:640px !important;width:calc(100% - 24px) !important;padding:0 !important;border-radius:22px !important;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100dvh - 40px);}
   .rf-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line-soft);}
@@ -28723,6 +28747,8 @@
       +   UM_I.match + 'تطبیق نام‌ها' + (mtPend ? '<i class="bad">' + toFa(mtPend) + '</i>' : '') + '</button>' : '')
       + (isAdm ? '<button type="button" data-umtab="up"' + (umState.tab === 'up' ? ' class="on"' : '') + '>'
       +   UP_I.up + 'محل آپلود</button>' : '')
+      + (isAdm ? '<button type="button" data-umtab="chain"' + (umState.tab === 'chain' ? ' class="on"' : '') + '>'
+      +   RVC_I + 'زنجیرهٔ تأیید</button>' : '')
       + '</div>';
 
     /* ادمین می‌تواند خودش کاربر بسازد، بی‌آنکه طرف درخواست حساب بدهد.
@@ -28829,6 +28855,7 @@
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'perm' ? ' on' : '') + '" data-umpane="perm">' + permPanelHtml() + '</div>' : '')
       + (!isAdm ? '<div class="um-pane' + (umState.tab === 'match' ? ' on' : '') + '" data-umpane="match">' + ctrPanelHtml() + '</div>' : '')
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'up' ? ' on' : '') + '" data-umpane="up">' + upCfgHtml() + '</div>' : '')
+      + (isAdm ? '<div class="um-pane' + (umState.tab === 'chain' ? ' on' : '') + '" data-umpane="chain">' + (rvcDraft = null, rvcHtml()) + '</div>' : '')
       + '</div>';
     umApplyFilter(box);
     try{ if(document.getElementById('dataCenter')) renderDataCenter(); }catch(e){}
@@ -33777,20 +33804,20 @@
   function reviewRoundsOf(r){
     const closed = stageLogOf(r).filter(e => e && e.type === 'rv-round')
       .map(e => ({n: e.n, who: e.who || [], done: e.done || [], from: e.from || '', to: e.to || '',
-                  days: (e.days != null ? e.days : faDiff(e.from, e.to)), open: false}));
+                  days: (e.days != null ? e.days : faDiff(e.from, e.to)), open: false, step: e.step || ''}));
     const cur = (typeof reviewersOf === 'function') ? reviewersOf(r) : [];
     const out = closed.slice();
     if(cur.length){
       const doneSet = (typeof reviewersDoneOf === 'function') ? reviewersDoneOf(r) : new Set();
-      let from = pick(r,AD.rvIS) || pick(r,['rvISent']) || '';
+      let from = pick(r,AD.rvIS) || pick(r,['rvISent']) || '', step = '';
       const lg = stageLogOf(r);
       for(let q = lg.length - 1; q >= 0; q--){
-        if(lg[q] && lg[q].type === 'rv-start' && lg[q].date){ from = lg[q].date; break; }
+        if(lg[q] && lg[q].type === 'rv-start' && lg[q].date){ from = lg[q].date; step = (+lg[q].lvl ? lg[q].step || '' : ''); break; }
       }
       const to   = pick(r,['rvIOk']) || '';
       out.push({n: closed.length + 1, who: cur,
         done: cur.filter(n => doneSet.has(nameKey(n))),
-        from: from, to: to, days: faDiff(from, to || todayShamsi()), open: !to});
+        from: from, to: to, days: faDiff(from, to || todayShamsi()), open: !to, step: step});
     }
     return out;
   }
@@ -40784,6 +40811,7 @@
       /* نسخهٔ محلی دسترسی‌ها برای شروع بعدی: صفحه بی‌انتظار باز می‌شود */
       try{ localStorage.setItem(PERM_CACHE_KEY, JSON.stringify({p: lists[PERM_KIND] || [], r: lists[PERM_ROLE_KIND] || [], u: lists[PERM_USER_KIND] || []})); }catch(e2){}
       try{ upCfgLoad(lists); }catch(e2){}
+      try{ rvChainLoad(lists); }catch(e2){}
       try{ rptCfgLoad(lists); }catch(e2){}
       try{ leaveFromLists(lists); }catch(e2){}
       try{ aliasLoad(lists); }catch(e2){}
@@ -42495,6 +42523,115 @@
     return out;
   }
 
+  /* ====== زنجیرهٔ تأیید داخلی (تنظیم ادمین) ======
+     وقتی همهٔ مسئولین بررسی داخلی (مهندسان) تأیید کردند، مورد مستقیم
+     «تأیید داخلی» نمی‌شود؛ به ترتیبی که ادمین تعیین کرده دست نفر بعدی
+     می‌رود (مثلاً سرپرست کارگاه، بعد مدیریت پروژه). هر پله یک «دور»
+     جدا در تاریخچه است، با نام و تاریخ. وقتی آخرین پله تأیید کرد،
+     «تأیید داخلی» می‌شود. تنظیم در جدول lists ذخیره می‌شود. */
+  const RVC_KIND = 'زنجیرهٔ تأیید داخلی';
+  let rvChain = {steps: []};     // [{name, label}]
+  function rvChainLoad(lists){
+    const raw = (lists && lists[RVC_KIND]) || [];
+    if(!raw.length){ rvChain = {steps: []}; return; }
+    try{ const c = JSON.parse(raw[0]) || {}; rvChain = {steps: (c.steps || []).filter(s => s && s.name)}; }catch(e){}
+  }
+  async function rvChainSave(steps){
+    const clean = (steps || []).filter(s => s && String(s.name || '').trim()).map(s => ({name: String(s.name).trim(), label: String(s.label || '').trim()}));
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(RVC_KIND), {method:'DELETE'}); }catch(e){}
+    if(clean.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
+      body:[{kind: RVC_KIND, value: JSON.stringify({steps: clean})}]});
+    rvChain = {steps: clean};
+    try{ clearNetCache(); }catch(e){}
+  }
+  const rvStepLabel = s => (s && (s.label || roleOf(s.name) || s.name)) || '';
+  /* پلهٔ فعلی: ۰ یعنی مسئولین بررسی (مهندسان)، ۱ به بعد پله‌های زنجیره.
+     ورود دوباره به بررسی داخلی یا رد، از پلهٔ صفر شروع می‌کند. */
+  function rvLevelOf(r){
+    let lvl = 0;
+    stageLogOf(r).forEach(e => {
+      if(!e) return;
+      if(e.type === 'rv-start') lvl = +e.lvl || 0;
+      else if(!e.type && (e.to === 'بررسی داخلی' || /^رد/.test(String(e.to || '')))) lvl = 0;
+    });
+    return lvl;
+  }
+  function rvLevelLabel(r){
+    const lvl = rvLevelOf(r);
+    if(!lvl) return '';
+    let lab = '';
+    const lg = stageLogOf(r);
+    for(let q = lg.length - 1; q >= 0; q--){ if(lg[q] && lg[q].type === 'rv-start'){ lab = lg[q].step || ''; break; } }
+    return lab || rvStepLabel(rvChain.steps[lvl - 1]);
+  }
+  /* پلهٔ بعدی زنجیره بعد از پلهٔ lvl؛ کسی که همین حالا جزو تأییدکنندگان بوده، رد می‌شود */
+  function rvNextStep(lvl, who){
+    const had = new Set((who || []).map(nameKey));
+    for(let i = lvl; i < rvChain.steps.length; i++){
+      const s = rvChain.steps[i];
+      if(s && s.name && !had.has(nameKey(s.name))) return {i: i + 1, s};
+    }
+    return null;
+  }
+
+  /* ====== پنل ادمین: زنجیرهٔ تأیید داخلی ====== */
+  const RVC_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7h6M9 17h6"/><rect x="3" y="4" width="6" height="6" rx="2"/><rect x="15" y="4" width="6" height="6" rx="2"/><rect x="3" y="14" width="6" height="6" rx="2"/><rect x="15" y="14" width="6" height="6" rx="2"/><path d="M18 10v4"/></svg>';
+  let rvcDraft = null;
+  function rvcFlowHtml(steps){
+    const node = (t, s, cls) => '<span class="rvc-n' + (cls ? ' ' + cls : '') + '"><b>' + t + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</span>';
+    return '<div class="rvc-flow">' + node('مسئولین بررسی', 'مهندسان انتخاب‌شده', 'base')
+      + steps.filter(s => s.name).map(s => '<i>‹</i>' + node(esc(rvStepLabel(s)), esc(s.name))).join('')
+      + '<i>‹</i>' + node('تأیید داخلی', 'پایان گردش داخلی', 'end') + '</div>';
+  }
+  function rvcHtml(){
+    if(!rvcDraft) rvcDraft = rvChain.steps.map(s => Object.assign({}, s));
+    const names = listNames();
+    const opt = cur => '<option value="">— انتخاب نفر —</option>' + names.map(n => '<option value="' + esc(n) + '"' + (nameKey(n) === nameKey(cur) ? ' selected' : '') + '>' + esc(n) + (roleOf(n) ? ' · ' + esc(roleOf(n)) : '') + '</option>').join('');
+    const row = (s, i) => '<div class="rvc-row">'
+      + '<span class="rvc-i">' + toFa(i + 1) + '</span>'
+      + '<span class="rvc-av">' + (s.name ? avatarHtml(s.name, '', true) : '') + '</span>'
+      + '<div class="rvc-fs"><select data-rvcname="' + i + '">' + opt(s.name) + '</select>'
+      +   '<input type="text" data-rvclabel="' + i + '" value="' + esc(s.label || '') + '" placeholder="عنوان پله (خالی = سمت شخص' + (s.name && roleOf(s.name) ? ': ' + esc(roleOf(s.name)) : '') + ')"></div>'
+      + '<span class="rvc-acts"><button type="button" data-rvcup="' + i + '" title="بالاتر"' + (i ? '' : ' disabled') + '>↑</button>'
+      +   '<button type="button" data-rvcdn="' + i + '" title="پایین‌تر"' + (i < rvcDraft.length - 1 ? '' : ' disabled') + '>↓</button>'
+      +   '<button type="button" class="del" data-rvcdel="' + i + '" title="حذف">✕</button></span></div>';
+    const dirty = JSON.stringify(rvcDraft.filter(s => s.name)) !== JSON.stringify(rvChain.steps);
+    return '<div class="rvc" id="rvcBox">'
+      + '<div class="upc-hero"><span class="upc-hi">' + RVC_I + '</span><span><b>زنجیرهٔ تأیید داخلی</b>'
+      +   '<small>وقتی همهٔ مسئولین بررسی داخلی (مهندسان) تأیید کردند، مورد به ترتیب زیر دست نفر بعدی می‌رود. هر پله یک دور جدا در گردش ثبت می‌شود. با تأیید آخرین پله «تأیید داخلی» می‌شود. اگر فهرست خالی باشد، مثل قبل مستقیم «تأیید داخلی» می‌شود.</small></span></div>'
+      + rvcFlowHtml(rvcDraft)
+      + '<div class="rvc-list">' + (rvcDraft.length ? rvcDraft.map(row).join('') : '<p class="rvc-empty">هنوز پله‌ای تعیین نشده.</p>') + '</div>'
+      + '<div class="rvc-foot"><button type="button" class="mini" data-rvcadd="1">+ افزودن پله</button>'
+      +   '<button type="button" class="mini go" data-rvcsave="1"' + (dirty ? '' : ' disabled') + '>ذخیرهٔ زنجیره</button></div>'
+      + '</div>';
+  }
+  function rvcRepaint(){ const b = document.getElementById('rvcBox'); if(b) b.outerHTML = rvcHtml(); }
+  document.addEventListener('change', e => {
+    const n = e.target.closest && e.target.closest('[data-rvcname]');
+    if(n && rvcDraft){ rvcDraft[+n.dataset.rvcname].name = n.value; rvcRepaint(); }
+  });
+  document.addEventListener('input', e => {
+    const l = e.target.closest && e.target.closest('[data-rvclabel]');
+    if(l && rvcDraft){ rvcDraft[+l.dataset.rvclabel].label = l.value;
+      const b = document.querySelector('#rvcBox [data-rvcsave]'); if(b) b.disabled = false;
+      const f = document.querySelector('#rvcBox .rvc-flow'); if(f) f.outerHTML = rvcFlowHtml(rvcDraft); }
+  });
+  document.addEventListener('click', async e => {
+    const t = e.target.closest && e.target.closest('[data-rvcadd],[data-rvcup],[data-rvcdn],[data-rvcdel],[data-rvcsave]');
+    if(!t || !rvcDraft) return;
+    const d = t.dataset;
+    if(d.rvcadd){ rvcDraft.push({name:'', label:''}); rvcRepaint(); return; }
+    const sw = (a, b) => { const x = rvcDraft[a]; rvcDraft[a] = rvcDraft[b]; rvcDraft[b] = x; rvcRepaint(); };
+    if(d.rvcup != null){ const i = +d.rvcup; if(i > 0) sw(i, i - 1); return; }
+    if(d.rvcdn != null){ const i = +d.rvcdn; if(i < rvcDraft.length - 1) sw(i, i + 1); return; }
+    if(d.rvcdel != null){ rvcDraft.splice(+d.rvcdel, 1); rvcRepaint(); return; }
+    if(d.rvcsave){
+      t.disabled = true; t.textContent = 'در حال ذخیره…';
+      try{ await rvChainSave(rvcDraft); rvcDraft = null; rvcRepaint(); showDialog('ok','ذخیره شد','زنجیرهٔ تأیید داخلی به‌روز شد و از این به بعد برای همهٔ صورت‌وضعیت‌ها و قراردادها اعمال می‌شود.'); }
+      catch(err){ t.disabled = false; t.textContent = 'ذخیرهٔ زنجیره'; showDialog('err','ذخیره نشد', friendlyErr(err)); }
+    }
+  });
+
   function reviewersChip(kind, r, editable){
     if(kind !== 'statement' && kind !== 'contract') return '';
     const cur = String(pick(r,AD.review) || '');
@@ -42519,7 +42656,8 @@
     let boss = false;
     try{ boss = isAdminUser() || can('review.tickAny'); }catch(e){}
     const tickOf = n => (id && (boss || nameKey(n) === meK0)) ? {id: id, kind: kind} : null;
-    const inner = '<u>بررسی داخلی</u>'
+    const stepLab = rvLevelLabel(r);
+    const inner = '<u>' + (stepLab ? 'تأیید ' + esc(stepLab) : 'بررسی داخلی') + '</u>'
       + (who.length
           ? '<span class="rvw-ava">'
             + who.slice(0,5).map(n => rvAva(n, dn.has(nameKey(n)), tickOf(n))).join('') + '</span>'
@@ -42554,6 +42692,34 @@
     const all = who.length > 0 && who.every(n => doneKeys.has(nameKey(n)));
     const values = {'rvDone': nextArr.join('|')};
     const curSt = String(pick(row,AD.review) || '');
+    /* زنجیره: اگر پلهٔ بعدی تعیین شده، دور تازه با همان نفر؛ نه «تأیید داخلی» */
+    const lvl = rvLevelOf(row);
+    const nx = (all && (curSt === 'بررسی داخلی' || curSt === 'رد داخلی')) ? rvNextStep(lvl, who) : null;
+    if(nx){
+      const today = todayShamsi(), me = activeUserName();
+      const log = stageLogOf(row);
+      const nPrev = log.filter(e => e && e.type === 'rv-round').length;
+      let curStart = pick(row,['rvISent']) || '', curStep = '';
+      for(let q = log.length - 1; q >= 0; q--){ if(log[q] && log[q].type === 'rv-start'){ curStart = log[q].date || curStart; curStep = log[q].step || ''; break; } }
+      const label = rvStepLabel(nx.s);
+      values['rvWho'] = nx.s.name;
+      values['rvDone'] = '';
+      values['rvStageLog'] = log.concat([
+        {type:'rv-round', n: nPrev + 1, who: who, done: nextArr.slice(), from: curStart, to: today, days: faDiff(curStart, today),
+         by: me, lvl: lvl, step: curStep || (lvl ? rvStepLabel(rvChain.steps[lvl - 1]) : 'مسئولین بررسی')},
+        {type:'rv-start', n: nPrev + 2, date: today, who: [nx.s.name], by: me, lvl: nx.i, step: label}
+      ]).slice(-60);
+      if(curSt === 'رد داخلی'){ values['وضعیت رسیدگی'] = 'بررسی داخلی'; }
+      const ok = await sendAction({action:'update', target:kind, id:id, values: values});
+      if(!ok){ showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); lastServerError = ''; return false; }
+      try{ await notifyNewReviewers(kind, id, [nx.s.name], [nx.s.name]); }catch(e){}
+      showDialog('ok','رفت برای ' + label,
+        'همهٔ مسئولین این پله تأیید کردند. مورد برای تأیید به ' + nx.s.name + ' (' + label + ') رسید'
+        + (nx.i < rvChain.steps.length ? '؛ بعد از او، پلهٔ بعدیِ زنجیره.' : '؛ با تأیید او «تأیید داخلی» می‌شود.'));
+      clearNetCache();
+      setTimeout(loadAdmin, 300);
+      return true;
+    }
     if(all && (curSt === 'بررسی داخلی' || curSt === 'رد داخلی')){
       values['وضعیت رسیدگی'] = 'تأیید داخلی';
       try{ Object.assign(values, reviewStamp(kind, row, 'تأیید داخلی', '')); }catch(e){}
@@ -42808,6 +42974,8 @@
       + (showPpl || true ? '<section class="rf-sec rf-ppl' + (RF_INT(S.st) ? '' : ' dim') + '"><h4>مسئولین بررسی داخلی <small class="rf-pcnt">' + (S.picked.length ? toFa(S.picked.length) + ' نفر' : '') + '</small>'
           + '<span class="rf-qa">' + (S.prev.length ? '<button type="button" data-rfprev="1">افزودن دور قبل</button>' : '') + '<button type="button" data-rfclear="1">هیچ‌کس</button></span></h4>'
           + '<p class="rf-hint">فقط در «بررسی داخلی» و «رد داخلی» به کار می‌رود. انتخاب مسئول، مرحله را «بررسی داخلی» می‌کند.</p>'
+          + (rvChain.steps.length ? '<div class="rf-chain"><u>بعد از تأیید همه:</u>' + rvChain.steps.map(st => '<span>' + esc(rvStepLabel(st)) + '<small>' + esc(st.name) + '</small></span>').join('<i>‹</i>') + '<i>‹</i><span class="end">تأیید داخلی</span></div>'
+              + (rvLevelOf(S.row) ? '<p class="rf-hint">الان در پلهٔ «' + esc(rvLevelLabel(S.row)) + '» است. انتخاب دستیِ مسئولین، گردش را از پلهٔ مهندسان از نو شروع می‌کند.</p>' : '') : '')
           + '<div class="rf-chips">' + rfChipsHtml() + '</div>'
           + '<label class="rf-q">' + RF_I.search + '<input type="search" id="rfQ" placeholder="جست‌وجوی نام یا سمت…" autocomplete="off" value="' + esc(S.q) + '"></label>'
           + '<div class="rf-list">' + rfListHtml() + '</div></section>' : '')
@@ -43274,7 +43442,7 @@
       const dys = (rd.days != null && rd.days >= 0)
         ? toFa(rd.days) + ' روز' : '';
       return '<div class="rvf-rd' + (rd.open ? ' open' : '') + '">'
-        + '<span class="rvf-rdn">دور ' + toFa(rd.n) + '</span>'
+        + '<span class="rvf-rdn">دور ' + toFa(rd.n) + (rd.step && rd.step !== 'مسئولین بررسی' ? ' · ' + esc(rd.step) : '') + '</span>'
         + '<span class="rvf-rdav">' + ava + '</span>'
         + '<span class="rvf-rdwho">' + esc(who.join('، ')) + '</span>'
         + '<span class="rvf-rdwhen">' + when + '</span>'
