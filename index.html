@@ -20154,9 +20154,9 @@
       localStorage.setItem('siteLogM.userSeen.v1', String(Date.now()));
     }catch(e){}
     try{
-      const rows = await supaFetch('people?select=session_epoch&name=eq.' + encodeURIComponent(currentUser) + '&limit=1',
-        {prefer:'return=representation'});
-      const ep = rows && rows[0] ? +(rows[0].session_epoch || 0) : null;
+      /* شمارهٔ نشست در جدول بسته‌ی people_auth است؛ فقط از راه تابع سرور */
+      const r = await supaFetch('rpc/session_epoch', {method:'POST', prefer:'return=representation', body:{p_name: currentUser}});
+      const ep = (r && typeof r === 'object' && r.epoch != null) ? +r.epoch : null;
       if(ep == null) return;
       const mine = localStorage.getItem('siteLogM.userEpoch.v1');
       if(mine === null){ localStorage.setItem('siteLogM.userEpoch.v1', String(ep)); return; }   // نشست قدیمی: یک بار ثبت می‌شود
