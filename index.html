@@ -25225,11 +25225,13 @@
   })();
 
   /* ================= اکسل فعالیت‌های اجرایی: دانلود ← اصلاح ← بارگذاری =================
-     برای تکمیل طبقه، محل کارکرد و پیمانکارِ فعالیت‌ها به‌صورت گروهی.
+     همهٔ اطلاعات قابل ویرایش هر فعالیت اجرایی در یک فایل: عنوان، مسئول‌ها،
+     پیمانکار، محل کارکرد، طبقه، وضعیت، درصد، تاریخ‌ها و موانع.
      شناسهٔ هر فعالیت در فایل می‌ماند؛ هنگام بارگذاری فقط خانه‌هایی که
      واقعاً عوض شده‌اند تغییر می‌کنند و پیش از ذخیره، فهرست دقیق
-     «قبل ← بعد» نشان داده می‌شود تا تک‌تک تأیید یا کنار گذاشته شوند. */
-  const TX_COLS = ['شناسه (تغییر ندهید)', 'عنوان فعالیت', 'مسئول', 'وضعیت', 'موعد', '✎ پیمانکار (طرف عملیات)', '✎ طبقه', '✎ محل کارکرد / موقعیت'];
+     «قبل ← بعد» نشان داده می‌شود تا تک‌تک تأیید یا کنار گذاشته شوند.
+     محل کارکرد مثل «محل کارکرد» گزارش روزانه خوانده می‌شود (B4، GF، 501،
+     North Façade …) و طبقه هیچ‌وقت به متن محل چسبانده نمی‌شود. */
   const TX_I = {
     down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
     up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></svg>',
@@ -25237,7 +25239,32 @@
     warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>'
   };
   const txCanBulk = () => { try{ return isAdminUser() || can('task.bulk'); }catch(e){ return false; } };
-  /* فقط فعالیت‌های اجرایی (نه ردیف‌های ساخته‌شده از دفتر فنی) */
+  /* ستون‌های فایل؛ ro یعنی فقط برای دیدن */
+  const TX_DEF = [
+    {k:'id',     h:'شناسه (تغییر ندهید)', w:12, al:['شناسه']},
+    {k:'title',  h:'✎ عنوان فعالیت', w:44, al:['عنوانفعالیت']},
+    {k:'owner1', h:'✎ مسئول ۱', w:20, al:['مسئول1']},
+    {k:'owner2', h:'✎ مسئول ۲', w:20, al:['مسئول2']},
+    {k:'side',   h:'✎ پیمانکار (طرف عملیات)', w:26, al:['پیمانکار', 'طرفعملیات']},
+    {k:'pos',    h:'✎ محل کارکرد', w:20, al:['محلکارکرد']},
+    {k:'floor',  h:'✎ طبقه (وقتی محل خالی است)', w:16, al:['طبقه']},
+    {k:'status', h:'✎ وضعیت', w:14, al:['وضعیت']},
+    {k:'pct',    h:'✎ درصد پیشرفت', w:12, al:['درصد']},
+    {k:'start',  h:'✎ تاریخ ابلاغ', w:13, al:['تاریخابلاغ']},
+    {k:'due',    h:'✎ موعد اتمام', w:13, al:['موعد']},
+    {k:'doneAt', h:'✎ تاریخ تکمیل', w:13, al:['تاریختکمیل'], needDone:true},
+    {k:'blk',    h:'✎ موانع فعلی (هر مانع با ؛ جدا)', w:52, al:['موانعفعلی']},
+    {k:'by',     h:'ابلاغ‌کننده', w:18, ro:true},
+    {k:'appr',   h:'تأیید شده', w:10, ro:true},
+    {k:'blkDone',h:'موانع رفع‌شده (فقط برای دیدن)', w:44, ro:true},
+    {k:'pctBy',  h:'آخرین ثبت درصد', w:26, ro:true}
+  ];
+  const TX_F = {title:'عنوان', owner1:'مسئول ۱', owner2:'مسئول ۲', side:'پیمانکار', position:'محل کارکرد', status:'وضعیت',
+    pct:'درصد', start:'تاریخ ابلاغ', due:'موعد اتمام', doneAt:'تاریخ تکمیل', blk:'موانع'};
+  const TX_ST = {done:'انجام شده', doing:'در حال اجرا', todo:'انجام نشده', none:'بدون وضعیت'};
+  const txNorm = v => toEn(String(v == null ? '' : v)).replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[‌ٔ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const txKey = v => txNorm(v).toLowerCase().replace(/ç/g, 'c').replace(/[\s\-_.]/g, '');
+  /* فقط فعالیت‌های اجرایی (نه دفتر فنی، نه فعالیت عمومی و کار اداری) */
   async function txRows(){
     let rows = (tasksAll || []).filter(r => !r.__adm && pick(r,T.id));
     if(!rows.length){
@@ -25246,7 +25273,11 @@
         rows = ((b && b.tasks) || []).filter(r => pick(r,T.id));
       }catch(e){}
     }
-    return rows;
+    return rows.filter(r => { try{ return !isNoteSide(r); }catch(e){ return true; } });
+  }
+  async function txPrep(){
+    try{ await loadTaskBlockers(); }catch(e){}
+    try{ await probeTaskDoneCol(); }catch(e){}
   }
   function txFloorLabel(pos){
     const ks = floorKeysOf(pos);
@@ -25254,47 +25285,128 @@
     if(ks.length > 3) return 'چند طبقه';
     return ks.map(k => (BUILDING.find(f => f.key === k) || {}).label || k).join('، ');
   }
-  /* «۵»، «طبقه ۵»، «همکف»، «منفی ۲»، «B2»، «پنت‌هاوس» … → کلید طبقه */
+  /* «۵»، «طبقه ۵»، «همکف»، «GF»، «B4»، «b-4»، «منفی ۲»، «پنت‌هاوس» … → کلید طبقه */
   function txFloorKey(v){
-    let s = toEn(String(v || '')).trim().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, '');
+    const s = txNorm(v).replace(/\s/g, '');
     if(!s) return '';
     if(/چند|همه|کل/.test(s)) return '*';
-    const m = s.match(/(منفی|زیرزمین|^-|^b)\s*(\d{1,2})/i);
-    if(m) return 'B' + (+m[2]);
+    const m = s.match(/(?:منفی|زیرزمین|^-|(?:^|[^a-z])b[-_.]?)(\d{1,2})(?!\d)/i);
+    if(m) return BUILDING.some(f => f.key === 'B' + (+m[1])) ? 'B' + (+m[1]) : null;
     if(/همکف|^gf$|^0$/i.test(s)) return 'GF';
     if(/هلی/.test(s)) return 'HELIPAD';
     if(/پنت/.test(s)) return '17';
     if(/فنی|mech/i.test(s)) return '18';
-    const n = s.match(/(\d{1,2})/);
+    const n = s.match(/^(?:طبقه|l|f)?(\d{1,2})$/i);
     if(n && BUILDING.some(f => f.key === String(+n[1]))) return String(+n[1]);
     return null;   // نامعتبر
   }
+  /* محل کارکرد به همان شکلی که در گزارش روزانه ثبت می‌شود */
+  function txZoneList(){
+    const dl = document.getElementById('zoneList');
+    return dl ? Array.from(dl.options).map(o => o.value).filter(Boolean) : [];
+  }
+  function txZone(v){
+    const s = txNorm(v);
+    if(!s) return {v:'', known:true};
+    const k = txKey(s);
+    const hit = txZoneList().find(z => txKey(z) === k);
+    if(hit) return {v:hit, known:true};
+    const b = s.match(/^(?:b|منفی|زیرزمین)\s*[-_.]?\s*(\d{1,2})$/i);
+    if(b) return {v:'B' + (+b[1]), known:true};
+    if(/^(gf|همکف)$/i.test(s)) return {v:'GF', known:true};
+    if(/^\d{3,4}$/.test(s)) return {v:s, known:true};
+    return {v:s, known:false};
+  }
+  /* وقتی محل خالی است و فقط طبقه داده شده: کد همان طبقه، نه چیزی چسبیده به متن دیگر */
+  function txFloorZone(k){
+    if(/^B\d+$/.test(k) || k === 'GF') return k;
+    if(/^\d+$/.test(k) && +k <= 16) return 'طبقه ' + k;
+    return (BUILDING.find(f => f.key === k) || {}).label || k;
+  }
+  const txStatusOf = v => {
+    const s = txNorm(v).replace(/\s/g, '');
+    if(!s) return '';
+    if(/بدون|^none$/i.test(s)) return 'none';
+    if(/نشده|شروعنشده|^todo$|❌|✕/i.test(s)) return 'todo';
+    if(/درحال|جریان|^doing$|🔄/i.test(s)) return 'doing';
+    if(/انجام|تمام|^done$|✅/i.test(s)) return 'done';
+    return null;
+  };
+  const txPerson = v => {
+    const s = txNorm(v);
+    if(!s) return '';
+    const k = nameKey(s);
+    let names = [];
+    try{ names = (allPeopleNames() || []).concat((peopleRows || []).map(x => x && x.name).filter(Boolean)); }catch(e){}
+    const hit = names.find(n => nameKey(n) === k);
+    return hit || null;
+  };
+  /* موانع: «طراحی: منتظر نقشه؛ متریال: کاشی نرسیده؛ هماهنگی با مشاور» */
+  const txBlkLine = it => (it.kind && BLOCKERS.indexOf(it.kind) !== -1 ? it.kind + ': ' : '') + String(it.text || '').trim();
+  function txBlkParse(v){
+    return String(v == null ? '' : v).split(/[؛;\n]+/).map(x => x.trim()).filter(Boolean).map(x => {
+      const m = x.match(/^(طراحی|متریال|قراردادی)\s*[:：-]\s*(.+)$/);
+      return m ? {kind:m[1], text:m[2].trim()} : {kind:'', text:x};
+    });
+  }
+  function txBlkOpen(r){
+    const id = String(pick(r,T.id));
+    const all = (typeof tbOf === 'function') ? tbOf(id) : [];
+    if(all.length) return all.filter(x => x.open).map(x => ({id:x.id, kind:x.kind, text:x.text}));
+    const legacy = taskBlockText(r);
+    return legacy ? [{legacy:true, kind:(blockersOf(r)[0] || ''), text:legacy}] : [];
+  }
+  function txCur(r){
+    const id = String(pick(r,T.id));
+    const tp = tpNow(id);
+    const done = (typeof tbOf === 'function' ? tbOf(id) : []).filter(x => !x.open);
+    let st = 'none'; try{ st = taskStatus(r).cls; }catch(e){}
+    return {
+      id, title:String(pick(r,T.title) || ''), owner1:String(pick(r,T.m1) || ''), owner2:String(pick(r,T.m2) || ''),
+      side:String(pick(r,T.side) || ''), pos:String(pick(r,T.pos) || '').trim(), floor:txFloorLabel(pick(r,T.pos)),
+      status:st, pct: tp ? tp.p : null, start: normDate(pick(r,T.start)) || '', due: normDate(pick(r,T.due)) || '',
+      doneAt: faDateOf(pick(r, ['تاریخ تکمیل'])) || '', blk: txBlkOpen(r),
+      by:String(pick(r,T.by) || ''), appr: isOne(pick(r,T.approved)) ? 'بله' : '',
+      blkDone: done.map(txBlkLine).join('؛ '), pctBy: tp ? (tp.by || '—') + ' · ' + toFa(faDateOf(tp.date) || '') : ''
+    };
+  }
   async function txExport(){
     if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره بزنید.'); return; }
+    await txPrep();
     const rows = await txRows();
     if(!rows.length){ showDialog('warn','فعالیتی نیست','هنوز فعالیت اجرایی‌ای بارگذاری نشده است.'); return; }
+    const defs = TX_DEF.filter(d => !d.needDone || TASK_DONE_COL === true);
     const ord = (() => { const L = BUILDING.slice().reverse().map(f => f.label); return r => { const f = txFloorLabel(pick(r,T.pos)); const i = L.indexOf(f.split('، ')[0]); return f ? (i === -1 ? 500 : i) : 999; }; })();
     const list = rows.slice().sort((a, b) => ord(a) - ord(b) || String(pick(a,T.title) || '').localeCompare(String(pick(b,T.title) || ''), 'fa'));
-    const aoa = [TX_COLS].concat(list.map(r => {
-      let stt = ''; try{ stt = taskStatus(r).label; }catch(e){}
-      const due = pick(r,T.due);
-      return [String(pick(r,T.id)), String(pick(r,T.title) || ''), [pick(r,T.m1), pick(r,T.m2)].filter(Boolean).join('، '),
-        stt, due ? toFa(normDate(due) || due) : '', String(pick(r,T.side) || ''), txFloorLabel(pick(r,T.pos)), String(pick(r,T.pos) || '')];
-    }));
+    const val = (c, k) => {
+      if(k === 'status') return TX_ST[c.status] || '';
+      if(k === 'pct') return c.pct == null ? '' : c.pct;
+      if(k === 'start' || k === 'due' || k === 'doneAt') return c[k] ? toFa(c[k]) : '';
+      if(k === 'blk') return c.blk.map(txBlkLine).join('؛ ');
+      return c[k] == null ? '' : c[k];
+    };
+    const aoa = [defs.map(d => d.h)].concat(list.map(r => { const c = txCur(r); return defs.map(d => val(c, d.k)); }));
     const sh = XLSX.utils.aoa_to_sheet(aoa);
-    sh['!cols'] = [{wch:12}, {wch:44}, {wch:22}, {wch:13}, {wch:12}, {wch:28}, {wch:16}, {wch:34}];
-    sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:aoa.length - 1, c:TX_COLS.length - 1}})};
+    sh['!cols'] = defs.map(d => ({wch:d.w}));
+    sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:aoa.length - 1, c:defs.length - 1}})};
     for(let r = 1; r < aoa.length; r++){ const ad = XLSX.utils.encode_cell({r, c:0}); if(sh[ad]) sh[ad] = {t:'s', v:String(sh[ad].v)}; }
+    const zones = txZoneList();
     const help = [['راهنمای فایل'], [''],
-      ['۱) فقط ستون‌های ✎ را اصلاح کنید: پیمانکار، طبقه، محل کارکرد.'],
-      ['۲) ستون «شناسه» را تغییر ندهید و سطری را جابه‌جا یا کپی نکنید؛ تطبیق با همین شناسه است.'],
-      ['۳) برای طبقه کافی است عدد را بنویسید: ۵ یا «طبقه ۵». زیرزمین: منفی ۲ یا B2. همکف، پنت‌هاوس، طبقهٔ فنی و هلی‌پد هم پذیرفته می‌شود.'],
-      ['۴) اگر «محل کارکرد» را بنویسید، همان ذخیره می‌شود (مثل «۱۲۰۵» یا «طبقه ۳ تا ۵» یا «نما»)؛'],
-      ['    اگر فقط «طبقه» را عوض کنید، محل کارکرد از روی طبقه ساخته می‌شود.'],
-      ['۵) خانهٔ خالی یعنی «بدون تغییر»؛ چیزی پاک نمی‌شود.'],
-      ['۶) بعد از بارگذاری، پیش از ذخیره فهرست دقیق تغییرات را می‌بینید و می‌توانید هر سطر را کنار بگذارید.'],
-      [''], ['طبقه‌های قابل قبول:']].concat(BUILDING.slice().reverse().map(f => ['   ' + f.label]));
-    const sh2 = XLSX.utils.aoa_to_sheet(help); sh2['!cols'] = [{wch:110}];
+      ['۱) ستون‌های ✎ قابل اصلاح‌اند. ستون‌های بدون ✎ فقط برای دیدن هستند و تغییرشان اثری ندارد.'],
+      ['۲) ستون «شناسه» را تغییر ندهید و سطری را کپی نکنید؛ تطبیق با همین شناسه است.'],
+      ['۳) محل کارکرد را مثل «محل کارکرد» گزارش روزانه بنویسید: B4، GF، 501، 1205، North Façade و … (بزرگی و کوچکی حروف مهم نیست).'],
+      ['    طبقه از روی همین محل تشخیص داده می‌شود و هیچ‌وقت به متن محل چسبانده نمی‌شود.'],
+      ['۴) ستون «طبقه» فقط وقتی به کار می‌رود که محل کارکرد خالی باشد: ۵، طبقه ۵، GF، همکف، B4، b-4، منفی ۴ یا زیرزمین ۴.'],
+      ['۵) وضعیت: انجام شده / در حال اجرا / انجام نشده / بدون وضعیت.   درصد: عددی بین ۰ تا ۱۰۰.'],
+      ['۶) تاریخ‌ها شمسی، مثل ۱۴۰۵/۰۷/۱۲. خالی کردن «موعد اتمام» یعنی موعد ندارد.'],
+      ['۷) مسئول‌ها باید نام یکی از افراد سامانه باشند. خالی کردن «مسئول ۲» یعنی فقط یک مسئول.'],
+      ['۸) موانع: هر مانع را با «؛» جدا کنید؛ می‌توانید نوع را اول بنویسید: «طراحی: منتظر نقشه؛ متریال: کاشی نرسیده».'],
+      ['    مانعی که از فهرست پاک کنید «رفع‌شده» ثبت می‌شود (تاریخچه می‌ماند) و مانع تازه اضافه می‌شود.'],
+      ['۹) خانهٔ خالیِ عنوان، مسئول ۱، پیمانکار، وضعیت، درصد و تاریخ ابلاغ یعنی «بدون تغییر».'],
+      ['۱۰) بعد از بارگذاری، پیش از ذخیره فهرست دقیق تغییرات را می‌بینید و می‌توانید هر سطر را کنار بگذارید.'],
+      [''], ['طبقه‌ها:']].concat(BUILDING.slice().reverse().map(f => ['   ' + f.label + (/^B|GF/.test(f.key) ? '  (' + f.key + ')' : '')]))
+      .concat([[''], ['محل‌های کارکرد گزارش روزانه:']]).concat(zones.map(z => ['   ' + z]));
+    const sh2 = XLSX.utils.aoa_to_sheet(help); sh2['!cols'] = [{wch:120}];
     const wb = XLSX.utils.book_new(); try{ xlsBookRtl(wb); }catch(e){}
     XLSX.utils.book_append_sheet(wb, sh, 'فعالیت‌های اجرایی');
     XLSX.utils.book_append_sheet(wb, sh2, 'راهنما');
@@ -25302,20 +25414,27 @@
   }
 
   function txParse(aoa){
-    const nz = v => String(v == null ? '' : v).replace(/[\s‌✎()]+/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک');
-    let hr = aoa.findIndex(r => (r || []).some(v => /شناسه/.test(nz(v))));
+    const nz = v => toEn(String(v == null ? '' : v)).replace(/[\s‌✎()]+/g, '').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
+    const hr = aoa.findIndex(r => (r || []).some(v => /شناسه/.test(nz(v))));
     if(hr === -1) return {err:'ستون «شناسه» پیدا نشد. فایلی را بارگذاری کنید که از همین‌جا دانلود شده است.'};
     const H = (aoa[hr] || []).map(nz);
-    const col = (...k) => H.findIndex(h => k.some(x => h.indexOf(nz(x)) !== -1));
-    const ci = {id: col('شناسه'), side: col('پیمانکار', 'طرفعملیات'), floor: col('طبقه'), pos: col('محلکارکرد', 'موقعیت', 'محل')};
-    if(ci.floor !== -1 && ci.floor === ci.pos) ci.pos = -1;
-    const cell = (r, i) => i === -1 ? null : String(r[i] == null ? '' : r[i]).trim();
+    const ci = {}, used = new Set();
+    TX_DEF.filter(d => !d.ro).forEach(d => { const i = H.indexOf(nz(d.h)); if(i !== -1){ ci[d.k] = i; used.add(i); } });
+    TX_DEF.filter(d => !d.ro && ci[d.k] == null).forEach(d => {
+      const i = H.findIndex((h, j) => !used.has(j) && h && d.al.some(a => h.indexOf(nz(a)) !== -1) && !/رفع|آخرین|ابلاغکننده/.test(h));
+      if(i !== -1){ ci[d.k] = i; used.add(i); }
+    });
+    /* فایل نسخهٔ قبل: «محل کارکرد / موقعیت» */
+    if(ci.pos == null){ const i = H.findIndex((h, j) => !used.has(j) && /موقعیت|محل/.test(h)); if(i !== -1) ci.pos = i; }
+    const cell = (r, k) => ci[k] == null ? null : String(r[ci[k]] == null ? '' : r[ci[k]]).trim();
     const out = [];
     aoa.slice(hr + 1).forEach((r, i) => {
       if(!r) return;
-      const id = toEn(cell(r, ci.id) || '').trim();
+      const id = toEn(cell(r, 'id') || '').trim();
       if(!id) return;
-      out.push({line: hr + i + 2, id, side: cell(r, ci.side), floor: cell(r, ci.floor), pos: cell(r, ci.pos)});
+      const x = {line: hr + i + 2, id};
+      TX_DEF.filter(d => !d.ro && d.k !== 'id').forEach(d => { x[d.k] = cell(r, d.k); });
+      out.push(x);
     });
     return {rows: out, cols: ci};
   }
@@ -25330,33 +25449,92 @@
       seen.add(x.id);
       const r = byId.get(x.id);
       if(!r){ unknown.push(x); return; }
-      const oldPos = String(pick(r,T.pos) || '').trim(), oldSide = String(pick(r,T.side) || '').trim();
-      const ch = {}; const warn = [];
+      const c = txCur(r);
+      const ch = {}, warn = [];
+      const has = k => x[k] !== null && x[k] !== undefined;
+      const filled = k => has(k) && x[k] !== '';
+      // عنوان
+      if(has('title')){
+        if(x.title === '') { if(c.title) warn.push('عنوان خالی است؛ تغییر نکرد'); }
+        else if(txNorm(x.title) !== txNorm(c.title)) ch.title = [c.title, x.title.trim()];
+      }
+      // مسئول‌ها
+      if(filled('owner1') && nameKey(txNorm(x.owner1)) !== nameKey(c.owner1)){
+        const p = txPerson(x.owner1);
+        if(p === null) warn.push('مسئول ۱ «' + x.owner1 + '» در افراد سامانه نیست؛ تغییر نکرد');
+        else if(nameKey(p) !== nameKey(c.owner1)) ch.owner1 = [c.owner1, p];
+      }
+      if(has('owner2') && nameKey(txNorm(x.owner2)) !== nameKey(c.owner2)){
+        const p = txPerson(x.owner2);
+        if(p === null) warn.push('مسئول ۲ «' + x.owner2 + '» در افراد سامانه نیست؛ تغییر نکرد');
+        else if(nameKey(p || '') !== nameKey(c.owner2 || '')) ch.owner2 = [c.owner2, p];
+      }
       // پیمانکار
-      if(x.side !== null && x.side !== '' && x.side !== oldSide) ch.side = [oldSide, x.side];
-      // محل کارکرد / طبقه
-      let newPos = null;
-      if(x.pos !== null && x.pos !== '' && x.pos !== oldPos) newPos = x.pos;
-      else if(x.floor !== null && x.floor !== '' && x.floor !== txFloorLabel(oldPos)){
-        const k = txFloorKey(x.floor);
-        if(k === null) warn.push('طبقهٔ «' + x.floor + '» شناخته نشد؛ کنار گذاشته شد');
-        else if(k === '*'){ /* «چند طبقه»: محل باید دستی نوشته شود */ warn.push('برای «چند طبقه» محل کارکرد را بنویسید (مثل «طبقه ۳ تا ۵» یا «نما»)'); }
-        else{
-          /* متنی که خودِ سامانه دوباره به همین طبقه برمی‌گرداند */
-          const lab = /^\d+$/.test(k) && +k <= 16 ? 'طبقه ' + toFa(k)
-            : /^B\d+$/.test(k) ? 'منفی ' + toFa(k.slice(1))
-            : k === 'GF' ? 'همکف' : ((BUILDING.find(f => f.key === k) || {}).label || k);
-          newPos = (oldPos && !floorKeysOf(oldPos).length) ? lab + ' — ' + oldPos : lab;
-          if(oldPos && newPos === lab && !/^(طبقه[ٔ]?\s*)?[\d۰-۹]{1,2}$/.test(oldPos.trim()))
-            warn.push('محل قبلی «' + oldPos + '» با طبقه جایگزین می‌شود');
+      if(filled('side') && txNorm(x.side) !== txNorm(c.side)) ch.side = [c.side, txNorm(x.side)];
+      // محل کارکرد و طبقه
+      if(has('pos') || has('floor')){
+        const z = txZone(has('pos') ? x.pos : c.pos);
+        let newPos = z.v;
+        const floorTouched = filled('floor') && txNorm(x.floor) !== txNorm(c.floor);
+        if(!newPos && filled('floor')){
+          const k = txFloorKey(x.floor);
+          if(k === null){ warn.push('طبقهٔ «' + x.floor + '» شناخته نشد؛ کنار گذاشته شد'); newPos = c.pos; }
+          else if(k === '*'){ warn.push('برای «چند طبقه» محل کارکرد را بنویسید (مثل North Façade)'); newPos = c.pos; }
+          else newPos = txFloorZone(k);
+        }else if(newPos && floorTouched){
+          const k = txFloorKey(x.floor);
+          if(k && k !== '*' && floorKeysOf(newPos).indexOf(k) === -1)
+            warn.push('طبقهٔ «' + x.floor + '» با محل «' + newPos + '» نمی‌خواند؛ طبقه از روی محل تشخیص داده می‌شود');
+        }
+        if(newPos && !z.known && newPos === z.v && txKey(newPos) !== txKey(c.pos))
+          warn.push('«' + newPos + '» در فهرست محل‌های گزارش روزانه نیست؛ همان‌طور که نوشته شده ذخیره می‌شود');
+        if(txKey(newPos) !== txKey(c.pos)){
+          ch.position = [c.pos, newPos];
+          if(newPos && !floorKeysOf(newPos).length) warn.push('طبقه از این محل تشخیص داده نمی‌شود');
         }
       }
-      if(newPos !== null && newPos !== oldPos){
-        ch.position = [oldPos, newPos];
-        if(!floorKeysOf(newPos).length) warn.push('طبقه از این محل تشخیص داده نمی‌شود');
+      // وضعیت
+      if(filled('status')){
+        const s = txStatusOf(x.status);
+        if(s === null) warn.push('وضعیت «' + x.status + '» شناخته نشد');
+        else if(s !== c.status) ch.status = [TX_ST[c.status], TX_ST[s], s];
+      }
+      // درصد
+      if(filled('pct')){
+        const n = parseFloat(txNorm(x.pct).replace(/[%٪\s]/g, ''));
+        if(isNaN(n) || n < 0 || n > 100) warn.push('درصد «' + x.pct + '» باید بین ۰ تا ۱۰۰ باشد');
+        else if(Math.round(n) !== c.pct) ch.pct = [c.pct == null ? '' : toFa(c.pct) + '٪', toFa(Math.round(n)) + '٪', Math.round(n)];
+      }
+      // تاریخ‌ها
+      if(filled('start')){
+        const d = normDate(x.start);
+        if(!d) warn.push('تاریخ ابلاغ «' + x.start + '» معتبر نیست');
+        else if(d !== c.start) ch.start = [c.start, d];
+      }
+      if(has('due')){
+        const d = x.due === '' ? '' : normDate(x.due);
+        if(d === null) warn.push('موعد «' + x.due + '» معتبر نیست');
+        else if(d !== c.due) ch.due = [c.due, d];
+      }
+      if(has('doneAt') && TASK_DONE_COL === true){
+        const d = x.doneAt === '' ? '' : normDate(x.doneAt);
+        if(d === null) warn.push('تاریخ تکمیل «' + x.doneAt + '» معتبر نیست');
+        else if(d && d !== c.doneAt) ch.doneAt = [c.doneAt, d];
+      }
+      // موانع
+      if(has('blk')){
+        const want = txBlkParse(x.blk), open = c.blk;
+        const kOf = t => txKey(t);
+        const resolve = open.filter(o => !want.some(w => kOf(w.text) === kOf(o.text)));
+        const add = want.filter(w => !open.some(o => kOf(o.text) === kOf(w.text)));
+        const rekind = want.map(w => { const o = open.find(o => kOf(o.text) === kOf(w.text)); return o && !o.legacy && w.kind && w.kind !== o.kind ? {id:o.id, kind:w.kind, text:o.text} : null; }).filter(Boolean);
+        if(resolve.length || add.length || rekind.length){
+          ch.blk = [open.map(txBlkLine).join('؛ '), want.map(txBlkLine).join('؛ '), {resolve, add, rekind}];
+          ch.blk.detail = resolve.map(o => 'رفع: ' + o.text).concat(add.map(a => 'جدید: ' + txBlkLine(a)), rekind.map(k => 'نوع: ' + txBlkLine(k)));
+        }
       }
       if(!Object.keys(ch).length){ if(!warn.length) same++; else plan.push({id:x.id, line:x.line, r, ch, warn, skip:true}); return; }
-      plan.push({id:x.id, line:x.line, r, ch, warn, on:true});
+      plan.push({id:x.id, line:x.line, r, c, ch, warn, on:true});
     });
     return {plan, unknown, dup: Array.from(dup), same};
   }
@@ -25381,17 +25559,19 @@
   }
   function txPaintFoot(){
     const m = txModal(); const n = txState.plan.filter(p => p.on && !p.skip).length;
-    const b = m.querySelector('[data-txgo]'); if(b){ b.disabled = !n || txState.busy; b.querySelector('span').textContent = n ? 'ذخیرهٔ ' + toFa(n) + ' تغییر' : 'سطری انتخاب نشده'; }
+    const b = m.querySelector('[data-txgo]'); if(b){ b.disabled = !n || txState.busy; b.querySelector('span').textContent = n ? 'ذخیرهٔ ' + toFa(n) + ' فعالیت' : 'سطری انتخاب نشده'; }
     const all = m.querySelector('[data-txall]'); if(all){ const ok = txState.plan.filter(p => !p.skip); all.checked = ok.length && ok.every(p => p.on); }
   }
-  const TX_F = {position:'محل کارکرد', side:'پیمانکار'};
   function txPaint(){
     const m = txModal(), S = txState, box = m.querySelector('.tx');
     const ok = S.plan.filter(p => !p.skip), warnN = S.plan.filter(p => p.warn.length).length;
+    const nCh = ok.reduce((t, p) => t + Object.keys(p.ch).length, 0);
     const chip = (cls, n, t) => '<span class="tx-k ' + cls + '"><b>' + toFa(n) + '</b>' + t + '</span>';
+    const fa = (f, v) => (f === 'start' || f === 'due' || f === 'doneAt') && v ? toFa(v) : v;
     box.innerHTML = '<div class="tx-head"><span class="tx-hic">' + TX_I.xls + '</span><div><b>بارگذاری اکسل فعالیت‌های اجرایی</b><small>' + esc(S.file) + '</small></div>'
       + '<button type="button" class="tx-x" data-txclose="1" aria-label="بستن">✕</button></div>'
-      + '<div class="tx-sum">' + chip('', S.read, 'سطر خوانده شد') + chip('ch', ok.length, 'تغییر') + chip('', S.same, 'بدون تغییر')
+      + '<div class="tx-sum">' + chip('', S.read, 'سطر خوانده شد') + chip('ch', ok.length, 'فعالیت تغییر کرده') + chip('ch', nCh, 'خانهٔ تغییر')
+      +   chip('', S.same, 'بدون تغییر')
       +   (warnN ? chip('wr', warnN, 'هشدار') : '') + (S.unknown.length ? chip('bad', S.unknown.length, 'شناسهٔ ناشناخته') : '')
       +   (S.dup.length ? chip('bad', S.dup.length, 'شناسهٔ تکراری') : '') + '</div>'
       + (S.unknown.length ? '<div class="tx-note bad">' + TX_I.warn + 'سطرهای ' + S.unknown.slice(0, 8).map(u => toFa(u.line)).join('، ') + (S.unknown.length > 8 ? ' …' : '') + ' شناسه‌ای دارند که در فهرست نیست و نادیده گرفته می‌شوند.</div>' : '')
@@ -25399,8 +25579,10 @@
           ? '<div class="tx-list"><label class="tx-all"><input type="checkbox" data-txall="1"' + (ok.length && ok.every(p => p.on) ? ' checked' : '') + '><span>انتخاب همه</span></label>'
             + S.plan.map((p, i) => '<div class="tx-row' + (p.skip ? ' skip' : '') + '">'
               + (p.skip ? '<span class="tx-cbx"></span>' : '<input type="checkbox" class="tx-cb" data-txon="' + i + '"' + (p.on ? ' checked' : '') + '>')
-              + '<div class="tx-body"><b>' + esc(pick(p.r,T.title) || 'فعالیت') + '</b><small>سطر ' + toFa(p.line) + ' · ' + esc([pick(p.r,T.m1)].filter(Boolean).join('')) + '</small>'
-              + Object.keys(p.ch).map(f => '<div class="tx-ch"><u>' + TX_F[f] + '</u><s>' + esc(p.ch[f][0] || '—') + '</s><i>←</i><em>' + esc(p.ch[f][1]) + '</em>'
+              + '<div class="tx-body"><b>' + esc(pick(p.r,T.title) || 'فعالیت') + '</b><small>سطر ' + toFa(p.line) + ' · ' + esc(pick(p.r,T.m1) || '') + '</small>'
+              + Object.keys(p.ch).map(f => f === 'blk'
+                  ? p.ch.blk.detail.map(d => '<div class="tx-ch"><u>' + TX_F.blk + '</u><em>' + esc(d) + '</em></div>').join('')
+                  : '<div class="tx-ch"><u>' + TX_F[f] + '</u><s>' + esc(fa(f, p.ch[f][0]) || '—') + '</s><i>←</i><em>' + esc(fa(f, p.ch[f][1]) || '(خالی)') + '</em>'
                   + (f === 'position' ? '<span class="tx-fl">' + esc(txFloorLabel(p.ch[f][1]) || 'بدون طبقه') + '</span>' : '') + '</div>').join('')
               + p.warn.map(w => '<div class="tx-w">' + TX_I.warn + esc(w) + '</div>').join('')
               + '</div></div>').join('') + '</div>'
@@ -25417,12 +25599,48 @@
     catch(e){ showDialog('err','فایل خوانده نشد','این فایل اکسل معتبری نیست.'); return; }
     const p = txParse(aoa);
     if(p.err){ showDialog('warn','ستون شناسه نیست', p.err); return; }
-    if(p.cols.side === -1 && p.cols.floor === -1 && p.cols.pos === -1){ showDialog('warn','ستونی برای اصلاح نیست','ستون‌های «پیمانکار»، «طبقه» یا «محل کارکرد» در فایل پیدا نشد.'); return; }
+    if(Object.keys(p.cols).length < 2){ showDialog('warn','ستونی برای اصلاح نیست','هیچ‌کدام از ستون‌های قابل اصلاح در فایل پیدا نشد.'); return; }
+    await txPrep();
     const cur = await txRows();
     const r = txPlan(p.rows, cur);
     txState = Object.assign({file: file.name, read: p.rows.length, busy:false}, r);
     txModal().hidden = false;
     txPaint();
+  }
+  /* ذخیرهٔ یک فعالیت: ستون‌های خودِ فعالیت با یک PATCH، درصد و موانع در تاریخچه */
+  async function txSaveOne(p){
+    const ch = p.ch, body = {}, me = activeUserName(), today = todayShamsi();
+    if(ch.title) body.title = ch.title[1];
+    if(ch.owner1) body.owner1 = ch.owner1[1];
+    if(ch.owner2) body.owner2 = ch.owner2[1] || null;
+    if(ch.side) body.side = ch.side[1];
+    if(ch.position) body.position = ch.position[1] || null;
+    if(ch.start) body.start_date = ch.start[1];
+    if(ch.due) body.due_date = ch.due[1] || null;
+    if(ch.status){
+      const s = ch.status[2];
+      body.done = s === 'done'; body.doing = s === 'doing'; body.not_done = s === 'todo';
+      if(TASK_DONE_COL === true) body.done_date = s === 'done' ? ((ch.doneAt && ch.doneAt[1]) || p.c.doneAt || today) : null;
+    }else if(ch.doneAt && TASK_DONE_COL === true) body.done_date = ch.doneAt[1];
+    if(Object.keys(body).length) await supaFetch('tasks?id=eq.' + encodeURIComponent(p.id), {method:'PATCH', body});
+    if(ch.pct) await supaFetch('nudges', {method:'POST', body:[{date_fa: today, from_name: me, to_name: me, kind: TP_KIND,
+      item_id: String(p.id), title: 'درصد', message: String(ch.pct[2]), seen: true}]});
+    if(ch.blk){
+      const op = ch.blk[2], note = 'رفع از طریق اکسل';
+      for(const o of op.resolve){
+        let bid = o.id;
+        if(o.legacy){
+          const made = await supaFetch('nudges', {method:'POST', prefer:'return=representation', body:[{date_fa: today, from_name: me,
+            to_name: me, kind: TB_KIND, item_id: String(p.id), title: o.kind || '', message: o.text, seen: true}]});
+          bid = made && made[0] && made[0].id;
+        }
+        if(bid) await supaFetch('nudges', {method:'POST', body:[{date_fa: today, from_name: me, to_name: me,
+          kind: TB_EV_KIND, item_id: String(bid), title: 'رفع', message: note, seen: true}]});
+      }
+      for(const a of op.add) await supaFetch('nudges', {method:'POST', body:[{date_fa: today, from_name: me,
+        to_name: pick(p.r,T.m1) || me, kind: TB_KIND, item_id: String(p.id), title: a.kind || '', message: a.text, seen: true}]});
+      for(const k of op.rekind) await supaFetch('nudges?id=eq.' + encodeURIComponent(k.id), {method:'PATCH', body:{title: k.kind}});
+    }
   }
   async function txApply(){
     const S = txState; if(!S || S.busy) return;
@@ -25434,18 +25652,23 @@
     let done = 0; const failed = [];
     for(let i = 0; i < todo.length; i += 5){
       await Promise.all(todo.slice(i, i + 5).map(async p => {
-        const body = {}; Object.keys(p.ch).forEach(f => { body[f] = p.ch[f][1]; });
-        try{ await supaFetch('tasks?id=eq.' + encodeURIComponent(p.id), {method:'PATCH', body}); }
+        try{ await txSaveOne(p); }
         catch(e){ failed.push(p); }
         done++; bar.style.width = Math.round(done / todo.length * 100) + '%'; lab.textContent = toFa(done) + ' از ' + toFa(todo.length);
       }));
     }
+    const okRows = todo.filter(p => failed.indexOf(p) === -1);
+    /* خلاصهٔ موانع روی خودِ فعالیت، و اعلان تکمیل برای تازه انجام‌شده‌ها */
+    if(okRows.some(p => p.ch.blk || p.ch.pct)){ try{ await loadTaskBlockers(true); }catch(e){} }
+    for(const p of okRows.filter(p => p.ch.blk)){ try{ await tbSync(p.id); }catch(e){} }
+    for(const p of okRows.filter(p => p.ch.status && p.ch.status[2] === 'done')){ try{ await notifyTaskDone(p.id); }catch(e){} }
     S.busy = false;
     m.hidden = true;
     try{ clearNetCache(); }catch(e){}
+    try{ if(typeof tasksLoaded !== 'undefined') tasksLoaded = false; }catch(e){}
     try{ if(typeof loadTasks === 'function') await loadTasks(); }catch(e){}
     showDialog(failed.length ? 'warn' : 'ok', failed.length ? 'بخشی ذخیره نشد' : 'ذخیره شد',
-      toFa(todo.length - failed.length) + ' فعالیت به‌روز شد.' + (failed.length ? ' ' + toFa(failed.length) + ' سطر ذخیره نشد (سطرهای ' + failed.slice(0, 8).map(f => toFa(f.line)).join('، ') + '). دوباره همان فایل را بارگذاری کنید؛ فقط همین‌ها دوباره فرستاده می‌شوند.' : ''));
+      toFa(okRows.length) + ' فعالیت به‌روز شد.' + (failed.length ? ' ' + toFa(failed.length) + ' سطر ذخیره نشد (سطرهای ' + failed.slice(0, 8).map(f => toFa(f.line)).join('، ') + '). دوباره همان فایل را بارگذاری کنید؛ فقط همین‌ها دوباره فرستاده می‌شوند.' : ''));
   }
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-txxl]');
@@ -34623,7 +34846,7 @@
     if(!v) return '';
     { const bm = v.match(/(منفی|زیرزمین)\s*(\d{1,2})/); if(bm) return 'B' + (+bm[2]); }
     if(/HELI|هلی/.test(v)) return 'HELIPAD';
-    if(/^B\s*(\d+)/.test(v)) return 'B' + v.match(/^B\s*(\d+)/)[1];
+    { const bm = v.match(/(?:^|[^A-Z])B\s*[-_.]?\s*(\d{1,2})(?!\d)/) || v.match(/^-\s*(\d{1,2})$/); if(bm) return 'B' + (+bm[1]); }
     if(/^(GF|همکف)$/.test(v)) return 'GF';
     if(/پنت|PENT/.test(v)) return '17';
     if(/فنی|MECH/.test(v)) return '18';
