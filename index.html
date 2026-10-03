@@ -18731,6 +18731,23 @@
   .sd2.open > .sd-chips{display:none;}
   [data-theme="dark"] .sd2 .sd-row .sd-in{background:rgba(255,255,255,.05) !important;}
   @media (max-width:640px){ .sd2 .sd-row .sd-in{height:46px !important;font-size:16px !important;} .sd2 .sd-row .sd-clear{top:8px;} }
+  /* ===== سربرگ کارت دفتر فنی: عکس، نشان هشدار روی گوشهٔ عکس، عنوان هم‌راستا ===== */
+  :is(#adminView, .adm-host, #panelView) .rv .adm-head{position:relative;align-items:center !important;gap:10px !important;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-avw{position:relative;flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-self:center;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-avw > .ava.rail{width:36px !important;height:36px !important;flex:0 0 36px !important;margin:0 !important;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-avw > .nudge-flag{
+    position:absolute;inset-inline-end:-5px;bottom:-4px;z-index:2;margin:0 !important;
+    width:18px !important;height:18px !important;flex:none !important;border:2px solid var(--surface) !important;
+    background:var(--alert) !important;color:#fff !important;box-shadow:none !important;animation:none !important;}
+  [data-theme="dark"] :is(#adminView, .adm-host, #panelView) .rv .adm-avw > .nudge-flag{border-color:#1b1f26 !important;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-avw > .nudge-flag svg{width:10px;height:10px;stroke-width:3;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-avw > .nudge-flag:hover{transform:scale(1.12);}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-crit{border-radius:999px;padding:2px 8px 2px 2px;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-crit:not(.emp){padding:0;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-titlewrap{display:flex !important;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:36px;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-title{margin:0 !important;line-height:1.5;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-crit{margin-top:0 !important;line-height:1;}
+  :is(#adminView, .adm-host, #panelView) .rv .adm-head > .adm-acts{align-self:center;padding-top:0 !important;}
   /* ===== کارت دفتر فنی، خلوت‌تر: یک قاب، بدون قاب‌های تودرتو ===== */
   :is(#adminView, .adm-host) .rv .adm-ms{
     background:none !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;
@@ -44165,7 +44182,7 @@
     const pill = paid ? 'تسویه شده' : (rv || notifyLabel(notify) || '');
     const pillK = bad ? 'bad' : (stage || 'td');
     /* مرحله و رنگش را نوار گردشِ بالای کارت نشان می‌دهد؛ اینجا تکرار نمی‌شود */
-    return msTrackHtml(msHeadHtml('', '', pillK, total).replace(/<\/div>$/, pathEditBtn(kind, r) + '</div>'), items, '', admPctHtml(kind, r));
+    return msTrackHtml(msHeadHtml('گردش ' + (KIND_LABEL[kind] || ''), '', pillK, total).replace(/<\/div>$/, pathEditBtn(kind, r) + '</div>'), items, '', admPctHtml(kind, r));
   }
 
   /* ====== درصد پیشرفت صورت وضعیت و قرارداد ======
@@ -45012,8 +45029,9 @@
       /* عکس مسئول و پرچم هشدار داخل سربرگ، کنار عنوان. ستون شناور
          حذف شد تا هیچ ردیفی پدینگ اضافه نگیرد و همه تمام‌عرض باشند —
          ریشهٔ «مرز از چپ» و تمام‌عرض نشدن جزئیات همین بود. */
-      +   (owner ? avatarHtml(owner, 'rail') : '')
-      +   alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r))
+      /* نشان هشدار روی گوشهٔ عکس می‌نشیند؛ بدون عکس، همان جای خودش */
+      +   (owner ? '<span class="adm-avw">' + avatarHtml(owner, 'rail') + alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r)) + '</span>'
+                 : alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r)))
       +   '<div class="adm-titlewrap">'
       +     '<h4 class="adm-title">'+esc(head.title)+'</h4>'
       +     (admCardHot(kind, r)
