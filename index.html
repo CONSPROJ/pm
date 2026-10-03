@@ -25237,6 +25237,20 @@
       const me = (typeof activeUserName === 'function') ? activeUserName() : '';
       const tab = (t, after) => () => { switchTab(t); if(after) setTimeout(after, 260); };
       const click = sel => () => { const b = document.querySelector(sel); if(b) b.click(); };
+      /* دفتر فنی، مستقیم روی یک دسته: تا کاشی‌ها ساخته شوند صبر می‌کند */
+      const toCat = k => () => {
+        switchTab('admin');
+        let n = 0;
+        const t = setInterval(() => {
+          n++;
+          if(document.getElementById('secAdm' + k) || n > 40){
+            clearInterval(t);
+            try{ admSetCat(k); }catch(e){}
+            const c = document.querySelector('[data-admcat="' + k + '"]');
+            if(c) try{ c.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){}
+          }
+        }, 100);
+      };
       const L = [
         ['nav', 'ثبت گزارش روزانه', 'فرم گزارش کارگاه امروز', 'write report daily ثبت', tab('write')],
         ['nav', 'گزارش زمانی', 'گزارش روزانه، هفتگی و ماهانهٔ کارگاه', 'report روزانه هفتگی ماهانه', tab('view', click('#viewKindCaps [data-kind="daily"]'))],
@@ -25248,6 +25262,11 @@
         ['nav', 'لیست فعالیت', 'کارهای باز و تکمیل‌شده', 'tasks فعالیت', tab('tasks', click('#tkTiles [data-tkw="tasks"]'))],
         ['nav', 'تقویم موعدها و ابلاغ‌ها', 'موعدهای این ماه', 'calendar تقویم موعد', tab('tasks', click('#tkTiles [data-tkw="cal"]'))],
         ['nav', 'دفتر فنی', 'صورت‌وضعیت، قرارداد، نامه و صورتجلسه', 'admin اداری', tab('admin')],
+        ['nav', 'صورت وضعیت‌ها', 'دفتر فنی — صورت وضعیت‌ها', 'statement صورت وضعیت', toCat('statement')],
+        ['nav', 'قراردادها', 'دفتر فنی — قراردادها و الحاقیه‌ها', 'contract قرارداد', toCat('contract')],
+        ['nav', 'صورتجلسه‌ها', 'دفتر فنی — بندهای صورتجلسه', 'minute صورتجلسه', toCat('minute')],
+        ['nav', 'نامه‌ها', 'دفتر فنی — مکاتبات', 'letter نامه', toCat('letter')],
+        ['nav', 'اسناد طراحی', 'دفتر فنی — نقشه‌ها و مدارک طراحی', 'design طراحی نقشه', toCat('design')],
         ['nav', 'کارتابل من', 'کارهای من، گزارش‌ها و مرخصی', 'kartable پروفایل', () => openProfile(me)],
         ['nav', 'کارت‌های فعالیت', 'مرور کارتی موارد نیازمند اقدام', 'deck کارت', click('#deckBtn')],
         ['act', 'پیام‌ها', 'گفت‌وگوها و پیام‌های خصوصی', 'چت message', click('#msgBtn')],
@@ -25268,6 +25287,7 @@
         'لیست فعالیت': SP_I.task,
         'تقویم موعدها و ابلاغ‌ها': P('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/><circle cx="12" cy="15" r="2"/>'),
         'دفتر فنی': P('<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>'),
+        'صورت وضعیت‌ها': SP_I.st, 'قراردادها': SP_I.ct, 'صورتجلسه‌ها': SP_I.mn, 'نامه‌ها': SP_I.lt, 'اسناد طراحی': SP_I.dz,
         'کارتابل من': P('<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M3 12h18"/>'),
         'کارت‌های فعالیت': P('<rect x="3" y="6" width="12" height="14" rx="2.5"/><path d="M17.5 8.5c1 .4 1.5 1.2 1.5 2.2V18M20.5 11c.9.5 1.3 1.3 1.3 2.2v3"/>'),
         'پیام‌ها': P('<path d="M4 5h16v12H7l-3 3z"/>'),
@@ -25458,7 +25478,11 @@
           html += '<div class="sp-h">' + SP_I.clock + '<span>اخیراً باز شده</span><button type="button" class="sp-hx" data-spclr="1">پاک کردن</button></div>';
           rec.forEach(o => { st.list.push(o); html += rowHtml(o, i++, ''); });
         }
-        const quick = idx.filter(o => (o.type === 'nav' || o.type === 'act') && (!st.scope || st.scope === 'nav')).slice(0, 8);
+        const TILES = ['ثبت گزارش روزانه', 'گزارش زمانی', 'گزارش مالی و اداری', 'لیست فعالیت',
+          'صورت وضعیت‌ها', 'قراردادها', 'صورتجلسه‌ها', 'نامه‌ها',
+          'اسناد طراحی', 'نیروی انسانی', 'تقویم موعدها و ابلاغ‌ها', 'کارتابل من'];
+        const quick = (!st.scope || st.scope === 'nav')
+          ? TILES.map(t => idx.find(o => o.title === t && (o.type === 'nav' || o.type === 'act'))).filter(Boolean) : [];
         if(quick.length && (!st.scope || st.scope === 'nav')){
           html += '<div class="sp-h">' + SP_I.nav + '<span>میان‌برها</span></div><div class="sp-grid">';
           quick.forEach(o => { st.list.push(o); html += '<button type="button" class="sp-tile' + (i === st.sel ? ' on' : '') + '" data-spi="' + (i++) + '"><span class="sp-gl t-' + o.type + '">' + o.ic + '</span><b>' + esc(o.title) + '</b></button>'; });
