@@ -25422,6 +25422,33 @@
 
     // فعالیت‌ها در تب «فعالیت» هستند، نه در بخش اداری
     const TASK_KINDS = ['task','tasks','activity','فعالیت'];
+    /* سندِ دفتر فنی که از لیست فعالیت، کارت‌ها یا اعلان با نوع «فعالیت»
+       آمده، در خودِ دفتر فنی و با کارت فعلی‌اش باز می‌شود، نه در لیست
+       فعالیت با نمای قدیمی */
+    const KIND_FA = {'صورت وضعیت':'statement','قرارداد':'contract','نامه':'letter','صورتجلسه':'minute','اسناد طراحی':'design'};
+    if(KIND_FA[kind]) kind = KIND_FA[kind];
+    if(TASK_KINDS.indexOf(String(kind)) !== -1){
+      try{
+        const sid = String(id);
+        const tr = (tasksAll || []).find(t => t && t.__adm && (String(t.__admId || '') === sid || String(pick(t,T.id) || '') === sid));
+        if(tr && tr.__admKind && tr.__admId){ kind = tr.__admKind; id = tr.__admId; }
+        else{
+          const h = (adminAll || []).find(x => String(pick(x.row,AD.id)) === sid);
+          if(h) kind = h.kind;
+          else{
+            const dk = (typeof deckIndex !== 'undefined') ? deckIndex.get(sid) : null;
+            if(dk && dk.kind && dk.kind !== 'task') kind = dk.kind;
+            else{
+              const A = (await fetchBundle(normDate(dateInput.value) || todayShamsi())).admin || {};
+              const K = {statements:'statement', contracts:'contract', minutes:'minute', letters:'letter', designs:'design'};
+              for(const k of Object.keys(K)){
+                if((A[k] || []).some(r => String(pick(r,AD.id)) === sid)){ kind = K[k]; break; }
+              }
+            }
+          }
+        }
+      }catch(e){}
+    }
     if(TASK_KINDS.indexOf(String(kind)) !== -1){
       /* فیلتر شخص یا جست‌وجو ممکن است مورد را پنهان کرده باشد */
       try{
