@@ -18705,6 +18705,44 @@
   .fd-chip:hover i{background:var(--alert-soft);color:var(--alert);}
   .fd-clear{all:unset;cursor:pointer;height:30px;padding:0 10px;font:700 11px var(--f);color:var(--alert);border-radius:99px;}
   .fd-clear:hover{background:var(--alert-soft);}
+  /* ===== فهرست کشویی تازهٔ فیلترها ===== */
+  select.ns-native{position:absolute !important;width:1px !important;height:1px !important;opacity:0 !important;pointer-events:none !important;clip-path:inset(50%);}
+  .ns-btn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;height:42px;padding:0 12px;border-radius:12px;
+    background:var(--field);border:1px solid transparent;font:600 12.5px var(--f);color:var(--ink);transition:border-color .15s, background .15s;}
+  .ns-btn:hover{border-color:var(--line);}
+  .ns-btn:focus-visible{outline:2px solid color-mix(in srgb, var(--ink) 35%, transparent);outline-offset:1px;}
+  .ns-btn .ns-v{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start;color:var(--muted);}
+  .ns-btn.on .ns-v{color:var(--ink);font-weight:800;}
+  .ns-btn.on{background:color-mix(in srgb, var(--ink) 6%, var(--surface));border-color:color-mix(in srgb, var(--ink) 28%, var(--line));}
+  .ns-btn .ns-ar{display:grid;place-items:center;width:18px;height:18px;color:var(--muted);transition:transform .18s;}
+  .ns-btn .ns-ar svg{width:15px;height:15px;}
+  .ns-btn.open .ns-ar{transform:rotate(180deg);}
+  .ns-btn.open{border-color:color-mix(in srgb, var(--ink) 35%, var(--line));background:var(--surface);}
+  .ns-btn[hidden]{display:none;}
+  [data-theme="dark"] .ns-btn{background:rgba(255,255,255,.05);}
+  .ns-pop{position:fixed;z-index:3000;max-height:min(340px, 60vh);display:flex;flex-direction:column;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line);box-shadow:0 22px 50px -24px rgba(0,0,0,.45);overflow:hidden;animation:fd2In .14s ease;font-family:var(--f);}
+  [data-theme="dark"] .ns-pop{background:#1d2128;border-color:rgba(255,255,255,.1);}
+  .ns-h{display:none;}
+  .ns-q{display:flex;align-items:center;gap:7px;margin:8px 8px 4px;height:36px;padding:0 10px;border-radius:10px;background:var(--field);}
+  .ns-q svg{width:15px;height:15px;color:var(--muted);flex:0 0 15px;}
+  .ns-q input{all:unset;flex:1;min-width:0;font:600 12.5px var(--f);color:var(--ink);}
+  .ns-l{overflow-y:auto;padding:5px;display:flex;flex-direction:column;gap:1px;}
+  .ns-o{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 10px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .ns-o span{flex:1;min-width:0;line-height:1.5;}
+  .ns-o i{width:16px;height:16px;flex:0 0 16px;color:var(--ink);display:grid;place-items:center;}
+  .ns-o i svg{width:15px;height:15px;}
+  .ns-o:hover, .ns-o:focus-visible{background:var(--field);outline:none;}
+  .ns-o.on{font-weight:900;background:color-mix(in srgb, var(--ink) 6%, transparent);}
+  .ns-o.all span{color:var(--muted);}
+  .ns-none{padding:14px;text-align:center;font-size:12px;color:var(--muted);}
+  .ns-bg{position:fixed;inset:0;z-index:2999;background:rgba(10,14,20,.35);animation:fd2In .15s ease;}
+  .ns-pop.sheet{left:0 !important;right:0 !important;bottom:0 !important;top:auto !important;width:auto !important;max-height:70vh;border-radius:20px 20px 0 0;
+    padding-bottom:env(safe-area-inset-bottom);animation:nsUp .2s ease;}
+  .ns-pop.sheet .ns-h{display:block;padding:14px 16px 4px;font-size:13px;font-weight:900;color:var(--ink);}
+  .ns-pop.sheet .ns-o{min-height:46px;font-size:14px;}
+  .ns-pop.sheet .ns-q input{font-size:16px;}
+  @keyframes nsUp{from{transform:translateY(30px);opacity:0;}}
   /* ===== جست‌وجو v2، هم‌شکل فیلتر ===== */
   .sd2.fdrawer{margin-top:8px;}
   .sd2 > .fd-body{padding:12px !important;display:none;flex-direction:column;gap:10px;}
@@ -52474,6 +52512,123 @@
   ], tasksForWho, () => applyTaskFilters());
 
   /* هر نوار فیلتر داخل یک کشوی تاشو با نشانهٔ قیف می‌نشیند و پیش‌فرض بسته است */
+  /* ====== فهرست کشویی تازهٔ فیلترها ======
+     select هر کشوی فیلتر سر جایش می‌ماند (منطق فیلترها دست نمی‌خورد) ولی پنهان
+     می‌شود و یک دکمهٔ هم‌شکل با فیلتر v2 جایش می‌نشیند: مقدار فعلی، نشان فعال
+     بودن، و فهرستی با تیک گزینهٔ انتخابی؛ اگر گزینه‌ها زیاد باشد کادر جست‌وجو هم
+     دارد. روی موبایل از پایین صفحه باز می‌شود. انتخاب، همان change را می‌فرستد. */
+  (function(){
+    const NS_SEL = '.fd2 .fd-body select:not([multiple]), .fdrawer .fd-body select:not([multiple])';
+    const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    let open = null;   // {sel, btn, pop, q}
+    const labelOf = sel => { const o = sel.options[sel.selectedIndex]; return o ? o.textContent.trim() : ''; };
+    const isEmpty = sel => !sel.value;
+    function sync(sel){
+      const b = sel.__nsBtn; if(!b) return;
+      b.querySelector('.ns-v').textContent = labelOf(sel) || '—';
+      b.classList.toggle('on', !isEmpty(sel));
+      b.disabled = sel.disabled;
+      b.hidden = sel.hidden || sel.style.display === 'none';
+    }
+    function enhance(sel){
+      if(sel.__nsBtn || !sel.options) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ns-btn';
+      b.setAttribute('aria-haspopup', 'listbox');
+      const lab = sel.id ? document.querySelector('label[for="' + CSS.escape(sel.id) + '"]') : null;
+      if(lab) b.setAttribute('aria-label', lab.textContent.trim());
+      b.innerHTML = '<span class="ns-v"></span><i class="ns-ar">' + CHEV + '</i>';
+      sel.__nsBtn = b;
+      sel.classList.add('ns-native');
+      sel.insertAdjacentElement('afterend', b);
+      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open && open.sel === sel ? close() : show(sel); });
+      sel.addEventListener('change', () => sync(sel));
+      new MutationObserver(() => sync(sel)).observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['disabled','hidden','style']});
+      sync(sel);
+    }
+    function listHtml(sel, q){
+      const n = s => toEn(String(s || '')).toLowerCase().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
+      const qq = n(q || '');
+      const opts = Array.from(sel.options).filter(o => !o.disabled || o.value === sel.value);
+      const shown = qq ? opts.filter(o => n(o.textContent).indexOf(qq) !== -1) : opts;
+      if(!shown.length) return '<div class="ns-none">موردی پیدا نشد</div>';
+      return shown.map(o => {
+        const on = o.value === sel.value;
+        return '<button type="button" role="option" class="ns-o' + (on ? ' on' : '') + (o.value ? '' : ' all') + '" data-nsv="' + esc(o.value) + '" aria-selected="' + on + '">'
+          + '<span>' + esc(o.textContent.trim() || '—') + '</span><i>' + (on ? CHK : '') + '</i></button>';
+      }).join('');
+    }
+    function show(sel){
+      close();
+      const btn = sel.__nsBtn;
+      const many = sel.options.length > 8;
+      const pop = document.createElement('div');
+      pop.className = 'ns-pop';
+      pop.setAttribute('role', 'listbox');
+      const t = (btn.getAttribute('aria-label') || '').trim();
+      pop.innerHTML = (t ? '<div class="ns-h">' + esc(t) + '</div>' : '')
+        + (many ? '<label class="ns-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" placeholder="جست‌وجو…" autocomplete="off"></label>' : '')
+        + '<div class="ns-l">' + listHtml(sel, '') + '</div>';
+      document.body.appendChild(pop);
+      const mob = window.matchMedia('(max-width:640px)').matches;
+      if(mob){
+        pop.classList.add('sheet');
+        const bg = document.createElement('div'); bg.className = 'ns-bg'; document.body.appendChild(bg);
+        bg.addEventListener('click', close);
+        pop.__bg = bg;
+      }else{
+        const r = btn.getBoundingClientRect();
+        const w = Math.max(r.width, 220);
+        pop.style.width = w + 'px';
+        const left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
+        pop.style.left = left + 'px';
+        const below = window.innerHeight - r.bottom;
+        if(below < 280 && r.top > below){ pop.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
+        else pop.style.top = (r.bottom + 6) + 'px';
+      }
+      btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
+      open = {sel, btn, pop};
+      pop.addEventListener('click', e => {
+        const o = e.target.closest('[data-nsv]'); if(!o) return;
+        e.stopPropagation();
+        if(sel.value !== o.dataset.nsv){ sel.value = o.dataset.nsv; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+        sync(sel); close(); btn.focus({preventScroll:true});
+      });
+      const qi = pop.querySelector('.ns-q input');
+      if(qi){ qi.addEventListener('input', () => { pop.querySelector('.ns-l').innerHTML = listHtml(sel, qi.value); }); if(!mob) setTimeout(() => qi.focus(), 20); }
+      const cur = pop.querySelector('.ns-o.on'); if(cur) cur.scrollIntoView({block:'nearest'});
+    }
+    function close(){
+      if(!open) return;
+      open.btn.classList.remove('open'); open.btn.setAttribute('aria-expanded', 'false');
+      if(open.pop.__bg) open.pop.__bg.remove();
+      open.pop.remove(); open = null;
+    }
+    document.addEventListener('click', e => { if(open && !open.pop.contains(e.target)) close(); });
+    document.addEventListener('keydown', e => {
+      if(!open) return;
+      if(e.key === 'Escape'){ e.preventDefault(); const b = open.btn; close(); b.focus(); return; }
+      if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        e.preventDefault();
+        const os = Array.from(open.pop.querySelectorAll('.ns-o'));
+        let i = os.indexOf(document.activeElement);
+        i = e.key === 'ArrowDown' ? Math.min(os.length - 1, i + 1) : Math.max(0, i - 1);
+        if(os[i]) os[i].focus();
+      }
+    });
+    window.addEventListener('resize', close);
+    document.addEventListener('scroll', e => { if(open && !open.pop.contains(e.target) && !open.pop.classList.contains('sheet')) close(); }, true);
+    /* مقدارهایی که کد عوض می‌کند (حذف فیلترها، کپسول ✕) بی‌رویداد change: بعد از هر کلیک همگام می‌شوند */
+    let raf = 0;
+    const syncAll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => document.querySelectorAll('select.ns-native').forEach(sync)); };
+    document.addEventListener('click', () => setTimeout(syncAll, 0), true);
+    document.addEventListener('change', syncAll, true);
+    const scan = () => document.querySelectorAll(NS_SEL).forEach(enhance);
+    new MutationObserver(muts => { if(muts.some(m => m.addedNodes.length)) { scan(); syncAll(); } }).observe(document.documentElement, {childList:true, subtree:true});
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan); else setTimeout(scan, 0);
+  })();
+
   /* کشوی جست‌وجو، زیر کشوی فیلتر — در هر سه برگه.
      هم‌شکل فیلتر v2: دکمهٔ قرصی، پنل با کادر بزرگ، و وقتی عبارتی فعال
      است، کپسولش زیر دکمه می‌ماند (حتی با کشوی بسته) و با ✕ پاک می‌شود.
