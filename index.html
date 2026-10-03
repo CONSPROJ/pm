@@ -18695,6 +18695,42 @@
   .fd-chip:hover i{background:var(--alert-soft);color:var(--alert);}
   .fd-clear{all:unset;cursor:pointer;height:30px;padding:0 10px;font:700 11px var(--f);color:var(--alert);border-radius:99px;}
   .fd-clear:hover{background:var(--alert-soft);}
+  /* ===== جست‌وجو v2، هم‌شکل فیلتر ===== */
+  .sd2.fdrawer{margin-top:8px;}
+  .sd2 > .fd-body{padding:12px !important;display:none;flex-direction:column;gap:10px;}
+  .sd2.open > .fd-body{display:flex !important;}
+  .sd2 .sd-row{position:relative;display:flex;align-items:center;}
+  .sd2 .sd-row .sd-ic{position:absolute;inset-inline-start:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none;display:grid;place-items:center;}
+  .sd2 .sd-row .sd-ic svg{width:18px;height:18px;}
+  .sd2 .sd-row:focus-within .sd-ic{color:var(--ink);}
+  .sd2 .sd-row .sd-in{width:100%;box-sizing:border-box;height:48px !important;border-radius:14px !important;padding-inline:44px 44px !important;
+    background:var(--field) !important;border:1px solid transparent !important;font:600 14px var(--f) !important;color:var(--ink) !important;box-shadow:none !important;}
+  .sd2 .sd-row .sd-in:focus{border-color:color-mix(in srgb, var(--ink) 30%, var(--line)) !important;background:var(--surface) !important;box-shadow:0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent) !important;outline:none;}
+  .sd2 .sd-row .sd-clear{all:unset;position:absolute;inset-inline-end:9px;top:50%;transform:translateY(-50%);cursor:pointer;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
+    font-size:11px;color:var(--muted);background:var(--surface);}
+  .sd2 .sd-clear[hidden]{display:none;}
+  .sd2 .sd-clear:hover{background:var(--alert-soft);color:var(--alert);}
+  /* اخیر و راهنما: زیر کادر، فقط وقتی کادر در دست است */
+  .sd2 > .fd-body{position:relative;}
+  .sd2 .sd-foot{display:none;flex-direction:column;gap:8px;position:absolute;top:calc(100% + 6px);inset-inline:0;z-index:40;
+    padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 40px -22px rgba(0,0,0,.45);animation:fd2In .15s ease;}
+  [data-theme="dark"] .sd2 .sd-foot{background:#1d2128;border-color:rgba(255,255,255,.1);}
+  .sd2:focus-within .sd-foot{display:flex;}
+  /* بخش‌هایی که جست‌وجویشان همیشه باز است: بی‌قاب، و کپسول تکراری نمی‌خواهد */
+  #taskFiltersHost #taskSearch > .fd-body, #panelAdmin #admSearch > .fd-body{background:none !important;border:0 !important;box-shadow:none !important;animation:none;}
+  #taskFiltersHost #taskSearch .sd-chips, #panelAdmin #admSearch .sd-chips{display:none !important;}
+  .sd2 .sd-rec{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .sd2 .sd-rec:empty{display:none;}
+  .sd2 .sd-rec u{text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:var(--muted);margin-inline-end:2px;}
+  .sd2 .sd-rec u svg{width:13px;height:13px;}
+  .sd2 .sd-r{all:unset;cursor:pointer;height:28px;padding:0 11px;border-radius:99px;background:var(--field);font:700 11.5px var(--f);color:var(--ink);display:inline-flex;align-items:center;
+    max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sd2 .sd-r:hover{background:color-mix(in srgb, var(--ink) 10%, var(--field));}
+  .sd2 .sd-hint{font-size:10.5px;color:var(--muted);line-height:1.7;}
+  .sd2 .sd-chip b{max-width:220px;}
+  .sd2.open > .sd-chips{display:none;}
+  [data-theme="dark"] .sd2 .sd-row .sd-in{background:rgba(255,255,255,.05) !important;}
+  @media (max-width:640px){ .sd2 .sd-row .sd-in{height:46px !important;font-size:16px !important;} .sd2 .sd-row .sd-clear{top:8px;} }
   /* دسته‌بندی لیست فعالیت: پرسنل / پیمانکار / طبقه */
   .tk-grpseg{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:13px;background:var(--field);margin-inline-start:auto;}
   [data-theme="dark"] .tk-grpseg{background:rgba(255,255,255,.05);}
@@ -25171,7 +25207,7 @@
         const tw = document.getElementById('taskWho'); if(tw) tw.value = '';
         if(personCombos && personCombos['comboTaskWho']) personCombos['comboTaskWho'].set('');
         qTask = '';
-        const si = document.querySelector('#taskSearch .sd-in'); if(si) si.value = '';
+        const si = document.querySelector('#taskSearch .sd-in'); if(si){ si.value = ''; const sx = si.closest('.sd2'); if(sx && sx.sdSync) sx.sdSync(); }
       }catch(e){}
       tasksPanelOpen = true;
       switchTab('tasks');
@@ -25196,7 +25232,7 @@
     if(!el && (qAdmin || elVal('fAdmOwner') || elVal('fAdmParty') || elVal('fAdmNotify'))){
       try{
         qAdmin = '';
-        const si = document.querySelector('#admSearch .sd-in'); if(si) si.value = '';
+        const si = document.querySelector('#admSearch .sd-in'); if(si){ si.value = ''; const sx = si.closest('.sd2'); if(sx && sx.sdSync) sx.sdSync(); }
         ['fAdmOwner','fAdmParty','fAdmNotify'].forEach(k => { const f = document.getElementById(k); if(f) f.value = ''; });
         if(personCombos && personCombos['comboAdmResp']) personCombos['comboAdmResp'].set('');
         applyAdminFilters();
@@ -31766,7 +31802,7 @@
             const si = document.querySelector('#taskSearch .sd-in');
             if(si) si.value = who;
             const sd = document.getElementById('taskSearch');
-            if(sd){ sd.classList.add('open','active'); }
+            if(sd){ sd.classList.add('open','active'); if(sd.sdSync) sd.sdSync(); }
             /* پنجرهٔ فعالیت‌های باز، باز باشد و روی همان شخص بایستد؛
                پیش‌تر همه‌چیز بسته می‌ماند و باید دستی باز می‌شد. */
             tasksPanelOpen = true;
@@ -51994,42 +52030,72 @@
   ], tasksForWho, () => applyTaskFilters());
 
   /* هر نوار فیلتر داخل یک کشوی تاشو با نشانهٔ قیف می‌نشیند و پیش‌فرض بسته است */
-  /* کشوی جست‌وجو، زیر کشوی فیلتر — در هر سه برگه */
+  /* کشوی جست‌وجو، زیر کشوی فیلتر — در هر سه برگه.
+     هم‌شکل فیلتر v2: دکمهٔ قرصی، پنل با کادر بزرگ، و وقتی عبارتی فعال
+     است، کپسولش زیر دکمه می‌ماند (حتی با کشوی بسته) و با ✕ پاک می‌شود.
+     جست‌وجوهای اخیر هر بخش جدا نگه داشته می‌شوند. */
   function makeSearchDrawer(afterEl, id, placeholder, onType){
     if(!afterEl || document.getElementById(id)) return document.getElementById(id);
     const SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'
       + '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
+    const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+    const RKEY = 'siteLogM.sdRecent.' + id;
+    const recent = () => { try{ return JSON.parse(localStorage.getItem(RKEY) || '[]') || []; }catch(e){ return []; } };
+    const remember = q => {
+      q = String(q || '').trim(); if(q.length < 2) return;
+      try{ localStorage.setItem(RKEY, JSON.stringify([q].concat(recent().filter(x => x !== q)).slice(0, 6))); }catch(e){}
+    };
     const d = document.createElement('div');
-    d.className = 'fdrawer sdrawer';
+    d.className = 'fdrawer sdrawer fd2 sd2';
     d.id = id;
-    d.innerHTML = '<button type="button" class="fd-toggle">'
+    d.innerHTML = '<button type="button" class="fd-toggle" aria-expanded="false">'
       +   '<span class="fd-ic">' + SEARCH + '</span><b>جست‌وجو</b>'
       +   '<span class="fd-n"></span><span class="fd-ar">▾</span>'
       + '</button>'
+      + '<div class="fd-chips sd-chips"></div>'
       + '<div class="fd-body"><div class="sd-row">'
       +   '<span class="sd-ic" aria-hidden="true">' + SEARCH + '</span>'
       +   '<input type="text" class="sd-in" inputmode="search" enterkeyhint="search" autocomplete="off" '
-      +     'placeholder="' + esc(placeholder || 'جست‌وجو…') + '">'
+      +     'placeholder="' + esc(placeholder || 'جست‌وجو…') + '" aria-label="جست‌وجو">'
       +   '<button type="button" class="sd-clear" aria-label="پاک کردن" title="پاک کردن" hidden>✕</button>'
-      + '</div></div>';
+      + '</div>'
+      + '<div class="sd-foot"><div class="sd-rec"></div><span class="sd-hint">چند کلمه را با فاصله بنویسید؛ مواردی می‌آیند که همه را داشته باشند.</span></div>'
+      + '</div>';
     afterEl.parentNode.insertBefore(d, afterEl.nextSibling);
 
     const btn = d.querySelector('.fd-toggle');
     const inp = d.querySelector('.sd-in');
-    btn.addEventListener('click', () => {
-      const open = d.classList.toggle('open');
-      btn.querySelector('.fd-ar').textContent = open ? '▴' : '▾';
-      if(open) setTimeout(() => inp.focus(), 30);
-    });
     const clr = d.querySelector('.sd-clear');
-    let tmr = null;
-    const fire = () => {
-      clearTimeout(tmr);
+    const chips = d.querySelector('.sd-chips');
+    const rec = d.querySelector('.sd-rec');
+    const paintRec = () => {
+      const r = recent().filter(x => x !== inp.value.trim());
+      rec.innerHTML = r.length ? '<u>' + CLOCK + 'اخیر</u>' + r.map(x => '<button type="button" class="sd-r" data-sdr="' + esc(x) + '">' + esc(x) + '</button>').join('') : '';
+    };
+    const setOpen = open => {
+      d.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.querySelector('.fd-ar').textContent = open ? '▴' : '▾';
+      if(open){ paintRec(); setTimeout(() => inp.focus(), 30); }
+    };
+    btn.addEventListener('click', () => setOpen(!d.classList.contains('open')));
+    let tmr = null, saveT = null;
+    const paint = () => {
       const q = inp.value.trim();
       clr.hidden = !inp.value;
       d.classList.toggle('active', !!q);
-      d.querySelector('.fd-n').textContent = q ? '●' : '';
+      d.querySelector('.fd-n').textContent = q ? '۱' : '';
+      chips.innerHTML = q ? '<button type="button" class="fd-chip sd-chip" title="پاک کردن جست‌وجو"><u>جست‌وجو</u><b>«' + esc(q) + '»</b><i>✕</i></button>' : '';
+      return q;
+    };
+    /* وقتی جای دیگری مقدار کادر را عوض می‌کند (مثلاً رفتن به فعالیت‌های یک نفر) */
+    d.sdSync = paint;
+    const fire = () => {
+      clearTimeout(tmr);
+      const q = paint();
+      clearTimeout(saveT);
+      if(q) saveT = setTimeout(() => remember(q), 1500);
       onType(q);
     };
     // فهرست‌های بلند با هر حرف دوباره کشیده نمی‌شوند؛ کمی صبر تا تایپ تمام شود
@@ -52039,10 +52105,18 @@
       tmr = setTimeout(fire, 180);
     });
     inp.addEventListener('keydown', e => {
-      if(e.key === 'Enter'){ e.preventDefault(); fire(); }
-      if(e.key === 'Escape' && inp.value){ e.preventDefault(); inp.value = ''; fire(); }
+      if(e.key === 'Enter'){ e.preventDefault(); fire(); remember(inp.value); paintRec(); }
+      if(e.key === 'Escape'){ e.preventDefault(); if(inp.value){ inp.value = ''; fire(); } else setOpen(false); }
     });
-    clr.addEventListener('click', () => { inp.value = ''; fire(); inp.focus({preventScroll:true}); });
+    clr.addEventListener('click', () => { inp.value = ''; fire(); paintRec(); inp.focus({preventScroll:true}); });
+    chips.addEventListener('click', () => { inp.value = ''; fire(); paintRec(); });
+    /* لمس «اخیر» فوکوس کادر را نگیرد، وگرنه فهرست پیش از کلیک بسته می‌شود */
+    d.querySelector('.sd-foot').addEventListener('mousedown', e => e.preventDefault());
+    inp.addEventListener('focus', paintRec);
+    rec.addEventListener('click', e => {
+      const b = e.target.closest('[data-sdr]'); if(!b) return;
+      inp.value = b.dataset.sdr; fire(); remember(inp.value); paintRec();
+    });
     return d;
   }
 
