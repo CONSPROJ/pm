@@ -1411,6 +1411,16 @@
   .pc-tab svg{width:18px;height:18px;}
   .pc-tab.on{background:var(--surface);color:var(--ink);box-shadow:0 3px 10px -6px rgba(15,20,35,.45);}
   .pc-body{display:flex;flex-direction:column;gap:10px;}
+  .zm-av{display:grid;place-items:center;} .zm-av svg{width:16px;height:16px;}
+  .zm-fl.man{outline:1px dashed currentColor;}
+  .zm-nofl{opacity:.85;}
+  .zm .dc-to select{height:40px;border-radius:11px;border:1px solid var(--line);background:var(--field);font:600 12.5px var(--f);color:var(--ink);padding:0 10px;}
+  .pc-q{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-radius:13px;background:var(--surface);border:1px solid var(--line);margin:10px 0 0;}
+  .pc-q:focus-within{border-color:color-mix(in srgb, var(--ink) 30%, var(--line));}
+  .pc-q svg{width:17px;height:17px;color:var(--muted);flex:0 0 17px;}
+  .pc-q input{all:unset;flex:1;min-width:0;font:600 13px var(--f);color:var(--ink);}
+  .pc-qx{all:unset;cursor:pointer;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:10px;color:var(--muted);background:var(--field);}
+  @media (max-width:640px){ .pc-q input{font-size:16px;} }
   .pc-note{font-size:11px;line-height:1.85;color:var(--muted);padding:9px 11px;border-radius:11px;background:var(--field);}
   .pm-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);}
   .pm-gh{padding:7px 12px;font-size:10.5px;font-weight:800;color:var(--muted);background:var(--field);border-bottom:1px solid var(--line);}
@@ -19004,6 +19014,13 @@
   @media (max-width:520px){ .rfb-tx u{display:none;} }
   .adm-tags .chip-set > .rfb, .chip-set > .rfb{height:auto !important;min-height:0;}
   .rfb-main, .rfb-ppl, .rfb-did, .rfb-pick{height:26px !important;}
+  .ho .rf-pp.sug:not(.on){border-color:color-mix(in srgb, var(--ok) 45%, var(--line));}
+  .ho .rf-pp.ho-fin{grid-column:1 / -1;background:var(--ok-soft);}
+  .ho .rf-pp.ho-fin.on{border-color:var(--ok);background:color-mix(in srgb, var(--ok) 14%, var(--surface));}
+  .ho .rf-pp.ho-fin.on .rf-ck{background:var(--ok);border-color:var(--ok);}
+  .ho-fic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff;font-weight:900;flex:0 0 30px;}
+  .ho .rf-list{max-height:min(46vh, 380px);}
+  .ho .rf-go{min-width:120px;}
   /* ====== زنجیرهٔ تأیید داخلی ====== */
   .rvc{display:flex;flex-direction:column;gap:12px;}
   .rvc-flow, .rf-chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
@@ -21180,8 +21197,6 @@
      d:'ساختن فعالیت برای دیگران', def:[1,2]},
     {g:'فعالیت', k:'task.approve', t:'تأیید تکمیل فعالیت',
      d:'تأیید نهایی کار انجام‌شده', def:[1,2]},
-    {g:'فعالیت', k:'task.bulk', t:'ویرایش گروهی فعالیت‌ها با اکسل',
-     d:'دانلود و بارگذاری اکسل برای اصلاح طبقه، محل کارکرد و پیمانکار', def:[1,2]},
     {g:'ویرایش', k:'rep.editAny', t:'ویرایش گزارش روزانهٔ دیگران',
      d:'وگرنه فقط گزارش خودش', def:[1]},
     {g:'ویرایش', k:'adm.editAny', t:'ویرایش موارد ادارىِ دیگران',
@@ -21222,7 +21237,9 @@
      d:'وگرنه هرکس فقط تیک خودش', def:[1,2]},
     {g:'ارتباط', k:'comment.delAny', t:'حذف نظر دیگران', d:'نظر خودش را همیشه می‌تواند', def:[1,2]},
     {g:'ارتباط', k:'nudge.presets', t:'متن‌های آمادهٔ تلنگر', d:'', def:[1,2]},
-    {g:'ارتباط', k:'msg.broadcast', t:'پیام گروهی به همه', d:'', def:[1]}
+    {g:'ارتباط', k:'msg.broadcast', t:'پیام گروهی به همه', d:'', def:[1]},
+    {g:'ارتباط', k:'remind.use', t:'یادآور', d:'ثبت یادآور و دیدن زبانهٔ «یادآورها»', def:[1,2,3,4,5]},
+    {g:'ارتباط', k:'remind.others', t:'یادآور برای دیگران', d:'وگرنه فقط برای خودش یادآور می‌گذارد', def:[1,2]}
   ];
   /* سمت‌هایی که فارغ از سطح، یک اجازه را دارند (قبلاً در کد پنهان بود) */
   const PERM_ROLE_DEF = {
@@ -23145,9 +23162,12 @@
     const who = to.length === 1 ? (nameKey(to[0]) === nameKey(activeUserName()) ? 'برای خودم' : 'برای ' + esc(to[0])) : 'برای ' + toFa(to.length) + ' نفر';
     return '<b>' + esc(wd) + '، ساعت ' + toFa(w.time) + '</b> <u>(' + rm2Rel(w.at) + ')</u> · ' + who + rep;
   }
+  const canRemind = () => { try{ return isAdminUser() || can('remind.use'); }catch(e){ return true; } };
+  const canRemindOthers = () => { try{ return isAdminUser() || can('remind.others'); }catch(e){ return false; } };
   function remindBoxHtml(){
     const me = activeUserName();
     if(!rm2.to) rm2.to = [me];
+    if(!canRemindOthers()) rm2.to = [me];
     const at = new Date(Date.now() + 3600000);
     return '<div class="rm2" id="rm2">'
       + '<div class="ab-card">'
@@ -23156,10 +23176,12 @@
       +   '<textarea class="ab-note rm2-text" id="rm2Text" rows="2" placeholder="مثلاً: پیگیری صورت وضعیت شمارهٔ ۳ از کارفرما"></textarea>'
       + '</div>'
       + '<div class="ab-card">'
-      +   '<div class="ab-step"><i>۲</i><b>برای چه کسی؟</b><span class="ab-qa"><button type="button" data-rm2me="1">فقط خودم</button></span></div>'
-      +   '<div class="ab-sel" id="rm2Sel">' + rm2SelHtml() + '</div>'
-      +   '<label class="ab-q">' + AB_I.search + '<input type="search" id="rm2Q" placeholder="افزودن نفر دیگر…" autocomplete="off"></label>'
-      +   '<div class="ab-pp rm2-pp" id="rm2PP">' + rm2PeopleHtml() + '</div>'
+      + (canRemindOthers()
+          ? '<div class="ab-step"><i>۲</i><b>برای چه کسی؟</b><span class="ab-qa"><button type="button" data-rm2me="1">فقط خودم</button></span></div>'
+            + '<div class="ab-sel" id="rm2Sel">' + rm2SelHtml() + '</div>'
+            + '<label class="ab-q">' + AB_I.search + '<input type="search" id="rm2Q" placeholder="افزودن نفر دیگر…" autocomplete="off"></label>'
+            + '<div class="ab-pp rm2-pp" id="rm2PP">' + rm2PeopleHtml() + '</div>'
+          : '<div class="ab-step"><i>۲</i><b>برای خودم</b></div><div class="pc-note">یادآور فقط برای خودتان ثبت می‌شود.</div>')
       + '</div>'
       + '<div class="ab-card">'
       +   '<div class="ab-step"><i>۳</i><b>کِی؟</b></div>'
@@ -25595,7 +25617,8 @@
     xls:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12.5l4 5M13.5 12.5l-4 5"/></svg>',
     warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>'
   };
-  const txCanBulk = () => { try{ return isAdminUser() || can('task.bulk'); }catch(e){ return false; } };
+  /* دانلود و بارگذاری اکسل فقط برای ادمین سامانه */
+  const txCanBulk = () => { try{ return isAdminUser(); }catch(e){ return false; } };
   /* ستون‌های فایل؛ ro یعنی فقط برای دیدن */
   const TX_DEF = [
     {k:'id',     h:'شناسه (تغییر ندهید)', w:12, al:['شناسه']},
@@ -26017,7 +26040,7 @@
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-txxl]');
     if(!b) return;
-    if(!txCanBulk()){ showDialog('warn','دسترسی ندارید','ویرایش گروهی فعالیت‌ها برای سطح دسترسی شما فعال نیست.'); return; }
+    if(!txCanBulk()){ showDialog('warn','دسترسی ندارید','دانلود و بارگذاری اکسل فقط برای ادمین است.'); return; }
     if(b.dataset.txxl === 'out') txExport();
     else{
       let f = document.getElementById('txFile');
@@ -27788,7 +27811,10 @@
   /* ====== مرکز دسترسی ======
      ترتیب تصمیم برای هر اجازه: ۱) ادمین سامانه همیشه دارد ۲) استثنای
      فردی (مجاز/ممنوع) ۳) سمت (مثلاً سرپرست کارگاه) ۴) سطح دسترسی. */
-  const pcState = {tab:'lv', who:''};
+  const pcState = {tab:'lv', who:'', q:''};
+  /* جست‌وجو در مرکز دسترسی: عنوان، گروه و توضیح هر اجازه؛ در زبانهٔ افراد، نام و سمت هم */
+  const pcNorm = v => toEn(String(v || '')).replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/\u200c/g, ' ').toLowerCase();
+  const pcHit = (txt, q) => !q || pcNorm(q).split(/\s+/).filter(Boolean).every(w => pcNorm(txt).indexOf(w) !== -1);
   const PC_I = {
     lv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="1.6" fill="currentColor"/><circle cx="15" cy="12" r="1.6" fill="currentColor"/><circle cx="7" cy="17" r="1.6" fill="currentColor"/></svg>',
     usr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1-3.6 3.8-5.4 7-5.4s6 1.8 7 5.4"/></svg>',
@@ -27828,8 +27854,10 @@
     /* فقط ادمین سامانه می‌تواند دسترسی‌ها را عوض کند، وگرنه هر کس با
        اجازهٔ «مدیریت کاربران» می‌توانست اجازهٔ خودش را بالا ببرد. */
     if(!isAdminUser()) return '';
-    const capsMain = PERM_CAPS.filter(c => c.g !== 'اعلان‌ها');
-    const capsNotif = PERM_CAPS.filter(c => c.g === 'اعلان‌ها');
+    const q = pcState.q || '';
+    const capOk = c => pcHit(c.t + ' ' + c.g + ' ' + (c.d || ''), q);
+    const capsMain = PERM_CAPS.filter(c => c.g !== 'اعلان‌ها' && capOk(c));
+    const capsNotif = PERM_CAPS.filter(c => c.g === 'اعلان‌ها' && capOk(c));
     const changed = permMap ? Object.keys(permMap).filter(k => permDefault(k).join(',') !== (permMap[k] || []).slice().sort().join(',')).length : 0;
     const nOv = Object.values(permUserMap || {}).reduce((t, o) => t + Object.keys(o || {}).length, 0);
     const people = (peopleRows || []).filter(p => p.active !== false && !p.pending).map(p => p.name)
@@ -27847,21 +27875,26 @@
     }else if(pcState.tab === 'rl'){
       const roles = ROLE_LIST.filter(r => r && r !== '—');
       body = '<div class="pc-note">به یک سمت، فارغ از سطح، اجازه بدهید. مثلاً «سرپرست کارگاه» جریمه را تأیید کند. هر کس آن سمت را داشته باشد این اجازه را می‌گیرد.</div>'
-        + '<div class="pc-roles">' + PERM_CAPS.map(c => {
+        + '<div class="pc-roles">' + PERM_CAPS.filter(capOk).map(c => {
             const on = permRolesOf(c.k);
             return '<div class="pc-rr"><div class="pc-rt"><b>' + esc(c.t) + '</b><u>' + esc(c.g) + '</u></div><div class="pc-rc">'
               + roles.map(r => '<button type="button" class="pc-chip' + (on.indexOf(r) !== -1 ? ' on' : '') + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(r) + '">' + esc(r) + '</button>').join('')
               + '</div></div>';
           }).join('') + '</div>';
     }else{
-      const who = pcState.who && people.some(n => nameKey(n) === nameKey(pcState.who)) ? pcState.who : (people[0] || '');
+      /* اگر عبارت با نام یا سمت کسی جور است، فهرست افراد فیلتر می‌شود و همهٔ اجازه‌ها دیده می‌شوند؛
+         وگرنه همهٔ افراد و فقط اجازه‌های جور با عبارت */
+      const pplHit = q ? people.filter(n => pcHit(n + ' ' + roleOf(n), q)) : [];
+      const byPerson = pplHit.length > 0;
+      const pplShown = byPerson ? pplHit : people;
+      const who = pcState.who && pplShown.some(n => nameKey(n) === nameKey(pcState.who)) ? pcState.who : (pplShown[0] || '');
       pcState.who = who;
       body = '<div class="pc-note">برای یک نفر، جدا از سطح و سمتش، کاری را مجاز یا ممنوع کنید. «پیش‌فرض» یعنی همان که سطح و سمت می‌گویند.</div>'
-        + '<div class="pc-people">' + people.map(n => '<button type="button" class="pc-p' + (nameKey(n) === nameKey(who) ? ' on' : '') + '" data-pcp="' + esc(n) + '">'
+        + '<div class="pc-people">' + pplShown.map(n => '<button type="button" class="pc-p' + (nameKey(n) === nameKey(who) ? ' on' : '') + '" data-pcp="' + esc(n) + '">'
             + avatarHtml(n, '', true) + '<span>' + esc(n) + '</span>'
             + (Object.keys(permUserMap[nameKey(n)] || {}).length ? '<i>' + toFa(Object.keys(permUserMap[nameKey(n)]).length) + '</i>' : '') + '</button>').join('') + '</div>'
         + (who ? '<div class="pc-who"><b>' + esc(who) + '</b><span>' + esc(LEVEL_SHORT[levelOf(who)] || '') + (roleOf(who) ? ' · ' + esc(roleOf(who)) : '') + '</span></div>'
-          + '<div class="pc-ovs">' + PERM_CAPS.map(c => {
+          + '<div class="pc-ovs">' + PERM_CAPS.filter(c => byPerson || capOk(c)).map(c => {
               const ov = permUserOf(who, c.k);
               const eff = canUser(who, c.k);
               const seg = (v, t) => '<button type="button" class="' + ((ov === v) ? 'on' : '') + '" data-pco="' + esc(c.k) + '" data-v="' + (v == null ? '' : (v ? '1' : '0')) + '">' + t + '</button>';
@@ -27878,18 +27911,32 @@
       +   '<button type="button" class="mini" id="pmReset">بازگرداندن به پیش‌فرض</button>'
       +   '<span class="pc-st">' + (changed ? toFa(changed) + ' اجازهٔ تغییرکرده' : 'سطح‌ها پیش‌فرض') + (nOv ? ' · ' + toFa(nOv) + ' استثنای فردی' : '') + '</span></div>'
       + '<div class="pc-tabs">' + tab('lv', PC_I.lv, 'سطح‌ها') + tab('nt', PC_I.bell, 'اعلان‌ها') + tab('rl', PC_I.role, 'سمت‌ها') + tab('us', PC_I.usr, 'افراد') + '</div>'
-      + '<div class="pc-body">' + body + '</div>'
+      + '<label class="pc-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'
+      +   '<input type="search" id="pcQ" placeholder="جست‌وجوی اجازه' + (pcState.tab === 'us' ? '، نام یا سمت' : '') + '… (مثلاً یادآور، اکسل، جریمه)" value="' + esc(q) + '" autocomplete="off">'
+      +   (q ? '<button type="button" class="pc-qx" data-pcqx="1" aria-label="پاک کردن">✕</button>' : '') + '</label>'
+      + '<div class="pc-body">' + body + (q && !body.replace(/<[^>]+>/g, '').trim() ? '' : '') + '</div>'
       + '</div>';
   }
   function permRepaint(){
     const pane = document.querySelector('[data-umpane="perm"]');
     if(pane) pane.innerHTML = permPanelHtml();
   }
+  let pcQT = null;
+  document.addEventListener('input', e => {
+    if(e.target.id !== 'pcQ') return;
+    const v = e.target.value;
+    clearTimeout(pcQT);
+    pcQT = setTimeout(() => {
+      pcState.q = v; permRepaint();
+      const qi = document.getElementById('pcQ'); if(qi){ qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+    }, 160);
+  });
   document.addEventListener('click', async e => {
     const t = e.target;
     if(!t.closest || !t.closest('#permCenter')) return;
     const tb = t.closest('[data-pctab]');
     if(tb){ e.stopPropagation(); pcState.tab = tb.dataset.pctab; permRepaint(); return; }
+    if(t.closest('[data-pcqx]')){ e.stopPropagation(); pcState.q = ''; permRepaint(); const qi = document.getElementById('pcQ'); if(qi) qi.focus(); return; }
     const pp = t.closest('[data-pcp]');
     if(pp){ e.stopPropagation(); pcState.who = pp.dataset.pcp; permRepaint(); return; }
     if(!isAdminUser()) return;
@@ -30026,6 +30073,223 @@
       return na >= nb ? x : {a: x.b, b: x.a, sim: x.sim};      // a = نام پرکاربردتر (اصلی)
     });
   }
+  /* ====== تطبیق محل‌های کارکرد و طبقه‌ها ======
+     مثل تطبیق نام‌ها: املاهای مختلف یک محل (b4، B 4، B-4) یکی حساب
+     می‌شوند (مستعار) یا در همهٔ رکوردها یکسان می‌شوند (جایگزینی کامل).
+     برای محلی که طبقه‌اش از متن تشخیص داده نمی‌شود (مثل «بالکن شمالی»)
+     طبقه را دستی تعیین می‌کنید؛ از آن به بعد همه‌جا همان طبقه حساب می‌شود. */
+  const ZM_ALIAS_KIND = 'محل مستعار', ZM_FLOOR_KIND = 'طبقهٔ محل', ZM_SEP = '¦';
+  let zmAliasPairs = [], zmFloorPairs = [];
+  const ZM_ALIAS = new Map(), ZM_FLOOR = new Map();
+  function zmKey(v){
+    return toEn(String(v == null ? '' : v)).toLowerCase().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/ç/g, 'c')
+      .replace(/[\s\-_.‌ٔ]/g, '');
+  }
+  function zmRebuild(){
+    ZM_ALIAS.clear(); ZM_FLOOR.clear();
+    zmAliasPairs.forEach(x => ZM_ALIAS.set(zmKey(x.a), x.b));
+    zmFloorPairs.forEach(x => {
+      const ks = String(x.f || '').split(',').map(k => k.trim()).filter(Boolean);
+      if(ks.length) ZM_FLOOR.set(zmKey(x.z), ks);
+    });
+  }
+  function zmLoad(lists){
+    const sp = v => { const p = String(v).split(ZM_SEP); return [(p[0] || '').trim(), (p[1] || '').trim()]; };
+    zmAliasPairs = ((lists && lists[ZM_ALIAS_KIND]) || []).map(sp).filter(p => p[0] && p[1]).map(p => ({a:p[0], b:p[1]}));
+    zmFloorPairs = ((lists && lists[ZM_FLOOR_KIND]) || []).map(sp).filter(p => p[0] && p[1]).map(p => ({z:p[0], f:p[1]}));
+    zmRebuild();
+  }
+  async function zmSaveKind(kind, rows){
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(kind), {method:'DELETE'}).catch(() => {});
+    if(rows.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
+      body: rows.map(v => ({kind, value: v}))});
+    try{ clearNetCache(); }catch(e){}
+  }
+  const zmSaveAlias = () => zmSaveKind(ZM_ALIAS_KIND, zmAliasPairs.map(x => x.a + ZM_SEP + x.b)).then(zmRebuild);
+  const zmSaveFloor = () => zmSaveKind(ZM_FLOOR_KIND, zmFloorPairs.map(x => x.z + ZM_SEP + x.f)).then(zmRebuild);
+  /* نام اصلیِ یک محل (اگر مستعار تعریف شده) */
+  function canonicalZone(z){
+    if(!ZM_ALIAS.size) return z;
+    const hit = ZM_ALIAS.get(zmKey(z));
+    return hit || z;
+  }
+  /* طبقهٔ دستیِ یک محل، اگر تعیین شده */
+  function zoneFloorOverride(z){
+    if(!ZM_FLOOR.size || !z) return null;
+    return ZM_FLOOR.get(zmKey(canonicalZone(z))) || ZM_FLOOR.get(zmKey(z)) || null;
+  }
+
+  /* ---- پنل ---- */
+  const zmState = {q:'', f:'all', open:'', rows:null, busy:null};
+  async function zmLoadRows(force){
+    if(zmState.rows && !force) return zmState.rows;
+    if(zmState.busy) return zmState.busy;
+    zmState.busy = (async () => {
+      const m = new Map();
+      const add = (v, src, n) => {
+        const z = String(v || '').trim(); if(!z) return;
+        const x = m.get(z) || {z, n:0, src:new Set()};
+        x.n += n || 1; x.src.add(src); m.set(z, x);
+      };
+      try{ (await supaFetch('activities?select=zone&zone=not.is.null&limit=50000', {prefer:'return=representation'}) || []).forEach(r => add(r.zone, 'rep')); }catch(e){}
+      try{ (await supaFetch('issues?select=zone&zone=not.is.null&limit=20000', {prefer:'return=representation'}) || []).forEach(r => add(r.zone, 'iss')); }catch(e){}
+      try{ (tasksAll && tasksAll.length ? tasksAll : ((heavyCache && heavyCache.data && heavyCache.data.tasks) || [])).forEach(r => { if(!r.__adm) add(pick(r,T.pos), 'task'); }); }catch(e){}
+      try{ const dl = document.getElementById('zoneList'); if(dl) Array.from(dl.options).forEach(o => { if(o.value && !m.has(o.value.trim())) add(o.value, 'list', 0); }); }catch(e){}
+      zmState.rows = Array.from(m.values());
+      zmState.busy = null;
+      return zmState.rows;
+    })();
+    return zmState.busy;
+  }
+  const zmFloorTxt = z => {
+    const ks = floorKeysOf(z);
+    if(!ks.length) return '';
+    if(ks.length > 3) return 'چند طبقه';
+    return ks.map(k => (BUILDING.find(f => f.key === k) || {}).label || k).join('، ');
+  };
+  function zmSuggest(rows){
+    /* املاهایی که با حذف فاصله، خط تیره و بزرگی حروف یکی می‌شوند */
+    const g = new Map();
+    rows.forEach(x => {
+      if(ZM_ALIAS.has(zmKey(x.z)) && zmKey(ZM_ALIAS.get(zmKey(x.z))) !== zmKey(x.z)) return;
+      const k = zmKey(x.z);
+      if(!g.has(k)) g.set(k, []);
+      g.get(k).push(x);
+    });
+    return Array.from(g.values()).filter(a => a.length > 1).map(a => a.sort((p, q) => q.n - p.n));
+  }
+  function zmPanelHtml(){
+    const rows = zmState.rows;
+    if(!rows){ zmLoadRows().then(() => { if(typeof renderDataCenter === 'function') renderDataCenter(); }); return '<div class="empty">در حال خواندن محل‌ها…</div>'; }
+    const sug = zmSuggest(rows);
+    const q = zmKey(zmState.q || '');
+    const isAl = x => ZM_ALIAS.has(zmKey(x.z)) && zmKey(ZM_ALIAS.get(zmKey(x.z))) !== zmKey(x.z);
+    const hasOv = x => !!ZM_FLOOR.get(zmKey(x.z));
+    const noFl = x => !isAl(x) && !floorKeysOf(x.z).length;
+    const F = zmState.f;
+    const shown = rows.filter(x => {
+      if(F === 'nofl' && !noFl(x)) return false;
+      if(F === 'al' && !isAl(x)) return false;
+      if(F === 'ov' && !hasOv(x)) return false;
+      if(q && zmKey(x.z).indexOf(q) === -1) return false;
+      return true;
+    }).sort((a, b) => b.n - a.n || String(a.z).localeCompare(String(b.z), 'fa')).slice(0, 300);
+    const chip = (k, t, n) => '<button type="button" class="dc-f' + (F === k ? ' on' : '') + '" data-zmf="' + k + '">' + t + '<u>' + toFa(n) + '</u></button>';
+    const SRC = {rep:'گزارش روزانه', iss:'مانع', task:'فعالیت', list:'فهرست'};
+    const flOpts = cur => '<option value="">تشخیص خودکار از متن</option>'
+      + BUILDING.map(f => '<option value="' + f.key + '"' + (cur === f.key ? ' selected' : '') + '>' + esc(f.label) + (/^B|GF/.test(f.key) ? ' (' + f.key + ')' : '') + '</option>').join('')
+      + '<option value="ALL"' + (cur === 'ALL' ? ' selected' : '') + '>کل ساختمان / چند طبقه</option>';
+    const rowHtml = x => {
+      const op = zmState.open === x.z, al = isAl(x), ov = ZM_FLOOR.get(zmKey(x.z));
+      const fl = zmFloorTxt(x.z);
+      return '<div class="dc-row' + (op ? ' open' : '') + (al ? ' is-al' : '') + '">'
+        + '<button type="button" class="dc-rh" data-zmrow="' + esc(x.z) + '">'
+        +   '<span class="dc-av zm-av">' + FLR_PIN + '</span>'
+        +   '<span class="dc-nm"><b dir="auto">' + esc(x.z) + '</b><small>'
+        +     Array.from(x.src).map(s => '<em class="t-ctr">' + SRC[s] + '</em>').join('')
+        +     (al ? '<em class="t-alias">مستعارِ ' + esc(ZM_ALIAS.get(zmKey(x.z))) + '</em>' : '')
+        +     (fl ? '<em class="t-person zm-fl' + (ov ? ' man' : '') + '">' + esc(fl) + (ov ? ' · دستی' : '') + '</em>' : (al ? '' : '<em class="t-alias zm-nofl">طبقه نامشخص</em>'))
+        +   '</small></span>'
+        +   '<span class="dc-c">' + (x.n ? toFa(x.n) + '<u>رکورد</u>' : '<u>فقط فهرست</u>') + '</span>'
+        + '</button>'
+        + (op ? '<div class="dc-act">'
+            + '<label class="dc-to"><span>طبقهٔ این محل</span><select class="zm-fl-sel" data-zmfl="' + esc(x.z) + '">' + flOpts(ov ? (ov.length > 3 ? 'ALL' : ov[0]) : '') + '</select></label>'
+            + (al
+                ? '<div class="dc-note">این املا، مستعارِ «' + esc(ZM_ALIAS.get(zmKey(x.z))) + '» است و همه‌جا یکی حساب می‌شوند.</div>'
+                  + '<div class="dc-btns"><button type="button" class="mini" data-zmunal="' + esc(x.z) + '">برداشتن مستعار</button>'
+                  + '<button type="button" class="mini go" data-zmrep="' + esc(x.z) + '" data-to="' + esc(ZM_ALIAS.get(zmKey(x.z))) + '">جایگزینی کامل با «' + esc(ZM_ALIAS.get(zmKey(x.z))) + '»</button></div>'
+                : '<label class="dc-to"><span>محل مقصد</span><input type="text" class="dc-in zm-in" list="zmAll" placeholder="املای درست، مثل B4" autocomplete="off"></label>'
+                  + '<div class="dc-btns"><button type="button" class="mini go" data-zmal="' + esc(x.z) + '">مستعارِ مقصد شود</button>'
+                  + '<button type="button" class="mini" data-zmrep="' + esc(x.z) + '">جایگزینی کامل با مقصد</button></div>'
+                  + '<div class="dc-help"><b>مستعار</b>: این املا و مقصد یک محل حساب می‌شوند و رکوردی عوض نمی‌شود. <b>جایگزینی کامل</b>: در گزارش‌های روزانه، موانع و فعالیت‌ها این املا با مقصد عوض می‌شود (برگشت‌ناپذیر).</div>')
+            + '</div>' : '')
+        + '</div>';
+    };
+    const sugHtml = sug.length
+      ? '<div class="dc-sg"><div class="dc-sgh"><b>املاهای مختلف یک محل</b><small>' + toFa(sug.length) + ' گروه — پرکاربردترین املا سمت راست است</small></div>'
+        + sug.slice(0, 15).map(a => '<div class="dc-sgr"><span class="dc-pair">' + a.map((x, i) => (i ? '<i>' + DC_I.link + '</i>' : '') + '<b dir="auto">' + esc(x.z) + '</b>').join('') + '</span>'
+          + '<span class="dc-btns"><button type="button" class="mini go" data-zmgal="' + esc(a.map(x => x.z).join(ZM_SEP)) + '">یکی کن (مستعار)</button>'
+          + '<button type="button" class="mini" data-zmgrep="' + esc(a.map(x => x.z).join(ZM_SEP)) + '">جایگزینی با «' + esc(a[0].z) + '»</button></span></div>').join('') + '</div>'
+      : '<div class="dc-sg ok"><b>املای تکراری مشکوکی پیدا نشد ✓</b></div>';
+    return '<div class="zm">'
+      + '<div class="dc-note">محل‌ها همان‌طور که در گزارش روزانه، موانع و فعالیت‌ها نوشته شده‌اند. املاهای یک محل را یکی کنید و برای محلی که طبقه‌اش تشخیص داده نمی‌شود، طبقه را دستی بگذارید.</div>'
+      + sugHtml
+      + '<div class="dc-tools"><label class="dc-q">' + DC_I.search + '<input type="search" id="zmQ" placeholder="جست‌وجوی محل…" value="' + esc(zmState.q) + '" autocomplete="off"></label>'
+      +   '<button type="button" class="mini" data-zmreload="1">بازخوانی</button></div>'
+      + '<div class="dc-fs">' + chip('all', 'همه', rows.length) + chip('nofl', 'طبقه نامشخص', rows.filter(noFl).length)
+      +   chip('ov', 'طبقهٔ دستی', rows.filter(hasOv).length) + chip('al', 'مستعارها', rows.filter(isAl).length) + '</div>'
+      + '<datalist id="zmAll">' + rows.filter(x => !isAl(x)).map(x => '<option value="' + esc(x.z) + '">').join('') + '</datalist>'
+      + '<div class="dc-list">' + (shown.length ? shown.map(rowHtml).join('') : '<div class="empty">محلی پیدا نشد.</div>') + '</div>'
+      + '</div>';
+  }
+  async function zmReplace(from, to){
+    if(!from || !to || from === to) return false;
+    const ok = await askConfirm('جایگزینی کامل', '«' + from + '» در گزارش‌های روزانه، موانع و فعالیت‌ها به «' + to + '» تغییر کند؟\n\nاین کار برگشت‌پذیر نیست.', 'جایگزینی');
+    if(!ok) return false;
+    const e = encodeURIComponent(from);
+    try{
+      await supaFetch('activities?zone=eq.' + e, {method:'PATCH', body:{zone: to}});
+      await supaFetch('issues?zone=eq.' + e, {method:'PATCH', body:{zone: to}}).catch(() => {});
+      await supaFetch('tasks?position=eq.' + e, {method:'PATCH', body:{position: to}});
+    }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return false; }
+    /* مستعار و طبقهٔ دستیِ املای قدیم هم به املای تازه منتقل می‌شود */
+    const kf = zmKey(from);
+    const hadAl = zmAliasPairs.some(x => zmKey(x.a) === kf);
+    zmAliasPairs = zmAliasPairs.filter(x => zmKey(x.a) !== kf);
+    const fo = zmFloorPairs.find(x => zmKey(x.z) === kf);
+    if(fo && !zmFloorPairs.some(x => zmKey(x.z) === zmKey(to))) fo.z = to; else zmFloorPairs = zmFloorPairs.filter(x => zmKey(x.z) !== kf);
+    if(hadAl) await zmSaveAlias();
+    await zmSaveFloor();
+    zmState.rows = null; zmState.open = '';
+    try{ clearNetCache(); if(typeof tasksLoaded !== 'undefined') tasksLoaded = false; }catch(e2){}
+    showDialog('ok', 'یکسان شد', '«' + from + '» در همهٔ رکوردها به «' + to + '» تغییر کرد.');
+    return true;
+  }
+  async function zmClick(e){
+    const t = e.target;
+    const f = t.closest('[data-zmf]'); if(f){ zmState.f = f.dataset.zmf; return renderDataCenter(); }
+    const rr = t.closest('[data-zmrow]'); if(rr){ zmState.open = zmState.open === rr.dataset.zmrow ? '' : rr.dataset.zmrow; return renderDataCenter(); }
+    if(t.closest('[data-zmreload]')){ zmState.rows = null; return renderDataCenter(); }
+    const al = t.closest('[data-zmal]');
+    if(al){
+      const to = String((al.closest('.dc-act').querySelector('.zm-in') || {}).value || '').trim();
+      if(!to){ showDialog('warn', 'مقصد خالی است', 'املای درست محل را بنویسید یا از فهرست انتخاب کنید.'); return; }
+      if(zmKey(to) === zmKey(al.dataset.zmal) && to === al.dataset.zmal) return;
+      zmAliasPairs = zmAliasPairs.filter(x => zmKey(x.a) !== zmKey(al.dataset.zmal)).concat([{a: al.dataset.zmal, b: canonicalZone(to)}]);
+      await zmSaveAlias(); zmState.open = ''; return renderDataCenter();
+    }
+    const un = t.closest('[data-zmunal]');
+    if(un){ zmAliasPairs = zmAliasPairs.filter(x => zmKey(x.a) !== zmKey(un.dataset.zmunal)); await zmSaveAlias(); return renderDataCenter(); }
+    const rp = t.closest('[data-zmrep]');
+    if(rp){
+      const to = rp.dataset.to || String((rp.closest('.dc-act').querySelector('.zm-in') || {}).value || '').trim();
+      if(!to){ showDialog('warn', 'مقصد خالی است', 'املای درست محل را بنویسید.'); return; }
+      if(await zmReplace(rp.dataset.zmrep, to)) return renderDataCenter();
+      return;
+    }
+    const ga = t.closest('[data-zmgal]');
+    if(ga){
+      const a = ga.dataset.zmgal.split(ZM_SEP), main = a[0];
+      a.slice(1).forEach(z => { zmAliasPairs = zmAliasPairs.filter(x => x.a !== z).concat([{a: z, b: main}]); });
+      await zmSaveAlias(); return renderDataCenter();
+    }
+    const gr = t.closest('[data-zmgrep]');
+    if(gr){
+      const a = gr.dataset.zmgrep.split(ZM_SEP), main = a[0];
+      for(const z of a.slice(1)){ if(!(await zmReplace(z, main))) break; }
+      return renderDataCenter();
+    }
+  }
+  document.addEventListener('change', async e => {
+    const s = e.target.closest && e.target.closest('[data-zmfl]');
+    if(!s) return;
+    const z = s.dataset.zmfl, v = s.value;
+    zmFloorPairs = zmFloorPairs.filter(x => zmKey(x.z) !== zmKey(z));
+    if(v) zmFloorPairs.push({z, f: v === 'ALL' ? FACADE_KEYS.join(',') : v});
+    try{ await zmSaveFloor(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+    renderDataCenter();
+  });
+
   async function renderDataCenter(force){
     const box = document.getElementById('dataCenter');
     if(!box || !isAdminUser()) return;
@@ -30100,6 +30364,7 @@
       + '<div class="dc-tabs">'
       +   tab('names', DC_I.names, 'نام‌ها', sugg.length, true)
       +   tab('match', DC_I.link, 'پیمانکار و طرف قرارداد', mtPend, true)
+      +   tab('zone', DC_I.link, 'محل و طبقه', zmState.rows ? zmSuggest(zmState.rows).length : 0, true)
       +   tab('db', DC_I.db, 'پایگاه داده', 0)
       + '</div>'
       + '<div class="dc-pane' + (dcState.tab === 'names' ? ' on' : '') + '">'
@@ -30111,11 +30376,18 @@
       +   '<div class="dc-list">' + (shown.length ? shown.map(rowHtml).join('') : '<div class="empty">نامی پیدا نشد.</div>') + '</div>'
       + '</div>'
       + '<div class="dc-pane' + (dcState.tab === 'match' ? ' on' : '') + '">' + ctrPanelHtml() + '</div>'
+      + '<div class="dc-pane' + (dcState.tab === 'zone' ? ' on' : '') + '">' + (dcState.tab === 'zone' ? zmPanelHtml() : '') + '</div>'
       + '<div class="dc-pane' + (dcState.tab === 'db' ? ' on' : '') + '">' + dbxLaunchHtml() + '</div>'
       + '</div>';
     if(box.dataset.dcw !== '1'){
       box.dataset.dcw = '1';
       box.addEventListener('input', e => {
+        if(e.target.id === 'zmQ'){
+          zmState.q = e.target.value;
+          clearTimeout(box.__zt);
+          box.__zt = setTimeout(() => { renderDataCenter().then(() => { const i = document.getElementById('zmQ'); if(i){ i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); }, 250);
+          return;
+        }
         if(e.target.id !== 'dcQ') return;
         dcState.q = e.target.value;
         clearTimeout(box.__qt);
@@ -30127,6 +30399,7 @@
   async function dcClick(e){
     const t = e.target;
     const tb = t.closest('[data-dctab]'); if(tb){ dcState.tab = tb.dataset.dctab; return renderDataCenter(); }
+    if(t.closest('[data-zmf],[data-zmrow],[data-zmreload],[data-zmal],[data-zmunal],[data-zmrep],[data-zmgal],[data-zmgrep]')) return zmClick(e);
     const fb = t.closest('[data-dcf]'); if(fb){ dcState.f = fb.dataset.dcf; return renderDataCenter(); }
     const rr = t.closest('[data-dcrow]'); if(rr){ dcState.open = dcState.open === rr.dataset.dcrow ? '' : rr.dataset.dcrow; return renderDataCenter(); }
     if(t.closest('[data-dcreload]')){ dcNames = null; return renderDataCenter(true); }
@@ -31729,7 +32002,7 @@
                                 ['news', 'اخبار و تغییرات', 0, NEWS_IC, 'دو هفتهٔ اخیر', 'sky']);
       if(canSendGeneral()) subs.push(['gen', 'ابلاغ', 0, PF_I.mega, 'فعالیت، صورت وضعیت، قرارداد', 'ok'],
         ['cal', 'تقویم فعالیت‌ها', 0, KT_I.cal, 'همهٔ موعدها روی تقویم', 'sky']);
-      subs.push(['rem', 'یادآورها', 0, PF_I.log, 'ثبت و فهرست یادآورها', 'warn']);
+      if(canRemind()) subs.push(['rem', 'یادآورها', 0, PF_I.log, 'ثبت و فهرست یادآورها', 'warn']);
       if(wrkFineApprover()){
         const nF = (wrkPending || []).filter(isFineAny).length;
         subs.push(['fine', 'جریمه‌ها', nF, TD_I.warn, nF ? 'در انتظار تأیید شما' : 'جریمهٔ تازه‌ای نیست', nF ? 'bad' : 'ink']);
@@ -35159,6 +35432,12 @@
   const FACADE_KEYS = ['1','2','3','4','5','6','7','8','9','10',
                        '11','12','13','14','15','16','17'];
   function floorKeysOf(zone){
+    /* طبقهٔ دستی و نام اصلیِ محل (از «داده و نام‌ها ← محل و طبقه») */
+    try{
+      const ovr = zoneFloorOverride(zone);
+      if(ovr) return ovr.slice();
+      zone = canonicalZone(zone);
+    }catch(e){}
     const v = toEn(String(zone || '')).trim();
     if(!v) return [];
 
@@ -41016,6 +41295,7 @@
       try{ localStorage.setItem(PERM_CACHE_KEY, JSON.stringify({p: lists[PERM_KIND] || [], r: lists[PERM_ROLE_KIND] || [], u: lists[PERM_USER_KIND] || []})); }catch(e2){}
       try{ upCfgLoad(lists); }catch(e2){}
       try{ rvChainLoad(lists); }catch(e2){}
+      try{ zmLoad(lists); }catch(e2){}
       try{ rptCfgLoad(lists); }catch(e2){}
       try{ leaveFromLists(lists); }catch(e2){}
       try{ aliasLoad(lists); }catch(e2){}
@@ -42952,6 +43232,69 @@
   /* ذخیرهٔ فهرست «انجام داده‌ها» و، اگر همه تیک خوردند، رفتن خودکار
      به «تأیید داخلی» — چون وقتی همهٔ مسئولین کارشان را تمام کرده‌اند،
      ماندن در «بررسی داخلی» فقط مرحله را الکی باز نگه می‌دارد. */
+  /* ====== سپردن پس از آخرین تأیید داخلی ======
+     کسی که آخرین تیک بررسی داخلی را می‌زند خودش انتخاب می‌کند مورد دست
+     چه کسی برود (پیشنهاد: پلهٔ بعدیِ زنجیره)، یا گردش داخلی تمام شود
+     و «تأیید داخلی» شود. دیگر لازم نیست بعداً روی «تأیید داخلی» بروند و
+     بنویسند به چه کسی داده‌اند. انتخاب، یک دور تازه در گردش ثبت می‌کند. */
+  let hoS = null;
+  function hoModal(){
+    let m = document.getElementById('hoModal');
+    if(m) return m;
+    m = document.createElement('div'); m.id = 'hoModal'; m.className = 'modal-bg ho-bg'; m.hidden = true;
+    m.innerHTML = '<div class="modal rf ho" role="dialog" aria-modal="true" aria-label="سپردن به نفر بعد"></div>';
+    document.body.appendChild(m);
+    const done = v => { const S = hoS; hoS = null; m.hidden = true; if(S) S.res(v); };
+    m.addEventListener('click', e => {
+      if(!hoS) return;
+      if(e.target === m || e.target.closest('[data-hoclose]')) return done(null);
+      const p = e.target.closest('[data-hop]');
+      if(p){ hoS.pick = p.dataset.hop; hoPaint('list'); return; }
+      if(e.target.closest('[data-hofin]')){ hoS.pick = '__fin'; hoPaint('list'); return; }
+      if(e.target.closest('[data-hogo]') && hoS.pick) return done(hoS.pick === '__fin' ? {fin:true} : {name: hoS.pick});
+    });
+    m.addEventListener('input', e => { if(e.target.id === 'hoQ' && hoS){ hoS.q = e.target.value; hoPaint('list'); } });
+    return m;
+  }
+  function hoListHtml(){
+    const S = hoS, q = txNorm(S.q || '').toLowerCase();
+    let names = listNames().filter(n => !S.who.some(w => nameKey(w) === nameKey(n)));
+    if(q) names = names.filter(n => (txNorm(n) + ' ' + txNorm(roleOf(n))).toLowerCase().indexOf(q) !== -1);
+    const sug = S.sug ? S.sug.s.name : '';
+    names.sort((a, b) => (nameKey(b) === nameKey(sug)) - (nameKey(a) === nameKey(sug)) || a.localeCompare(b, 'fa'));
+    const fin = '<button type="button" class="rf-pp ho-fin' + (S.pick === '__fin' ? ' on' : '') + '" data-hofin="1"><span class="rf-av ho-fic">✓</span>'
+      + '<span class="rf-pt"><b>پایان گردش داخلی</b><small>«تأیید داخلی» می‌شود و از دست بررسی داخلی بیرون می‌رود</small></span><span class="rf-ck">' + (S.pick === '__fin' ? RF_I.ok : '') + '</span></button>';
+    return fin + names.map(n => {
+      const on = S.pick && nameKey(S.pick) === nameKey(n), sg = sug && nameKey(n) === nameKey(sug);
+      return '<button type="button" class="rf-pp' + (on ? ' on' : '') + (sg ? ' sug' : '') + '" data-hop="' + esc(n) + '"><span class="rf-av">' + rvAva(n) + '</span>'
+        + '<span class="rf-pt"><b>' + esc(n) + '</b><small>' + esc(roleOf(n) || '—') + (sg ? ' · <em>پیشنهاد زنجیره: ' + esc(rvStepLabel(S.sug.s)) + '</em>' : '') + '</small></span>'
+        + '<span class="rf-ck">' + (on ? RF_I.ok : '') + '</span></button>';
+    }).join('');
+  }
+  function hoPaint(part){
+    const m = hoModal(), box = m.querySelector('.ho'), S = hoS;
+    const go = S.pick === '__fin' ? 'تأیید داخلی' : (S.pick ? 'سپردن به ' + S.pick : 'یک گزینه را انتخاب کنید');
+    if(part === 'list'){
+      box.querySelector('.ho-list').innerHTML = hoListHtml();
+      const b = box.querySelector('[data-hogo]'); b.disabled = !S.pick; b.textContent = go;
+      return;
+    }
+    box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + RF_I.flow + '</span><div><b>تأیید شما ثبت می‌شود؛ به چه کسی بسپارید؟</b><small>' + esc(S.title) + '</small></div>'
+      + '<button type="button" class="tx-x" data-hoclose="1" aria-label="بستن">✕</button></div>'
+      + '<div class="rf-body"><p class="rf-hint">همهٔ مسئولین این پله تأیید کرده‌اند و شما آخرین نفرید. انتخاب کنید مورد دست چه کسی برود؛ یک دور تازه در گردش ثبت می‌شود و برایش اعلان می‌رود.</p>'
+      + '<label class="rf-q">' + RF_I.search + '<input type="search" id="hoQ" placeholder="جست‌وجوی نام یا سمت…" autocomplete="off"></label>'
+      + '<div class="rf-list ho-list">' + hoListHtml() + '</div></div>'
+      + '<div class="rf-foot"><div class="rf-btns"><button type="button" class="mini" data-hoclose="1">انصراف</button>'
+      + '<button type="button" class="send rf-go" data-hogo="1"' + (S.pick ? '' : ' disabled') + '>' + go + '</button></div></div>';
+  }
+  function hoAsk(kind, row, who, sug){
+    return new Promise(res => {
+      hoS = {res, who, sug, pick: sug ? sug.s.name : '', q:'', title: (typeof rfTitle === 'function') ? rfTitle(kind, row) : ''};
+      hoModal().hidden = false;
+      hoPaint();
+    });
+  }
+
   async function rvSaveDone(kind, id, row, nextArr){
     const who = reviewersOf(row);
     const doneKeys = new Set(nextArr.map(nameKey));
@@ -42960,7 +43303,18 @@
     const curSt = String(pick(row,AD.review) || '');
     /* زنجیره: اگر پلهٔ بعدی تعیین شده، دور تازه با همان نفر؛ نه «تأیید داخلی» */
     const lvl = rvLevelOf(row);
-    const nx = (all && (curSt === 'بررسی داخلی' || curSt === 'رد داخلی')) ? rvNextStep(lvl, who) : null;
+    let nx = (all && (curSt === 'بررسی داخلی' || curSt === 'رد داخلی')) ? rvNextStep(lvl, who) : null;
+    /* آخرین تأییدکننده خودش انتخاب می‌کند مورد دست چه کسی برود */
+    if(all && (curSt === 'بررسی داخلی' || curSt === 'رد داخلی')){
+      const ch = await hoAsk(kind, row, who, nx);
+      if(!ch) return false;                          // انصراف: هیچ چیز ثبت نمی‌شود
+      if(ch.fin) nx = null;
+      else{
+        const ci = rvChain.steps.findIndex(st => nameKey(st.name) === nameKey(ch.name));
+        nx = ci !== -1 ? {i: ci + 1, s: rvChain.steps[ci]}
+                       : {i: lvl, s: {name: ch.name, label: roleOf(ch.name) || 'بررسی'}};
+      }
+    }
     if(nx){
       const today = todayShamsi(), me = activeUserName();
       const log = stageLogOf(row);
@@ -42979,9 +43333,8 @@
       const ok = await sendAction({action:'update', target:kind, id:id, values: values});
       if(!ok){ showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); lastServerError = ''; return false; }
       try{ await notifyNewReviewers(kind, id, [nx.s.name], [nx.s.name]); }catch(e){}
-      showDialog('ok','رفت برای ' + label,
-        'همهٔ مسئولین این پله تأیید کردند. مورد برای تأیید به ' + nx.s.name + ' (' + label + ') رسید'
-        + (nx.i < rvChain.steps.length ? '؛ بعد از او، پلهٔ بعدیِ زنجیره.' : '؛ با تأیید او «تأیید داخلی» می‌شود.'));
+      showDialog('ok','سپرده شد به ' + nx.s.name,
+        'مورد برای بررسی به ' + nx.s.name + ' (' + label + ') رسید و برایش اعلان رفت. وقتی او تأیید کند، خودش انتخاب می‌کند دست چه کسی برود.');
       clearNetCache();
       setTimeout(loadAdmin, 300);
       return true;
@@ -43405,7 +43758,7 @@
       const next = on
         ? (cur.some(n => nameKey(n) === nameKey(nm)) ? cur : cur.concat([nm]))
         : cur.filter(n => nameKey(n) !== nameKey(nm));
-      await rvSaveDone(kind, id, row, next);
+      if(!(await rvSaveDone(kind, id, row, next))) rvTick.classList.toggle('rv-done');
       return true;
     }
 
