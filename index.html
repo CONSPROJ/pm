@@ -1415,6 +1415,17 @@
   .zm-fl.man{outline:1px dashed currentColor;}
   .zm-nofl{opacity:.85;}
   .zm .dc-to select{height:40px;border-radius:11px;border:1px solid var(--line);background:var(--field);font:600 12.5px var(--f);color:var(--ink);padding:0 10px;}
+  .ptd-sum{margin-inline-start:auto;font-size:11.5px;font-weight:800;color:var(--ok);}
+  .ptd{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .ptd-r{display:flex !important;align-items:center;gap:10px;}
+  .ptd-r > span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column;}
+  .ptd-ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok);font-weight:900;flex:0 0 26px;}
+  .ptd-r i{font-style:normal;font-weight:900;color:var(--ok);white-space:nowrap;}
+  .mi-st{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;font-size:10.5px;font-weight:800;background:var(--field);color:var(--ink);white-space:nowrap;}
+  .mi-st.st-1{background:color-mix(in srgb, var(--sky) 13%, transparent);color:var(--sky);}
+  .mi-st.st-2{background:color-mix(in srgb, #8a63d2 14%, transparent);color:#7a55c4;}
+  .mi-st.st-3{background:var(--ok-soft);color:var(--ok);}
+  [data-theme="dark"] .mi-st.st-2{color:#b9a2ef;}
   .pc-q{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-radius:13px;background:var(--surface);border:1px solid var(--line);margin:10px 0 0;}
   .pc-q:focus-within{border-color:color-mix(in srgb, var(--ink) 30%, var(--line));}
   .pc-q svg{width:17px;height:17px;color:var(--muted);flex:0 0 17px;}
@@ -22488,7 +22499,7 @@
         urg: ndParse(pick(r,N.msg)).urg,
         time: pick(r,N.time),
         seen: pick(r,N.state) === 'خوانده‌شده' || lseen.has('nd:' + pick(r,N.id)),
-        goto:{kind: isDone ? 'task' : (pick(r,N.kind) || ''),
+        goto:{kind: isDone ? (/^(statement|contract)$/.test(pr.target) ? pr.target : 'task') : (pick(r,N.kind) || ''),
               id: pick(r,N.itemId) || '', who: pick(r,N.to) || ''},
         reply: pick(r,N.from) || '', forMe: true   // تلنگر همیشه به خودِ من زده شده
       });
@@ -37892,6 +37903,7 @@
             + '</div>' : '')
       + '</div>'
       + adminChartsHtml(a)
+      + paidTodayHtml(a.statements, dateLabel)
       + '<div class="ar-sec-h" id="secReceivable"><span class="ic">' + AR_I.money + '</span><h3>مطالبات و تطویل پرداخت</h3></div>'
       + receivablesHtml(a.statements);
 
@@ -40164,7 +40176,7 @@
       'شماره صورت وضعیت':'number','مبلغ صورت وضعیت':'amount','مبلغ پرداختی':'paid',
       'تاریخ ارسال':'sent_date','موعد اتمام':'due_date','نوع ابلاغ':'notify','وضعیت رسیدگی':'review','مسئول':'owner',
       'وضعیت پرداخت':'pay_status','تاریخ پرداخت':'pay_date','تاریخچهٔ ارسال':'send_history',
-      'لینک':'link','توضیحات':'note'},
+      'لینک':'link','توضیحات':'note','نوع صورت وضعیت':'st_type'},
     contracts:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
       'rvWho':'reviewers',
       'rvDone':'reviewers_done',
@@ -40224,6 +40236,15 @@
     return TASK_FLOOR_COL;
   }
   setTimeout(() => { try{ probeTaskFloorCol(); }catch(e){} }, 3200);
+  /* ستون «نوع صورت وضعیت» (موقت / مستقل / قطعی)؛ تا ساخته نشده فرستاده نمی‌شود */
+  let STMT_TYPE_COL = null;
+  async function probeStmtTypeCol(){
+    if(STMT_TYPE_COL !== null) return STMT_TYPE_COL;
+    try{ await supaFetch('statements?select=st_type&limit=1'); STMT_TYPE_COL = true; }
+    catch(e){ STMT_TYPE_COL = false; }
+    return STMT_TYPE_COL;
+  }
+  setTimeout(() => { try{ probeStmtTypeCol(); }catch(e){} }, 3400);
 
   function toSupa(table, obj){
     const m = SUPA_MAP[table] || {};
@@ -40239,6 +40260,7 @@
       if(!col) return;
       if(table === 'tasks' && col === 'done_date' && TASK_DONE_COL !== true) return;
       if(table === 'tasks' && col === 'floor' && TASK_FLOOR_COL !== true) return;
+      if(table === 'statements' && col === 'st_type' && STMT_TYPE_COL !== true) return;
       let v = obj[k];
       if(table === 'tasks' && ['done','not_done','doing'].indexOf(col) !== -1) v = (String(v).trim() === '1');
       if(table === 'minutes' && col === 'done') v = (v === true || String(v) === 'true' || String(v).trim() === '1');
@@ -41399,13 +41421,13 @@
 
       if(payload.type === 'admin'){
         const jobs = [];
-        (payload.statements || []).forEach(x => jobs.push(['statements', {
+        (payload.statements || []).forEach(x => jobs.push(['statements', Object.assign({
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
           contract_name:x.contractName, party:x.party, contract_no:x.contractNo, number:x.number,
           amount: x.amount ? Number(toEn(String(x.amount)).replace(/[^\d.]/g,'')) : null,
           paid: x.paid ? Number(toEn(String(x.paid)).replace(/[^\d.]/g,'')) : null,
           sent_date:x.sentDate, due_date:x.dueDate || null, notify:x.notify, review:x.review, owner:x.owner, link:x.link, note:x.note
-        }]));
+        }, (x.stType && STMT_TYPE_COL === true) ? {st_type: x.stType} : {})]));
         (payload.contracts || []).forEach(x => jobs.push(['contracts', Object.assign({
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
           title:x.title, number:x.number, party:x.party, subject:x.subject,
@@ -41437,9 +41459,15 @@
 
         const byTable = {};
         jobs.forEach(([t, row]) => { (byTable[t] = byTable[t] || []).push(row); });
-        for(const t of Object.keys(byTable)) await supaFetch(t, {method:'POST', body: byTable[t]});
+        /* شناسهٔ ردیف‌های تازه برگردانده می‌شود تا بعد از ثبت، همان مورد باز شود */
+        const T2K = {statements:'statement', contracts:'contract', minutes:'minute', letters:'letter', designs:'design'};
+        const created = [];
+        for(const t of Object.keys(byTable)){
+          const made = await supaFetch(t, {method:'POST', body: byTable[t], prefer:'return=representation'});
+          (Array.isArray(made) ? made : []).forEach(x => { if(x && x.id != null) created.push({kind: T2K[t], id: String(x.id)}); });
+        }
         await supaLearn(payload.listPairs);
-        return {state:'confirmed'};
+        return {state:'confirmed', created};
       }
 
       const acts = (payload.contractors || []).map(c => Object.assign({}, base, {
@@ -41585,7 +41613,45 @@
     }
   }
 
+  /* ارسال به کارفرما و پرداخت صورت وضعیت/قرارداد، مثل تکمیل فعالیت، به
+     مدیران (سطح ۱ و ۲) در دستهٔ «تکمیل‌شده»ی اعلان‌ها خبر داده می‌شود */
   async function sendAction(obj){
+    let admBefore = null;
+    try{
+      if(obj && obj.action === 'update' && (obj.target === 'statement' || obj.target === 'contract') && obj.values && typeof rowMap !== 'undefined')
+        admBefore = Object.assign({}, rowMap.get(obj.id) || {});
+    }catch(e){}
+    const ok = await sendActionRaw(obj);
+    if(ok && admBefore) try{ notifyAdmMilestone(obj.target, obj.id, admBefore, obj.values); }catch(e){}
+    return ok;
+  }
+  async function notifyAdmMilestone(kind, id, before, values){
+    const prevRv = String(pick(before,AD.review) || '');
+    const prevPay = String(exact(before,'وضعیت پرداخت') || '');
+    const rv = values['وضعیت رسیدگی'], pay = values['وضعیت پرداخت'];
+    const events = [];
+    if(rv === 'بررسی کارفرما' && prevRv !== 'بررسی کارفرما') events.push('sent');
+    if((pay === RV_PAID && prevPay !== RV_PAID) || (rv === RV_PAID && prevRv !== RV_PAID && prevPay !== RV_PAID)) events.push('paid');
+    if(!events.length) return;
+    const me = activeUserName();
+    const lbl = KIND_LABEL[kind] || '';
+    const no = kind === 'statement' ? pick(before,AD.sNo) : pick(before,AD.cNo);
+    const party = kind === 'statement' ? pick(before,AD.sParty) : (pick(before,AD.cTitle) || pick(before,AD.cParty));
+    const docT = lbl + (no ? ' ' + toFa(no) : '') + (party ? ' — ' + party : '');
+    const amt = kind === 'statement' ? moneyNum(values['مبلغ پرداختی'] || pick(before,AD.sAmount)) : 0;
+    for(const ev of events){
+      const msg = ev === 'sent'
+        ? me + ' ' + docT + ' را برای کارفرما ارسال کرد.'
+        : docT + ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان)' : '') + '؛ ثبت: ' + me + '.';
+      for(const w of managerNames()){
+        if(nameKey(w) === nameKey(me)) continue;
+        try{ await sendActionRaw({action:'nudge', from: me, to: w, kind: DONE_KIND, itemId: id,
+          title: kind + CM_SEP + (ev === 'sent' ? 'ارسال به کارفرما' : 'پرداخت') + CM_SEP + docT, message: msg, date: todayShamsi()}); }catch(e){}
+      }
+    }
+    try{ if(typeof invalidateNudges === 'function') invalidateNudges(); }catch(e){}
+  }
+  async function sendActionRaw(obj){
     if(obj && ['nudge','nudgeRead','update','delete'].indexOf(obj.action) !== -1
        && typeof invalidateNudges === 'function') invalidateNudges();
     clearNetCache();
@@ -42365,6 +42431,7 @@
     id:['شناسه'], rid:['شناسه گزارش'], time:['زمان ثبت'], date:['تاریخ'],
     project:['پروژه'], eng:['مهندس'],
     sName:['نام قرارداد'], sParty:['طرف قرارداد'], sCno:['شماره قرارداد'],
+    sType:['نوع صورت وضعیت'],
     sNo:['شماره صورت وضعیت'], sAmount:['مبلغ صورت وضعیت'], sPaid:['مبلغ پرداختی'],
     sDate:['تاریخ ارسال'], sNotify:['نوع ابلاغ'], sNote:['توضیحات'],
     sPayStatus:['وضعیت پرداخت'], sPayDate:['تاریخ پرداخت'],
@@ -42390,6 +42457,7 @@
     due:['موعد اتمام'],
     link:['لینک']
   };
+  const ST_TYPES = ['موقت', 'مستقل', 'قطعی'];
   const KIND_LABEL = {statement:'صورت وضعیت', contract:'قرارداد', minute:'صورتجلسه', letter:'نامه', design:'اسناد طراحی'};
   // نام مفرد هر دسته، برای «ثبت ... تازه» و شناسهٔ کارت
   const KIND_ONE = k => (k === 'design' ? 'سند طراحی' : KIND_LABEL[k]);
@@ -45473,6 +45541,8 @@
           const bits = [];
           bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
+          if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
+            bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
           if(party) bits.push('<span class="cl-p">' + esc(party) + '</span>');
           const amt2 = (kind === 'statement') ? pick(r,AD.sAmount)
                      : (kind === 'contract') ? pick(r,AD.cAmount) : '';
@@ -45518,6 +45588,8 @@
           const bits = [];
           bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
+          if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
+            bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
           if(party) bits.push('<button type="button" class="mi-p" '
             + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
             + esc(party) + '</button>');
@@ -45742,7 +45814,10 @@
             f('a-sName','نام قرارداد', pick(r,AD.sName), false, 'contractSubjectList')
           + f('a-sParty','طرف قرارداد', pick(r,AD.sParty), false, 'contractPartyList')
           + f('a-sCno','شماره قرارداد', pick(r,AD.sCno), false, 'contractNoList')
-          + f('a-sNo','شماره صورت وضعیت', pick(r,AD.sNo)))
+          + f('a-sNo','شماره صورت وضعیت', pick(r,AD.sNo))
+          + chips('<div class="field"><label>نوع صورت وضعیت</label><select class="a-sType"><option value="">—</option>'
+              + ST_TYPES.map(v => '<option value="' + v + '"' + (pick(r,AD.sType) === v ? ' selected' : '') + '>' + v + '</option>').join('')
+              + '</select></div>'))
         + sec('money', 'مبالغ',
             fm('a-sAmount','مبلغ صورت وضعیت (ریال)', pick(r,AD.sAmount))
           + fm('a-sPaid','مبلغ پرداختی (ریال)', pick(r,AD.sPaid)), 'two')
@@ -46300,6 +46375,7 @@
     if(kind === 'statement'){
       put(o,'نام قرارداد','a-sName'); put(o,'طرف قرارداد','a-sParty'); put(o,'شماره قرارداد','a-sCno');
       put(o,'شماره صورت وضعیت','a-sNo'); put(o,'مبلغ صورت وضعیت','a-sAmount'); put(o,'مبلغ پرداختی','a-sPaid');
+      put(o,'نوع صورت وضعیت','a-sType');
       put(o,'تاریخ ارسال','a-sDate'); put(o,'موعد اتمام','a-due');
       put(o,'نوع ابلاغ','a-sNotify'); put(o,'توضیحات','a-sNote');
       put(o,'وضعیت رسیدگی','a-sReview'); put(o,'rvWho','a-rvWho');
@@ -46469,6 +46545,7 @@
     let failed = 0;
 
     // موارد تازه
+    const newDocs = [];
     for(const rec of pendingNewAdmin.slice()){
       const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[rec.kind];
       const payload = {
@@ -46481,6 +46558,7 @@
       if(rec.learn && rec.learn.length) payload.listPairs = rec.learn;
       const r = await post(payload);
       if(r.state === 'failed') failed++;
+      else if(r.created && r.created.length) newDocs.push(r.created[0]);
     }
     pendingNewAdmin.length = 0;
     for(const [id, ch] of items){
@@ -46493,9 +46571,17 @@
     pendingAdmin.clear();
     if(failed) showDialog('err','ثبت ناقص',
       (lastServerError || 'بعضی تغییرات ثبت نشد') + ' — ' + toFa(failed) + ' مورد ناموفق بود.');
-    else showDialog('ok','ثبت شد','همهٔ تغییرات دفتر فنی با موفقیت ثبت شدند.');
+    else if(!newDocs.length) showDialog('ok','ثبت شد','همهٔ تغییرات دفتر فنی با موفقیت ثبت شدند.');
     lastServerError = '';
-    setTimeout(loadAdmin, 600);
+    /* مدرک تازه: بعد از ثبت، همان مورد در دفتر فنی باز می‌شود */
+    if(newDocs.length && !failed){
+      const nd = newDocs[newDocs.length - 1];
+      setTimeout(async () => {
+        try{ await loadAdmin(); }catch(e){}
+        try{ window.__admMarkEdited && window.__admMarkEdited(nd.kind, nd.id); }catch(e){}
+        try{ await gotoAdminItem(nd.kind, nd.id); }catch(e){}
+      }, 400);
+    }else setTimeout(loadAdmin, 600);
   }
   let adminLoaded = false;
   const admUserName = () => document.getElementById('admOwner').value.trim();
@@ -46511,7 +46597,7 @@
       Object.assign(item, {contractName:v['نام قرارداد'], party:v['طرف قرارداد'], contractNo:v['شماره قرارداد'],
         number:v['شماره صورت وضعیت'], amount:v['مبلغ صورت وضعیت'], paid:v['مبلغ پرداختی'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['نوع ابلاغ'], note:v['توضیحات'], owner:v['مسئول'],
-        link:v['لینک'], review:v['وضعیت رسیدگی']});
+        link:v['لینک'], review:v['وضعیت رسیدگی'], stType:v['نوع صورت وضعیت']});
     }else if(kind === 'contract'){
       Object.assign(item, {title:v['عنوان قرارداد'], number:v['شماره قرارداد'], party:v['طرف قرارداد'],
         subject:v['موضوع قرارداد'], amount:v['مبلغ قرارداد'], paid:v['مبلغ پرداختی'],
@@ -49268,6 +49354,24 @@
     try{ pushNavBack && pushNavBack('گزارش مالی و اداری', () => switchTab('view')); }catch(e2){}
     gotoAdminItem('statement', d.dataset.gotoId, '');
   }, true);
+  /* پرداخت‌های روزِ گزارش (پیش‌فرض امروز): هر صورت وضعیتی که تاریخ پرداختش همان روز است */
+  function paidTodayHtml(statements, dateLabel){
+    const day = (dateLabel && normDate(dateLabel)) || todayShamsi();
+    const isToday = dayKey(day) === dayKey(todayShamsi());
+    const list = (statements || []).filter(r => { const d = exact(r, 'تاریخ پرداخت'); return d && dayKey(d) === dayKey(day); });
+    const total = list.reduce((t, r) => t + (paidOf(r) || moneyNum(pick(r,AD.sAmount)) || 0), 0);
+    return '<div class="ar-sec-h" id="secPaidToday"><span class="ic">' + AR_I.money + '</span><h3>' + (isToday ? 'پرداخت‌های امروز' : 'پرداخت‌های ' + esc(toFa(day))) + '</h3>'
+      + (list.length ? '<span class="ptd-sum">' + toFa(list.length) + ' سند · ' + esc(arToman(total)) + ' تومان</span>' : '') + '</div>'
+      + (list.length
+          ? '<div class="ptd">' + list.map(r => {
+              const amt = paidOf(r) || moneyNum(pick(r,AD.sAmount)) || 0;
+              return '<button type="button" class="ptd-r rcs-d" data-goto-kind="statement" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
+                + '<span class="ptd-ic">✓</span><span><b>' + esc(pick(r,AD.sParty) || pick(r,AD.sName) || 'نامشخص') + '</b>'
+                + '<small>' + (pick(r,AD.sNo) ? 'صورت وضعیت ' + esc(toFa(pick(r,AD.sNo))) : 'صورت وضعیت') + '</small></span>'
+                + '<i>' + esc(arToman(amt)) + ' <small>تومان</small></i></button>';
+            }).join('') + '</div>'
+          : '<div class="hr-note">' + (isToday ? 'امروز' : 'در این روز') + ' پرداختی ثبت نشده است.</div>');
+  }
   function receivablesHtml(statements){
     const all = statements || [];
     if(!all.length) return '<div class="empty">صورت وضعیتی ثبت نشده است.</div>';
@@ -58239,7 +58343,7 @@
     {g:'n-rej',  c:'rej',  t:'رد شده‌ها',        p:'b-adm'},
     {g:'n-blk',  c:'blk',  t:'موانع ثبت‌شده',    p:'b-exec'},
     {g:'n-emp',  c:'emp',  t:'نزد کارفرما',      p:'b-adm'},
-    {g:'n-pay',  c:'pay',  t:'تسویه و پرداخت',   p:'b-adm'}
+    {g:'n-pay',  c:'pay',  t:'آخرین پرداخت‌ها',   p:'b-adm'}
   ];
   /* ====== تازه تمام‌شده ======
      کارت‌ها تا حالا فقط کارِ مانده را نشان می‌دادند. این دسته آخرین
@@ -58348,7 +58452,10 @@
     try{ L = mgChangeList(); }catch(e){ return []; }
     const out = [];
     DECK_NEWS.forEach(z => {
-      L.filter(x => x.cat === z.c && x.id).forEach(x => {
+      let LL = L.filter(x => x.cat === z.c && x.id);
+      /* پرداخت‌ها به ترتیب واقعیِ تاریخ پرداخت: تازه‌ترین اول («در حال پرداخت» بالای همه) */
+      if(z.c === 'pay') LL = LL.slice().sort((a, b) => (b.live ? 1 : 0) - (a.live ? 1 : 0) || String(dayKey(b.date) || '').localeCompare(String(dayKey(a.date) || '')));
+      LL.forEach(x => {
         const lvl = x.tone === 'bad' ? 'hot' : (z.c === 'emp' ? 'warm' : 'calm');
         out.push({cat:'due', grp: z.g, level: lvl,
           side: z.c === 'emp' ? 'employer' : '',
@@ -58839,7 +58946,7 @@
       });
       if(kind === 'statement' && isPaid(r) && pick(r,AD.sPayDate))
         add({date: pick(r,AD.sPayDate), kind: kind, id: id, title: docTitle(kind, r), cat: 'pay',
-             what: 'تسویه شد' + (amtNum(pick(r,AD.sAmount)) ? ' — ' + moneyFa(pick(r,AD.sAmount)) + ' ریال' : ''),
+             what: 'پرداخت شد ' + toFa(admDate(pick(r,AD.sPayDate)) || '') + (amtNum(pick(r,AD.sAmount)) ? ' — ' + arToman(amtNum(pick(r,AD.sAmount))) + ' تومان' : ''),
              tone: 'ok', by: ''});
       else if(kind === 'statement' && /در حال پرداخت/.test(String(pick(r,AD.sPayStatus) || '')))
         out.push({date: '', ago: 0, kind: kind, id: id, title: docTitle(kind, r), cat: 'pay',
@@ -58933,7 +59040,7 @@
     {c:'hold',   t:'به بن‌بست رسیده',      tone:'bad', w:1},
     {c:'rej',    t:'رد شده‌ها',            tone:'bad', w:2},
     {c:'blk',    t:'موانع ثبت‌شده',        tone:'bad', w:3},
-    {c:'pay',    t:'تسویه و پرداخت',       tone:'ok',  w:4},
+    {c:'pay',    t:'آخرین پرداخت‌ها',      tone:'ok',  w:4},
     {c:'emp',    t:'نزد کارفرما',          tone:'emp', w:5},
     {c:'ok',     t:'تأییدها',              tone:'ok',  w:6},
     {c:'notify', t:'ابلاغ‌ها',             tone:'info',w:7},
