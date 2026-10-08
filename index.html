@@ -1750,6 +1750,13 @@
   .cnw .cnw-dup{display:flex;flex-direction:column;gap:6px;}
   .cnw .cnw-dup:empty{display:none;}
   .ctc-f > span small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px;}
+  .cnm{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb, var(--field) 55%, var(--surface));transition:border-color .15s;}
+  .cnm.chg{border-color:var(--sky);}
+  .cnm-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .cnm-pv{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:9px 12px;border-radius:11px;background:var(--surface);border:1px dashed var(--line);}
+  .cnm-pv u{text-decoration:none;font-size:11px;color:var(--muted);font-weight:700;} .cnm-pv b{font-size:14px;font-weight:900;}
+  .cnm-pv i{font-style:normal;font-size:11px;color:var(--sky);font-weight:700;flex-basis:100%;}
+  .cnm-pv i[hidden]{display:none;}
   /* فرم پیمانکار: بخش‌بندی، پروندهٔ قراردادها و صورت وضعیت‌ها */
   .ctc-sheet .ctc-edh{flex-wrap:wrap;row-gap:10px;}
   .ctx-sub{color:var(--muted);}
@@ -27728,6 +27735,7 @@
     const clean = {};
     if(o.p && o.p.length) clean.p = o.p; if(o.e) clean.e = o.e; if(o.c) clean.c = o.c;
     if(o.w) clean.w = o.w; if(o.a) clean.a = o.a; if(o.n) clean.n = o.n;
+    if(o.fn) clean.fn = o.fn; if(o.ln) clean.ln = o.ln; if(o.co) clean.co = o.co;
     { const o0 = ctrContactOf(canon); const ad = o.ad || (o0 && o0.ad); if(ad && Object.keys(o).length) clean.ad = ad; }
     /* نام قراردادی، دیسیپلین و تخصص‌ها */
     if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s; if(o.ct) clean.ct = o.ct;
@@ -27837,7 +27845,7 @@
     });
     sug.sort((x, y) => y.sim - x.sim);
     return '<div class="ctm" data-ctm="' + esc(canon) + '">'
-      + '<div class="ctm-h"><b>نام و تطبیق</b><small>نامی که انتخاب کنید روی کارت و گزارش پیمانکار نشان داده می‌شود</small></div>'
+      + '<div class="ctm-h"><b>املاهای دیگر و تطبیق</b><small>نام‌هایی که در گزارش‌ها و اسناد برای همین پیمانکار آمده؛ هر کدام را می‌شود نام روی کارت کرد</small></div>'
       + '<div class="ctm-list">' + names.map(n => {
           const on = normName(n) === normName(canon), o = all.get(normName(n));
           return '<div class="ctm-r' + (on ? ' on' : '') + '">'
@@ -27849,8 +27857,7 @@
           '<div class="ctm-sr"><span class="ctm-sim" title="شباهت"><i style="width:' + Math.round(x.sim * 100) + '%"></i></span><span class="ctm-sn"><b>' + esc(x.o.name) + '</b><small>' + toFa(Math.round(x.sim * 100)) + '٪ شبیه' + ctmSrcHtml(x.o) + '</small></span>'
           + '<button type="button" class="ctm-y" data-ctmlink="' + esc(x.o.name) + '">همین است</button><button type="button" class="ctm-n" data-ctmno="' + esc(x.o.name) + '">نه</button></div>').join('') + '</div>' : '')
       + (ed ? '<div class="ctm-add"><label class="ctm-q">' + CTC_I.user + '<input type="search" class="ctm-in" placeholder="جست‌وجوی نام دیگر برای یکی کردن…" autocomplete="off"></label><div class="ctm-res"></div></div>'
-        + '<details class="ctm-ren"><summary>تغییر املای نام اصلی</summary><div class="ctg-ren"><input type="text" class="ctg-rin" value="' + esc(canon) + '" aria-label="نام اصلی تازه"><button type="button" class="mx-btn" data-ctgren="' + esc(canon) + '">ثبت نام تازه</button></div>'
-        + '<small class="ctg-hint">این نام را در همهٔ گزارش‌ها، اسناد اداری، کارگری و فهرست‌ها عوض می‌کند.</small></details>' : '')
+        : '')
       + '</div>';
   }
   /* نام قراردادی: از نام‌هایی که در قرارداد و صورت وضعیت همین پیمانکار آمده؛
@@ -27945,7 +27952,7 @@
     return '<div class="ctc-ed" data-ctced="' + esc(name) + '">'
       + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(ctrCanon(name))) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small class="ctx-sub">' + esc(ctxSubTxt(D)) + '</small></span><button type="button" class="ctc-pf" data-ctcprof="1" title="کارت پیمانکار، گزارش‌ها و یادداشت‌ها">' + CDX_I.prof + '<span>کارت پیمانکار</span></button><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button>'
       +   '<nav class="ctx-nav"><button type="button" data-ctxjump="names" class="on">نام‌ها</button><button type="button" data-ctxjump="docs">قراردادها</button><button type="button" data-ctxjump="skill">تخصص</button><button type="button" data-ctxjump="contact">تماس</button></nav></div>'
-      + '<section class="ctx-s" data-ctxsec="names">' + ctmHtml(name) + ctcnHtml(name, c, D) + '</section>'
+      + '<section class="ctx-s" data-ctxsec="names">' + cnmHtml(name, c) + ctmHtml(name) + ctcnHtml(name, c, D) + '</section>'
       + ctdkHtml(name, man, D, loading)
       + '<section class="ctx-s" data-ctxsec="skill"><div class="ctx-h">' + CTX_I.tool + '<b>دیسیپلین و تخصص</b></div>'
       + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
@@ -28121,14 +28128,20 @@
       const n2 = box.querySelector('[data-ctdk]'); if(n2) n2.querySelectorAll('details[data-k]').forEach(d => { if(op.indexOf(d.dataset.k) !== -1) d.open = true; }); } }
   }
   /* نامی را روی کارت می‌نشاند؛ اگر هنوز از نام‌های این پیمانکار نیست، اول یکی می‌شود */
-  async function ctxMakeCardName(box, nm){
-    if(!box || !can('ctr.contact')) return;
+  async function ctxMakeCardName(box, nm, opt){
+    opt = opt || {};
+    if(!box || !can('ctr.contact')) return false;
     const canon = ctrCanon(box.dataset.ctced);
-    if(ctrExK(nm) === ctrExK(canon)) return;
+    if(ctrExK(nm) === ctrExK(canon)) return true;
     try{
-      if(normName(nm) !== normName(canon) && !ctrNamesOf(canon).some(n => ctrExK(n) === ctrExK(nm))){
-        const other = ctrCanon(nm), grp = normName(other) !== normName(nm) || ctrNamesOf(nm).length > 1;
-        if(!(await askConfirm('نام روی کارت', '«' + nm + '» از نام‌های همین پیمانکار حساب می‌شود' + (grp ? ' (این نام اکنون زیر «' + other + '» است و آن پرونده هم با همین یکی می‌شود)' : '') + ' و از این پس روی کارت و گزارش پیمانکار «' + nm + '» نوشته می‌شود.', 'یکی کن و نشان بده'))){ ctxRefresh(box); return; }
+      const isMem = ctrNamesOf(canon).some(n => ctrExK(n) === ctrExK(nm));
+      const other = ctrCanon(nm), grp = !isMem && normName(nm) !== normName(canon) && (normName(other) !== normName(nm) || ctrNamesOf(nm).length > 1 || ctdEntities().some(e => e.k === normName(nm)));
+      if(opt.rename){
+        if(!(await askConfirm('تغییر نام پیمانکار', 'نام «' + canon + '» به «' + nm + '» تغییر می‌کند و روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها همین نوشته می‌شود.'
+          + (grp ? '\n\nتوجه: «' + nm + '» از قبل پیمانکار جداگانه‌ای است (' + other + ')؛ این دو پرونده یکی می‌شوند.' : '\nنام قبلی به همین پرونده وصل می‌ماند تا گزارش‌ها و اسناد قبلی از دست نروند.'), grp ? 'یکی کن و تغییر بده' : 'تغییر نام'))){ return false; }
+        if(normName(nm) !== normName(canon) && !isMem) await kxLink(canon, nm, true);
+      }else if(normName(nm) !== normName(canon) && !isMem){
+        if(!(await askConfirm('نام روی کارت', '«' + nm + '» از نام‌های همین پیمانکار حساب می‌شود' + (grp ? ' (این نام اکنون زیر «' + other + '» است و آن پرونده هم با همین یکی می‌شود)' : '') + ' و از این پس روی کارت و گزارش پیمانکار «' + nm + '» نوشته می‌شود.', 'یکی کن و نشان بده'))){ ctxRefresh(box); return false; }
         await kxLink(canon, nm, true);
       }
       const oldC = ctrContactOf(canon);
@@ -28137,9 +28150,46 @@
       /* اطلاعات تماس هم زیر نام تازه می‌رود */
       if(oldC && oldC.name && normName(oldC.name) !== normName(nm)){ const cp = Object.assign({}, oldC); delete cp.name; try{ await ctrContactSave(nm, cp); }catch(e){} }
       ctxRefresh(box, nm);
+      try{ cnmPaint(box); }catch(e){}
       try{ ctcRefreshDom(''); ctcRepaint(); }catch(e){}
-    }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); ctxRefresh(box); }
+      try{ mergeIntoList('contractorList', [nm]); }catch(e){}
+      return true;
+    }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); ctxRefresh(box); return false; }
   }
+  /* ====== نام و نام خانوادگی پیمانکار ======
+     نام روی کارت = «نام نام‌خانوادگی (نام شرکت)»؛ اگر فقط شرکت باشد، همان نام شرکت.
+     اجزا در پرونده ذخیره می‌شوند؛ اگر نباشند از روی نام فعلی حدس زده می‌شوند. */
+  const ctrNameJoin = o => { const p = [o.fn, o.ln].map(x => String(x || '').replace(/\s+/g, ' ').trim()).filter(Boolean).join(' '); const co = String(o.co || '').replace(/\s+/g, ' ').trim(); return p ? (co ? p + ' (' + co + ')' : p) : co; };
+  function ctrNameParts(name, c){
+    c = c || {};
+    if((c.fn || c.ln || c.co) && ctrExK(ctrNameJoin(c)) === ctrExK(name)) return {fn: c.fn || '', ln: c.ln || '', co: c.co || ''};
+    let t = String(name || '').replace(/\s+/g, ' ').trim(), co = '';
+    const m = t.match(/^(.*?)\s*[(（]([^()（）]+)[)）]\s*$/); if(m && m[1].trim()){ t = m[1].trim(); co = m[2].trim(); }
+    if(/^(شرکت|گروه|موسسه|مؤسسه|کارگاه|تعاونی|صنایع|پیمانکاری)(\s|$)/.test(t)) return {fn: '', ln: '', co: co ? t + ' (' + co + ')' : t};
+    const w = t.split(' ');
+    const k = (w.length > 2 && /^(سید|سیده|میر|حاج|حاجی)$/.test(w[0])) ? 2 : 1;
+    return {fn: w.slice(0, k).join(' '), ln: w.slice(k).join(' '), co};
+  }
+  function cnmHtml(name, c){
+    const canon = ctrCanon(name), P = ctrNameParts(canon, c), ed = can('ctr.contact');
+    const f = (k, lb, v, ph) => '<label class="ctc-f"><span>' + lb + '</span><input type="text" data-ctk="' + k + '" class="cnm-in" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off"' + (ed ? '' : ' disabled') + '></label>';
+    return '<div class="cnm" data-cnm="' + esc(canon) + '"><div class="ctx-sh"><b>نام پیمانکار</b><small>با تغییر نام و «ذخیره»، نام روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها عوض می‌شود؛ نام قبلی هم به همین پرونده وصل می‌ماند</small></div>'
+      + '<div class="cnm-g">' + f('fn', 'نام', P.fn, 'مثلاً حسین') + f('ln', 'نام خانوادگی', P.ln, 'مثلاً ناظری') + '</div>'
+      + f('co', 'نام شرکت <small>اختیاری؛ اگر پیمانکار شرکت است و نام شخص ندارد، فقط همین را بنویسید</small>', P.co, 'مثلاً آسمان بالابر توان')
+      + '<div class="cnm-pv"><u>روی کارت</u><b>' + esc(canon) + '</b><i hidden>تغییر می‌کند</i></div></div>';
+  }
+  function cnmPaint(box){
+    const nb = box && box.querySelector('.cnm'); if(!nb) return;
+    const v = k => (nb.querySelector('[data-ctk="' + k + '"]') || {}).value || '';
+    const nn = ctrNameJoin({fn: v('fn'), ln: v('ln'), co: v('co')}), canon = ctrCanon(box.dataset.ctced);
+    const ch = !!nn && ctrExK(nn) !== ctrExK(canon);
+    nb.dataset.cnm = canon;
+    nb.querySelector('.cnm-pv b').textContent = nn || '—';
+    nb.querySelector('.cnm-pv i').hidden = !ch;
+    nb.classList.toggle('chg', ch);
+    if(ch){ const pv = nb.querySelector('.cnm-pv i'); pv.textContent = 'قبلاً «' + canon + '» — با «ذخیره» عوض می‌شود'; }
+  }
+  document.addEventListener('input', e => { const i = e.target; if(i && i.classList && i.classList.contains('cnm-in')) cnmPaint(i.closest('.ctc-ed')); });
   /* اگر قراردادها و صورت وضعیت‌ها هنوز خوانده نشده، یک بار از سرور می‌آیند */
   let ctrDocsP = null;
   function ctrEnsureDocs(){
@@ -28321,6 +28371,10 @@
     const bad = (o.p || []).concat(o.w ? [o.w] : []).find(v => telOf(v).replace(/^\+/, '').length < 7);
     if(bad){ showDialog('warn','شماره درست نیست','«' + bad + '» شمارهٔ تلفن معتبری نیست.'); return; }
     if(dl && !(await askConfirm('حذف اطلاعات تماس', 'اطلاعات تماس «' + box.dataset.ctced + '» پاک شود؟', 'حذف'))) return;
+    if(sv){ const nb = box.querySelector('.cnm');
+      if(nb){ const nn = ctrNameJoin({fn: o.fn, ln: o.ln, co: o.co});
+        if(!nn){ showDialog('warn','نام پیمانکار','نام و نام خانوادگی، یا نام شرکت را بنویسید.'); return; }
+        if(ctrExK(nn) !== ctrExK(ctrCanon(box.dataset.ctced))){ sv.disabled = true; const ok = await ctxMakeCardName(box, nn, {rename: true}); sv.disabled = false; if(!ok) return; } } }
     (sv || dl).disabled = true;
     try{ await ctrContactSave(box.dataset.ctced, o); const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
       showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
@@ -28448,7 +28502,8 @@
       const prev = plan.get(normName(canon));
       const base = prev ? prev.o : old;
       const m = {c: o.c || base.c || '', p: o.p.length ? Array.from(new Set(o.p)) : (base.p || []), w: o.w || base.w || '', e: o.e || base.e || '', a: o.a || base.a || '', n: o.n || base.n || '',
-        cn: o.cn || base.cn || '', d: o.d || base.d || '', s: o.s || base.s || '', ct: o.ct || base.ct || ''};
+        cn: o.cn || base.cn || '', d: o.d || base.d || '', s: o.s || base.s || '', ct: o.ct || base.ct || '',
+        fn: base.fn || '', ln: base.ln || '', co: base.co || '', ad: base.ad || ''};
       /* نام‌های تازه برای یکی شدن، و نام منتخب */
       ctdNameOps.push({canon, al: (x.al || []).filter(n => normName(n) !== normName(canon) && !ctrNamesOf(canon).some(y => normName(y) === normName(n))), pn: x.pn});
       const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n, m.cn, m.d, m.s, m.ct]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '', old.cn || '', old.d || '', old.s || '', old.ct || '']);
@@ -28563,7 +28618,7 @@
         if(f === 'part' && I.score === 5) return false;
         if(f === 'tel' && I.c.p && I.c.p.length) return false;
         if(f === 'ct' && I.nc) return false;
-        if(q){ const hay = [e.canon, I.c.c, I.c.e, I.c.cn, I.c.d, I.skills.join(' '), I.c.a, (I.c.p || []).join(' '), ctrNamesOf(e.canon).join(' '), I.c.ct].filter(Boolean).join(' '); if(hay.indexOf(q) === -1 && toEn(hay).indexOf(toEn(q)) === -1) return false; }
+        if(q){ const hay = [e.canon, I.c.fn, I.c.ln, I.c.co, I.c.c, I.c.e, I.c.cn, I.c.d, I.skills.join(' '), I.c.a, (I.c.p || []).join(' '), ctrNamesOf(e.canon).join(' '), I.c.ct].filter(Boolean).join(' '); if(hay.indexOf(q) === -1 && toEn(hay).indexOf(toEn(q)) === -1) return false; }
         return true;
       }).sort(ctdState.sort === 'az' ? ((a, b) => a.canon.localeCompare(b.canon, 'fa')) : ((a, b) => (b.n + b.docs + b.inf.nc * 3) - (a.n + a.docs + a.inf.nc * 3)));
       const lim = ctdState.lim || 60;
@@ -28608,7 +28663,10 @@
      در فهرست‌های انتخاب گزارش روزانه و دفتر فنی هم می‌آید و پرونده‌اش باز می‌شود. */
   function ctcNewHtml(q){
     return '<div class="ctc-ed cnw"><div class="ctc-edh"><span class="ctc-av">' + CDX_I.plus + '</span><span><b>پیمانکار تازه</b><small class="ctx-sub">بعد از ثبت، پرونده‌اش برای تکمیل باز می‌شود</small></span><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button></div>'
-      + '<label class="ctc-f"><span>نام پیمانکار <small>همان نامی که روی کارت و گزارش‌ها می‌آید</small></span><input type="text" class="cnw-n" value="' + esc(q || '') + '" placeholder="مثلاً شرکت آرمان سازه" autocomplete="off"></label>'
+      + (function(){ const P = ctrNameParts(q || '', {});
+          return '<div class="cnm-g"><label class="ctc-f"><span>نام</span><input type="text" class="cnw-fn cnw-k" value="' + esc(P.fn) + '" placeholder="مثلاً حسین" autocomplete="off"></label><label class="ctc-f"><span>نام خانوادگی</span><input type="text" class="cnw-ln cnw-k" value="' + esc(P.ln) + '" placeholder="مثلاً ناظری" autocomplete="off"></label></div>'
+            + '<label class="ctc-f"><span>نام شرکت <small>اختیاری؛ اگر پیمانکار شرکت است، فقط همین را هم می‌شود نوشت</small></span><input type="text" class="cnw-co cnw-k" value="' + esc(P.co) + '" placeholder="مثلاً آسمان بالابر توان" autocomplete="off"></label>'
+            + '<input type="hidden" class="cnw-n" value="' + esc(q || '') + '"><div class="cnm-pv"><u>روی کارت</u><b>' + esc(q || '—') + '</b></div>'; })()
       + '<div class="cnw-dup"></div>'
       + '<label class="ctc-f"><span>نام قراردادی <small>اگر در قرارداد و صورت وضعیت به نام دیگری آمده</small></span><input type="text" class="cnw-cn" data-list="contractPartyList" autocomplete="off" placeholder="اختیاری"></label>'
       + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" class="cnw-d" data-list="ctdDiscList" autocomplete="off" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
@@ -28625,7 +28683,7 @@
     const m = ctcSheet();
     m.querySelector('.modal-body').innerHTML = ctcNewHtml(q);
     m.hidden = false; document.body.style.overflow = 'hidden';
-    const i = m.querySelector('.cnw-n'); i.focus(); if(q) ctcNewDup(i);
+    const i = m.querySelector('.cnw-n'); m.querySelector('.cnw-fn').focus(); if(q) ctcNewDup(i);
   }
   function ctcNewDup(i){
     const box = i.closest('.cnw'), out = box.querySelector('.cnw-dup'), v = String(i.value || '').trim();
@@ -28635,21 +28693,27 @@
     out.innerHTML = hits.length ? '<div class="ctx-sh"><b>' + (hits[0].sim >= 0.999 ? 'این پیمانکار از قبل هست' : 'شاید همین‌ها باشد') + '</b><small>اگر یکی از این‌هاست، پرونده‌اش را باز کنید تا تکراری ساخته نشود</small></div>'
       + hits.map(o => '<button type="button" class="ctm-hit" data-cnwopen="' + esc(o.e.canon) + '"><b>' + esc(o.e.canon) + '</b><small>' + toFa(Math.round(o.sim * 100)) + '٪ شبیه' + (o.e.n ? ' · ' + toFa(o.e.n) + ' ردیف گزارش' : '') + '</small><em>باز کردن پرونده</em></button>').join('') : '';
   }
-  document.addEventListener('input', e => { if(e.target && e.target.classList && e.target.classList.contains('cnw-n')) ctcNewDup(e.target); });
+  document.addEventListener('input', e => {
+    const t = e.target; if(!t || !t.classList || !t.classList.contains('cnw-k')) return;
+    const box = t.closest('.cnw'), v = c => (box.querySelector(c) || {}).value || '';
+    const nn = ctrNameJoin({fn: v('.cnw-fn'), ln: v('.cnw-ln'), co: v('.cnw-co')}), h = box.querySelector('.cnw-n');
+    h.value = nn; box.querySelector('.cnm-pv b').textContent = nn || '—'; ctcNewDup(h);
+  });
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest) return;
     const op = t.closest('[data-cnwopen]'); if(op){ e.stopPropagation(); ctcOpen(op.dataset.cnwopen); return; }
     const sv = t.closest('[data-cnwsave]'); if(!sv) return;
     e.stopPropagation();
     const box = sv.closest('.cnw'), val = c => String((box.querySelector(c) || {}).value || '').replace(/\s+/g, ' ').trim();
-    const name = val('.cnw-n'), cn = val('.cnw-cn'), d = val('.cnw-d'), c = val('.cnw-c'), p = val('.cnw-p');
-    if(name.length < 2){ showDialog('warn','نام پیمانکار','نام پیمانکار را بنویسید.'); return; }
+    const fn = val('.cnw-fn'), ln = val('.cnw-ln'), co = val('.cnw-co');
+    const name = ctrNameJoin({fn, ln, co}), cn = val('.cnw-cn'), d = val('.cnw-d'), c = val('.cnw-c'), p = val('.cnw-p');
+    if(name.length < 2){ showDialog('warn','نام پیمانکار','نام و نام خانوادگی، یا نام شرکت را بنویسید.'); return; }
     if(p && telOf(p).replace(/^\+/, '').length < 7){ showDialog('warn','شماره درست نیست','«' + p + '» شمارهٔ تلفن معتبری نیست.'); return; }
     const same = ctdEntities().find(x => normName(x.canon) === normName(name) || ctrNamesOf(x.canon).some(n => normName(n) === normName(name)));
     if(same){ showDialog('warn','از قبل هست','«' + same.canon + '» در فهرست هست؛ پرونده‌اش باز شد.'); ctcOpen(same.canon); return; }
     sv.disabled = true;
     try{
-      await ctrContactSave(name, {ad: todayShamsi(), cn, d, c, p: p ? [p] : []});
+      await ctrContactSave(name, {ad: todayShamsi(), cn, d, c, p: p ? [p] : [], fn, ln, co});
       /* در فهرست انتخاب پیمانکار و طرف قرارداد، روی همهٔ دستگاه‌ها */
       try{ await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:[{kind:'پیمانکار', value:name}, {kind:'طرف قرارداد', value: cn || name}]}); }catch(err){}
       try{ mergeIntoList('contractorList', [name]); mergeIntoList('contractPartyList', [cn || name]); }catch(err){}
