@@ -1503,6 +1503,24 @@
   .prr-d{display:flex;flex-direction:column;gap:2px;min-width:0;} .prr-d b{font-size:12.5px;font-weight:800;} .prr-d small{font-size:11px;color:var(--muted);}
   /* سند طراحی: هم‌زبان با بقیهٔ دفتر فنی */
   .dsx2{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+  /* صورتجلسه: کارت جلسه */
+  .adm-grp.mtg{border-radius:16px;}
+  .mtg-h{display:flex !important;align-items:center;gap:12px;padding:12px 14px !important;text-align:start;}
+  .mtg-d{flex:0 0 48px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--field);line-height:1.15;}
+  .mtg-d b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);} .mtg-d u{text-decoration:none;font-size:10.5px;color:var(--muted);font-weight:600;}
+  .mtg-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+  .mtg-t > b{font-size:14.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mtg-t small{font-size:11.5px;color:var(--muted);font-weight:500;} .mtg-t small em{font-style:normal;font-weight:700;}
+  .mtg-t small em.ok{color:var(--ok);} .mtg-t small em.bad{color:var(--alert);}
+  .mtg-bar{display:block;height:5px;border-radius:9px;background:var(--line);overflow:hidden;max-width:220px;}
+  .mtg-bar > i{display:block;height:100%;border-radius:9px;background:var(--ok);}
+  .mtg.g-bad .mtg-d{background:color-mix(in srgb, var(--alert) 14%, var(--field));} .mtg.g-bad .mtg-d b{color:var(--alert);}
+  .mtg.g-warn .mtg-d{background:color-mix(in srgb, var(--warn) 14%, var(--field));}
+  .mtg.g-ok .mtg-t > b{color:var(--muted);}
+  .mtg-who{display:flex;flex:0 0 auto;}
+  .mtg-who i{font-style:normal;width:26px;height:26px;border-radius:50%;margin-inline-start:-7px;border:2px solid var(--surface);background:var(--field);display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--ink);}
+  @media (max-width:520px){ .mtg-who{display:none;} }
+
   /* کارت سند طراحی v3 */
   .adm-design .adm-meta, .adm-design .adm-tags:empty{display:none !important;}
   .adm-design .adm-tags:has(.chip-set:empty){display:none;}
@@ -1601,10 +1619,11 @@
   .mn3-ch{width:15px;height:15px;color:var(--muted);transition:transform .2s;}
   .mn3-b.mb-open .mn3-ch{transform:rotate(180deg);}
   .mn3-b > .mb-det{padding:0 0 12px 0;padding-inline-start:34px;}
-  .mn3-info{display:flex;flex-wrap:wrap;gap:8px 22px;padding:2px 0 4px;}
+  .mn3-info{display:grid;grid-template-columns:repeat(auto-fit, minmax(118px, 1fr));gap:10px 14px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb, var(--field) 55%, transparent);margin-bottom:6px;}
+  @media (max-width:560px){ .mn3-b > .mb-det{padding-inline-start:0 !important;} }
   .mn3-kv{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .mn3-kv u{text-decoration:none;font-size:10.5px;color:var(--muted);}
-  .mn3-kv b{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink);}
+  .mn3-kv b{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink);min-width:0;}
   .mn3-kv .ava{width:20px;height:20px;font-size:9px;}
   .mn3-acts{display:flex;gap:6px;margin:8px 0 4px;}
   .mn3-a{all:unset;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:9px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;}
@@ -44998,7 +45017,7 @@
                    : (kind === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
                    : (kind === 'contract')  ? ((pick(r,AD.cAdd) ? 'الحاقیه ' + toFa(pick(r,AD.cAdd)) + ' — ' : '') + (pick(r,AD.cTitle) || 'قرارداد'))
                    : (kind === 'letter')    ? (pick(r,AD.lSubject) || 'نامه')
-                   : (pick(r,AD.mSubject) || pick(r,AD.mText) || 'صورتجلسه');
+                   : (pick(r,AD.mText) || pick(r,AD.mSubject) || 'صورتجلسه');
     const party  = admParty(kind, r) || '';
     const review = (kind === 'statement' || kind === 'contract')
       ? String((typeof effectiveReview === 'function' ? effectiveReview(r) : pick(r,AD.review)) || '') : '';
@@ -45028,6 +45047,11 @@
       : (review === 'بررسی کارفرما') ? 'rv-emp'
       : (/^تأیید/.test(review) || review === 'تایید شده') ? 'rv-ok' : '';
     let stTxt = review || notifyLabel(notify) || done.label || '';
+    if(kind === 'minute'){
+      const dn = String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true;
+      stTxt = dn ? 'انجام شد' : 'در جریان'; stCls = dn ? 'rv-ok' : '';
+      if(dn) dTxt = '';
+    }
     /* سند طراحی: وضعیت خودِ مدرک و این‌که الان دست کیست و چند روز */
     if(kind === 'design'){
       try{
@@ -47621,14 +47645,14 @@
         const dl = daysSince(pick(r,AD.mDate));
         const left = dl == null ? null : -dl;
         return {
-          title: pick(r,AD.mSubject) || 'صورتجلسه',
+          title: pick(r,AD.mText) || pick(r,AD.mSubject) || 'صورتجلسه',
           rows: kv('تاریخ صورتجلسه', admDate(pick(r,AD.mMeet)))
               + kv('تاریخ اقدام', admDate(pick(r,AD.mDate)))
               + (left == null ? '' : kv('مانده تا اقدام',
                   left >= 0 ? (toFa(left) + ' روز') : (toFa(Math.abs(left)) + ' روز گذشته'),
                   left >= 0 ? '' : 'warn'))
               + kv('ردیف بند', pick(r,AD.mIdx) ? toFa(pick(r,AD.mIdx)) : ''),
-          note: pick(r,AD.mText)
+          note: pick(r,AD.mText) ? '' : ''
         };
       },
       letter: () => ({
@@ -47655,6 +47679,8 @@
       const kl = KIND_LABEL[kind] || '';
       const t = String(head.title || '').trim();
       if(!kl || !t || kind === 'design') return;
+      /* بند صورتجلسه: موضوع جلسه سرِ کارت جلسه است؛ این‌جا فقط «بند N» */
+      if(kind === 'minute'){ const ix = pick(r,AD.mIdx); if(ix) head.title = 'بند ' + toFa(ix) + ' · ' + t; return; }
       if(t.indexOf(kl) === 0) return;        // از قبل با نوع شروع شده
       if(t === kl) return;                   // عنوانی جز نوع ندارد
       head.title = kl + ' ' + t;
@@ -50565,6 +50591,44 @@
     /* لایهٔ اصلی همیشه وضعیت ابلاغ است (درون‌سازمانی، برون‌سازمانی …).
        در صورت وضعیت، قرارداد و نامه، داخل هر کدام زیرپنجره‌های «وضعیت
        بررسی» می‌آیند و داخل آن‌ها طرف قرارداد. */
+    /* ====== صورتجلسه: هر جلسه یک کارت، بندهایش زیر آن ======
+       سرِ کارت: تاریخ جلسه، موضوع، شمار بندها، انجام‌شده‌ها و معوق‌ها،
+       نوار پیشرفت و مسئولان بندهای باز. داخلش بندها به ترتیب ردیف. */
+    if(kind === 'minute'){
+      const isDone = row => String(pick(row,AD.mDone)) === 'true' || pick(row,AD.mDone) === true;
+      const mKey = row => String(pick(row,AD.mId) || '').trim() || (String(pick(row,AD.mSubject) || '') + '|' + String(pick(row,AD.mMeet) || ''));
+      const by = new Map();
+      rows.forEach(row => { const k = mKey(row); if(!by.has(k)) by.set(k, []); by.get(k).push(row); });
+      const idxN = r0 => parseFloat(toEn(String(pick(r0,AD.mIdx) || '')).replace(/[^\d.]/g, '')) || 0;
+      const mtgs = Array.from(by.entries()).map(([k, l]) => {
+        l.sort((a, b) => idxN(a) - idxN(b));
+        const done = l.filter(isDone).length;
+        const late = l.filter(r0 => !isDone(r0) && (daysSince(pick(r0,AD.mDate)) || 0) > 0).length;
+        let hot = 0; l.forEach(r0 => { try{ if(admCardHot('minute', r0)) hot++; }catch(e){} });
+        const meet = pick(l[0],AD.mMeet) || pick(l[0],AD.date) || '';
+        const who = Array.from(new Set(l.filter(r0 => !isDone(r0)).map(r0 => String(pick(r0,AD.mOwner) || '').trim()).filter(Boolean)));
+        const md = faToDate(meet);
+        return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who};
+      }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.hot - a.hot) || (b.late - a.late) || (b.md - a.md));
+      const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      return mtgs.map(m => {
+        const key = 'minute|m:' + m.k, all = m.l.length, closed = m.done === all;
+        const open = (narrowing || admView === 'fast') ? (admGrpOpen.get(key) !== false) : (admGrpOpen.get(key) === true);
+        const fp = faParts(m.meet);
+        const tone = closed ? 'ok' : (m.hot ? 'bad' : (m.late ? 'warn' : 'info'));
+        const pct = all ? Math.round(m.done / all * 100) : 0;
+        return '<div class="adm-grp mtg g-' + tone + (open ? ' open' : '') + '" data-grp="' + esc(key) + '">'
+          + '<button type="button" class="adm-grp-head mtg-h" aria-expanded="' + open + '">'
+          +   '<span class="mtg-d">' + (fp ? '<b>' + toFa(fp[2]) + '</b><u>' + MN[fp[1] - 1] + '</u>' : '<b>—</b>') + '</span>'
+          +   '<span class="mtg-t"><b>' + esc(m.subj) + '</b>'
+          +     '<small>' + toFa(all) + ' بند' + (m.done ? ' · <em class="ok">' + toFa(m.done) + ' انجام شد</em>' : '') + (m.late ? ' · <em class="bad">' + toFa(m.late) + ' معوق</em>' : '') + (closed ? ' · <em class="ok">بسته شد</em>' : '') + '</small>'
+          +     '<i class="mtg-bar"><i style="width:' + pct + '%"></i></i></span>'
+          +   (m.who.length ? '<span class="mtg-who">' + m.who.slice(0, 3).map(n2 => '<i title="' + esc(n2) + '">' + esc(initialsOf(n2)) + '</i>').join('') + (m.who.length > 3 ? '<i>+' + toFa(m.who.length - 3) + '</i>' : '') + '</span>' : '')
+          +   '<span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>'
+          + '</button>'
+          + '<div class="adm-grp-body">' + bodyHtml(m.l) + '</div></div>';
+      }).join('');
+    }
     /* سند طراحی: دسته‌ها بر اساس این‌که سند الان دست کیست */
     if(kind === 'design'){
       const DG = [['cons', 'نزد مشاور', 'warn'], ['emp', 'نزد کارفرما', 'warn'], ['ctr', 'نزد پیمانکار', 'info'], ['in', 'نزد داخل پروژه', 'info'], ['done', 'گردش بسته (تأییدشده)', 'ok'], ['', 'بدون گردش', 'off']];
@@ -50765,8 +50829,8 @@
       // صورتجلسه: هر جلسه یک پنجره، بندها داخلش
       if(k === 'minute'){
         if(admView === 'fast'){
-          box.innerHTML = '<div class="adm-fast">'
-            + rows.map(row => admFastRow('minute', row)).join('') + '</div>';
+          /* هر جلسه یک کارت با خلاصه و پیشرفت؛ بندها زیرش به ترتیب ردیف */
+          box.innerHTML = admGroupsHtml('minute', rows, items => '<div class="adm-fast">' + items.map(row => admFastRow('minute', row)).join('') + '</div>');
           return;
         }
         const byMeet = new Map();
