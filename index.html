@@ -17375,6 +17375,10 @@
   .um-lf.on{background:color-mix(in srgb, var(--sky) 12%, var(--surface));border-color:var(--sky);color:var(--ink);}
   .um-lf:disabled{opacity:.45;cursor:default;}
   .um-tabs{top:-1px;margin:12px 0 12px;}
+  .um-tabs{overflow-x:auto !important;scrollbar-width:none;flex-wrap:nowrap !important;}
+  .um-tabs::-webkit-scrollbar, .dc-tabs::-webkit-scrollbar{display:none;}
+  .um-tabs button{flex:0 0 auto !important;white-space:nowrap !important;}
+  .dc-tabs{scrollbar-width:none;} .dc-tabs .dc-tab{flex:0 0 auto;white-space:nowrap;}
   .um-tabs button svg{width:16px;height:16px;flex:none;}
   .um-pane{display:none;}
   .um-pane.on{display:block;animation:fadeIn .22s both;}
@@ -18676,6 +18680,18 @@
     .kt-s b{font-size:18px;}
     .kt-s u{font-size:9.2px;}
   }
+  /* تنظیمات v3 */
+  .st-gh{display:flex;align-items:center;gap:8px;margin:4px 2px 8px;font-size:12px;font-weight:900;color:var(--muted);}
+  .st-gh::after{content:"";flex:1;height:1px;background:linear-gradient(90deg, transparent, var(--line));}
+  .pf2-list.st-acc{margin-bottom:16px;}
+  #profileBody[data-ptab="settings"] .kt-ph{position:relative;top:auto;margin-top:14px;}
+  #profileBody[data-ptab="settings"] > .pf3-pane{animation:ktPane .28s ease;}
+  #profileBody > .pf3-pane{scroll-margin-top:96px;}
+  .pf2-row .tx{overflow:visible !important;}
+  .pf2-row .tx b{font-weight:700 !important;line-height:1.6;}
+  .pf3-nav.st-nav{display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));}
+  .pf3-nav.st-nav .p3-tx small{display:block !important;font-size:10.5px;line-height:1.6;color:var(--muted);white-space:normal;}
+  @media (max-width:640px){ .pf3-nav.st-nav .p3-tx b{font-size:12.5px !important;} }
   /* کارتابل: کاشی‌های گروه‌بندی‌شده */
   .pf3-nav.kt-nav{gap:8px;margin-top:4px;}
   .p3-gh{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:10px 2px 0;font-size:12px;font-weight:900;color:var(--muted);letter-spacing:-.1px;}
@@ -32070,12 +32086,12 @@
     /* سطری که کلیدش با # شروع شود، سرتیتر یک گروه از کاشی‌هاست */
     const real = subs.filter(x => x[0].charAt(0) !== '#' && !x[6]);
     /* کارتابل: کاشی‌ها بسته می‌آیند و با لمس باز و بسته می‌شوند */
-    if(tab === 'kart' || tab === 'person'){
+    if(tab === 'kart' || tab === 'person' || tab === 'settings'){
       if(!real.some(x => x[0] === pf3Sub[tab])) pf3Sub[tab] = '';
     }else if(!real.some(x => x[0] === pf3Sub[tab])) pf3Sub[tab] = (real[0] || subs[0])[0];
     /* با آیکون و توضیح، به شکل کاشی؛ بدون آن، نوار کپسولی */
     const tiles = subs.some(x => x[3]);
-    return '<div class="pf3-nav' + (tiles ? ' tiles' : '') + ((tab === 'kart' || tab === 'person') ? ' kt-nav' : '') + '" role="tablist" data-pf3="' + tab + '">'
+    return '<div class="pf3-nav' + (tiles ? ' tiles' : '') + ((tab === 'kart' || tab === 'person' || tab === 'settings') ? ' kt-nav' : '') + (tab === 'settings' ? ' st-nav' : '') + '" role="tablist" data-pf3="' + tab + '">'
       + subs.map(([k, t, n, ic, d, c, act]) => k.charAt(0) === '#' ? '<div class="p3-gh"><span>' + t + '</span></div>' : '<button type="button" role="tab" ' + (act ? 'data-pfq="' + act + '"' : 'data-pf3go="' + k + '"')
         + ' class="' + (!act && pf3Sub[tab] === k ? 'on' : '') + (c ? ' c-' + c : '') + (act ? ' act' : '') + '">'
         + (tiles
@@ -32091,7 +32107,7 @@
     pf3Sub[nav.dataset.pf3] = k;
     nav.querySelectorAll('[data-pf3go]').forEach(b => b.classList.toggle('on', b.dataset.pf3go === k));
     host.querySelectorAll(':scope > .pf3-pane').forEach(p => p.classList.toggle('on', p.dataset.pf3p === k));
-    if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person'){
+    if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person' || nav.dataset.pf3 === 'settings'){
       const p = host.querySelector(':scope > .pf3-pane.on'), tb = nav.querySelector('[data-pf3go="' + k + '"]');
       if(p && tb && !p.querySelector(':scope > .kt-ph')){
         p.insertAdjacentHTML('afterbegin', '<div class="kt-ph"><span class="kt-phi">' + ((tb.querySelector('.p3-ic') || {}).innerHTML || '') + '</span>'
@@ -32108,13 +32124,13 @@
     const b = e.target.closest('[data-pf3go]');
     if(!b) return;
     const nav = b.closest('.pf3-nav');
-    if((nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person') && b.classList.contains('on')){
+    if((nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person' || nav.dataset.pf3 === 'settings') && b.classList.contains('on')){
       pf3Show(nav.parentElement, '');
       return;
     }
     pf3Show(nav.parentElement, b.dataset.pf3go);
     /* در کارتابل، بخش باز شده زیر کاشی‌هاست؛ صفحه خودش تا آن می‌رود */
-    if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person'){
+    if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person' || nav.dataset.pf3 === 'settings'){
       const pane = nav.parentElement.querySelector(':scope > .pf3-pane.on');
       if(pane) setTimeout(() => pane.scrollIntoView({behavior:'smooth', block:'start'}), 30);
     }
@@ -33926,14 +33942,18 @@
       const admUsers = me && (isAdminUser() || can('users.manage'));
       const ctTool = me && (can('ctr.contact') || can('rep.hr'));
       const admTools = admUsers || ctTool;
-      if(admTools) h += pf3NavHtml('settings', [['acc', 'حساب کاربری', 0],
-        ...(admUsers ? [['users', 'کاربران و دسترسی', 0]] : []),
-        ...(ctTool ? [['ct', 'تماس پیمانکاران', 0]] : []),
-        ...(isAdminUser() ? [['data', 'داده و نام‌ها', 0], ['rpt', 'گزارش‌دهندگان', 0]] : []),
-        ...(admUsers && can('msg.broadcast') ? [['bc', 'پیام گروهی', 0]] : []), ...(admUsers ? [['log', 'لاگ کاربران', 0]] : [])]);
-      if(ctTool){ h += '<div class="pf3-pane" data-pf3p="ct"><div class="ctd" id="ctDir"></div></div>'; setTimeout(() => { try{ ctcRepaint(); }catch(e){} }, 40); }
-      h += (admTools ? '<div class="pf3-pane" data-pf3p="acc">' : '')
-        + '<div class="pf2-list">'
+      /* تنظیمات v3: «حساب من» همیشه باز؛ ابزارهای مدیریت به شکل کاشی که هر کدام
+         بخش خودش را زیر کاشی‌ها باز می‌کند (مثل کارتابل) */
+      const ST_I = {
+        users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/></svg>',
+        ct:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9.5" cy="11" r="2.3"/><path d="M6 16.5c.7-1.7 2-2.6 3.5-2.6s2.8.9 3.5 2.6M15 10h3M15 13.5h3"/></svg>',
+        data:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/></svg>',
+        rpt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8M6 7h12a1 1 0 011 1v11a1 1 0 01-1 1H6a1 1 0 01-1-1V8a1 1 0 011-1z"/><path d="M9 12l2 2 4-4"/></svg>'
+      };
+      if(admTools){
+        h += '<div class="st-gh">حساب من</div>';
+      }
+      h += '<div class="pf2-list st-acc">'
         +   row('pfAva', PF_I.cam, avatarOf(name) ? 'تغییر عکس پروفایل' : 'افزودن عکس پروفایل', 'عکس برای همه دیده می‌شود')
         +   (me ? row('pfName', PF_I.edit, 'نام نمایشی', esc(name) + (roleOf(name) ? ' · ' + esc(roleOf(name)) : '')) : '')
         +   (me ? row('pfTour', PF_I.help, 'راهنمای برنامه', 'معرفی بخش‌ها و راهنمای گام‌به‌گام') : '')
@@ -33941,7 +33961,14 @@
         +   (me ? row('pfSwitch', PF_I.swap, 'تغییر کاربر', 'ورود با نام دیگری روی همین دستگاه') : '')
         +   (me ? row('pfLogoutAll', PF_I.out, 'خروج از همهٔ دستگاه‌ها', 'اگر روی گوشی یا رایانهٔ دیگری وارد شده‌اید، همه خارج می‌شوند') : '')
         +   (me ? row('pfLogout', PF_I.out, 'خروج از حساب', 'نام شما از این دستگاه پاک می‌شود', 'danger') : '')
-        + '</div>' + (admTools ? '</div>' : '');
+        + '</div>';
+      if(admTools) h += pf3NavHtml('settings', [['#adm', 'مدیریت سامانه'],
+        ...(admUsers ? [['users', 'کاربران و دسترسی', 0, ST_I.users, 'افراد، نقش‌ها، دسترسی‌ها و زنجیرهٔ تأیید', 'sky']] : []),
+        ...(ctTool ? [['ct', 'پرونده‌های پیمانکاران', 0, ST_I.ct, 'نام‌ها، قراردادها، تماس، دیسیپلین و تخصص', 'ok']] : []),
+        ...(isAdminUser() ? [['data', 'داده و نام‌ها', 0, ST_I.data, 'یکسان‌سازی نام‌ها و ویرایش پایگاه داده', 'warn'], ['rpt', 'گزارش‌دهندگان', 0, ST_I.rpt, 'چه کسانی هر روز باید گزارش بدهند', 'sky']] : []),
+        ...(admUsers && can('msg.broadcast') ? [['bc', 'پیام گروهی', 0, PF_I.mega, 'یک پیام برای همهٔ کاربران', '']] : []),
+        ...(admUsers ? [['log', 'لاگ کاربران', 0, PF_I.log, 'ورودها و کارهای هر کاربر', '']] : [])]);
+      if(ctTool){ h += '<div class="pf3-pane" data-pf3p="ct"><div class="ctd" id="ctDir"></div></div>'; setTimeout(() => { try{ ctcRepaint(); }catch(e){} }, 40); }
 
       if(admUsers){
         h += '<div class="pf3-pane" data-pf3p="bc"><div class="pf2-card pf2-bc">'
