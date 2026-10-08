@@ -1818,6 +1818,24 @@
   .ct-notes .cm-panel{margin-top:4px;}
   .cdx-r.cdx-hid{opacity:.7;cursor:default;border-style:dashed;}
   .cdx-rs{all:unset;cursor:pointer;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--sky);color:var(--sky);font-size:12px;font-weight:800;white-space:nowrap;}
+  .dsc2{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .dsc2-add{display:flex;gap:8px;} .dsc2-add .dsc2-in{flex:1;min-width:0;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit;font-size:13px;}
+  .dsc2-add .dz-b{flex:0 0 auto;padding:0 16px;}
+  .dsc2-list{display:flex;flex-direction:column;gap:6px;}
+  .dsc2-r{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden;}
+  .dsc2-r.op{border-color:var(--sky);}
+  .dsc2-h{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:11px 12px;}
+  .dsc2-c{--c:var(--sky);width:12px;height:12px;border-radius:4px;background:var(--c);flex:0 0 12px;}
+  .dsc2-h b{font-size:13.5px;font-weight:700;}
+  .dsc2-u{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0;}
+  .dsc2-u i{font-style:normal;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--field);color:var(--muted);}
+  .dsc2-u i.z{opacity:.7;}
+  .dsc2-h em{font-style:normal;font-size:11.5px;color:var(--sky);font-weight:700;}
+  .dsc2-ed{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px;}
+  .dsc2-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .dz-b.dng{color:var(--alert);border-color:color-mix(in srgb, var(--alert) 40%, var(--line));}
+  .dz-b:disabled{opacity:.45;cursor:default;}
+  .cdx-tabs button{font-size:12px;}
   /* فرم پیمانکار: بخش‌بندی، پروندهٔ قراردادها و صورت وضعیت‌ها */
   .ctc-sheet .ctc-edh{flex-wrap:wrap;row-gap:10px;}
   .ctx-sub{color:var(--muted);}
@@ -28063,15 +28081,17 @@
   function ctrAllContracts(){
     return ctrDocRows().filter(x => x.kind === 'contract').map(x => { const r = x.row;
       return {k:'c', id: String(pick(r, AD.id) || ''), no: String(pick(r, AD.cNo) || '').trim(), t: String(pick(r, AD.cTitle) || '').trim(),
-        p: String(pick(r, AD.cParty) || '').trim(), amt: moneyNum2(pick(r, AD.cAmount)), d: ctrFd(pick(r, AD.cStart) || pick(r, AD.cDate)), add: String(pick(r, AD.cAdd) || '').trim()}; });
+        p: ctrRawParty(r), amt: moneyNum2(pick(r, AD.cAmount)), d: ctrFd(pick(r, AD.cStart) || pick(r, AD.cDate)), add: String(pick(r, AD.cAdd) || '').trim()}; });
   }
   function ctrAllStatements(){
     return ctrDocRows().filter(x => x.kind === 'statement').map(x => { const r = x.row; let paid = 0, done = false;
       try{ paid = paidOf(r); done = isPaid(r); }catch(e){}
       return {k:'s', id: String(pick(r, AD.id) || ''), no: String(pick(r, AD.sNo) || '').trim(), cno: String(pick(r, AD.sCno) || '').trim(), cname: String(pick(r, AD.sName) || '').trim(),
-        p: String(pick(r, AD.sParty) || '').trim(), type: String(pick(r, AD.sType) || '').trim(), amt: moneyNum2(pick(r, AD.sAmount)), paid, done, d: ctrFd(pick(r, AD.sDate))}; });
+        p: ctrRawParty(r), type: String(pick(r, AD.sType) || '').trim(), amt: moneyNum2(pick(r, AD.sAmount)), paid, done, d: ctrFd(pick(r, AD.sDate))}; });
   }
   const ctrCtTxt = ct => [ct.no, ct.t].filter(Boolean).join(' — ');
+  /* املای واقعیِ طرف قرارداد در سند (پیش از جایگزینی با نام اصلی) — برای «نام قراردادی» */
+  const ctrRawParty = r => String((r && r.__raw && r.__raw['طرف قرارداد']) || pick(r, AD.cParty) || '').trim();
   function ctrDocsCalc(name, man){
     const names = ctrNamesOf(name), nk0 = new Set(names.map(normName));
     const memo = new Map();
@@ -28225,6 +28245,8 @@
       /* اطلاعات تماس هم زیر نام تازه می‌رود */
       if(oldC && oldC.name && normName(oldC.name) !== normName(nm)){ const cp = Object.assign({}, oldC); delete cp.name; try{ await ctrContactSave(nm, cp); }catch(e){} }
       ctxRefresh(box, nm);
+      /* خانه‌های نام هم با نام تازهٔ روی کارت پر می‌شوند (نوع طرف دست نمی‌خورد) */
+      if(!opt.rename){ try{ const nb = box.querySelector('.cnm'); if(nb){ const tv = (nb.querySelector('[data-ctk="t"]') || {}).value || ''; nb.outerHTML = cnmHtml(nm, {t: tv}); } }catch(e){} }
       try{ cnmPaint(box); }catch(e){}
       try{ ctcRefreshDom(''); ctcRepaint(); }catch(e){}
       try{ mergeIntoList('contractorList', [nm]); }catch(e){}
@@ -28505,6 +28527,92 @@
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
     try{ ctcRepaint(); }catch(e2){}
   }, true);
+  /* ====== دیسیپلین‌ها ======
+     یک فهرست برای همه: رشتهٔ فعالیت‌ها، رشتهٔ افراد، دیسیپلین پرونده‌های پیمانکار
+     و رشتهٔ اسناد طراحی. تغییر نام یا یکی کردن، همهٔ این‌ها را با هم عوض می‌کند. */
+  let discData = null, discBusy = false, discOpen = '';
+  async function discEnsure(force){
+    if((discData && !force) || discBusy) return;
+    discBusy = true;
+    try{ const b = await fetchBundle(normDate(dateInput.value) || todayShamsi()); discData = {tasks: (b && b.tasks) || [], designs: (b && b.admin && b.admin.designs) || []}; }catch(e){ discData = {tasks: [], designs: []}; }
+    discBusy = false;
+    try{ ctcRepaint(); }catch(e){}
+  }
+  function discUsage(){
+    const m = new Map();
+    const g = n => { n = String(n == null ? '' : n).trim(); if(!n) return null; let o = m.get(n); if(!o){ o = {n, t: 0, c: 0, p: 0, d: 0}; m.set(n, o); } return o; };
+    tkCatList.forEach(g);
+    const D = discData || {tasks: [], designs: []};
+    const tasks = D.tasks.length ? D.tasks : ((typeof tasksAll !== 'undefined' && tasksAll) || []);
+    tasks.forEach(r => { const o = g(pick(r,T.cat)); if(o) o.t++; });
+    ctrContacts.forEach(c => { const o = g(c.d); if(o) o.c++; });
+    try{ pdMap.forEach(d => { const o = g(d); if(o) o.p++; }); }catch(e){}
+    D.designs.forEach(r => { const o = g(pick(r,AD.dDisc)); if(o) o.d++; });
+    return Array.from(m.values()).filter(o => !tkCatHidden.has(o.n) || (o.t + o.c + o.p + o.d)).sort((a, b) => (b.t + b.c + b.p + b.d) - (a.t + a.c + a.p + a.d) || a.n.localeCompare(b.n, 'fa'));
+  }
+  function discHtml(){
+    if(!discData){ discEnsure(); }
+    const U = discUsage();
+    const chip = (n, lb) => n ? '<i>' + toFa(n) + ' ' + lb + '</i>' : '';
+    return '<div class="dsc2"><div class="cdx-note">یک فهرست برای همهٔ بخش‌ها: رشتهٔ <b>فعالیت‌ها</b>، <b>افراد</b>، دیسیپلین <b>پیمانکاران</b> و رشتهٔ <b>اسناد طراحی</b>. با تغییر نام یا یکی کردن، همه‌جا با هم عوض می‌شود.</div>'
+      + '<div class="dsc2-add"><input type="text" class="dsc2-in" placeholder="دیسیپلین تازه، مثلاً تأسیسات برقی" autocomplete="off"><button type="button" class="dz-b pri" data-discadd="1">+ افزودن</button></div>'
+      + (discData ? '' : '<div class="ctdk-empty"><i class="ctdk-spin"></i>در حال شمردن کاربردها…</div>')
+      + '<div class="dsc2-list">' + U.map(o => {
+          const used = o.t + o.c + o.p + o.d, op = discOpen === o.n;
+          return '<div class="dsc2-r' + (op ? ' op' : '') + '" data-disc="' + esc(o.n) + '">'
+            + '<button type="button" class="dsc2-h" data-discop="' + esc(o.n) + '"><span class="dsc2-c" style="--c:' + tkCatColor(o.n) + '"></span><b>' + esc(o.n) + '</b>'
+            + '<span class="dsc2-u">' + (used ? chip(o.t, 'فعالیت') + chip(o.c, 'پیمانکار') + chip(o.p, 'نفر') + chip(o.d, 'سند طراحی') : '<i class="z">بی‌کاربرد</i>') + '</span><em>ویرایش ›</em></button>'
+            + (op ? '<div class="dsc2-ed"><label class="ctc-f"><span>نام تازه <small>اگر نام یکی از دیسیپلین‌های دیگر را بنویسید، این دو یکی می‌شوند</small></span><input type="text" class="dsc2-nn" value="' + esc(o.n) + '" list="dsc2List" autocomplete="off"></label>'
+                + '<div class="dsc2-acts"><button type="button" class="dz-b pri" data-discren="' + esc(o.n) + '">ثبت نام تازه</button>'
+                + '<button type="button" class="dz-b dng" data-discdel="' + esc(o.n) + '"' + (used ? ' disabled title="اول با دیسیپلین دیگری یکی کنید"' : '') + '>حذف</button></div>'
+                + (used ? '<small class="ctg-hint">برای حذف دیسیپلینی که کاربرد دارد، نامش را به یک دیسیپلین دیگر تغییر دهید تا یکی شوند.</small>' : '') + '</div>' : '')
+            + '</div>'; }).join('') + '</div>'
+      + '<datalist id="dsc2List">' + U.map(o => '<option value="' + esc(o.n) + '">').join('') + '</datalist></div>';
+  }
+  async function discRename(oldN, newN){
+    oldN = String(oldN || '').trim(); newN = String(newN || '').replace(/\s+/g, ' ').trim();
+    if(!oldN || !newN || oldN === newN) return false;
+    const U = discUsage(), o = U.find(x => x.n === oldN) || {t: 0, c: 0, p: 0, d: 0}, merge = U.some(x => x.n === newN);
+    const parts = [o.t ? toFa(o.t) + ' فعالیت' : '', o.c ? toFa(o.c) + ' پیمانکار' : '', o.p ? toFa(o.p) + ' نفر' : '', o.d ? toFa(o.d) + ' سند طراحی' : ''].filter(Boolean);
+    if(!(await askConfirm(merge ? 'یکی کردن دیسیپلین' : 'تغییر نام دیسیپلین', (merge ? '«' + oldN + '» با «' + newN + '» یکی می‌شود' : 'نام «' + oldN + '» به «' + newN + '» تغییر می‌کند') + (parts.length ? ' و ' + parts.join('، ') + ' هم عوض می‌شوند.' : '.'), merge ? 'یکی کن' : 'تغییر نام'))) return false;
+    try{
+      if(o.t) await supaFetch('tasks?category=eq.' + encodeURIComponent(oldN), {method:'PATCH', body:{category: newN}});
+      if(o.d) await supaFetch('designs?discipline=eq.' + encodeURIComponent(oldN), {method:'PATCH', body:{discipline: newN}});
+      for(const c of Array.from(ctrContacts.values())){ if(String(c.d || '').trim() === oldN){ const cp = Object.assign({}, c, {d: newN}); delete cp.name; await ctrContactSave(c.name, cp); } }
+      if(o.p){ const rows = []; pdMap.forEach((d, k) => { if(d === oldN) pdMap.set(k, newN); }); pdMap.forEach((d, k) => { const nm = (listNames().find(x => nameKey(x) === k)) || k; rows.push(nm + '¦' + d); }); await zmSaveKind(PD_KIND, rows); }
+      try{ await kxListAdd(TK_CAT_KIND, newN); }catch(e){}
+      try{ await kxListDel(TK_CAT_KIND, oldN); }catch(e){}
+      if(TK_CAT_DEF.indexOf(oldN) !== -1 || DESIGN_DISC.indexOf(oldN) !== -1){ tkCatHidden.add(oldN); try{ await kxListAdd(TK_CAT_HIDE, oldN); }catch(e){} }
+      tkCatHidden.delete(newN); try{ await kxListDel(TK_CAT_HIDE, newN); }catch(e){}
+      tkCatList = Array.from(new Set(tkCatList.filter(x => x !== oldN).concat([newN])));
+      /* داده‌های در حافظه هم همین الان */
+      const fix = (arr, key) => (arr || []).forEach(x => { const r = x && x.row && x.kind ? x.row : x; if(r && String(pick(r, key) || '').trim() === oldN) setCell(r, key[0], newN); });
+      try{ fix(tasksAll, T.cat); }catch(e){}
+      try{ fix((adminAll || []).filter(x => x.kind === 'design'), AD.dDisc); }catch(e){}
+      if(discData){ fix(discData.tasks, T.cat); fix(discData.designs, AD.dDisc); }
+      clearNetCache(); try{ tasksLoaded = false; adminLoaded = false; }catch(e){}
+      discOpen = '';
+      return true;
+    }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return false; }
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest || !t.closest('.dsc2')) return;
+    const op = t.closest('[data-discop]'); if(op){ discOpen = discOpen === op.dataset.discop ? '' : op.dataset.discop; ctcRepaint(); return; }
+    const ad = t.closest('[data-discadd]');
+    if(ad){ const i = t.closest('.dsc2').querySelector('.dsc2-in'), v = String(i.value || '').replace(/\s+/g, ' ').trim(); if(!v) return;
+      if(discUsage().some(x => x.n === v)){ showDialog('warn', 'از قبل هست', '«' + v + '» در فهرست هست.'); return; }
+      ad.disabled = true; try{ await kxListAdd(TK_CAT_KIND, v); tkCatHidden.delete(v); try{ await kxListDel(TK_CAT_HIDE, v); }catch(err){} tkCatList.push(v); clearNetCache(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+      ctcRepaint(); return; }
+    const rn = t.closest('[data-discren]');
+    if(rn){ const v = rn.closest('.dsc2-ed').querySelector('.dsc2-nn').value; rn.disabled = true; await discRename(rn.dataset.discren, v); ctcRepaint(); return; }
+    const dl = t.closest('[data-discdel]');
+    if(dl && !dl.disabled){ const n = dl.dataset.discdel;
+      if(!(await askConfirm('حذف دیسیپلین', '«' + n + '» از فهرست دیسیپلین‌ها برداشته شود؟', 'حذف'))) return;
+      try{ await kxListDel(TK_CAT_KIND, n); }catch(err){}
+      tkCatHidden.add(n); try{ await kxListAdd(TK_CAT_HIDE, n); }catch(err){}
+      tkCatList = tkCatList.filter(x => x !== n); discOpen = ''; clearNetCache(); ctcRepaint(); }
+  }, true);
+  document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('dsc2-in')){ e.preventDefault(); const b = e.target.closest('.dsc2').querySelector('[data-discadd]'); if(b) b.click(); } });
   /* حذف پیمانکار: اطلاعات پرونده پاک و همهٔ املاهایش از فهرست‌ها برداشته می‌شود */
   async function ctrDeleteFile(box){
     if(!can('ctr.contact')) return;
@@ -28761,7 +28869,7 @@
     const ents = ctdEntities(), di = ctdDocIndex();
     ents.forEach(e => { e.inf = ctdInfoOf(e, di); });
     const sug = ed ? ctdSug() : {pairs: [], multi: []}, nFix = sug.pairs.length;
-    const tab = (ctdState.tab === 'fix' && ed) ? 'fix' : 'list';
+    const tab = (ed && (ctdState.tab === 'fix' || ctdState.tab === 'disc')) ? ctdState.tab : 'list';
     ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); });
     const nHid = ents.filter(e => e.hid).length;
     if(ctdState.ty === 'hid' && !nHid) ctdState.ty = '';
@@ -28773,9 +28881,10 @@
     const head = '<div class="cdx-hd"><span class="cdx-ic">' + CTC_I.user + '</span><span class="cdx-tt"><b>پروندهٔ پیمانکاران</b><small>مرجع نام، اطلاعات و قراردادهای پیمانکاران، مشاوران و تیم کارفرما؛ هر تغییری این‌جا در گزارش‌ها، دفتر فنی و فهرست‌های انتخاب هم اعمال می‌شود</small></span>'
       + (ed ? '<button type="button" class="cdx-new" data-cdxnew="1">' + CDX_I.plus + '<span>پیمانکار تازه</span></button>' : '') + '</div>'
       + '<div class="cdx-kpi">' + kpi('all', 'پیمانکار', cnt.all) + kpi('ok', 'پروندهٔ کامل', cnt.ok, 'ok') + kpi('part', 'ناقص', cnt.part, cnt.part ? 'warn' : '') + kpi('tel', 'بی‌تلفن', cnt.tel) + kpi('ct', 'بی‌قرارداد', cnt.ct) + '</div>'
-      + (ed ? '<div class="cdx-tabs"><button type="button" class="' + (tab === 'list' ? 'on' : '') + '" data-cdxtab="list">فهرست پیمانکاران</button><button type="button" class="' + (tab === 'fix' ? 'on' : '') + '" data-cdxtab="fix">اصلاح نام‌ها' + (nFix ? '<i>' + toFa(nFix) + '</i>' : '') + '</button></div>' : '');
+      + (ed ? '<div class="cdx-tabs"><button type="button" class="' + (tab === 'list' ? 'on' : '') + '" data-cdxtab="list">فهرست پیمانکاران</button><button type="button" class="' + (tab === 'fix' ? 'on' : '') + '" data-cdxtab="fix">اصلاح نام‌ها' + (nFix ? '<i>' + toFa(nFix) + '</i>' : '') + '</button><button type="button" class="' + (tab === 'disc' ? 'on' : '') + '" data-cdxtab="disc">دیسیپلین‌ها</button></div>' : '');
     let body = '';
-    if(tab === 'fix'){
+    if(tab === 'disc'){ body = discHtml(); }
+    else if(tab === 'fix'){
       body = '<div class="cdx-fix ctx-fix"><div class="cdx-note">نام‌هایی که شبیه هم‌اند و هنوز درباره‌شان تصمیمی گرفته نشده. <b>پیوند</b>: هر دو املا می‌مانند و یک پیمانکار شمرده می‌شوند · <b>یکسان‌سازی</b>: همهٔ گزارش‌ها و اسناد به نام اصلی تغییر می‌کنند · <b>جدا هستند</b>: دیگر پیشنهاد نمی‌شود.</div>'
         + (nFix ? sug.pairs.slice(0, 30).map(kxPairHtml).join('') : '<div class="kx-done"><span>✓</span><b>نام تکراری‌ای نمانده</b><small>برای اصلاح نام یک پیمانکار، پرونده‌اش را از فهرست باز کنید.</small></div>') + '</div>';
     }else{
@@ -28926,7 +29035,7 @@
   }
   function ctrDocNames(){
     const m = new Map();
-    ctrDocRows().forEach(x => { const n = String(pick(x.row, x.kind === 'contract' ? AD.cParty : AD.sParty) || '').trim(); const k = normName(n); if(k) m.set(k, (m.get(k) || 0) + 1); });
+    ctrDocRows().forEach(x => { const n = ctrRawParty(x.row); const k = normName(n); if(k) m.set(k, (m.get(k) || 0) + 1); });
     return m;
   }
   /* پرونده‌ها از روی پیوندهای «یکی هستند» ساخته می‌شوند */
@@ -47936,7 +48045,7 @@
             f('a-dTitle','عنوان سند', pick(r,AD.dTitle))
           + f('a-dNo','شمارهٔ سند / نقشه', pick(r,AD.dNo))
           + chips(sel('a-dType','نوع سند', DOC_TYPES, pick(r,AD.dType)))
-          + chips(sel('a-dDisc','رشته', DESIGN_DISC, pick(r,AD.dDisc))), 'two')
+          + chips(sel('a-dDisc','رشته', (function(){ try{ return Array.from(new Set(DESIGN_DISC.filter(x => !tkCatHidden.has(x)).concat(tkCatList))); }catch(e){ return DESIGN_DISC; } })(), pick(r,AD.dDisc))), 'two')
         + sec('flow', 'مبدأ و طراح',
             chips(sel('a-dOrigin','سند از طرف', DOC_ORIGINS, pick(r,AD.dOrigin)))
           + f('a-dParty','طراح (نفرات پروژه یا مشاور / شرکت طراح)', pick(r,AD.dParty), false, (function(){ try{ designerListEnsure(); }catch(e){} return 'designerList'; })())
@@ -54180,9 +54289,13 @@
   const TK_CAT_KIND = 'رشتهٔ فعالیت';
   const TK_CAT_DEF = ['ابنیه','سازه','معماری','مکانیکال','الکتریکال','نازک‌کاری','نما','محوطه'];
   let tkCatList = TK_CAT_DEF.slice();
+  /* دیسیپلین‌هایی که در بخش «دیسیپلین‌ها» حذف یا با دیگری یکی شده‌اند */
+  const TK_CAT_HIDE = 'رشتهٔ حذف‌شده';
+  let tkCatHidden = new Set();
   function tkCatLoad(lists){
     const extra = ((lists && lists[TK_CAT_KIND]) || []).map(x => String(x).trim()).filter(Boolean);
-    tkCatList = Array.from(new Set(TK_CAT_DEF.concat(extra)));
+    if(lists && lists[TK_CAT_HIDE]) tkCatHidden = new Set(lists[TK_CAT_HIDE].map(x => String(x).trim()).filter(Boolean));
+    tkCatList = Array.from(new Set(TK_CAT_DEF.concat(extra))).filter(x => !tkCatHidden.has(x));
     pdMap = new Map();
     ((lists && lists[PD_KIND]) || []).forEach(v => { const [n, d] = String(v).split('¦'); if(n && d) pdMap.set(nameKey(n.trim()), d.trim()); });
   }
