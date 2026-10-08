@@ -3052,6 +3052,7 @@
     .adm-ms .ms-track .ms-ln:not(.rd){min-width:66px;flex-shrink:0;}
     .adm-ms .ms-track .ms-span{min-width:140px;flex-shrink:0;}
     .adm-ms .ms-track .ms-span > .ms-ln{min-width:50px;}
+    .adm-ms .ms-track .ms-ln.has-tb{min-width:130px;}
     .adm-ms .ms-rsum{inset-inline:18px;}
     .adm-ms .ms-rsum span{font-size:9px;padding:1px 6px;}
     .adm-ms .ms-rsum span b{font-size:10px;}
@@ -9179,6 +9180,23 @@
   @keyframes tbPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}70%{box-shadow:0 0 0 7px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
   .adm-ms .ms-tb:hover{transform:rotate(0) scale(1.15);}
   .adm-ms .ms-tb.sel{transform:rotate(0) scale(1.2);outline:2px solid var(--c);outline-offset:2px;}
+  /* موانع: پیمانکار گیر و تاریخ روی نمودار */
+  .tb-ctr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;margin:2px 0 0;}
+  .tb-ctr u{text-decoration:none;color:var(--muted);font-weight:700;}
+  .tb-cn{border:none;background:none;padding:0;font:inherit;font-weight:800;color:var(--ink);cursor:pointer;border-bottom:1px dotted var(--muted);}
+  .tb-sk{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;background:color-mix(in srgb, #5b6bd6 12%, transparent);color:#4e5cc0;font-weight:800;font-size:10.5px;}
+  [data-theme="dark"] .tb-sk{color:#a9b3f5;}
+  .tb-dts.tb-dts3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  @media (max-width:560px){ .tb-dts.tb-dts3{grid-template-columns:1fr 1fr;} .tb-dts.tb-dts3 label:first-child{grid-column:1 / -1;} }
+  .tbi-c{display:flex;align-items:center;gap:7px;font-size:12px;margin:4px 0;}
+  .tbi-c u{text-decoration:none;color:var(--muted);} .tbi-c b{font-weight:900;}
+  .tbi-c span{height:20px;padding:0 8px;border-radius:99px;display:inline-flex;align-items:center;background:var(--field);font-size:10.5px;font-weight:800;}
+  .adm-ms .ms-tbd{position:absolute;top:19px;z-index:3;width:40px;margin-inline-start:-20px;text-align:center;font-size:9.5px;font-weight:800;color:var(--c);font-family:var(--m, inherit);white-space:nowrap;pointer-events:none;}
+  .adm-ms .ms-tbd.done{opacity:.7;}
+  .adm-ms .ms-tbd.up{top:-17px;}
+  .adm-ms .ms-ln.has-tb{min-width:110px;}
+  .rc-sub{font-size:11px;font-weight:800;color:var(--muted);margin:8px 0 4px;}
+  .hri-r.act.done{opacity:.65;}
   .tbl.tbl-only{margin:0;padding:0;border:none;background:none;}
   /* موانع روی زمان */
   .tbl{margin:8px -2px 4px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);}
@@ -36659,7 +36677,18 @@
                     const t = String(pick(r,I.text) || '');
                     return (w && sameEntity(w, name)) || (nn && nn.length > 2 && normName(t).indexOf(nn) !== -1);
                   });
-                  if(!rel.length) return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">۰</span></summary><div class="hr-note">در این بازه مانعی برای این پیمانکار ثبت نشده است. ✓</div></details>';
+                  /* موانعِ لیست فعالیت که این پیمانکار گیرِ آن‌ها ثبت شده */
+                  const act = [];
+                  try{ tbCache.items.forEach(list => list.forEach(it => { if(it.ctr && sameEntity(it.ctr, name)) act.push(it); })); }catch(e){}
+                  act.sort((x, y) => (y.open - x.open) || String(dayKey(faDateOf(y.date) || '')).localeCompare(String(dayKey(faDateOf(x.date) || ''))));
+                  const actHtml = act.length ? '<div class="rc-sub">از لیست فعالیت</div>' + act.map(it => {
+                      const tr = taskById(it.task);
+                      return '<div class="hri-r act' + (it.open ? ' open' : ' done') + '"><i></i><span>' + esc(it.text || '—') + '</span>'
+                        + '<small>' + esc(toFa(admDate(faDateOf(it.date)) || '')) + (it.skill ? ' · ' + esc(it.skill) : '')
+                        + (tr ? ' · ' + esc(pick(tr,T.title) || '') : '') + ' · ' + (it.open ? 'باز' : 'رفع شده') + '</small></div>';
+                    }).join('') : '';
+                  if(!rel.length && !act.length) return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">۰</span></summary><div class="hr-note">در این بازه مانعی برای این پیمانکار ثبت نشده است. ✓</div></details>';
+                  if(!rel.length) return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">' + toFa(act.filter(x => x.open).length) + '</span></summary><div class="hr-iss">' + actHtml + '</div></details>';
                   const byZ = new Map();
                   rel.forEach(r => { const z = String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
                   /* همهٔ موانع، تازه‌ترین بالا؛ چهار تای اول باز و بقیه با «نمایش همه».
@@ -36674,6 +36703,7 @@
                         + '<small>' + esc(toFa(stampFa(pick(r,F.date)) || pick(r,F.date) || '')) + (pick(r,I.zone) ? ' · ' + esc(pick(r,I.zone)) : '')
                         + (pick(r,I.who) ? ' · ' + esc(pick(r,I.who)) : '') + '</small></div>').join('')
                     + (all.length > 4 ? '<button type="button" class="hri-all" data-hriall="1">نمایش همهٔ ' + toFa(all.length) + ' مانع</button>' : '')
+                    + actHtml
                     + '</div></details>';
                 })()
               + '<div class="rc-title">پروندهٔ اداری</div>' + docTiles;
@@ -44363,10 +44393,11 @@
       const i = n++;
       return '<span class="ms-ln' + (x.ahead ? ' ahead' : '') + (x.live ? ' live' : '')
         + (x.round ? ' rd' : '') + (x.odd ? ' odd' : '') + (x.tone ? ' t-' + x.tone : '')
-        + (x.ppl ? ' has-ppl' : '') + '" '
+        + (x.ppl ? ' has-ppl' : '') + ((x.tbs && x.tbs.length) ? ' has-tb' : '') + '" '
         + 'style="--a:var(--c-' + x.a + ');--b:var(--c-' + x.b + ');--i:' + i
         /* فاصلهٔ واقعی: هر تکه به نسبت روزهایش جا می‌گیرد (ریشهٔ دوم تا خیلی کوتاه و خیلی بلند هر دو خوانا بمانند) */
-        + (x.w != null ? ';flex-grow:' + msW(x.w).toFixed(2) : '') + '"'
+        /* تکه‌ای که مانع رویش است جای کافی می‌گیرد تا نشان و تاریخش روی برچسب‌ها نیفتد */
+        + ((x.w != null || (x.tbs && x.tbs.length)) ? ';flex-grow:' + ((x.tbs && x.tbs.length) ? Math.max(msW(x.w), 2.6) : msW(x.w)).toFixed(2) : '') + '"'
         + (x.tip ? ' title="' + esc(x.tip) + '"' : '') + '>'
         /* روی تکهٔ دور (با عکس افراد) ضربدرِ رد داخل برچسب بالای خط می‌نشیند
            تا با عکس‌ها و برچسب روی هم نیفتد */
@@ -44385,7 +44416,8 @@
             : (x.ppl || ''))
         + (x.tbs || []).map(tb => '<button type="button" class="ms-tb' + (tb.open ? ' open' : ' done') + '" data-tblbar="' + esc(tb.id) + '" '
             + 'style="--c:' + tb.c + ';inset-inline-start:' + tb.pos.toFixed(1) + '%" title="' + esc(tb.tip) + '" aria-label="' + esc(tb.tip) + '">'
-            + (BLOCK_ICO[tb.kind] || '!') + '</button>').join('')
+            + (BLOCK_ICO[tb.kind] || '!') + '</button>'
+            + (tb.d ? '<span class="ms-tbd' + (tb.open ? '' : ' done') + ((tb.pos < 30 || tb.pos > 70) ? ' up' : '') + '" style="--c:' + tb.c + ';inset-inline-start:' + tb.pos.toFixed(1) + '%">' + esc(toFa(admDate(tb.d)).slice(5)) + '</span>' : '')).join('')
         + (x.ppl ? [] : (x.rejs || [])).map(rj =>
             '<span class="ms-rej" style="inset-inline-start:' + rj.pos.toFixed(1) + '%" '
             + 'title="' + esc(rj.tip) + '">✕</span>').join('')
@@ -45085,10 +45117,11 @@
         let hit = lns.find(y => { const fa = faToDate(y.from), fb = faToDate(y.to); return fa && fb && d0 >= fa && d0 <= fb; });
         if(!hit) hit = d0 < faToDate(lns[0].from) ? lns[0] : lns[lns.length - 1];
         const fa = faToDate(hit.from), fb = faToDate(hit.to);
-        const pos = (fa && fb && fb > fa) ? Math.max(16, Math.min(84, (d0 - fa) / (fb - fa) * 100)) : 50;
-        (hit.tbs = hit.tbs || []).push({id: it.id, kind: it.kind || '', open: !!it.open, pos,
+        const pos = (fa && fb && fb > fa) ? Math.max(9, Math.min(91, (d0 - fa) / (fb - fa) * 100)) : 50;
+        (hit.tbs = hit.tbs || []).push({id: it.id, kind: it.kind || '', open: !!it.open, pos, d: sp.start,
           c: TB_COLOR[it.kind] || 'var(--alert)',
-          tip: (it.kind ? it.kind + ': ' : '') + (it.text || '') + ' — ثبت ' + toFa(admDate(sp.start)) + (sp.end ? ' · رفع ' + toFa(admDate(sp.end)) : ' · هنوز باز')});
+          tip: (it.kind ? it.kind + ': ' : '') + (it.text || '') + (it.ctr ? ' — گیرِ ' + it.ctr + (it.skill ? ' (' + it.skill + ')' : '') : '')
+            + ' — بروز ' + toFa(admDate(sp.start)) + (sp.end ? ' · رفع ' + toFa(admDate(sp.end)) : ' · هنوز باز')});
       });
     }catch(e){}
 
@@ -50404,6 +50437,20 @@
   const taskBlockText = r => (r && !r.__adm && !isNoteSide(r)) ? String(pick(r,T.blockers) || '').trim() : '';
   const taskNoteText = r => (r && isNoteSide(r)) ? String(pick(r,T.blockers) || '').trim() : '';
   let tbCache = {t: 0, items: new Map()};   // شناسهٔ فعالیت ← [مانع‌ها]
+  /* پیمانکارِ گیرِ مانع و تخصصش، ته همان متن پیام به شکل ⟦{...}⟧ ذخیره
+     می‌شود (ستون تازه لازم نیست)؛ همه‌جا فقط متن تمیز دیده می‌شود */
+  const TB_META_RE = /\s*⟦(\{[\s\S]*\})⟧\s*$/;
+  function tbParseMsg(m){
+    m = String(m || '');
+    const x = m.match(TB_META_RE);
+    if(!x) return {text: m, ctr: '', skill: ''};
+    let o = {}; try{ o = JSON.parse(x[1]) || {}; }catch(e){}
+    return {text: m.replace(TB_META_RE, ''), ctr: String(o.c || ''), skill: String(o.s || '')};
+  }
+  function tbPackMsg(text, ctr, skill){
+    text = String(text || '').trim(); ctr = String(ctr || '').trim(); skill = String(skill || '').trim();
+    return (ctr || skill) ? text + ' ⟦' + JSON.stringify({c: ctr, s: skill}) + '⟧' : text;
+  }
   let tbLoading = null;
   async function loadTaskBlockers(force){
     if(tbLoading) return tbLoading;
@@ -50416,8 +50463,9 @@
         const rows = raw.map(x => fromSupa('nudges', x));
         const byId = new Map(), items = new Map();
         rows.filter(r => pick(r,N.kind) === TB_KIND).forEach(r => {
+          const pm = tbParseMsg(pick(r,N.msg));
           const it = {id: String(pick(r,N.id)), task: String(pick(r,N.itemId) || ''), kind: String(pick(r,N.title) || ''),
-            text: String(pick(r,N.msg) || ''), by: pick(r,N.from) || '', at: pick(r,N.time) || '', date: pick(r,N.date) || '',
+            text: pm.text, ctr: pm.ctr, skill: pm.skill, by: pick(r,N.from) || '', at: pick(r,N.time) || '', date: pick(r,N.date) || '',
             open: true, events: []};
           byId.set(it.id, it);
           if(!items.has(it.task)) items.set(it.task, []);
@@ -50479,13 +50527,16 @@
     const item = it => '<div class="tb-it' + (it.open ? ' open' : ' done') + '">'
       + '<div class="tb-top">' + kindChip(it.kind)
       +   '<span class="tb-tx">' + esc(it.text || '—') + '</span></div>'
+      + (it.ctr || it.skill ? '<div class="tb-ctr"><u>گیرِ</u>'
+          + (it.ctr ? '<button type="button" class="tb-cn" data-hrprof="' + esc(it.ctr) + '">' + esc(it.ctr) + '</button>' : '')
+          + (it.skill ? '<span class="tb-sk">' + esc(it.skill) + '</span>' : '') + '</div>' : '')
       + (function(){
           const sp = tbSpanOf(it), dd = faDiff(sp.start, sp.end || todayShamsi());
-          return '<div class="tb-dates"><span><u>ثبت</u>' + toFa(admDate(sp.start) || '—') + '</span>'
+          return '<div class="tb-dates"><span><u>بروز مشکل</u>' + toFa(admDate(sp.start) || '—') + '</span>'
             + '<span><u>رفع</u>' + (sp.end ? toFa(admDate(sp.end)) : 'هنوز باز') + '</span>'
             + (dd != null ? '<span><u>مدت</u>' + toFa(dd) + ' روز</span>' : '') + '</div>';
         })()
-      + '<div class="tb-meta"><span>ثبت: ' + esc(it.by || '—') + ' · ' + tbWhen(it) + '</span>'
+      + '<div class="tb-meta"><span>ثبت در سامانه: ' + esc(it.by || '—') + ' · ' + (function(){ try{ const d = stampFa(it.at); if(d) return tbWhen({date: d, at: it.at}); }catch(e){} return tbWhen(it); })() + '</span>'
       +   it.events.map(ev => '<span class="' + (ev.type === 'رفع' ? 'ok' : 'bad') + '">'
             + (ev.type === 'رفع' ? '✓ رفع شد' : '↺ دوباره باز شد') + ': ' + esc(ev.by || '—') + ' · ' + tbWhen(ev)
             + (ev.note ? ' — ' + esc(ev.note) : '') + '</span>').join('')
@@ -50585,8 +50636,9 @@
       + '<div class="tbi-h"><span class="tbi-k">' + (BLOCK_ICO[it.kind] || '') + esc(it.kind || 'مانع') + '</span>'
       +   '<b class="' + (it.open ? 'bad' : 'ok') + '">' + (it.open ? 'باز' : 'رفع شده') + '</b></div>'
       + '<div class="tbi-t">' + esc(it.text || '—') + '</div>'
+      + (it.ctr || it.skill ? '<div class="tbi-c"><u>پیمانکار گیر</u><b>' + esc(it.ctr || '—') + '</b>' + (it.skill ? '<span>' + esc(it.skill) + '</span>' : '') + '</div>' : '')
       + '<div class="tbi-g">'
-      +   '<span title="' + esc(toFa(admDate(sp.start) || '')) + '"><u>ثبت</u>' + (toFa(admDate(sp.start)).slice(5) || '—') + '<small>' + esc(it.by || '') + '</small></span>'
+      +   '<span title="' + esc(toFa(admDate(sp.start) || '')) + '"><u>بروز</u>' + (toFa(admDate(sp.start)).slice(5) || '—') + '<small>' + esc(it.by || '') + '</small></span>'
       +   '<span title="' + esc(sp.end ? toFa(admDate(sp.end)) : '') + '"><u>رفع</u>' + (sp.end ? toFa(admDate(sp.end)).slice(5) : 'هنوز باز') + '<small>' + esc(res && !it.open ? (res.by || '') : '') + '</small></span>'
       +   '<span><u>مدت</u>' + (days != null ? toFa(days) + ' روز' : '—') + (it.open ? '<small>تا امروز</small>' : '') + '</span>'
       + '</div>'
@@ -50627,12 +50679,13 @@
       if(fr) fr.outerHTML = taskTlBlockHtml(row); else ln.outerHTML = tbLaneHtml(row);
     });
   }
-  async function tbAdd(taskId, kind, text){
+  async function tbAdd(taskId, kind, text, opt){
     const me = activeUserName();
     const row = taskById(taskId);
-    await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: me,
+    const o = opt || {};
+    await supaFetch('nudges', {method:'POST', body:[{date_fa: o.date || todayShamsi(), from_name: me,
       to_name: row ? (pick(row,T.m1) || me) : me, kind: TB_KIND, item_id: String(taskId),
-      title: kind || '', message: text, seen: true}]});
+      title: kind || '', message: tbPackMsg(text, o.ctr, o.skill), seen: true}]});
     await loadTaskBlockers(true);
     await tbSync(taskId);
   }
@@ -50648,7 +50701,7 @@
   async function tbEdit(bid, taskId, v){
     const it = tbFind(bid);
     await supaFetch('nudges?id=eq.' + encodeURIComponent(bid), {method:'PATCH',
-      body:{title: v.kind || '', message: v.text, date_fa: v.start}});
+      body:{title: v.kind || '', message: tbPackMsg(v.text, v.ctr != null ? v.ctr : (it && it.ctr), v.skill != null ? v.skill : (it && it.skill)), date_fa: v.start}});
     if(it && !it.open && v.end){
       const ev = (it.events || []).filter(x => x.type === 'رفع').pop();
       if(ev && ev.id) await supaFetch('nudges?id=eq.' + encodeURIComponent(ev.id), {method:'PATCH',
@@ -50694,6 +50747,9 @@
       ? '<div class="tb-kinds">' + BLOCKERS.concat(['سایر']).map((k, i) => '<button type="button" class="tb-kc' + (i === BLOCKERS.length ? ' on' : '') + '" data-tbk="' + esc(k) + '">'
           + (BLOCK_ICO[k] || '') + esc(k) + '</button>').join('') + '</div>'
         + '<textarea class="tb-in" rows="2" placeholder="شرح مانع یا مشکل…"></textarea>'
+        + (function(){ const D0 = todayShamsi(), C0 = '', S0 = ''; return '<div class="tb-dts tb-dts3"><label><u>تاریخ بروز مشکل</u><input type="text" class="tb-d1" inputmode="numeric" value="' + esc(toFa(D0)) + '" placeholder="۱۴۰۵/۰۷/۰۱"></label>'
+        + '<label><u>پیمانکار گیر (اختیاری)</u><input type="text" class="tb-ctr" list="contractorList" autocomplete="off" value="' + esc(C0) + '" placeholder="نام پیمانکار"></label>'
+        + '<label><u>تخصص</u><input type="text" class="tb-sk" list="skillList" autocomplete="off" value="' + esc(S0) + '" placeholder="مثلاً آرماتوربندی"></label></div>'; })()
         + '<div class="tb-fa"><button type="button" class="mini go" data-tbsave="1">ثبت مانع</button><button type="button" class="mini" data-tbcancel="1">انصراف</button></div>'
       : '<textarea class="tb-in" rows="2" placeholder="چطور رفع شد؟ (اختیاری)"></textarea>'
         + '<div class="tb-fa"><button type="button" class="mini go" data-tbsave="1">ثبت رفع مانع</button><button type="button" class="mini" data-tbcancel="1">انصراف</button></div>';
@@ -50705,7 +50761,10 @@
       f.innerHTML = '<div class="tb-kinds">' + BLOCKERS.concat(['سایر']).map(k => '<button type="button" class="tb-kc' + (k === curK ? ' on' : '') + '" data-tbk="' + esc(k) + '">'
           + (BLOCK_ICO[k] || '') + esc(k) + '</button>').join('') + '</div>'
         + '<textarea class="tb-in" rows="2" placeholder="شرح مانع…">' + esc(it.text || '') + '</textarea>'
-        + '<div class="tb-dts"><label><u>تاریخ ثبت</u><input type="text" class="tb-d1" inputmode="numeric" value="' + esc(toFa(sp.start || '')) + '" placeholder="۱۴۰۵/۰۷/۰۱"></label>'
+        + '<div class="tb-dts tb-dts3"><label><u>تاریخ بروز مشکل</u><input type="text" class="tb-d1" inputmode="numeric" value="' + esc(toFa(sp.start || '')) + '" placeholder="۱۴۰۵/۰۷/۰۱"></label>'
+        + '<label><u>پیمانکار گیر</u><input type="text" class="tb-ctr" list="contractorList" autocomplete="off" value="' + esc(it.ctr || '') + '" placeholder="نام پیمانکار"></label>'
+        + '<label><u>تخصص</u><input type="text" class="tb-sk" list="skillList" autocomplete="off" value="' + esc(it.skill || '') + '"></label></div>'
+        + '<div class="tb-dts">'
         + (!it.open && lastRes
             ? '<label><u>تاریخ رفع</u><input type="text" class="tb-d2" inputmode="numeric" value="' + esc(toFa(sp.end || '')) + '" placeholder="۱۴۰۵/۰۷/۰۱"></label>'
               + '<label class="wide"><u>توضیح رفع</u><input type="text" class="tb-n2" value="' + esc(lastRes.note || '') + '"></label>'
@@ -50719,6 +50778,14 @@
     anchor.after(f);
     const ta = f.querySelector('textarea'); if(ta) setTimeout(() => ta.focus({preventScroll:true}), 30);
   }
+  /* با انتخاب پیمانکار، تخصصش از گزارش‌های روزانه پیشنهاد می‌شود */
+  document.addEventListener('change', e => {
+    const c = e.target.closest && e.target.closest('.tb-form .tb-ctr');
+    if(!c) return;
+    const sk = c.closest('.tb-form').querySelector('.tb-sk');
+    if(!sk || sk.value.trim()) return;
+    try{ const a = skillsOfName(c.value.trim()); if(a && a.length) sk.value = a[0]; }catch(err){}
+  }, true);
   document.addEventListener('click', async e => {
     const t = e.target;
     const add = t.closest('[data-tbadd]');
@@ -50764,7 +50831,11 @@
         if(f.dataset.mode === 'add'){
           if(!txt){ sv.disabled = false; showDialog('warn','شرح لازم است','شرح مانع را بنویسید.'); return; }
           const k = (f.querySelector('.tb-kc.on') || {}).dataset;
-          await tbAdd(taskId, k && k.tbk !== 'سایر' ? k.tbk : '', txt);
+          const d0 = normDate((f.querySelector('.tb-d1') || {}).value || '');
+          if(!d0){ sv.disabled = false; showDialog('warn','تاریخ نادرست','تاریخ بروز مشکل را به شکل ۱۴۰۵/۰۷/۰۱ وارد کنید.'); return; }
+          if(faToDate(d0) > faToDate(todayShamsi())){ sv.disabled = false; showDialog('warn','تاریخ نادرست','تاریخ بروز مشکل نمی‌تواند بعد از امروز باشد.'); return; }
+          await tbAdd(taskId, k && k.tbk !== 'سایر' ? k.tbk : '', txt, {date: d0,
+            ctr: String((f.querySelector('.tb-ctr') || {}).value || '').trim(), skill: String((f.querySelector('.tb-sk') || {}).value || '').trim()});
         }else if(f.dataset.mode === 'edit'){
           if(!txt){ sv.disabled = false; showDialog('warn','شرح لازم است','شرح مانع را بنویسید.'); return; }
           const k = (f.querySelector('.tb-kc.on') || {}).dataset;
@@ -50775,7 +50846,8 @@
           if(d2 && faToDate(d2) < faToDate(d1)){ sv.disabled = false; showDialog('warn','تاریخ نادرست','تاریخ رفع نمی‌تواند پیش از تاریخ ثبت باشد.'); return; }
           const n2 = f.querySelector('.tb-n2');
           await tbEdit(f.dataset.bid, taskId, {kind: k && k.tbk !== 'سایر' ? k.tbk : '', text: txt, start: d1, end: d2,
-            note: n2 ? String(n2.value || '').trim() : null});
+            note: n2 ? String(n2.value || '').trim() : null,
+            ctr: String((f.querySelector('.tb-ctr') || {}).value || '').trim(), skill: String((f.querySelector('.tb-sk') || {}).value || '').trim()});
         }else if(f.dataset.legacy === '1'){
           await tbResolveLegacy(taskId, txt);
         }else{
