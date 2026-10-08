@@ -1670,6 +1670,11 @@
   .ds-holdp .ds-at{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit;font-size:13px;}
   .ds-hl{all:unset;cursor:pointer;color:inherit;font:inherit;text-decoration:underline dotted;text-underline-offset:3px;}
   .ds-hl:hover{color:var(--sky);}
+  .ct-card .ct-hfile{color:var(--sky);} .ct-card .ct-hfile svg{width:18px;height:18px;}
+  .ct-card .mc-head .ctc-mini{margin-inline-start:auto;}
+  .ct-card .ct-alias{flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none;white-space:nowrap;}
+  .ct-card .ct-alias::-webkit-scrollbar{display:none;}
+  .ct-card .ct-alias span{flex:0 0 auto;}
   .ct-notes{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px;}
   .ct-nh{display:flex;flex-direction:column;gap:2px;} .ct-nh b{font-size:13px;font-weight:900;} .ct-nh small{font-size:11.5px;color:var(--muted);}
   /* فهرست پیمانکاران در «گزارش پیمانکار» */
@@ -17070,6 +17075,7 @@
     .hr-tabs button{font-size:11.5px;}
     #ctProfModal{padding:0 !important;align-items:flex-end !important;}
     #ctProfModal .ct-card{width:100% !important;max-height:92vh;border-radius:24px 24px 0 0 !important;}
+    #ctProfModal .ct-card{max-height:92dvh;}
   }
 
   .tdh-kpis.hrh{grid-template-columns:1.6fr repeat(4, minmax(0,1fr));}
@@ -38972,22 +38978,17 @@
     const als = (() => { try{ return aliasesOf(name).filter(a => a !== name); }catch(e){ return []; } })();
     bg.innerHTML = '<div class="modal-card ct-card">'
       + '<div class="mc-head"><b class="mc-title">' + esc(name) + '</b>'
+      /* پروندهٔ پیمانکار و (برای مشاور و کارفرما) دکمهٔ تماس، کنار دکمهٔ بستن؛ بخش یادداشت پایین کارت حذف شد */
+      +   (function(){ try{ return isContractorName(name) ? '' : ctcMiniHtml(name); }catch(e){ return ''; } })()
+      +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ico-btn ct-hfile" data-ctcedit="' + esc(name) + '" title="پروندهٔ پیمانکار: نام، قراردادها و تماس" aria-label="پروندهٔ پیمانکار"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9.5" cy="11" r="2.3"/><path d="M6 16.5c.7-1.7 2-2.6 3.5-2.6s2.8.9 3.5 2.6M15 10h3M15 13.5h3"/></svg></button>' : ''; }catch(e){ return ''; } })()
       +   '<button type="button" class="ico-btn" data-ctx>✕</button></div>'
       + (als.length
           ? '<div class="ct-alias"><u>نام‌های یکی‌شده</u>'
             + als.map(a => '<span>' + esc(a) + '</span>').join('') + '</div>'
           : '')
       + '<div class="ct-body"><div class="empty">در حال دریافت گزارش‌ها…</div></div>'
-      /* یادداشت و نظر روی پروندهٔ طرف (پیمانکار، مشاور یا کارفرما) */
-      + '<div class="ct-notes"><div class="ct-nh"><b>یادداشت‌ها</b><small>هر چه دربارهٔ ' + esc(name) + ' باید بماند: قرار، هشدار، پیگیری</small>'
-      +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ct-file" data-ctcedit="' + esc(name) + '">پروندهٔ پیمانکار: نام، قراردادها و تماس ›</button>' : ''; }catch(e){ return ''; } })() + '</div>'
-      /* اطلاعات تماس فقط با دکمهٔ «تماس» باز می‌شود؛ کارت پیمانکار آن را بالای خود دارد */
-      +   (function(){ try{ return isContractorName(name) ? '' : '<div class="ct-cbtn">' + ctcMiniHtml(name) + '</div>'; }catch(e){ return ''; } })()
-      +   (function(){ try{ return commentBarHtml('party', 'party:' + nameKey(name), 'پروندهٔ ' + name, {}); }catch(e){ return ''; } })()
-      + '</div></div>';
+      + '</div>';
     document.body.appendChild(bg);
-    /* یادداشت‌ها بی‌واسطه باز می‌شوند: فهرست و جای نوشتن، بدون دکمهٔ نظرات و اشتراک */
-    try{ const ob = bg.querySelector('.ct-notes .cm-open'); if(ob) openCommentPanel(ob); }catch(e){}
     document.body.style.overflow = 'hidden';
 
     // ---- راه خروج همین اول ساخته می‌شود، پیش از هر انتظاری ----
