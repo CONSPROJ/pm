@@ -1626,6 +1626,17 @@
   .ctd-wrap > .ctd-host{padding:0 14px 14px;}
   .ctd-wrap .ctd-list{max-height:560px;overflow:auto;overscroll-behavior:contain;}
   .ctc-who .ctc-em{color:var(--sky);} .ctc-who .ctc-meta{color:var(--muted);white-space:normal;line-height:1.6;}
+  /* تگ‌های فرم پیمانکار */
+  .ctg-box > span small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px;}
+  .ctg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px;border-radius:12px;border:1px solid var(--line);background:var(--field);min-height:44px;box-sizing:border-box;}
+  .ctg-t{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:default;}
+  button.ctg-t{cursor:pointer;}
+  .ctg-t.on{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));background:color-mix(in srgb, var(--sky) 10%, var(--surface));}
+  .ctg-t.auto{border-style:dashed;color:var(--muted);}
+  .ctg-t.sug{border-style:dashed;color:var(--sky);background:none;font-weight:600;}
+  .ctg-t i{font-style:normal;font-size:10px;color:var(--muted);cursor:pointer;padding:2px;}
+  .ctg-t i:hover{color:var(--alert);}
+  .ctg-in{flex:1;min-width:140px;height:30px;border:0 !important;background:none !important;color:var(--ink);font:inherit;font-size:12.5px;padding:0 6px;outline:none;box-shadow:none !important;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -27516,7 +27527,7 @@
     if(o.p && o.p.length) clean.p = o.p; if(o.e) clean.e = o.e; if(o.c) clean.c = o.c;
     if(o.w) clean.w = o.w; if(o.a) clean.a = o.a; if(o.n) clean.n = o.n;
     /* نام قراردادی، دیسیپلین و تخصص‌ها */
-    if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s;
+    if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s; if(o.ct) clean.ct = o.ct;
     const old = ctrContactOf(canon);
     if(old && old.name){
       await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(old.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
@@ -27599,8 +27610,29 @@
     return '<div class="ctc-ed" data-ctced="' + esc(name) + '">'
       + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(name)) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small>مشخصات و اطلاعات تماس پیمانکار</small></span></div>'
       + '<label class="ctc-f"><span>نام قراردادی (نام شرکت در قرارداد)</span><input type="text" data-ctk="cn" value="' + esc(c.cn || '') + '" placeholder="مثلاً شرکت ساختمانی …"></label>'
-      + '<div class="ctc-phs"><label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
-      +   '<label class="ctc-f"><span>تخصص‌ها</span><input type="text" data-ctk="s" value="' + esc(c.s || '') + '" placeholder="مثلاً لوله‌کشی، کانال‌کشی"></label></div>'
+      + (function(){
+          /* نام‌ها: همهٔ املاهای یکی‌شده؛ ستاره = نامی که روی کارت می‌آید */
+          const disp = ctrCanon(name), names = ctrNamesOf(name);
+          return '<div class="ctc-f ctg-box"><span>نام‌ها <small>نامِ ستاره‌دار روی کارت پیمانکار نشان داده می‌شود؛ برای انتخاب، روی نام بزنید</small></span><div class="ctg">'
+            + names.map(n => '<button type="button" class="ctg-t' + (normName(n) === normName(disp) ? ' on' : '') + '" data-ctgprim="' + esc(n) + '">' + (normName(n) === normName(disp) ? '★ ' : '') + esc(n) + '</button>').join('')
+            + '<input type="text" class="ctg-in" data-ctgname="' + esc(disp) + '" placeholder="+ املای دیگر (یکی شود)"></div></div>';
+        })()
+      + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
+      + (function(){
+          /* تخصص‌ها به شکل تگ؛ تخصص‌هایی که در گزارش‌ها آمده ولی ثبت نشده، پیشنهاد می‌شوند */
+          const cur = ctrTagsOf(c.s), seen = ctrSkillsSeen(name).filter(x => cur.indexOf(x) === -1);
+          return '<div class="ctc-f ctg-box"><span>تخصص‌ها</span><input type="hidden" data-ctk="s" value="' + esc(cur.join('، ')) + '">'
+            + '<div class="ctg" data-ctgfor="s">' + cur.map(x => '<span class="ctg-t on">' + esc(x) + '<i data-ctgdel="1">✕</i></span>').join('')
+            + seen.map(x => '<button type="button" class="ctg-t sug" data-ctgadd="' + esc(x) + '" title="در گزارش‌ها آمده؛ برای افزودن بزنید">+ ' + esc(x) + '</button>').join('')
+            + '<input type="text" class="ctg-in" data-ctgnew="s" placeholder="+ تخصص (Enter)"></div></div>';
+        })()
+      + (function(){
+          const cs = ctrContractsOf(name);
+          return '<div class="ctc-f ctg-box"><span>قراردادها <small>از بخش قرارداد خودکار می‌آید؛ قرارداد دیگری را با «شماره — عنوان» اضافه کنید</small></span><input type="hidden" data-ctk="ct" value="' + esc(cs.man.join(' | ')) + '">'
+            + '<div class="ctg" data-ctgfor="ct">' + cs.auto.map(x => '<span class="ctg-t auto" title="از بخش قرارداد">' + esc(x) + '</span>').join('')
+            + cs.man.map(x => '<span class="ctg-t on">' + esc(x) + '<i data-ctgdel="1">✕</i></span>').join('')
+            + '<input type="text" class="ctg-in" data-ctgnew="ct" placeholder="+ شماره — عنوان قرارداد (Enter)"></div></div>';
+        })()
       + '<label class="ctc-f"><span>نام نماینده / مسئول</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
       + '<div class="ctc-phs">' + ph.map((v, i) => '<label class="ctc-f"><span>' + (i ? 'تلفن دیگر' : 'تلفن همراه') + '</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" value="' + esc(v) + '" placeholder="09xxxxxxxxx"></label>').join('')
       +   '<button type="button" class="ctc-add" data-ctcph="1">+ تلفن دیگر</button></div>'
@@ -27611,6 +27643,51 @@
       + '<div class="ctc-eact"><button type="button" class="mx-btn pri" data-ctcsave="1">ذخیره</button><button type="button" class="mx-btn" data-ctcclose="1">انصراف</button>'
       + (ctrContactOf(name) ? '<button type="button" class="mx-btn dng" data-ctcdel="1">حذف</button>' : '') + '</div></div>';
   }
+  /* ---- تگ‌ها در فرم پیمانکار ---- */
+  function ctgSync(box){
+    const k = box.dataset.ctgfor, hid = box.closest('.ctg-box').querySelector('[data-ctk="' + k + '"]');
+    if(!hid) return;
+    const vals = Array.from(box.querySelectorAll('.ctg-t.on')).map(t => t.firstChild.textContent.trim()).filter(Boolean);
+    hid.value = vals.join(k === 'ct' ? ' | ' : '، ');
+  }
+  function ctgAdd(box, v){
+    v = String(v || '').trim(); if(!v) return;
+    if(Array.from(box.querySelectorAll('.ctg-t.on, .ctg-t.auto')).some(t => t.firstChild.textContent.trim() === v)) return;
+    const inp = box.querySelector('.ctg-in');
+    inp.insertAdjacentHTML('beforebegin', '<span class="ctg-t on">' + esc(v) + '<i data-ctgdel="1">✕</i></span>');
+    ctgSync(box);
+  }
+  document.addEventListener('keydown', e => {
+    const i = e.target; if(!i || !i.classList || !i.classList.contains('ctg-in')) return;
+    if(e.key !== 'Enter' && e.key !== ',' && e.key !== '،') return;
+    e.preventDefault();
+    if(i.dataset.ctgnew){ ctgAdd(i.closest('.ctg'), i.value); i.value = ''; return; }
+    if(i.dataset.ctgname){ ctgLinkName(i.dataset.ctgname, i.value, i); }
+  });
+  async function ctgLinkName(canon, nm, inp){
+    nm = String(nm || '').trim(); if(!nm || normName(nm) === normName(canon)) return;
+    if(!can('ctr.contact')) return;
+    if(!(await askConfirm('یکی کردن نام', '«' + nm + '» همان «' + canon + '» حساب شود؟ گزارش‌ها و اسناد هر دو نام زیر یک پرونده می‌آیند.', 'یکی شود'))) return;
+    try{ await kxLink(canon, nm, true); if(inp) inp.value = ''; ctcRepaint(); try{ const m = document.getElementById('ctcModal'); if(m && !m.hidden) m.querySelector('.modal-body').innerHTML = ctcEditorHtml(canon); }catch(e){} }
+    catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); }
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest) return;
+    const del = t.closest('[data-ctgdel]');
+    if(del){ const box = del.closest('.ctg'); del.parentElement.remove(); ctgSync(box); return; }
+    const add = t.closest('[data-ctgadd]');
+    if(add){ const box = add.closest('.ctg'); const v = add.dataset.ctgadd; add.remove(); ctgAdd(box, v); return; }
+    const pr = t.closest('[data-ctgprim]');
+    if(pr){
+      if(!can('ctr.contact') || pr.classList.contains('on')) return;
+      e.stopPropagation();
+      const nm = pr.dataset.ctgprim;
+      try{ await kxSetPrimary(nm); clearNetCache();
+        pr.closest('.ctg').querySelectorAll('[data-ctgprim]').forEach(b => { const on = b === pr; b.classList.toggle('on', on); b.textContent = (on ? '★ ' : '') + b.dataset.ctgprim; });
+        showDialog('ok', 'نام منتخب', '«' + nm + '» از این به بعد روی کارت و گزارش پیمانکار نشان داده می‌شود.'); }
+      catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); }
+    }
+  }, true);
   function ctcOpen(name){
     let m = document.getElementById('ctcModal');
     if(!m){ m = document.createElement('div'); m.id = 'ctcModal'; m.className = 'modal-bg'; m.innerHTML = '<div class="modal ctc-modal" role="dialog" aria-modal="true"><div class="modal-body"></div></div>'; document.body.appendChild(m);
@@ -27661,7 +27738,34 @@
     down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
     up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></svg>'
   };
-  const CTD_COLS = ['نام پیمانکار', 'نام قراردادی', 'دیسیپلین', 'تخصص‌ها', 'نماینده / مسئول', 'تلفن همراه', 'تلفن دیگر', 'واتساپ', 'ایمیل', 'نشانی', 'یادداشت'];
+  /* قراردادهای هر پیمانکار: از بخش قرارداد (خودکار) و فهرستی که دستی اضافه شده */
+  function ctrContractsAuto(name){
+    const ck = normName(ctrCanon(name));
+    const out = [], seen = new Set();
+    ctrDocRows().filter(x => x.kind === 'contract').forEach(x => {
+      const party = pick(x.row, AD.cParty); if(!party || normName(ctrCanon(party)) !== ck) return;
+      const t = [pick(x.row, AD.cNo), pick(x.row, AD.cTitle)].filter(Boolean).join(' — ');
+      if(t && !seen.has(t)){ seen.add(t); out.push(t); }
+    });
+    return out;
+  }
+  const ctrTagsOf = v => String(v || '').split(/\s*[|،,؛]\s*/).map(x => x.trim()).filter(Boolean);
+  function ctrContractsOf(name){
+    const c = ctrContactOf(name) || {};
+    const auto = ctrContractsAuto(name);
+    const man = ctrTagsOf(c.ct).filter(x => auto.indexOf(x) === -1);
+    return {auto, man};
+  }
+  /* همهٔ املاهای یکی‌شدهٔ یک پیمانکار و تخصص‌های تطبیق‌خوردهٔ گزارش‌ها */
+  function ctrNamesOf(name){
+    let mem = [];
+    try{ mem = ctrBuild().members.get(normName(ctrCanon(name))) || []; }catch(e){}
+    return Array.from(new Set([ctrCanon(name)].concat(mem)));
+  }
+  function ctrSkillsSeen(name){
+    try{ const k = normName(ctrCanon(name)); const e = kxEntities(kxStats()).find(x => x.k === k); return e ? Array.from(e.skills.keys()) : []; }catch(e){ return []; }
+  }
+  const CTD_COLS = ['نام پیمانکار', 'نام منتخب', 'همهٔ نام‌ها', 'نام قراردادی', 'دیسیپلین', 'تخصص‌ها', 'تخصص‌های دیده‌شده در گزارش‌ها', 'قراردادها', 'نماینده / مسئول', 'تلفن همراه', 'تلفن دیگر', 'واتساپ', 'ایمیل', 'نشانی', 'یادداشت'];
   function ctdEntities(){
     let ents = [];
     try{ ents = kxEntities(kxStats()); }catch(e){}
@@ -27683,12 +27787,14 @@
     if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره بزنید.'); return; }
     const ents = ctdEntities().sort((a, b) => a.canon.localeCompare(b.canon, 'fa'));
     const aoa = [CTD_COLS].concat(ents.map(e => { const c = ctrContactOf(e.canon) || {}; const p = c.p || [];
-      return [e.canon, c.cn || '', c.d || '', c.s || (e.skills && e.skills.size ? Array.from(e.skills.keys()).join('، ') : ''), c.c || '', p[0] || '', p.slice(1).join(' / '), c.w || '', c.e || '', c.a || '', c.n || '']; }));
+      const cs = ctrContractsOf(e.canon);
+      return [e.canon, ctrCanon(e.canon), ctrNamesOf(e.canon).join(' | '), c.cn || '', c.d || '', ctrTagsOf(c.s).join('، '), (e.skills && e.skills.size ? Array.from(e.skills.keys()).join('، ') : ''),
+        cs.auto.concat(cs.man).join(' | '), c.c || '', p[0] || '', p.slice(1).join(' / '), c.w || '', c.e || '', c.a || '', c.n || '']; }));
     const sh = XLSX.utils.aoa_to_sheet(aoa);
-    sh['!cols'] = [{wch:28}, {wch:28}, {wch:14}, {wch:24}, {wch:20}, {wch:15}, {wch:18}, {wch:15}, {wch:26}, {wch:30}, {wch:30}];
+    sh['!cols'] = [{wch:26}, {wch:26}, {wch:40}, {wch:28}, {wch:14}, {wch:26}, {wch:26}, {wch:40}, {wch:20}, {wch:15}, {wch:18}, {wch:15}, {wch:26}, {wch:30}, {wch:30}];
     sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:aoa.length - 1, c:CTD_COLS.length - 1}})};
     /* تلفن‌ها متن بمانند تا صفرِ اول نیفتد */
-    for(let r = 1; r < aoa.length; r++) [5, 6, 7].forEach(c => { const ad = XLSX.utils.encode_cell({r, c}); if(sh[ad]) sh[ad] = {t:'s', v: String(sh[ad].v)}; });
+    for(let r = 1; r < aoa.length; r++) [9, 10, 11].forEach(c => { const ad = XLSX.utils.encode_cell({r, c}); if(sh[ad]) sh[ad] = {t:'s', v: String(sh[ad].v)}; });
     const wb = XLSX.utils.book_new(); try{ xlsBookRtl(wb); }catch(e){}
     XLSX.utils.book_append_sheet(wb, sh, 'تماس پیمانکاران');
     XLSX.writeFile(wb, 'تماس پیمانکاران - ' + toFa(todayShamsi()).replace(/\//g, '-') + '.xlsx');
@@ -27700,9 +27806,10 @@
     if(hr === -1) hr = 0;
     const H = (aoa[hr] || []).map(norm);
     const col = (...keys) => H.findIndex(h => keys.some(k => h.indexOf(norm(k)) !== -1));
-    const ci = {n: col('نامپیمانکار') !== -1 ? col('نامپیمانکار') : col('پیمانکار', 'نام'), c: col('نماینده', 'مسئول'), p1: col('تلفنهمراه', 'موبایل', 'همراه'),
+    const ci = {n: col('نامپیمانکار') !== -1 ? col('نامپیمانکار') : col('پیمانکار'), c: col('نماینده', 'مسئول'), p1: col('تلفنهمراه', 'موبایل', 'همراه'),
       p2: col('تلفندیگر', 'تلفن۲', 'ثابت'), w: col('واتساپ'), e: col('ایمیل', 'email', 'mail'), a: col('نشانی', 'آدرس'), no: col('یادداشت', 'توضیح'),
-      cn: col('نامقراردادی'), d: col('دیسیپلین', 'دسیپلین', 'رشته'), s: col('تخصص')};
+      cn: col('نامقراردادی'), d: col('دیسیپلین', 'دسیپلین', 'رشته'), s: H.findIndex(h => h === norm('تخصص‌ها') || h === norm('تخصصها')),
+      pn: col('ناممنتخب'), al: col('همهٔنام‌ها', 'همهنامها', 'همهٔنامها'), ct: col('قراردادها')};
     if(ci.p1 === -1) ci.p1 = col('تلفن', 'شماره');
     if(ci.n === -1) return {rows: [], err:'ستون «نام پیمانکار» پیدا نشد.'};
     const cell = (r, i) => i === -1 ? '' : String(r[i] == null ? '' : r[i]).trim();
@@ -27712,11 +27819,14 @@
       const name = cell(r, ci.n); if(!name) return;
       const ph = [cell(r, ci.p1)].concat(cell(r, ci.p2).split(/[\/،,]+/)).map(x => x.trim()).filter(Boolean)
         .map(x => /^9\d{9}$/.test(toEn(x)) ? '0' + toEn(x) : x);
-      rows.push({line: hr + i + 2, name, o: {c: cell(r, ci.c), p: ph, w: cell(r, ci.w), e: cell(r, ci.e), a: cell(r, ci.a), n: cell(r, ci.no), cn: cell(r, ci.cn), d: cell(r, ci.d), s: cell(r, ci.s)}});
+      rows.push({line: hr + i + 2, name, o: {c: cell(r, ci.c), p: ph, w: cell(r, ci.w), e: cell(r, ci.e), a: cell(r, ci.a), n: cell(r, ci.no), cn: cell(r, ci.cn), d: cell(r, ci.d), s: ctrTagsOf(cell(r, ci.s)).join('، '),
+        ct: ctrTagsOf(cell(r, ci.ct)).filter(x => ctrContractsAuto(name).indexOf(x) === -1).join(' | ')}, pn: cell(r, ci.pn), al: ctrTagsOf(cell(r, ci.al))});
     });
     return {rows};
   }
+  let ctdNameOps = [];      // از اکسل: نام‌های تازه برای یکی شدن و نام منتخب
   async function ctdImport(file){
+    ctdNameOps = [];
     if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره امتحان کنید.'); return; }
     let aoa = [];
     try{ const wb = XLSX.read(await file.arrayBuffer(), {type:'array'}); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''}); }
@@ -27735,19 +27845,23 @@
       const prev = plan.get(normName(canon));
       const base = prev ? prev.o : old;
       const m = {c: o.c || base.c || '', p: o.p.length ? Array.from(new Set(o.p)) : (base.p || []), w: o.w || base.w || '', e: o.e || base.e || '', a: o.a || base.a || '', n: o.n || base.n || '',
-        cn: o.cn || base.cn || '', d: o.d || base.d || '', s: o.s || base.s || ''};
-      const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n, m.cn, m.d, m.s]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '', old.cn || '', old.d || '', old.s || '']);
+        cn: o.cn || base.cn || '', d: o.d || base.d || '', s: o.s || base.s || '', ct: o.ct || base.ct || ''};
+      /* نام‌های تازه برای یکی شدن، و نام منتخب */
+      ctdNameOps.push({canon, al: (x.al || []).filter(n => normName(n) !== normName(canon) && !ctrNamesOf(canon).some(y => normName(y) === normName(n))), pn: x.pn});
+      const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n, m.cn, m.d, m.s, m.ct]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '', old.cn || '', old.d || '', old.s || '', old.ct || '']);
       if(same && !prev) return;
       plan.set(normName(canon), {canon, o: m, isNew: !ctrContactOf(canon), unknown: !known.has(normName(canon))});
     });
     const items = Array.from(plan.values());
-    if(!items.length){ showDialog('ok','تغییری نیست', 'همهٔ ' + toFa(rows.length) + ' سطر فایل با اطلاعات فعلی یکی است.' + (bad.length ? '\n' + bad.slice(0, 6).join('\n') : '')); return; }
+    const ops = ctdNameOps.filter(o => o.al.length || (o.pn && normName(o.pn) !== normName(ctrCanon(o.canon))));
+    if(!items.length && !ops.length){ showDialog('ok','تغییری نیست', 'همهٔ ' + toFa(rows.length) + ' سطر فایل با اطلاعات فعلی یکی است.' + (bad.length ? '\n' + bad.slice(0, 6).join('\n') : '')); return; }
     const nNew = items.filter(x => x.isNew).length, nUnk = items.filter(x => x.unknown).length;
     const msg = toFa(rows.length) + ' سطر خوانده شد.\n'
       + '• ' + toFa(nNew) + ' پیمانکار اطلاعات تماس تازه می‌گیرد\n'
       + '• ' + toFa(items.length - nNew) + ' پیمانکار به‌روز می‌شود\n'
       + (nUnk ? '• ' + toFa(nUnk) + ' نام در گزارش‌ها نیست و جدا ذخیره می‌شود\n' : '')
       + (bad.length ? '• ' + toFa(bad.length) + ' خانهٔ نادرست کنار گذاشته شد:\n   ' + bad.slice(0, 5).join('\n   ') + (bad.length > 5 ? '\n   …' : '') + '\n' : '')
+      + (ops.length ? '• نام‌ها: ' + toFa(ops.reduce((t, o) => t + o.al.length, 0)) + ' املای تازه یکی می‌شود و ' + toFa(ops.filter(o => o.pn && normName(o.pn) !== normName(ctrCanon(o.canon))).length) + ' نام منتخب عوض می‌شود\n' : '')
       + 'خانه‌های خالی اطلاعات قبلی را پاک نمی‌کنند.';
     if(!(await askConfirm('بارگذاری اکسل تماس‌ها', msg, 'ذخیره'))) return;
     const btn = document.querySelector('[data-ctdxl="in"]'); if(btn){ btn.disabled = true; btn.lastChild.textContent = 'در حال ذخیره…'; }
@@ -27763,6 +27877,13 @@
       olds.forEach(c => ctrContacts.delete(normName(c.name)));
       items.forEach(x => ctrContacts.set(normName(x.canon), Object.assign({}, x.clean, {name: x.canon})));
       try{ localStorage.setItem('siteLogM.ctrContacts.v1', JSON.stringify(Array.from(ctrContacts.values()))); }catch(e){}
+      for(const o of ops){
+        for(const n of o.al){ try{ await kxLink(o.canon, n, true); }catch(e){ fail++; } }
+        if(o.pn && normName(o.pn) !== normName(ctrCanon(o.canon))){
+          if(ctrNamesOf(o.canon).some(y => normName(y) === normName(o.pn))){ try{ await kxSetPrimary(o.pn); }catch(e){ fail++; } }
+          else{ try{ await kxLink(o.canon, o.pn, true); await kxSetPrimary(o.pn); }catch(e){ fail++; } }
+        }
+      }
       clearNetCache();
       ctcRepaint(); ctcRefreshDom('');
       showDialog(fail ? 'warn' : 'ok', 'بارگذاری شد', 'اطلاعات تماس ' + toFa(items.length) + ' پیمانکار ذخیره شد.' + (fail ? ' (' + toFa(fail) + ' پاک‌سازی قبلی ناموفق بود)' : ''));
@@ -27845,9 +27966,24 @@
     src.forEach(c => { const k = normName(c || ''); if(k) m.set(k, (m.get(k) || 0) + 1); });
     return m;
   }
+  /* نام‌هایی که در قرارداد یا صورت وضعیت آمده‌اند؛ اگر نام منتخبی انتخاب
+     نشده، همین نام روی کارت پیمانکار می‌نشیند */
+  function ctrDocRows(){
+    let A = null;
+    try{ if(typeof adminAll !== 'undefined' && adminAll && adminAll.length) return adminAll.filter(x => x.kind === 'contract' || x.kind === 'statement').map(x => ({kind: x.kind, row: x.row})); }catch(e){}
+    try{ A = lastAdminDay; }catch(e){}
+    if(!A) return [];
+    return (A.contracts || []).map(r => ({kind:'contract', row:r})).concat((A.statements || []).map(r => ({kind:'statement', row:r})));
+  }
+  function ctrDocNames(){
+    const m = new Map();
+    ctrDocRows().forEach(x => { const n = String(pick(x.row, x.kind === 'contract' ? AD.cParty : AD.sParty) || '').trim(); const k = normName(n); if(k) m.set(k, (m.get(k) || 0) + 1); });
+    return m;
+  }
   /* پرونده‌ها از روی پیوندهای «یکی هستند» ساخته می‌شوند */
   function ctrBuild(){
-    const sig = ctrVer + '|' + ((allRows || []).length) + '|' + ((typeof mtAllRows !== 'undefined' && mtAllRows) ? mtAllRows.length : 0) + '|' + Object.keys(loadLinks()).length;
+    let docSig = 0; try{ docSig = ((typeof adminAll !== 'undefined' && adminAll) ? adminAll.length : 0) * 7 + (lastAdminDay ? ((lastAdminDay.contracts || []).length + (lastAdminDay.statements || []).length) : 0); }catch(e){}
+    const sig = ctrVer + '|' + docSig + '|' + ((allRows || []).length) + '|' + ((typeof mtAllRows !== 'undefined' && mtAllRows) ? mtAllRows.length : 0) + '|' + Object.keys(loadLinks()).length;
     if(ctrCache && ctrCache.sig === sig) return ctrCache;
     const parent = new Map(), names = new Map();
     const find = k => { let r = k; while(parent.get(r) !== r) r = parent.get(r); let x = k; while(parent.get(x) !== r){ const nx = parent.get(x); parent.set(x, r); x = nx; } return r; };
@@ -27864,7 +28000,9 @@
     groups.forEach(keys => {
       if(keys.length < 2) return;
       const pk = keys.find(k => ctrPrimary.has(k));
-      const best = pk || keys.slice().sort((x, y) => (cnt.get(y) || 0) - (cnt.get(x) || 0) || names.get(x).length - names.get(y).length)[0];
+      const dn = ctrDocNames();
+      const docK = keys.filter(k => dn.has(k)).sort((x, y) => (dn.get(y) || 0) - (dn.get(x) || 0))[0];
+      const best = pk || docK || keys.slice().sort((x, y) => (cnt.get(y) || 0) - (cnt.get(x) || 0) || names.get(x).length - names.get(y).length)[0];
       const disp = (pk && ctrPrimaryName.get(pk)) || names.get(best);
       keys.forEach(k => { canon.set(k, disp); members.set(k, keys.map(x => names.get(x))); });
     });
