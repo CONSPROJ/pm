@@ -1611,6 +1611,10 @@
   .ds-side i{width:8px;height:8px;border-radius:50%;background:var(--c);}
   .ds-side.on{border-color:var(--c);background:color-mix(in srgb, var(--c) 12%, var(--surface));}
   .ds-holdp .ds-at{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit;font-size:13px;}
+  .ds-hl{all:unset;cursor:pointer;color:inherit;font:inherit;text-decoration:underline dotted;text-underline-offset:3px;}
+  .ds-hl:hover{color:var(--sky);}
+  .ct-notes{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px;}
+  .ct-nh{display:flex;flex-direction:column;gap:2px;} .ct-nh b{font-size:13px;font-weight:900;} .ct-nh small{font-size:11.5px;color:var(--muted);}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -37497,7 +37501,12 @@
           ? '<div class="ct-alias"><u>نام‌های یکی‌شده</u>'
             + als.map(a => '<span>' + esc(a) + '</span>').join('') + '</div>'
           : '')
-      + '<div class="ct-body"><div class="empty">در حال دریافت گزارش‌ها…</div></div></div>';
+      + '<div class="ct-body"><div class="empty">در حال دریافت گزارش‌ها…</div></div>'
+      /* یادداشت و نظر روی پروندهٔ طرف (پیمانکار، مشاور یا کارفرما) */
+      + '<div class="ct-notes"><div class="ct-nh"><b>تماس، یادداشت و نظرات</b><small>هر چه دربارهٔ ' + esc(name) + ' باید ثبت شود</small></div>'
+      +   (function(){ try{ return ctcBarHtml(name); }catch(e){ return ''; } })()
+      +   (function(){ try{ return commentBarHtml('party', 'party:' + nameKey(name), 'پروندهٔ ' + name, {}); }catch(e){ return ''; } })()
+      + '</div></div>';
     document.body.appendChild(bg);
     document.body.style.overflow = 'hidden';
 
@@ -50211,6 +50220,15 @@
   /* سمتِ ثبت‌شده، یا برای سابقهٔ قدیمی حدس از روی مرحله */
   const dsSideAt = (x, r) => (x && x.side) ? x.side : dsDefSide(x && x.st, r);
   const dsHolderTxt = (x, r) => { const sd = dsSideOf(dsSideAt(x, r)); if(!sd) return ''; return x.at ? x.at + (sd.k === 'in' ? '' : ' (' + sd.t + ')') : sd.t; };
+  /* نام نگه‌دارنده، قابل کلیک: نفر داخل پروژه پروفایل خودش، مشاور و
+     کارفرما و پیمانکار پروندهٔ طرف (با اطلاعات تماس، یادداشت و نظرات) */
+  function dsHolderLink(side, at, txt){
+    const nm = at || (side === 'emp' ? 'کارفرما' : '');
+    if(!nm) return esc(txt);
+    return side === 'in'
+      ? '<button type="button" class="ds-hl person" data-person="' + esc(nm) + '">' + esc(txt) + '</button>'
+      : '<button type="button" class="ds-hl" data-hrprof="' + esc(nm) + '" title="پروندهٔ ' + esc(nm) + '">' + esc(txt) + '</button>';
+  }
   function dsHolderNow(r){
     try{
       const revs = dsRevsOf(r), cur = revs[revs.length - 1];
@@ -50238,7 +50256,7 @@
       const ava = (dsSideAt(x, rev.__r) === 'in' && (x.at || (i === 0 && x.by))) ? (x.at || x.by) : '';
       return {k: kOf(x), t: x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : ''), d: x.d || '',
         rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava,
-        sub: (!ava && h) ? 'نزد ' + esc(h) : '', last: !open && i === L.length - 1, st: x.st};
+        sub: (!ava && h) ? 'نزد ' + dsHolderLink(dsSideAt(x, rev.__r), x.at || '', h) : '', last: !open && i === L.length - 1, st: x.st};
     });
     if(open){ const lx = L[L.length - 1]; const h = dsHolderTxt(lx, rev.__r); pts.push({k: kOf(lx), t:'امروز', d:'', now:true, isToday:true, txt: h ? 'نزد ' + h : lastSt, st: lastSt}); }
     const items = [];
@@ -50291,7 +50309,7 @@
     /* مشخصات سند: یک خط متن ساده، نه کپسول */
     const facts = [];
     const hn = dsHolderNow(r);
-    const holder = hn ? '<div class="ds-hold s-' + hn.side + '"><i></i><u>الان دست</u><b>' + esc(hn.txt) + '</b>'
+    const holder = hn ? '<div class="ds-hold s-' + hn.side + '"><i></i><u>الان دست</u><b>' + dsHolderLink(hn.side, hn.at, hn.txt) + '</b>'
       + (hn.days != null ? '<em class="' + ((DS_STAGE_LIM[hn.st] && hn.days > DS_STAGE_LIM[hn.st][1]) ? 'bad' : (DS_STAGE_LIM[hn.st] && hn.days > DS_STAGE_LIM[hn.st][0]) ? 'warn' : '') + '">' + toFa(hn.days) + ' روز</em>' : '')
       + '<small>' + esc(hn.st) + '</small></div>' : '';
     if(pick(r,AD.dType)) facts.push('<b>' + esc(pick(r,AD.dType)) + '</b>');
