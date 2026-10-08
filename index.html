@@ -1427,14 +1427,11 @@
   .tk-flr.lnk:hover, .tk-plc.lnk:hover, .ti-k.lnk:hover, .zlnk:hover{color:var(--sky);}
   /* ====== تدارکات ====== */
   .wp-card.c-prc .wp-ic{color:#2a8a86;}
-  #prcArea{display:flex;flex-direction:column;gap:12px;margin-top:10px;}
+  #prcArea{display:block;}
   #prcArea[hidden]{display:none !important;}
-  .prc-tabs{display:flex;gap:8px;flex-wrap:wrap;}
-  .prc-tab{height:42px;padding:0 15px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
-  .prc-tab.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
-  .prc-tab b{font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:color-mix(in srgb, currentColor 14%, transparent);}
-  .prc-tab em{font-style:normal;font-size:11px;font-weight:900;padding:2px 8px;border-radius:99px;background:var(--alert);color:#fff;}
-  .prf{border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:14px;}
+  .prf{display:flex;flex-direction:column;gap:14px;}
+  .prc-hotlbl{color:var(--alert);font-weight:800;}
+  #prcArea > .block + .block{margin-top:0;}
   .prf-h{display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px;}
   .prf-h > div{flex:1;display:flex;flex-direction:column;gap:3px;} .prf-h b{font-size:16px;font-weight:900;} .prf-h small{font-size:12px;color:var(--muted);}
   .prf-code{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 12px;border-radius:12px;border:1px dashed var(--alert);color:var(--alert);}
@@ -1447,11 +1444,9 @@
   .prf-th{font-size:11px;font-weight:800;color:var(--muted);padding:0 2px;}
   .prf-n{width:28px;height:28px;border-radius:9px;background:var(--field);display:grid;place-items:center;font-size:12px;font-weight:900;}
   .prf-x{height:34px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--alert);cursor:pointer;}
-  .prf-sig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-top:1px dashed var(--line);padding-top:12px;}
-  .prs{display:flex;flex-direction:column;gap:4px;} .prs u{text-decoration:none;font-size:11px;font-weight:800;color:var(--muted);}
   .prf-foot{display:flex;justify-content:flex-end;gap:8px;}
   @media (max-width:700px){
-    .prf-g{grid-template-columns:1fr 1fr;} .prf-sig{grid-template-columns:1fr 1fr;}
+    .prf-g{grid-template-columns:1fr 1fr;}
     .prf-th{display:none;}
     .prf-row{grid-template-columns:28px 1fr 1fr 32px;border:1px solid var(--line-soft);border-radius:12px;padding:8px;}
     .prf-row .pr-d{grid-column:2 / 4;} .prf-row .prf-x{grid-column:4;grid-row:1;}
@@ -20035,7 +20030,18 @@
       </div>
       <div class="block" id="wrkBody"><div class="empty">در حال آماده‌سازی…</div></div>
     </div>
-    <div id="prcArea" hidden></div>
+    <!-- ================= تدارکات ================= -->
+    <div id="prcArea" hidden>
+      <div class="block" id="prcHead">
+        <div class="block-head"><span class="tag">۱</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 10.2a1.5 1.5 0 001.5 1.2h8.6a1.5 1.5 0 001.5-1.1L21 8H6.2"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span><h2>تدارکات</h2>
+          <span class="side" id="prcSide"></span></div>
+        <div class="kind-caps wrk-caps" id="prcTabs">
+          <button type="button" class="kcap sm on" data-prtab="new">درخواست خرید تازه</button>
+          <button type="button" class="kcap sm" data-prtab="list">پیگیری خریدها</button>
+        </div>
+      </div>
+      <div class="block" id="prcBody"><div class="empty">در حال آماده‌سازی…</div></div>
+    </div>
   </div>
 
   <!-- ================= مشاهده ================= -->
@@ -50216,7 +50222,6 @@
   function prNewHtml(){
     const D = prcState.draft || (prcState.draft = {date: todayShamsi(), unit: '', requester: activeUserName(), note: '', sig: {}, items: [{}, {}, {}]});
     const proj = (function(){ try{ return (document.getElementById('projectName') || {}).value || ''; }catch(e){ return ''; } })();
-    const sigF = (k, lbl) => '<label class="prs"><u>' + lbl + '</u><input type="text" class="pr-sig" data-sig="' + k + '" data-list="engineerList" autocomplete="off" value="' + esc(D.sig[k] || '') + '" placeholder="نام"></label>';
     return '<div class="prf">'
       + '<div class="prf-h"><div><b>درخواست خرید کالا و خدمات</b><small>کارگاه: ' + esc(proj || '—') + '</small></div>'
       +   '<span class="prf-code"><u>شماره</u><b>' + esc(prNextCode()) + '</b><small>پس از ثبت</small></span></div>'
@@ -50226,7 +50231,6 @@
       + '<div class="prf-t"><div class="prf-th"><span>ردیف</span><span>شرح کالا</span><span>مقدار</span><span>واحد</span><span>مرکز هزینه</span><span>سایر توضیحات</span><span></span></div>'
       +   '<div class="prf-rows">' + D.items.map(prItemRowHtml).join('') + '</div>'
       +   '<button type="button" class="te-add" data-pradd="1">+ ردیف تازه</button></div>'
-      + '<div class="prf-sig">' + sigF('req', 'امضاء درخواست‌کننده') + sigF('sup', 'امضاء سرپرست کارگاه') + sigF('store', 'تأیید و کنترل انبار') + sigF('pm', 'امضاء مدیر پروژه') + '</div>'
       + '<label class="te-f"><u>توضیحات برگه</u><textarea class="pr-note" rows="2" placeholder="اختیاری">' + esc(D.note) + '</textarea></label>'
       + '<div class="prf-foot"><button type="button" class="mini" data-prclear="1">پاک کردن برگه</button>'
       +   '<button type="button" class="send rf-go" data-prsave="1"' + (prcState.busy ? ' disabled' : '') + '>' + (prcState.busy ? 'در حال ثبت…' : 'ثبت درخواست خرید') + '</button></div>'
@@ -50298,17 +50302,17 @@
       + '</div>';
   }
   async function prcRender(){
-    const host = document.getElementById('prcArea'); if(!host) return;
-    if(!prcState.t) host.innerHTML = '<div class="empty">در حال دریافت درخواست‌های خرید…</div>';
+    const host = document.getElementById('prcArea'), body = document.getElementById('prcBody'); if(!host || !body) return;
+    try{ segInit(document.getElementById('prcTabs'), '.kcap', el => el.classList.contains('on')); }catch(e){}
+    host.querySelectorAll('#prcTabs [data-prtab]').forEach(b => b.classList.toggle('on', b.dataset.prtab === prcState.tab));
+    if(!prcState.t) body.innerHTML = '<div class="empty">در حال دریافت درخواست‌های خرید…</div>';
     await prcLoad();
     try{ prListsEnsure(); }catch(e){}
     const openAll = prcState.list.reduce((t, r) => t + r.items.filter(prIsOpen).length, 0);
     const hotAll = prcState.list.reduce((t, r) => t + r.items.filter(it => prHot(r, it)).length, 0);
-    host.innerHTML = '<div class="prc-tabs">'
-      + '<button type="button" class="prc-tab' + (prcState.tab === 'new' ? ' on' : '') + '" data-prtab="new">+ درخواست خرید تازه</button>'
-      + '<button type="button" class="prc-tab' + (prcState.tab === 'list' ? ' on' : '') + '" data-prtab="list">گزارش و پیگیری خریدها<b>' + toFa(openAll) + ' باز</b>' + (hotAll ? '<em>' + toFa(hotAll) + ' بحرانی</em>' : '') + '</button></div>'
-      + '<div class="prc-body">' + (prcState.tab === 'new' ? prNewHtml() : prListHtml()) + '</div>';
-    if(prcState.tab === 'list'){ const qi = document.getElementById('prQ'); if(qi && prcState.q && document.activeElement !== qi){} }
+    const side = document.getElementById('prcSide');
+    if(side) side.innerHTML = toFa(openAll) + ' قلم باز' + (hotAll ? ' · <b class="prc-hotlbl">' + toFa(hotAll) + ' بحرانی</b>' : '');
+    body.innerHTML = prcState.tab === 'new' ? prNewHtml() : prListHtml();
     try{ prHotCheck(); }catch(e){}
   }
   document.addEventListener('click', async e => {
@@ -50367,7 +50371,7 @@
       prcState.q = e.target.value;
       clearTimeout(prcState.qt);
       prcState.qt = setTimeout(() => {
-        const body = document.querySelector('#prcArea .prc-body'); if(!body) return;
+        const body = document.getElementById('prcBody'); if(!body) return;
         const pos = e.target.selectionStart;
         body.innerHTML = prListHtml();
         const qi = document.getElementById('prQ'); if(qi){ qi.focus(); try{ qi.setSelectionRange(pos, pos); }catch(err){} }
