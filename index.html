@@ -1615,6 +1615,17 @@
   .ds-hl:hover{color:var(--sky);}
   .ct-notes{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px;}
   .ct-nh{display:flex;flex-direction:column;gap:2px;} .ct-nh b{font-size:13px;font-weight:900;} .ct-nh small{font-size:11.5px;color:var(--muted);}
+  /* فهرست پیمانکاران در «گزارش پیمانکار» */
+  .ctd-wrap{padding:0 !important;overflow:hidden;}
+  .ctd-wrap > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;}
+  .ctd-wrap > summary::-webkit-details-marker{display:none;}
+  .ctd-wrap .ctd-st{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .ctd-wrap .ctd-st b{font-size:14px;font-weight:900;} .ctd-wrap .ctd-st small{font-size:11.5px;color:var(--muted);}
+  .ctd-wrap > summary > i{font-style:normal;color:var(--muted);transition:transform .2s;}
+  .ctd-wrap[open] > summary > i{transform:rotate(180deg);}
+  .ctd-wrap > .ctd-host{padding:0 14px 14px;}
+  .ctd-wrap .ctd-list{max-height:560px;overflow:auto;overscroll-behavior:contain;}
+  .ctc-who .ctc-em{color:var(--sky);} .ctc-who .ctc-meta{color:var(--muted);white-space:normal;line-height:1.6;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -20032,6 +20043,10 @@
       </button>
     </div>
     <div class="jump-bar" id="writeJumpBar"></div>
+    <details class="block ctd-wrap" id="ctdWrite" hidden>
+      <summary class="ctd-sum"><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 0116 0"/><path d="M2.5 11h19v2.5h-19z"/><path d="M12 3v4"/></svg></span><span class="ctd-st"><b>فهرست پیمانکاران پروژه</b><small>نام قراردادی، دیسیپلین، تخصص، تماس، ایمیل و نشانی</small></span><i>▾</i></summary>
+      <div class="ctd ctd-host"></div>
+    </details>
     <form id="reportForm" novalidate>
       <div class="cr-sum" id="crSum" aria-live="polite">
         <div class="crs-ring"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" cx="22" cy="22" r="18"/></svg><b id="crsPct">۰٪</b></div>
@@ -27500,6 +27515,8 @@
     const clean = {};
     if(o.p && o.p.length) clean.p = o.p; if(o.e) clean.e = o.e; if(o.c) clean.c = o.c;
     if(o.w) clean.w = o.w; if(o.a) clean.a = o.a; if(o.n) clean.n = o.n;
+    /* نام قراردادی، دیسیپلین و تخصص‌ها */
+    if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s;
     const old = ctrContactOf(canon);
     if(old && old.name){
       await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(old.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
@@ -27563,7 +27580,10 @@
       + (ed ? '<button type="button" class="ctc-b add" data-ctcedit="' + esc(name) + '">+ افزودن تلفن و ایمیل</button>' : '') + '</div>';
     return '<div class="ctc-bar" data-ctc="' + esc(name) + '">'
       + '<span class="ctc-who">' + CTC_I.user + '<span><b>' + esc(c.c || c.name || name) + '</b>'
-      +   '<small dir="ltr">' + esc([ph ? toFa(ph) : '', c.e || ''].filter(Boolean).join(' · ')) + '</small></span></span>'
+      +   (ph ? '<small dir="ltr">' + esc(toFa(ph)) + '</small>' : '')
+      +   (c.e ? '<small class="ctc-em" dir="ltr">' + esc(c.e) + '</small>' : '')
+      +   ((c.cn || c.d || c.s || c.a) ? '<small class="ctc-meta">' + esc([c.cn ? 'قرارداد: ' + c.cn : '', c.d || '', c.s || '', c.a || ''].filter(Boolean).join(' · ')) + '</small>' : '')
+      + '</span></span>'
       + '<span class="ctc-acts">'
       +   (ph ? '<a class="ctc-b tel" href="tel:' + esc(telOf(ph)) + '" title="تماس">' + CTC_I.tel + '<span>تماس</span></a>'
              + '<a class="ctc-b sms" href="sms:' + esc(telOf(ph)) + '" title="پیامک">' + CTC_I.sms + '<span>پیامک</span></a>' : '')
@@ -27577,7 +27597,10 @@
     const c = ctrContactOf(name) || {};
     const ph = (c.p || []).concat(['']).slice(0, Math.max(2, (c.p || []).length + 1));
     return '<div class="ctc-ed" data-ctced="' + esc(name) + '">'
-      + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(name)) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small>اطلاعات تماس پیمانکار</small></span></div>'
+      + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(name)) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small>مشخصات و اطلاعات تماس پیمانکار</small></span></div>'
+      + '<label class="ctc-f"><span>نام قراردادی (نام شرکت در قرارداد)</span><input type="text" data-ctk="cn" value="' + esc(c.cn || '') + '" placeholder="مثلاً شرکت ساختمانی …"></label>'
+      + '<div class="ctc-phs"><label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
+      +   '<label class="ctc-f"><span>تخصص‌ها</span><input type="text" data-ctk="s" value="' + esc(c.s || '') + '" placeholder="مثلاً لوله‌کشی، کانال‌کشی"></label></div>'
       + '<label class="ctc-f"><span>نام نماینده / مسئول</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
       + '<div class="ctc-phs">' + ph.map((v, i) => '<label class="ctc-f"><span>' + (i ? 'تلفن دیگر' : 'تلفن همراه') + '</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" value="' + esc(v) + '" placeholder="09xxxxxxxxx"></label>').join('')
       +   '<button type="button" class="ctc-add" data-ctcph="1">+ تلفن دیگر</button></div>'
@@ -27638,24 +27661,34 @@
     down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
     up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></svg>'
   };
-  const CTD_COLS = ['نام پیمانکار', 'نماینده / مسئول', 'تلفن همراه', 'تلفن دیگر', 'واتساپ', 'ایمیل', 'نشانی', 'یادداشت'];
+  const CTD_COLS = ['نام پیمانکار', 'نام قراردادی', 'دیسیپلین', 'تخصص‌ها', 'نماینده / مسئول', 'تلفن همراه', 'تلفن دیگر', 'واتساپ', 'ایمیل', 'نشانی', 'یادداشت'];
   function ctdEntities(){
     let ents = [];
     try{ ents = kxEntities(kxStats()); }catch(e){}
     const seen = new Set(ents.map(e => e.k));
-    ctrContacts.forEach((c, k) => { if(!seen.has(k)) ents.push({canon: c.name, k, n:0, docs:0, members:[], skills:new Map()}); });
+    ctrContacts.forEach((c, k) => { if(!seen.has(k)){ seen.add(k); ents.push({canon: c.name, k, n:0, docs:0, members:[], skills:new Map()}); } });
+    /* همهٔ پیمانکارانِ فهرست پروژه، حتی اگر گزارش‌ها هنوز بار نشده باشند */
+    ['contractorList', 'contractPartyList'].forEach(id => {
+      const dl = document.getElementById(id); if(!dl) return;
+      Array.from(dl.options).forEach(o => {
+        let c = String(o.value || '').trim(); if(!c) return;
+        try{ c = ctrCanon(canonicalName(c)); const sp = splitParts(c); if(sp) c = sp.n; }catch(e){}
+        const k = normName(c); if(!k || seen.has(k)) return;
+        seen.add(k); ents.push({canon: c, k, n:0, docs: id === 'contractPartyList' ? 1 : 0, members:[], skills:new Map()});
+      });
+    });
     return ents;
   }
   function ctdExport(){
     if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره بزنید.'); return; }
     const ents = ctdEntities().sort((a, b) => a.canon.localeCompare(b.canon, 'fa'));
     const aoa = [CTD_COLS].concat(ents.map(e => { const c = ctrContactOf(e.canon) || {}; const p = c.p || [];
-      return [e.canon, c.c || '', p[0] || '', p.slice(1).join(' / '), c.w || '', c.e || '', c.a || '', c.n || '']; }));
+      return [e.canon, c.cn || '', c.d || '', c.s || (e.skills && e.skills.size ? Array.from(e.skills.keys()).join('، ') : ''), c.c || '', p[0] || '', p.slice(1).join(' / '), c.w || '', c.e || '', c.a || '', c.n || '']; }));
     const sh = XLSX.utils.aoa_to_sheet(aoa);
-    sh['!cols'] = [{wch:28}, {wch:20}, {wch:15}, {wch:18}, {wch:15}, {wch:26}, {wch:30}, {wch:30}];
+    sh['!cols'] = [{wch:28}, {wch:28}, {wch:14}, {wch:24}, {wch:20}, {wch:15}, {wch:18}, {wch:15}, {wch:26}, {wch:30}, {wch:30}];
     sh['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:aoa.length - 1, c:CTD_COLS.length - 1}})};
     /* تلفن‌ها متن بمانند تا صفرِ اول نیفتد */
-    for(let r = 1; r < aoa.length; r++) [2, 3, 4].forEach(c => { const ad = XLSX.utils.encode_cell({r, c}); if(sh[ad]) sh[ad] = {t:'s', v: String(sh[ad].v)}; });
+    for(let r = 1; r < aoa.length; r++) [5, 6, 7].forEach(c => { const ad = XLSX.utils.encode_cell({r, c}); if(sh[ad]) sh[ad] = {t:'s', v: String(sh[ad].v)}; });
     const wb = XLSX.utils.book_new(); try{ xlsBookRtl(wb); }catch(e){}
     XLSX.utils.book_append_sheet(wb, sh, 'تماس پیمانکاران');
     XLSX.writeFile(wb, 'تماس پیمانکاران - ' + toFa(todayShamsi()).replace(/\//g, '-') + '.xlsx');
@@ -27667,8 +27700,9 @@
     if(hr === -1) hr = 0;
     const H = (aoa[hr] || []).map(norm);
     const col = (...keys) => H.findIndex(h => keys.some(k => h.indexOf(norm(k)) !== -1));
-    const ci = {n: col('نامپیمانکار', 'پیمانکار', 'نام'), c: col('نماینده', 'مسئول'), p1: col('تلفنهمراه', 'موبایل', 'همراه'),
-      p2: col('تلفندیگر', 'تلفن۲', 'ثابت'), w: col('واتساپ'), e: col('ایمیل', 'email', 'mail'), a: col('نشانی', 'آدرس'), no: col('یادداشت', 'توضیح')};
+    const ci = {n: col('نامپیمانکار') !== -1 ? col('نامپیمانکار') : col('پیمانکار', 'نام'), c: col('نماینده', 'مسئول'), p1: col('تلفنهمراه', 'موبایل', 'همراه'),
+      p2: col('تلفندیگر', 'تلفن۲', 'ثابت'), w: col('واتساپ'), e: col('ایمیل', 'email', 'mail'), a: col('نشانی', 'آدرس'), no: col('یادداشت', 'توضیح'),
+      cn: col('نامقراردادی'), d: col('دیسیپلین', 'دسیپلین', 'رشته'), s: col('تخصص')};
     if(ci.p1 === -1) ci.p1 = col('تلفن', 'شماره');
     if(ci.n === -1) return {rows: [], err:'ستون «نام پیمانکار» پیدا نشد.'};
     const cell = (r, i) => i === -1 ? '' : String(r[i] == null ? '' : r[i]).trim();
@@ -27678,7 +27712,7 @@
       const name = cell(r, ci.n); if(!name) return;
       const ph = [cell(r, ci.p1)].concat(cell(r, ci.p2).split(/[\/،,]+/)).map(x => x.trim()).filter(Boolean)
         .map(x => /^9\d{9}$/.test(toEn(x)) ? '0' + toEn(x) : x);
-      rows.push({line: hr + i + 2, name, o: {c: cell(r, ci.c), p: ph, w: cell(r, ci.w), e: cell(r, ci.e), a: cell(r, ci.a), n: cell(r, ci.no)}});
+      rows.push({line: hr + i + 2, name, o: {c: cell(r, ci.c), p: ph, w: cell(r, ci.w), e: cell(r, ci.e), a: cell(r, ci.a), n: cell(r, ci.no), cn: cell(r, ci.cn), d: cell(r, ci.d), s: cell(r, ci.s)}});
     });
     return {rows};
   }
@@ -27700,8 +27734,9 @@
       const old = ctrContactOf(canon) || {};
       const prev = plan.get(normName(canon));
       const base = prev ? prev.o : old;
-      const m = {c: o.c || base.c || '', p: o.p.length ? Array.from(new Set(o.p)) : (base.p || []), w: o.w || base.w || '', e: o.e || base.e || '', a: o.a || base.a || '', n: o.n || base.n || ''};
-      const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '']);
+      const m = {c: o.c || base.c || '', p: o.p.length ? Array.from(new Set(o.p)) : (base.p || []), w: o.w || base.w || '', e: o.e || base.e || '', a: o.a || base.a || '', n: o.n || base.n || '',
+        cn: o.cn || base.cn || '', d: o.d || base.d || '', s: o.s || base.s || ''};
+      const same = JSON.stringify([m.c, m.p, m.w, m.e, m.a, m.n, m.cn, m.d, m.s]) === JSON.stringify([old.c || '', old.p || [], old.w || '', old.e || '', old.a || '', old.n || '', old.cn || '', old.d || '', old.s || '']);
       if(same && !prev) return;
       plan.set(normName(canon), {canon, o: m, isNew: !ctrContactOf(canon), unknown: !known.has(normName(canon))});
     });
@@ -27744,8 +27779,14 @@
     ctdImport(e.target.files[0]);
   });
   function ctcRepaint(focusId){
-    const box = document.getElementById('ctDir');
-    if(!box) return;
+    /* دفترچه هم در پنل مدیریت (#ctDir) هست، هم در «گزارش پیمانکار» (.ctd-host) */
+    let boxes = Array.from(document.querySelectorAll('#ctDir, .ctd-host'));
+    if(!boxes.length) return;
+    const vis = boxes.filter(b => b.offsetParent);
+    if(vis.length) boxes = vis;
+    try{ let dl = document.getElementById('ctdDiscList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctdDiscList'; document.body.appendChild(dl); }
+      dl.innerHTML = tkCatsAll().map(c => '<option value="' + esc(c) + '">').join(''); }catch(e){}
+    const box = {set innerHTML(h){ boxes.forEach(b => { b.innerHTML = h; }); }};
     const ents = ctdEntities();
     const q = String(ctdState.q || '').trim();
     const nWith = ents.filter(e => ctrContactOf(e.canon)).length;
@@ -27753,7 +27794,7 @@
       const c = ctrContactOf(e.canon);
       if(ctdState.f === 'with' && !c) return false;
       if(ctdState.f === 'none' && c) return false;
-      if(q){ const hay = [e.canon, c && c.c, c && c.e, c && (c.p || []).join(' ')].filter(Boolean).join(' '); if(hay.indexOf(q) === -1 && toEn(hay).indexOf(toEn(q)) === -1) return false; }
+      if(q){ const hay = [e.canon, c && c.c, c && c.e, c && c.cn, c && c.d, c && c.s, c && c.a, c && (c.p || []).join(' ')].filter(Boolean).join(' '); if(hay.indexOf(q) === -1 && toEn(hay).indexOf(toEn(q)) === -1) return false; }
       return true;
     }).sort((a, b) => (!!ctrContactOf(b.canon) - !!ctrContactOf(a.canon)) || (b.n + b.docs) - (a.n + a.docs));
     const ed = can('ctr.contact');
@@ -27770,7 +27811,8 @@
           const op = ctdState.open === e.k;
           return '<div class="ctd-r' + (op ? ' open' : '') + '">'
             + '<button type="button" class="ctd-h" data-ctdo="' + esc(e.k) + '"><span class="ctc-av">' + esc(initialsOf(e.canon)) + '</span>'
-            + '<span class="ctd-n"><b>' + esc(e.canon) + '</b><small>' + (e.skills && e.skills.size ? esc(Array.from(e.skills.keys()).slice(0, 3).join('، ')) : (e.docs ? 'طرف قرارداد' : '')) + '</small></span>'
+            + '<span class="ctd-n"><b>' + esc(e.canon) + '</b><small>' + (function(){ const c = ctrContactOf(e.canon) || {};
+                return esc([c.cn && c.cn !== e.canon ? c.cn : '', c.d || '', c.s || (e.skills && e.skills.size ? Array.from(e.skills.keys()).slice(0, 3).join('، ') : (e.docs ? 'طرف قرارداد' : ''))].filter(Boolean).join(' · ')); })() + '</small></span>'
             + (ed ? '<span class="ctd-e">' + (op ? 'بستن' : (ctrContactOf(e.canon) ? 'ویرایش' : '+ افزودن')) + '</span>' : '') + '</button>'
             + ctcBarHtml(e.canon)
             + (op && ed ? ctcEditorHtml(e.canon) : '')
@@ -27780,7 +27822,7 @@
   }
   document.addEventListener('click', e => {
     const t = e.target;
-    if(!t.closest || !t.closest('#ctDir')) return;
+    if(!t.closest || !t.closest('#ctDir, .ctd-host')) return;
     const f = t.closest('[data-ctdf]'); if(f){ ctdState.f = f.dataset.ctdf; ctcRepaint(); return; }
     const o = t.closest('[data-ctdo]'); if(o){ if(!can('ctr.contact')) return; ctdState.open = ctdState.open === o.dataset.ctdo ? '' : o.dataset.ctdo; ctcRepaint(); return; }
     if(t.closest('[data-ctcclose]')){ e.stopPropagation(); ctdState.open = ''; ctcRepaint(); }
@@ -27791,7 +27833,7 @@
     clearTimeout(ctcRepaint.__t); ctcRepaint.__t = setTimeout(() => ctcRepaint('ctdQ'), 200);
   });
   /* بعد از ذخیره داخل دفترچه، ردیف بسته می‌شود */
-  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#ctDir [data-ctcsave], #ctDir [data-ctcdel]')) setTimeout(() => { ctdState.open = ''; }, 0); }, true);
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#ctDir [data-ctcsave], #ctDir [data-ctcdel], .ctd-host [data-ctcsave], .ctd-host [data-ctcdel]')) setTimeout(() => { ctdState.open = ''; }, 0); }, true);
   const ctrRetiredList = () => Array.from(ctrRetired.entries()).map(([k, to]) => k + '\u00a6' + to);
   const ctrPersist = () => { try{ localStorage.setItem(CTR_LS, JSON.stringify({pn: Array.from(ctrPrimaryName.values()), m: Array.from(ctrMulti), r: ctrRetiredList()})); }catch(e){} };
   let ctrCache = null, ctrVer = 0;
@@ -59214,7 +59256,10 @@
     const body = document.getElementById('wrkBody');
     if(!caps || !area) return;
 
-    const crewEls = () => ['writeJumpBar','reportForm','reviewBlock','mineBlock']
+    /* فهرست پیمانکاران فقط برای ادمین و کسی که دسترسی ویرایش تماس دارد */
+    const ctdW = document.getElementById('ctdWrite');
+    if(ctdW) ctdW.addEventListener('toggle', () => { if(ctdW.open){ try{ ctcRepaint(); }catch(e){} } });
+    const crewEls = () => ['writeJumpBar','reportForm','reviewBlock','mineBlock','ctdWrite']
       .map(id => document.getElementById(id)).filter(Boolean);
     /* m خالی: فقط دو کارت انتخاب دیده می‌شوند؛ با انتخاب، کارت‌ها جمع
        می‌شوند و فرم همان نوع زیرشان باز می‌شود. زدن دوبارهٔ کارت فعال،
@@ -59229,6 +59274,7 @@
       document.body.classList.toggle('wpick-idle', idle);
       const wrk = (m === 'wrk'), prc = (m === 'prc');
       crewEls().forEach(el => { el.style.display = (wrk || prc || idle) ? 'none' : ''; });
+      if(ctdW){ let okC = false; try{ okC = isAdminUser() || can('ctr.contact'); }catch(e){} ctdW.hidden = !okC; }
       const pa = document.getElementById('prcArea');
       if(pa){ pa.hidden = !prc; if(prc){ try{ prcRender(); }catch(e){} } }
       /* نوار چسبانِ «ثبت گزارش» مالِ فرم پیمانکاران است، نه کارگری */
