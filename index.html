@@ -16907,7 +16907,9 @@
   .cf-more > summary{list-style:none;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:var(--sky);padding:7px;border-radius:12px;border:1px dashed var(--line);}
   .cf-more > summary::-webkit-details-marker{display:none;}
   .cf-more[open] > summary{margin-bottom:6px;}
-  .cf-docs{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:8px;}
+  .cf-docs{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:8px;}
+  .ct-cbtn{display:flex;margin-top:6px;} .ct-cbtn .ctc-mini{margin-inline-start:0;}
+  .cfd.k-design{--kc:#0f8a7a;}
   .cfd{--kc:var(--sky);position:relative;display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:15px;min-width:0;text-align:start;font-family:var(--f);
     background:linear-gradient(160deg, color-mix(in srgb, var(--kc) 9%, var(--surface)), var(--surface));border:1px solid color-mix(in srgb, var(--kc) 20%, var(--line));}
   .cfd.k-contract{--kc:#6b5bb5;} .cfd.k-statement{--kc:var(--sky);} .cfd.k-letter{--kc:var(--ok);} .cfd.k-minute{--kc:var(--warn);}
@@ -16926,7 +16928,7 @@
   .cff{--kc:var(--sky);position:relative;display:flex;align-items:center;gap:10px;padding:9px 12px;border:0;border-bottom:1px solid var(--line-soft);
     background:transparent;font-family:var(--f);text-align:start;cursor:pointer;transition:background .15s;}
   .cff:last-child{border-bottom:0;} .cff:hover{background:var(--canvas);}
-  .cff.k-contract{--kc:#6b5bb5;} .cff.k-letter{--kc:var(--ok);} .cff.k-minute{--kc:var(--warn);}
+  .cff.k-contract{--kc:#6b5bb5;} .cff.k-letter{--kc:var(--ok);} .cff.k-minute{--kc:var(--warn);} .cff.k-design{--kc:#0f8a7a;}
   .cff-ic{flex-basis:30px;width:30px;height:30px;border-radius:10px;}
   .cff-tx{flex:1;display:flex;flex-direction:column;min-width:0;}
   .cff-tx b{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -16938,7 +16940,7 @@
   @media(max-width:640px){
     .cf-hero{padding:14px;gap:12px;} .cf-ring{flex-basis:64px;width:64px;height:64px;} .cf-main > b{font-size:21px;}
     .cf-kpis b{font-size:13px;} .cf-kpis > span{padding:8px 9px;}
-    .cf-docs{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .cf-docs{grid-template-columns:repeat(2, minmax(0,1fr));} .cf-docs .cfd.k-design{grid-column:1 / -1;}
     .cf-leg .r{margin-inline-start:0;width:100%;}
   }
   @media (prefers-reduced-motion: reduce){ .cf-ring .fg, .cf-use i, .cf-age i, .cf-tr .lp{animation:none;stroke-dashoffset:var(--o, 0);} }
@@ -38067,13 +38069,13 @@
               return (dy ? dy.getTime() : 0) - (dx ? dx.getTime() : 0);
             };
             const DK = [['contract','contracts','قرارداد'],['statement','statements','صورت وضعیت'],
-                        ['letter','letters','نامه'],['minute','minutes','صورتجلسه']];
+                        ['letter','letters','نامه'],['minute','minutes','صورتجلسه'],['design','designs','سند طراحی']];
             const docs = DK.map(([kd, key, lb]) => {
               const all = partyOf(key, kd).sort(byDate(kd));
               const last = all[0] || null;
               const al = all.filter(r => { try{ return !!admCardAlert(kd, r); }catch(e){ return false; } }).length;
               const no = !last ? '' : (kd === 'statement' ? pick(last,AD.sNo) : kd === 'contract' ? pick(last,AD.cNo)
-                        : kd === 'letter' ? pick(last,AD.lNo) : pick(last,AD.mIdx));
+                        : kd === 'letter' ? pick(last,AD.lNo) : kd === 'design' ? pick(last,AD.dNo) : pick(last,AD.mIdx));
               return {kd, lb, all, cnt: all.length, al, no, d0: last ? admSentDate(kd, last) : '',
                       id: last ? String(pick(last,AD.id) || '') : ''};
             });
@@ -38095,6 +38097,7 @@
                 return [v || notifyLabel(admNotify(kd, r)) || '—', /^رد/.test(v) ? 'bad' : (v === 'تایید شده' ? 'ok' : '')];
               }
               if(kd === 'minute' && (String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true)) return ['انجام شده', 'ok'];
+              if(kd === 'design'){ const v = String(pick(r,AD.dStatus) || ''); return [v || '—', /تأیید|اجرا/.test(v) ? 'ok' : (/رد|اصلاح/.test(v) ? 'bad' : '')]; }
               return [notifyLabel(admNotify(kd, r)) || '—', ''];
             };
             const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.slice(0, 6).map(({kd, r, d}) => {
@@ -38462,9 +38465,10 @@
           : '')
       + '<div class="ct-body"><div class="empty">در حال دریافت گزارش‌ها…</div></div>'
       /* یادداشت و نظر روی پروندهٔ طرف (پیمانکار، مشاور یا کارفرما) */
-      + '<div class="ct-notes"><div class="ct-nh"><b>تماس، یادداشت و نظرات</b><small>هر چه دربارهٔ ' + esc(name) + ' باید ثبت شود</small>'
+      + '<div class="ct-notes"><div class="ct-nh"><b>یادداشت و نظرات</b><small>هر چه دربارهٔ ' + esc(name) + ' باید ثبت شود</small>'
       +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ct-file" data-ctcedit="' + esc(name) + '">پروندهٔ پیمانکار: نام، قراردادها و تماس ›</button>' : ''; }catch(e){ return ''; } })() + '</div>'
-      +   (function(){ try{ return ctcBarHtml(name); }catch(e){ return ''; } })()
+      /* اطلاعات تماس فقط با دکمهٔ «تماس» باز می‌شود؛ کارت پیمانکار آن را بالای خود دارد */
+      +   (function(){ try{ return isContractorName(name) ? '' : '<div class="ct-cbtn">' + ctcMiniHtml(name) + '</div>'; }catch(e){ return ''; } })()
       +   (function(){ try{ return commentBarHtml('party', 'party:' + nameKey(name), 'پروندهٔ ' + name, {}); }catch(e){ return ''; } })()
       + '</div></div>';
     document.body.appendChild(bg);
@@ -39402,6 +39406,7 @@
   // مبلغ ریالی، کوتاه‌شده به تومان (برای گزارش مالی)
   const arToman = n => arMoneyShort((n || 0) / 10);
   const CF_I = {
+    design:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M10 20v-5h4v5"/><path d="M9 10h6"/></svg>',
     contract:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 16c1.2-1.6 2.2-1.6 3 0s1.8 1.6 3 0"/></svg>',
     statement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>',
     letter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>',
