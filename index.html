@@ -1616,15 +1616,16 @@
   .ct-notes{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px;}
   .ct-nh{display:flex;flex-direction:column;gap:2px;} .ct-nh b{font-size:13px;font-weight:900;} .ct-nh small{font-size:11.5px;color:var(--muted);}
   /* فهرست پیمانکاران در «گزارش پیمانکار» */
-  .ctd-wrap{padding:0 !important;overflow:hidden;}
+  .ctd-wrap{padding:14px !important;}
+  .crt-blk{padding:10px !important;} .crt-blk .wrk-caps{margin-top:0;}
   .ctd-wrap > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;}
   .ctd-wrap > summary::-webkit-details-marker{display:none;}
   .ctd-wrap .ctd-st{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
   .ctd-wrap .ctd-st b{font-size:14px;font-weight:900;} .ctd-wrap .ctd-st small{font-size:11.5px;color:var(--muted);}
   .ctd-wrap > summary > i{font-style:normal;color:var(--muted);transition:transform .2s;}
   .ctd-wrap[open] > summary > i{transform:rotate(180deg);}
-  .ctd-wrap > .ctd-host{padding:0 14px 14px;}
-  .ctd-wrap .ctd-list{max-height:560px;overflow:auto;overscroll-behavior:contain;}
+  .ctd-wrap > .ctd-host{padding:0;}
+  .ctd-wrap .ctd-list{max-height:70vh;overflow:auto;overscroll-behavior:contain;}
   .ctc-who .ctc-em{color:var(--sky);} .ctc-who .ctc-meta{color:var(--muted);white-space:normal;line-height:1.6;}
   /* تگ‌های فرم پیمانکار */
   .ctg-box > span small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px;}
@@ -1637,6 +1638,9 @@
   .ctg-t i{font-style:normal;font-size:10px;color:var(--muted);cursor:pointer;padding:2px;}
   .ctg-t i:hover{color:var(--alert);}
   .ctg-in{flex:1;min-width:140px;height:30px;border:0 !important;background:none !important;color:var(--ink);font:inherit;font-size:12.5px;padding:0 6px;outline:none;box-shadow:none !important;}
+  .ctg-ren{display:flex;gap:6px;margin-top:6px;}
+  .ctg-ren .ctg-rin{flex:1;min-width:0;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 10px;font:inherit;font-size:13px;}
+  .ctg-hint{display:block;font-size:10.5px;color:var(--muted);margin-top:4px;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -12760,7 +12764,7 @@
     margin-inline-start:5px;
   }
 
-  body.wrk-mode .dock, body.prc-mode .dock{display:none !important;}
+  body.wrk-mode .dock, body.prc-mode .dock, body.ctd-mode .dock{display:none !important;}
 
   /* ====== بخش کارگری ====== */
   .wmode-caps{margin:0 0 10px;}
@@ -20054,10 +20058,14 @@
       </button>
     </div>
     <div class="jump-bar" id="writeJumpBar"></div>
-    <details class="block ctd-wrap" id="ctdWrite" hidden>
-      <summary class="ctd-sum"><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 0116 0"/><path d="M2.5 11h19v2.5h-19z"/><path d="M12 3v4"/></svg></span><span class="ctd-st"><b>فهرست پیمانکاران پروژه</b><small>نام قراردادی، دیسیپلین، تخصص، تماس، ایمیل و نشانی</small></span><i>▾</i></summary>
-      <div class="ctd ctd-host"></div>
-    </details>
+    <!-- دو زبانه مثل گزارش کارگری: گزارش روزانه / اطلاعات پیمانکاران (برای ادمین) -->
+    <div class="block crt-blk" id="crewTabsBlk" hidden>
+      <div class="kind-caps wrk-caps" id="crewTabs">
+        <button type="button" class="kcap sm on" data-crtab="rep">گزارش روزانهٔ پیمانکاران</button>
+        <button type="button" class="kcap sm" data-crtab="info">اطلاعات پیمانکاران</button>
+      </div>
+    </div>
+    <div class="block ctd-wrap" id="ctdWrite" hidden><div class="ctd ctd-host"></div></div>
     <form id="reportForm" novalidate>
       <div class="cr-sum" id="crSum" aria-live="polite">
         <div class="crs-ring"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" cx="22" cy="22" r="18"/></svg><b id="crsPct">۰٪</b></div>
@@ -27615,7 +27623,9 @@
           const disp = ctrCanon(name), names = ctrNamesOf(name);
           return '<div class="ctc-f ctg-box"><span>نام‌ها <small>نامِ ستاره‌دار روی کارت پیمانکار نشان داده می‌شود؛ برای انتخاب، روی نام بزنید</small></span><div class="ctg">'
             + names.map(n => '<button type="button" class="ctg-t' + (normName(n) === normName(disp) ? ' on' : '') + '" data-ctgprim="' + esc(n) + '">' + (normName(n) === normName(disp) ? '★ ' : '') + esc(n) + '</button>').join('')
-            + '<input type="text" class="ctg-in" data-ctgname="' + esc(disp) + '" placeholder="+ املای دیگر (یکی شود)"></div></div>';
+            + '<input type="text" class="ctg-in" data-ctgname="' + esc(disp) + '" placeholder="+ املای دیگر (یکی شود)"></div>'
+            + '<div class="ctg-ren"><input type="text" class="ctg-rin" value="' + esc(disp) + '" aria-label="نام اصلی تازه"><button type="button" class="mx-btn" data-ctgren="' + esc(disp) + '">تغییر نام اصلی</button></div>'
+            + '<small class="ctg-hint">تغییر نام اصلی، این نام را در همهٔ گزارش‌ها، اسناد اداری، کارگری و فهرست‌ها عوض می‌کند.</small></div>';
         })()
       + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
       + (function(){
@@ -27677,6 +27687,33 @@
     if(del){ const box = del.closest('.ctg'); del.parentElement.remove(); ctgSync(box); return; }
     const add = t.closest('[data-ctgadd]');
     if(add){ const box = add.closest('.ctg'); const v = add.dataset.ctgadd; add.remove(); ctgAdd(box, v); return; }
+    const rn = t.closest('[data-ctgren]');
+    if(rn){
+      e.stopPropagation();
+      if(!can('ctr.contact')){ showDialog('warn','اجازه ندارید','تغییر نام پیمانکار فقط برای ادمین و کسی است که دسترسی دارد.'); return; }
+      const from = rn.dataset.ctgren, inp = rn.parentElement.querySelector('.ctg-rin');
+      const to = String(inp && inp.value || '').trim();
+      if(!to || normName(to) === normName(from)){ showDialog('warn','نام تازه','نام اصلی تازه را بنویسید.'); return; }
+      const oldC = ctrContactOf(from);
+      rn.disabled = true;
+      try{
+        const done = await kxMerge(from, to);
+        if(done){
+          /* اطلاعات تماس هم زیر نام تازه می‌رود */
+          if(oldC && oldC.name){
+            const cp = Object.assign({}, oldC); delete cp.name;
+            await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(oldC.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
+            ctrContacts.delete(normName(oldC.name));
+            await ctrContactSave(to, cp);
+          }
+          try{ await kxSetPrimary(to); }catch(err){}
+          ctdState.open = normName(to);
+          clearNetCache(); ctcRepaint();
+        }
+      }catch(err){ showDialog('err','تغییر نام انجام نشد', friendlyErr(err)); }
+      rn.disabled = false;
+      return;
+    }
     const pr = t.closest('[data-ctgprim]');
     if(pr){
       if(!can('ctr.contact') || pr.classList.contains('on')) return;
@@ -27920,7 +27957,7 @@
     }).sort((a, b) => (!!ctrContactOf(b.canon) - !!ctrContactOf(a.canon)) || (b.n + b.docs) - (a.n + a.docs));
     const ed = can('ctr.contact');
     const chip = (k, t, n) => '<button type="button" class="dc-f' + (ctdState.f === k ? ' on' : '') + '" data-ctdf="' + k + '">' + t + '<u>' + toFa(n) + '</u></button>';
-    box.innerHTML = '<div class="ctd-hero"><span class="ctd-ic">' + CTC_I.tel + '</span><span><b>تماس پیمانکاران</b><small>تلفن، واتساپ، ایمیل و نمایندهٔ هر پیمانکار؛ روی کارت پیمانکار و در اشتراک‌گذاری هم استفاده می‌شود. برای ورود انبوه، اکسل را دانلود و پر کنید و دوباره بارگذاری کنید.</small></span></div>'
+    box.innerHTML = '<div class="ctd-hero"><span class="ctd-ic">' + CTC_I.tel + '</span><span><b>اطلاعات پیمانکاران</b><small>نام اصلی و نام‌ها، نام قراردادی، دیسیپلین، تخصص‌ها، قراردادها، تلفن، ایمیل و نشانی. برای ورود انبوه، اکسل را دانلود و پر کنید و دوباره بارگذاری کنید.</small></span></div>'
       + '<div class="ctd-kpi"><div><b>' + toFa(ents.length) + '</b><u>پیمانکار</u></div><div class="ok"><b>' + toFa(nWith) + '</b><u>با اطلاعات تماس</u></div><div class="' + (ents.length - nWith ? 'warn' : '') + '"><b>' + toFa(ents.length - nWith) + '</b><u>بدون اطلاعات</u></div></div>'
       + '<div class="ctd-xl">'
       +   '<button type="button" class="mx-btn" data-ctdxl="out">' + CTD_XI.down + 'دانلود اکسل</button>'
@@ -59394,10 +59431,26 @@
     const body = document.getElementById('wrkBody');
     if(!caps || !area) return;
 
-    /* فهرست پیمانکاران فقط برای ادمین و کسی که دسترسی ویرایش تماس دارد */
+    /* زبانهٔ «اطلاعات پیمانکاران» فقط برای ادمین و کسی که دسترسی ویرایش تماس دارد */
     const ctdW = document.getElementById('ctdWrite');
-    if(ctdW) ctdW.addEventListener('toggle', () => { if(ctdW.open){ try{ ctcRepaint(); }catch(e){} } });
-    const crewEls = () => ['writeJumpBar','reportForm','reviewBlock','mineBlock','ctdWrite']
+    const crTabsBlk = document.getElementById('crewTabsBlk'), crTabs = document.getElementById('crewTabs');
+    let crTab = 'rep';
+    try{ segInit(crTabs, '.kcap', el => el.classList.contains('on')); }catch(e){}
+    const crewOk = () => { try{ return isAdminUser() || can('ctr.contact'); }catch(e){ return false; } };
+    function crewTabApply(on){
+      const ok = crewOk();
+      const tab = (on && ok) ? crTab : 'rep';
+      if(crTabsBlk){ crTabsBlk.hidden = !(on && ok); crTabsBlk.style.display = ''; }
+      if(crTabs) crTabs.querySelectorAll('[data-crtab]').forEach(b => b.classList.toggle('on', b.dataset.crtab === crTab));
+      ['writeJumpBar','reportForm','reviewBlock','mineBlock'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = (on && tab === 'rep') ? '' : 'none'; });
+      if(ctdW){ ctdW.hidden = !(on && tab === 'info'); ctdW.style.display = ''; if(on && tab === 'info'){ try{ ctcRepaint(); }catch(e){} } }
+      document.body.classList.toggle('ctd-mode', !!(on && tab === 'info'));
+    }
+    if(crTabs) crTabs.addEventListener('click', e => {
+      const b = e.target.closest('[data-crtab]'); if(!b) return;
+      crTab = b.dataset.crtab; crewTabApply(true);
+    });
+    const crewEls = () => ['writeJumpBar','reportForm','reviewBlock','mineBlock']
       .map(id => document.getElementById(id)).filter(Boolean);
     /* m خالی: فقط دو کارت انتخاب دیده می‌شوند؛ با انتخاب، کارت‌ها جمع
        می‌شوند و فرم همان نوع زیرشان باز می‌شود. زدن دوبارهٔ کارت فعال،
@@ -59412,7 +59465,7 @@
       document.body.classList.toggle('wpick-idle', idle);
       const wrk = (m === 'wrk'), prc = (m === 'prc');
       crewEls().forEach(el => { el.style.display = (wrk || prc || idle) ? 'none' : ''; });
-      if(ctdW){ let okC = false; try{ okC = isAdminUser() || can('ctr.contact'); }catch(e){} ctdW.hidden = !okC; }
+      crewTabApply(m === 'crew');
       const pa = document.getElementById('prcArea');
       if(pa){ pa.hidden = !prc; if(prc){ try{ prcRender(); }catch(e){} } }
       /* نوار چسبانِ «ثبت گزارش» مالِ فرم پیمانکاران است، نه کارگری */
