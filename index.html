@@ -1836,6 +1836,15 @@
   .dz-b.dng{color:var(--alert);border-color:color-mix(in srgb, var(--alert) 40%, var(--line));}
   .dz-b:disabled{opacity:.45;cursor:default;}
   .cdx-tabs button{font-size:12px;}
+  .skx-dup{gap:8px;}
+  .skx-p{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:12px;background:var(--surface);border:1px solid var(--line-soft);}
+  .skx-p .ctm-sim{display:none;}
+  .skx-p .ctm-n{grid-column:1 / -1;justify-self:center;height:28px;font-size:11.5px;}
+  .cdx-tabs button{white-space:nowrap;}
+  .skx-k{all:unset;box-sizing:border-box;cursor:pointer;min-width:0;display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);}
+  .skx-k b{font-size:13px;font-weight:700;} .skx-k small{font-size:10.5px;color:var(--muted);} .skx-k em{font-style:normal;font-size:11px;font-weight:700;color:var(--sky);}
+  .skx-k:hover{border-color:var(--sky);background:color-mix(in srgb, var(--sky) 7%, var(--surface));}
+  .skx .mx-q{margin:0 !important;}
   /* فرم پیمانکار: بخش‌بندی، پروندهٔ قراردادها و صورت وضعیت‌ها */
   .ctc-sheet .ctc-edh{flex-wrap:wrap;row-gap:10px;}
   .ctx-sub{color:var(--muted);}
@@ -27712,6 +27721,7 @@
       if(lists[CTR_MULTI_KIND]) ctrMulti = new Set(lists[CTR_MULTI_KIND].map(v => normName(v)).filter(Boolean));
       if(lists[CTR_RETIRED_KIND]) ctrSetRetired(lists[CTR_RETIRED_KIND]);
       if(lists[CTR_CONTACT_KIND] || lists[CTR_PRIMARY_KIND] || lists[CTR_HIDE_KIND]) ctrSetHidden(lists[CTR_HIDE_KIND] || []);
+      if(lists[CTR_CONTACT_KIND] || lists[SK_HIDE_KIND] || lists[SK_NO_KIND]){ skHidden = new Set((lists[SK_HIDE_KIND] || []).map(x => String(x).trim())); skNo = new Set(lists[SK_NO_KIND] || []); skPersist(); }
       if(lists[CTR_CONTACT_KIND]) ctrSetContacts(lists[CTR_CONTACT_KIND]);
       ctrPersist(); ctrInvalidate();
     }catch(e){}
@@ -27784,6 +27794,12 @@
   const ctrSetRetired = arr => { ctrRetired.clear(); (arr || []).forEach(v => { const a = String(v).split('\u00a6'); if(a.length >= 2 && normName(a[0]) && normName(a[0]) !== normName(a[1])) ctrRetired.set(normName(a[0]), String(a[1]).trim()); }); };
   /* پیمانکارهای حذف‌شده: از پرونده‌ها و همهٔ فهرست‌های کشویی برداشته می‌شوند؛
      سوابق گزارش و اسناد سر جایشان می‌مانند و پرونده برگشت‌پذیر است */
+  /* تخصص‌های حذف‌شده یا یکی‌شده (از فهرست‌های کشویی برداشته می‌شوند) و جفت‌هایی که «جدا هستند» */
+  const SK_HIDE_KIND = 'تخصص — حذف‌شده', SK_NO_KIND = 'تخصص — جدا';
+  let skHidden = new Set(), skNo = new Set();
+  try{ const o = JSON.parse(localStorage.getItem('siteLogM.skReg.v1') || '{}'); skHidden = new Set(o.h || []); skNo = new Set(o.n || []); }catch(e){}
+  const skPersist = () => { try{ localStorage.setItem('siteLogM.skReg.v1', JSON.stringify({h: Array.from(skHidden), n: Array.from(skNo)})); }catch(e){} };
+  const skPairId = (a, b) => [normName(a), normName(b)].sort().join('|');
   const CTR_HIDE_KIND = 'پیمانکار — حذف‌شده';
   const ctrHidden = new Set();
   const ctrSetHidden = arr => { ctrHidden.clear(); (arr || []).forEach(v => { const k = normName(v); if(k) ctrHidden.add(k); }); };
@@ -28365,7 +28381,7 @@
     try{ const sl = document.getElementById('skillList'); if(sl) Array.from(sl.options).forEach(o => add(o.value)); }catch(e){}
     try{ kxStats().forEach(x => x.skills.forEach((n, sk) => add(sk))); }catch(e){}
     try{ ctrContacts.forEach(c => ctrTagsOf(c.s).forEach(add)); }catch(e){}
-    dl.innerHTML = Array.from(m.values()).sort((a, b) => a.localeCompare(b, 'fa')).map(v => '<option value="' + esc(v) + '">').join('');
+    dl.innerHTML = Array.from(m.values()).filter(v => !skHidden.has(v)).sort((a, b) => a.localeCompare(b, 'fa')).map(v => '<option value="' + esc(v) + '">').join('');
   }
   document.addEventListener('change', e => {
     const i = e.target; if(!i || !i.classList || !i.classList.contains('ctg-in') || !i.dataset.ctgnew) return;
@@ -28613,6 +28629,110 @@
       tkCatList = tkCatList.filter(x => x !== n); discOpen = ''; clearNetCache(); ctcRepaint(); }
   }, true);
   document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('dsc2-in')){ e.preventDefault(); const b = e.target.closest('.dsc2').querySelector('[data-discadd]'); if(b) b.click(); } });
+  /* ====== تخصص‌ها ======
+     همهٔ تخصص‌ها از گزارش‌های روزانه، پرونده‌های پیمانکار و فهرست پروژه، با شمار
+     کاربرد. تخصص‌های شبیه (تکراری) پیشنهاد می‌شوند تا یکی شوند. تغییر نام یا
+     یکی کردن، گزارش‌ها، پرونده‌ها، فهرست کشویی و تفکیک پیمانکارها را با هم عوض می‌کند. */
+  let skOpen = '', skBusy = false, skQ = '';
+  function skUsage(){
+    const m = new Map();
+    const g = v => { v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); if(!v) return null; let o = m.get(v); if(!o){ o = {n: v, r: 0, c: 0, l: 0}; m.set(v, o); } return o; };
+    const rows = (typeof mtAllRows !== 'undefined' && mtAllRows && mtAllRows.length) ? mtAllRows.map(x => x.skill) : (allRows || []).map(r => pick(r,F.skill));
+    rows.forEach(v => { const o = g(v); if(o) o.r++; });
+    ctrContacts.forEach(c => ctrTagsOf(c.s).forEach(v => { const o = g(v); if(o) o.c++; }));
+    try{ const sl = document.getElementById('skillList'); if(sl) Array.from(sl.options).forEach(op => { const o = g(op.value); if(o) o.l++; }); }catch(e){}
+    return Array.from(m.values()).filter(o => !skHidden.has(o.n) || o.r || o.c).sort((a, b) => (b.r + b.c) - (a.r + a.c) || a.n.localeCompare(b.n, 'fa'));
+  }
+  /* جفت‌های شبیه: همان کلید (فاصله، نیم‌فاصله، ی/ک) یا شباهت بالا */
+  function skDupes(U){
+    const out = [], L = U.slice(0, 250);
+    for(let i = 0; i < L.length; i++) for(let j = i + 1; j < L.length; j++){
+      const a = L[i], b = L[j];
+      if(skNo.has(skPairId(a.n, b.n))) continue;
+      const same = normName(a.n) === normName(b.n) || a.n.replace(/[\s‌]+/g, '') === b.n.replace(/[\s‌]+/g, '');
+      let sim = same ? 1 : 0; if(!same){ try{ sim = nameSim(a.n, b.n); }catch(e){} }
+      if(sim >= 0.8) out.push({a, b, sim});
+    }
+    return out.sort((x, y) => y.sim - x.sim).slice(0, 30);
+  }
+  function skHtml(){
+    try{ if(typeof mtAllRows !== 'undefined' && !mtAllRows && !mtAllBusy) mtLoadAllNames().then(() => { if(ctdState.tab === 'skill') ctcRepaint(); }); }catch(e){}
+    const U = skUsage(), D = skDupes(U), q = String(skQ || '').trim();
+    const cnt = o => [o.r ? toFa(o.r) + ' ردیف گزارش' : '', o.c ? toFa(o.c) + ' پیمانکار' : ''].filter(Boolean);
+    const list = q ? U.filter(o => o.n.indexOf(q) !== -1 || toEn(o.n).indexOf(toEn(q)) !== -1) : U;
+    return '<div class="dsc2 skx"><div class="cdx-note">همهٔ تخصص‌های گزارش‌های روزانه، پرونده‌های پیمانکار و فهرست پروژه. تخصص‌های <b>تکراری یا شبیه</b> را یکی کنید تا فهرست‌ها و گزارش‌ها تمیز بمانند؛ تغییر نام همه‌جا با هم اعمال می‌شود.</div>'
+      + (D.length ? '<div class="ctdk-sug skx-dup"><div class="ctx-sh"><b>تخصص‌های تکراری یا شبیه (' + toFa(D.length) + ')</b><small>نامی را که باید بماند بزنید؛ دیگری در آن ادغام می‌شود</small></div>'
+          + D.slice(0, 12).map(x => '<div class="skx-p" data-ska="' + esc(x.a.n) + '" data-skb="' + esc(x.b.n) + '">'
+            + '<span class="ctm-sim" title="شباهت"><i style="width:' + Math.round(x.sim * 100) + '%"></i></span>'
+            + '<button type="button" class="skx-k" data-skkeep="a"><b>' + esc(x.a.n) + '</b><small>' + (cnt(x.a).join(' · ') || 'فقط در فهرست') + '</small><em>این بماند</em></button>'
+            + '<button type="button" class="skx-k" data-skkeep="b"><b>' + esc(x.b.n) + '</b><small>' + (cnt(x.b).join(' · ') || 'فقط در فهرست') + '</small><em>این بماند</em></button>'
+            + '<button type="button" class="ctm-n" data-skno="1">جدا هستند</button></div>').join('') + '</div>' : '')
+      + '<div class="dsc2-add"><input type="text" class="dsc2-in skx-in" placeholder="تخصص تازه، مثلاً جوشکار" autocomplete="off"><button type="button" class="dz-b pri" data-skadd="1">+ افزودن</button></div>'
+      + '<label class="mx-q">' + DC_I.search + '<input type="search" id="skQ" placeholder="جست‌وجوی تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
+      + '<div class="dsc2-list">' + list.slice(0, 120).map(o => {
+          const used = o.r + o.c, op = skOpen === o.n;
+          return '<div class="dsc2-r' + (op ? ' op' : '') + '">'
+            + '<button type="button" class="dsc2-h" data-skop="' + esc(o.n) + '"><b>' + esc(o.n) + '</b>'
+            + '<span class="dsc2-u">' + (used ? cnt(o).map(t => '<i>' + t + '</i>').join('') : '<i class="z">فقط در فهرست</i>') + '</span><em>ویرایش ›</em></button>'
+            + (op ? '<div class="dsc2-ed"><label class="ctc-f"><span>نام درست <small>اگر نام یکی از تخصص‌های دیگر را بنویسید، این دو یکی می‌شوند</small></span><input type="text" class="skx-nn" value="' + esc(o.n) + '" list="skxList" autocomplete="off"></label>'
+                + '<div class="dsc2-acts"><button type="button" class="dz-b pri" data-skren="' + esc(o.n) + '">ثبت</button>'
+                + '<button type="button" class="dz-b dng" data-skdel="' + esc(o.n) + '"' + (used ? ' disabled title="اول با تخصص دیگری یکی کنید"' : '') + '>حذف</button></div></div>' : '')
+            + '</div>'; }).join('') + (list.length > 120 ? '<div class="mx-empty">' + toFa(list.length - 120) + ' تخصص دیگر؛ جست‌وجو کنید</div>' : '') + '</div>'
+      + '<datalist id="skxList">' + U.map(o => '<option value="' + esc(o.n) + '">').join('') + '</datalist></div>';
+  }
+  async function skRename(oldN, newN, quiet){
+    oldN = String(oldN || '').trim(); newN = String(newN || '').replace(/\s+/g, ' ').trim();
+    if(!oldN || !newN || oldN === newN) return false;
+    const U = skUsage(), o = U.find(x => x.n === oldN) || {r: 0, c: 0}, merge = U.some(x => x.n === newN);
+    if(!quiet){
+      const parts = [o.r ? toFa(o.r) + ' ردیف گزارش' : '', o.c ? toFa(o.c) + ' پروندهٔ پیمانکار' : ''].filter(Boolean);
+      if(!(await askConfirm(merge ? 'یکی کردن تخصص' : 'تغییر نام تخصص', (merge ? '«' + oldN + '» در «' + newN + '» ادغام می‌شود' : '«' + oldN + '» به «' + newN + '» تغییر می‌کند') + (parts.length ? ' و ' + parts.join('، ') + ' هم عوض می‌شود.' : '.'), merge ? 'یکی کن' : 'تغییر نام'))) return false;
+    }
+    try{
+      if(o.r) await supaFetch('activities?skill=eq.' + encodeURIComponent(oldN), {method:'PATCH', body:{skill: newN}});
+      for(const c of Array.from(ctrContacts.values())){ const tg = ctrTagsOf(c.s); if(tg.indexOf(oldN) !== -1){ const cp = Object.assign({}, c); delete cp.name; cp.s = Array.from(new Set(tg.map(x => x === oldN ? newN : x))).join('، '); await ctrContactSave(c.name, cp); } }
+      /* تفکیک پیمانکار با همین تخصص */
+      try{ const rows = await supaFetch('lists?kind=eq.' + encodeURIComponent(SPLIT_LIST_KIND) + '&select=value') || [];
+        for(const rw of rows){ const a = String(rw.value).split(LK_SEP); if(a.length >= 2 && normName(a[1]) === normName(oldN)){ await kxSplit(a[0], oldN, false); await kxSplit(a[0], newN, true); } } }catch(e){}
+      try{ await kxListAdd('تخصص', newN); }catch(e){}
+      try{ await kxListDel('تخصص', oldN); }catch(e){}
+      skHidden.add(oldN); skHidden.delete(newN); skPersist();
+      try{ await kxListAdd(SK_HIDE_KIND, oldN); }catch(e){} try{ await kxListDel(SK_HIDE_KIND, newN); }catch(e){}
+      /* داده‌های در حافظه */
+      try{ (mtAllRows || []).forEach(x => { if(String(x.skill || '').trim() === oldN) x.skill = newN; }); }catch(e){}
+      try{ (allRows || []).forEach(r => { if(String(pick(r,F.skill) || '').trim() === oldN) setCell(r, 'تخصص', newN); }); }catch(e){}
+      try{ const sl = document.getElementById('skillList'); if(sl){ Array.from(sl.options).forEach(op => { if(op.value === oldN) op.remove(); }); mergeIntoList('skillList', [newN]); } }catch(e){}
+      clearNetCache(); try{ ctrInvalidate(); ctdSugCache = {sig: '', v: null}; ctrNamesChanged(); }catch(e){}
+      skOpen = '';
+      return true;
+    }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return false; }
+  }
+  document.addEventListener('input', e => { if(e.target && e.target.id === 'skQ'){ skQ = e.target.value; clearTimeout(skHtml.__t); skHtml.__t = setTimeout(() => ctcRepaint('skQ'), 200); } });
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest || !t.closest('.skx')) return;
+    const op = t.closest('[data-skop]'); if(op){ skOpen = skOpen === op.dataset.skop ? '' : op.dataset.skop; ctcRepaint(); return; }
+    const kp = t.closest('[data-skkeep]');
+    if(kp){ const p = kp.closest('.skx-p'), keep = kp.dataset.skkeep === 'a' ? p.dataset.ska : p.dataset.skb, drop = kp.dataset.skkeep === 'a' ? p.dataset.skb : p.dataset.ska;
+      kp.disabled = true; await skRename(drop, keep); ctcRepaint(); return; }
+    const no = t.closest('[data-skno]');
+    if(no){ const p = no.closest('.skx-p'), v = p.dataset.ska + '¦' + p.dataset.skb; skNo.add(skPairId(p.dataset.ska, p.dataset.skb)); skPersist(); try{ await kxListAdd(SK_NO_KIND, skPairId(p.dataset.ska, p.dataset.skb)); }catch(err){} ctcRepaint(); return; }
+    const ad = t.closest('[data-skadd]');
+    if(ad){ const i = t.closest('.skx').querySelector('.skx-in'), v = String(i.value || '').replace(/\s+/g, ' ').trim(); if(!v) return;
+      const ex = skUsage().find(x => normName(x.n) === normName(v));
+      if(ex && !skHidden.has(ex.n)){ showDialog('warn', 'از قبل هست', '«' + ex.n + '» در فهرست هست.'); return; }
+      ad.disabled = true; try{ await kxListAdd('تخصص', v); skHidden.delete(v); skPersist(); try{ await kxListDel(SK_HIDE_KIND, v); }catch(err){} mergeIntoList('skillList', [v]); clearNetCache(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+      ctcRepaint(); return; }
+    const rn = t.closest('[data-skren]');
+    if(rn){ const v = rn.closest('.dsc2-ed').querySelector('.skx-nn').value; rn.disabled = true; await skRename(rn.dataset.skren, v); ctcRepaint(); return; }
+    const dl = t.closest('[data-skdel]');
+    if(dl && !dl.disabled){ const n = dl.dataset.skdel;
+      if(!(await askConfirm('حذف تخصص', '«' + n + '» از فهرست‌های کشویی برداشته شود؟', 'حذف'))) return;
+      try{ await kxListDel('تخصص', n); }catch(err){}
+      skHidden.add(n); skPersist(); try{ await kxListAdd(SK_HIDE_KIND, n); }catch(err){}
+      try{ const sl = document.getElementById('skillList'); if(sl) Array.from(sl.options).forEach(op => { if(op.value === n) op.remove(); }); }catch(err){}
+      skOpen = ''; clearNetCache(); ctcRepaint(); }
+  }, true);
+  document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('skx-in')){ e.preventDefault(); const b = e.target.closest('.skx').querySelector('[data-skadd]'); if(b) b.click(); } });
   /* حذف پیمانکار: اطلاعات پرونده پاک و همهٔ املاهایش از فهرست‌ها برداشته می‌شود */
   async function ctrDeleteFile(box){
     if(!can('ctr.contact')) return;
@@ -28869,7 +28989,7 @@
     const ents = ctdEntities(), di = ctdDocIndex();
     ents.forEach(e => { e.inf = ctdInfoOf(e, di); });
     const sug = ed ? ctdSug() : {pairs: [], multi: []}, nFix = sug.pairs.length;
-    const tab = (ed && (ctdState.tab === 'fix' || ctdState.tab === 'disc')) ? ctdState.tab : 'list';
+    const tab = (ed && (ctdState.tab === 'fix' || ctdState.tab === 'disc' || ctdState.tab === 'skill')) ? ctdState.tab : 'list';
     ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); });
     const nHid = ents.filter(e => e.hid).length;
     if(ctdState.ty === 'hid' && !nHid) ctdState.ty = '';
@@ -28881,9 +29001,10 @@
     const head = '<div class="cdx-hd"><span class="cdx-ic">' + CTC_I.user + '</span><span class="cdx-tt"><b>پروندهٔ پیمانکاران</b><small>مرجع نام، اطلاعات و قراردادهای پیمانکاران، مشاوران و تیم کارفرما؛ هر تغییری این‌جا در گزارش‌ها، دفتر فنی و فهرست‌های انتخاب هم اعمال می‌شود</small></span>'
       + (ed ? '<button type="button" class="cdx-new" data-cdxnew="1">' + CDX_I.plus + '<span>پیمانکار تازه</span></button>' : '') + '</div>'
       + '<div class="cdx-kpi">' + kpi('all', 'پیمانکار', cnt.all) + kpi('ok', 'پروندهٔ کامل', cnt.ok, 'ok') + kpi('part', 'ناقص', cnt.part, cnt.part ? 'warn' : '') + kpi('tel', 'بی‌تلفن', cnt.tel) + kpi('ct', 'بی‌قرارداد', cnt.ct) + '</div>'
-      + (ed ? '<div class="cdx-tabs"><button type="button" class="' + (tab === 'list' ? 'on' : '') + '" data-cdxtab="list">فهرست پیمانکاران</button><button type="button" class="' + (tab === 'fix' ? 'on' : '') + '" data-cdxtab="fix">اصلاح نام‌ها' + (nFix ? '<i>' + toFa(nFix) + '</i>' : '') + '</button><button type="button" class="' + (tab === 'disc' ? 'on' : '') + '" data-cdxtab="disc">دیسیپلین‌ها</button></div>' : '');
+      + (ed ? '<div class="cdx-tabs"><button type="button" class="' + (tab === 'list' ? 'on' : '') + '" data-cdxtab="list">فهرست</button><button type="button" class="' + (tab === 'fix' ? 'on' : '') + '" data-cdxtab="fix">اصلاح نام‌ها' + (nFix ? '<i>' + toFa(nFix) + '</i>' : '') + '</button><button type="button" class="' + (tab === 'disc' ? 'on' : '') + '" data-cdxtab="disc">دیسیپلین‌ها</button><button type="button" class="' + (tab === 'skill' ? 'on' : '') + '" data-cdxtab="skill">تخصص‌ها</button></div>' : '');
     let body = '';
     if(tab === 'disc'){ body = discHtml(); }
+    else if(tab === 'skill'){ body = skHtml(); }
     else if(tab === 'fix'){
       body = '<div class="cdx-fix ctx-fix"><div class="cdx-note">نام‌هایی که شبیه هم‌اند و هنوز درباره‌شان تصمیمی گرفته نشده. <b>پیوند</b>: هر دو املا می‌مانند و یک پیمانکار شمرده می‌شوند · <b>یکسان‌سازی</b>: همهٔ گزارش‌ها و اسناد به نام اصلی تغییر می‌کنند · <b>جدا هستند</b>: دیگر پیشنهاد نمی‌شود.</div>'
         + (nFix ? sug.pairs.slice(0, 30).map(kxPairHtml).join('') : '<div class="kx-done"><span>✓</span><b>نام تکراری‌ای نمانده</b><small>برای اصلاح نام یک پیمانکار، پرونده‌اش را از فهرست باز کنید.</small></div>') + '</div>';
@@ -41539,6 +41660,7 @@
         .map(o => { let c = o.v; try{ c = ctrCanon(canonicalName(o.v)); const sp = splitParts(c); if(sp && dl.id === 'contractorList') c = sp.n; }catch(e){} return {v: c, g: o.g}; })
         .filter(o => { const k = normName(o.v) || o.v; if(seen.has(k)) return false; seen.add(k); return true; });
     }
+    if(dl && /^(skillList|ctdSkillList)$/.test(dl.id) && skHidden.size){ const seen = new Set(); opts = opts.filter(o => { const k = normName(o.v); if(skHidden.has(String(o.v).trim()) || seen.has(k)) return false; seen.add(k); return true; }); }
     const hit = opts.filter(o => !q || toEn(o.v.toLowerCase()).indexOf(q) !== -1);
     let html = '', lastG = null;
     hit.forEach(o => {
