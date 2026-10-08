@@ -1778,6 +1778,8 @@
   [data-theme="dark"] .cdx-tyb.t-cons{color:#a898e6;} [data-theme="dark"] .cdx-tyb.t-emp{color:#e0a070;}
   .ct-notes .cm-bar{display:none !important;}
   .ct-notes .cm-panel{margin-top:4px;}
+  .cdx-r.cdx-hid{opacity:.7;cursor:default;border-style:dashed;}
+  .cdx-rs{all:unset;cursor:pointer;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--sky);color:var(--sky);font-size:12px;font-weight:800;white-space:nowrap;}
   /* فرم پیمانکار: بخش‌بندی، پروندهٔ قراردادها و صورت وضعیت‌ها */
   .ctc-sheet .ctc-edh{flex-wrap:wrap;row-gap:10px;}
   .ctx-sub{color:var(--muted);}
@@ -27653,6 +27655,7 @@
       if(lists[CTR_PRIMARY_KIND]) ctrSetPrimaries(lists[CTR_PRIMARY_KIND]);
       if(lists[CTR_MULTI_KIND]) ctrMulti = new Set(lists[CTR_MULTI_KIND].map(v => normName(v)).filter(Boolean));
       if(lists[CTR_RETIRED_KIND]) ctrSetRetired(lists[CTR_RETIRED_KIND]);
+      if(lists[CTR_CONTACT_KIND] || lists[CTR_PRIMARY_KIND] || lists[CTR_HIDE_KIND]) ctrSetHidden(lists[CTR_HIDE_KIND] || []);
       if(lists[CTR_CONTACT_KIND]) ctrSetContacts(lists[CTR_CONTACT_KIND]);
       ctrPersist(); ctrInvalidate();
     }catch(e){}
@@ -27723,10 +27726,20 @@
   const CTR_RETIRED_KIND = 'پیمانکار — نام قدیمی';
   const ctrRetired = new Map();
   const ctrSetRetired = arr => { ctrRetired.clear(); (arr || []).forEach(v => { const a = String(v).split('\u00a6'); if(a.length >= 2 && normName(a[0]) && normName(a[0]) !== normName(a[1])) ctrRetired.set(normName(a[0]), String(a[1]).trim()); }); };
+  /* پیمانکارهای حذف‌شده: از پرونده‌ها و همهٔ فهرست‌های کشویی برداشته می‌شوند؛
+     سوابق گزارش و اسناد سر جایشان می‌مانند و پرونده برگشت‌پذیر است */
+  const CTR_HIDE_KIND = 'پیمانکار — حذف‌شده';
+  const ctrHidden = new Set();
+  const ctrSetHidden = arr => { ctrHidden.clear(); (arr || []).forEach(v => { const k = normName(v); if(k) ctrHidden.add(k); }); };
+  function ctrIsHidden(n){
+    if(!ctrHidden.size || !n) return false;
+    const k = normName(n); if(ctrHidden.has(k)) return true;
+    try{ return ctrHidden.has(normName(ctrCanon(n))); }catch(e){ return false; }
+  }
   let ctrPrimary = new Set(), ctrMulti = new Set();     // کلید: normName
   const ctrPrimaryName = new Map();                       // normName → نامِ دقیقِ انتخاب‌شده
   const ctrSetPrimaries = arr => { ctrPrimary = new Set(); ctrPrimaryName.clear(); (arr || []).forEach(v => { const k = normName(v); if(k){ ctrPrimary.add(k); ctrPrimaryName.set(k, String(v).trim()); } }); };
-  try{ const o = JSON.parse(localStorage.getItem(CTR_LS) || '{}'); ctrSetPrimaries(o.pn || []); ctrMulti = new Set(o.m || []); ctrSetRetired(o.r || []); }catch(e){}
+  try{ const o = JSON.parse(localStorage.getItem(CTR_LS) || '{}'); ctrSetPrimaries(o.pn || []); ctrMulti = new Set(o.m || []); ctrSetRetired(o.r || []); ctrSetHidden(o.h || []); }catch(e){}
   /* ====== اطلاعات تماس پیمانکاران ======
      هر پیمانکار (با نام اصلی پرونده) یک ردیف در lists:
      «نام¦{"p":[تلفن‌ها],"e":ایمیل,"c":نماینده,"w":واتساپ,"a":نشانی,"n":یادداشت}» */
@@ -27986,7 +27999,7 @@
           return '<div class="ctc-f ctg-box"><span>تخصص‌ها</span><input type="hidden" data-ctk="s" value="' + esc(cur.join('، ')) + '">'
             + '<div class="ctg" data-ctgfor="s">' + cur.map(x => '<span class="ctg-t on">' + esc(x) + '<i data-ctgdel="1">✕</i></span>').join('')
             + seen.map(x => '<button type="button" class="ctg-t sug" data-ctgadd="' + esc(x) + '" title="در گزارش‌ها آمده؛ برای افزودن بزنید">+ ' + esc(x) + '</button>').join('')
-            + '<input type="text" class="ctg-in" data-ctgnew="s" placeholder="+ تخصص (Enter)"></div></div>';
+            + '<input type="text" class="ctg-in" data-ctgnew="s" data-list="ctdSkillList" autocomplete="off" placeholder="+ انتخاب یا نوشتن تخصص"></div></div>';
         })()
       + '</section>'
       + '<section class="ctx-s" data-ctxsec="contact"><div class="ctx-h">' + CTC_I.tel + '<b>تماس و نشانی</b></div>'
@@ -27999,7 +28012,7 @@
       + '<label class="ctc-f"><span>یادداشت</span><textarea data-ctk="n" rows="2">' + esc(c.n || '') + '</textarea></label>'
       + '</section>'
       + '<div class="ctc-eact"><button type="button" class="mx-btn pri" data-ctcsave="1">ذخیره</button><button type="button" class="mx-btn" data-ctcclose="1">انصراف</button>'
-      + (ctrContactOf(name) ? '<button type="button" class="mx-btn dng" data-ctcdel="1">حذف</button>' : '') + '</div></div>';
+      + (can('ctr.contact') ? '<button type="button" class="mx-btn dng" data-ctrdel="1" title="حذف این پیمانکار از پرونده‌ها و فهرست‌ها">حذف پیمانکار</button>' : '') + '</div></div>';
   }
   /* ====== پروندهٔ قراردادها و صورت وضعیت‌های پیمانکار ======
      قرارداد: طرفش همین پیمانکار است (با همهٔ املاهای یکی‌شده) یا دستی افزوده شده.
@@ -28285,6 +28298,19 @@
       }catch(err){ lk.disabled = false; showDialog('err','ثبت نشد', friendlyErr(err)); }
     }
   }, true);
+  /* فهرست کشویی تخصص‌ها: فهرست پروژه، تخصص‌های گزارش‌ها و تخصص‌های ثبت‌شدهٔ پرونده‌ها */
+  function ctdSkillListFill(){
+    let dl = document.getElementById('ctdSkillList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctdSkillList'; document.body.appendChild(dl); }
+    const m = new Map(), add = v => { v = String(v || '').trim(); const k = normName(v); if(k && !m.has(k)) m.set(k, v); };
+    try{ const sl = document.getElementById('skillList'); if(sl) Array.from(sl.options).forEach(o => add(o.value)); }catch(e){}
+    try{ kxStats().forEach(x => x.skills.forEach((n, sk) => add(sk))); }catch(e){}
+    try{ ctrContacts.forEach(c => ctrTagsOf(c.s).forEach(add)); }catch(e){}
+    dl.innerHTML = Array.from(m.values()).sort((a, b) => a.localeCompare(b, 'fa')).map(v => '<option value="' + esc(v) + '">').join('');
+  }
+  document.addEventListener('change', e => {
+    const i = e.target; if(!i || !i.classList || !i.classList.contains('ctg-in') || !i.dataset.ctgnew) return;
+    if(String(i.value || '').trim()){ ctgAdd(i.closest('.ctg'), i.value); i.value = ''; }
+  });
   /* ---- تگ‌ها در فرم پیمانکار ---- */
   function ctgSync(box){
     const k = box.dataset.ctgfor, hid = box.closest('.ctg-box').querySelector('[data-ctk="' + k + '"]');
@@ -28398,6 +28424,7 @@
     if(ctcOpen.__mk){ ctcOpen.__mk = false; m.hidden = true; return; }
     document.body.classList.add('ctc-open');
     const need = !ctrDocRows().length;
+    try{ ctdSkillListFill(); }catch(e){}
     m.querySelector('.modal-body').innerHTML = ctcEditorHtml(name, need);
     m.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -28439,6 +28466,45 @@
       showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
     try{ ctcRepaint(); }catch(e2){}
+  }, true);
+  /* حذف پیمانکار: اطلاعات پرونده پاک و همهٔ املاهایش از فهرست‌ها برداشته می‌شود */
+  async function ctrDeleteFile(box){
+    if(!can('ctr.contact')) return;
+    const canon = ctrCanon(box.dataset.ctced), names = Array.from(new Set(ctrNamesOf(canon).concat([canon, box.dataset.ctced]).filter(Boolean)));
+    const e = ctdEntities().find(x => x.k === normName(canon)) || {n: 0, docs: 0};
+    let D = null; try{ D = ctrDocsCalc(canon, []); }catch(err){}
+    const facts = [e.n ? toFa(e.n) + ' ردیف گزارش' : '', D && D.tot.nc ? toFa(D.tot.nc) + ' قرارداد' : '', D && D.tot.ns ? toFa(D.tot.ns) + ' صورت وضعیت' : ''].filter(Boolean);
+    const msg = '«' + canon + '» از پرونده‌ها و همهٔ فهرست‌های کشویی (گزارش روزانه، دفتر فنی، …) برداشته و اطلاعات تماسش پاک می‌شود.'
+      + (facts.length ? '\n\nاین پیمانکار ' + facts.join('، ') + ' دارد؛ آن سوابق دست نمی‌خورند. اگر املای اشتباه یک پیمانکار دیگر است، به‌جای حذف آن را در «اصلاح نام‌ها» یکی کنید.' : '')
+      + '\n\nاز فیلتر «حذف‌شده» در پرونده‌ها می‌شود برش گرداند.';
+    if(!(await askConfirm('حذف پیمانکار', msg, 'حذف پیمانکار'))) return;
+    try{
+      for(const n of names){ ctrHidden.add(normName(n)); try{ await kxListAdd(CTR_HIDE_KIND, n); }catch(err){} }
+      const c = ctrContactOf(canon);
+      if(c && c.name){ await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(c.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {}); ctrContacts.delete(normName(c.name)); }
+      try{ localStorage.setItem('siteLogM.ctrContacts.v1', JSON.stringify(Array.from(ctrContacts.values()))); }catch(err){}
+      for(const n of names){ for(const kd of ['پیمانکار', 'طرف قرارداد']){ try{ await kxListDel(kd, n); }catch(err){} } }
+      ['contractorList', 'contractPartyList'].forEach(id => { const dl = document.getElementById(id); if(dl) Array.from(dl.options).forEach(o => { if(names.some(n => normName(n) === normName(o.value))) o.remove(); }); });
+      ctrPersist(); clearNetCache(); try{ ctrInvalidate(); }catch(err){} ctrNamesChanged();
+      const m = box.closest('#ctcModal'); if(m){ m.hidden = true; ctcUnlock(); }
+      ctcRepaint(); ctcRefreshDom('');
+      showDialog('ok', 'حذف شد', '«' + canon + '» از پرونده‌ها و فهرست‌ها برداشته شد.');
+    }catch(err){ showDialog('err', 'حذف نشد', friendlyErr(err)); }
+  }
+  async function ctrRestoreFile(name){
+    if(!can('ctr.contact')) return;
+    const names = Array.from(ctrHidden).filter(k => k === normName(name) || normName(ctrCanon(k)) === normName(ctrCanon(name)));
+    const all = new Set(names.concat([normName(name)]));
+    for(const k of all){ ctrHidden.delete(k); }
+    try{ const rows = await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_HIDE_KIND) + '&select=value'); for(const r of (rows || [])){ if(all.has(normName(r.value))) await kxListDel(CTR_HIDE_KIND, r.value); } }catch(err){}
+    try{ await kxListAdd('پیمانکار', name); mergeIntoList('contractorList', [name]); }catch(err){}
+    ctrPersist(); clearNetCache(); try{ ctrInvalidate(); }catch(err){}
+    ctcRepaint();
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest) return;
+    const d = t.closest('[data-ctrdel]'); if(d){ e.stopPropagation(); await ctrDeleteFile(d.closest('.ctc-ed')); return; }
+    const r = t.closest('[data-cdxrestore]'); if(r){ e.stopPropagation(); r.disabled = true; await ctrRestoreFile(r.dataset.cdxrestore); }
   }, true);
   /* ====== دفترچهٔ تماس پیمانکاران ====== */
   const ctdState = {q:'', f:'all', open:''};
@@ -28658,7 +28724,10 @@
     ents.forEach(e => { e.inf = ctdInfoOf(e, di); });
     const sug = ed ? ctdSug() : {pairs: [], multi: []}, nFix = sug.pairs.length;
     const tab = (ctdState.tab === 'fix' && ed) ? 'fix' : 'list';
-    ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; });
+    ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); });
+    const nHid = ents.filter(e => e.hid).length;
+    if(ctdState.ty === 'hid' && !nHid) ctdState.ty = '';
+    if(ctdState.ty !== 'hid'){ for(let i = ents.length - 1; i >= 0; i--) if(ents[i].hid) ents.splice(i, 1); }
     const tyN = k => ents.filter(e => e.ty === k).length;
     const cnt = {all: ents.length, ok: ents.filter(e => e.inf.score === 5).length, part: ents.filter(e => e.inf.score < 5).length,
       tel: ents.filter(e => !(e.inf.c.p && e.inf.c.p.length)).length, ct: ents.filter(e => !e.inf.nc).length};
@@ -28675,7 +28744,8 @@
       const q = String(ctdState.q || '').trim(), f = ctdState.f || 'all', ty = ctdState.ty || '';
       const list = ents.filter(e => {
         const I = e.inf;
-        if(ty && e.ty !== ty) return false;
+        if(ty === 'hid'){ if(!e.hid) return false; }
+        else if(ty && e.ty !== ty) return false;
         if(f === 'ok' && I.score < 5) return false;
         if(f === 'part' && I.score === 5) return false;
         if(f === 'tel' && I.c.p && I.c.p.length) return false;
@@ -28685,7 +28755,7 @@
       }).sort(ctdState.sort === 'az' ? ((a, b) => a.canon.localeCompare(b.canon, 'fa')) : ((a, b) => (b.n + b.docs + b.inf.nc * 3) - (a.n + a.docs + a.inf.nc * 3)));
       const lim = ctdState.lim || 60;
       const row = e => { const I = e.inf, ph = I.c.p && I.c.p[0];
-        return '<div class="cdx-r" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
+        return '<div class="cdx-r' + (e.hid ? ' cdx-hid' : '') + '" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
           + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + esc(initialsOf(e.canon)) + '</i></span>'
           + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + '</b>'
           +   '<small>' + esc([I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
@@ -28693,9 +28763,9 @@
           +     (I.miss.length && ed ? '<i class="m">کم دارد: ' + esc(I.miss.join('، ')) + '</i>' : '') + '</span></span>'
           + '<span class="cdx-a">'
           +   (ph ? '<a class="cdx-b" href="tel:' + esc(telOf(ph)) + '" title="تماس ' + esc(toFa(ph)) + '">' + CTC_I.tel + '</a>' : '')
-          +   '<button type="button" class="cdx-b" data-cdxprof="' + esc(e.canon) + '" title="کارت و گزارش‌های پیمانکار">' + CDX_I.prof + '</button>'
+          +   (e.hid ? '<button type="button" class="cdx-rs" data-cdxrestore="' + esc(e.canon) + '">بازگرداندن</button>' : '<button type="button" class="cdx-b" data-cdxprof="' + esc(e.canon) + '" title="کارت و گزارش‌های پیمانکار">' + CDX_I.prof + '</button>')
           +   (ed ? '<span class="cdx-go">' + CDX_I.chev + '</span>' : '') + '</span></div>'; };
-      body = '<div class="cdx-ty">' + [['', 'همه', ents.length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, tyN(k)])).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>'
+      body = '<div class="cdx-ty">' + [['', 'همه', ents.filter(e => !e.hid).length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, ents.filter(e => !e.hid && e.ty === k).length])).concat(nHid && ed ? [['hid', 'حذف‌شده', nHid]] : []).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>'
         + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، املای دیگر، قرارداد، تلفن یا تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
         + '<button type="button" class="cdx-sort" data-cdxsort="1" title="ترتیب">' + (ctdState.sort === 'az' ? 'الفبایی' : 'پرکارتر اول') + '</button>'
         + '<span class="cdx-xl"><button type="button" class="cdx-b" data-ctdxl="out" title="دانلود اکسل همهٔ پرونده‌ها">' + CTD_XI.down + '</button>'
@@ -28718,7 +28788,8 @@
     const nw = t.closest('[data-cdxnew]'); if(nw){ e.stopPropagation(); ctcNewOpen(nw.dataset.cdxnew === '1' ? '' : nw.dataset.cdxnew); return; }
     const pf = t.closest('[data-cdxprof]'); if(pf){ e.stopPropagation(); try{ openContractorProfile(pf.dataset.cdxprof); }catch(err){} return; }
     if(t.closest('a[href^="tel:"]')) return;
-    const o = t.closest('[data-ctdo]'); if(o){ if(!can('ctr.contact')){ try{ openContractorProfile(o.dataset.ctdn); }catch(err){} return; } ctcOpen(o.dataset.ctdn || o.dataset.ctdo); return; }
+    if(t.closest('[data-cdxrestore]')) return;
+    const o = t.closest('[data-ctdo]'); if(o){ if(o.closest('.cdx-hid')) return; if(!can('ctr.contact')){ try{ openContractorProfile(o.dataset.ctdn); }catch(err){} return; } ctcOpen(o.dataset.ctdn || o.dataset.ctdo); return; }
     if(t.closest('[data-ctdmore]')){ ctdState.lim = (ctdState.lim || 60) + 60; ctcRepaint(); return; }
   }, true);
   document.addEventListener('keydown', e => { if(e.key !== 'Enter') return; const o = e.target && e.target.closest && e.target.closest('.cdx-r'); if(o && e.target === o) o.click(); });
@@ -28796,7 +28867,7 @@
   /* بعد از ذخیره داخل دفترچه، ردیف بسته می‌شود */
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#ctDir [data-ctcsave], #ctDir [data-ctcdel], .ctd-host [data-ctcsave], .ctd-host [data-ctcdel]')) setTimeout(() => { ctdState.open = ''; }, 0); }, true);
   const ctrRetiredList = () => Array.from(ctrRetired.entries()).map(([k, to]) => k + '\u00a6' + to);
-  const ctrPersist = () => { try{ localStorage.setItem(CTR_LS, JSON.stringify({pn: Array.from(ctrPrimaryName.values()), m: Array.from(ctrMulti), r: ctrRetiredList()})); }catch(e){} };
+  const ctrPersist = () => { try{ localStorage.setItem(CTR_LS, JSON.stringify({pn: Array.from(ctrPrimaryName.values()), m: Array.from(ctrMulti), r: ctrRetiredList(), h: Array.from(ctrHidden)})); }catch(e){} };
   let ctrCache = null, ctrVer = 0;
   const ctrInvalidate = () => { ctrVer++; ctrCache = null; };
   /* شمار ردیف هر املا در گزارش‌ها (کل پایگاه‌داده اگر خوانده شده) */
@@ -28857,6 +28928,65 @@
     if(!x) return x;
     for(let i = 0; i < 5 && ctrRetired.size && ctrRetired.has(normName(x)); i++) x = ctrRetired.get(normName(x));
     try{ const c = ctrBuild().canon.get(normName(x)); return c || x; }catch(e){ return x; }
+  }
+  /* ====== نام اصلی همه‌جا ======
+     هر بار داده از سرور می‌آید (و هر بار نامی یکی یا عوض می‌شود)، نام پیمانکار و
+     طرف‌ها در همهٔ ردیف‌های حافظه با نام اصلی پرونده جایگزین می‌شود؛ پس گزارش
+     روزانه، لیست فعالیت، دفتر فنی، جست‌وجو و فهرست‌ها همه یک نام نشان می‌دهند.
+     سوابق روی سرور دست نمی‌خورند و املای قبلی در __raw نگه داشته می‌شود. */
+  const CTR_NAME_FIELDS = ['پیمانکار', 'پیمانکار مربوطه', 'طرف قرارداد', 'طراح', 'طرف مقابل'];
+  function ctrCanonRows(arr, memo){
+    if(!Array.isArray(arr) || !arr.length) return 0;
+    memo = memo || new Map(); let n = 0;
+    const cOf = v => { if(memo.has(v)) return memo.get(v); let c = v; try{ c = ctrCanon(canonicalName(v)) || v; }catch(e){} memo.set(v, c); return c; };
+    arr.forEach(x => {
+      const r = (x && x.row && typeof x.row === 'object' && x.kind) ? x.row : x;
+      if(!r || typeof r !== 'object') return;
+      for(const f of CTR_NAME_FIELDS){
+        if(!(f in r)) continue;
+        const raw = (r.__raw && r.__raw[f] != null) ? r.__raw[f] : r[f];
+        const v = String(raw == null ? '' : raw).trim(); if(!v) continue;
+        if(f === 'پیمانکار'){ try{ const sk = String(r['تخصص'] || '').trim(); if(sk && isSplit(v, sk)) continue; }catch(e){} }
+        const c = cOf(v);
+        if(c === String(r[f] == null ? '' : r[f]).trim()) continue;
+        if(!r.__raw){ try{ Object.defineProperty(r, '__raw', {value: {}, enumerable: false, writable: true}); }catch(e){} }
+        if(r.__raw && r.__raw[f] == null) r.__raw[f] = v;
+        setCell(r, f, c); n++;
+      }
+    });
+    return n;
+  }
+  function ctrCanonBundle(b, memo){
+    if(!b) return; memo = memo || new Map();
+    if(b.day){ ctrCanonRows(b.day.rows, memo); ctrCanonRows(b.day.issues, memo); }
+    ctrCanonRows(b.prevRows, memo);
+    const A = b.admin || (b.statements ? b : null);
+    if(A) ['statements', 'contracts', 'letters', 'designs'].forEach(k => ctrCanonRows(A[k], memo));
+  }
+  /* بعد از هر تغییر نام: همهٔ داده‌های در حافظه دوباره یک‌دست می‌شوند و کش‌ها خالی */
+  let ctrNamesT = 0;
+  function ctrNamesChanged(){
+    clearTimeout(ctrNamesT);
+    ctrNamesT = setTimeout(() => {
+      try{ ctrInvalidate(); }catch(e){}
+      const memo = new Map();
+      try{ if(bundleCache && bundleCache.data) ctrCanonBundle(bundleCache.data, memo); }catch(e){}
+      try{ if(heavyCache && heavyCache.data) ctrCanonBundle(heavyCache.data, memo); }catch(e){}
+      try{ ctrCanonBundle(lastAdminDay, memo); }catch(e){}
+      try{ ctrCanonRows(adminAll, memo); }catch(e){}
+      try{ ctrCanonRows(allRows, memo); ctrCanonRows(allIssues, memo); ctrCanonRows(lastIssues, memo); }catch(e){}
+      try{ ctrCanonRows(rangeCache.rows, memo); ctrCanonRows(rangeCache.issues, memo); }catch(e){}
+      try{ ctrCanonRows(tasksAll, memo); }catch(e){}
+      try{ netCache.clear(); }catch(e){}
+      try{ ctdSugCache = {sig: '', v: null}; }catch(e){}
+      /* تب‌های دیگر در بازدید بعدی از نو ساخته می‌شوند تا نام تازه را نشان دهند */
+      try{ adminLoaded = false; }catch(e){}
+      try{ tasksLoaded = false; }catch(e){}
+      window.__ctrStale = true;
+      try{ ['contractorList', 'contractPartyList'].forEach(id => { const dl = document.getElementById(id); if(!dl) return; const seen = new Set();
+        Array.from(dl.options).forEach(o => { let c = o.value; try{ c = ctrCanon(canonicalName(o.value)); }catch(e){} const k = normName(c);
+          if(ctrIsHidden(o.value) || seen.has(k)){ o.remove(); return; } seen.add(k); if(c !== o.value) o.value = c; }); }); }catch(e){}
+    }, 30);
   }
   /* نامی که در گزارش‌ها برای این ردیف استفاده می‌شود */
   function contractorLabel(name, skill){
@@ -30032,6 +30162,7 @@
     partyLinks[k] = !!same; linkPairs[k] = {a: String(a), b: String(b), same: !!same};
     persistLinks(); ctrInvalidate();
     await pushLinkToServer(a, b, !!same);
+    ctrNamesChanged();
   }
   function kxMembersOf(name){
     const C = ctrBuild(); const k = normName(name);
@@ -30048,6 +30179,7 @@
     }
     ctrPrimary.add(normName(name)); ctrPrimaryName.set(normName(name), String(name).trim()); ctrPersist(); ctrInvalidate();
     try{ await kxListAdd(CTR_PRIMARY_KIND, String(name)); }catch(e){}
+    ctrNamesChanged();
   }
   async function kxUnlink(name){
     loadLinks();
@@ -30061,6 +30193,7 @@
     }
     if(ctrPrimary.has(k)){ const nm = ctrPrimaryName.get(k) || String(name); ctrPrimary.delete(k); ctrPrimaryName.delete(k); ctrPersist(); try{ await kxListDel(CTR_PRIMARY_KIND, nm); }catch(e){} }
     persistLinks(); ctrInvalidate();
+    ctrNamesChanged();
   }
   async function kxMerge(from, to){
     if(!from || !to || normName(from) === normName(to)) return false;
@@ -30084,6 +30217,7 @@
     await ctrRetire(from, to);
     persistLinks(); ctrInvalidate();
     try{ mtAllRows = null; await mtLoadAllNames(); }catch(e){}
+    clearNetCache(); ctrNamesChanged();
     showDialog('ok', 'یکسان شد', r && r.n ? toFa(r.n) + ' رکورد از «' + from + '» به «' + to + '» تغییر کرد.' : 'رکوردی با نام «' + from + '» پیدا نشد؛ پیوندها به‌روز شد.');
     return true;
   }
@@ -35242,6 +35376,7 @@
       }
     }
     if(name === 'write'){ try{ syncWriteCaps(); }catch(e){} }
+    if(name === 'view' && window.__ctrStale){ window.__ctrStale = false; try{ const lb = document.getElementById('loadBtn'); if(lb && !lb.disabled && lastDate) lb.click(); }catch(e){} }
     if(name === 'tasks' && !tasksLoaded) loadTasks();
     if(name === 'admin'){
       if(!adminLoaded) loadAdmin();
@@ -41253,7 +41388,8 @@
     /* فهرست نام پیمانکار و طرف قرارداد: فقط نام اصلی هر پرونده، بی تکرار */
     if(dl && /^(contractorList|contractPartyList|letterPartyList|mtNameList)$/.test(dl.id) && typeof ctrCanon === 'function'){
       const seen = new Set();
-      opts = opts.map(o => { let c = o.v; try{ c = ctrCanon(canonicalName(o.v)); const sp = splitParts(c); if(sp && dl.id === 'contractorList') c = sp.n; }catch(e){} return {v: c, g: o.g}; })
+      opts = opts.filter(o => { try{ return !ctrIsHidden(o.v); }catch(e){ return true; } })
+        .map(o => { let c = o.v; try{ c = ctrCanon(canonicalName(o.v)); const sp = splitParts(c); if(sp && dl.id === 'contractorList') c = sp.n; }catch(e){} return {v: c, g: o.g}; })
         .filter(o => { const k = normName(o.v) || o.v; if(seen.has(k)) return false; seen.add(k); return true; });
     }
     const hit = opts.filter(o => !q || toEn(o.v.toLowerCase()).indexOf(q) !== -1);
@@ -41637,6 +41773,7 @@
       bundleCache = {key, data: sb, t: Date.now()};
       if(sb.avatars && Object.keys(sb.avatars).length) avatars = sb.avatars;
       try{ applyLinkLists(sb.lists); }catch(e){}
+      try{ ctrCanonBundle(sb); }catch(e){}
       return sb;
     }
     const j = await getJSON(SCRIPT_URL + '?bundle=1' + (d ? '&date=' + encodeURIComponent(d) : ''));
@@ -41650,6 +41787,7 @@
     bundleCache = {key, data, t: Date.now()};
     if(data.avatars && typeof data.avatars === 'object') avatars = data.avatars;
     try{ applyLinkLists(data.lists); }catch(e){}
+    try{ ctrCanonBundle(data); }catch(e){}
     return data;
   }
   function clearBundle(){ bundleCache = {key:'', data:null, t:0}; }
