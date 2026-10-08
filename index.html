@@ -1579,6 +1579,12 @@
   .rv.adm-minute.mn2 .mn3-more[open] > summary::after{content:'▴';}
   .rv.adm-minute.mn2 .mn3-more .mn2-ntf{font-size:12.5px;}
   @media (max-width:520px){ .mn3-b > .mb-det{padding-inline-start:0;} .mn3-st.t-mute{display:none;} }
+  .tk-prc{display:flex;flex-direction:column;gap:2px;padding:6px 14px 12px;}
+  .tk-prc-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line-soft);}
+  .tk-prc-it b{font-size:13px;font-weight:700;} .tk-prc-it small{grid-column:1;font-size:11.5px;color:var(--muted);}
+  .tk-prc-it em{grid-column:2;grid-row:1 / span 2;align-self:center;font-style:normal;font-size:12px;font-weight:800;color:var(--muted);}
+  .tk-prc-it.hot em, .tk-prc-it.hot b{color:var(--alert);}
+  .tk-prc .tk-goadm{margin-top:8px;align-self:flex-start;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -30267,6 +30273,21 @@
         e.stopPropagation();
         const k = as.dataset.admkind, id = as.dataset.admset, want = as.dataset.st;
         as.textContent = '...';
+        /* ردیف بررسی داخلی: فقط سهم همین شخص؛ آخرین تأیید پنجرهٔ سپردن را باز می‌کند */
+        const rvName = as.dataset.rvperson || '';
+        if(rvName){
+          let row0 = rowMap.get(id);
+          if(!row0){ try{ const tr = (profileState.calList || []).concat(Array.from(tfrCards.values())).find(x => x && String(x.__admId) === String(id) && x.__admRow); row0 = tr && tr.__admRow; }catch(e){} }
+          if(!row0){ showDialog('warn','دوباره امتحان کنید','اطلاعات این سند هنوز بار نشده است.'); return; }
+          const cur = String(pick(row0,AD.rvDone) || '').split('|').map(x => x.trim()).filter(Boolean);
+          const keep = cur.filter(x => nameKey(x) !== nameKey(rvName));
+          if(want === 'done') keep.push(rvName);
+          const ok = (want === 'done') ? await rvSaveDone(k, id, row0, keep)
+            : await sendAction({action:'update', target:k, id:id, values:{'rvDone': keep.join('|')}});
+          clearNetCache();
+          if(ok) stPill(want, as.parentElement);
+          return;
+        }
         const values = (k === 'statement')
           ? {'مبلغ پرداختی': want === 'done' ? (as.dataset.amount || '') : ''}
           : (k === 'contract')
@@ -50648,6 +50669,11 @@
       + '</div>';
   }
   document.addEventListener('click', e => {
+    const g = e.target.closest('[data-prcgo]');
+    if(!g) return;
+    try{ gotoAdminItem('prc', g.dataset.prcgo); }catch(err){}
+  });
+  document.addEventListener('click', e => {
     if(!e.target.closest('[data-prgo]')) return;
     try{ switchTab('write'); window.wpickSetMode && window.wpickSetMode('prc'); prcState.tab = 'list'; prcRender(); }catch(err){}
   });
@@ -53113,6 +53139,14 @@
       if(r && r.__adm && r.__admRow && ['statement','contract','letter','design'].indexOf(r.__admKind) !== -1)
         inn.innerHTML = '<div class="adm-host tk-admhost">' + admCard(r.__admKind, r.__admRow, false)
           + '<button type="button" class="tk-goadm" data-tkgoadm="' + esc(r.__admKind) + '|' + esc(r.__admId) + '">باز کردن در دفتر فنی ‹</button></div>';
+      else if(r && r.__admKind === 'prc' && r.__prc){
+        const req = r.__prc;
+        inn.innerHTML = '<div class="tk-prc">' + req.items.filter(prIsOpen).map(it =>
+            '<div class="tk-prc-it' + (prHot(req, it) ? ' hot' : '') + '"><b>' + esc(it.d) + '</b><small>'
+            + (it.q ? esc(toFa(it.q)) + ' ' + esc(it.u || '') + ' · ' : '') + esc(it.st) + '</small>'
+            + '<em>' + toFa(prAge(req, it)) + ' روز</em></div>').join('')
+          + '<button type="button" class="tk-goadm" data-prcgo="' + esc(req.code) + '">پیگیری در تدارکات ‹</button></div>';
+      }
       else if(r) inn.innerHTML = taskCardHtml(r);
       try{ if(typeof markAlertCards === 'function') markAlertCards('#taskView'); }catch(e){}
     }
@@ -54236,11 +54270,23 @@
          انجام داده یا نداده — نه اینکه وضعیت کل مورد عوض شود. */
       const rvName = as.dataset.rvperson || '';
       if(rvName){
-        const row0 = rowMap.get(id) || {};
+        /* سطر خام سند: از دفتر فنی، یا اگر هنوز بار نشده، از همان ردیف لیست فعالیت */
+        let row0 = rowMap.get(id);
+        if(!row0){ try{ const tr = Array.from(tfrCards.values()).find(x => x && String(x.__admId) === String(id) && x.__admRow); row0 = tr && tr.__admRow; }catch(e){} }
+        row0 = row0 || {};
         const cur = String(pick(row0,AD.rvDone) || '').split('|')
           .map(x => x.trim()).filter(Boolean);
         const keep = cur.filter(x => nameKey(x) !== nameKey(rvName));
         if(want === 'done') keep.push(rvName);
+        /* تأیید، همان مسیر دفتر فنی را می‌رود: اگر این آخرین تأیید پله است،
+           پنجرهٔ «به چه کسی بسپارید» باز می‌شود و مورد به نفر بعد یا «تأیید
+           داخلی» منتقل می‌شود؛ پیش‌تر فقط در صف می‌ماند و جلو نمی‌رفت. */
+        if(want === 'done'){
+          const ok = await rvSaveDone(k, id, row0, keep);
+          if(ok){ clearNetCache(); tasksLoaded = false; setTimeout(loadTasks, 350); }
+          else{ setRvRowStatus(id, rvName, cur.some(x => nameKey(x) === nameKey(rvName)) ? 'done' : 'doing'); }
+          return;
+        }
         const prevRv = pendingAdm.get(id);
         pendingAdm.set(id, {kind: k,
           values: Object.assign({}, prevRv && prevRv.values, {'rvDone': keep.join('|')})});
@@ -55052,6 +55098,21 @@
         pick(r,AD.lParty), 'letter', pick(r,AD.id), {row: r});
     });
 
+    /* تدارکات: هر درخواست خریدی که قلم باز دارد، یک ردیف کلی به نام
+       «کارفرما» — خرید با کارفرماست و پیگیری‌اش زیر همان دسته می‌آید */
+    try{
+      (prcState.list || []).forEach(req => {
+        const open = req.items.filter(prIsOpen);
+        if(!open.length) return;
+        const hot = open.filter(it => prHot(req, it)).length;
+        mk('تدارکات \u2066' + req.code + '\u2069 — ' + toFa(open.length) + ' قلم باز' + (hot ? '، ' + toFa(hot) + ' بحرانی' : '')
+          + ' (' + open.slice(0, 2).map(it => it.d).join('، ') + (open.length > 2 ? '، …' : '') + ')',
+          'کارفرما', 'تدارکات', req.date, '', 'doing', req.unit || '', 'prc', req.code, {});
+        const o = out[out.length - 1];
+        if(o){ o.__offsite = true; o.__prc = req; o.__prcHot = hot; }
+      });
+    }catch(e){}
+
     /* اگر یک نفر هم مسئول اصلیِ یک مورد باشد و هم مسئول بررسی داخلی‌اش،
        دو ردیف برای یک کار می‌گرفت. فقط مرحله‌ای می‌ماند که جلوتر است:
        تا وقتی در بررسی داخلی است، ردیف بررسی؛ و به محض «تأیید داخلی»
@@ -55158,6 +55219,7 @@
         loadTaskBlockers().catch(() => null)]);
       // بدون این، ستون مسئولین بررسی خالی است و ردیف‌های بررسی داخلی ساخته نمی‌شوند
       try{ await mergeReviewCols(bundle.admin); }catch(e){}
+      try{ await prcLoad(); }catch(e){}          // تدارکات برای ردیف‌های «کارفرما»
       // wireFastEdit سطر را از rowMap می‌گیرد؛ بدون این، چیپ‌ها بی‌اثرند
       ['statements','contracts','minutes','letters'].forEach(k => {
         (bundle.admin && bundle.admin[k] || []).forEach(r => {
