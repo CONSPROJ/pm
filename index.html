@@ -1517,6 +1517,29 @@
   .dz-id > i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5;}
   .dz-id .dz-disc{padding:1px 8px;font-size:11px;}
   .dz .dz-act{grid-template-columns:2fr 1fr;}
+  /* نوار وضعیت سند طراحی */
+  .dz-bar{--c:var(--sky);display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--field);}
+  .dz-bar.s-cons{--c:#6d5bb5;} .dz-bar.s-emp{--c:#2a8a86;} .dz-bar.s-ctr{--c:#b07512;}
+  .dz-bar.s-done.t-ok{--c:var(--ok);} .dz-bar.s-done.t-bad{--c:var(--alert);} .dz-bar.s-done.t-warn{--c:#b07512;}
+  [data-theme="dark"] .dz-bar.s-cons{--c:#a898e6;} [data-theme="dark"] .dz-bar.s-emp{--c:#5cc4be;}
+  .dz-dot2{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb, var(--c) 16%, transparent);}
+  .dz-bm{min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .dz-main{font-size:14px;font-weight:700;color:var(--ink);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dz-main .ds-hl,.dz-main button{all:unset;cursor:pointer;color:var(--c);}
+  .dz-main .dz-who{font-weight:500;color:var(--muted);}
+  .dz-code{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--c);color:#fff;margin-inline-end:6px;vertical-align:1px;}
+  .dz-id2{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;font-size:11.5px;color:var(--muted);}
+  .dz-id2 > i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.45;}
+  .dz-disc2{display:inline-flex;align-items:center;gap:5px;} .dz-disc2::before{content:'';width:6px;height:6px;border-radius:2px;background:var(--dc,var(--muted));}
+  .dz-dn{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+  .dz-dn b{font-size:18px;font-weight:800;line-height:1.15;color:var(--ink);white-space:nowrap;} .dz-dn b u{text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);margin-inline-start:3px;}
+  .dz-dn small{font-size:10.5px;color:var(--muted);white-space:nowrap;}
+  .dz-dn.warn b{color:#b07512;} .dz-dn.bad b{color:var(--alert);}
+  .dz-bar .dz-main .ds-hl{all:unset;cursor:pointer;color:var(--c);font-weight:700;}
+  .dz-bar .dz-main .dz-hw{color:var(--c);font-weight:700;}
+  .dz-bar .dz-id2{flex-wrap:nowrap;white-space:nowrap;overflow:hidden;}
+  .dz-bar .dz-id2 > span{flex:0 0 auto;} .dz-bar .dz-id2 > .dz-disc2{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .dz .dz-flow .adm-ms{border-top:0;padding-top:0;margin-top:0;}
   .dz-more{border-top:1px solid var(--line-soft);padding-top:8px;}
   .dz-more > summary{cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px;}
   .dz-more > summary::-webkit-details-marker{display:none;}
@@ -19659,6 +19682,7 @@
     background:none !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;
     border-top:1px solid var(--line-soft) !important;padding:12px 0 2px !important;margin-top:14px !important;}
   [data-theme="dark"] :is(#adminView, .adm-host, #panelTasks, #panelView, #panelWrite, .dk-card, .gen-group, .modal, body) .adm-ms{border-top-color:rgba(255,255,255,.07) !important;}
+  :is(#adminView, .adm-host, #panelTasks, #panelView, #panelWrite, .dk-card, .gen-group, .modal, body) .dsx2.dz > .dz-flow > .adm-ms{border-top:0 !important;padding-top:2px !important;margin-top:0 !important;}
   :is(#adminView, .adm-host, #panelTasks, #panelView, #panelWrite, .dk-card, .gen-group, .modal, body) .adm-ms .ms-head{min-height:0;justify-content:space-between;}
   :is(#adminView, .adm-host, #panelTasks, #panelView, #panelWrite, .dk-card, .gen-group, .modal, body) .adm-ms .ms-total{font-size:10.5px;color:var(--muted);}
   :is(#adminView, .adm-host, #panelTasks, #panelView, #panelWrite, .dk-card, .gen-group, .modal, body) .adm-ms .ms-total b{font-size:12px;color:var(--ink);}
@@ -51925,19 +51949,28 @@
     const tot = (function(){ const d = first ? faDiff(first, todayShamsi()) : null; return d != null && d >= 0 ? d : null; })();
     const no = pick(r,AD.dNo), disc = pick(r,AD.dDisc);
     const tone = st ? dsTone(st) : 'info';
-    /* خلاصهٔ یک‌نگاه: وضعیت + این‌که دست کیست و چند روز؛ زیرش شناسهٔ سند در یک خط کم‌رنگ */
+    /* نوار وضعیت یک‌دست: نقطهٔ رنگی · «کجاست» و زیرش شناسهٔ سند · شمار روز در لبهٔ دیگر */
     const hn = dsHolderNow(r);
-    let hold = '';
+    const code = DS_CODE[st] ? '<b class="dz-code" dir="ltr">' + DS_CODE[st] + '</b>' : '';
+    let main = '', days = null, dCap = '', dTone = '', side = 'done';
     if(hn){
-      const lim = DS_STAGE_LIM[hn.st], dTone = (lim && hn.days != null) ? (hn.days > lim[1] ? 'bad' : hn.days > lim[0] ? 'warn' : '') : '';
-      hold = '<span class="dz-hl s-' + hn.side + '"><i class="dz-dot"></i>نزد <b>' + dsHolderLink(hn.side, hn.at, hn.txt) + '</b>' + (hn.days != null ? '<em class="' + dTone + '">' + toFa(hn.days) + ' روز</em>' : '') + '</span>';
-    }else if(st && dsDone(st)){
-      hold = '<span class="dz-hl s-done"><i class="dz-dot"></i>گردش ویرایش ' + esc(toFa(cur.rev)) + ' بسته شد</span>';
+      const lim = DS_STAGE_LIM[hn.st];
+      dTone = (lim && hn.days != null) ? (hn.days > lim[1] ? 'bad' : hn.days > lim[0] ? 'warn' : '') : '';
+      side = hn.side;
+      const who = 'نزد <span class="dz-hw">' + dsHolderLink(hn.side, hn.at, hn.txt) + '</span>';
+      main = /^نزد/.test(st) ? who : esc(st) + '<span class="dz-who"> · ' + who + '</span>';
+      days = hn.days; dCap = 'در این مرحله';
+    }else if(st){
+      main = code + esc(st);
+      if(dsDone(st)){ const cyc0 = (function(){ try{ return dsCycleDays(cur, true); }catch(e){ return null; } })(); days = cyc0; dCap = 'کل گردش'; }
     }
-    const top = '<div class="dz-sum">'
-      + (st ? '<span class="dz-st t-' + tone + '">' + (DS_CODE[st] ? '<b dir="ltr">' + DS_CODE[st] + '</b>' : '') + esc(st) + '</span>' : '')
-      + hold + '</div>'
-      + '<div class="dz-id">' + [no ? '<span dir="ltr">' + esc(no) + '</span>' : '', '<span dir="ltr">Rev ' + esc(cur.rev) + '</span>', disc ? '<span class="dz-disc" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : ''].filter(Boolean).join('<i></i>') + '</div>';
+    const idl = [no ? '<span dir="ltr">' + esc(no) + '</span>' : '', '<span dir="ltr">Rev ' + esc(cur.rev) + '</span>',
+                 disc ? '<span class="dz-disc2" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : ''].filter(Boolean).join('<i></i>');
+    const top = '<div class="dz-bar s-' + side + ' t-' + tone + '">'
+      + '<i class="dz-dot2"></i>'
+      + '<div class="dz-bm"><div class="dz-main">' + (main || 'بدون وضعیت') + '</div><div class="dz-id2">' + idl + '</div></div>'
+      + (days != null ? '<div class="dz-dn ' + dTone + '"><b>' + toFa(days) + '<u>روز</u></b><small>' + dCap + '</small></div>' : '')
+      + '</div>';
     const kv = [];
     const add = (k, v) => { if(v) kv.push('<div class="dz-kv"><dt>' + k + '</dt><dd>' + v + '</dd></div>'); };
     add('نوع', esc(pick(r,AD.dType) || ''));
