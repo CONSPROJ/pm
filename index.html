@@ -1503,6 +1503,35 @@
   .prr-d{display:flex;flex-direction:column;gap:2px;min-width:0;} .prr-d b{font-size:12.5px;font-weight:800;} .prr-d small{font-size:11px;color:var(--muted);}
   /* سند طراحی: هم‌زبان با بقیهٔ دفتر فنی */
   .dsx2{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+  /* کارت سند طراحی: خلاصه‌تر */
+  .dz-sum{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;}
+  .dz-sum .dz-st{margin-inline-start:0;}
+  .dz-hl{--c:var(--sky);display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+  .dz-hl.s-cons{--c:#6d5bb5;} .dz-hl.s-emp{--c:#2a8a86;} .dz-hl.s-ctr{--c:#b07512;} .dz-hl.s-done{--c:var(--ok);}
+  [data-theme="dark"] .dz-hl.s-cons{--c:#a898e6;} [data-theme="dark"] .dz-hl.s-emp{--c:#5cc4be;}
+  .dz-hl .dz-dot{width:8px;height:8px;flex:0 0 8px;box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent);}
+  .dz-hl b{color:var(--c);font-weight:700;} .dz-hl b .ds-hl{all:unset;cursor:pointer;}
+  .dz-hl em{font-style:normal;font-weight:700;color:var(--ink);padding:1px 8px;border-radius:99px;background:var(--field);font-size:12px;}
+  .dz-hl em.warn{color:#b07512;} .dz-hl em.bad{color:var(--alert);background:color-mix(in srgb, var(--alert) 12%, transparent);}
+  .dz-id{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:11.5px;color:var(--muted);}
+  .dz-id > i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5;}
+  .dz-id .dz-disc{padding:1px 8px;font-size:11px;}
+  .dz .dz-act{grid-template-columns:2fr 1fr;}
+  .dz-more{border-top:1px solid var(--line-soft);padding-top:8px;}
+  .dz-more > summary{cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .dz-more > summary::-webkit-details-marker{display:none;}
+  .dz-more > summary::after{content:'';width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;}
+  .dz-more[open] > summary::after{transform:rotate(-135deg);margin-top:3px;}
+  .dz-more > *:not(summary){margin-top:10px;}
+  .dz-hist{display:flex;flex-direction:column;gap:8px;} .dz-hist > b{font-size:12px;color:var(--muted);}
+  /* بند صورتجلسه: یک خط و پایین‌ترِ آرام */
+  .mn4-line{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--muted);margin:0 0 8px;}
+  .mn4-line b{color:var(--ink);font-weight:600;} .mn4-line > i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5;}
+  .mn4-foot{display:flex;align-items:center;gap:6px;margin-top:6px;}
+  .mn4-foot .cm-bar{flex:1;min-width:0;margin:0 !important;border:0 !important;padding:0 !important;}
+  .mn4-acts{display:inline-flex;gap:2px;flex:0 0 auto;}
+  .mn4-acts .mn3-a{width:34px;height:34px;padding:0;justify-content:center;}
+
   /* صورتجلسه: کارت جلسه */
   .adm-grp.mtg{border-radius:16px;}
   .mtg-h{display:flex !important;align-items:center;gap:12px;padding:12px 14px !important;text-align:start;}
@@ -1522,7 +1551,10 @@
   @media (max-width:520px){ .mtg-who{display:none;} }
 
   /* کارت سند طراحی v3 */
-  .adm-design .adm-meta, .adm-design .adm-tags:empty{display:none !important;}
+  .dz-ov{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line,#e5e7eb)}
+.dz-ovt{display:inline-block;font-size:11.5px;font-weight:700;color:var(--muted,#64748b);margin-bottom:2px}
+.adm-design .adm-meta, .adm-design .adm-tags:empty{display:none !important;}
+  .adm-minute .adm-meta{display:none !important;}
   .adm-design .adm-tags:has(.chip-set:empty){display:none;}
   .dz{gap:12px;font-variant-numeric:tabular-nums;}
   .dz-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
@@ -45151,19 +45183,14 @@
     const cat = String(pick(r,AD.mCat) || '').trim() === 'اجرایی' ? 'اجرایی' : 'اداری';
     const kv = (k, v) => v ? '<div class="mn3-kv"><u>' + k + '</u><b>' + v + '</b></div>' : '';
     const who = n => avatarHtml(n) + '<span>' + esc(n) + '</span>';
-    const info = '<div class="mn3-info">'
-      + kv('مسئول انجام', owner ? who(owner) : '')
-      + kv('مسئول پیگیری', fol ? who(fol) : '')
-      + kv('اقدام تا', pick(r,AD.mDate) ? esc(admDate(pick(r,AD.mDate))) : '')
-      + kv('نوع', cat)
-      + '</div>';
-    const acts = '<div class="mn3-acts">'
-      + (canEditAdm('minute', r)
-          ? '<button type="button" class="mn3-a edit" data-edit="' + esc(id) + '">' + ADM_ICON.edit + 'ویرایش</button>'
-            + '<button type="button" class="mn3-a del" data-del="' + esc(id) + '">' + ADM_ICON.trash + 'حذف</button>'
-          : '')
-      + '</div>';
-    return info + tl + acts + commentBarHtml('minute', id, title, {owner: owner || ''});
+    void kv; void who;
+    /* یک خط کم‌رنگ: پیگیری، موعد و نوع (مسئول انجام همین حالا روی سطر بند هست) */
+    const info = '<div class="mn4-line">' + [fol ? 'پیگیری: <b>' + esc(fol) + '</b>' : '', pick(r,AD.mDate) ? 'تا ' + esc(toFa(admDate(pick(r,AD.mDate)))) : '', cat].filter(Boolean).join('<i></i>') + '</div>';
+    const acts = canEditAdm('minute', r)
+      ? '<span class="mn4-acts"><button type="button" class="mn3-a edit" data-edit="' + esc(id) + '" title="ویرایش" aria-label="ویرایش">' + ADM_ICON.edit + '</button>'
+        + '<button type="button" class="mn3-a del" data-del="' + esc(id) + '" title="حذف" aria-label="حذف">' + ADM_ICON.trash + '</button></span>'
+      : '';
+    return info + tl + '<div class="mn4-foot">' + commentBarHtml('minute', id, title, {owner: owner || ''}) + acts + '</div>';
   }
   function mbToggle(line, force){
     if(!line) return;
@@ -47580,6 +47607,8 @@
   /* «جزئیات بیشتر» کارت دفتر فنی */
   function admMoreHtml(kind, r, head, o){
     const out = [];
+    // سند طراحی: یک بخش واحد و خلوت (مشخصات، یادداشت، ویرایش‌های قبلی)
+    if(kind === 'design'){ const dm = dsMoreHtml(r, o && o.owner); return dm || '<div class="am2-empty">جزئیات دیگری ثبت نشده است.</div>'; }
     const row = (k, v, cls) => v ? '<div class="am2-r' + (cls ? ' ' + cls : '') + '"><span>' + esc(k) + '</span><b>' + v + '</b></div>' : '';
     const tmn = n => toFa(Math.round(n / 10).toLocaleString('en-US'));
     // ۱) خلاصهٔ مالی
@@ -51858,6 +51887,34 @@
   /* ====== کارت سند طراحی v3 ======
      بالا: شمارهٔ مدرک، ویرایش، رشته و وضعیت. بعد یک جمله: سند الان دست کیست و
      چند روز. بعد مشخصات به شکل جدول کوچک، دو دکمهٔ هم‌اندازه، و خط گردش. */
+  /* محتوای «جزئیات بیشتر» سند طراحی: مشخصات، یادداشت و ویرایش‌های قبلی */
+  function dsMoreHtml(r, owner){
+    try{
+      const revs = dsRevsOf(r);
+      revs.forEach(x => { try{ Object.defineProperty(x, '__r', {value: r, enumerable: false, configurable: true}); }catch(e){} });
+      const cur = revs[revs.length - 1], old = revs.slice(0, -1).reverse();
+      const st = (function(){ const L = (cur.log || []).filter(x => x && x.st); return L.length ? L[L.length - 1].st : (pick(r,AD.dStatus) || ''); })();
+      const first = revs[0] && revs[0].log[0] && revs[0].log[0].d, tot = first ? faDiff(first, todayShamsi()) : null;
+      const kv = [], add = (k, v) => { if(v) kv.push('<div class="dz-kv"><dt>' + k + '</dt><dd>' + v + '</dd></div>'); };
+      add('نوع', esc(pick(r,AD.dType) || ''));
+      const party = pick(r,AD.dParty);
+      add('طراح', party ? '<button type="button" class="dz-lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>' : '');
+      add('از طرف', esc(pick(r,AD.dOrigin) || ''));
+      if(pick(r,AD.dFloor)){ const fl = pick(r,AD.dFloor); add('طبقه', '<button type="button" class="dz-lk" data-flr="' + esc(fl) + '">' + esc(fl === 'ALL' ? 'کل ساختمان' : (floorLabel(fl) || fl)) + '</button>'); }
+      add('محل', esc(pick(r,AD.dZone) || ''));
+      const dueRaw = pick(r,AD.due);
+      if(dueRaw){ const dl = daysSince(dueRaw), late = dl != null && dl > 0 && !dsDone(st); add('موعد', '<span class="' + (late ? 'dz-late' : '') + '">' + esc(toFa(admDate(dueRaw))) + '</span>' + (late ? '<small class="dz-late">' + toFa(dl) + ' روز گذشته</small>' : '')); }
+      if(tot != null && tot >= 0) add('از دریافت اول', toFa(tot) + ' روز');
+      if(owner) add('مسئول پرونده', esc(owner));
+      if(pick(r,AD.link)){ try{ add('پیوست', attachChipsHtml(pick(r,AD.link), 3)); }catch(e){} }
+      return '<div class="dz-moreb">'
+        + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
+        + (cur.note ? '<p class="dz-note"><u>یادداشت این ویرایش</u>' + esc(cur.note) + '</p>' : '')
+        + (old.length ? '<div class="dz-hist"><b>ویرایش‌های قبلی (' + toFa(old.length) + ')</b>' + dsCycleChartHtml(revs)
+            + old.map(rv => '<div class="dz-ov"><span class="dz-ovt">Rev ' + esc(toFa(rv.rev)) + (rv.date ? ' · ' + esc(toFa(admDate(rv.date))) : '') + '</span>' + dsFlowHtml(rv, false) + '</div>' + (rv.note ? '<p class="dz-note"><u>یادداشت Rev ' + esc(rv.rev) + '</u>' + esc(rv.note) + '</p>' : '')).join('') + '</div>' : '')
+        + '</div>';
+    }catch(e){ return ''; }
+  }
   function designDocHtml(r, editable, id){
     const revs = dsRevsOf(r);
     revs.forEach(x => { try{ Object.defineProperty(x, '__r', {value: r, enumerable: false, configurable: true}); }catch(e){} });
@@ -51868,21 +51925,19 @@
     const tot = (function(){ const d = first ? faDiff(first, todayShamsi()) : null; return d != null && d >= 0 ? d : null; })();
     const no = pick(r,AD.dNo), disc = pick(r,AD.dDisc);
     const tone = st ? dsTone(st) : 'info';
-    const top = '<div class="dz-top">'
-      + (no ? '<span class="dz-no" dir="ltr">' + esc(no) + '</span>' : '')
-      + '<span class="dz-rev" dir="ltr">Rev ' + esc(cur.rev) + '</span>'
-      + (disc ? '<span class="dz-disc" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : '')
-      + (st ? '<span class="dz-st t-' + tone + '">' + (DS_CODE[st] ? '<b dir="ltr">' + DS_CODE[st] + '</b>' : '') + esc(st) + '</span>' : '')
-      + '</div>';
+    /* خلاصهٔ یک‌نگاه: وضعیت + این‌که دست کیست و چند روز؛ زیرش شناسهٔ سند در یک خط کم‌رنگ */
     const hn = dsHolderNow(r);
     let hold = '';
     if(hn){
       const lim = DS_STAGE_LIM[hn.st], dTone = (lim && hn.days != null) ? (hn.days > lim[1] ? 'bad' : hn.days > lim[0] ? 'warn' : '') : '';
-      hold = '<div class="dz-hold s-' + hn.side + '"><i class="dz-dot"></i><span class="dz-ht"><u>الان دست</u><b>' + dsHolderLink(hn.side, hn.at, hn.txt) + '</b></span>'
-        + (hn.days != null ? '<span class="dz-days ' + dTone + '"><b>' + toFa(hn.days) + '</b><u>روز</u></span>' : '') + '</div>';
+      hold = '<span class="dz-hl s-' + hn.side + '"><i class="dz-dot"></i>نزد <b>' + dsHolderLink(hn.side, hn.at, hn.txt) + '</b>' + (hn.days != null ? '<em class="' + dTone + '">' + toFa(hn.days) + ' روز</em>' : '') + '</span>';
     }else if(st && dsDone(st)){
-      hold = '<div class="dz-hold s-done"><i class="dz-dot"></i><span class="dz-ht"><u>گردش ویرایش ' + esc(toFa(cur.rev)) + '</u><b>بسته شد · ' + esc(st) + '</b></span></div>';
+      hold = '<span class="dz-hl s-done"><i class="dz-dot"></i>گردش ویرایش ' + esc(toFa(cur.rev)) + ' بسته شد</span>';
     }
+    const top = '<div class="dz-sum">'
+      + (st ? '<span class="dz-st t-' + tone + '">' + (DS_CODE[st] ? '<b dir="ltr">' + DS_CODE[st] + '</b>' : '') + esc(st) + '</span>' : '')
+      + hold + '</div>'
+      + '<div class="dz-id">' + [no ? '<span dir="ltr">' + esc(no) + '</span>' : '', '<span dir="ltr">Rev ' + esc(cur.rev) + '</span>', disc ? '<span class="dz-disc" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : ''].filter(Boolean).join('<i></i>') + '</div>';
     const kv = [];
     const add = (k, v) => { if(v) kv.push('<div class="dz-kv"><dt>' + k + '</dt><dd>' + v + '</dd></div>'); };
     add('نوع', esc(pick(r,AD.dType) || ''));
@@ -51902,15 +51957,9 @@
     const head = msHeadHtml('گردش ویرایش ' + toFa(cur.rev), '', '', cyc != null ? toFa(cyc) + ' روز' : '');
     const old = revs.slice(0, -1).reverse();
     return '<div class="dsx2 dz">'
-      + top + hold
-      + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
-      + act
+      + top
       + '<div class="dz-flow">' + dsFlowHtml(cur, true, head) + '</div>'
-      + (cur.note ? '<p class="dz-note"><u>یادداشت این ویرایش</u>' + esc(cur.note) + '</p>' : '')
-      + (revs.length > 1 ? '<details class="dsx-hist"><summary>ویرایش‌های قبلی (' + toFa(old.length) + ')</summary>'
-          + dsCycleChartHtml(revs)
-          + old.map(rv => dsFlowHtml(rv, false) + (rv.note ? '<p class="dz-note"><u>یادداشت Rev ' + esc(rv.rev) + '</u>' + esc(rv.note) + '</p>' : '')).join('')
-          + '</details>' : '')
+      + act
       + '</div>';
   }
 
