@@ -1625,7 +1625,7 @@
   .ctd-wrap > summary > i{font-style:normal;color:var(--muted);transition:transform .2s;}
   .ctd-wrap[open] > summary > i{transform:rotate(180deg);}
   .ctd-wrap > .ctd-host{padding:0;}
-  .ctd-wrap .ctd-list{max-height:70vh;overflow:auto;overscroll-behavior:contain;}
+  .ctd-wrap .ctd-list{max-height:none;overflow:visible;}
   .ctc-who .ctc-em{color:var(--sky);} .ctc-who .ctc-meta{color:var(--muted);white-space:normal;line-height:1.6;}
   /* تگ‌های فرم پیمانکار */
   .ctg-box > span small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;margin-top:2px;}
@@ -1682,6 +1682,25 @@
   .ctcn-pick{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
   .ctcn-pick .ctcn-q{height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 11px;font:inherit;font-size:13px;}
   .ctcn-res{display:flex;flex-wrap:wrap;gap:6px;}
+  /* پنجرهٔ فرم پیمانکار: سربرگ و دکمهٔ ذخیره ثابت، بدنه اسکرول می‌خورد */
+  .ctc-sheet-bg{align-items:center;}
+  .ctc-modal.ctc-sheet{max-width:640px !important;width:calc(100% - 24px);max-height:min(90dvh, 900px);display:flex;flex-direction:column;padding:0 !important;overflow:hidden;}
+  .ctc-sheet > .modal-body{overflow:auto;overscroll-behavior:contain;padding:0 !important;flex:1;min-height:0;}
+  .ctc-sheet .ctc-ed{padding:0 16px 0;gap:12px;}
+  .ctc-sheet .ctc-edh{position:sticky;top:0;z-index:3;margin:0 -16px;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--line-soft);}
+  .ctc-sheet .ctc-edh > span{flex:1;min-width:0;}
+  .ctc-x{width:34px;height:34px;border-radius:10px;border:0;background:var(--field);color:var(--ink);cursor:pointer;font-size:14px;}
+  .ctc-sheet .ctc-eact{position:sticky;bottom:0;z-index:3;margin:4px -16px 0;padding:12px 16px;background:var(--surface);border-top:1px solid var(--line-soft);}
+  @media (max-width:640px){ .ctc-sheet-bg{align-items:flex-end;} .ctc-modal.ctc-sheet{width:100%;max-height:94dvh;border-radius:18px 18px 0 0 !important;} }
+  .ctd-more{width:100%;height:42px;border-radius:12px;border:1px dashed var(--line);background:none;color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+  .ctd-r .ctd-e{color:var(--sky);font-weight:800;}
+  .ctg-go{font-weight:900;color:var(--sky);cursor:pointer;padding:0 2px;font-size:13px;}
+  .ctg-res{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+  .ctg-res[hidden]{display:none;}
+  .ctg-r{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto minmax(0,1fr);gap:1px 10px;padding:8px 11px;border-radius:10px;border:1px solid var(--line-soft);background:var(--surface);cursor:pointer;}
+  .ctg-r:hover{border-color:var(--sky);}
+  .ctg-r b{grid-row:1 / span 2;align-self:center;font-size:12.5px;font-weight:900;direction:ltr;} .ctg-r span{font-size:13px;font-weight:700;} .ctg-r small{font-size:11px;color:var(--muted);}
+  .ctg-r.free b{color:var(--sky);} .ctg-r.free span{color:var(--muted);font-weight:600;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -27764,7 +27783,7 @@
     const c = ctrContactOf(name) || {};
     const ph = (c.p || []).concat(['']).slice(0, Math.max(2, (c.p || []).length + 1));
     return '<div class="ctc-ed" data-ctced="' + esc(name) + '">'
-      + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(name)) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small>مشخصات و اطلاعات تماس پیمانکار</small></span></div>'
+      + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(name)) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small>مشخصات و اطلاعات تماس پیمانکار</small></span><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button></div>'
       + ctmHtml(name)
       + ctcnHtml(name, c)
       + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" data-ctk="d" data-list="ctdDiscList" autocomplete="off" value="' + esc(c.d || '') + '" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
@@ -27779,9 +27798,12 @@
       + (function(){
           const cs = ctrContractsOf(name);
           return '<div class="ctc-f ctg-box"><span>قراردادها <small>از بخش قرارداد خودکار می‌آید؛ قرارداد دیگری را با «شماره — عنوان» اضافه کنید</small></span><input type="hidden" data-ctk="ct" value="' + esc(cs.man.join(' | ')) + '">'
-            + '<div class="ctg" data-ctgfor="ct">' + cs.auto.map(x => '<span class="ctg-t auto" title="از بخش قرارداد">' + esc(x) + '</span>').join('')
-            + cs.man.map(x => '<span class="ctg-t on">' + esc(x) + '<i data-ctgdel="1">✕</i></span>').join('')
-            + '<input type="text" class="ctg-in" data-ctgnew="ct" placeholder="+ شماره — عنوان قرارداد (Enter)"></div></div>';
+            + '<div class="ctg" data-ctgfor="ct">' + cs.auto.map(x => { const id = ctrContractIdOf(x);
+                return '<span class="ctg-t auto" title="از بخش قرارداد">' + esc(x) + (id ? '<b class="ctg-go" data-ctgoc="' + esc(id) + '" title="باز کردن این قرارداد در دفتر فنی">↗</b>' : '') + '</span>'; }).join('')
+            + cs.man.map(x => { const id = ctrContractIdOf(x);
+                return '<span class="ctg-t on">' + esc(x) + (id ? '<b class="ctg-go" data-ctgoc="' + esc(id) + '" title="باز کردن در دفتر فنی">↗</b>' : '') + '<i data-ctgdel="1">✕</i></span>'; }).join('')
+            + '<input type="text" class="ctg-in" data-ctgnew="ct" data-ctcsearch="1" placeholder="+ جست‌وجوی شماره یا عنوان قرارداد…"></div>'
+            + '<div class="ctg-res" hidden></div></div>';
         })()
       + '<label class="ctc-f"><span>نام نماینده / مسئول</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
       + '<div class="ctc-phs">' + ph.map((v, i) => '<label class="ctc-f"><span>' + (i ? 'تلفن دیگر' : 'تلفن همراه') + '</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" value="' + esc(v) + '" placeholder="09xxxxxxxxx"></label>').join('')
@@ -27807,6 +27829,29 @@
     inp.insertAdjacentHTML('beforebegin', '<span class="ctg-t on">' + esc(v) + '<i data-ctgdel="1">✕</i></span>');
     ctgSync(box);
   }
+  /* جست‌وجوی قرارداد برای افزودن: از همهٔ قراردادهای دفتر فنی، اول مال همین پیمانکار */
+  document.addEventListener('input', e => {
+    const i = e.target; if(!i || !i.dataset || !i.dataset.ctcsearch) return;
+    const box = i.closest('.ctg-box'), res = box.querySelector('.ctg-res');
+    const q = toEn(String(i.value || '').trim().toLowerCase());
+    if(!q){ res.hidden = true; res.innerHTML = ''; return; }
+    const me = normName(ctrCanon(box.closest('.ctc-ed').dataset.ctced));
+    const rows = ctrDocRows().filter(x => x.kind === 'contract').map(x => ({id: pick(x.row, AD.id), no: pick(x.row, AD.cNo) || '', t: pick(x.row, AD.cTitle) || '', p: pick(x.row, AD.cParty) || ''}))
+      .filter(x => toEn((x.no + ' ' + x.t + ' ' + x.p).toLowerCase()).indexOf(q) !== -1)
+      .sort((a, b) => (normName(ctrCanon(b.p)) === me) - (normName(ctrCanon(a.p)) === me)).slice(0, 8);
+    res.hidden = false;
+    res.innerHTML = rows.map(x => '<button type="button" class="ctg-r" data-ctgpick="' + esc([x.no, x.t].filter(Boolean).join(' — ')) + '"><b>' + esc(x.no || '—') + '</b><span>' + esc(x.t) + '</span><small>' + esc(x.p) + '</small></button>').join('')
+      + '<button type="button" class="ctg-r free" data-ctgpick="' + esc(i.value.trim()) + '"><b>+</b><span>افزودن «' + esc(i.value.trim()) + '» به همین شکل</span></button>';
+  });
+  document.addEventListener('click', e => {
+    const pk = e.target.closest && e.target.closest('[data-ctgpick]');
+    if(pk){ const box = pk.closest('.ctg-box'); ctgAdd(box.querySelector('.ctg'), pk.dataset.ctgpick); const i = box.querySelector('.ctg-in'); i.value = ''; const r = box.querySelector('.ctg-res'); r.hidden = true; r.innerHTML = '';
+      /* شناسه برای تگ تازه */
+      const id = ctrContractIdOf(pk.dataset.ctgpick); if(id){ const tg = Array.from(box.querySelectorAll('.ctg-t.on')).pop(); if(tg) tg.querySelector('i').insertAdjacentHTML('beforebegin', '<b class="ctg-go" data-ctgoc="' + esc(id) + '" title="باز کردن در دفتر فنی">↗</b>'); }
+      return; }
+    const go = e.target.closest && e.target.closest('[data-ctgoc]');
+    if(go){ e.preventDefault(); e.stopPropagation(); const m = document.getElementById('ctcModal'); if(m) m.hidden = true; try{ gotoAdminItem('contract', go.dataset.ctgoc); }catch(err){} }
+  }, true);
   document.addEventListener('keydown', e => {
     const i = e.target; if(!i || !i.classList || !i.classList.contains('ctg-in')) return;
     if(e.key !== 'Enter' && e.key !== ',' && e.key !== '،') return;
@@ -27867,11 +27912,12 @@
   }, true);
   function ctcOpen(name){
     let m = document.getElementById('ctcModal');
-    if(!m){ m = document.createElement('div'); m.id = 'ctcModal'; m.className = 'modal-bg'; m.innerHTML = '<div class="modal ctc-modal" role="dialog" aria-modal="true"><div class="modal-body"></div></div>'; document.body.appendChild(m);
-      m.addEventListener('click', e => { if(e.target === m) m.hidden = true; }); }
+    if(!m){ m = document.createElement('div'); m.id = 'ctcModal'; m.className = 'modal-bg ctc-sheet-bg'; m.innerHTML = '<div class="modal ctc-modal ctc-sheet" role="dialog" aria-modal="true"><div class="modal-body"></div></div>'; document.body.appendChild(m);
+      m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-ctcx]')){ m.hidden = true; document.body.style.overflow = ''; } }); }
     m.querySelector('.modal-body').innerHTML = ctcEditorHtml(name);
     m.hidden = false;
-    setTimeout(() => { const i = m.querySelector('input'); if(i && window.matchMedia('(hover:hover)').matches) i.focus(); }, 60);
+    document.body.style.overflow = 'hidden';
+    m.querySelector('.modal-body').scrollTop = 0;
   }
   function ctcRead(box){
     const o = {p: []};
@@ -27890,7 +27936,7 @@
     const box = t.closest('.ctc-ed');
     if(!box) return;
     if(t.closest('[data-ctcph]')){ e.stopPropagation(); t.closest('[data-ctcph]').insertAdjacentHTML('beforebegin', '<label class="ctc-f"><span>تلفن دیگر</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" placeholder="09xxxxxxxxx"></label>'); return; }
-    if(t.closest('[data-ctcclose]')){ const m = box.closest('#ctcModal'); if(m) m.hidden = true; return; }
+    if(t.closest('[data-ctcclose]')){ const m = box.closest('#ctcModal'); if(m){ m.hidden = true; document.body.style.overflow = ''; } return; }
     const sv = t.closest('[data-ctcsave]'), dl = t.closest('[data-ctcdel]');
     if(!sv && !dl) return;
     e.stopPropagation();
@@ -27900,7 +27946,7 @@
     if(bad){ showDialog('warn','شماره درست نیست','«' + bad + '» شمارهٔ تلفن معتبری نیست.'); return; }
     if(dl && !(await askConfirm('حذف اطلاعات تماس', 'اطلاعات تماس «' + box.dataset.ctced + '» پاک شود؟', 'حذف'))) return;
     (sv || dl).disabled = true;
-    try{ await ctrContactSave(box.dataset.ctced, o); const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal') m.hidden = true; else if(typeof ctcRepaint === 'function') ctcRepaint();
+    try{ await ctrContactSave(box.dataset.ctced, o); const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; document.body.style.overflow = ''; } if(typeof ctcRepaint === 'function') ctcRepaint();
       showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
     try{ ctcRepaint(); }catch(e2){}
@@ -27925,6 +27971,13 @@
       if(t && !seen.has(t)){ seen.add(t); out.push(t); }
     });
     return out;
+  }
+  /* شناسهٔ ردیف قرارداد از روی متن «شماره — عنوان» (یا فقط شماره)، برای باز کردنش */
+  function ctrContractIdOf(txt){
+    const no = normName(String(txt || '').split(' — ')[0]);
+    if(!no) return '';
+    const hit = ctrDocRows().find(x => x.kind === 'contract' && normName(String(pick(x.row, AD.cNo) || '')) === no);
+    return hit ? String(pick(hit.row, AD.id) || '') : '';
   }
   const ctrTagsOf = v => String(v || '').split(/\s*[|،,؛]\s*/).map(x => x.trim()).filter(Boolean);
   function ctrContractsOf(name){
@@ -28105,24 +28158,25 @@
       + '</div>'
       + '<label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، نماینده، تلفن یا ایمیل…" value="' + esc(q) + '" autocomplete="off"></label>'
       + '<div class="dc-fs">' + chip('all', 'همه', ents.length) + chip('with', 'با اطلاعات', nWith) + chip('none', 'بدون اطلاعات', ents.length - nWith) + '</div>'
-      + '<div class="ctd-list">' + (list.length ? list.slice(0, 300).map(e => {
-          const op = ctdState.open === e.k;
-          return '<div class="ctd-r' + (op ? ' open' : '') + '">'
-            + '<button type="button" class="ctd-h" data-ctdo="' + esc(e.k) + '"><span class="ctc-av">' + esc(initialsOf(e.canon)) + '</span>'
+      + '<div class="ctd-list">' + (list.length ? list.slice(0, ctdState.lim || 60).map(e => {
+          const op = false;
+          return '<div class="ctd-r">'
+            + '<button type="button" class="ctd-h" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '"><span class="ctc-av">' + esc(initialsOf(e.canon)) + '</span>'
             + '<span class="ctd-n"><b>' + esc(e.canon) + '</b><small>' + (function(){ const c = ctrContactOf(e.canon) || {};
                 return esc([c.cn && c.cn !== e.canon ? c.cn : '', c.d || '', c.s || (e.skills && e.skills.size ? Array.from(e.skills.keys()).slice(0, 3).join('، ') : (e.docs ? 'طرف قرارداد' : ''))].filter(Boolean).join(' · ')); })() + '</small></span>'
-            + (ed ? '<span class="ctd-e">' + (op ? 'بستن' : (ctrContactOf(e.canon) ? 'ویرایش' : '+ افزودن')) + '</span>' : '') + '</button>'
+            + (ed ? '<span class="ctd-e">' + (ctrContactOf(e.canon) ? 'ویرایش ›' : '+ تکمیل ›') + '</span>' : '') + '</button>'
             + ctcBarHtml(e.canon)
-            + (op && ed ? ctcEditorHtml(e.canon) : '')
             + '</div>';
-        }).join('') : '<div class="mx-empty">پیمانکاری پیدا نشد.</div>') + '</div>';
+        }).join('') + (list.length > (ctdState.lim || 60) ? '<button type="button" class="ctd-more" data-ctdmore="1">نمایش ' + toFa(Math.min(60, list.length - (ctdState.lim || 60))) + ' پیمانکار دیگر · از ' + toFa(list.length) + '</button>' : '')
+          : '<div class="mx-empty">پیمانکاری پیدا نشد.</div>') + '</div>';
     if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
   }
   document.addEventListener('click', e => {
     const t = e.target;
     if(!t.closest || !t.closest('#ctDir, .ctd-host')) return;
     const f = t.closest('[data-ctdf]'); if(f){ ctdState.f = f.dataset.ctdf; ctcRepaint(); return; }
-    const o = t.closest('[data-ctdo]'); if(o){ if(!can('ctr.contact')) return; ctdState.open = ctdState.open === o.dataset.ctdo ? '' : o.dataset.ctdo; ctcRepaint(); return; }
+    const o = t.closest('[data-ctdo]'); if(o){ if(!can('ctr.contact')) return; ctcOpen(o.dataset.ctdn || o.dataset.ctdo); return; }
+    if(t.closest('[data-ctdmore]')){ ctdState.lim = (ctdState.lim || 60) + 60; ctcRepaint(); return; }
     if(t.closest('[data-ctcclose]')){ e.stopPropagation(); ctdState.open = ''; ctcRepaint(); }
   }, true);
   document.addEventListener('input', e => {
