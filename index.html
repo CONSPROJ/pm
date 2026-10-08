@@ -1585,6 +1585,32 @@
   .tk-prc-it em{grid-column:2;grid-row:1 / span 2;align-self:center;font-style:normal;font-size:12px;font-weight:800;color:var(--muted);}
   .tk-prc-it.hot em, .tk-prc-it.hot b{color:var(--alert);}
   .tk-prc .tk-goadm{margin-top:8px;align-self:flex-start;}
+  /* کپسول وضعیت یکدست (statChip) */
+  .chip-set.rfb.sc-one{display:inline-flex;}
+  .chip-set.rfb.sc-one.sc-menu{display:flex;flex-wrap:wrap;width:100%;}
+  .chip-set.rfb.t-go{--c:var(--sky);}
+  /* سند طراحی: الان دست کیست */
+  .adm-ms{--c-emp:#2a8a86;--c-cons:#6d5bb5;}
+  [data-theme="dark"] .adm-ms{--c-emp:#5cc4be;--c-cons:#a898e6;}
+  .adm-ms .ms-emp{--c:var(--c-emp);} .adm-ms .ms-cons{--c:var(--c-cons);}
+  .ds-hold{--c:var(--sky);display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font-size:12px;}
+  .ds-hold.s-cons{--c:#6d5bb5;} .ds-hold.s-emp{--c:#2a8a86;} .ds-hold.s-ctr{--c:var(--warn);}
+  [data-theme="dark"] .ds-hold.s-cons{--c:#a898e6;} [data-theme="dark"] .ds-hold.s-emp{--c:#5cc4be;}
+  .ds-hold > i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 20%, transparent);}
+  .ds-hold u{text-decoration:none;color:var(--muted);font-size:11.5px;}
+  .ds-hold b{font-size:13.5px;font-weight:900;color:var(--c);}
+  .ds-hold em{font-style:normal;font-weight:800;color:var(--ink);} .ds-hold em.warn{color:#b07512;} .ds-hold em.bad{color:var(--alert);}
+  .ds-hold small{color:var(--muted);font-size:11.5px;}
+  .ds-hold small::before{content:'·';margin-inline-end:6px;}
+  .ds-holdp{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--field);}
+  .ds-holdp[hidden]{display:none;}
+  .ds-holdp > u{text-decoration:none;font-size:12px;font-weight:800;}
+  .ds-sides{display:flex;flex-wrap:wrap;gap:6px;}
+  .ds-side{--c:var(--sky);display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .ds-side.s-cons{--c:#6d5bb5;} .ds-side.s-emp{--c:#2a8a86;} .ds-side.s-ctr{--c:var(--warn);}
+  .ds-side i{width:8px;height:8px;border-radius:50%;background:var(--c);}
+  .ds-side.on{border-color:var(--c);background:color-mix(in srgb, var(--c) 12%, var(--surface));}
+  .ds-holdp .ds-at{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 12px;font:inherit;font-size:13px;}
   /* ====== فیلدهای یکدست فرم‌ها (ثبت گزارش، دفتر فنی، صورتجلسه) ======
      همان زبان فرم صورت وضعیت و قرارداد: زمینهٔ ملایم، گوشهٔ گرد، حلقهٔ فوکوس */
   :is(#panelWrite, .af) .field > label{font-size:12px !important;font-weight:800 !important;color:color-mix(in srgb, var(--ink) 78%, transparent) !important;margin-bottom:6px !important;letter-spacing:0;}
@@ -42325,7 +42351,7 @@
         if(b0 && (obj.values['وضعیت مدرک'] != null || obj.values['ویرایش'] != null)){
           const v2 = Object.assign({}, obj.values);
           v2['ویرایش‌ها'] = dsApply(b0, v2);
-          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink;
+          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink; delete v2.__dsSide; delete v2.__dsAt;
           obj = Object.assign({}, obj, {values: v2});
         }
       }catch(e){}
@@ -43729,9 +43755,8 @@
       +   '<div class="mn3-kv"><u>ابلاغ</u><b>' + (function(){
             const nv = String(admNotify('minute', first) || '');
             const lbl = esc(notifyLabel(nv) || 'ثبت نشده');
-            return canEditAdm('minute', first)
-              ? '<button type="button" class="stat-chip live mn2-ntf ' + notifyCls(nv) + '" data-fast="notify" data-fid="' + esc(pick(first,AD.id)) + '" data-fkind="minute" title="تغییر وضعیت ابلاغ"><b>' + lbl + '</b> ▾</button>'
-              : lbl;
+            return statChip({live: canEditAdm('minute', first), what:'notify', id: pick(first,AD.id), kind:'minute', raw: nv,
+              cls: nv ? notifyCls(nv) : 'off', cap:'ابلاغ', txt: notifyLabel(nv) || 'ثبت نشده'});
           })() + '</b></div>'
       +   (age != null && age >= 0 ? '<div class="mn3-kv"><u>از جلسه</u><b>' + toFa(age) + ' روز</b></div>' : '')
       +   (nextDue ? '<div class="mn3-kv"><u>اقدام بعدی</u><b>' + esc(admDate(nextDue)) + '</b></div>' : '')
@@ -43803,16 +43828,26 @@
   }
 
   /* چیپ وضعیت: نقطهٔ رنگی، برچسب ریز، و مقدار — بدون ایموجی */
+  /* کپسول وضعیت، به همان شکل نوار گردش قرارداد و صورت وضعیت (rfb):
+     نوار کوچک مراحل، عنوان کم‌رنگ، مقدار پررنگ و فلش تغییر. هر کدام
+     chip-set خودش است تا منوی سریع جای همین یکی بنشیند. */
+  const SC_TONE = {'st-ok':'ok', 'st-bad':'bad', 'st-warn':'idle', 'st-info':'go', 'off':'idle'};
+  const SC_STEPS = {notify: ['در حال تنظیم','درون‌سازمانی','برون‌سازمانی']};
   function statChip(o){
-    const inner = '<i class="dt"></i>'
-      + '<u>' + esc(o.cap) + '</u>'
-      + '<b>' + esc(o.txt) + '</b>'
-      + (o.extra || '');
-    if(o.live)
-      return '<button type="button" class="stat-chip live ' + o.cls + '" '
-        + 'data-fast="' + o.what + '" data-fid="' + esc(o.id) + '" data-fkind="' + o.kind + '" '
-        + 'title="برای تغییر کلیک کنید">' + inner + '</button>';
-    return '<span class="stat-chip ' + o.cls + '">' + inner + '</span>';
+    const tone = SC_TONE[o.cls] || (/ok/.test(o.cls || '') ? 'ok' : /bad/.test(o.cls || '') ? 'bad' : 'go');
+    const steps = SC_STEPS[o.what];
+    let track = '';
+    if(steps){
+      const at = steps.indexOf(String(o.raw != null ? o.raw : '') || '');
+      track = '<span class="rfb-track">' + steps.map((t, i) => '<span class="rfb-s ' + (at < 0 ? 'ahead' : i < at ? 'done' : i === at ? (tone === 'bad' ? 'bad' : (i === steps.length - 1 ? 'done' : 'now')) : 'ahead') + '" title="' + t + '"><i></i></span>').join('') + '</span>';
+    }
+    const inner = track + '<span class="rfb-tx"><u>' + esc(o.cap) + '</u><b>' + esc(o.txt) + '</b></span>' + (o.extra || '')
+      + (o.live ? '<span class="rfb-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></span>' : '');
+    return '<span class="chip-set rfb sc-one t-' + tone + '">'
+      + (o.live
+          ? '<button type="button" class="rfb-main" data-fast="' + o.what + '" data-fid="' + esc(o.id) + '" data-fkind="' + o.kind + '" title="برای تغییر کلیک کنید">' + inner + '</button>'
+          : '<span class="rfb-main">' + inner + '</span>')
+      + '</span>';
   }
 
   /* ====== مسئولین بررسی داخلی ======
@@ -44711,7 +44746,7 @@
     }
 
     // باز کردن منوی گزینه‌ها
-    const chip = e.target.closest('.stat-chip.live[data-fast]');
+    const chip = e.target.closest('.stat-chip.live[data-fast], .rfb-main[data-fast]');
     if(chip && (chip.dataset.fast === 'review' || chip.dataset.fast === 'notify')
        && (chip.dataset.fkind === 'statement' || chip.dataset.fkind === 'contract')){
       e.stopPropagation();
@@ -44722,6 +44757,7 @@
       e.stopPropagation();
       const holder = chip.parentElement;
       holder.dataset.prev = holder.innerHTML;
+      holder.classList.add('sc-menu');
       const curB = chip.querySelector('b');
       holder.innerHTML = fastMenuHtml(chip.dataset.fast, chip.dataset.fkind,
                                       chip.dataset.fid, curB ? curB.textContent.trim() : '');
@@ -44732,7 +44768,7 @@
     if(cancel){
       e.stopPropagation();
       const holder = cancel.closest('.chip-set');
-      if(holder && holder.dataset.prev) holder.innerHTML = holder.dataset.prev;
+      if(holder && holder.dataset.prev){ holder.innerHTML = holder.dataset.prev; holder.classList.remove('sc-menu'); }
       return true;
     }
     // ثبت مقدار تازه
@@ -46373,7 +46409,7 @@
             ? rfBarHtml(kind, r, editable)
             /* سند طراحی کپسول ندارد: وضعیت، ویرایش و مدت‌ها روی خط گردش خودش است */
             : kind === 'design' ? ''
-            : statChip({live: editable && id, what:'notify', id:id, kind:kind,
+            : statChip({live: editable && id, what:'notify', id:id, kind:kind, raw: notify,
                       cls: notify ? notifyCls(notify) : 'off',
                       cap:'ابلاغ', txt: notifyLabel(notify) || 'ثبت نشده'}))
       +     ((kind === 'statement' || kind === 'contract' || kind === 'design') ? '' : reviewersChip(kind, r, editable))
@@ -50128,7 +50164,11 @@
     const cur = revs[revs.length - 1];
     const st = values['وضعیت مدرک'];
     const last = cur.log.length ? cur.log[cur.log.length - 1].st : '';
-    if(st && st !== last) cur.log.push({st, d: when, by: me, note: (newRev === curRev ? (values.__dsNote || '') : '')});
+    if(st && st !== last){
+      const e1 = {st, d: when, by: me, note: (newRev === curRev ? (values.__dsNote || '') : '')};
+      if(values.__dsSide){ e1.side = values.__dsSide; if(values.__dsAt) e1.at = values.__dsAt; }
+      cur.log.push(e1);
+    }
     return revs.slice(-40);
   }
   /* مدت هر مرحله در یک ویرایش */
@@ -50153,6 +50193,35 @@
     const d = faDiff(L[0].d, end);
     return d != null && d >= 0 ? d : null;
   }
+  /* ====== سند طراحی: الان دست کیست؟ ======
+     هر مرحلهٔ گردش ثبت می‌کند سند نزد کدام طرف است — داخل پروژه (با نام
+     نفر)، مشاور، کارفرما یا پیمانکار — تا روی نمودار، کارت و لیست فعالیت
+     معلوم باشد توپ در زمین کیست و چند روز آنجا مانده. */
+  const DS_SIDES = [{k:'in', t:'داخل پروژه', c:'i'}, {k:'cons', t:'مشاور', c:'cons'}, {k:'emp', t:'کارفرما', c:'emp'}, {k:'ctr', t:'پیمانکار', c:'p'}];
+  const dsSideOf = k => DS_SIDES.find(x => x.k === k) || null;
+  /* پایان گردش: فقط تأییدها (A، B، IFC)؛ «نیاز به اصلاح» و «رد» یعنی سند دست کسی است */
+  const dsDone = st => ['تأیید شده','تأیید مشروط','برای اجرا'].indexOf(st) !== -1;
+  function dsDefSide(st, r){
+    if(dsDone(st)) return '';
+    if(st === 'دریافت' || st === 'در حال بررسی') return 'in';
+    if(st === 'نزد مشاور/کارفرما') return 'cons';
+    const o = String(pick(r || {},AD.dOrigin) || '');
+    return o === 'پیمانکار' ? 'ctr' : o === 'کارفرما' ? 'emp' : o === 'مشاور' ? 'cons' : 'in';
+  }
+  /* سمتِ ثبت‌شده، یا برای سابقهٔ قدیمی حدس از روی مرحله */
+  const dsSideAt = (x, r) => (x && x.side) ? x.side : dsDefSide(x && x.st, r);
+  const dsHolderTxt = (x, r) => { const sd = dsSideOf(dsSideAt(x, r)); if(!sd) return ''; return x.at ? x.at + (sd.k === 'in' ? '' : ' (' + sd.t + ')') : sd.t; };
+  function dsHolderNow(r){
+    try{
+      const revs = dsRevsOf(r), cur = revs[revs.length - 1];
+      const L = (cur.log || []).filter(x => x && x.st);
+      const last = L[L.length - 1]; if(!last || dsDone(last.st)) return null;
+      const side = dsSideAt(last, r); if(!side) return null;
+      const d = last.d ? daysSince(last.d) : null;
+      return {side, at: last.at || '', st: last.st, d: last.d || '', days: (d != null && d >= 0) ? d : null, txt: dsHolderTxt(last, r)};
+    }catch(e){ return null; }
+  }
+
   /* گردش یک ویرایش، با همان خط زمانی کارت‌های دفتر فنی (msTrackHtml) */
   const DS_K = {'دریافت':'n', 'در حال بررسی':'i', 'نزد مشاور/کارفرما':'c', 'نیاز به اصلاح':'bad',
                 'تأیید مشروط':'ok', 'تأیید شده':'ok', 'برای اجرا':'ok', 'رد شده':'bad'};
@@ -50161,11 +50230,17 @@
     if(!L.length) return null;
     const today = todayShamsi();
     const lastSt = L[L.length - 1].st;
-    const open = isCur && !rev.sup && !dsIsFinal(lastSt);
-    const pts = L.map((x, i) => ({k: DS_K[x.st] || 'i', t: x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : ''), d: x.d || '',
-      rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava: i === 0 ? (x.by || '') : '',
-      sub: (i && x.by) ? esc(x.by) : '', last: !open && i === L.length - 1, st: x.st, title: x.note || ''}));
-    if(open) pts.push({k: DS_K[lastSt] || 'i', t:'امروز', d:'', now:true, isToday:true, txt: lastSt, st: lastSt});
+    const open = isCur && !rev.sup && !dsDone(lastSt);
+    const kOf = x => { const sd = dsSideOf(dsSideAt(x, rev.__r)); return dsDone(x.st) ? (DS_K[x.st] || 'ok') : (sd ? sd.c : (DS_K[x.st] || 'i')); };
+    const pts = L.map((x, i) => {
+      const h = dsHolderTxt(x, rev.__r);
+      /* نفرِ داخل پروژه عکسش روی نقطه است؛ بقیه «نزد …» زیر تاریخ */
+      const ava = (dsSideAt(x, rev.__r) === 'in' && (x.at || (i === 0 && x.by))) ? (x.at || x.by) : '';
+      return {k: kOf(x), t: x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : ''), d: x.d || '',
+        rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava,
+        sub: (!ava && h) ? 'نزد ' + esc(h) : '', last: !open && i === L.length - 1, st: x.st};
+    });
+    if(open){ const lx = L[L.length - 1]; const h = dsHolderTxt(lx, rev.__r); pts.push({k: kOf(lx), t:'امروز', d:'', now:true, isToday:true, txt: h ? 'نزد ' + h : lastSt, st: lastSt}); }
     const items = [];
     pts.forEach((x, i) => {
       if(i){
@@ -50209,11 +50284,16 @@
   }
   function designDocHtml(r, editable, id){
     const revs = dsRevsOf(r);
+    revs.forEach(x => { Object.defineProperty(x, '__r', {value: r, enumerable: false}); });
     const cur = revs[revs.length - 1];
     const first = revs[0] && revs[0].log[0] && revs[0].log[0].d;
     const tot = (function(){ const d = first ? faDiff(first, todayShamsi()) : null; return d != null && d >= 0 ? d : null; })();
     /* مشخصات سند: یک خط متن ساده، نه کپسول */
     const facts = [];
+    const hn = dsHolderNow(r);
+    const holder = hn ? '<div class="ds-hold s-' + hn.side + '"><i></i><u>الان دست</u><b>' + esc(hn.txt) + '</b>'
+      + (hn.days != null ? '<em class="' + ((DS_STAGE_LIM[hn.st] && hn.days > DS_STAGE_LIM[hn.st][1]) ? 'bad' : (DS_STAGE_LIM[hn.st] && hn.days > DS_STAGE_LIM[hn.st][0]) ? 'warn' : '') + '">' + toFa(hn.days) + ' روز</em>' : '')
+      + '<small>' + esc(hn.st) + '</small></div>' : '';
     if(pick(r,AD.dType)) facts.push('<b>' + esc(pick(r,AD.dType)) + '</b>');
     if(pick(r,AD.dDisc)) facts.push(esc(pick(r,AD.dDisc)));
     if(pick(r,AD.dOrigin)) facts.push('از طرف ' + esc(pick(r,AD.dOrigin)));
@@ -50230,6 +50310,7 @@
     const head = msHeadHtml('گردش سند · Rev ' + toFa(cur.rev), '', '', total).replace(/<\/div>$/, act + '</div>');
     const old = revs.slice(0, -1).reverse();
     return '<div class="dsx2">'
+      + holder
       + (facts.length ? '<div class="dsk2">' + facts.join('<i></i>') + '</div>' : '')
       + dsFlowHtml(cur, true, head)
       + (cur.note ? '<p class="dsx-note">' + esc(cur.note) + '</p>' : '')
@@ -50252,9 +50333,23 @@
       if(!dsS) return;
       if(e.target === m || e.target.closest('[data-dsclose]')){ m.hidden = true; dsS = null; return; }
       const c = e.target.closest('[data-dsst]');
-      if(c){ dsS.st = c.dataset.dsst; m.querySelectorAll('[data-dsst]').forEach(x => x.classList.toggle('on', x === c)); return; }
+      if(c){
+        dsS.st = c.dataset.dsst; m.querySelectorAll('[data-dsst]').forEach(x => x.classList.toggle('on', x === c));
+        dsS.side = dsDefSide(dsS.st, dsS.r);
+        const inp = m.querySelector('.ds-at');
+        /* نام آخرین کسی که همین طرف سند را داشته، پیشنهاد می‌شود */
+        if(inp && !inp.dataset.touched){
+          let prevAt = '';
+          try{ const rv = dsRevsOf(dsS.r); rv.forEach(x => (x.log || []).forEach(y => { if(y && y.side === dsS.side && y.at) prevAt = y.at; })); }catch(err){}
+          inp.value = prevAt;
+        }
+        dsSidePaint(); return;
+      }
+      const sd = e.target.closest('[data-dsside]');
+      if(sd){ dsS.side = sd.dataset.dsside; dsSidePaint(); return; }
       if(e.target.closest('[data-dsgo]')) dsSave();
     });
+    m.addEventListener('input', e => { if(e.target.classList.contains('ds-at')) e.target.dataset.touched = '1'; });
     return m;
   }
   function dsOpen(id, mode){
@@ -50262,7 +50357,7 @@
     if(!r) return;
     const revs = dsRevsOf(r), cur = revs[revs.length - 1];
     const last = cur.log.length ? cur.log[cur.log.length - 1].st : '';
-    dsS = {id, mode, st: mode === 'rev' ? 'در حال بررسی' : ''};
+    dsS = {id, mode, st: mode === 'rev' ? 'در حال بررسی' : '', side: mode === 'rev' ? 'in' : '', r};
     const m = dsModal(), box = m.querySelector('.dsm');
     const title = (pick(r,AD.dTitle) || 'سند طراحی') + (pick(r,AD.dNo) ? ' · ' + pick(r,AD.dNo) : '');
     const nextOpts = DESIGN_STATES.filter(x => x !== last);
@@ -50276,11 +50371,24 @@
           : '<div class="ds-now">الان: <b class="t-' + dsTone(last) + '">' + esc(last || '—') + '</b></div>'
             + '<div class="ds-sts">' + nextOpts.map(x => '<button type="button" class="ds-st t-' + dsTone(x) + '" data-dsst="' + esc(x) + '">' + (DS_CODE[x] ? '<b>' + DS_CODE[x] + '</b>' : '') + esc(x) + '</button>').join('') + '</div>'
             + '<label class="te-f"><u>تاریخ</u><input type="text" class="ds-date" inputmode="numeric" value="' + esc(todayShamsi()) + '"></label>')
+      + '<div class="ds-holdp"' + (mode === 'rev' ? '' : ' hidden') + '><u>بعد از این مرحله، سند دست کیست؟</u><div class="ds-sides"></div>'
+      +   '<input type="text" class="ds-at" autocomplete="off" placeholder="نام نفر یا شرکت (اختیاری)"></div>'
       + '<label class="te-f"><u>' + (mode === 'rev' ? 'چه چیزی عوض شده؟' : 'توضیح / ملاحظات بررسی') + '</u><textarea class="ds-note" rows="3" placeholder="اختیاری"></textarea></label>'
       + '</div>'
       + '<div class="rf-foot"><div class="rf-btns"><button type="button" class="mini" data-dsclose="1">انصراف</button>'
       + '<button type="button" class="send rf-go" data-dsgo="1">' + (mode === 'rev' ? 'ثبت ویرایش' : 'ثبت مرحله') + '</button></div></div>';
+    dsSidePaint();
     m.hidden = false;
+  }
+  function dsSidePaint(){
+    const m = dsModal(), S = dsS; if(!S) return;
+    const box = m.querySelector('.ds-holdp'); if(!box) return;
+    const fin = S.st && dsDone(S.st);
+    box.hidden = !S.st || fin;
+    box.querySelector('.ds-sides').innerHTML = DS_SIDES.map(x => '<button type="button" class="ds-side s-' + x.k + (S.side === x.k ? ' on' : '') + '" data-dsside="' + x.k + '"><i></i>' + x.t + '</button>').join('');
+    const inp = box.querySelector('.ds-at');
+    if(S.side === 'in'){ try{ designerListEnsure(); }catch(e){} inp.setAttribute('data-list', 'engineerList'); inp.placeholder = 'نام نفر داخل پروژه'; }
+    else{ inp.setAttribute('data-list', 'contractPartyList'); inp.placeholder = S.side === 'emp' ? 'نام کارفرما یا نمایندهٔ آن (اختیاری)' : 'نام شرکت یا نفر (اختیاری)'; }
   }
   async function dsSave(){
     const S = dsS, m = dsModal(); if(!S || S.busy) return;
@@ -50288,6 +50396,7 @@
     if(!date){ showDialog('warn','تاریخ نادرست','تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
     const note = String((m.querySelector('.ds-note') || {}).value || '').trim();
     const values = {__dsDate: date, __dsNote: note};
+    if(S.side){ values.__dsSide = S.side; values.__dsAt = String((m.querySelector('.ds-at') || {}).value || '').trim(); }
     if(S.mode === 'rev'){
       const rv = String((m.querySelector('.ds-rev') || {}).value || '').trim();
       if(!rv){ showDialog('warn','شماره لازم است','شمارهٔ ویرایش جدید را بنویسید.'); return; }
@@ -55096,6 +55205,21 @@
         pick(r,AD.lDate), pick(r,AD.due),
         (n === 'برون‌سازمانی' || n === 'درون‌سازمانی') ? 'done' : (n === 'Hold' ? 'todo' : 'doing'),
         pick(r,AD.lParty), 'letter', pick(r,AD.id), {row: r});
+    });
+
+    /* اسناد طراحی در گردش: زیر نام کسی که سند الان دست اوست — نفر داخل
+       پروژه، یا «کارفرما»، مشاور و پیمانکار در دستهٔ خارج سازمان */
+    (A.designs || []).forEach(r => {
+      const hn = dsHolderNow(r);
+      if(!hn) return;
+      let ow = '', off = false;
+      if(hn.side === 'in') ow = hn.at || pick(r, AD_OWNER.design) || '';
+      else if(hn.side === 'emp'){ ow = 'کارفرما'; off = true; }
+      else { ow = hn.at || pick(r,AD.dParty) || dsSideOf(hn.side).t; off = true; }
+      if(!ow) return;
+      mk('سند طراحی ' + (pick(r,AD.dNo) || '') + ' — ' + (pick(r,AD.dTitle) || '') + ' · ' + hn.st,
+        ow, 'سند طراحی', hn.d || exact(r,'تاریخ ارسال'), '', 'doing', pick(r,AD.dZone) || '', 'design', pick(r,AD.id), {row: r});
+      if(off){ const o = out[out.length - 1]; if(o) o.__offsite = true; }
     });
 
     /* تدارکات: هر درخواست خریدی که قلم باز دارد، یک ردیف کلی به نام
