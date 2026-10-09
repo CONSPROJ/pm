@@ -21,7 +21,12 @@ begin
   if coalesce(p_key, '') ~ '^[a-z]+/[0-9]{4}/[0-9]{2}/[0-9a-f]{24}\.[a-z0-9]{1,8}$' then
     ids := ids || jsonb_build_object(
       'get_path',  net.http_get(public._pm_s3_sign(p_slot, 'GET', p_key, 300, '{}'::jsonb, false)),
-      'get_vhost', net.http_get(public._pm_s3_sign(p_slot, 'GET', p_key, 300, '{}'::jsonb, true)));
+      'get_vhost', net.http_get(public._pm_s3_sign(p_slot, 'GET', p_key, 300, '{}'::jsonb, true)),
+      -- همان درخواست با سربرگ‌های مرورگر آیفون (برای دیدن تفاوت رفتار با مرورگر)
+      'get_safari', net.http_get(public._pm_s3_sign(p_slot, 'GET', p_key, 300, '{}'::jsonb, false), '{}'::jsonb,
+        '{"User-Agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1","Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}'::jsonb),
+      'get_origin', net.http_get(public._pm_s3_sign(p_slot, 'GET', p_key, 300, '{}'::jsonb, false), '{}'::jsonb,
+        '{"Origin":"https://consproj.github.io","Accept":"*/*"}'::jsonb));
   end if;
   return jsonb_build_object('ok', true, 'ids', ids);
 end $$;
