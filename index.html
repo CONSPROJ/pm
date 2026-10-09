@@ -50258,7 +50258,7 @@
     if(a.src === 's3'){
       const loc = s3Local.get(a.key);
       if(loc) return '<img class="att-th" src="' + esc(loc) + '" alt="">';
-      return '<img class="att-th s3t" data-tk="' + (a.slot === 2 ? 2 : 1) + ':' + esc(a.thumb || a.key) + '" alt="">';
+      return '<img class="att-th s3t" referrerpolicy="no-referrer" data-tk="' + (a.slot === 2 ? 2 : 1) + ':' + esc(a.thumb || a.key) + '" alt="">';
     }
     if(a.src === 'sb') return '<img class="att-th" src="' + esc(a.url) + '" loading="lazy" decoding="async" alt="">';
     if(a.src === 'drive'){
@@ -50357,7 +50357,7 @@
   async function s3Fetch(a){
     const u = await s3Url(a.key, a.name, false, a.slot);
     let r = null;
-    try{ r = await fetch(u); }catch(e){}
+    try{ r = await fetch(u, {referrerPolicy:'no-referrer'}); }catch(e){}
     if(r && r.ok) return r;
     /* خواندن از داخل سایت ممکن نشد (اجازهٔ CORS برای GET نیست یا 404): لینک
        مستقیم داده می‌شود تا فایل در مرورگر باز شود */
@@ -50365,7 +50365,7 @@
     try{
       const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: a.slot === 2 ? 2 : 1});
       const alt = d.style === 'vhost' ? d.path : d.vhost;
-      const r2 = await fetch(alt);
+      const r2 = await fetch(alt, {referrerPolicy:'no-referrer'});
       if(r2.ok){ s3Cache.set(a.key + '|', {u: alt, t: Date.now() + 8 * 60000}); return r2; }
     }catch(e){}
     return r;
@@ -50398,7 +50398,7 @@
     if(btn) btn.classList.add('s3-busy');
     try{ s3SaveFile(await s3Blob(a)); }
     catch(er){
-      if(er.big){ const x = document.createElement('a'); x.href = er.big; x.target = '_blank'; x.rel = 'noopener'; document.body.appendChild(x); x.click(); x.remove(); }
+      if(er.big){ const x = document.createElement('a'); x.href = er.big; x.target = '_blank'; x.rel = 'noopener noreferrer'; document.body.appendChild(x); x.click(); x.remove(); }
       else showDialog('err', 'دانلود نشد', (a.name || '') + '\n' + friendlyErr(er));
     }finally{ if(btn) btn.classList.remove('s3-busy'); }
   }
@@ -50448,7 +50448,7 @@
         }
       }catch(er){
         if(er.big){ sm.textContent = 'با «باز کردن» در مرورگر باز می‌شود؛ بعد از دکمهٔ اشتراک‌گذاری ذخیره کنید';
-          row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b pri" href="' + esc(er.big) + '" target="_blank" rel="noopener">' + UP_I.open + '<span>باز کردن</span></a>'; }
+          row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b pri" href="' + esc(er.big) + '" target="_blank" rel="noopener noreferrer">' + UP_I.open + '<span>باز کردن</span></a>'; }
         else{ sm.textContent = friendlyErr(er); row.classList.add('bad'); }
       }
     });
@@ -50471,7 +50471,7 @@
     if(k === 'img' || k === 'pdf'){
       t.classList.add('s3-busy');
       s3Blob(a).then(f => { const u = URL.createObjectURL(f); fvOpen([{src:'web', url:u, full:u, name:a.name, ext}], 0, a.name); })
-        .catch(er => { if(er.big) window.open(er.big, '_blank', 'noopener'); else showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
+        .catch(er => { if(er.big) window.open(er.big, '_blank', 'noopener,noreferrer'); else showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
         .finally(() => t.classList.remove('s3-busy'));
     }else s3Download(a, t);
   }, true);
@@ -50546,16 +50546,16 @@
         const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: slot});
         step = 'خواندن فایل';
         /* دو آزمایش برای هر شکل نشانی: باز شدن مستقیم (مثل عکس) و خواندن از داخل سایت */
-        const tryImg = url => new Promise(ok => { const im = new Image(); const tm = setTimeout(() => ok(false), 8000);
+        const tryImg = (url, nr) => new Promise(ok => { const im = new Image(); if(nr) im.referrerPolicy = 'no-referrer'; const tm = setTimeout(() => ok(false), 8000);
           im.onload = () => { clearTimeout(tm); ok(true); }; im.onerror = () => { clearTimeout(tm); ok(false); }; im.src = url; });
-        const tryGet = async url => { try{ const r = await fetch(url); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+        const tryGet = async url => { try{ const r = await fetch(url, {referrerPolicy:'no-referrer'}); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
           return {ok: r.ok, st: r.status, t}; }catch(e){ return {ok: false, st: 0, t: ''}; } };
-        const [pi, vi, pa, vh] = await Promise.all([tryImg(d.path), tryImg(d.vhost), tryGet(d.path), tryGet(d.vhost)]);
+        const [pi, vi, pa, vh, piR] = await Promise.all([tryImg(d.path, true), tryImg(d.vhost, true), tryGet(d.path), tryGet(d.vhost), tryImg(d.path, false)]);
         const want = (pa.ok || pi) ? 'path' : (vh.ok || vi) ? 'vhost' : '';
         if(want && want !== d.style){ await s3Rpc('pm_storage_style', {p_slot: slot, p_style: want}); }
         s3Cache.clear(); s3ThumbC.clear();
         const line = (n, im, x) => n + ' — مستقیم: ' + (im ? 'سالم' : 'ناموفق') + '، داخل سایت: ' + (x.ok ? 'سالم' : (x.st ? 'کد ' + toFa(x.st) + (x.t ? ' (' + x.t + ')' : '') : 'مسدود (CORS)'));
-        const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh);
+        const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh) + ' · با نشانی سایت (Referer): ' + (piR ? 'سالم' : 'ناموفق');
         if(want && ((want === 'path' && pa.ok) || (want === 'vhost' && vh.ok))){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — ' + detail; }
         else if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'فایل‌ها باز می‌شوند ✓ ولی خواندن از داخل سایت (CORS برای GET) بسته است؛ دانلود با باز شدن در مرورگر انجام می‌شود. برای دانلود مستقیم، در CORS سطل متد GET را هم اضافه کنید. — ' + detail; }
         else{
@@ -50813,9 +50813,9 @@
     const m = fvModal(), S = fvS, a = S.L[S.i], k = ATT_KIND(a.ext), n = S.L.length;
     const pv = a.src === 's3' ? (k === 'img' ? 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' : 'about:blank') : fvPreviewUrl(a);
     let body;
-    if(k === 'img' && a.src !== 'drive') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '">';
+    if(k === 'img' && a.src !== 'drive') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
     else if(k === 'img') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
-    else if(k === 'pdf' || a.src === 'drive') body = '<iframe class="fv-frame" src="' + esc(pv) + '" title="' + esc(a.name) + '"></iframe>';
+    else if(k === 'pdf' || a.src === 'drive') body = '<iframe class="fv-frame" src="' + esc(pv) + '" title="' + esc(a.name) + '" referrerpolicy="no-referrer"></iframe>';
     else body = '<div class="fv-none"><span class="fv-big k-' + k + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
       + '<b>' + esc(a.name) + '</b><small>پیش‌نمایش این نوع فایل در مرورگر ممکن نیست؛ دانلود کنید و با برنامهٔ خودش باز کنید.</small>'
       + '<a class="fv-dlbig" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener">' + UP_I.dl + 'دانلود فایل</a></div>';
