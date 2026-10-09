@@ -1521,6 +1521,16 @@
   /* اقدام‌های کارت سند طراحی: یک دکمهٔ آرام «قدم بعد» و دو پیوند کوچک */
   .dz-files{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .dz-files{gap:6px 8px;}
+  .dzr-bar{flex:1;min-width:40px;display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden;background:var(--field);}
+  .dzr-bar i{display:block;height:100%;background:var(--sky);} .dzr-bar i.t-ext{background:#6d5bb5;} .dzr-bar i.t-bad{background:var(--alert);} .dzr-bar i.t-warn{background:#c98a1a;} .dzr-bar i.t-ok{background:var(--ok);}
+  [data-theme="dark"] .dzr-bar i.t-ext{background:#a898e6;}
+  .dzr-bar i.live{background-image:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);}
+  .dzr-d{flex:0 0 auto;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;}
+  .dzr-c{flex:0 0 auto;min-width:22px;text-align:center;font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:6px;color:#fff;background:var(--sky);}
+  .dzr-c.t-ok{background:var(--ok);} .dzr-c.t-warn{background:#c98a1a;} .dzr-c.t-bad{background:var(--alert);} .dzr-c.open{background:var(--field);color:var(--muted);font-weight:600;}
+  .dzr-leg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:10.5px;color:var(--muted);padding-top:6px;border-top:1px solid var(--line-soft, var(--line));}
+  .dzr-leg span{display:inline-flex;align-items:center;gap:5px;} .dzr-leg i{width:7px;height:7px;border-radius:2px;background:var(--sky);} .dzr-leg i.t-ext{background:#6d5bb5;} .dzr-leg i.t-bad{background:var(--alert);}
+  .dz-ov.cur{border-top:0;margin-top:4px;padding-top:0;}
   .dzr-box{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:13px;border:1px solid var(--line);}
   .dzr-hd{display:flex;align-items:center;gap:6px;} .dzr-hd b{font-size:12px;font-weight:700;} .dzr-hd i{font-style:normal;font-size:10.5px;font-weight:700;padding:0 7px;border-radius:99px;background:var(--field);color:var(--muted);}
   .dzr{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line-soft, var(--line));}
@@ -52207,29 +52217,31 @@
      و فایل‌هایش (دانلود مستقیم)، و دکمهٔ آپلود برای کسی که اجازه دارد */
   function dsRevTableHtml(r, revs, editable, id){
     const I = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
-    const rows = revs.map((rv, ri) => {
-      const isCur = ri === revs.length - 1 && !rv.sup;
-      const L = (rv.log || []).filter(x => x && x.st), st = L.length ? L[L.length - 1].st : '';
-      const code = DS_CODE[st] || '';
-      const days = (function(){ try{ return dsCycleDays(rv, isCur); }catch(e){ return null; } })();
+    const info = revs.map((rv, ri) => { const isCur = ri === revs.length - 1 && !rv.sup; let segs = [], tot = null;
+      try{ segs = dsSegs(rv, isCur); tot = dsCycleDays(rv, isCur); }catch(e){} return {rv, ri, isCur, segs, tot}; });
+    const max = Math.max(1, ...info.map(x => x.tot || 0));
+    const rows = info.map(({rv, ri, isCur, segs, tot}) => {
+      const fin = (rv.log || []).slice().reverse().find(y => y && dsIsFinal(y.st));
+      const sg = segs.filter(x => x.days != null && x.days > 0 && !dsIsFinal(x.st));
       const fl = attachList(dsRevFiles(r, revs, ri));
-      const tone = st ? dsTone(st) : 'info';
+      const res = fin ? '<span class="dzr-c t-' + dsTone(fin.st) + '" title="' + esc(fin.st) + '">' + DS_CODE[fin.st] + '</span>'
+                      : '<span class="dzr-c open">' + (rv.sup ? '—' : 'جاری') + '</span>';
       return '<div class="dzr' + (isCur ? ' cur' : '') + '">'
-        + '<div class="dzr-h"><span class="dzr-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi></span>'
-        +   '<span class="dzr-st t-' + (isCur && !code ? 'info' : tone) + '">' + (code ? '<b dir="ltr">' + code + '</b>' : '')
-        +     esc(isCur && !code ? 'جاری' : ({'تأیید شده':'تأیید','تأیید مشروط':'مشروط','نیاز به اصلاح':'اصلاح','رد شده':'رد','برای اجرا':'اجرا'}[st] || (rv.sup ? 'جایگزین' : st))) + '</span>'
-        +   '<span class="dzr-m">' + [rv.date ? '<bdi>' + esc(toFa(admDate(rv.date))) + '</bdi>' : '', days != null ? '<bdi>' + toFa(days) + ' روز</bdi>' : ''].filter(Boolean).join(' · ') + '</span>'
+        + '<div class="dzr-h" title="' + esc('دریافت ' + toFa(admDate(rv.date || '') || '')) + '">'
+        +   '<span class="dzr-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi></span>'
+        +   '<span class="dzr-bar">' + (sg.length ? sg.map(x => '<i class="t-' + dsTone(x.st) + (x.open ? ' live' : '') + '" style="width:' + (x.days / max * 100).toFixed(1) + '%" title="' + esc(x.st + ': ' + toFa(x.days) + ' روز') + '"></i>').join('') : '') + '</span>'
+        +   '<span class="dzr-d">' + (tot != null ? toFa(tot) + ' روز' : '—') + '</span>'
+        +   res
         +   ((editable && id) ? '<button type="button" class="dzr-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="آپلود یا حذف فایل‌های Rev ' + esc(rv.rev) + '" aria-label="فایل‌های Rev ' + esc(rv.rev) + '">' + I('<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>') + '</button>' : '')
         + '</div>'
-        + (fl.length
-            ? '<div class="dzr-fs">' + fl.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</div>'
-            : '<div class="dzr-fs none">بدون فایل</div>')
+        + (fl.length ? '<div class="dzr-fs">' + fl.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</div>' : '')
         + '</div>';
     }).reverse();
+    const leg = '<div class="dzr-leg"><span><i class="t-info"></i>بررسی داخلی</span><span><i class="t-ext"></i>نزد مشاور/کارفرما</span><span><i class="t-bad"></i>اصلاح</span></div>';
     const head = '<div class="dzr-hd"><b>ویرایش‌ها</b><i>' + toFa(revs.length) + '</i></div>';
-    if(rows.length <= 3) return '<div class="dzr-box">' + head + rows.join('') + '</div>';
-    return '<div class="dzr-box">' + head + rows.slice(0, 2).join('')
-      + '<details class="dzr-more"><summary>' + toFa(rows.length - 2) + ' ویرایش قدیمی‌تر</summary>' + rows.slice(2).join('') + '</details></div>';
+    const body = rows.length <= 3 ? rows.join('')
+      : rows.slice(0, 2).join('') + '<details class="dzr-more"><summary>' + toFa(rows.length - 2) + ' ویرایش قدیمی‌تر</summary>' + rows.slice(2).join('') + '</details>';
+    return '<div class="dzr-box">' + head + body + leg + '</div>';
   }
   /* قدمِ بعدیِ معمول برای هر مرحله: روی دکمهٔ اصلی کارت نوشته می‌شود */
   function dsNextOf(st){
@@ -52342,11 +52354,16 @@
       return '<div class="dz-moreb">'
         + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
         + (cur.note ? '<p class="dz-note"><u>یادداشت این ویرایش</u>' + esc(cur.note) + '</p>' : '')
-        + (old.length ? '<div class="dz-hist"><b>گردش ویرایش‌های قبلی</b>'
+        + '<div class="dz-hist"><b>گردش هر ویرایش</b>'
+            + '<div class="dz-ov cur"><span class="dz-ovt">Rev ' + esc(toFa(cur.rev)) + ' · جاری</span><div class="dz-flow">'
+            + (function(){ try{ const cyc = dsCycleDays(cur, true); return dsFlowHtml(cur, true, msHeadHtml('گردش ویرایش ' + toFa(cur.rev), '', '', cyc != null ? toFa(cyc) + ' روز' : '')); }catch(e){ return ''; } })()
+            + '</div></div>'
+        + (old.length ? '<div class="dz-hist-old">'
             + old.map(rv => {
                 return '<div class="dz-ov"><span class="dz-ovt">Rev ' + esc(toFa(rv.rev)) + (rv.date ? ' · ' + esc(toFa(admDate(rv.date))) : '') + '</span>'
                   + dsFlowHtml(rv, false) + '</div>' + (rv.note ? '<p class="dz-note"><u>یادداشت Rev ' + esc(rv.rev) + '</u>' + esc(rv.note) + '</p>' : ''); }).join('')
             + '</div>' : '')
+        + '</div>'
         + '</div>';
     }catch(e){ return ''; }
   }
@@ -52417,7 +52434,6 @@
     return '<div class="dsx2 dz">'
       + top
       + filesH
-      + '<div class="dz-flow">' + dsFlowHtml(cur, true, head) + '</div>'
       + act
       + '</div>';
   }
