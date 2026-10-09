@@ -1543,10 +1543,15 @@
   .msv-l span{font-weight:700;color:var(--ink);} .msv-l.t-bad span{color:var(--alert);} .msv-l.t-warn span{color:#b07512;} .msv-l em{font-style:normal;} .msv-l small{font-size:11px;}
   .msv-l.live{border-inline-start-style:dashed;}
   .dzr-new{font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);}
-  details.dzr.last{background:color-mix(in srgb, var(--sky) 5%, transparent);border-radius:10px;padding-inline:8px;margin-inline:-8px;}
+  details.dzr.last{position:relative;background:color-mix(in srgb, var(--sky) 5%, transparent);border-radius:12px;padding-inline:10px;margin-inline:-8px;overflow:hidden;animation:dzrIn .5s ease-out both;}
+  details.dzr.last::before{content:'';position:absolute;inset-block:8px;inset-inline-start:0;width:3px;border-radius:3px;background:linear-gradient(180deg, transparent, var(--sky), transparent);background-size:100% 200%;animation:dzrBar 2.4s ease-in-out infinite;}
+  details.dzr.last .dzr-new{animation:dzrBadge 2.4s ease-in-out infinite;}
+  @keyframes dzrIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @keyframes dzrBar{0%{background-position:0 100%;}50%{background-position:0 0;}100%{background-position:0 100%;}}
+  @keyframes dzrBadge{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--sky) 0%, transparent);}50%{box-shadow:0 0 0 4px color-mix(in srgb, var(--sky) 18%, transparent);}}
   details.dzr.last .dz-f{border:1px solid color-mix(in srgb, var(--sky) 35%, transparent);animation:dzfPulse 1.8s ease-out 2;}
   @keyframes dzfPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--sky) 35%, transparent);}100%{box-shadow:0 0 0 8px transparent;}}
-  @media (prefers-reduced-motion:reduce){ details.dzr.last .dz-f, .msv-p.now > i{animation:none;} }
+  @media (prefers-reduced-motion:reduce){ details.dzr.last .dz-f, .msv-p.now > i, details.dzr.last, details.dzr.last::before, details.dzr.last .dzr-new{animation:none;} }
   .tkd .tkd-flow{margin-top:6px;} .tkd .tkd-fs{margin-top:4px;} .tkd .tkd-act{margin-top:6px;}
   .dza-t{position:absolute;top:0;inset-inline-start:0;z-index:2;display:inline-flex;gap:2px;padding:2px;border-radius:99px;background:var(--field);}
   .dza-t button{all:unset;cursor:pointer;height:24px;padding:0 10px;border-radius:99px;font-size:11px;font-weight:600;color:var(--muted);}
@@ -1554,7 +1559,8 @@
   .dz-all[data-m="c"] .dza-f, .dz-all[data-m="f"] .dza-c{display:none;}
   details.dzr{display:block;}
   details.dzr > summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:5px;} details.dzr > summary::-webkit-details-marker{display:none;}
-  .dzr-n{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dzr-n{font-size:12px;line-height:1.7;color:var(--ink);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;padding-inline-start:8px;border-inline-start:2px solid var(--line);}
+  details.dzr.last .dzr-n{border-inline-start-color:var(--sky);}
   .dzr-more-t{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;font-size:11px;color:var(--muted);}
   .dzr-more-t::after{content:'';width:5px;height:5px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);margin-top:-3px;}
   details.dzr[open] .dzr-more-t::after{transform:rotate(-135deg);margin-top:2px;}
@@ -29544,6 +29550,25 @@
     ctrCache = {sig, canon, members, cnt};
     return ctrCache;
   }
+  /* نام کوتاهی که خودش پیوند ندارد ولی به شکل «نام — تخصص» جزو یک پرونده است
+     (مثلاً «نوری» وقتی «نوری — برق‌کار» زیر «میثم نوری» است) هم نام همان پرونده را می‌گیرد،
+     به شرط این‌که فقط یک پرونده چنین عضوی داشته باشد */
+  let ctrLooseC = {sig: '', m: null};
+  function ctrCanonLoose(v){
+    const x = String(v || '').trim(); if(!x) return x;
+    let c = x; try{ c = ctrCanon(canonicalName(x)) || x; }catch(e){}
+    if(normName(c) !== normName(x)) return c;
+    try{
+      const B = ctrBuild();
+      if(ctrLooseC.sig !== B.sig){
+        const m = new Map();
+        B.members.forEach((mem, k) => { const cn = B.canon.get(k); if(!cn) return; (mem || []).forEach(nm => { const sp = splitParts(nm); if(!sp || !sp.n) return; const kk = normName(sp.n); const o = m.get(kk); if(!o) m.set(kk, cn); else if(normName(o) !== normName(cn)) m.set(kk, null); }); });
+        ctrLooseC = {sig: B.sig, m};
+      }
+      const r = ctrLooseC.m.get(normName(x));
+      return r || x;
+    }catch(e){ return x; }
+  }
   /* نام اصلیِ پروندهٔ یک املا (اگر پیوندی نداشته باشد، همان نام) */
   function ctrCanon(n){
     let x = String(n || '').trim();
@@ -29564,6 +29589,19 @@
     arr.forEach(x => {
       const r = (x && x.row && typeof x.row === 'object' && x.kind) ? x.row : x;
       if(!r || typeof r !== 'object') return;
+      /* مسئولِ فعالیت اگر از پرسنل نیست (پیمانکار)، با نام روی کارت */
+      for(const f of ['مسئول 1', 'مسئول 2']){
+        if(!(f in r)) continue;
+        const raw = (r.__raw && r.__raw[f] != null) ? r.__raw[f] : r[f];
+        const v = String(raw == null ? '' : raw).trim(); if(!v || v === 'کارفرما') continue;
+        let st = false; try{ st = isStaffName(v); }catch(e){}
+        if(st) continue;
+        const c = memo.has('~' + v) ? memo.get('~' + v) : (function(){ const z = ctrCanonLoose(v); memo.set('~' + v, z); return z; })();
+        if(!c || c === v) continue;
+        if(!r.__raw){ try{ Object.defineProperty(r, '__raw', {value: {}, enumerable: false, writable: true}); }catch(e){} }
+        if(r.__raw && r.__raw[f] == null) r.__raw[f] = v;
+        setCell(r, f, c); n++;
+      }
       for(const f of CTR_NAME_FIELDS){
         if(!(f in r)) continue;
         const raw = (r.__raw && r.__raw[f] != null) ? r.__raw[f] : r[f];
@@ -52419,7 +52457,7 @@
       const fl = attachList(dsRevFiles(r, revs, ri));
       const res = fin ? '<span class="dzr-c t-' + dsTone(fin.st) + '" title="' + esc(fin.st) + '">' + DS_CODE[fin.st] + '</span>'
                       : '<span class="dzr-c open">' + (rv.sup ? '—' : 'جاری') + '</span>';
-      const note = String(rv.note || '').trim();
+      const note = String(rv.note || (function(){ const L0 = (rv.log || []).filter(y => y && y.note); return L0.length ? L0[L0.length - 1].note : ''; })() || '').trim();
       const ed = !!(editable && id);
       return '<details class="dzr' + (ri === revs.length - 1 ? ' cur last' : (isCur ? ' cur' : '')) + '"><summary class="dzr-s">'
         + '<div class="dzr-h">'
@@ -52429,7 +52467,7 @@
         +   res
         +   ((editable && id) ? '<button type="button" class="dzr-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="آپلود یا حذف فایل‌های Rev ' + esc(rv.rev) + '" aria-label="فایل‌های Rev ' + esc(rv.rev) + '">' + I('<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>') + '</button>' : '')
         + '</div>'
-        + (note ? '<div class="dzr-n">' + esc(note.split('\n')[0]) + '</div>' : '')
+        + (note ? '<div class="dzr-n">' + esc(note) + '</div>' : '')
         + (fl.length ? '<div class="dzr-fs">' + fl.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</div>' : '')
         + '<span class="dzr-more-t">جزئیات Rev ' + esc(toFa(rv.rev)) + '</span>'
         + '</summary>'
@@ -56122,7 +56160,7 @@
     }
     v = String(v || '').trim();
     if(!v) return [TK_NO_CTR];
-    try{ v = canonicalName(v) || v; }catch(e){}
+    try{ v = ctrCanonLoose(v) || v; }catch(e){}
     return [v];
   }
 
