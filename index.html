@@ -20752,6 +20752,34 @@
     .fv-b span{display:none;} .fv-b{width:36px;padding:0;justify-content:center;}
   }
 
+  /* ================= امنیت و پشتیبان ================= */
+  .bk{display:flex;flex-direction:column;gap:10px;}
+  .bk-card{padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);}
+  .bk-card.warn{border-color:color-mix(in srgb, var(--alert) 30%, var(--line));}
+  .bk-h{display:flex;align-items:center;gap:12px;}
+  .bk-h > span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .bk-h b{font-size:13.5px;font-weight:800;} .bk-h small{font-size:11px;color:var(--muted);line-height:1.8;}
+  .bk-h .mini{flex:none;display:inline-flex;align-items:center;gap:5px;}
+  .bk-h .mini svg{width:15px;height:15px;}
+  .bk-ic{flex:0 0 40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--sky-soft);color:var(--sky);}
+  .bk-card.warn .bk-ic{background:var(--alert-soft);color:var(--alert);}
+  .bk-ic svg{width:21px;height:21px;}
+  .bk-st{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+  .bk-row{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:12px;background:var(--field);font-size:12px;}
+  .bk-row > i{flex:0 0 10px;height:10px;margin-top:5px;border-radius:50%;background:var(--muted);}
+  .bk-row.ok > i{background:var(--ok);} .bk-row.bad > i{background:var(--alert);}
+  .bk-row span{display:flex;flex-direction:column;gap:2px;} .bk-row b{font-weight:800;} .bk-row small{color:var(--muted);line-height:1.8;}
+  .bk-prog{margin-top:10px;padding:9px 11px;border-radius:12px;background:var(--field);font-size:11.5px;line-height:1.9;}
+  .bk-prog.ok{background:var(--ok-soft);color:var(--ok);} .bk-prog.bad{background:var(--alert-soft);color:var(--alert);}
+  .bk-sum{margin-top:12px;display:flex;flex-direction:column;gap:10px;}
+  .bk-meta{font-size:12px;color:var(--muted);}
+  .bk-tbl{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:5px;}
+  .bk-tbl span{display:flex;justify-content:space-between;gap:6px;padding:6px 9px;border-radius:9px;background:var(--field);font-size:11.5px;}
+  .bk-tbl u{text-decoration:none;color:var(--muted);}
+  .bk-conf{display:flex;flex-direction:column;gap:5px;font-size:12px;}
+  .bk-conf input{max-width:220px;}
+  .bk-acts{display:flex;gap:8px;justify-content:flex-end;}
+
 </style>
 <script>
   (function(){
@@ -22080,6 +22108,16 @@
 
   /* ====== کاربر جاری ====== */
   const USER_KEY = 'siteLogM.user.v1';
+  /* توکن نشست سرور: با ورود موفق ساخته می‌شود و با هر درخواست فرستاده
+     می‌شود؛ سرور از روی آن (نه از نامی که مرورگر ادعا می‌کند) می‌فهمد
+     درخواست از طرف کیست. */
+  const TOK_KEY = 'siteLogM.tok.v1';
+  window.pmTok = function(v){
+    if(v === undefined){ if(window.__pmTok == null){ try{ window.__pmTok = localStorage.getItem(TOK_KEY) || ''; }catch(e){ window.__pmTok = ''; } } return window.__pmTok; }
+    window.__pmTok = v || '';
+    try{ v ? localStorage.setItem(TOK_KEY, v) : localStorage.removeItem(TOK_KEY); }catch(e){}
+    return window.__pmTok;
+  };
   let currentUser = '';
   try{ currentUser = localStorage.getItem(USER_KEY) || ''; }catch(e){ currentUser = ''; }
 
@@ -22112,6 +22150,7 @@
      ۲) بعد از چند روز بی‌استفاده بودن، دوباره رمز خواسته می‌شود. */
   function forceLogout(msg){
     try{ localStorage.removeItem('siteLogM.userEpoch.v1'); }catch(e){}
+    window.pmTok('');
     applyUser('');
     try{ openUserModal(); }catch(e){}
     if(msg) setTimeout(() => { try{ showDialog('warn','دوباره وارد شوید', msg); }catch(e){} }, 300);
@@ -22126,6 +22165,18 @@
       }
       localStorage.setItem('siteLogM.userSeen.v1', String(Date.now()));
     }catch(e){}
+    /* نشست امن (مرحلهٔ ۱ امنیت): اگر سرور این دستگاه را به نام همین
+       کاربر نمی‌شناسد (نشست قدیمی بی‌توکن، یا نامی که در مرورگر دستکاری
+       شده)، یک بار دوباره ورود خواسته می‌شود. */
+    try{
+      const w = await pmWhoami();
+      if(w && w.v){
+        if(!w.name || nameKey(w.name) !== nameKey(currentUser)){
+          forceLogout('برای امنیت بیشتر، یک بار دوباره وارد شوید.');
+          return;
+        }
+      }
+    }catch(e){}
     try{
       /* شمارهٔ نشست در جدول بسته‌ی people_auth است؛ فقط از راه تابع سرور */
       const r = await supaFetch('rpc/session_epoch', {method:'POST', prefer:'return=representation', body:{p_name: currentUser}});
@@ -22136,12 +22187,33 @@
       if(ep > +mine) forceLogout('رمز این حساب عوض شده یا از همهٔ دستگاه‌ها خارج شده است؛ لطفاً دوباره وارد شوید.');
     }catch(e){ /* ستون هنوز ساخته نشده یا شبکه قطع است */ }
   }
+  /* وضعیت امنیت سرور: v یعنی مرحلهٔ ۱ اجرا شده؛ locked یعنی جدول‌ها بسته‌اند */
+  let pmSec = null;
+  async function pmWhoami(){
+    try{
+      const r = await fetch(SUPA_URL + '/rest/v1/rpc/pm_whoami', {method:'POST',
+        headers: Object.assign({'apikey': SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY, 'Content-Type':'application/json'},
+          window.pmTok() ? {'x-pm-token': window.pmTok()} : {}), body:'{}'});
+      if(!r.ok){ pmSec = {v: 0}; return null; }      // مرحلهٔ ۱ هنوز اجرا نشده
+      const j = await r.json();
+      pmSec = j || {v: 0};
+      return j;
+    }catch(e){ return null; }
+  }
+  window.pmWhoami = pmWhoami;
+  setTimeout(() => { if(!currentUser) pmWhoami(); }, 1500);
   setTimeout(sessionGuard, 2500);
   setInterval(sessionGuard, 5 * 60000);
   document.addEventListener('visibilitychange', () => { if(!document.hidden) sessionGuard(); });
 
   function applyUser(name){
     currentUser = String(name || '').trim();
+    if(!currentUser && window.pmTok()){
+      /* خروج: نشست روی سرور هم پاک می‌شود */
+      const t0 = window.pmTok();
+      try{ fetch(SUPA_URL + '/rest/v1/rpc/pm_logout', {method:'POST', headers:{'apikey': SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY, 'Content-Type':'application/json', 'x-pm-token': t0}, body:'{}'}).catch(() => {}); }catch(e){}
+      window.pmTok('');
+    }
     try{ currentUser ? localStorage.setItem(USER_KEY, currentUser) : localStorage.removeItem(USER_KEY); }catch(e){}
 
     const eng = document.getElementById('engineerName');
@@ -22438,6 +22510,7 @@
       }
       const okPass = chk.ok === true;
       const first  = chk.first === true;
+      if(okPass && chk.token) window.pmTok(chk.token);
       if(!okPass && chk.reason === 'inactive'){
         btn.disabled = false;
         note.textContent = 'حساب شما غیرفعال شده است؛ با مدیر تماس بگیرید.';
@@ -22489,6 +22562,7 @@
           return;
         }
         chk.epoch = res.epoch;
+        if(res.token) window.pmTok(res.token);
         // سمتی که ادمین ثبت کرده دست نمی‌خورد؛ فقط اگر خالی است پر می‌شود
         if(!row.role && roleOf(loginName)){
           try{ await savePerson(loginName, {role: roleOf(loginName)}); }catch(e){}
@@ -22500,6 +22574,8 @@
       applyUser(loginName);
       bg.hidden = true;
       showLoginStep('');
+      /* جدول‌ها بسته‌اند و داده‌ها پیش از ورود خوانده نشده بودند: یک بار تازه‌سازی */
+      if(pmSec && pmSec.locked) setTimeout(() => location.reload(), 250);
     });
 
   })();
@@ -31546,6 +31622,8 @@
     try{
       const h = await sha256(pass);
       const r = await authRpc('admin_set_pass', {p_name: b.dataset.uSetpass, p_new: h, p_must: must});
+      if(r && r.reason === 'denied') throw new Error('نشست ادمین شما روی سرور شناخته نشد. یک بار خارج و دوباره وارد شوید.');
+      if(r && r.reason === 'weak') throw new Error('این رمز قابل قبول نیست.');
       if(!r || r.ok !== true) throw new Error('سرور رمز را ثبت نکرد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
       row.querySelector('.u-pass').value = '';
       showDialog('ok','رمز تعیین شد', b.dataset.uSetpass + ' از این پس با این رمز وارد می‌شود' + (must ? ' و بار اول باید آن را عوض کند.' : '.'));
@@ -31634,7 +31712,7 @@
       mtPend = (pools.contractors.length && pools.parties.length)
         ? pendingMatches(pools.contractors, pools.parties).length : 0;
     }catch(e){}
-    if((umState.tab === 'perm' || umState.tab === 'db' || umState.tab === 'up') && !isAdm) umState.tab = 'users';
+    if((umState.tab === 'perm' || umState.tab === 'db' || umState.tab === 'up' || umState.tab === 'sec') && !isAdm) umState.tab = 'users';
     if(isAdm && (umState.tab === 'match' || umState.tab === 'db')) umState.tab = 'users';
 
     const hero = '<div class="um-hero">'
@@ -31676,6 +31754,8 @@
       +   UP_I.up + 'محل آپلود</button>' : '')
       + (isAdm ? '<button type="button" data-umtab="chain"' + (umState.tab === 'chain' ? ' class="on"' : '') + '>'
       +   RVC_I + 'زنجیرهٔ تأیید</button>' : '')
+      + (isAdm ? '<button type="button" data-umtab="sec"' + (umState.tab === 'sec' ? ' class="on"' : '') + '>'
+      +   BK_I.shield + 'امنیت و پشتیبان</button>' : '')
       + '</div>';
 
     /* ادمین می‌تواند خودش کاربر بسازد، بی‌آنکه طرف درخواست حساب بدهد.
@@ -31783,6 +31863,7 @@
       + (!isAdm ? '<div class="um-pane' + (umState.tab === 'match' ? ' on' : '') + '" data-umpane="match">' + ctrPanelHtml() + '</div>' : '')
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'up' ? ' on' : '') + '" data-umpane="up">' + upCfgHtml() + '</div>' : '')
       + (isAdm ? '<div class="um-pane' + (umState.tab === 'chain' ? ' on' : '') + '" data-umpane="chain">' + (rvcDraft = null, rvcHtml()) + '</div>' : '')
+      + (isAdm ? '<div class="um-pane' + (umState.tab === 'sec' ? ' on' : '') + '" data-umpane="sec">' + bkPanelHtml() + '</div>' : '')
       + '</div>';
     umApplyFilter(box);
     try{ if(document.getElementById('dataCenter')) renderDataCenter(); }catch(e){}
@@ -32185,7 +32266,7 @@
             const r = await authRpc('admin_reset_pass', {p_name: name});
             if(r && r.ok === true)
               showDialog('ok','رمز بازنشانی شد', name + ' از همهٔ دستگاه‌ها خارج شد و در ورود بعدی با ۰۰۰۰ وارد می‌شود و باید رمز تازه بگذارد.');
-            else showDialog('err','بازنشانی نشد', 'سرور پاسخ نداد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
+            else showDialog('err','بازنشانی نشد', (r && r.reason === 'denied') ? 'نشست ادمین شما روی سرور شناخته نشد. یک بار خارج و دوباره وارد شوید.' : 'سرور پاسخ نداد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
           }
         }
         if(tog){
@@ -35054,6 +35135,7 @@
       const r = await authRpc('logout_all', {p_name: activeUserName(), p_hash: await sha256(pass)});
       if(r && r.ok === true){
         setSessionEpoch(r.epoch);
+        if(r.token) window.pmTok(r.token);
         showDialog('ok','انجام شد','از همهٔ دستگاه‌های دیگر خارج شدید. این دستگاه وارد می‌ماند.');
       }else showDialog('err','انجام نشد', (r && r.reason === 'bad') ? 'رمز درست نیست.' : 'سرور پاسخ نداد؛ دوباره تلاش کنید.');
     });
@@ -43461,7 +43543,7 @@
         'Authorization': 'Bearer ' + SUPA_KEY,
         'Content-Type': 'application/json',
         'Prefer': o.prefer || 'return=minimal'
-      }, o.headers || {}),
+      }, (window.pmTok && window.pmTok()) ? {'x-pm-token': window.pmTok()} : {}, o.headers || {}),
       body: o.body ? JSON.stringify(o.body) : undefined
     });
     if(!res.ok){
@@ -43555,7 +43637,7 @@
         method: o.method || 'GET',
         headers: Object.assign({
           'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json'
-        }, o.headers || {}),
+        }, (window.pmTok && window.pmTok()) ? {'x-pm-token': window.pmTok()} : {}, o.headers || {}),
         body: o.body !== undefined ? JSON.stringify(o.body) : undefined
       });
       const txt = await res.text();
@@ -49350,6 +49432,196 @@
   const STORAGE_BUCKET = 'attachments';
   const STORAGE_MAX_MB = 50;
   let storageOff = false;
+
+  /* ====== امنیت و پشتیبان (فقط ادمین) ======
+     • وضعیت امنیت سرور: مرحلهٔ ۱ (نشست امن) و مرحلهٔ ۲ (جدول‌های بسته)
+     • دانلود پشتیبان کامل: همهٔ جدول‌ها در یک فایل JSON
+     • بازگردانی از همان فایل: ردیف‌های موجود با نسخهٔ فایل جایگزین و
+       ردیف‌های گم‌شده اضافه می‌شوند؛ هیچ ردیفی حذف نمی‌شود. پیش از
+       بازگردانی، خودکار یک پشتیبان از وضعیت فعلی گرفته می‌شود.
+     رمزها در جدول بستهٔ people_auth اند و در پشتیبان نمی‌آیند. */
+  const BK_I = {
+    shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/></svg>',
+    db:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></svg>',
+    restore:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 108-8 8.3 8.3 0 00-6 2.6L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M12 8v4l3 2"/></svg>'
+  };
+  const BK_APP = 'site-pm-backup';
+  const bkTables = () => { const out = []; try{ DBX_TABLES.forEach(g => g[1].forEach(([t, lb]) => out.push([t, lb]))); }catch(e){} return out; };
+  function bkPanelHtml(){
+    return '<div class="bk">'
+      + '<div class="bk-card" id="bkStatus"><div class="bk-h"><span class="bk-ic">' + BK_I.shield + '</span><span><b>وضعیت امنیت سرور</b>'
+      +   '<small>نشان می‌دهد به‌روزرسانی‌های امنیتی پایگاه‌داده اجرا شده‌اند یا نه.</small></span>'
+      +   '<button type="button" class="mini" data-bkcheck="1">بررسی وضعیت</button></div>'
+      +   '<div class="bk-st" id="bkStBody"><div class="bk-row"><i></i><span>برای دیدن وضعیت «بررسی وضعیت» را بزنید.</span></div></div></div>'
+      + '<div class="bk-card"><div class="bk-h"><span class="bk-ic">' + BK_I.db + '</span><span><b>دانلود پشتیبان کامل</b>'
+      +   '<small>همهٔ داده‌های سامانه (' + toFa(bkTables().length) + ' جدول) در یک فایل. هفته‌ای یک بار بگیرید و جایی امن، بیرون از این سایت نگه دارید. رمزها در فایل نیستند.</small></span>'
+      +   '<button type="button" class="mini go" data-bkdown="1">' + UP_I.dl + 'دانلود پشتیبان</button></div>'
+      +   '<div class="bk-prog" id="bkDownProg" hidden></div></div>'
+      + '<div class="bk-card warn"><div class="bk-h"><span class="bk-ic">' + BK_I.restore + '</span><span><b>بازگردانی از فایل پشتیبان</b>'
+      +   '<small>فقط فایلی که از همین بخش دانلود شده. ردیف‌های موجود با نسخهٔ فایل جایگزین و ردیف‌های گم‌شده اضافه می‌شوند؛ چیزی پاک نمی‌شود. پیش از شروع، خودکار یک پشتیبان از وضعیت فعلی دانلود می‌شود.</small></span>'
+      +   '<button type="button" class="mini" data-bkpick="1">انتخاب فایل…</button></div>'
+      +   '<div id="bkRestore"></div></div>'
+      + '</div>';
+  }
+  function bkRow(ok, txt, sub){
+    return '<div class="bk-row ' + (ok === true ? 'ok' : ok === false ? 'bad' : '') + '"><i></i><span><b>' + txt + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
+  }
+  async function bkStatusPaint(){
+    const box = document.getElementById('bkStBody'); if(!box) return;
+    box.innerHTML = bkRow(null, 'در حال بررسی…');
+    const w = await window.pmWhoami();
+    const me = activeUserName();
+    let h = '';
+    if(!w || !w.v){
+      h += bkRow(false, 'مرحلهٔ ۱ (نشست امن) اجرا نشده', 'فایل security_phase1.sql را در Supabase ← SQL Editor اجرا کنید، بعد از سایت خارج و دوباره وارد شوید.');
+      h += bkRow(false, 'جدول‌ها برای همه بازند', 'بعد از مرحلهٔ ۱، مرحلهٔ ۲ را اجرا کنید.');
+    }else{
+      h += bkRow(true, 'مرحلهٔ ۱ اجرا شده؛ تابع‌های رمز فقط برای ادمین');
+      h += (w.name && nameKey(w.name) === nameKey(me))
+        ? bkRow(true, 'نشست امن کار می‌کند ✓', 'سرور شما را «' + esc(w.name) + '»' + (w.admin ? ' (ادمین)' : '') + ' می‌شناسد.')
+        : bkRow(false, 'سرور این نشست را نمی‌شناسد', 'یک بار از سایت خارج و دوباره وارد شوید، بعد دوباره بررسی کنید.');
+      h += w.locked
+        ? bkRow(true, 'مرحلهٔ ۲ اجرا شده؛ جدول‌ها بسته‌اند', 'بدون ورود چیزی خوانده یا نوشته نمی‌شود و پیام خصوصی را فقط فرستنده و گیرنده می‌بینند.')
+        : bkRow(false, 'مرحلهٔ ۲ هنوز اجرا نشده؛ جدول‌ها برای همه بازند',
+            (w.name && nameKey(w.name) === nameKey(me)) ? 'آماده است: اول «دانلود پشتیبان» بزنید، بعد security_phase2.sql را اجرا کنید.' : 'اول باید «نشست امن» سبز شود.');
+    }
+    box.innerHTML = h;
+  }
+  /* همهٔ ردیف‌های یک جدول، صفحه‌به‌صفحه و با ترتیب ثابت */
+  async function bkFetchTable(t, onRows){
+    const first = await supaFetch(t + '?select=*&limit=1', {prefer:'return=representation'}) || [];
+    const keys = first[0] ? Object.keys(first[0]) : [];
+    const ord = keys.indexOf('id') !== -1 ? 'id' : t === 'lists' ? 'kind,value' : keys.indexOf('name') !== -1 ? 'name' : (keys.indexOf('created_at') !== -1 ? 'created_at' : '');
+    const rows = [];
+    for(let off = 0; off < 500000; off += 1000){
+      const part = await supaFetch(t + '?select=*' + (ord ? '&order=' + ord : '') + '&limit=1000&offset=' + off, {prefer:'return=representation'}) || [];
+      rows.push.apply(rows, part);
+      if(onRows) onRows(rows.length);
+      if(part.length < 1000) break;
+    }
+    return rows;
+  }
+  function bkSave(obj, tag){
+    const p = faParts(todayShamsi()) || [];
+    const d = new Date();
+    const nm = 'pm-backup' + (tag ? '-' + tag : '') + '-' + toEn(String(p[0] || '')) + '-' + toEn(String(p[1] || '')).padStart(2, '0') + '-' + toEn(String(p[2] || '')).padStart(2, '0')
+      + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.json';
+    const blob = new Blob([JSON.stringify(obj)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nm;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    return {name: nm, size: blob.size};
+  }
+  async function bkExport(prog){
+    const T = bkTables(), out = {app: BK_APP, v: 1, created_at: new Date().toISOString(), created_fa: todayShamsi(), by: activeUserName(), tables: {}};
+    const errs = [];
+    for(let i = 0; i < T.length; i++){
+      const [t, lb] = T[i];
+      try{
+        const rows = await bkFetchTable(t, n => prog && prog(lb + ' · ' + toFa(n) + ' ردیف (' + toFa(i + 1) + ' از ' + toFa(T.length) + ')'));
+        /* هیچ ستون رمز یا کلیدی (اگر هنوز جایی مانده باشد) وارد فایل نمی‌شود */
+        out.tables[t] = rows.map(r => { const o = {}; Object.keys(r).forEach(k => { if(!DBX_SECRET.test(k)) o[k] = r[k]; }); return o; });
+      }
+      catch(e){ errs.push(lb + ': ' + friendlyErr(e)); }
+    }
+    out.errors = errs;
+    return out;
+  }
+  document.addEventListener('click', async e => {
+    if(e.target.closest && e.target.closest('[data-bkcheck]')){ bkStatusPaint(); return; }
+    const dn = e.target.closest && e.target.closest('[data-bkdown]');
+    if(dn){
+      if(!isAdminUser()){ showDialog('warn', 'دسترسی ندارید', 'پشتیبان‌گیری فقط برای ادمین است.'); return; }
+      const pg = document.getElementById('bkDownProg');
+      dn.disabled = true; pg.hidden = false; pg.className = 'bk-prog';
+      try{
+        const data = await bkExport(t => { pg.textContent = 'در حال خواندن: ' + t; });
+        const n = Object.values(data.tables).reduce((a, r) => a + r.length, 0);
+        const f = bkSave(data);
+        pg.className = 'bk-prog ' + (data.errors.length ? 'bad' : 'ok');
+        pg.textContent = (data.errors.length ? 'بخشی خوانده نشد: ' + data.errors.join('، ') + ' — ' : '✓ ')
+          + toFa(n) + ' ردیف از ' + toFa(Object.keys(data.tables).length) + ' جدول در «' + f.name + '» (' + fmtMB(f.size) + ') ذخیره شد.';
+        try{ localStorage.setItem('siteLogM.bkLast', JSON.stringify({at: Date.now(), fa: todayShamsi(), n})); }catch(e2){}
+      }catch(er){ pg.className = 'bk-prog bad'; pg.textContent = 'پشتیبان گرفته نشد: ' + friendlyErr(er); }
+      dn.disabled = false;
+      return;
+    }
+    if(e.target.closest && e.target.closest('[data-bkpick]')){
+      if(!isAdminUser()){ showDialog('warn', 'دسترسی ندارید', 'بازگردانی فقط برای ادمین است.'); return; }
+      let inp = document.getElementById('bkFile');
+      if(!inp){ inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json'; inp.id = 'bkFile'; inp.hidden = true; document.body.appendChild(inp); }
+      inp.onchange = async () => { const f = inp.files && inp.files[0]; inp.value = ''; if(f) bkLoadFile(f); };
+      inp.click();
+      return;
+    }
+    const go = e.target.closest && e.target.closest('[data-bkgo]');
+    if(go) bkRestoreRun(go);
+    if(e.target.closest && e.target.closest('[data-bkcancel]')){ const b = document.getElementById('bkRestore'); if(b) b.innerHTML = ''; bkPending = null; }
+  });
+  let bkPending = null;
+  async function bkLoadFile(f){
+    const box = document.getElementById('bkRestore'); if(!box) return;
+    let data = null;
+    try{ data = JSON.parse(await f.text()); }catch(e){}
+    const known = new Set(bkTables().map(x => x[0]));
+    if(!data || data.app !== BK_APP || !data.tables || typeof data.tables !== 'object'){
+      box.innerHTML = '<div class="bk-prog bad">این فایل، پشتیبانِ همین سامانه نیست یا خراب است.</div>';
+      return;
+    }
+    const T = Object.keys(data.tables).filter(t => known.has(t) && Array.isArray(data.tables[t]));
+    bkPending = {data, T};
+    const lb = Object.fromEntries(bkTables());
+    box.innerHTML = '<div class="bk-sum"><div class="bk-meta">پشتیبانِ <b>' + esc(data.created_fa || '') + '</b>' + (data.by ? ' · گرفته‌شده توسط ' + esc(data.by) : '') + '</div>'
+      + '<div class="bk-tbl">' + T.map(t => '<span><u>' + esc(lb[t] || t) + '</u><b>' + toFa(data.tables[t].length) + '</b></span>').join('') + '</div>'
+      + '<label class="bk-conf"><span>برای تأیید، کلمهٔ <b>بازگردانی</b> را بنویسید:</span><input type="text" id="bkConfirm" autocomplete="off"></label>'
+      + '<div class="bk-acts"><button type="button" class="mini" data-bkcancel="1">انصراف</button><button type="button" class="mini danger" data-bkgo="1">شروع بازگردانی</button></div>'
+      + '<div class="bk-prog" id="bkResProg" hidden></div></div>';
+  }
+  function bkConflictOf(t, rows){
+    const k = rows[0] ? Object.keys(rows[0]) : [];
+    if(t === 'lists') return 'kind,value';
+    if(k.indexOf('id') !== -1) return 'id';
+    if(t === 'people') return 'name';
+    return '';
+  }
+  async function bkRestoreRun(btn){
+    if(!bkPending || !isAdminUser()) return;
+    const cf = document.getElementById('bkConfirm');
+    if(!cf || cf.value.trim() !== 'بازگردانی'){ showDialog('warn', 'تأیید نشد', 'برای شروع، کلمهٔ «بازگردانی» را دقیق بنویسید.'); return; }
+    const pg = document.getElementById('bkResProg');
+    btn.disabled = true; pg.hidden = false; pg.className = 'bk-prog';
+    try{
+      pg.textContent = 'گرفتن پشتیبان از وضعیت فعلی…';
+      const cur = await bkExport(t => { pg.textContent = 'پشتیبان از وضعیت فعلی: ' + t; });
+      bkSave(cur, 'before-restore');
+    }catch(er){
+      pg.className = 'bk-prog bad'; pg.textContent = 'پشتیبان وضعیت فعلی گرفته نشد؛ بازگردانی انجام نشد. ' + friendlyErr(er);
+      btn.disabled = false; return;
+    }
+    const lb = Object.fromEntries(bkTables());
+    const done = [], fail = [];
+    for(const t of bkPending.T){
+      const rows = bkPending.data.tables[t] || [];
+      if(!rows.length){ done.push(lb[t] + ': ۰'); continue; }
+      const oc = bkConflictOf(t, rows);
+      if(!oc){ fail.push((lb[t] || t) + ': کلید ردیف‌ها مشخص نیست'); continue; }
+      let n = 0, bad = '';
+      for(let i = 0; i < rows.length; i += 300){
+        pg.textContent = 'بازگردانی ' + (lb[t] || t) + ' · ' + toFa(Math.min(rows.length, i + 300)) + ' از ' + toFa(rows.length);
+        try{
+          await supaFetch(t + '?on_conflict=' + encodeURIComponent(oc), {method:'POST',
+            headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body: rows.slice(i, i + 300)});
+          n += Math.min(300, rows.length - i);
+        }catch(er){ bad = friendlyErr(er); }
+      }
+      (bad ? fail : done).push((lb[t] || t) + ': ' + toFa(n) + ' از ' + toFa(rows.length) + (bad ? ' — ' + bad : ''));
+    }
+    pg.className = 'bk-prog ' + (fail.length ? 'bad' : 'ok');
+    pg.innerHTML = (fail.length ? '<b>بخشی بازگردانی نشد</b><br>' + fail.map(esc).join('<br>') + '<br>' : '<b>✓ بازگردانی انجام شد</b><br>')
+      + done.map(esc).join('<br>');
+    try{ clearNetCache(); }catch(e){}
+    btn.disabled = false;
+  }
 
   /* ====== محل آپلود (تنظیم ادمین) ======
      ادمین در «مدیریت کاربران ← محل آپلود» تعیین می‌کند فایل‌های تازه
