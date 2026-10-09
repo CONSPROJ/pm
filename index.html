@@ -50347,30 +50347,92 @@
      باز کردن پنجره بعد از انتظار را اجرا نمی‌کند. آنجا یک برگهٔ کوچک باز
      می‌شود؛ لینک‌ها آماده می‌شوند و کاربر روی پیوند واقعی می‌زند. */
   const s3IOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  /* دانلود از داخل خود سایت: فایل با همان لینک امضاشده (بدون پارامتر اضافه)
+     خوانده می‌شود و با نام اصلی ذخیره می‌شود. باز کردن مستقیم لینک دانلودِ
+     فضای ابری در آیفون «404 page not found» می‌داد. */
+  const S3_MIME = {pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic'};
+  const S3_BLOB_MAX = 300 * 1048576;
+  async function s3Blob(a, onP){
+    const u = await s3Url(a.key, a.name, false, a.slot);
+    const r = await fetch(u, {cache:'no-store'});
+    if(!r.ok){
+      const t = String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+      throw new Error('فضای ابری فایل را نداد (کد ' + toFa(r.status) + ')' + (t ? ' — ' + t : ''));
+    }
+    const len = +r.headers.get('content-length') || 0;
+    if(len > S3_BLOB_MAX){ const e = new Error('big'); e.big = u; throw e; }
+    let blob;
+    if(onP && len && r.body && r.body.getReader){
+      const rd = r.body.getReader(), parts = []; let got = 0;
+      for(;;){ const {done, value} = await rd.read(); if(done) break; parts.push(value); got += value.length; onP(got / len); }
+      blob = new Blob(parts);
+    }else blob = await r.blob();
+    const type = (blob.type && blob.type !== 'application/octet-stream') ? blob.type : (S3_MIME[a.ext] || blob.type || 'application/octet-stream');
+    return new File([blob], a.name || 'file', {type});
+  }
+  function s3SaveFile(f){
+    const u = URL.createObjectURL(f), x = document.createElement('a');
+    x.href = u; x.download = f.name; x.rel = 'noopener'; x.style.display = 'none';
+    document.body.appendChild(x); x.click();
+    setTimeout(() => { URL.revokeObjectURL(u); x.remove(); }, 60000);
+  }
+  async function s3Download(a, btn){
+    if(btn) btn.classList.add('s3-busy');
+    try{ s3SaveFile(await s3Blob(a)); }
+    catch(er){
+      if(er.big){ const x = document.createElement('a'); x.href = er.big; x.target = '_blank'; x.rel = 'noopener'; document.body.appendChild(x); x.click(); x.remove(); }
+      else showDialog('err', 'دانلود نشد', (a.name || '') + '\n' + friendlyErr(er));
+    }finally{ if(btn) btn.classList.remove('s3-busy'); }
+  }
   function s3Sheet(L, title){
     let m = document.getElementById('s3Sheet');
     if(m) m.remove();
     m = document.createElement('div');
     m.id = 's3Sheet'; m.className = 's3s-bg';
+    const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
     m.innerHTML = '<div class="s3s" role="dialog" aria-modal="true"><div class="s3s-h"><b>' + esc(title || (L.length > 1 ? 'دانلود ' + toFa(L.length) + ' فایل' : 'دانلود فایل')) + '</b>'
       + '<button type="button" class="s3s-x" data-s3sx="1" aria-label="بستن">' + UP_I.x + '</button></div>'
       + '<div class="s3s-l">' + L.map((a, i) => '<div class="s3s-it k-' + ATT_KIND(a.ext) + '" data-i="' + i + '">'
         + '<span class="up-ext">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
-        + '<span class="s3s-n"><b>' + esc(a.name) + '</b><small>در حال آماده‌سازی…</small></span>'
+        + '<span class="s3s-n"><b>' + esc(a.name) + '</b><small>در حال دریافت…</small></span>'
         + '<span class="s3s-a"></span></div>').join('') + '</div>'
-      + '<small class="s3s-hint">در آیفون بعد از باز شدن فایل، از دکمهٔ اشتراک‌گذاری «Save to Files» یا «Save Image» را بزنید.</small></div>';
+      + '<small class="s3s-hint">' + (canShare ? '«ذخیره» را بزنید و «Save to Files» یا «Save Image» را انتخاب کنید.' : 'بعد از باز شدن فایل، از دکمهٔ اشتراک‌گذاری «Save to Files» یا «Save Image» را بزنید.') + '</small></div>';
     document.body.appendChild(m);
-    m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-s3sx]')) m.remove(); });
+    const files = [], urls = [];
+    m.addEventListener('click', e => {
+      if(e.target === m || e.target.closest('[data-s3sx]')){ m.remove(); setTimeout(() => urls.forEach(u => { try{ URL.revokeObjectURL(u); }catch(er){} }), 60000); return; }
+      const b = e.target.closest('[data-s3sv], [data-s3op]'); if(!b) return;
+      const i = +b.closest('.s3s-it').dataset.i, f = files[i], a = L[i];
+      if(!f) return;
+      if(b.dataset.s3sv){
+        if(canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f]}).catch(() => {}); }
+        else s3SaveFile(f);
+      }else{
+        const k = ATT_KIND(a.ext);
+        if(k === 'img' || k === 'pdf'){ m.remove(); fvOpen([{src:'web', url: urls[i], full: urls[i], name: a.name, ext: a.ext}], 0, a.name); }
+        else s3SaveFile(f);
+      }
+    });
     L.forEach(async (a, i) => {
-      const row = m.querySelector('.s3s-it[data-i="' + i + '"]');
-      let dl, op;
+      const row = m.querySelector('.s3s-it[data-i="' + i + '"]'), sm = row.querySelector('small');
       try{
-        if(a.src === 's3'){ [dl, op] = await Promise.all([s3Url(a.key, a.name, true, a.slot), s3Url(a.key, a.name, false, a.slot)]); }
-        else{ dl = attachDownloadUrl(a); op = a.url; }
-        row.querySelector('small').textContent = 'آماده است';
-        row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b" href="' + esc(op) + '" target="_blank" rel="noopener">' + UP_I.open + '<span>باز کردن</span></a>'
-          + '<a class="s3s-b pri" href="' + esc(dl) + '" target="_blank" rel="noopener" download="' + esc(a.name) + '">' + UP_I.dl + '<span>دانلود</span></a>';
-      }catch(er){ row.querySelector('small').textContent = friendlyErr(er); row.classList.add('bad'); }
+        if(a.src === 's3'){
+          files[i] = await s3Blob(a, p => { sm.textContent = 'در حال دریافت… ' + toFa(Math.round(p * 100)) + '٪'; });
+          urls[i] = URL.createObjectURL(files[i]);
+          sm.textContent = 'آماده است · ' + fmtMB(files[i].size);
+          const k = ATT_KIND(a.ext);
+          row.querySelector('.s3s-a').innerHTML = ((k === 'img' || k === 'pdf') ? '<button type="button" class="s3s-b" data-s3op="1">' + UP_I.open + '<span>نمایش</span></button>' : '')
+            + '<button type="button" class="s3s-b pri" data-s3sv="1">' + UP_I.dl + '<span>ذخیره</span></button>';
+        }else{
+          sm.textContent = 'آماده است';
+          row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b" href="' + esc(a.url) + '" target="_blank" rel="noopener">' + UP_I.open + '<span>باز کردن</span></a>'
+            + '<a class="s3s-b pri" href="' + esc(attachDownloadUrl(a)) + '" target="_blank" rel="noopener" download="' + esc(a.name) + '">' + UP_I.dl + '<span>دانلود</span></a>';
+        }
+      }catch(er){
+        if(er.big){ sm.textContent = 'فایل بزرگ است؛ مستقیم باز می‌شود';
+          row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b pri" href="' + esc(er.big) + '" target="_blank" rel="noopener">' + UP_I.open + '<span>باز کردن</span></a>'; }
+        else{ sm.textContent = friendlyErr(er); row.classList.add('bad'); }
+      }
     });
   }
   document.addEventListener('click', e => {
@@ -50382,19 +50444,18 @@
     if(!m) return;
     const slot = +m[1], key = m[2];
     let name = ''; try{ name = decodeURIComponent(m[3] || ''); }catch(er){}
-    if(s3IOS()){
-      const ext = (name.match(/\.([a-z0-9]{1,5})$/i) || ['', ''])[1].toLowerCase();
-      s3Sheet([{src:'s3', key, slot, name: name || 'فایل', ext}]);
-      return;
-    }
-    const ck = key + '|' + (dl ? name : ''), c = s3Cache.get(ck);
-    const go = (w, u) => { if(dl){ const f = document.createElement('iframe'); f.hidden = true; f.src = u; document.body.appendChild(f); setTimeout(() => f.remove(), 60000); } else if(w) w.location.href = u; else location.href = u; };
-    if(c && c.t > Date.now()){ if(dl) go(null, c.u); else window.open(c.u, '_blank', 'noopener'); return; }
-    /* پنجره پیش از درخواست باز می‌شود تا مرورگر جلویش را نگیرد */
-    const w = dl ? null : window.open('', '_blank');
-    t.classList.add('s3-busy');
-    s3Url(key, name, dl, slot).then(u => go(w, u)).catch(er => { if(w) w.close(); showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
-      .finally(() => t.classList.remove('s3-busy'));
+    const ext = (name.match(/\.([a-z0-9]{1,5})$/i) || ['', ''])[1].toLowerCase();
+    const a = {src:'s3', key, slot, name: name || 'فایل', ext};
+    if(s3IOS()){ s3Sheet([a]); return; }
+    if(dl){ s3Download(a, t); return; }
+    /* باز کردن: عکس و PDF در نمایشگر خود سایت؛ بقیه دانلود */
+    const k = ATT_KIND(ext);
+    if(k === 'img' || k === 'pdf'){
+      t.classList.add('s3-busy');
+      s3Blob(a).then(f => { const u = URL.createObjectURL(f); fvOpen([{src:'web', url:u, full:u, name:a.name, ext}], 0, a.name); })
+        .catch(er => { if(er.big) window.open(er.big, '_blank', 'noopener'); else showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
+        .finally(() => t.classList.remove('s3-busy'));
+    }else s3Download(a, t);
   }, true);
   function s3SecHtml(slot){
     return '<div class="upc-sec" data-upc-for="s3" data-s3slot="' + slot + '"><b class="upc-st">' + S3_SLOT[slot]
@@ -50718,7 +50779,7 @@
       const pre = k === 'img' && (s3Local.get(a.key) || (a.thumb && ((s3ThumbC.get((a.slot === 2 ? 2 : 1) + ':' + a.thumb) || {}).u)));
       if(el && pre){ el.src = pre; }
       if(el){ if(!pre) el.classList.add('s3-wait');
-        s3Url(a.key, a.name, false, a.slot).then(u => { if(fvS === keep && keep.L[keep.i] === a){ el.src = u; el.classList.remove('s3-wait'); } })
+        (k === 'pdf' ? s3Blob(a).then(f => URL.createObjectURL(f)) : s3Url(a.key, a.name, false, a.slot)).then(u => { if(fvS === keep && keep.L[keep.i] === a){ el.src = u; el.classList.remove('s3-wait'); } })
           .catch(er => { if(fvS === keep) el.outerHTML = '<div class="fv-none"><b>' + esc(a.name) + '</b><small>' + esc(friendlyErr(er)) + '</small></div>'; });
       }
     }
@@ -50734,7 +50795,7 @@
     if(s3IOS() && (L || []).length){ s3Sheet(L); return; }
     (L || []).forEach((a, i) => setTimeout(async () => {
       let u = attachDownloadUrl(a);
-      if(a.src === 's3'){ try{ u = await s3Url(a.key, a.name, true, a.slot); }catch(er){ showDialog('err', 'دانلود نشد', a.name + '\n' + friendlyErr(er)); return; } }
+      if(a.src === 's3'){ await s3Download(a); return; }
       const f = document.createElement('iframe'); f.hidden = true; f.src = u;
       document.body.appendChild(f); setTimeout(() => f.remove(), 60000);
     }, i * 700));
