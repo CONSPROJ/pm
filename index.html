@@ -17170,6 +17170,7 @@
   .ptx-role{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:99px;font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);}
   .ptx-role::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--c);}
   .ptx-cn{font-size:11.5px;color:var(--muted);}
+  .ptx-bar{display:flex;align-items:center;justify-content:flex-end;margin-bottom:-6px;}
   .ptx-q{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
   .ptx-qb{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;background:var(--field);color:var(--ink);text-decoration:none;font-size:12px;font-weight:600;}
   .ptx-qb svg{width:15px;height:15px;color:var(--c);} .ptx-qb:hover{background:color-mix(in srgb, var(--c) 10%, var(--field));}
@@ -39189,16 +39190,8 @@
     const R = {A:0, B:0, C:0, D:0}; S.forEach(x => { if(x.res === 'IFC') R.A++; else if(R[x.res] != null) R[x.res]++; });
     const rTot = R.A + R.B + R.C + R.D;
     const tone = x => (x.lim && x.days != null) ? (x.days > x.lim[1] ? 'bad' : x.days > x.lim[0] ? 'warn' : 'ok') : '';
-    /* تماس سریع */
-    const ph = c.p && c.p[0], wa = c.w || ph;
-    const quick = (ph || c.e)
-      ? '<div class="ptx-q">'
-        + (ph ? '<a class="ptx-qb" href="tel:' + esc(telOf(ph)) + '">' + I('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>') + '<span>تماس</span></a>' : '')
-        + (wa ? '<a class="ptx-qb" href="https://wa.me/' + esc(waOf(wa)) + '" target="_blank" rel="noopener">' + I('<path d="M3 21l1.6-4.6A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/>') + '<span>واتساپ</span></a>' : '')
-        + (c.e ? '<a class="ptx-qb" href="mailto:' + esc(c.e) + '">' + I('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>') + '<span>ایمیل</span></a>' : '')
-        + (c.c ? '<span class="ptx-qn">' + I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>') + esc(c.c) + '</span>' : '')
-        + '</div>'
-      : (can('ctr.contact') ? '<div class="ptx-q"><button type="button" class="ptx-qb" data-ctcedit="' + esc(name) + '">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>افزودن تلفن و ایمیل</span></button></div>' : '');
+    /* تماس: همان دکمهٔ «تماس» کارت پیمانکاران (با زدنش اطلاعات تماس باز می‌شود) */
+    const quick = (function(){ try{ const m = ctcMiniHtml(name); return m ? '<div class="ptx-bar">' + m + '</div>' : ''; }catch(e){ return ''; } })();
     /* شاخص‌ها */
     const kpi = (v, u, l, cls) => '<div class="ptx-k' + (cls ? ' ' + cls : '') + '"><b>' + v + (u ? '<u>' + u + '</u>' : '') + '</b><small>' + l + '</small></div>';
     const maxNow = now.length ? now[0].days : null;
