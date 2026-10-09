@@ -1522,6 +1522,32 @@
   .dz-files{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .dz-files{gap:6px 8px;}
   .dz-all{position:relative;}
+  .adm-ms{position:relative;}
+  .ms-exp{all:unset;cursor:pointer;position:absolute;top:2px;inset-inline-end:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--muted);opacity:.7;z-index:2;}
+  .ms-exp:hover{opacity:1;background:var(--field);color:var(--ink);} .ms-exp svg{width:14px;height:14px;}
+  .adm-ms .ms-head{padding-inline-end:30px;}
+  .adm-ms .ms-track{cursor:zoom-in;} .adm-ms .ms-track.dragging{cursor:grabbing;user-select:none;}
+  @media (hover:hover){ .adm-ms .ms-track.ovf{cursor:grab;} }
+  #msViewModal .msv{max-width:640px !important;width:min(640px, 96vw);max-height:90dvh;display:flex;flex-direction:column;padding:0 !important;overflow:hidden;}
+  .msv .rf-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;} .msv .rf-head > div{flex:1;display:flex;flex-direction:column;} .msv .rf-head small{font-size:11.5px;color:var(--muted);}
+  .msv-b{overflow:auto;padding:12px 16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .msv-chart .ms-exp{display:none;} .msv-chart .adm-ms .ms-track{cursor:grab;}
+  .msv-steps{display:flex;flex-direction:column;}
+  .msv-p{--c:var(--sky);position:relative;display:flex;gap:12px;padding:6px 0;}
+  .msv-p > i{flex:0 0 12px;width:12px;height:12px;border-radius:50%;margin-top:4px;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb, var(--c) 16%, transparent);}
+  .msv-p.k-c{--c:#6d5bb5;} .msv-p.k-p{--c:#b07512;} .msv-p.k-ok{--c:var(--ok);} .msv-p.k-bad,.msv-p.rej{--c:var(--alert);} .msv-p.k-emp{--c:#2a8a86;} .msv-p.ghost{opacity:.55;}
+  .msv-p.now > i{animation:msvPulse 1.6s ease-in-out infinite;}
+  @keyframes msvPulse{50%{box-shadow:0 0 0 7px color-mix(in srgb, var(--c) 10%, transparent);}}
+  .msv-p > div{display:flex;flex-direction:column;gap:2px;min-width:0;} .msv-p b{font-size:13px;font-weight:700;} .msv-p small{font-size:11.5px;color:var(--muted);} .msv-p p{margin:4px 0 0;font-size:12px;line-height:1.7;padding:6px 10px;border-radius:9px;background:var(--field);}
+  .msv-l{display:flex;flex-direction:column;gap:2px;margin-inline-start:5px;padding:4px 0 4px 17px;padding-inline-start:17px;border-inline-start:2px solid var(--line);font-size:11.5px;color:var(--muted);}
+  .msv-l span{font-weight:700;color:var(--ink);} .msv-l.t-bad span{color:var(--alert);} .msv-l.t-warn span{color:#b07512;} .msv-l em{font-style:normal;} .msv-l small{font-size:11px;}
+  .msv-l.live{border-inline-start-style:dashed;}
+  .dzr-new{font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);}
+  details.dzr.last{background:color-mix(in srgb, var(--sky) 5%, transparent);border-radius:10px;padding-inline:8px;margin-inline:-8px;}
+  details.dzr.last .dz-f{border:1px solid color-mix(in srgb, var(--sky) 35%, transparent);animation:dzfPulse 1.8s ease-out 2;}
+  @keyframes dzfPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--sky) 35%, transparent);}100%{box-shadow:0 0 0 8px transparent;}}
+  @media (prefers-reduced-motion:reduce){ details.dzr.last .dz-f, .msv-p.now > i{animation:none;} }
+  .tkd .tkd-flow{margin-top:6px;} .tkd .tkd-fs{margin-top:4px;} .tkd .tkd-act{margin-top:6px;}
   .dza-t{position:absolute;top:0;inset-inline-start:0;z-index:2;display:inline-flex;gap:2px;padding:2px;border-radius:99px;background:var(--field);}
   .dza-t button{all:unset;cursor:pointer;height:24px;padding:0 10px;border-radius:99px;font-size:11px;font-weight:600;color:var(--muted);}
   .dza-t button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
@@ -28506,7 +28532,11 @@
       if(opt.rename){
         if(!(await askConfirm('تغییر نام پیمانکار', 'نام «' + canon + '» به «' + nm + '» تغییر می‌کند و روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها همین نوشته می‌شود.'
           + (grp ? '\n\nتوجه: «' + nm + '» از قبل پیمانکار جداگانه‌ای است (' + other + ')؛ این دو پرونده یکی می‌شوند.' : '\nنام قبلی به همین پرونده وصل می‌ماند تا گزارش‌ها و اسناد قبلی از دست نروند.'), grp ? 'یکی کن و تغییر بده' : 'تغییر نام'))){ return false; }
-        if(normName(nm) !== normName(canon) && !isMem) await kxLink(canon, nm, true);
+        if(normName(nm) !== normName(canon) && (!isMem || linkState(canon, nm) !== true)) await kxLink(canon, nm, true);
+      }else if(normName(nm) !== normName(canon) && isMem && linkState(canon, nm) !== true){
+        /* عضو بودنِ فقط ضمنی (مثلاً از راه نام قراردادی) کافی نیست: با جابه‌جا شدن پرونده
+           از بین می‌رود و نام قبلی دوباره جدا دیده می‌شد. پیوند صریح ثبت می‌شود. */
+        await kxLink(canon, nm, true);
       }else if(normName(nm) !== normName(canon) && !isMem){
         if(!(await askConfirm('نام روی کارت', '«' + nm + '» از نام‌های همین پیمانکار حساب می‌شود' + (grp ? ' (این نام اکنون زیر «' + other + '» است و آن پرونده هم با همین یکی می‌شود)' : '') + ' و از این پس روی کارت و گزارش پیمانکار «' + nm + '» نوشته می‌شود.', 'یکی کن و نشان بده'))){ ctxRefresh(box); return false; }
         await kxLink(canon, nm, true);
@@ -29514,6 +29544,7 @@
     if(!b) return; memo = memo || new Map();
     if(b.day){ ctrCanonRows(b.day.rows, memo); ctrCanonRows(b.day.issues, memo); }
     ctrCanonRows(b.prevRows, memo);
+    if(Array.isArray(b.tasks)) ctrCanonRows(b.tasks, memo);
     const A = b.admin || (b.statements ? b : null);
     if(A) ['statements', 'contracts', 'letters', 'designs'].forEach(k => ctrCanonRows(A[k], memo));
   }
@@ -39347,6 +39378,16 @@
     function onEsc(ev){ if(ev.key === 'Escape') close(); }
     document.addEventListener('keydown', onEsc);
 
+    /* مشاور و کارفرما گزارش کارگاهی ندارند: کارتشان بی‌درنگ ساخته می‌شود، بی انتظار برای دریافت گزارش‌ها */
+    {
+      const pt0 = (function(){ try{ return ctrTypeOf(name); }catch(e){ return ''; } })();
+      if(pt0 === 'cons' || pt0 === 'emp'){
+        const ttl0 = bg.querySelector('.mc-head'), body0 = bg.querySelector('.ct-body');
+        try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>'); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } }catch(e){}
+        if(body0) body0.innerHTML = ctPartyHtml(name);
+        return;
+      }
+    }
     /* مستقل از بازه و روزِ باز در گزارش: پیش‌فرض ۳۰ روزِ منتهی به امروز */
     const ctRef = todayShamsi();
     let card = null;
@@ -42408,6 +42449,8 @@
       issues: mapd('issues', is),
       machines: mapd('machines', mc)
     };
+    /* گزارش هفتگی و ماهانه هم با نام روی کارت */
+    try{ const memo = new Map(); ctrCanonRows(rangeCache.rows, memo); ctrCanonRows(rangeCache.issues, memo); }catch(e){}
     return rangeCache;
   }
 
@@ -46908,7 +46951,8 @@
       return '<span class="ms-pt ms-' + x.k + (x.now ? ' now' : '') + (x.rej ? ' rej' : '')
         + (x.ahead ? ' ahead' : '') + (x.ghost ? ' ghost' : '') + (x.last ? ' last' : '')
         + (x.back ? ' back' : '') + (x.ava ? ' has-ava' : '')
-        + (x.due ? ' due' + (x.tone ? ' t-' + x.tone : '') : '') + '" style="--i:' + i + '">'
+        + (x.due ? ' due' + (x.tone ? ' t-' + x.tone : '') : '') + '" style="--i:' + i + '"'
+        + (x.note ? ' data-note="' + esc(x.note) + '"' : '') + (x.who ? ' data-who="' + esc(x.who) + '"' : '') + '>'
         + (x.ava ? '<i class="ms-ava" title="مسئول: ' + esc(x.ava) + '">' + avatarHtml(x.ava, '', true) + '</i>' : '<i></i>')
         + '<u>' + (x.pre ? '<s>' + x.pre + '</s>' : '') + esc(x.t) + '</u>'
         + (dt ? '<b><s>' + esc(dt.slice(0, 5)) + '</s>' + esc(dt.slice(5)) + '</b>'
@@ -46941,6 +46985,7 @@
       return ptHtml(x);
     }).join('');
     return '<div class="adm-ms' + (extraCls ? ' ' + extraCls : '') + '">' + head
+      + '<button type="button" class="ms-exp" data-msexp="1" title="نمایش کامل گردش" aria-label="نمایش کامل گردش"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button>'
       + '<div class="ms-track">' + body + '</div>' + (foot || '') + '</div>';
   }
 
@@ -46978,6 +47023,83 @@
     }, true);
   })();
 
+  /* ====== نمایش کامل گردش ======
+     هر نمودار گردش (صورت وضعیت، قرارداد، سند طراحی، فعالیت، …) با کلیک باز می‌شود:
+     همان نمودار بزرگ‌تر و زیرش مراحل به‌صورت فهرست عمودی با تاریخ، مسئول،
+     مدت هر مرحله و توضیح. روی دسکتاپ نمودار با کشیدن موس هم جابه‌جا می‌شود. */
+  function msViewOpen(ms){
+    if(!ms) return;
+    let m = document.getElementById('msViewModal');
+    if(!m){
+      m = document.createElement('div'); m.id = 'msViewModal'; m.className = 'modal-bg'; m.hidden = true;
+      m.innerHTML = '<div class="modal msv" role="dialog" aria-modal="true"></div>';
+      document.body.appendChild(m);
+      m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-msvx]')){ m.hidden = true; document.body.style.overflow = ''; } });
+      document.addEventListener('keydown', e => { if(e.key === 'Escape' && !m.hidden){ m.hidden = true; document.body.style.overflow = ''; } });
+    }
+    const card = ms.closest('.rv, .line, .dk-card, .flr-it, .hr-card, .modal');
+    const tEl = card && card.querySelector('.adm-title, .top > b, .dk-ttl, h4, b');
+    const title = (tEl && tEl.textContent.trim()) || 'گردش';
+    const head = ms.querySelector('.ms-head'), ttl = head && head.querySelector('.ms-ttl'), tot = head && head.querySelector('.ms-total');
+    const steps = [];
+    ms.querySelectorAll('.ms-track .ms-pt, .ms-track .ms-ln').forEach(el => {
+      if(el.classList.contains('ms-pt')){
+        const k = (Array.from(el.classList).find(c => /^ms-(?!pt)/.test(c)) || 'ms-i').slice(3);
+        const u = el.querySelector('u'), b = el.querySelector('b'), sm = el.querySelector('small'), av = el.querySelector('.ms-ava');
+        steps.push({pt: true, k, now: el.classList.contains('now'), rej: el.classList.contains('rej'), ghost: el.classList.contains('ghost') || el.classList.contains('ahead'),
+          t: u ? u.textContent.replace(/\s+/g, ' ').trim() : '', d: b ? b.textContent.trim() : '', sub: sm ? sm.textContent.trim() : '',
+          who: av ? String(av.getAttribute('title') || '').replace(/^مسئول:\s*/, '') : (el.dataset.who || ''), note: el.dataset.note || ''});
+      }else{
+        const em = el.querySelector(':scope > em');
+        const ppl = Array.from(el.querySelectorAll('.ms-av [data-person], .ms-av .ava')).map(a => a.getAttribute('data-person') || a.getAttribute('title') || '').filter(Boolean);
+        steps.push({ln: true, t: em ? em.textContent.replace(/\s+/g, ' ').replace(/^[!✕×]\s*/, '').trim() : '', tone: (Array.from(el.classList).find(c => /^t-/.test(c)) || '').slice(2),
+          tip: el.getAttribute('title') || '', ppl: Array.from(new Set(ppl)), live: el.classList.contains('live')});
+      }
+    });
+    const clone = ms.cloneNode(true); clone.querySelectorAll('.ms-exp').forEach(x => x.remove());
+    clone.querySelectorAll('.ms-track').forEach(t => { delete t.dataset.msc; delete t.dataset.msro; });
+    const list = steps.map(x => x.pt
+      ? '<div class="msv-p k-' + x.k + (x.now ? ' now' : '') + (x.rej ? ' rej' : '') + (x.ghost ? ' ghost' : '') + '"><i></i><div><b>' + esc(x.t || '—') + '</b>'
+          + '<small>' + [x.d ? '<bdi>' + esc(x.d) + '</bdi>' : '', x.sub ? esc(x.sub) : '', x.who ? 'ثبت/مسئول: ' + esc(x.who) : ''].filter(Boolean).join(' · ') + '</small>'
+          + (x.note ? '<p>' + esc(x.note) + '</p>' : '') + '</div></div>'
+      : ((x.t || x.tip || x.ppl.length) ? '<div class="msv-l' + (x.tone ? ' t-' + x.tone : '') + (x.live ? ' live' : '') + '"><span>' + esc(x.t || '') + '</span>'
+          + (x.ppl.length ? '<em>' + x.ppl.map(esc).join('، ') + '</em>' : '') + (x.tip && x.tip !== x.t ? '<small>' + esc(x.tip) + '</small>' : '') + '</div>' : '')
+    ).join('');
+    m.querySelector('.msv').innerHTML = '<div class="rf-head"><div><b>' + esc(ttl && ttl.textContent.trim() ? ttl.textContent.trim() : 'گردش') + '</b><small>' + esc(title) + (tot ? ' · ' + esc(tot.textContent.trim()) : '') + '</small></div>'
+      + '<button type="button" class="tx-x" data-msvx="1" aria-label="بستن">✕</button></div>'
+      + '<div class="msv-b"><div class="msv-chart"></div><div class="msv-steps">' + list + '</div></div>';
+    m.querySelector('.msv-chart').appendChild(clone);
+    m.hidden = false; document.body.style.overflow = 'hidden';
+  }
+  (function(){
+    /* کشیدن با موس روی نمودارِ پهن؛ کلیکِ بی‌کشیدن، نمایش کامل را باز می‌کند */
+    let drag = null, moved = false;
+    document.addEventListener('pointerdown', e => {
+      if(e.pointerType !== 'mouse' || e.button !== 0) return;
+      const t = e.target.closest && e.target.closest('.adm-ms .ms-track'); if(!t || t.closest('#msViewModal .msv-chart') && false) return;
+      if(t.scrollWidth - t.clientWidth <= 4) return;
+      drag = {t, x: e.clientX, s: t.scrollLeft}; moved = false;
+    });
+    document.addEventListener('pointermove', e => {
+      if(!drag) return;
+      const dx = e.clientX - drag.x;
+      if(Math.abs(dx) > 4){ moved = true; drag.t.classList.add('dragging'); }
+      if(moved) drag.t.scrollLeft = drag.s - dx;
+    });
+    document.addEventListener('pointerup', () => { if(drag){ drag.t.classList.remove('dragging'); drag = null; } });
+    document.addEventListener('click', e => {
+      if(moved){ moved = false; e.preventDefault(); e.stopPropagation(); return; }
+      const xb = e.target.closest && e.target.closest('[data-msexp]');
+      const ms = e.target.closest && e.target.closest('.adm-ms');
+      if(!ms || ms.closest('#msViewModal')) return;
+      if(!xb){
+        if(!e.target.closest('.ms-track')) return;
+        if(e.target.closest('a, button, input, select, textarea, [data-person], [data-hrprof], [data-flr], .ava, .ms-av, .tb-pin, [data-tb], [data-tbid]')) return;
+      }
+      e.preventDefault(); e.stopPropagation();
+      msViewOpen(ms);
+    }, true);
+  })();
   function msHeadHtml(title, pill, pillK, total){
     return '<div class="ms-head">'
       + '<span class="ms-ttl">' + esc(title) + '</span>'
@@ -52252,9 +52374,9 @@
                       : '<span class="dzr-c open">' + (rv.sup ? '—' : 'جاری') + '</span>';
       const note = String(rv.note || '').trim();
       const ed = !!(editable && id);
-      return '<details class="dzr' + (isCur ? ' cur' : '') + '"><summary class="dzr-s">'
+      return '<details class="dzr' + (ri === revs.length - 1 ? ' cur last' : (isCur ? ' cur' : '')) + '"><summary class="dzr-s">'
         + '<div class="dzr-h">'
-        +   '<span class="dzr-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi></span>'
+        +   '<span class="dzr-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi></span>' + (ri === revs.length - 1 && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '')
         +   '<span class="dzr-bar">' + (sg.length ? sg.map(x => '<i class="t-' + dsTone(x.st) + (x.open ? ' live' : '') + '" style="width:' + (x.days / max * 100).toFixed(1) + '%" title="' + esc(x.st + ': ' + toFa(x.days) + ' روز') + '"></i>').join('') : '') + '</span>'
         +   '<span class="dzr-d">' + (tot != null ? toFa(tot) + ' روز' : '—') + '</span>'
         +   res
@@ -52318,7 +52440,7 @@
       /* نفرِ داخل پروژه عکسش روی نقطه است؛ بقیه «نزد …» زیر تاریخ */
       const ava = (dsSideAt(x, rev.__r) === 'in' && (x.at || (i === 0 && x.by))) ? (x.at || x.by) : '';
       return {k: kOf(x), t: x.lbl || (x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : '')), d: x.d || '',
-        rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava,
+        rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava, note: x.note || '', who: x.by || '',
         sub: (!ava && h) ? dsHolderLink(dsSideAt(x, rev.__r), x.at || '', dsHolderShort(x, rev.__r)) : '', last: !open && i === L.length - 1, st: x.st};
     });
     if(open){ const lx = L[L.length - 1]; const h = dsHolderShort(lx, rev.__r); pts.push({k: kOf(lx), t:'امروز', d:'', now:true, isToday:true, txt: h || lastSt, st: lastSt}); }
@@ -52500,7 +52622,7 @@
           try{
             const full = dsAllFlowHtml(r, revs, false);
             const pts = revs.reduce((p, rv) => p + (rv.log || []).filter(x => x && x.st).length, 0);
-            const canC = revs.length > 1 && revs.slice(0, -1).some(rv => (rv.log || []).filter(x => x && x.st).length > 2);
+            const canC = false;
             if(!canC) return '<div class="dz-flow dz-all">' + full + '</div>';
             const m = dzAllMode || (pts > 6 ? 'c' : 'f');
             return '<div class="dz-flow dz-all" data-m="' + m + '">'
@@ -55575,6 +55697,37 @@
   }
 
   // یک ردیف فعالیت (کارت کامل)
+  /* سند طراحی در لیست فعالیت: وضعیت سند (نه «در حال اجرا»)، نزد کیست و چند روز،
+     گردش کل سند به جای خط ابلاغ تا انجام، فایل‌های آخرین ویرایش و اقدام بعدی */
+  function taskDesignCardHtml(r){
+    const row = r.__admRow, id = r.__admId || pick(row,AD.id);
+    const revs = dsRevsOf(row); revs.forEach(x => { try{ Object.defineProperty(x, '__r', {value: row, enumerable: false, configurable: true}); }catch(e){} });
+    const cur = revs[revs.length - 1], L = (cur.log || []).filter(x => x && x.st), st = L.length ? L[L.length - 1].st : (pick(row,AD.dStatus) || '');
+    const hn = dsHolderNow(row), tone = st ? dsTone(st) : 'info';
+    const no = pick(row,AD.dNo), ttl = pick(row,AD.dTitle) || 'سند طراحی', disc = pick(row,AD.dDisc);
+    const fl = attachList(dsRevFiles(row, revs, revs.length - 1));
+    const ed = (function(){ try{ return canEditAdm('design', row); }catch(e){ return false; } })();
+    const nx = ed ? dsNextOf(st) : null;
+    return '<div class="line tkd" data-task-id="' + esc(id) + '" data-go-kind="design" data-go-id="' + esc(id) + '">'
+      + '<div class="top"><b>' + esc(ttl) + '</b>'
+      +   alertFlagHtml(id, criticalOf(id, '', dsDone(st), {kind: 'design', startRaw: pick(r,T.start)}))
+      +   '<span class="st-cell"><span class="dz-st t-' + tone + '">' + (DS_CODE[st] ? '<b dir="ltr">' + DS_CODE[st] + '</b>' : '') + esc(st || '—') + '</span></span></div>'
+      + '<div class="task-meta"><span class="ti-k">سند طراحی</span>' + [no ? '<span dir="ltr">' + esc(no) + '</span>' : '', '<span dir="ltr">Rev ' + esc(cur.rev) + '</span>', disc ? '<span>' + esc(disc) + '</span>' : ''].filter(Boolean).map(x => '<i></i>' + x).join('')
+      +   (hn ? '<i></i><span class="ti-w">نزد ' + esc(hn.txt) + (hn.days != null ? ' · ' + toFa(hn.days) + ' روز' : '') + '</span>' : '') + '</div>'
+      + '<div class="dz-flow tkd-flow">' + dsAllFlowHtml(row, revs) + '</div>'
+      + (fl.length ? '<div class="dzr-fs tkd-fs">' + fl.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</div>' : '')
+      + '<div class="dz-act3 tkd-act">'
+      +   (nx ? '<button type="button" class="dz-go" ' + (nx.rev ? 'data-dsrev' : 'data-dsstep') + '="' + esc(id) + '"' + (nx.st ? ' data-dsto="' + esc(nx.st) + '"' : '') + '><b>' + esc(nx.t) + '</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-5 5 5 5"/></svg></button>' : '')
+      +   '<span class="dz-alt"><button type="button" class="dz-ln" data-gotodoc="design¦' + esc(id) + '"><span>باز کردن سند در دفتر فنی</span></button></span></div>'
+      + commentBarHtml('design', id, ttl)
+      + '</div>';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-gotodoc]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const [k, id] = b.dataset.gotodoc.split('¦');
+    try{ gotoAdminItem(k, id); }catch(err){}
+  }, true);
   function taskCardHtml(r){
     const today = new Date(); today.setHours(0,0,0,0);
     const st = taskStatus(r);
@@ -55600,6 +55753,7 @@
             ? '<span class="rvw-days' + (d > 7 ? ' late' : '') + '">' + toFa(d) + '</span>' : '')
         + '</span>';
     }
+    if(r.__admKind === 'design' && r.__admRow){ try{ return taskDesignCardHtml(r); }catch(e){} }
     return '<div class="line' + (rail ? ' has-age' : '') + '"'
       + (rowId ? ' data-task-id="' + esc(rowId) + '"' : '')
       + (r.__adm ? ' data-go-kind="' + esc(r.__admKind || '') + '"'
@@ -56000,6 +56154,7 @@
       return v;
     }
     const v = {dates: all, rows: (rw || []).map(x => fromSupa('activities', x)), issues: (is || []).map(x => fromSupa('issues', x))};
+    try{ const memo = new Map(); ctrCanonRows(v.rows, memo); ctrCanonRows(v.issues, memo); }catch(e){}
     flrCache.set(key, v);
     return v;
   }
@@ -64304,7 +64459,7 @@
     if(needA && b.admin){
       const out = [];
       [['statements','statement'],['contracts','contract'],
-       ['minutes','minute'],['letters','letter']].forEach(([k, kind]) => {
+       ['minutes','minute'],['letters','letter'],['designs','design']].forEach(([k, kind]) => {
         (b.admin[k] || []).forEach(row => {
           out.push({kind: kind, row: row});
           try{ const id = pick(row,AD.id); if(id) rowMap.set(id, row); }catch(e){}
