@@ -50568,14 +50568,14 @@
             const NM = {list_path:'فهرست (مسیر)', list_vhost:'فهرست (زیردامنه)', get_path:'فایل (مسیر)', get_vhost:'فایل (زیردامنه)'};
             srv = '\n\nجواب فضای ابری به سرور:\n' + Object.keys(NM).filter(k => rr[k]).map(k => {
               const v = rr[k];
-              return '• ' + NM[k] + ': ' + (v.wait ? 'بی‌جواب' : v.err ? 'خطا ' + v.err : 'کد ' + v.st + ' — ' + String(v.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140));
+              return '• ' + NM[k] + ': ' + (v.wait ? 'بی‌جواب' : v.err ? 'خطا ' + v.err : 'کد ' + toFa(v.st) + ' — ' + String(v.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140));
             }).join('\n');
-          }catch(er){ srv = '\n\n(بررسی از سمت سرور: ' + friendlyErr(er) + ')'; }
+          }catch(er){ srv = '\n\n(بررسی از سمت سرور انجام نشد: ' + String(er && er.message || er).slice(0, 200) + ')'; }
           res.style.whiteSpace = 'pre-line'; res.style.direction = 'rtl';
-          throw new Error('آپلود شد ولی دانلود نشد. ' + detail + srv);
+          const e2 = new Error('آپلود شد ولی دانلود نشد. ' + detail + srv); e2.raw = true; throw e2;
         }
       }
-    }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = friendlyErr(er); }
+    }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = er && er.raw ? er.message : friendlyErr(er); }
     sv.disabled = false;
   });
   async function uploadAny(file, onProgress, kind){
