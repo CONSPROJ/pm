@@ -2771,6 +2771,7 @@
   .upc-sec[data-upc-for="s3"] .upc-hint{display:block;direction:rtl;text-align:right;margin-top:8px;font-size:10.5px;line-height:1.8;}
   .s3-st.ok{color:var(--ok);font-weight:700;}
   .s3-busy{opacity:.55;pointer-events:none;cursor:progress;}
+  .s3-tl{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;} .s3-tl a{display:inline-flex;align-items:center;height:34px;padding:0 12px;border-radius:10px;background:var(--field);color:var(--sky);font-size:11.5px;font-weight:800;text-decoration:none;white-space:nowrap;}
   .rw-ph{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;}
   .rw-ph-l{display:contents;}
   .rw-ph-add{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:11px;border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;}
@@ -50577,11 +50578,14 @@
             }).join('\n');
           }catch(er){ srv = '\n\n(بررسی از سمت سرور انجام نشد: ' + String(er && er.message || er).slice(0, 200) + ')'; }
           res.style.whiteSpace = 'pre-line'; res.style.direction = 'rtl';
-          const e2 = new Error('آپلود شد ولی دانلود نشد. ' + detail + srv); e2.raw = true; throw e2;
+          const e2 = new Error('آپلود شد ولی دانلود نشد. ' + detail + srv); e2.raw = true; e2.links = [d.path, d.vhost]; throw e2;
         }
       }
     }catch(er){ res.className = 'upc-res s3-res bad';
-      res.textContent = er && er.raw ? er.message : ((step ? 'مرحلهٔ «' + step + '» نشد:\n' : '') + String(er && er.message || er).slice(0, 300)); }
+      res.textContent = er && er.raw ? er.message : ((step ? 'مرحلهٔ «' + step + '» نشد:\n' : '') + String(er && er.message || er).slice(0, 300));
+      /* لینک‌های آزمایشی (۱۰ دقیقه‌ای) تا ادمین ببیند مرورگر خودش چه جوابی می‌گیرد */
+      if(er && er.links) res.insertAdjacentHTML('beforeend', '<span class="s3-tl"><a href="' + esc(er.links[0]) + '" target="_blank" rel="noopener noreferrer">باز کردن لینک آزمایشی (مسیر)</a>'
+        + '<a href="' + esc(er.links[1]) + '" target="_blank" rel="noopener noreferrer">باز کردن لینک آزمایشی (زیردامنه)</a></span>'); }
     sv.disabled = false;
   });
   async function uploadAny(file, onProgress, kind){
