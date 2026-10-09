@@ -15507,49 +15507,42 @@
   }
 
   /* ================= لیست فعالیت v2 ================= */
-  /* نوار فرمان: جست‌وجو همیشه باز، مسئول و فیلتر در یک ردیف */
+  /* نوار فرمان: یک ردیف — جست‌وجو و دکمهٔ «فیلتر»؛ مسئول و بقیهٔ فیلترها
+     داخل پنل جمع‌شونده، فیلترهای فعال به شکل برچسب زیر ردیف */
   #panelTasks #taskFiltersHost{
-    display:grid;flex-direction:row;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;
-    margin:4px 0 14px;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;
+    margin:4px 0 12px;
   }
   #taskFiltersHost > *{margin:0 !important;min-width:0;}
-  #taskFiltersHost #taskSearch{grid-column:1 / -1;order:-2;}
-  #taskFiltersHost #taskWhoBar{order:-1;}
-  #taskFiltersHost #taskFilterDrawer{order:0;}
-  #taskFiltersHost #taskFilterDrawer.open{grid-column:1 / -1;order:1;}
-  #taskFiltersHost #taskSearch > .fd-toggle{display:none !important;}
-  #taskFiltersHost #taskSearch > .fd-body{display:block !important;padding:0 !important;}
-  #taskFiltersHost #taskSearch .sd-in{
-    height:48px !important;border-radius:15px !important;font-size:13px !important;
-    background:var(--surface) !important;border:1px solid var(--line) !important;
-    box-shadow:0 10px 24px -22px rgba(15,20,35,.6);
-    transition:border-color .2s, box-shadow .2s;
-  }
-  #taskFiltersHost #taskSearch .sd-in:focus{border-color:var(--sky) !important;box-shadow:0 0 0 4px var(--sky-soft) !important;}
-  #taskFiltersHost #taskWhoBar{
-    display:flex !important;align-items:center;gap:8px;padding:0 !important;
-    background:none !important;border:0 !important;box-shadow:none !important;flex-wrap:nowrap;
-  }
-  #taskFiltersHost #taskWhoBar .filter-title,
-  #taskFiltersHost #taskWhoBar label{display:none !important;}
-  #taskFiltersHost #taskWhoBar .field{flex:1 1 auto;min-width:0;margin:0;}
-  #taskFiltersHost #taskWhoBar #loadTasks{
-    flex:0 0 auto;height:48px;margin:0;padding:0 18px;border-radius:15px;
-  }
-  #taskFiltersHost #taskWhoBar .ico-btn{flex:0 0 48px;width:48px;height:48px;border-radius:15px;}
+  #taskFiltersHost #taskSearch{grid-column:1;grid-row:1;}
+  #taskFiltersHost #taskFilterDrawer{display:contents !important;}
+  #taskFiltersHost #taskFilterDrawer[style*="none"] > *{display:none !important;}
+  #taskFiltersHost:not(:has(#taskFilterDrawer:not([style*="none"]))) #taskSearch{grid-column:1 / -1;}
   #taskFiltersHost #taskFilterDrawer > .fd-toggle{
-    height:48px;min-height:48px;padding:0 14px;border-radius:15px;gap:7px;white-space:nowrap;
-    background:var(--surface);border:1px solid var(--line);
+    grid-column:2;grid-row:1;align-self:stretch;
+    height:44px;min-height:44px !important;padding:0 13px;border-radius:14px;gap:7px;white-space:nowrap;
+    background:var(--surface);border:1px solid var(--line);font-size:12.5px;
   }
   #taskFiltersHost #taskFilterDrawer > .fd-toggle .fd-ar{display:none;}
-  #taskFiltersHost #taskFilterDrawer.open > .fd-toggle{width:auto;justify-self:start;display:inline-flex;}
+  #taskFiltersHost #taskFilterDrawer.open > .fd-toggle{border-color:var(--sky);background:var(--sky-soft);color:var(--sky);}
+  #taskFiltersHost #taskFilterDrawer > .fd-chips{grid-column:1 / -1;}
+  #taskFiltersHost #taskFilterDrawer > .fd-chips:empty{display:none;}
+  #taskFiltersHost #taskFilterDrawer > .fd-body{grid-column:1 / -1;}
   #taskFiltersHost #taskFilterDrawer.open > .fd-body{animation:foldIn .3s cubic-bezier(.22,.7,.2,1) both;}
+  #taskFiltersHost #taskSearch > .fd-toggle{display:none !important;}
+  #taskFiltersHost #taskSearch > .fd-body{display:block !important;padding:0 !important;}
+  #taskFiltersHost #taskSearch .sd-foot{display:none !important;}
+  #taskFiltersHost #taskSearch .sd-in{
+    height:44px !important;border-radius:14px !important;font-size:13px !important;
+    background:var(--surface) !important;border:1px solid var(--line) !important;
+    box-shadow:none;transition:border-color .2s, box-shadow .2s;
+  }
+  #taskFiltersHost #taskSearch .sd-in:focus{border-color:var(--sky) !important;box-shadow:0 0 0 4px var(--sky-soft) !important;}
+  /* مسئول اولین و پهن‌ترین فیلتر پنل است */
+  #taskFiltersHost #taskFilters .fld-who{flex:1 1 100%;}
   @media(max-width:640px){
-    #taskFiltersHost #taskWhoBar #loadTasks{padding:0 14px;}
+    #taskFiltersHost #taskFilterDrawer > .fd-toggle{padding:0 11px;}
     #taskFiltersHost #taskFilterDrawer > .fd-toggle b{display:none;}
-    #taskFiltersHost #taskFilterDrawer > .fd-toggle{width:48px;padding:0;justify-content:center;}
-    #taskFiltersHost #taskFilterDrawer.open > .fd-toggle b{display:inline;}
-    #taskFiltersHost #taskFilterDrawer.open > .fd-toggle{width:auto;padding:0 14px;}
   }
 
   /* قهرمان آمار: حلقهٔ پیشرفت + کاشی‌های قابل کلیک */
@@ -20946,18 +20939,17 @@
     <div class="jump-bar" id="taskJumpBar"></div>
     <div class="block" id="taskToolsBlock">
       <div class="toolbar filterbox" id="taskWhoBar">
-        <span class="filter-title">انتخاب مسئول</span>
-        <div class="field">
-          <label for="taskWho">مسئول</label>
-          <input type="text" id="taskWho" hidden>
-          <div id="comboTaskWho"></div>
-        </div>
         <button type="button" class="add" id="loadTasks">نمایش</button>
         <button type="button" class="ico-btn exp pdf" id="tasksPdfBtn" title="خروجی PDF"
           aria-label="خروجی PDF" hidden></button>
       </div>
       <div class="toolbar filterbox" id="taskFilters" style="margin-top:12px;display:none;">
         <span class="filter-title">فیلتر فعالیت‌ها</span>
+        <div class="field fld-who">
+          <label for="taskWho">مسئول</label>
+          <input type="text" id="taskWho" hidden data-fdcombo="comboTaskWho">
+          <div id="comboTaskWho"></div>
+        </div>
         <div class="field">
           <label for="fTaskStatus">وضعیت</label>
           <select id="fTaskStatus">
@@ -57162,7 +57154,7 @@
   let donePanelOpen = false;   // پنجرهٔ فعالیت‌های تکمیل‌شده، پیش‌فرض بسته
   let taskFocusWho = '';       // اگر از اعلان آمده باشیم، نام فرد اینجا می‌ماند
   const taskBarHome = {};      // جای اصلی نوارها، تا موقع بازسازی پنجره پاک نشوند
-  const TASK_BARS = ['taskWhoBar', 'taskFilterDrawer', 'taskSearch'];
+  const TASK_BARS = ['taskFilterDrawer', 'taskSearch'];
 
   // نوارها را از داخل پنجره بیرون می‌آورد تا با بازنویسی پنجره از بین نروند
   function stashTaskFilters(){
@@ -57189,7 +57181,7 @@
     const inp = document.getElementById('taskWho');
     if(inp) inp.value = '';
     if(personCombos['comboTaskWho']) personCombos['comboTaskWho'].set('');
-    ['fTaskStatus','fTaskSrc','fTaskSide','fTaskPos','fTaskCat'].forEach(id => {
+    ['fTaskStatus','fTaskSrc','fTaskSide','fTaskPos','fTaskCat','fTaskBlk'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
@@ -57284,11 +57276,13 @@
         +         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg>کارتی</button>'
         +     '</div>'
         +     (canAddTask() ? '<button type="button" class="tk-addbtn" data-tkadd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>فعالیت</button>' : '')
-        +     (txCanBulk() ? '<details class="tk-more"><summary title="ابزارهای بیشتر" aria-label="ابزارهای بیشتر"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary>'
-        +       '<div class="tk-more-m"><u>' + TX_I.xls + 'اکسل فعالیت‌های اجرایی</u>'
+        +     ((txCanBulk() || isAdminUser()) ? '<details class="tk-more"><summary title="ابزارهای بیشتر" aria-label="ابزارهای بیشتر"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary>'
+        +       '<div class="tk-more-m">'
+        +       (isAdminUser() ? '<u>خروجی</u><button type="button" data-tkpdf="1" title="چاپ یا PDF همین فهرست با فیلترهای فعلی">' + TX_I.down + 'PDF فهرست فعلی</button>' : '')
+        +       (txCanBulk() ? '<u>' + TX_I.xls + 'اکسل فعالیت‌های اجرایی</u>'
         +       '<button type="button" data-txxl="out" title="دانلود فعالیت‌های اجرایی برای اصلاح طبقه و محل">' + TX_I.down + 'دانلود فایل</button>'
-        +       '<button type="button" data-txxl="in" title="بارگذاری فایل اصلاح‌شده">' + TX_I.up + 'بارگذاری فایل اصلاح‌شده</button></div>'
-        +     '</details>' : '')
+        +       '<button type="button" data-txxl="in" title="بارگذاری فایل اصلاح‌شده">' + TX_I.up + 'بارگذاری فایل اصلاح‌شده</button>' : '')
+        +     '</div></details>' : '')
         +     '<div class="tk-grpseg" role="group" aria-label="دسته‌بندی بر اساس">'
         +       '<button type="button" data-tkgrp="person"' + (taskGroup === 'person' ? ' class="on"' : '') + '>'
         +         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6S13.7 16 14.5 19"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.6c2.3.2 4 1.6 4.7 4.4"/></svg>پرسنل</button>'
@@ -57320,6 +57314,13 @@
 
     }else{
       // پنجره سر جایش می‌ماند؛ فقط متن‌ها و فهرست‌ها عوض می‌شوند
+      // نوار جست‌وجو و فیلتر اگر برای بارگیری دوباره بیرون رفته بود، برمی‌گردد
+      TASK_BARS.forEach(id => {
+        const f = document.getElementById(id);
+        if(f && f.parentElement !== host) host.appendChild(f);
+      });
+      const blk2 = document.getElementById('taskToolsBlock');
+      if(blk2) blk2.style.display = 'none';
       const slot = document.getElementById('taskFocusSlot');
       if(slot && slot.innerHTML !== focusBar) slot.innerHTML = focusBar;
       const t1 = document.getElementById('tasksTitle');   if(t1) t1.innerHTML = openTitle;
@@ -57653,7 +57654,7 @@
     const body = d.querySelector(':scope > .fd-body');
     if(!body) return out;
     body.querySelectorAll('select, input[type=text], input[type=search], input[type=date], input:not([type])').forEach(el => {
-      if(el.hidden || el.disabled || el.closest('[hidden]')) return;
+      if(el.disabled || ((el.hidden || el.closest('[hidden]')) && !el.dataset.fdcombo)) return;
       const v = String(el.value || '').trim();
       if(!v) return;
       const fld = el.closest('.field');
@@ -57691,6 +57692,7 @@
     const A = (d && d.__fdA) || [];
     const clear = a => {
       a.el.value = '';
+      if(a.el.dataset.fdcombo && personCombos[a.el.dataset.fdcombo]) personCombos[a.el.dataset.fdcombo].set('');
       a.el.dispatchEvent(new Event('input', {bubbles:true}));
       a.el.dispatchEvent(new Event('change', {bubbles:true}));
     };
@@ -57717,7 +57719,7 @@
   function buildTaskFilters(){
     stashTaskFilters();   // اگر داخل پنجره بود، اول به جای امن برمی‌گردد
     taskFilters.refresh();
-    const d = wrapFilterDrawer('taskFilters', 'taskFilterDrawer', 'فیلتر فعالیت‌ها');
+    const d = wrapFilterDrawer('taskFilters', 'taskFilterDrawer', 'فیلتر');
     if(d){
       d.style.display = '';
       makeSearchDrawer(d, 'taskSearch', 'عنوان، مسئول، موقعیت…',
@@ -58313,6 +58315,12 @@
     b.innerHTML = PDF_ICON;
     b.hidden = !isAdminUser();
   })();
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-tkpdf]');
+    if(!b) return;
+    const m = b.closest('details'); if(m) m.open = false;
+    document.getElementById('tasksPdfBtn').click();
+  });
   document.getElementById('tasksPdfBtn').addEventListener('click', () => {
     if(!lastTasks || !lastTasks.list.length){ showDialog('warn','داده‌ای نیست','اول فعالیت‌ها را نمایش دهید.'); return; }
     document.getElementById('printArea').innerHTML = tasksPdfHtml(lastTasks.list, lastTasks.who);
