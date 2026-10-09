@@ -50357,16 +50357,17 @@
   async function s3Fetch(a){
     const u = await s3Url(a.key, a.name, false, a.slot);
     let r = null;
-    try{ r = await fetch(u, {cache:'no-store'}); }catch(e){}
+    try{ r = await fetch(u); }catch(e){}
     if(r && r.ok) return r;
+    /* خواندن از داخل سایت ممکن نشد (اجازهٔ CORS برای GET نیست یا 404): لینک
+       مستقیم داده می‌شود تا فایل در مرورگر باز شود */
+    if(!r){ const e = new Error('direct'); e.big = u; throw e; }
     try{
       const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: a.slot === 2 ? 2 : 1});
       const alt = d.style === 'vhost' ? d.path : d.vhost;
-      const r2 = await fetch(alt, {cache:'no-store'});
+      const r2 = await fetch(alt);
       if(r2.ok){ s3Cache.set(a.key + '|', {u: alt, t: Date.now() + 8 * 60000}); return r2; }
-      if(!r) r = r2;
     }catch(e){}
-    if(!r){ const e = new Error('اتصال به فضای ابری برقرار نشد'); e.status = 0; throw e; }
     return r;
   }
   async function s3Blob(a, onP){
@@ -50446,7 +50447,7 @@
             + '<a class="s3s-b pri" href="' + esc(attachDownloadUrl(a)) + '" target="_blank" rel="noopener" download="' + esc(a.name) + '">' + UP_I.dl + '<span>دانلود</span></a>';
         }
       }catch(er){
-        if(er.big){ sm.textContent = 'فایل بزرگ است؛ مستقیم باز می‌شود';
+        if(er.big){ sm.textContent = 'با «باز کردن» در مرورگر باز می‌شود؛ بعد از دکمهٔ اشتراک‌گذاری ذخیره کنید';
           row.querySelector('.s3s-a').innerHTML = '<a class="s3s-b pri" href="' + esc(er.big) + '" target="_blank" rel="noopener">' + UP_I.open + '<span>باز کردن</span></a>'; }
         else{ sm.textContent = friendlyErr(er); row.classList.add('bad'); }
       }
@@ -50533,20 +50534,26 @@
       }else{
         /* آپلود یک فایل آزمایشی، سپس خواندنش با هر دو شکل نشانی؛ شکلی که
            جواب بدهد برای دانلودها ذخیره می‌شود */
-        const f = new File(['pm-test ' + new Date().toISOString()], 'test.txt', {type:'text/plain'});
+        const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
+        const f = new File([png], 'test.png', {type:'image/png'});
         const u = await uploadToS3(f, null, 'test', slot);
         const a = attachList(u)[0];
         res.textContent = 'آپلود شد؛ در حال بررسی دانلود…';
         const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: slot});
-        const tryGet = async url => { try{ const r = await fetch(url, {cache:'no-store'}); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
-          return {ok: r.ok, st: r.status, t}; }catch(e){ return {ok: false, st: 0, t: 'CORS یا اتصال'}; } };
-        const [pa, vh] = await Promise.all([tryGet(d.path), tryGet(d.vhost)]);
-        const want = pa.ok ? 'path' : vh.ok ? 'vhost' : '';
+        /* دو آزمایش برای هر شکل نشانی: باز شدن مستقیم (مثل عکس) و خواندن از داخل سایت */
+        const tryImg = url => new Promise(ok => { const im = new Image(); const tm = setTimeout(() => ok(false), 8000);
+          im.onload = () => { clearTimeout(tm); ok(true); }; im.onerror = () => { clearTimeout(tm); ok(false); }; im.src = url; });
+        const tryGet = async url => { try{ const r = await fetch(url); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+          return {ok: r.ok, st: r.status, t}; }catch(e){ return {ok: false, st: 0, t: ''}; } };
+        const [pi, vi, pa, vh] = await Promise.all([tryImg(d.path), tryImg(d.vhost), tryGet(d.path), tryGet(d.vhost)]);
+        const want = (pa.ok || pi) ? 'path' : (vh.ok || vi) ? 'vhost' : '';
         if(want && want !== d.style){ await s3Rpc('pm_storage_style', {p_slot: slot, p_style: want}); }
         s3Cache.clear(); s3ThumbC.clear();
-        const line = (n, x) => n + ': ' + (x.ok ? 'سالم' : 'کد ' + toFa(x.st) + (x.t ? ' (' + x.t + ')' : ''));
-        if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — شکل نشانی: ' + (want === 'vhost' ? 'زیردامنهٔ سطل' : 'مسیر') + (want !== d.style ? ' (تنظیم شد)' : ''); }
-        else throw new Error('آپلود شد ولی دانلود نشد. ' + line('مسیر', pa) + ' · ' + line('زیردامنه', vh));
+        const line = (n, im, x) => n + ' — مستقیم: ' + (im ? 'سالم' : 'ناموفق') + '، داخل سایت: ' + (x.ok ? 'سالم' : (x.st ? 'کد ' + toFa(x.st) + (x.t ? ' (' + x.t + ')' : '') : 'مسدود (CORS)'));
+        const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh);
+        if(want && ((want === 'path' && pa.ok) || (want === 'vhost' && vh.ok))){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — ' + detail; }
+        else if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'فایل‌ها باز می‌شوند ✓ ولی خواندن از داخل سایت (CORS برای GET) بسته است؛ دانلود با باز شدن در مرورگر انجام می‌شود. برای دانلود مستقیم، در CORS سطل متد GET را هم اضافه کنید. — ' + detail; }
+        else throw new Error('آپلود شد ولی دانلود نشد. ' + detail);
       }
     }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = friendlyErr(er); }
     sv.disabled = false;
