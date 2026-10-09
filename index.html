@@ -50517,6 +50517,8 @@
     const v = s => String((sec.querySelector(s) || {}).value || '').trim();
     if(sv.dataset.s3Del && !(await askConfirm('حذف اتصال «' + S3_SLOT[slot] + '»؟', 'فایل‌های داخل خودِ فضای ابری پاک نمی‌شوند؛ فقط سامانه دیگر به آن وصل نمی‌شود.', 'حذف اتصال'))) return;
     sv.disabled = true; res.className = 'upc-res s3-res'; res.textContent = 'در حال انجام…';
+    let step = '';
+    res.style.whiteSpace = 'pre-line';
     try{
       if(sv.dataset.s3Del){
         await s3Rpc('pm_storage_set', {p_slot: slot, p_endpoint: '', p_region: '', p_bucket: '', p_access: '', p_secret: ''});
@@ -50534,12 +50536,15 @@
       }else{
         /* آپلود یک فایل آزمایشی، سپس خواندنش با هر دو شکل نشانی؛ شکلی که
            جواب بدهد برای دانلودها ذخیره می‌شود */
+        step = 'آپلود فایل آزمایشی';
         const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
         const f = new File([png], 'test.png', {type:'image/png'});
         const u = await uploadToS3(f, null, 'test', slot);
         const a = attachList(u)[0];
         res.textContent = 'آپلود شد؛ در حال بررسی دانلود…';
+        step = 'ساخت لینک دانلود (pm_file_diag)';
         const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: slot});
+        step = 'خواندن فایل';
         /* دو آزمایش برای هر شکل نشانی: باز شدن مستقیم (مثل عکس) و خواندن از داخل سایت */
         const tryImg = url => new Promise(ok => { const im = new Image(); const tm = setTimeout(() => ok(false), 8000);
           im.onload = () => { clearTimeout(tm); ok(true); }; im.onerror = () => { clearTimeout(tm); ok(false); }; im.src = url; });
@@ -50575,7 +50580,8 @@
           const e2 = new Error('آپلود شد ولی دانلود نشد. ' + detail + srv); e2.raw = true; throw e2;
         }
       }
-    }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = er && er.raw ? er.message : friendlyErr(er); }
+    }catch(er){ res.className = 'upc-res s3-res bad';
+      res.textContent = er && er.raw ? er.message : ((step ? 'مرحلهٔ «' + step + '» نشد:\n' : '') + String(er && er.message || er).slice(0, 300)); }
     sv.disabled = false;
   });
   async function uploadAny(file, onProgress, kind){
