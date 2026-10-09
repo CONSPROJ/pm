@@ -3832,6 +3832,24 @@
     background:var(--field);padding:1px 8px;border-radius:999px;
   }
   .tk-grp-h::after{order:2;}
+.tkl-tiles{display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px;margin:10px 0 12px;}
+  .tkl-t{--c:var(--sky);all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s, box-shadow .15s, transform .1s;}
+  .tkl-t:hover{border-color:color-mix(in srgb, var(--c) 40%, var(--line));} .tkl-t:active{transform:scale(.99);}
+  .tkl-t.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 14%, transparent);}
+  .tkl-t .tkl-ic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);margin-bottom:4px;}
+  .tkl-t .tkl-ic svg{width:19px;height:19px;}
+  .tkl-t b{font-size:13.5px;font-weight:800;color:var(--ink);} .tkl-t small{font-size:11px;color:var(--muted);}
+  .tkl-t em{position:absolute;top:10px;inset-inline-end:10px;font-style:normal;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;color:var(--alert);background:color-mix(in srgb, var(--alert) 11%, transparent);}
+  .k-in{--c:var(--sky);} .k-emp{--c:#2a8a86;} .k-cons{--c:#6d5bb5;} .k-ctr{--c:#b07512;}
+  [data-theme="dark"] .k-emp{--c:#5cc4be;} [data-theme="dark"] .k-cons{--c:#a898e6;} [data-theme="dark"] .k-ctr{--c:#e0b050;}
+  .tkl-sec{margin:0 0 10px;border-radius:18px;border:1px solid var(--line);background:color-mix(in srgb, var(--c) 3%, var(--surface));overflow:hidden;}
+  .tkl-h{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;}
+  .tkl-h .tkl-ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);} .tkl-h .tkl-ic svg{width:17px;height:17px;}
+  .tkl-h b{font-size:13.5px;font-weight:800;} .tkl-h u{text-decoration:none;font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--field);color:var(--muted);}
+  .tkl-h em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--alert);}
+  .tkl-ar{margin-inline-start:auto;width:8px;height:8px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-4px;transition:transform .2s;}
+  .tkl-sec.open .tkl-ar{transform:rotate(-135deg);margin-top:4px;}
+  .tkl-b{display:none;padding:0 10px 10px;} .tkl-sec.open .tkl-b{display:block;}
   .tk-jsep{
     display:inline-flex;align-items:center;padding:0 8px;font-size:10.5px;font-weight:700;color:var(--muted);
     border-inline-start:1px solid var(--line);margin-inline-start:4px;white-space:nowrap;
@@ -29136,7 +29154,19 @@
         seen.add(k); ents.push({canon: c, k, n:0, docs: id === 'contractPartyList' ? 1 : 0, members:[], skills:new Map()});
       });
     });
-    return ents;
+    /* هر پرونده یک بار: دو ردیفی که نام اصلی‌شان (نام روی کارت) یکی است، با هم یکی می‌شوند */
+    const by = new Map(), out = [];
+    ents.forEach(e => {
+      let c = e.canon; try{ c = ctrCanon(e.canon) || e.canon; }catch(err){}
+      try{ if(ctrIsHidden(c) && !ctrIsHidden(e.canon)) c = e.canon; }catch(err){}
+      const key = normName(c) || e.k;
+      const o = by.get(key);
+      if(!o){ e.canon = c; e.k = key; by.set(key, e); out.push(e); return; }
+      o.n = (o.n || 0) + (e.n || 0); o.docs = (o.docs || 0) + (e.docs || 0);
+      try{ (e.members || []).forEach(m => { if((o.members || []).indexOf(m) === -1) (o.members = o.members || []).push(m); }); }catch(err){}
+      try{ if(e.skills && o.skills) e.skills.forEach((v, sk) => o.skills.set(sk, (o.skills.get(sk) || 0) + (typeof v === 'number' ? v : 0))); }catch(err){}
+    });
+    return out;
   }
   function ctdExport(){
     if(typeof XLSX === 'undefined'){ showDialog('warn','کمی صبر کنید','ابزار اکسل هنوز بارگذاری نشده؛ چند ثانیه بعد دوباره بزنید.'); return; }
@@ -29526,7 +29556,7 @@
      طرف‌ها در همهٔ ردیف‌های حافظه با نام اصلی پرونده جایگزین می‌شود؛ پس گزارش
      روزانه، لیست فعالیت، دفتر فنی، جست‌وجو و فهرست‌ها همه یک نام نشان می‌دهند.
      سوابق روی سرور دست نمی‌خورند و املای قبلی در __raw نگه داشته می‌شود. */
-  const CTR_NAME_FIELDS = ['پیمانکار', 'پیمانکار مربوطه', 'طرف قرارداد', 'طراح', 'طرف مقابل'];
+  const CTR_NAME_FIELDS = ['پیمانکار', 'پیمانکار مربوطه', 'طرف قرارداد', 'طراح', 'طرف مقابل', 'طرف عملیات'];
   function ctrCanonRows(arr, memo){
     if(!Array.isArray(arr) || !arr.length) return 0;
     memo = memo || new Map(); let n = 0;
@@ -55977,17 +56007,62 @@
       else push('بدون مسئول', r);
     });
     const sp = taskPeopleSplit(people);
-    return sp.names.map((p,i) => {
+    return tkLevelsHtml(sp, people, (p, i) => {
         const items = people.get(p);
-        return sp.headAt(i)
-          + '<div class="eng foldable" id="'+pre+i+'">'
+        return '<div class="eng foldable" id="'+pre+i+'">'
           + '<button type="button" class="eng-head">' + avatarHtml(p) + personName(p)
           + '<span class="meta">' + toFa(items.length) + ' مورد</span>'
           + '<span class="eng-ar">▾</span></button>'
           + '<div class="eng-body">' + personSectionsHtml(items) + '</div></div>';
-      }).join('');
+      }, pre);
   }
 
+  /* ====== سطح‌های لیست فعالیت: کاشی بالای فهرست + پنجرهٔ تاشوی هر سطح ======
+     با لمس کاشی همان پنجره باز می‌شود (و بقیه بسته)؛ وضعیت باز بودن روی همین دستگاه می‌ماند. */
+  const TKL_IC = {
+    in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/></svg>',
+    emp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/></svg>',
+    cons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-14 4 9 3-5 4 10"/><path d="M3 19h18"/></svg>',
+    ctr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20V10l7-4 7 4v10"/><path d="M9 20v-4h6v4M12 6V3"/></svg>'
+  };
+  let tklOpen = (function(){ try{ const v = JSON.parse(localStorage.getItem('siteLogM.tkLv') || 'null'); return Array.isArray(v) ? v : ['in']; }catch(e){ return ['in']; } })();
+  function tkLevelsHtml(sp, people, blockFn, pre){
+    let idx = 0;
+    const today0 = faToDate(todayShamsi());
+    const stat = names => { let n = 0, late = 0, open = 0; const seen = new Set();
+      names.forEach(p => (people.get(p) || []).forEach(r => { const id = pick(r,T.id) || r.__admId || ''; if(id && seen.has(id)) return; if(id) seen.add(id); n++;
+        const c = taskStatus(r).cls; if(c !== 'done'){ open++; const d = faToDate(faDateOf(pick(r,T.due) || '')); if(d && today0 && d < today0) late++; } }));
+      return {n, open, late}; };
+    const L = sp.levels || [{k:'in', t:'همه', names: sp.names}];
+    if(L.length < 2) return L.map(x => x.names.map(p => blockFn(p, idx++)).join('')).join('');
+    const S = L.map(x => Object.assign({}, x, stat(x.names)));
+    return '<div class="tkl-tiles" data-tklpre="' + (pre || '') + '">' + S.map(x => '<button type="button" class="tkl-t k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' on' : '') + '" data-tklv="' + x.k + '">'
+          + '<span class="tkl-ic">' + TKL_IC[x.k] + '</span><b>' + esc(x.t) + '</b>'
+          + '<small>' + toFa(x.names.length) + (x.k === 'in' ? ' نفر' : ' طرف') + ' · ' + toFa(x.open) + ' باز</small>'
+          + (x.late ? '<em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '</button>').join('') + '</div>'
+      + S.map(x => '<section class="tkl-sec k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' open' : '') + '" data-tklsec="' + x.k + '">'
+          + '<button type="button" class="tkl-h" data-tklh="' + x.k + '"><span class="tkl-ic">' + TKL_IC[x.k] + '</span><b>' + esc(x.t) + '</b>'
+          + '<u>' + toFa(x.names.length) + '</u>' + (x.late ? '<em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '<i class="tkl-ar"></i></button>'
+          + '<div class="tkl-b">' + x.names.map(p => blockFn(p, idx++)).join('') + '</div></section>').join('');
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-tklv], [data-tklh]'); if(!t) return;
+    const k = t.dataset.tklv || t.dataset.tklh;
+    const root = t.closest('.tkl-tiles') ? t.closest('.tkl-tiles').parentElement : t.closest('.tkl-sec').parentElement;
+    const sec = root.querySelector('[data-tklsec="' + k + '"]'); if(!sec) return;
+    let open;
+    if(t.dataset.tklv){
+      /* کاشی: همان سطح باز، بقیه بسته */
+      root.querySelectorAll('[data-tklsec]').forEach(x => x.classList.toggle('open', x === sec));
+      open = [k];
+      setTimeout(() => { try{ scrollToSection(sec); }catch(err){ sec.scrollIntoView({behavior:'smooth', block:'start'}); } }, 30);
+    }else{
+      sec.classList.toggle('open');
+      open = Array.from(root.querySelectorAll('[data-tklsec].open')).map(x => x.dataset.tklsec);
+    }
+    root.querySelectorAll('[data-tklv]').forEach(x => x.classList.toggle('on', open.indexOf(x.dataset.tklv) !== -1));
+    tklOpen = open; try{ localStorage.setItem('siteLogM.tkLv', JSON.stringify(open)); }catch(err){}
+  });
   /* نام‌های لیست فعالیت در دو دسته: پرسنل (کاربران سامانه) و خارج سازمان
      (کارفرما و پیمانکارانی که سندی در گردش آن‌هاست). people: نام → ردیف‌ها */
   function taskPeopleSplit(people){
@@ -56009,8 +56084,22 @@
     const outNames = Array.from(people.keys()).filter(isOut)
       .sort((a,b) => (a === 'کارفرما' ? -1 : b === 'کارفرما' ? 1 : byName(a,b)));
     const head = (t, n) => '<div class="tk-grp-h"><b>' + t + '</b><u>' + toFa(n) + '</u></div>';
+    /* چهار سطح: پرسنل پروژه، کارفرما، مشاور، پیمانکار */
+    const lvOf = p => {
+      if(p === 'بدون مسئول') return 'in';
+      if(p === 'کارفرما') return 'emp';
+      let t = ''; try{ t = ctrTypeOf(p); }catch(e){}
+      if(staff.has(nameKey(p))){
+        const rl = String((function(){ try{ return roleOf(p); }catch(e){ return ''; } })() || '');
+        return /کارفرما/.test(rl) ? 'emp' : /مشاور/.test(rl) ? 'cons' : 'in';
+      }
+      return t === 'emp' ? 'emp' : t === 'cons' ? 'cons' : 'ctr';
+    };
+    const all = inNames.concat(outNames);
+    const levels = [['in','پرسنل پروژه'],['emp','کارفرما'],['cons','مشاور'],['ctr','پیمانکاران']].map(([k, t]) => ({k, t, names: all.filter(p => lvOf(p) === k)})).filter(L => L.names.length);
     return {
-      inNames, outNames, names: inNames.concat(outNames),
+      levels,
+      inNames, outNames, names: levels.reduce((a, L) => a.concat(L.names), []),
       // سرتیتر دسته پیش از اولین نام هر دسته (فقط وقتی دستهٔ بیرونی هم هست)
       headAt: i => !outNames.length ? ''
         : (i === 0 && inNames.length) ? head('پرسنل', inNames.length)
@@ -56409,13 +56498,16 @@
     const pNames = sp.names;
 
     const bar = document.getElementById('taskJumpBar');
-    if(bar) bar.innerHTML = pNames.map((n,i) =>
-      (i === sp.inNames.length && sp.outNames.length ? '<span class="tk-jsep">خارج سازمان</span>' : '')
-      + '<button type="button" class="mini" data-jumpt="taskP'+i+'">'+esc(n)+'</button>').join('');
+    if(bar){
+      let j = 0;
+      bar.innerHTML = (sp.levels && sp.levels.length > 1)
+        ? sp.levels.map((L, li) => (li ? '<span class="tk-jsep">' + esc(L.t) + '</span>' : '') + L.names.map(n => '<button type="button" class="mini" data-jumpt="taskP' + (j++) + '">' + esc(n) + '</button>').join('')).join('')
+        : pNames.map((n,i) => '<button type="button" class="mini" data-jumpt="taskP'+i+'">'+esc(n)+'</button>').join('');
+    }
 
     if(mode === 'floor') flrList = list;
     box.innerHTML = taskStats(list) + (pNames.length ? '' : '<div class="empty">موردی نیست.</div>')
-      + pNames.map((p,i) => sp.headAt(i) + personBlock(p, i)).join('');
+      + (mode === 'person' ? tkLevelsHtml(sp, people, personBlock, 'open') : pNames.map((p,i) => sp.headAt(i) + personBlock(p, i)).join(''));
     if(window.updateJumpActive) setTimeout(window.updateJumpActive, 60);
     return;
 
@@ -58068,6 +58160,8 @@
     if(!b) return;
     const t = document.getElementById(b.dataset.jumpt);
     if(!t) return;
+    /* اگر نفر داخل سطحِ بسته است، آن سطح هم باز می‌شود */
+    const lsec = t.closest('.tkl-sec'); if(lsec && !lsec.classList.contains('open')){ lsec.classList.add('open'); const tl = lsec.parentElement.querySelector('[data-tklv="' + lsec.dataset.tklsec + '"]'); if(tl) tl.classList.add('on'); }
     // با پرش از نوار بالا، همان بخش خودکار باز می‌شود
     if((t.classList.contains('foldable') || t.classList.contains('secp'))
        && !t.classList.contains('open')){
