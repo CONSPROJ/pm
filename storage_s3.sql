@@ -72,7 +72,11 @@ $$;
 revoke all on function public._pm_s3_ready(integer) from public, anon, authenticated;
 
 -- لینک امضاشده (AWS Signature V4، امضا در query string)
-create or replace function public._pm_s3_presign(p_slot integer, p_method text, p_key text, p_expires integer, p_extra jsonb)
+-- دو شکل نشانی: path-style ‏(host/bucket/key) یا virtual-hosted ‏(bucket.host/key)
+alter table public.pm_storage_cfg add column if not exists get_style text;
+
+drop function if exists public._pm_s3_sign(integer, text, text, integer, jsonb, boolean);
+create function public._pm_s3_sign(p_slot integer, p_method text, p_key text, p_expires integer, p_extra jsonb, p_vhost boolean)
 returns text
 language plpgsql security definer
 set search_path = public, extensions
@@ -86,8 +90,14 @@ begin
   amzdate := to_char(t at time zone 'UTC', 'YYYYMMDD"T"HH24MISS"Z"');
   ds := to_char(t at time zone 'UTC', 'YYYYMMDD');
   scope := ds || '/' || c.region || '/s3/aws4_request';
-  select '/' || public._pm_uri(c.bucket) || '/' || string_agg(public._pm_uri(x), '/' order by n)
+  select string_agg(public._pm_uri(x), '/' order by n)
     into path from unnest(string_to_array(p_key, '/')) with ordinality as u(x, n);
+  if coalesce(p_vhost, false) then
+    host := c.bucket || '.' || host;
+    path := '/' || path;
+  else
+    path := '/' || public._pm_uri(c.bucket) || '/' || path;
+  end if;
   q := jsonb_build_object(
          'X-Amz-Algorithm', 'AWS4-HMAC-SHA256',
          'X-Amz-Credential', c.access_key || '/' || scope,
@@ -104,7 +114,47 @@ begin
   k := hmac(convert_to('aws4_request', 'UTF8'), k, 'sha256');
   return 'https://' || host || path || '?' || qs || '&X-Amz-Signature=' || encode(hmac(convert_to(sts, 'UTF8'), k, 'sha256'), 'hex');
 end $$;
+revoke all on function public._pm_s3_sign(integer, text, text, integer, jsonb, boolean) from public, anon, authenticated;
+
+create or replace function public._pm_s3_presign(p_slot integer, p_method text, p_key text, p_expires integer, p_extra jsonb)
+returns text
+language plpgsql security definer
+set search_path = public, extensions
+as $$
+declare st text;
+begin
+  select get_style into st from public.pm_storage_cfg where id = p_slot;
+  return public._pm_s3_sign(p_slot, p_method, p_key, p_expires, p_extra, p_method in ('GET', 'HEAD') and st = 'vhost');
+end $$;
 revoke all on function public._pm_s3_presign(integer, text, text, integer, jsonb) from public, anon, authenticated;
+
+-- هر دو شکل نشانی برای یک فایل (برای عیب‌یابی و جایگزینی خودکار؛ مثل pm_file_url فقط برای واردشده‌ها)
+create or replace function public.pm_file_diag(p_key text, p_slot integer) returns jsonb
+language plpgsql security definer
+set search_path = public, extensions
+as $$
+declare st text;
+begin
+  if public.pm_me() is null then return jsonb_build_object('ok', false, 'reason', 'login'); end if;
+  if coalesce(p_key, '') !~ '^[a-z]+/[0-9]{4}/[0-9]{2}/[0-9a-f]{24}\.[a-z0-9]{1,8}$' or p_slot not in (1, 2) then
+    return jsonb_build_object('ok', false, 'reason', 'bad'); end if;
+  select get_style into st from public.pm_storage_cfg where id = p_slot;
+  return jsonb_build_object('ok', true, 'style', coalesce(st, 'path'),
+    'path', public._pm_s3_sign(p_slot, 'GET', p_key, 600, '{}'::jsonb, false),
+    'vhost', public._pm_s3_sign(p_slot, 'GET', p_key, 600, '{}'::jsonb, true));
+end $$;
+
+create or replace function public.pm_storage_style(p_slot integer, p_style text) returns jsonb
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if not public.pm_is_admin() then return jsonb_build_object('ok', false, 'reason', 'denied'); end if;
+  update public.pm_storage_cfg set get_style = case when p_style = 'vhost' then 'vhost' else null end where id = p_slot;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.pm_file_diag(text, integer) to anon, authenticated;
+grant execute on function public.pm_storage_style(integer, text) to anon, authenticated;
 
 create or replace function public._pm_lv() returns integer
 language plpgsql stable security definer

@@ -50352,9 +50352,26 @@
      فضای ابری در آیفون «404 page not found» می‌داد. */
   const S3_MIME = {pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic'};
   const S3_BLOB_MAX = 300 * 1048576;
-  async function s3Blob(a, onP){
+  /* بعضی فضاها (مثل لیارا) نشانی‌ای به شکل bucket.host/key می‌خواهند؛ اگر
+     شکل فعلی 404 داد، شکل دیگر امتحان می‌شود */
+  async function s3Fetch(a){
     const u = await s3Url(a.key, a.name, false, a.slot);
-    const r = await fetch(u, {cache:'no-store'});
+    let r = null;
+    try{ r = await fetch(u, {cache:'no-store'}); }catch(e){}
+    if(r && r.ok) return r;
+    try{
+      const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: a.slot === 2 ? 2 : 1});
+      const alt = d.style === 'vhost' ? d.path : d.vhost;
+      const r2 = await fetch(alt, {cache:'no-store'});
+      if(r2.ok){ s3Cache.set(a.key + '|', {u: alt, t: Date.now() + 8 * 60000}); return r2; }
+      if(!r) r = r2;
+    }catch(e){}
+    if(!r){ const e = new Error('اتصال به فضای ابری برقرار نشد'); e.status = 0; throw e; }
+    return r;
+  }
+  async function s3Blob(a, onP){
+    const r = await s3Fetch(a);
+    const u = r.url;
     if(!r.ok){
       const t = String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
       throw new Error('فضای ابری فایل را نداد (کد ' + toFa(r.status) + ')' + (t ? ' — ' + t : ''));
@@ -50466,7 +50483,7 @@
       +   '<label><span>کلید دسترسی (Access Key)</span><input type="text" class="s3-ak" dir="ltr" autocomplete="off"></label>'
       +   '<label><span>کلید محرمانه (Secret Key)</span><input type="password" class="s3-sk" dir="ltr" autocomplete="new-password" placeholder="کلید محرمانه"></label></div>'
       +   '<small class="upc-hint s3-st">در حال خواندن…</small>'
-      +   '<div class="upc-row"><button type="button" class="mini" data-s3-save="1">ذخیرهٔ اتصال</button><button type="button" class="mini" data-s3-test="1">بررسی اتصال</button>'
+      +   '<div class="upc-row"><button type="button" class="mini" data-s3-save="1">ذخیرهٔ اتصال</button><button type="button" class="mini" data-s3-test="1">بررسی اتصال و دانلود</button>'
       +     (slot === 2 ? '<button type="button" class="mini s3-del" data-s3-del="1" hidden>حذف این اتصال</button>' : '')
       +     '<span class="upc-res s3-res"></span></div>'
       + '</div>';
@@ -50514,13 +50531,22 @@
         res.className = 'upc-res s3-res ok'; res.textContent = 'اتصال ذخیره شد ✓';
         s3InfoPaint(sec.closest('.upc'));
       }else{
+        /* آپلود یک فایل آزمایشی، سپس خواندنش با هر دو شکل نشانی؛ شکلی که
+           جواب بدهد برای دانلودها ذخیره می‌شود */
         const f = new File(['pm-test ' + new Date().toISOString()], 'test.txt', {type:'text/plain'});
         const u = await uploadToS3(f, null, 'test', slot);
         const a = attachList(u)[0];
-        const g = await s3Rpc('pm_file_url', {p_key: a.key, p_name: a.name, p_download: false, p_slot: slot});
-        const r = await fetch(g.url, {cache:'no-store'});
-        if(!r.ok) throw new Error('آپلود شد ولی خواندن فایل ناموفق بود (کد ' + toFa(r.status) + ').');
-        res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود آزمایشی موفق بود ✓';
+        res.textContent = 'آپلود شد؛ در حال بررسی دانلود…';
+        const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: slot});
+        const tryGet = async url => { try{ const r = await fetch(url, {cache:'no-store'}); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+          return {ok: r.ok, st: r.status, t}; }catch(e){ return {ok: false, st: 0, t: 'CORS یا اتصال'}; } };
+        const [pa, vh] = await Promise.all([tryGet(d.path), tryGet(d.vhost)]);
+        const want = pa.ok ? 'path' : vh.ok ? 'vhost' : '';
+        if(want && want !== d.style){ await s3Rpc('pm_storage_style', {p_slot: slot, p_style: want}); }
+        s3Cache.clear(); s3ThumbC.clear();
+        const line = (n, x) => n + ': ' + (x.ok ? 'سالم' : 'کد ' + toFa(x.st) + (x.t ? ' (' + x.t + ')' : ''));
+        if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — شکل نشانی: ' + (want === 'vhost' ? 'زیردامنهٔ سطل' : 'مسیر') + (want !== d.style ? ' (تنظیم شد)' : ''); }
+        else throw new Error('آپلود شد ولی دانلود نشد. ' + line('مسیر', pa) + ' · ' + line('زیردامنه', vh));
       }
     }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = friendlyErr(er); }
     sv.disabled = false;
