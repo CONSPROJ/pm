@@ -50365,7 +50365,7 @@
     if(!r){ const e = new Error('direct'); e.big = u; throw e; }
     try{
       const d = await s3Rpc('pm_file_diag', {p_key: a.key, p_slot: a.slot === 2 ? 2 : 1});
-      const alt = d.style === 'vhost' ? d.path : d.vhost;
+      const alt = (d.style !== 'cdom' && d.cdom) || (d.style === 'vhost' ? d.path : d.vhost);
       const r2 = await fetch(alt, {referrerPolicy:'no-referrer'});
       if(r2.ok){ s3Cache.set(a.key + '|', {u: alt, t: Date.now() + 8 * 60000}); return r2; }
     }catch(e){}
@@ -50483,7 +50483,9 @@
       +   '<label><span>نام سطل (Bucket)</span><input type="text" class="s3-bk" dir="ltr" autocomplete="off"></label>'
       +   '<label><span>منطقه (Region)</span><input type="text" class="s3-rg" dir="ltr" placeholder="us-east-1" autocomplete="off"></label>'
       +   '<label><span>کلید دسترسی (Access Key)</span><input type="text" class="s3-ak" dir="ltr" autocomplete="off"></label>'
-      +   '<label><span>کلید محرمانه (Secret Key)</span><input type="password" class="s3-sk" dir="ltr" autocomplete="new-password" placeholder="کلید محرمانه"></label></div>'
+      +   '<label><span>کلید محرمانه (Secret Key)</span><input type="password" class="s3-sk" dir="ltr" autocomplete="new-password" placeholder="کلید محرمانه"></label>'
+      +   '<label><span>دامنهٔ دانلود (اختیاری)</span><input type="text" class="s3-dm" dir="ltr" placeholder="files.example.ir" autocomplete="off"></label></div>'
+      +   '<small class="upc-hint">اگر سرویس‌دهنده دانلود مستقیم را فقط روی دامنهٔ شخصی می‌دهد (مثل لیارا)، دامنه‌ای را که به سطل وصل کرده‌اید اینجا بنویسید.</small>'
       +   '<small class="upc-hint s3-st">در حال خواندن…</small>'
       +   '<div class="upc-row"><button type="button" class="mini" data-s3-save="1">ذخیرهٔ اتصال</button><button type="button" class="mini" data-s3-test="1">بررسی اتصال و دانلود</button>'
       +     (slot === 2 ? '<button type="button" class="mini s3-del" data-s3-del="1" hidden>حذف این اتصال</button>' : '')
@@ -50500,7 +50502,7 @@
       const st = sec.querySelector('.s3-st');
       if(err){ st.className = 'upc-hint s3-st'; st.textContent = friendlyErr(err); return; }
       const v = (s, x) => { const i = sec.querySelector(s); if(i && x && !i.value) i.value = x; };
-      v('.s3-ep', r.endpoint); v('.s3-bk', r.bucket); v('.s3-rg', r.region); v('.s3-ak', r.access);
+      v('.s3-ep', r.endpoint); v('.s3-bk', r.bucket); v('.s3-rg', r.region); v('.s3-ak', r.access); v('.s3-dm', r.domain);
       const sk = sec.querySelector('.s3-sk'); if(sk) sk.placeholder = r.hasSecret ? 'ذخیره شده — برای تغییر، کلید تازه بگذارید' : 'کلید محرمانه';
       const del = sec.querySelector('.s3-del'); if(del) del.hidden = !r.endpoint;
       st.className = 'upc-hint s3-st' + (r.ready ? ' ok' : '');
@@ -50530,6 +50532,8 @@
         if(!/^https:\/\/[^\s/]+/.test(v('.s3-ep'))) throw new Error('نشانی سرویس باید با https:// شروع شود.');
         if(!v('.s3-bk') || !v('.s3-ak')) throw new Error('نام سطل و کلید دسترسی را وارد کنید.');
         await s3Rpc('pm_storage_set', {p_slot: slot, p_endpoint: v('.s3-ep'), p_region: v('.s3-rg'), p_bucket: v('.s3-bk'), p_access: v('.s3-ak'), p_secret: v('.s3-sk')});
+        try{ await s3Rpc('pm_storage_domain', {p_slot: slot, p_domain: v('.s3-dm')}); }
+        catch(er){ if(v('.s3-dm')) throw new Error(er.status === 404 ? 'برای دامنهٔ دانلود، فایل storage_s3.sql (نسخهٔ تازه) باید در Supabase اجرا شود.' : 'دامنهٔ دانلود ذخیره نشد: ' + (er.reason === 'bad' ? 'شکل دامنه درست نیست.' : String(er.message || er))); }
         const sk = sec.querySelector('.s3-sk'); if(sk) sk.value = '';
         s3Cache.clear();
         res.className = 'upc-res s3-res ok'; res.textContent = 'اتصال ذخیره شد ✓';
@@ -50551,13 +50555,18 @@
           im.onload = () => { clearTimeout(tm); ok(true); }; im.onerror = () => { clearTimeout(tm); ok(false); }; im.src = url; });
         const tryGet = async url => { try{ const r = await fetch(url, {referrerPolicy:'no-referrer'}); const t = r.ok ? '' : String(await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
           return {ok: r.ok, st: r.status, t}; }catch(e){ return {ok: false, st: 0, t: ''}; } };
-        const [pi, vi, pa, vh, piR] = await Promise.all([tryImg(d.path, true), tryImg(d.vhost, true), tryGet(d.path), tryGet(d.vhost), tryImg(d.path, false)]);
-        const want = (pa.ok || pi) ? 'path' : (vh.ok || vi) ? 'vhost' : '';
+        const none = Promise.resolve(null);
+        const [pi, vi, pa, vh, piR, ci, ca, ki, ka] = await Promise.all([tryImg(d.path, true), tryImg(d.vhost, true), tryGet(d.path), tryGet(d.vhost), tryImg(d.path, false),
+          d.cdom ? tryImg(d.cdom, true) : none, d.cdom ? tryGet(d.cdom) : none, d.cdom_plain ? tryImg(d.cdom_plain, true) : none, d.cdom_plain ? tryGet(d.cdom_plain) : none]);
+        /* ترتیب ترجیح: هر شکلی که از داخل سایت خوانده شود، بعد هر شکلی که مستقیم باز شود؛ لینک امضاشده بر بی‌امضا مقدم است */
+        const want = pa.ok ? 'path' : vh.ok ? 'vhost' : (ca && ca.ok) ? 'cdom' : (ka && ka.ok) ? 'cdom_plain'
+          : pi ? 'path' : vi ? 'vhost' : ci ? 'cdom' : ki ? 'cdom_plain' : '';
         if(want && want !== d.style){ await s3Rpc('pm_storage_style', {p_slot: slot, p_style: want}); }
         s3Cache.clear(); s3ThumbC.clear();
         const line = (n, im, x) => n + ' — مستقیم: ' + (im ? 'سالم' : 'ناموفق') + '، داخل سایت: ' + (x.ok ? 'سالم' : (x.st ? 'کد ' + toFa(x.st) + (x.t ? ' (' + x.t + ')' : '') : 'مسدود (CORS)'));
-        const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh) + ' · با نشانی سایت (Referer): ' + (piR ? 'سالم' : 'ناموفق');
-        if(want && ((want === 'path' && pa.ok) || (want === 'vhost' && vh.ok))){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — ' + detail; }
+        const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh) + ' · با نشانی سایت (Referer): ' + (piR ? 'سالم' : 'ناموفق')
+          + (d.cdom ? ' · ' + line('دامنهٔ شخصی', ci, ca) + ' · ' + line('دامنهٔ شخصی بی‌امضا', ki, ka) : '');
+        if(want && ((want === 'path' && pa.ok) || (want === 'vhost' && vh.ok) || (want === 'cdom' && ca && ca.ok) || (want === 'cdom_plain' && ka && ka.ok))){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — ' + detail; }
         else if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'فایل‌ها باز می‌شوند ✓ ولی خواندن از داخل سایت (CORS برای GET) بسته است؛ دانلود با باز شدن در مرورگر انجام می‌شود. برای دانلود مستقیم، در CORS سطل متد GET را هم اضافه کنید. — ' + detail; }
         else{
           /* سرور خودش از فضای ابری می‌پرسد تا جواب واقعی (بدون محدودیت مرورگر) دیده شود */
