@@ -94,7 +94,9 @@ begin
     into path from unnest(string_to_array(p_key, '/')) with ordinality as u(x, n);
   if coalesce(p_vhost, false) then
     host := c.bucket || '.' || host;
-    path := '/' || path;
+    path := '/' || coalesce(path, '');
+  elsif coalesce(path, '') = '' then
+    path := '/' || public._pm_uri(c.bucket);
   else
     path := '/' || public._pm_uri(c.bucket) || '/' || path;
   end if;

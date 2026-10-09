@@ -50553,7 +50553,27 @@
         const detail = line('مسیر', pi, pa) + ' · ' + line('زیردامنه', vi, vh);
         if(want && ((want === 'path' && pa.ok) || (want === 'vhost' && vh.ok))){ res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود سالم است ✓ — ' + detail; }
         else if(want){ res.className = 'upc-res s3-res ok'; res.textContent = 'فایل‌ها باز می‌شوند ✓ ولی خواندن از داخل سایت (CORS برای GET) بسته است؛ دانلود با باز شدن در مرورگر انجام می‌شود. برای دانلود مستقیم، در CORS سطل متد GET را هم اضافه کنید. — ' + detail; }
-        else throw new Error('آپلود شد ولی دانلود نشد. ' + detail);
+        else{
+          /* سرور خودش از فضای ابری می‌پرسد تا جواب واقعی (بدون محدودیت مرورگر) دیده شود */
+          let srv = '';
+          try{
+            res.textContent = 'دانلود از مرورگر نشد؛ در حال پرسیدن مستقیم از سرور…';
+            const pr = await s3Rpc('pm_storage_probe', {p_slot: slot, p_key: a.key});
+            let rr = null;
+            for(let i = 0; i < 10; i++){
+              await new Promise(z => setTimeout(z, 1200));
+              rr = (await s3Rpc('pm_storage_probe_result', {p_ids: pr.ids})).res || {};
+              if(!Object.values(rr).some(v => v.wait)) break;
+            }
+            const NM = {list_path:'فهرست (مسیر)', list_vhost:'فهرست (زیردامنه)', get_path:'فایل (مسیر)', get_vhost:'فایل (زیردامنه)'};
+            srv = '\n\nجواب فضای ابری به سرور:\n' + Object.keys(NM).filter(k => rr[k]).map(k => {
+              const v = rr[k];
+              return '• ' + NM[k] + ': ' + (v.wait ? 'بی‌جواب' : v.err ? 'خطا ' + v.err : 'کد ' + v.st + ' — ' + String(v.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140));
+            }).join('\n');
+          }catch(er){ srv = '\n\n(بررسی از سمت سرور: ' + friendlyErr(er) + ')'; }
+          res.style.whiteSpace = 'pre-line'; res.style.direction = 'rtl';
+          throw new Error('آپلود شد ولی دانلود نشد. ' + detail + srv);
+        }
       }
     }catch(er){ res.className = 'upc-res s3-res bad'; res.textContent = friendlyErr(er); }
     sv.disabled = false;
