@@ -1599,6 +1599,7 @@
   .dz-fe{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;color:var(--muted);}
   .dz-fe:hover{background:var(--field);color:var(--ink);} .dz-fe svg{width:15px;height:15px;}
   .dz-ovf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 6px;}
+  .dsg-bar{display:flex;align-items:center;gap:8px;margin:0 0 10px;} .dsg-l{font-size:11.5px;color:var(--muted);}
   .dsg-seg{display:flex;align-items:center;gap:4px;margin:0 0 10px;font-size:11.5px;color:var(--muted);}
   .dsg-seg span{margin-inline-end:4px;}
   .dsg-seg button{all:unset;cursor:pointer;height:28px;padding:0 12px;border-radius:99px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);}
@@ -3210,9 +3211,18 @@
   }
   .avs{
     cursor:pointer;border:0;background:transparent;font-family:var(--f);
-    font-size:11.5px;font-weight:600;color:var(--muted);
-    padding:6px 14px;border-radius:999px;transition:background .16s ease,color .16s ease;
+    font-size:12px;font-weight:600;color:var(--muted);
+    padding:6px 13px;border-radius:999px;transition:background .16s ease,color .16s ease;
+    display:inline-flex;align-items:center;gap:6px;
   }
+  .avs svg{width:15px;height:15px;flex:0 0 15px;}
+  .avb-sw{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 6px;border-radius:999px;font-size:12px;font-weight:600;color:var(--muted);}
+  .avb-sw:hover{color:var(--ink);}
+  .avb-sw .sw{position:relative;width:30px;height:18px;border-radius:99px;background:var(--line);transition:background .18s ease;flex:0 0 30px;}
+  .avb-sw .sw i{position:absolute;top:2px;inset-inline-start:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .18s ease;}
+  .avb-sw.on{color:var(--ink);} .avb-sw.on .sw{background:var(--sky);} .avb-sw.on .sw i{inset-inline-start:14px;}
+  .avb-sw:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
+  .admview-bar.no-rv .avb-sw{display:none;}
   .avs.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px -4px rgba(20,25,45,.5);}
   .admview-hint{font-size:10.5px;color:var(--muted);}
   @media(max-width:560px){ .admview-hint{display:none;} }
@@ -20982,15 +20992,13 @@
       <div id="admNewBox"></div>
     </div>
     <div class="admview-bar" id="admViewBar">
-      <div class="admview-seg" role="group" aria-label="نمای فهرست دفتر فنی">
-        <button type="button" class="avs" data-admview="fast">فهرست سریع</button>
-        <button type="button" class="avs" data-admview="card">کارتی</button>
+      <div class="admview-seg" role="group" aria-label="نحوهٔ نمایش">
+        <button type="button" class="avs" data-admview="fast" title="هر مورد یک سطر؛ همه در یک نگاه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>فهرست</span></button>
+        <button type="button" class="avs" data-admview="card" title="هر مورد کارت کامل با جزئیات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span>کارت</span></button>
       </div>
-      <div class="admview-seg" role="group" aria-label="دسته‌بندی دفتر فنی">
-        <button type="button" class="avs" data-admgroup="flat">فقط ابلاغ</button>
-        <button type="button" class="avs" data-admgroup="nested">ابلاغ و وضعیت بررسی</button>
-      </div>
-      <span class="admview-hint">فهرست سریع همهٔ موارد را در یک نگاه نشان می‌دهد.</span>
+      <button type="button" class="avb-sw" data-admgroupsw="1" role="switch" aria-checked="false" title="داخل هر گروهِ ابلاغ، موارد به تفکیک مرحلهٔ رسیدگی (بررسی داخلی، نزد کارفرما، …) هم بیایند">
+        <span class="sw" aria-hidden="true"><i></i></span><span>تفکیک رسیدگی</span>
+      </button>
     </div>
     <div id="adminView"><div class="empty">برای دیدن موارد دفتر فنی، دکمهٔ «نمایش» را بزنید.</div></div>
   </div>
@@ -50195,6 +50203,7 @@
     if(!document.getElementById('secAdm' + k) || k === 'chore') k = 'statement';
     admCat = k;
     try{ localStorage.setItem('admCat', k); }catch(e){}
+    try{ window.__admBarPaint && window.__admBarPaint(); }catch(e){}
     box.dataset.cat = k;
     box.querySelectorAll('[data-admcat]').forEach(c => {
       const on = c.dataset.admcat === k;
@@ -51065,7 +51074,7 @@
      هر سند با ستون «طبقه» به یک طبقه (یا کل ساختمان) بسته است. نمای «طبقه»
      یک جدول خلاصه می‌دهد (برای هر طبقه: چند نقشه، چندتا تأییدشده، چندتا در
      گردش، چندتا اصلاحی) و زیرش دسته‌های هر طبقه، از بام تا زیرزمین. */
-  let dsGrpMode = (function(){ try{ return localStorage.getItem('siteLogM.dsGrp') || 'hold'; }catch(e){ return 'hold'; } })();
+  let dsGrpMode = (function(){ try{ return localStorage.getItem('siteLogM.dsGrp2') || 'floor'; }catch(e){ return 'floor'; } })();
   function dsFloorKeys(r){
     const v = String(pick(r,AD.dFloor) || '').trim();
     if(!v) return [''];
@@ -51099,7 +51108,7 @@
   document.addEventListener('click', e => {
     const g = e.target.closest && e.target.closest('[data-dsgrp]');
     if(g){
-      dsGrpMode = g.dataset.dsgrp; try{ localStorage.setItem('siteLogM.dsGrp', dsGrpMode); }catch(err){}
+      dsGrpMode = g.dataset.dsgrp; try{ localStorage.setItem('siteLogM.dsGrp2', dsGrpMode); }catch(err){}
       try{ applyAdminFilters(); }catch(err){}
       return;
     }
@@ -51189,8 +51198,11 @@
     }
     /* سند طراحی: دسته‌ها بر اساس این‌که سند الان دست کیست، یا به تفکیک طبقه */
     if(kind === 'design'){
-      const tg = '<div class="dsg-seg" role="tablist"><span>دسته‌بندی</span>'
-        + [['hold','نزد کیست'],['floor','طبقه']].map(([k, t]) => '<button type="button" role="tab" data-dsgrp="' + k + '"' + (dsGrpMode === k ? ' class="on" aria-selected="true"' : '') + '>' + t + '</button>').join('') + '</div>';
+      const SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+      const tg = '<div class="dsg-bar"><span class="dsg-l">گروه‌بندی اسناد</span><div class="admview-seg" role="group" aria-label="گروه‌بندی اسناد طراحی">'
+        + [['floor','طبقه', SVG + '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16"/></svg>', 'اسناد هر طبقه با هم، از بالای ساختمان تا زیرزمین'],
+           ['hold','مرحلهٔ گردش', SVG + '<path d="M4 12h4l3-7 4 14 3-7h2"/></svg>', 'بر اساس این‌که سند الان کجای گردش است: داخل پروژه، نزد مشاور، کارفرما، پیمانکار یا بسته‌شده']]
+          .map(([k, t, ic, tip]) => '<button type="button" class="avs' + (dsGrpMode === k ? ' on' : '') + '" data-dsgrp="' + k + '" title="' + tip + '"' + (dsGrpMode === k ? ' aria-pressed="true"' : '') + '>' + ic + '<span>' + t + '</span></button>').join('') + '</div></div>';
       if(dsGrpMode === 'floor'){
         const by = new Map();
         rows.forEach(r => { const k = dsFloorKeys(r)[0]; if(!by.has(k)) by.set(k, []); by.get(k).push(r); });
@@ -52055,15 +52067,20 @@
     const paint = () => {
       bar.querySelectorAll('[data-admview]').forEach(b =>
         b.classList.toggle('on', b.dataset.admview === admView));
-      bar.querySelectorAll('[data-admgroup]').forEach(b =>
-        b.classList.toggle('on', b.dataset.admgroup === admGroupMode));
+      bar.querySelectorAll('[data-admgroupsw]').forEach(b => {
+        const on = admGroupMode === 'nested';
+        b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+      /* کلید تفکیک فقط برای دسته‌هایی که رسیدگی دارند معنا دارد */
+      let cat = ''; try{ cat = admCat; }catch(e2){}
+      bar.classList.toggle('no-rv', !!cat && ADM_BY_REVIEW.indexOf(cat) === -1);
     };
+    window.__admBarPaint = paint;
     paint();
     bar.addEventListener('click', e => {
-      const gb = e.target.closest('[data-admgroup]');
+      const gb = e.target.closest('[data-admgroupsw]');
       if(gb){
-        if(gb.dataset.admgroup === admGroupMode) return;
-        admGroupMode = gb.dataset.admgroup;
+        admGroupMode = admGroupMode === 'nested' ? 'flat' : 'nested';
         try{ localStorage.setItem('admGroupMode', admGroupMode); }catch(e2){}
         paint();
         try{ applyAdminFilters(); }catch(e2){}
