@@ -1264,7 +1264,21 @@
     -webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);
   }
   .dock-btn.ghost:hover{color:var(--ink);border-color:var(--ink);}
-  .dock-in .send{flex:0 0 auto;}
+  /* نوار ثبت: یک ردیف تمام‌عرض و مات بالای نوار پایین؛ «ثبت گزارش» پهن، «کپی» کوچک کنارش.
+     پیش‌تر دکمهٔ ثبت جمع می‌شد و دو دکمه وسط فرم روی کادرها شناور می‌ماندند. */
+  .dock-in .send{flex:1 1 auto;}
+  @media(max-width:640px){
+    .dock .dock-in{
+      max-width:none;padding:8px 12px;flex-wrap:nowrap;
+      background:color-mix(in srgb, var(--surface) 90%, transparent);
+      -webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);
+      border-top:1px solid var(--line);
+      pointer-events:auto;
+    }
+    .dock .dock-btn.send{box-shadow:none;}
+    .dock .dock-btn.ghost{box-shadow:none;background:var(--field);border-color:transparent;}
+  }
+  [data-theme="dark"] .dock .dock-in{background:color-mix(in srgb, #15181d 92%, transparent);}
 
   @media(max-width:430px){
     .dock-in{padding:10px 12px;gap:8px;}
@@ -20793,6 +20807,19 @@
   .aud-m small{font-size:10.5px;color:var(--muted);}
   .aud-cs{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
   .aud-c{font-size:10.5px;color:var(--ink);word-break:break-word;} .aud-c u{text-decoration:none;color:var(--muted);font-family:var(--m);}
+
+  /* انتخاب قرارداد هنگام پر شدن خودکار */
+  #ctChooseModal{position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,20,30,.45);}
+  #ctChooseModal[hidden]{display:none;}
+  .ctch{width:100%;max-width:440px;background:var(--surface);border-radius:18px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;}
+  .ctch .mc-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line);}
+  .ctch-l{display:flex;flex-direction:column;gap:6px;padding:12px;max-height:60vh;overflow:auto;}
+  .ctch-i{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--field);border:1px solid transparent;}
+  .ctch-i:hover{border-color:var(--sky);}
+  .ctch-i b{font-size:13px;font-weight:800;} .ctch-i small{font-size:11px;color:var(--muted);}
+  .ctch-i.none{background:none;border:1px dashed var(--line);}
+  .ct-flash{animation:ctFlash 1.2s ease 1;}
+  @keyframes ctFlash{0%{box-shadow:0 0 0 0 var(--sky-soft);background:var(--sky-soft);}100%{box-shadow:none;}}
 
 </style>
 <script>
@@ -42343,7 +42370,7 @@
      ردیف‌ها، همین جست‌وجو و همین رفتار صفحه‌کلید به کار می‌رود:
      عکس برای پرسنل، نشان حرفی برای پیمانکار و مشاور، نقش زیر نام،
      پررنگ شدن بخشِ جست‌وجوشده و «اخیر» بالای فهرست. */
-  const PK_ENT = /^(contractorList|contractPartyList|letterPartyList|mtNameList|ownerList|dsAtList|engineerList)$/;
+  const PK_ENT = /^(contractorList|contractPartyList|letterPartyList|mtNameList|ownerList|dsAtList|engineerList|mnWhoList|designerList)$/;
   const PK_RECENT = /^(contractorList|contractPartyList|letterPartyList|mtNameList|ownerList|dsAtList|engineerList|comboTaskWho|pcombo)$/;
   /* نویسه‌به‌نویسه یکسان‌سازی می‌شود تا جای بخش پیداشده در متن اصلی بماند */
   function pkNormCh(ch){
@@ -42774,7 +42801,18 @@
     const dl = document.getElementById(popInput.getAttribute('data-list'));
     let opts = dl ? Array.from(dl.options).map(o => ({v: o.value, g: o.getAttribute('data-g') || '', s: o.getAttribute('data-s') || ''})) : [];
     /* فهرست نام پیمانکار و طرف قرارداد: فقط نام اصلی هر پرونده، بی تکرار */
-    if(dl && /^(contractorList|contractPartyList|letterPartyList|mtNameList)$/.test(dl.id) && typeof ctrCanon === 'function'){
+    /* فرم گزارش روزانه: همان نام‌های کوتاهِ همیشگی (مثلاً فامیلی)، نه نام روی کارت؛
+       فقط نام‌های قراردادی، مشاور، کارفرما و پیمانکاران حذف‌شده نمی‌آیند */
+    if(dl && dl.id === 'contractorList' && popInput.closest && popInput.closest('#panelWrite')){
+      let cnK = new Set(); try{ ctrContacts.forEach(c => { if(c && c.cn && normName(c.cn) !== normName(c.name)) cnK.add(normName(c.cn)); }); }catch(e){}
+      const seen = new Set();
+      opts = opts.filter(o => {
+        const k = normName(o.v); if(!k || seen.has(k) || cnK.has(k)) return false;
+        try{ if(ctrIsHidden(o.v)) return false; const t = ctrTypeOf(o.v); if(t === 'cons' || t === 'emp') return false; }catch(e){}
+        seen.add(k); return true;
+      });
+    }
+    else if(dl && /^(contractorList|contractPartyList|letterPartyList|mtNameList)$/.test(dl.id) && typeof ctrCanon === 'function'){
       const seen = new Set();
       opts = opts.filter(o => { try{ return !ctrIsHidden(o.v); }catch(e){ return true; } })
         .map(o => { let c = o.v; try{ c = ctrCanon(canonicalName(o.v)); const sp = splitParts(c); if(sp && dl.id === 'contractorList') c = sp.n; }catch(e){} return {v: c, g: o.g, s: o.s}; })
@@ -49191,12 +49229,27 @@
   // یک بند صورتجلسه با مسئول اقدام و تاریخ اقدام
   /* فهرست ترکیبی نفرات پروژه و پیمانکاران، برای «مسئول انجام» بندها */
   /* طراح سند: نفرات خود پروژه (وقتی طراحی داخل پروژه است) یا مشاور و شرکت طراح */
+  /* هر پیمانکار فقط با «نام روی کارت»؛ نام‌های یکی‌شده (مستعار، قراردادی، فامیلی) جدا نمی‌آیند */
+  function ctrCardNames(ids){
+    const seen = new Set(), out = [];
+    (ids || ['contractorList', 'contractPartyList']).forEach(id => {
+      const d = document.getElementById(id); if(!d) return;
+      Array.from(d.options).forEach(o => {
+        let c = String(o.value || '').trim(); if(!c) return;
+        try{ if(ctrIsHidden(c)) return; }catch(e){}
+        try{ c = ctrCanon(canonicalName(c)); const sp = splitParts(c); if(sp) c = sp.n; }catch(e){}
+        const k = normName(c); if(!k || seen.has(k)) return;
+        seen.add(k); out.push(c);
+      });
+    });
+    return out;
+  }
   function designerListEnsure(){
     let dl = document.getElementById('designerList');
     if(!dl){ dl = document.createElement('datalist'); dl.id = 'designerList'; document.body.appendChild(dl); }
     const people = (function(){ try{ return listNames(); }catch(e){ return []; } })();
-    const ext = Array.from((document.getElementById('contractPartyList') || {options: []}).options || []).map(o => o.value).filter(Boolean)
-      .concat((adminAll || []).filter(x => x.kind === 'design').map(x => pick(x.row, AD.dParty)).filter(Boolean));
+    const ext = ctrCardNames(['contractPartyList'])
+      .concat((adminAll || []).filter(x => x.kind === 'design').map(x => { let v = pick(x.row, AD.dParty); try{ v = ctrCanon(canonicalName(v)); }catch(e){} return v; }).filter(Boolean));
     const seen = new Set();
     const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
     dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + ext.map(n => opt(n, 'مشاور و شرکت طراح')).join('');
@@ -49205,10 +49258,10 @@
     let dl = document.getElementById('mnWhoList');
     if(!dl){ dl = document.createElement('datalist'); dl.id = 'mnWhoList'; document.body.appendChild(dl); }
     const people = (function(){ try{ return listNames(); }catch(e){ return []; } })();
-    const ctr = Array.from((document.getElementById('contractorList') || {options: []}).options || []).map(o => o.value).filter(Boolean);
+    const ctr = ctrCardNames();
     const seen = new Set();
-    dl.innerHTML = people.concat(ctr).filter(n => { const k = nameKey(n); if(seen.has(k)) return false; seen.add(k); return true; })
-      .map(n => '<option value="' + esc(n) + '">').join('');
+    const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
+    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + ctr.map(n => opt(n, 'پیمانکاران')).join('');
   }
   function bandBlock(d){
     d = d || {};
@@ -50395,22 +50448,94 @@
     if(fs && fs.length) handleUpload(box, Array.from(fs));
   });
 
-  // با انتخاب شمارهٔ قرارداد، موضوع و طرف قرارداد خودکار پر می‌شوند
-  document.addEventListener('change', e => {
+  /* ====== پر شدن خودکار طرف قرارداد، شماره و نام قرارداد ======
+     هر کدام از سه کادر (طرف، شماره، نام قرارداد) پر شود، دو تای دیگر از
+     قراردادهای ثبت‌شده و صورت وضعیت‌های قبلی پر می‌شوند. اگر چند قرارداد
+     جور دربیاید، فهرست کوتاهی برای انتخاب باز می‌شود. چیزی که کاربر
+     خودش نوشته دست نمی‌خورد؛ فقط کادرهای خالی یا خودکارپرشده. */
+  const CT_FIELDS = {
+    statement: {n:'a-sCno', s:'a-sName', p:'a-sParty'},
+    contract:  {n:'a-cNo',  s:'a-cTitle', p:'a-cParty', s2:'a-cSubject'}
+  };
+  function ctIndex(){
+    const out = [], seen = new Set();
+    const canonP = v => { let c = String(v || '').trim(); try{ c = ctrCanon(canonicalName(c)); const sp = splitParts(c); if(sp) c = sp.n; }catch(e){} return c; };
+    const add = (n, s, p, src) => {
+      n = String(n || '').trim(); s = String(s || '').trim(); p = canonP(p);
+      if(!n && !s) return;
+      const k = toEn(n).toLowerCase() + '|' + normName(s) + '|' + normName(p);
+      if(seen.has(k)) return; seen.add(k);
+      out.push({n, s, p, src});
+    };
+    const all = (typeof adminAll !== 'undefined' && Array.isArray(adminAll)) ? adminAll : [];
+    all.filter(x => x.kind === 'contract').forEach(x => add(pick(x.row, AD.cNo), pick(x.row, AD.cTitle) || pick(x.row, AD.cSubject), pick(x.row, AD.cParty), 'قرارداد'));
+    try{ CONTRACT_SEED.forEach(x => add(x.n, x.s, x.p, 'قرارداد')); }catch(e){}
+    all.filter(x => x.kind === 'statement').forEach(x => add(pick(x.row, AD.sCno), pick(x.row, AD.sName), pick(x.row, AD.sParty), 'صورت وضعیت'));
+    /* ردیف‌هایی که فقط از صورت وضعیت آمده‌اند و همان شماره را دارند حذف می‌شوند */
+    const withN = new Set(out.filter(x => x.n && x.src === 'قرارداد').map(x => toEn(x.n).toLowerCase()));
+    return out.filter(x => x.src === 'قرارداد' || !x.n || !withN.has(toEn(x.n).toLowerCase()));
+  }
+  const ctSame = {
+    n: (a, b) => !!a && !!b && toEn(a).toLowerCase().replace(/\s+/g, '') === toEn(b).toLowerCase().replace(/\s+/g, ''),
+    s: (a, b) => !!a && !!b && normName(a) === normName(b),
+    p: (a, b) => { if(!a || !b) return false; try{ return sameEntity(a, b); }catch(e){ return normName(a) === normName(b); } }
+  };
+  function ctChoose(cands, title){
+    return new Promise(res => {
+      let m = document.getElementById('ctChooseModal');
+      if(!m){ m = document.createElement('div'); m.id = 'ctChooseModal'; m.className = 'modal-bg'; document.body.appendChild(m); }
+      m.innerHTML = '<div class="modal-card ctch"><div class="mc-head"><b class="mc-title">' + esc(title) + '</b><button type="button" class="ico-btn" data-ctch="-1">✕</button></div>'
+        + '<div class="ctch-l">' + cands.map((c, i) => '<button type="button" class="ctch-i" data-ctch="' + i + '"><b>' + esc(c.s || '—') + '</b>'
+          + '<small>' + [c.n ? 'شماره ' + toFa(c.n) : '', c.p, c.src === 'صورت وضعیت' ? 'از صورت وضعیت‌های قبلی' : ''].filter(Boolean).map(esc).join(' · ') + '</small></button>').join('')
+        + '<button type="button" class="ctch-i none" data-ctch="-1"><b>هیچ‌کدام</b><small>خودم پر می‌کنم</small></button></div></div>';
+      try{ closePop(); }catch(e){}
+      m.hidden = false;
+      const done = v => { m.hidden = true; m.removeEventListener('click', on); res(v); };
+      const on = e => { const b = e.target.closest('[data-ctch]'); if(b) done(+b.dataset.ctch); else if(e.target === m) done(-1); };
+      m.addEventListener('click', on);
+    });
+  }
+  document.addEventListener('change', async e => {
     const el = e.target;
     if(!el || !el.classList) return;
-    const isC = el.classList.contains('a-cNo'), isS = el.classList.contains('a-sCno');
-    if(!isC && !isS) return;
-    const hit = contractByNo(el.value);
-    if(!hit) return;
-    const host = el.closest('[data-id], [data-new-kind]');
-    if(!host) return;
-    const set = (cls, v) => {
-      const t = host.querySelector('.' + cls);
-      if(t && !t.value.trim()) t.value = v;
-    };
-    if(isC){ set('a-cParty', hit.p); set('a-cTitle', hit.s); set('a-cSubject', hit.s); }
-    else   { set('a-sParty', hit.p); set('a-sName', hit.s); }
+    let kind = '', key = '';
+    for(const k of Object.keys(CT_FIELDS)) for(const f of ['n', 's', 'p']) if(el.classList.contains(CT_FIELDS[k][f])){ kind = k; key = f; }
+    if(!kind || el.__ctFilling) return;
+    const v = String(el.value || '').trim();
+    /* همان مقدار یک بار بررسی می‌شود (انتخاب از فهرست و بعد ترک کادر دو رویداد می‌دهند) */
+    if(el.__ctLast === v) return;
+    el.__ctLast = v;
+    el.dataset.ctAuto = '';                       // کاربر خودش این کادر را عوض کرد
+    if(!v) return;
+    const host = el.closest('[data-id], [data-new-kind], .af') || document;
+    const F = CT_FIELDS[kind];
+    const get = f => host.querySelector('.' + F[f]);
+    const free = f => { const t = get(f); return t && (!t.value.trim() || t.dataset.ctAuto === '1'); };
+    const targets = ['n', 's', 'p'].filter(f => f !== key && free(f));
+    if(!targets.length) return;
+    /* کادرهایی که کاربر خودش پر کرده هم باید با قرارداد بخوانند */
+    const fixed = ['n', 's', 'p'].filter(f => f !== key && !free(f) && get(f) && get(f).value.trim());
+    let cands = ctIndex().filter(c => ctSame[key](c[key], v) && fixed.every(f => !c[f] || ctSame[f](c[f], get(f).value.trim())));
+    /* فقط گزینه‌هایی که چیزی برای پر کردن دارند، و بی‌تکرار از نظر همان کادرها */
+    const sig = c => targets.map(f => f === 'n' ? toEn(c[f] || '') : normName(c[f] || '')).join('|');
+    const uniq = new Map(); cands.filter(c => targets.some(f => c[f])).forEach(c => { if(!uniq.has(sig(c))) uniq.set(sig(c), c); });
+    cands = Array.from(uniq.values());
+    if(!cands.length) return;
+    let pickC = cands[0];
+    /* برای قرارداد تازه، پر شدن از روی «طرف» همیشه پرسیده می‌شود (شاید قرارداد جدیدی است) */
+    if(cands.length > 1 || (kind === 'contract' && key === 'p')){
+      const i = await ctChoose(cands, cands.length > 1 ? 'کدام قرارداد؟' : 'همین قرارداد است؟');
+      if(i < 0) return;
+      pickC = cands[i];
+    }
+    targets.forEach(f => {
+      const t = get(f); if(!t || !pickC[f]) return;
+      t.__ctFilling = true; t.value = pickC[f]; t.dataset.ctAuto = '1';
+      t.classList.remove('ct-flash'); void t.offsetWidth; t.classList.add('ct-flash');
+      t.dispatchEvent(new Event('input', {bubbles:true}));
+      t.__ctFilling = false;
+    });
+    if(kind === 'contract' && F.s2 && pickC.s){ const s2 = host.querySelector('.' + F.s2); if(s2 && !s2.value.trim()){ s2.value = pickC.s; s2.dataset.ctAuto = '1'; } }
   }, true);
 
   /* ردیف انتخاب‌شده‌ها در فرم مسئولین بررسی داخلی */
