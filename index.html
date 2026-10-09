@@ -46937,6 +46937,7 @@
     /* بار اول، اگر مسیر اسکرول دارد، مرحلهٔ فعلی وسط دیده شود */
     const toNow = t => {
       if(t.dataset.msc) return;
+      if(!t.clientWidth) return;          // هنوز پنهان است (کارت بسته)؛ بعد از باز شدن دوباره سنجیده می‌شود
       t.dataset.msc = '1';
       if(t.scrollWidth - t.clientWidth <= 4) return;
       const now = t.querySelector('.ms-pt.now') || t.querySelector('.ms-pt.last');
@@ -46944,11 +46945,17 @@
       const a = now.getBoundingClientRect(), b = t.getBoundingClientRect();
       t.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2);
     };
-    const scan = () => document.querySelectorAll('.adm-ms .ms-track').forEach(t => { mark(t); toNow(t); mark(t); });
+    /* مسیری که پنهان ساخته شده (کارت بسته)، وقتی پهنا گرفت سنجیده می‌شود */
+    const ro = (typeof ResizeObserver === 'function') ? new ResizeObserver(es => es.forEach(en => { const t = en.target; if(t.clientWidth){ mark(t); toNow(t); mark(t); if(t.dataset.msc) ro.unobserve(t); } })) : null;
+    const scan = () => document.querySelectorAll('.adm-ms .ms-track').forEach(t => { mark(t); toNow(t); mark(t); if(ro && !t.dataset.msc && !t.dataset.msro){ t.dataset.msro = '1'; ro.observe(t); } });
     let tm = 0;
-    new MutationObserver(() => { clearTimeout(tm); tm = setTimeout(scan, 120); })
+    /* محدودکننده، نه تأخیر: اگر جایی از صفحه مدام عوض شود، سنجش باز هم انجام می‌شود */
+    const later = ms => { if(tm) return; tm = setTimeout(() => { tm = 0; scan(); }, ms); };
+    new MutationObserver(() => later(150))
       .observe(document.body, {childList:true, subtree:true});
-    window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(scan, 150); });
+    /* باز شدن کارت یا «جزئیات بیشتر» فقط کلاس عوض می‌کند، نه DOM را */
+    document.addEventListener('click', () => later(220), true);
+    window.addEventListener('resize', () => later(150));
     document.addEventListener('scroll', e => {
       if(e.target && e.target.classList && e.target.classList.contains('ms-track')) mark(e.target);
     }, true);
@@ -52281,7 +52288,7 @@
       const h = dsHolderTxt(x, rev.__r);
       /* نفرِ داخل پروژه عکسش روی نقطه است؛ بقیه «نزد …» زیر تاریخ */
       const ava = (dsSideAt(x, rev.__r) === 'in' && (x.at || (i === 0 && x.by))) ? (x.at || x.by) : '';
-      return {k: kOf(x), t: x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : ''), d: x.d || '',
+      return {k: kOf(x), t: x.lbl || (x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : '')), d: x.d || '',
         rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava,
         sub: (!ava && h) ? dsHolderLink(dsSideAt(x, rev.__r), x.at || '', dsHolderShort(x, rev.__r)) : '', last: !open && i === L.length - 1, st: x.st};
     });
@@ -52309,6 +52316,22 @@
     const T = dsTrackItems(rev, isCur);
     if(!T) return '';
     return msTrackHtml(head || msHeadHtml('Rev ' + toFa(rev.rev) + (rev.sup ? ' · جایگزین‌شده' : ''), '', '', ''), T.items, 'ds-ms');
+  }
+  /* گردش کل سند، مثل صورت وضعیت و قرارداد: همهٔ ویرایش‌ها پشت سر هم روی یک خط؛
+     هر ویرایش تازه با «Rev N» شروع می‌شود */
+  function dsAllFlowHtml(r, revs){
+    if(!revs.length) return '';
+    const cur = revs[revs.length - 1], log = [];
+    revs.forEach((rv, ri) => (rv.log || []).filter(x => x && x.st).forEach((x, i) => {
+      const y = Object.assign({}, x);
+      if(i === 0 && revs.length > 1) y.lbl = 'Rev ' + toFa(rv.rev) + (x.st === 'دریافت' ? '' : ' · ' + x.st);
+      log.push(y);
+    }));
+    const all = {rev: cur.rev, sup: cur.sup, log};
+    try{ Object.defineProperty(all, '__r', {value: r, enumerable: false, configurable: true}); }catch(e){}
+    const first = log[0] && log[0].d, end = (dsDone((log[log.length - 1] || {}).st) && log[log.length - 1].d) || todayShamsi();
+    const tot = first ? faDiff(first, end) : null;
+    return dsFlowHtml(all, true, msHeadHtml('گردش کل سند' + (revs.length > 1 ? ' · ' + toFa(revs.length) + ' ویرایش' : ''), '', '', tot != null && tot >= 0 ? toFa(tot) + ' روز' : ''));
   }
   /* نمودار چرخش همهٔ ویرایش‌ها: هر ویرایش یک نوار، تکه‌ها به نسبت روزهای هر مرحله */
   function dsCycleChartHtml(revs){
@@ -52354,7 +52377,7 @@
       return '<div class="dz-moreb">'
         + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
         + (cur.note ? '<p class="dz-note"><u>یادداشت این ویرایش</u>' + esc(cur.note) + '</p>' : '')
-        + '<div class="dz-hist"><b>گردش هر ویرایش</b>'
+        + (revs.length < 2 ? '' : '<div class="dz-hist"><b>گردش هر ویرایش</b>'
             + '<div class="dz-ov cur"><span class="dz-ovt">Rev ' + esc(toFa(cur.rev)) + ' · جاری</span><div class="dz-flow">'
             + (function(){ try{ const cyc = dsCycleDays(cur, true); return dsFlowHtml(cur, true, msHeadHtml('گردش ویرایش ' + toFa(cur.rev), '', '', cyc != null ? toFa(cyc) + ' روز' : '')); }catch(e){ return ''; } })()
             + '</div></div>'
@@ -52363,7 +52386,7 @@
                 return '<div class="dz-ov"><span class="dz-ovt">Rev ' + esc(toFa(rv.rev)) + (rv.date ? ' · ' + esc(toFa(admDate(rv.date))) : '') + '</span>'
                   + dsFlowHtml(rv, false) + '</div>' + (rv.note ? '<p class="dz-note"><u>یادداشت Rev ' + esc(rv.rev) + '</u>' + esc(rv.note) + '</p>' : ''); }).join('')
             + '</div>' : '')
-        + '</div>'
+        + '</div>')
         + '</div>';
     }catch(e){ return ''; }
   }
@@ -52433,6 +52456,7 @@
     const filesH = (function(){ try{ return dsRevTableHtml(r, revs, editable, id); }catch(e){ return ''; } })();
     return '<div class="dsx2 dz">'
       + top
+      + '<div class="dz-flow dz-all">' + (function(){ try{ return dsAllFlowHtml(r, revs); }catch(e){ return ''; } })() + '</div>'
       + filesH
       + act
       + '</div>';
