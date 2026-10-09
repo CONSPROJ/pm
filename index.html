@@ -17656,7 +17656,8 @@
   .um-k u{text-decoration:none;font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .um-k b{font-size:18px;font-weight:800;color:var(--ink);line-height:1.1;}
   .um-k.ok b{color:var(--ok);} .um-k.bad b{color:var(--alert);} .um-k.warn b{color:var(--warn);}
-  .um2{--lv1:#3d4b5c;--lv2:var(--sky);--lv5:#0f9f8f;--lv3:#d08a1c;--lv4:#8a93a3;}
+  .um2{--lv1:#3d4b5c;--lv2:var(--sky);--lv5:#0f9f8f;--lv3:#d08a1c;--lv4:#8a93a3;--lv6:#8e5bb5;}
+  .um-lvbar .lv6,.um-lf.lv6 > i,.um-lv.lv6{--c:var(--lv6);} .pf2-hero.lv6{--pc:#8e5bb5;}
   .um-lvbar{display:flex;gap:3px;height:7px;margin-top:12px;border-radius:99px;overflow:hidden;}
   .um-lvbar i{display:block;border-radius:99px;min-width:6px;}
   .um-lvbar .lv1,.um-lf.lv1 > i,.um-lv.lv1{--c:var(--lv1);} .um-lvbar .lv2,.um-lf.lv2 > i,.um-lv.lv2{--c:var(--lv2);}
@@ -20782,6 +20783,16 @@
   .bk-conf{display:flex;flex-direction:column;gap:5px;font-size:12px;}
   .bk-conf input{max-width:220px;}
   .bk-acts{display:flex;gap:8px;justify-content:flex-end;}
+  .aud-f{display:flex;gap:6px;margin-top:12px;} .aud-f select{flex:1;min-width:0;}
+  .aud-l{display:flex;flex-direction:column;gap:5px;margin-top:8px;max-height:60vh;overflow:auto;}
+  .aud-r{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:11px;background:var(--field);}
+  .aud-op{flex:none;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;background:var(--surface);}
+  .aud-op.ok{color:var(--ok);} .aud-op.sky{color:var(--sky);} .aud-op.bad{color:var(--alert);}
+  .aud-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .aud-m b{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .aud-m small{font-size:10.5px;color:var(--muted);}
+  .aud-cs{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
+  .aud-c{font-size:10.5px;color:var(--ink);word-break:break-word;} .aud-c u{text-decoration:none;color:var(--muted);font-family:var(--m);}
 
 </style>
 <script>
@@ -22634,27 +22645,34 @@
   };
   /* ====== سطوح دسترسی ======
      ۱ ادمین کل · ۲ مدیریت (ابلاغ فعالیت) · ۳ کاربر عادی · ۴ فقط مشاهده */
+  /* نقش‌ها به‌جای شمارهٔ خالی (مثل سامانه‌های بزرگ مدیریت پروژه): هر نقش
+     یک بستهٔ پیش‌فرض از اجازه‌ها دارد که ادمین در «دسترسی‌ها» تغییرش
+     می‌دهد، و برای هر نفر هم استثنا گذاشتنی است. شمارهٔ هر نقش همان
+     قبلی است تا حساب‌های موجود دست نخورند.
+     «بیرونی» (۶) برای کارفرما، مشاور یا ناظر بیرون از تیم است: فقط
+     گزارش‌های کارگاهی را می‌بیند؛ اسناد مالی، قراردادها و کارگری را نه
+     (این مرز روی سرور هم بسته است). */
   const LEVEL_LABEL = {
-    1:'۱ — ادمین سامانه · دسترسی و ویرایش کامل',
-    2:'۲ — مدیریت · ابلاغ فعالیت و ویرایش ابلاغ‌های خودش',
-    3:'۳ — اداری و اجرایی · ویرایش گزارش‌ها و موارد خودش',
-    /* مثل سطح ۳ است، با یک تفاوت: بخش کارگران را هم می‌تواند
-       بسازد و اصلاح کند و تغییرش منتظر تأیید ادمین نمی‌ماند. */
-    5:'۵ — مدیریت کارگران · مثل سطح ۳، به‌علاوهٔ ویرایش بخش کارگری',
-    4:'۴ — فقط مشاهده · بدون هیچ ویرایشی'
+    1:'مدیر سامانه · دسترسی و ویرایش کامل، کاربران و تنظیمات',
+    2:'مدیر پروژه · ابلاغ کار، تأیید، دیدن همه‌چیز',
+    3:'کارشناس · ثبت گزارش و موارد خودش، دفتر فنی',
+    5:'سرپرست کارگری · مثل کارشناس، به‌علاوهٔ مدیریت مستقیم کارگران',
+    4:'فقط مشاهده (داخلی) · می‌بیند، هیچ چیز را تغییر نمی‌دهد',
+    6:'بیرونی (کارفرما / مشاور / ناظر) · فقط گزارش کارگاهی، بدون مالی و قرارداد'
   };
-  const LEVEL_SHORT = {1:'سطح ۱ — ادمین', 2:'سطح ۲ — مدیریت',
-                       3:'سطح ۳ — اداری و اجرایی',
-                       5:'سطح ۵ — مدیریت کارگران',
-                       4:'سطح ۴ — فقط مشاهده'};
-  const LEVEL_ORDER = [1, 2, 5, 3, 4];
+  const LEVEL_SHORT = {1:'مدیر سامانه', 2:'مدیر پروژه',
+                       3:'کارشناس',
+                       5:'سرپرست کارگری',
+                       4:'فقط مشاهده',
+                       6:'بیرونی (کارفرما/مشاور)'};
+  const LEVEL_ORDER = [1, 2, 5, 3, 4, 6];
   const LEVEL_ROLES = {2:['مدیریت پروژه','سرپرست کارگاه']};
 
   function levelOf(name){
     if(isAdminName(name)) return 1;      // ادمین سامانه همیشه سطح ۱ است
     const row = personRow(name);
     const v = row && row.level != null ? parseInt(row.level, 10) : NaN;
-    if(v >= 1 && v <= 5) return v;
+    if(v >= 1 && v <= 6) return v;
     // اگر سطحی ثبت نشده، از روی سمت حدس زده می‌شود
     if(LEVEL_ROLES[2].indexOf(roleOf(name)) !== -1) return 2;
     return 3;
@@ -22668,7 +22686,7 @@
   const PERM_KIND = 'دسترسی سطح';
   const PERM_CAPS = [
     {g:'بخش‌های برنامه', k:'tab.write', t:'بخش ثبت گزارش', d:'', def:[1,2,3,5]},
-    {g:'بخش‌های برنامه', k:'tab.view',  t:'بخش گزارش‌ها',  d:'', def:[1,2,3,4,5]},
+    {g:'بخش‌های برنامه', k:'tab.view',  t:'بخش گزارش‌ها',  d:'', def:[1,2,3,4,5,6]},
     {g:'بخش‌های برنامه', k:'tab.tasks', t:'بخش لیست فعالیت', d:'', def:[1,2,3,4,5]},
     {g:'بخش‌های برنامه', k:'tab.admin', t:'بخش دفتر فنی',
      d:'صورت وضعیت، قرارداد، نامه، صورتجلسه', def:[1,2,3]},
@@ -22680,8 +22698,8 @@
      d:'ساختن صورت وضعیت، قرارداد، نامه یا صورتجلسه', def:[1,2,3]},
     {g:'ثبت گزارش', k:'write.editOwn', t:'اصلاح گزارش خودش',
      d:'ویرایش و حذف ردیف‌هایی که خودش ثبت کرده', def:[1,2,3,5]},
-    {g:'گزارش‌ها', k:'rep.time', t:'گزارش زمانی (روزانه)', d:'', def:[1,2,3,4,5]},
-    {g:'گزارش‌ها', k:'rep.week', t:'بازهٔ هفتگی', d:'', def:[1,2,3,4,5]},
+    {g:'گزارش‌ها', k:'rep.time', t:'گزارش زمانی (روزانه)', d:'', def:[1,2,3,4,5,6]},
+    {g:'گزارش‌ها', k:'rep.week', t:'بازهٔ هفتگی', d:'', def:[1,2,3,4,5,6]},
     {g:'گزارش‌ها', k:'rep.month', t:'بازهٔ ماهانه', d:'', def:[1,2,3,5]},
     {g:'گزارش‌ها', k:'rep.adm', t:'گزارش مالی و اداری',
      d:'مبالغ، مطالبات و گردش اسناد', def:[1,2,3]},
@@ -22772,7 +22790,7 @@
     if(L === 1) return true;
     return permLevelsOf(k).indexOf(L) !== -1;
   }
-  const PERM_LEVELS = [2, 5, 3, 4];      // سطح ۱ قابل تغییر نیست
+  const PERM_LEVELS = [2, 5, 3, 4, 6];      // سطح ۱ قابل تغییر نیست
   let permMap = null;                     // {cap: [levels]} یا null یعنی پیش‌فرض
 
   function permDefault(k){
@@ -22826,7 +22844,7 @@
         if(i < 1) return;
         const k = String(v).slice(0, i);
         m[k] = String(v).slice(i + 1).split(',').map(x => parseInt(x, 10))
-          .filter(x => x >= 1 && x <= 5);
+          .filter(x => x >= 1 && x <= 6);
       });
       permMap = Object.keys(m).length ? m : null;
     }catch(e){ permMap = null; }
@@ -22897,7 +22915,8 @@
   /* سطح ۵ فقط در بخش کارگری فرق دارد؛ بقیهٔ برنامه با آن مثل سطح ۳
      رفتار می‌کند، وگرنه همهٔ مقایسه‌های «<= ۲» و «=== ۳» می‌شکست. */
   const rawLevel = () => (isAdminUser() ? 1 : levelOf(activeUserName()));
-  const myLevel = () => { const v = rawLevel(); return v === 5 ? 3 : v; };
+  /* سرپرست کارگری در بقیهٔ بخش‌ها مثل کارشناس است و «بیرونی» مثل فقط‌مشاهده */
+  const myLevel = () => { const v = rawLevel(); return v === 5 ? 3 : v === 6 ? 4 : v; };
   const isCrewBoss = () => { try{ return rawLevel() === 5; }catch(e){ return false; } };
 
   /* سمتِ ثبت‌شده در پنل مدیریت (جدول people) همیشه مقدم است. پیش‌تر
@@ -30614,11 +30633,12 @@
     2:'مدیر پروژه و سرپرستان: ابلاغ کار، دیدن همه‌چیز، تأیید و پیگیری',
     5:'مدیریت کارگران: کارگری را بی‌واسطه می‌سازد و اصلاح می‌کند',
     3:'مهندس و کارشناس: گزارش و موارد خودش را ثبت و اصلاح می‌کند',
-    4:'ناظر یا کارفرما: فقط مشاهده، بی هیچ ویرایش'
+    4:'همکار داخلی که فقط باید ببیند: بی هیچ ویرایش',
+    6:'کارفرما، مشاور یا ناظر بیرونی: فقط گزارش کارگاهی؛ مالی، قرارداد و کارگری بسته است'
   };
   /* هر اجازه یک کارت با چهار دکمهٔ سطح؛ روی گوشی هم کامل دیده و ویرایش می‌شود
      (جدول قبلی روی موبایل از صفحه بیرون می‌زد) */
-  const PM_LV = {2:'مدیریت', 5:'مدیریت کارگران', 3:'اداری و اجرایی', 4:'فقط مشاهده'};
+  const PM_LV = {2:'مدیر پروژه', 5:'سرپرست کارگری', 3:'کارشناس', 4:'فقط مشاهده', 6:'بیرونی'};
   function permMatrixHtml(caps){
     const groups = [];
     caps.forEach(c => { let g = groups.find(x => x.g === c.g); if(!g){ g = {g: c.g, items: []}; groups.push(g); } g.items.push(c); });
@@ -32317,7 +32337,7 @@
           const lv2 = rowEl ? parseInt((rowEl.querySelector('.u-level') || {}).value, 10) : NaN;
           await savePerson(name, {pending:false, active:true, must_change:false,
             role: rl2 || null});
-          if(lv2 >= 1 && lv2 <= 5){ try{ await savePerson(name, {level: lv2}); }catch(e3){} }
+          if(lv2 >= 1 && lv2 <= 6){ try{ await savePerson(name, {level: lv2}); }catch(e3){} }
           // نام تازه به فهرست ورود هم اضافه شود
           const dl = document.getElementById('engineerList');
           if(dl && !Array.from(dl.options).some(o => o.value === name)){
@@ -49497,8 +49517,57 @@
       +   '<small>فقط فایلی که از همین بخش دانلود شده. ردیف‌های موجود با نسخهٔ فایل جایگزین و ردیف‌های گم‌شده اضافه می‌شوند؛ چیزی پاک نمی‌شود. پیش از شروع، خودکار یک پشتیبان از وضعیت فعلی دانلود می‌شود.</small></span>'
       +   '<button type="button" class="mini" data-bkpick="1">انتخاب فایل…</button></div>'
       +   '<div id="bkRestore"></div></div>'
+      + '<div class="bk-card"><div class="bk-h"><span class="bk-ic">' + BK_I.restore + '</span><span><b>سابقهٔ تغییرات</b>'
+      +   '<small>هر افزودن، ویرایش و حذف: چه کسی، چه زمانی، چه چیزی از چه به چه. فقط ادمین می‌بیند و پاک‌شدنی نیست (از مرحلهٔ ۴ امنیت به بعد).</small></span>'
+      +   '<button type="button" class="mini" data-audload="1">نمایش</button></div>'
+      +   '<div id="audBox"></div></div>'
       + '</div>';
   }
+  /* ====== سابقهٔ تغییرات (audit_log) ====== */
+  const AUD_OP = {INSERT:['افزودن','ok'], UPDATE:['ویرایش','sky'], DELETE:['حذف','bad']};
+  const AUD_SKIP = /^(id|created_at|updated_at|stage_log|rvStageLog|revs)$/;
+  let audRows = [];
+  function audTitle(r){
+    const d = r.data || {};
+    const v = k => { const x = d[k]; return Array.isArray(x) ? x[1] : x; };
+    return String(v('title') || v('subject') || v('contract_name') || v('name') || v('value') || v('activity') || v('contractor') || r.row_id || '').slice(0, 80);
+  }
+  function audPaint(){
+    const box = document.getElementById('audBox'); if(!box) return;
+    const fw = (document.getElementById('audWho') || {}).value || '', ft = (document.getElementById('audTbl') || {}).value || '';
+    const L = Object.fromEntries(bkTables().concat([['people','کاربران'],['lists','فهرست‌ها']]));
+    const who = Array.from(new Set(audRows.map(r => r.who || '—')));
+    const tbls = Array.from(new Set(audRows.map(r => r.tbl)));
+    const rows = audRows.filter(r => (!fw || (r.who || '—') === fw) && (!ft || r.tbl === ft));
+    box.innerHTML = '<div class="aud-f"><select id="audWho"><option value="">همهٔ افراد</option>' + who.map(w => '<option' + (w === fw ? ' selected' : '') + '>' + esc(w) + '</option>').join('') + '</select>'
+      + '<select id="audTbl"><option value="">همهٔ بخش‌ها</option>' + tbls.map(t => '<option value="' + esc(t) + '"' + (t === ft ? ' selected' : '') + '>' + esc(L[t] || t) + '</option>').join('') + '</select></div>'
+      + (rows.length ? '<div class="aud-l">' + rows.map(r => {
+          const op = AUD_OP[r.op] || [r.op, ''];
+          const dt = new Date(r.at);
+          let when = ''; try{ when = dt.toLocaleDateString('fa-IR') + ' · ' + dt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'}); }catch(e){}
+          const ch = r.op === 'UPDATE' ? Object.keys(r.data || {}).filter(k => !AUD_SKIP.test(k)).slice(0, 6).map(k => {
+              const a = (r.data[k] || [])[0], b = (r.data[k] || [])[1];
+              const f = x => x == null || x === '' ? '—' : String(typeof x === 'object' ? JSON.stringify(x) : x).slice(0, 60);
+              return '<span class="aud-c"><u>' + esc(k) + '</u> ' + esc(f(a)) + ' ← ' + esc(f(b)) + '</span>';
+            }).join('') : '';
+          return '<div class="aud-r"><span class="aud-op ' + op[1] + '">' + op[0] + '</span><span class="aud-m"><b>' + esc(audTitle(r) || '—') + '</b>'
+            + '<small>' + esc(L[r.tbl] || r.tbl) + ' · ' + esc(r.who || 'نامشخص (بیرون از سایت)') + ' · ' + esc(when) + '</small>' + (ch ? '<span class="aud-cs">' + ch + '</span>' : '') + '</span></div>';
+        }).join('') + '</div>' : '<div class="bk-prog">موردی نیست.</div>');
+  }
+  document.addEventListener('change', e => { if(e.target && (e.target.id === 'audWho' || e.target.id === 'audTbl')) audPaint(); });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-audload]');
+    if(!b) return;
+    const box = document.getElementById('audBox'); if(!box) return;
+    b.disabled = true; box.innerHTML = '<div class="bk-prog">در حال دریافت…</div>';
+    try{
+      audRows = await supaFetch('audit_log?select=*&order=at.desc&limit=300', {prefer:'return=representation'}) || [];
+      audPaint();
+    }catch(er){
+      box.innerHTML = '<div class="bk-prog bad">' + (er && er.status === 404 ? 'سابقهٔ تغییرات هنوز فعال نشده؛ مرحلهٔ ۴ امنیت را اجرا کنید.' : 'دریافت نشد: ' + esc(friendlyErr(er))) + '</div>';
+    }
+    b.disabled = false;
+  });
   function bkRow(ok, txt, sub){
     return '<div class="bk-row ' + (ok === true ? 'ok' : ok === false ? 'bad' : '') + '"><i></i><span><b>' + txt + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>';
   }
