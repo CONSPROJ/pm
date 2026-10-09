@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script defer crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script defer src="lib/xlsx-0.18.5.full.min.js"></script>
 <style>
   /* تا دسترسی‌ها نرسیده و زبانهٔ درست انتخاب نشده، صفحهٔ «ثبت گزارش» نشان
      داده نمی‌شود؛ پیش‌تر برای کسی که اجازهٔ ثبت ندارد چند لحظه فرم
@@ -10974,6 +10974,7 @@
   #msgModal #msgModalTitle{font-size:var(--t-head);font-weight:700;}
   #msgModal #msgModalText{
     margin:0;font-size:var(--t-body);line-height:2;color:var(--muted);text-align:center;
+    white-space:pre-line;-webkit-user-select:text;user-select:text;
   }
   #confirmModal .mc-ic{
     width:34px;height:34px;flex:0 0 34px;border-radius:999px;
@@ -21819,6 +21820,10 @@
           <input type="text" id="reqName" placeholder="مثلاً آقای رضا محمدی" autocomplete="off"></div>
         <div class="field"><label for="reqRole">سمت</label>
           <select id="reqRole"><option value="">سمت خود را انتخاب کنید</option></select></div>
+        <div class="field"><label for="reqPass1">رمز عبور دلخواه</label>
+          <input type="password" id="reqPass1" placeholder="حداقل ۸ نویسه" autocomplete="new-password"></div>
+        <div class="field"><label for="reqPass2">تکرار رمز</label>
+          <input type="password" id="reqPass2" autocomplete="new-password"></div>
         <button type="button" class="send" id="reqGo" style="width:100%;">ارسال درخواست</button>
         <button type="button" class="mini" id="reqBack" style="margin-top:8px;">‹ بازگشت</button>
         <div class="auth-note" id="reqNote"></div>
@@ -21842,7 +21847,7 @@
             </span>
             <!-- inputmode حذف شد: صفحه‌کلید را عددی می‌کرد و رمزهای
                  حرفی قابل تایپ نبودند -->
-            <input type="password" id="userPassInput" placeholder="رمز اولیه ۰۰۰۰"
+            <input type="password" id="userPassInput" placeholder="رمز عبور"
                    autocomplete="current-password">
             <button type="button" class="pw-eye" data-pw-toggle="userPassInput"
                     aria-label="نمایش رمز">
@@ -22270,6 +22275,20 @@
     }catch(e){ return null; }
   }
   const loginCheck  = (name, hash) => authRpc('login_check', {p_name: name, p_hash: hash});
+  /* رمز موقتِ ساخته‌شده روی سرور فقط همین یک بار به ادمین نشان داده می‌شود */
+  function pmTempDialog(name, temp, title){
+    if(!temp){
+      showDialog('ok', title || 'انجام شد', name + ' از همهٔ دستگاه‌ها خارج شد. (به‌روزرسانی امنیتی مرحلهٔ ۳ هنوز اجرا نشده و رمز موقت ساخته نشد.)');
+      return;
+    }
+    try{ navigator.clipboard && navigator.clipboard.writeText(temp).catch(() => {}); }catch(e){}
+    showDialog('ok', title || 'رمز موقت', 'رمز موقت ' + name + ':\n\n' + temp + '\n\nاین رمز فقط همین حالا نشان داده می‌شود. آن را حضوری یا با پیام خصوصی به خودش بدهید؛ بار اول ورود باید عوضش کند.');
+  }
+  async function pmShowTempPass(name, title){
+    const r = await authRpc('admin_reset_pass', {p_name: name});
+    if(r && r.ok === true) pmTempDialog(name, r.temp, title);
+    else showDialog('warn', title || 'انجام شد', name + ' ساخته شد ولی رمز موقت گرفته نشد' + ((r && r.reason === 'denied') ? ': نشست ادمین شما روی سرور شناخته نشد؛ خارج و دوباره وارد شوید و «بازنشانی رمز» را بزنید.' : '. از «بازنشانی رمز» استفاده کنید.'));
+  }
   const changePass  = (name, oldHash, newHash) => authRpc('change_pass', {p_name: name, p_old: oldHash || '', p_new: newHash});
   function pwWeakMsg(p){
     if(String(p || '').length < PW_MIN) return 'رمز باید حداقل ' + toFa(PW_MIN) + ' نویسه باشد.';
@@ -22465,9 +22484,22 @@
       const rl = document.getElementById('reqRole').value.trim();
       if(nm2.length < 3){ note.textContent = 'نام کامل را وارد کنید.'; return; }
       if(!rl){ note.textContent = 'سمت خود را انتخاب کنید.'; return; }
+      const rp1 = (document.getElementById('reqPass1') || {}).value || '', rp2 = (document.getElementById('reqPass2') || {}).value || '';
+      const wk0 = pwWeakMsg(rp1.trim());
+      if(wk0){ note.textContent = wk0; return; }
+      if(rp1 !== rp2){ note.textContent = 'دو رمز یکسان نیستند.'; return; }
       btn.disabled = true;
       try{
-        await savePerson(nm2, {role: rl || null, pending: true, active: false, must_change: true});
+        /* درخواست همراه رمز خودِ متقاضی روی سرور ثبت می‌شود (رمز هرگز ذخیرهٔ ساده نمی‌شود) */
+        let r0 = null;
+        try{ r0 = await supaRpc('request_account', {p_name: nm2, p_role: rl, p_hash: await sha256(rp1.trim())}); }catch(e0){ r0 = (e0 && e0.status === 404) ? 'old' : {ok:false, reason: 'net'}; }
+        if(r0 === 'old') await savePerson(nm2, {role: rl || null, pending: true, active: false, must_change: true});
+        else if(!r0 || r0.ok !== true){
+          note.textContent = (r0 && r0.reason === 'exists') ? 'این نام از قبل ثبت شده است.'
+            : (r0 && r0.reason === 'busy') ? 'درخواست‌های زیادی در انتظار است؛ با مدیر تماس بگیرید.'
+            : (r0 && r0.reason === 'weak') ? 'این رمز قابل قبول نیست.' : 'ثبت درخواست انجام نشد.';
+          btn.disabled = false; return;
+        }
         note.style.color = 'var(--ok)';
         note.textContent = 'درخواست ثبت شد؛ پس از تأیید مدیر می‌توانید وارد شوید.';
       }catch(err){
@@ -22523,6 +22555,11 @@
         note.textContent = 'به‌خاطر چند تلاش ناموفق، ورود این حساب ' + toFa(chk.minutes || 15) + ' دقیقه قفل است.';
         return;
       }
+      if(!okPass && chk.reason === 'nopass'){
+        btn.disabled = false;
+        note.textContent = 'برای این حساب هنوز رمزی تعیین نشده؛ از مدیر سامانه بخواهید یک رمز موقت به شما بدهد.';
+        return;
+      }
       if(!okPass && chk.reason === 'notfound'){
         btn.disabled = false;
         note.textContent = 'این نام در فهرست کاربران نیست.';
@@ -22530,8 +22567,7 @@
       }
       if(!okPass){
         btn.disabled = false;
-        note.textContent = first ? 'رمز اولیه ۰۰۰۰ است.'
-          : ('رمز درست نیست.' + (chk.left ? ' ' + toFa(chk.left) + ' تلاش دیگر تا قفل موقت.' : ''));
+        note.textContent = 'رمز درست نیست.' + (chk.left ? ' ' + toFa(chk.left) + ' تلاش دیگر تا قفل موقت.' : '');
         return;
       }
       if(row.active === false){
@@ -22554,7 +22590,7 @@
         const wk = pwWeakMsg(n1);
         if(wk){ note.textContent = wk; btn.disabled = false; return; }
         if(n1 !== n2){ note.textContent = 'دو رمز یکسان نیستند.'; btn.disabled = false; return; }
-        if(n1 === '0000'){ note.textContent = 'رمز تازه نباید ۰۰۰۰ باشد.'; btn.disabled = false; return; }
+        if(n1 === pass){ note.textContent = 'رمز تازه باید با رمز موقت فرق داشته باشد.'; btn.disabled = false; return; }
         const newHash = await sha256(n1);
         const res = await changePass(loginName, first ? '' : hash, newHash);
         if(!res || res.ok !== true){
@@ -31664,7 +31700,7 @@
     const lvlOpt = (L, sel) => '<option value="' + L + '"'
       + (L === sel ? ' selected' : '') + '>' + esc(LEVEL_SHORT[L] || '') + '</option>';
     /* ادمین می‌تواند خودش کاربر بسازد، بی‌آنکه طرف درخواست حساب بدهد.
-       کاربر تازه با رمز ۰۰۰۰ وارد می‌شود و همان بار اول رمز می‌گذارد. */
+       برای کاربر تازه رمز موقت ساخته می‌شود. */
     /* ====== مدیریت کاربران v2 ======
        سه بخش جدا (کاربران، دسترسی‌ها، تطبیق نام‌ها) تا فهرست بلند نشود.
        هر کاربر یک ردیف جمع‌وجور است که با کلیک باز می‌شود. کلاس‌ها و
@@ -31706,7 +31742,7 @@
     const nAct = U.filter(u => u.active && !u.ct).length;
     const nInit = U.filter(u => u.pass !== 'own').length;
     const LV_NAME = {1:'ادمین', 2:'مدیریت', 5:'مدیریت کارگران', 3:'اداری و اجرایی', 4:'فقط مشاهده'};
-    const PASS_T = {own:'رمز شخصی', init:'رمز اولیه', none:'بدون رمز'};
+    const PASS_T = {own:'رمز شخصی', init:'رمز موقت (باید عوض شود)', none:'بدون رمز'};
     const isAdm = isAdminUser();
     let mtPend = 0;
     try{
@@ -31761,9 +31797,9 @@
       + '</div>';
 
     /* ادمین می‌تواند خودش کاربر بسازد، بی‌آنکه طرف درخواست حساب بدهد.
-       کاربر تازه با رمز ۰۰۰۰ وارد می‌شود و همان بار اول رمز می‌گذارد. */
+       برای کاربر تازه یک رمز موقت تصادفی ساخته و فقط یک بار به ادمین نشان داده می‌شود. */
     const addForm = '<div class="um-new u-new"' + (umState.add ? '' : ' hidden') + '>'
-      + '<div class="um-new-h"><b>افزودن کاربر تازه</b><small>با رمز ۰۰۰۰ وارد می‌شود و بار اول رمز تازه می‌گذارد.</small></div>'
+      + '<div class="um-new-h"><b>افزودن کاربر تازه</b><small>یک رمز موقت ساخته می‌شود که فقط همان لحظه به شما نشان داده می‌شود؛ کاربر بار اول عوضش می‌کند.</small></div>'
       + '<div class="um-grid">'
       +   '<div class="um-nameset um-f-name">'
       +     '<div class="field um-f um-f-ttl"><label>عنوان</label><select class="u-ttl">' + UM_TITLES.map(t => '<option value="' + esc(t) + '">' + esc(t || 'بدون عنوان') + '</option>').join('') + '</select></div>'
@@ -31835,7 +31871,7 @@
               + '<div class="um-pass-row"><input type="password" class="u-pass" placeholder="رمز تازه (حداقل ۸ نویسه)" autocomplete="new-password">'
               + '<label class="um-chk"><input type="checkbox" class="u-pass-must" checked><span>بار اول خودش عوض کند</span></label>'
               + '<button type="button" class="mini go" data-u-setpass="' + esc(n) + '">تعیین رمز</button></div>'
-              + '<small>وضعیت فعلی: ' + PASS_T[u.pass] + ' · «بازنشانی» رمز را ۰۰۰۰ می‌کند.</small></div>')
+              + '<small>وضعیت فعلی: ' + PASS_T[u.pass] + ' · «بازنشانی» یک رمز موقت تازه می‌سازد.</small></div>')
         +   '<div class="um-acts">'
         +     '<button type="button" class="mini go um-save" data-u-save="' + esc(n) + '" disabled>' + UM_I.save + 'ذخیرهٔ تغییرات</button>'
         +     '<button type="button" class="mini" data-u-reset="' + esc(n) + '">' + UM_I.key + 'بازنشانی رمز</button>'
@@ -31975,8 +32011,7 @@
           umState.open.add(nameKey(nm));
           await loadPeople();
           await renderAdminPanel();
-          showDialog('ok','کاربر ساخته شد',
-            nm + ' اضافه شد و با رمز ۰۰۰۰ می‌تواند وارد شود. بار اول باید رمز تازه بگذارد.');
+          await pmShowTempPass(nm, 'کاربر ساخته شد');
         }catch(err){
           showDialog('err','ساخته نشد', friendlyErr(err));
         }
@@ -32264,10 +32299,9 @@
           await loadPeople();
         }
         if(reset){
-          if(confirm('رمز ' + name + ' به ۰۰۰۰ بازنشانی شود؟')){
+          if(confirm('برای ' + name + ' یک رمز موقت تازه ساخته شود؟ رمز فعلی‌اش از کار می‌افتد.')){
             const r = await authRpc('admin_reset_pass', {p_name: name});
-            if(r && r.ok === true)
-              showDialog('ok','رمز بازنشانی شد', name + ' از همهٔ دستگاه‌ها خارج شد و در ورود بعدی با ۰۰۰۰ وارد می‌شود و باید رمز تازه بگذارد.');
+            if(r && r.ok === true) pmTempDialog(name, r.temp, 'رمز بازنشانی شد');
             else showDialog('err','بازنشانی نشد', (r && r.reason === 'denied') ? 'نشست ادمین شما روی سرور شناخته نشد. یک بار خارج و دوباره وارد شوید.' : 'سرور پاسخ نداد. اگر به‌روزرسانی امنیتی پایگاه‌داده اجرا نشده، اول آن را اجرا کنید.');
           }
         }
@@ -32281,7 +32315,7 @@
           const rowEl = app.closest('[data-user-row]');
           const rl2 = rowEl ? String((rowEl.querySelector('.u-role') || {}).value || '').trim() : '';
           const lv2 = rowEl ? parseInt((rowEl.querySelector('.u-level') || {}).value, 10) : NaN;
-          await savePerson(name, {pending:false, active:true, must_change:true,
+          await savePerson(name, {pending:false, active:true, must_change:false,
             role: rl2 || null});
           if(lv2 >= 1 && lv2 <= 5){ try{ await savePerson(name, {level: lv2}); }catch(e3){} }
           // نام تازه به فهرست ورود هم اضافه شود
@@ -32289,7 +32323,7 @@
           if(dl && !Array.from(dl.options).some(o => o.value === name)){
             const o = document.createElement('option'); o.value = name; dl.appendChild(o);
           }
-          showDialog('ok','تأیید شد', name + ' فعال شد و با رمز ۰۰۰۰ می‌تواند وارد شود.');
+          showDialog('ok','تأیید شد', name + ' فعال شد و با رمزی که هنگام درخواست گذاشته وارد می‌شود. اگر رمزش را ندارد، «بازنشانی رمز» را بزنید تا رمز موقت بگیرد.');
         }
         if(rej){
           if(confirm('درخواست ' + name + ' رد شود؟')){
