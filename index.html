@@ -1520,7 +1520,22 @@
   .dz .dz-act{grid-template-columns:2fr 1fr;}
   /* اقدام‌های کارت سند طراحی: یک دکمهٔ آرام «قدم بعد» و دو پیوند کوچک */
   .dz-files{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .dz-files{gap:6px 8px;} .dz-fl{display:flex;flex-basis:100%;align-items:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap;} .dz-fl svg{width:13px;height:13px;}
+  .dz-files{gap:6px 8px;}
+  .dzr-box{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:13px;border:1px solid var(--line);}
+  .dzr-hd{display:flex;align-items:center;gap:6px;} .dzr-hd b{font-size:12px;font-weight:700;} .dzr-hd i{font-style:normal;font-size:10.5px;font-weight:700;padding:0 7px;border-radius:99px;background:var(--field);color:var(--muted);}
+  .dzr{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line-soft, var(--line));}
+  .dzr-h{display:flex;align-items:center;gap:8px;min-width:0;}
+  .dzr-rv{flex:0 0 auto;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:7px;background:var(--field);color:var(--ink);}
+  .dzr.cur .dzr-rv{background:color-mix(in srgb, var(--sky) 14%, transparent);color:var(--sky);}
+  .dzr-st{--sc:var(--sky);display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--sc);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dzr-st b{font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--sc);color:#fff;}
+  .dzr-st.t-ok{--sc:var(--ok);} .dzr-st.t-warn{--sc:#b07512;} .dzr-st.t-bad{--sc:var(--alert);} .dzr-st.t-ext{--sc:#6d5bb5;} [data-theme="dark"] .dzr-st.t-ext{--sc:#a898e6;}
+  .dzr-m{margin-inline-start:auto;flex:0 0 auto;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .dzr-up{all:unset;cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;color:var(--muted);}
+  .dzr-up:hover{background:var(--field);color:var(--sky);} .dzr-up svg{width:15px;height:15px;}
+  .dzr-fs{display:flex;flex-wrap:wrap;gap:5px;} .dzr-fs.none{font-size:11px;color:var(--muted);}
+  .dzr-more > summary{cursor:pointer;list-style:none;font-size:11.5px;color:var(--muted);padding:6px 0 2px;border-top:1px solid var(--line-soft, var(--line));}
+  .dzr-more > summary::-webkit-details-marker{display:none;} .dz-fl{display:flex;flex-basis:100%;align-items:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap;} .dz-fl svg{width:13px;height:13px;}
   .dz-fs{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0;}
   .dz-f{display:inline-flex;align-items:center;gap:6px;max-width:100%;height:32px;padding:0 6px 0 10px;border-radius:10px;background:var(--field);color:var(--ink);text-decoration:none;font-size:12px;transition:background .15s;}
   .dz-f:hover{background:color-mix(in srgb, var(--sky) 10%, var(--field));}
@@ -52188,6 +52203,34 @@
     if(ri === revs.length - 1 && !revs.some(x => x.link)) return pick(r,AD.link) || '';
     return '';
   }
+  /* خلاصهٔ همهٔ ویرایش‌ها روی کارت: هر Rev یک ردیف با تاریخ، نتیجه، مدت گردش
+     و فایل‌هایش (دانلود مستقیم)، و دکمهٔ آپلود برای کسی که اجازه دارد */
+  function dsRevTableHtml(r, revs, editable, id){
+    const I = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+    const rows = revs.map((rv, ri) => {
+      const isCur = ri === revs.length - 1 && !rv.sup;
+      const L = (rv.log || []).filter(x => x && x.st), st = L.length ? L[L.length - 1].st : '';
+      const code = DS_CODE[st] || '';
+      const days = (function(){ try{ return dsCycleDays(rv, isCur); }catch(e){ return null; } })();
+      const fl = attachList(dsRevFiles(r, revs, ri));
+      const tone = st ? dsTone(st) : 'info';
+      return '<div class="dzr' + (isCur ? ' cur' : '') + '">'
+        + '<div class="dzr-h"><span class="dzr-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi></span>'
+        +   '<span class="dzr-st t-' + (isCur && !code ? 'info' : tone) + '">' + (code ? '<b dir="ltr">' + code + '</b>' : '')
+        +     esc(isCur && !code ? 'جاری' : ({'تأیید شده':'تأیید','تأیید مشروط':'مشروط','نیاز به اصلاح':'اصلاح','رد شده':'رد','برای اجرا':'اجرا'}[st] || (rv.sup ? 'جایگزین' : st))) + '</span>'
+        +   '<span class="dzr-m">' + [rv.date ? '<bdi>' + esc(toFa(admDate(rv.date))) + '</bdi>' : '', days != null ? '<bdi>' + toFa(days) + ' روز</bdi>' : ''].filter(Boolean).join(' · ') + '</span>'
+        +   ((editable && id) ? '<button type="button" class="dzr-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="آپلود یا حذف فایل‌های Rev ' + esc(rv.rev) + '" aria-label="فایل‌های Rev ' + esc(rv.rev) + '">' + I('<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>') + '</button>' : '')
+        + '</div>'
+        + (fl.length
+            ? '<div class="dzr-fs">' + fl.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</div>'
+            : '<div class="dzr-fs none">بدون فایل</div>')
+        + '</div>';
+    }).reverse();
+    const head = '<div class="dzr-hd"><b>ویرایش‌ها</b><i>' + toFa(revs.length) + '</i></div>';
+    if(rows.length <= 3) return '<div class="dzr-box">' + head + rows.join('') + '</div>';
+    return '<div class="dzr-box">' + head + rows.slice(0, 2).join('')
+      + '<details class="dzr-more"><summary>' + toFa(rows.length - 2) + ' ویرایش قدیمی‌تر</summary>' + rows.slice(2).join('') + '</details></div>';
+  }
   /* قدمِ بعدیِ معمول برای هر مرحله: روی دکمهٔ اصلی کارت نوشته می‌شود */
   function dsNextOf(st){
     switch(st){
@@ -52299,11 +52342,9 @@
       return '<div class="dz-moreb">'
         + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
         + (cur.note ? '<p class="dz-note"><u>یادداشت این ویرایش</u>' + esc(cur.note) + '</p>' : '')
-        + (old.length ? '<div class="dz-hist"><b>ویرایش‌های قبلی (' + toFa(old.length) + ')</b>' + dsCycleChartHtml(revs)
-            + old.map(rv => { const ri = revs.indexOf(rv), L1 = attachList(dsRevFiles(r, revs, ri)), ed = (function(){ try{ return canEditAdm('design', r); }catch(e){ return false; } })();
+        + (old.length ? '<div class="dz-hist"><b>گردش ویرایش‌های قبلی</b>'
+            + old.map(rv => {
                 return '<div class="dz-ov"><span class="dz-ovt">Rev ' + esc(toFa(rv.rev)) + (rv.date ? ' · ' + esc(toFa(admDate(rv.date))) : '') + '</span>'
-                  + ((L1.length || ed) ? '<div class="dz-ovf">' + L1.map(a => '<a class="dz-f sm" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('')
-                      + (ed ? '<button type="button" class="dz-ln" data-dsfiles="' + esc(pick(r,AD.id)) + '" data-dsri="' + ri + '">' + UP_I.clip + '<span>' + (L1.length ? 'فایل‌ها' : 'افزودن فایل') + '</span></button>' : '') + '</div>' : '')
                   + dsFlowHtml(rv, false) + '</div>' + (rv.note ? '<p class="dz-note"><u>یادداشت Rev ' + esc(rv.rev) + '</u>' + esc(rv.note) + '</p>' : ''); }).join('')
             + '</div>' : '')
         + '</div>';
@@ -52362,9 +52403,7 @@
           + '<b>' + esc(nx.t) + '</b>' + I('<path d="M14 7l-5 5 5 5"/>') + '</button>'
         : '';
       const ln = (attr, ic, t, tip) => '<button type="button" class="dz-ln" ' + attr + '="' + esc(id) + '" title="' + tip + '" aria-label="' + tip + '">' + I(ic) + '<span>' + t + '</span></button>';
-      const hasF = (function(){ try{ return attachList(dsRevFiles(r, revs, revs.length - 1)).length > 0; }catch(e){ return false; } })();
       return '<div class="dz-act3">' + pri + '<span class="dz-alt">'
-        + (hasF ? '' : ln('data-dsfiles', '<path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.1-8.1a3.3 3.3 0 014.7 4.7l-8.1 8.1a1.7 1.7 0 01-2.4-2.4l7.4-7.4"/>', 'فایل', 'گذاشتن فایل (نقشه، PDF، CAD) برای همین ویرایش'))
         + ln('data-dsedit', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', 'اصلاح', 'اصلاح همین مرحله: اگر تاریخ، مرحله یا نگه‌دارنده اشتباه ثبت شده؛ مرحلهٔ تازه‌ای اضافه نمی‌شود')
         + (nx && !nx.rev ? '' : ln('data-dsstep', '<path d="M4 12h14M13 6l6 6-6 6"/>', 'مرحله', 'انتخاب آزاد مرحلهٔ بعدی'))
         + (nx && nx.rev ? '' : ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', '<bdi dir="ltr">Rev ' + esc(dsNextRev(cur.rev)) + '</bdi>', 'ویرایش جدید: نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود'))
@@ -52373,14 +52412,8 @@
     const cyc = (function(){ try{ return dsCycleDays(cur, true); }catch(e){ return null; } })();
     const head = msHeadHtml('گردش ویرایش ' + toFa(cur.rev), '', '', cyc != null ? toFa(cyc) + ' روز' : '');
     const old = revs.slice(0, -1).reverse();
-    /* فایل‌های ویرایش جاری: دانلود مستقیم، و افزودن/ویرایش برای کسی که اجازه دارد */
-    const curFiles = dsRevFiles(r, revs, revs.length - 1), fl = attachList(curFiles);
-    const filesH = fl.length
-      ? '<div class="dz-files"><span class="dz-fl">' + UP_I.clip + '<span>فایل‌های <bdi dir="ltr">Rev ' + esc(cur.rev) + '</bdi></span></span>'
-        + '<span class="dz-fs">' + fl.map(a => '<a class="dz-f" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '"><i class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + UP_I.dl + '</a>').join('') + '</span>'
-        + ((editable && id) ? '<button type="button" class="dz-fe" data-dsfiles="' + esc(id) + '" title="افزودن یا حذف فایل‌های این ویرایش">' + UP_I.up + '</button>' : '')
-        + '</div>'
-      : '';
+    /* همهٔ ویرایش‌ها با فایل‌هایشان (دانلود و آپلود) */
+    const filesH = (function(){ try{ return dsRevTableHtml(r, revs, editable, id); }catch(e){ return ''; } })();
     return '<div class="dsx2 dz">'
       + top
       + filesH
