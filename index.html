@@ -2766,6 +2766,8 @@
   .upc-modes{grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));}
   .upc:not([data-mode="s3"]) .upc-sec[data-upc-for="s3"]{opacity:.55;}
   .upc[data-mode="s3"] .upc-sec[data-upc-for="sb"], .upc[data-mode="s3"] .upc-sec[data-upc-for="drive"]{display:none;}
+  .upc-st small{font-size:10.5px;font-weight:600;color:var(--muted);}
+  .upc-sec[data-upc-for="s3"] + .upc-sec[data-upc-for="s3"]{margin-top:-4px;}
   .upc-sec[data-upc-for="s3"] .upc-hint{display:block;direction:rtl;text-align:right;margin-top:8px;font-size:10.5px;line-height:1.8;}
   .s3-st.ok{color:var(--ok);font-weight:700;}
   .s3-busy{opacity:.55;pointer-events:none;cursor:progress;}
@@ -49859,15 +49861,7 @@
       +   mode('sb', 'فقط فضای سامانه', 'Supabase Storage — سریع، تا ۵۰ مگابایت، دانلود مستقیم', UP_I.clip)
       +   mode('drive', 'فقط گوگل درایو', 'از طریق Apps Script، هر نوع سند در پوشهٔ خودش', UP_I.open)
       + '</div>'
-      + '<div class="upc-sec" data-upc-for="s3"><b class="upc-st">فضای ابری S3</b>'
-      +   '<div class="upc-g"><label><span>نشانی سرویس (Endpoint)</span><input type="text" class="s3-ep" dir="ltr" placeholder="https://s3.ir-thr-at1.arvanstorage.ir" autocomplete="off"></label>'
-      +   '<label><span>نام سطل (Bucket)</span><input type="text" class="s3-bk" dir="ltr" autocomplete="off"></label>'
-      +   '<label><span>منطقه (Region)</span><input type="text" class="s3-rg" dir="ltr" placeholder="us-east-1" autocomplete="off"></label>'
-      +   '<label><span>کلید دسترسی (Access Key)</span><input type="text" class="s3-ak" dir="ltr" autocomplete="off"></label>'
-      +   '<label><span>کلید محرمانه (Secret Key)</span><input type="password" class="s3-sk" dir="ltr" autocomplete="new-password" placeholder="…"></label></div>'
-      +   '<small class="upc-hint s3-st">در حال خواندن…</small>'
-      +   '<div class="upc-row"><button type="button" class="mini" data-s3-save="1">ذخیرهٔ اتصال</button><button type="button" class="mini" data-s3-test="1">بررسی اتصال</button><span class="upc-res s3-res"></span></div>'
-      + '</div>'
+      + s3SecHtml(1) + s3SecHtml(2)
       + '<div class="upc-sec" data-upc-for="sb"><b class="upc-st">فضای سامانه</b>'
       +   '<div class="upc-g"><label><span>نام سطل (Bucket)</span><input type="text" class="upc-bucket" dir="ltr" value="' + esc(c.bucket || '') + '"></label>'
       +   '<label><span>ساختار پوشه‌ها</span><input type="text" class="upc-folder" dir="ltr" value="' + esc(c.folder || '') + '">'
@@ -49943,12 +49937,12 @@
     next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>'
   };
   function attachList(val){
-    return String(val || '').split(/\s*\n\s*|\s+(?=https?:\/\/|s3:)/).map(s => s.trim()).filter(s => /^(https?:\/\/|s3:[a-z]+\/)/.test(s)).map(u => {
+    return String(val || '').split(/\s*\n\s*|\s+(?=https?:\/\/|s3b?:)/).map(s => s.trim()).filter(s => /^(https?:\/\/|s3b?:[a-z]+\/)/.test(s)).map(u => {
       let name = '';
       const h = u.indexOf('#');
       if(h !== -1){ try{ name = decodeURIComponent(u.slice(h + 1)); }catch(e){ name = u.slice(h + 1); } }
       const base = h === -1 ? u : u.slice(0, h);
-      const src = /^s3:/.test(base) ? 's3' : /\/storage\/v1\/object\//.test(base) ? 'sb' : (/drive\.google|docs\.google/.test(base) ? 'drive' : 'web');
+      const src = /^s3b?:/.test(base) ? 's3' : /\/storage\/v1\/object\//.test(base) ? 'sb' : (/drive\.google|docs\.google/.test(base) ? 'drive' : 'web');
       if(!name){
         if(src === 'drive') name = 'فایل گوگل درایو';
         else if(src === 's3') name = 'پیوست.' + (base.match(/\.([a-z0-9]{1,8})$/) || ['', 'bin'])[1];
@@ -49957,12 +49951,12 @@
       const ext = (name.match(/\.([a-z0-9]{1,5})$/i) || ['', ''])[1].toLowerCase();
       const a = {url: base, full: u, name, src, ext};
       /* فایل خصوصی: نشانیِ واقعی هنگام کلیک از سرور گرفته می‌شود */
-      if(src === 's3'){ a.key = base.slice(3); a.url = '#s3open:' + a.key + '|' + encodeURIComponent(name); }
+      if(src === 's3'){ a.slot = /^s3b:/.test(base) ? 2 : 1; a.key = base.slice(base.indexOf(':') + 1); a.url = s3Href(a, false); }
       return a;
     });
   }
   function attachDownloadUrl(a){
-    if(a.src === 's3') return '#s3dl:' + a.key + '|' + encodeURIComponent(a.name);
+    if(a.src === 's3') return s3Href(a, true);
     if(a.src === 'sb') return a.url + (a.url.indexOf('?') === -1 ? '?' : '&') + 'download=' + encodeURIComponent(a.name);
     if(a.src === 'drive'){
       const m = a.url.match(/\/d\/([\w-]{10,})/) || a.url.match(/[?&]id=([\w-]{10,})/);
@@ -50045,30 +50039,34 @@
       xhr.send(file);
     });
   }
-  /* ====== فضای ابری S3 ======
-     کلید محرمانه فقط روی سرور است. برای هر آپلود یک لینک امضاشدهٔ ۱۵ دقیقه‌ای
-     گرفته می‌شود و فایل مستقیم به فضای ابری می‌رود. فایل‌ها خصوصی‌اند و
-     برای دیدن یا دانلود، لینک ۱۰ دقیقه‌ای فقط به کاربرِ واردشده داده می‌شود. */
+  /* ====== فضای ابری S3 (اصلی + جایگزین) ======
+     کلیدهای محرمانه فقط روی سرور است. برای هر آپلود یک لینک امضاشدهٔ ۱۵ دقیقه‌ای
+     گرفته می‌شود و فایل مستقیم به فضای ابری می‌رود. اگر فضای اصلی در دسترس
+     نبود، فایل به فضای جایگزین می‌رود («s3b:» در پیوست). فایل‌ها خصوصی‌اند و
+     برای دیدن یا دانلود، لینک ۱۰ دقیقه‌ای فقط به کاربرِ واردشده داده می‌شود؛
+     اگر فضای خودِ فایل جواب نداد، از فضای دیگر باز می‌شود. */
   const S3_ERR = {login:'برای آپلود دوباره وارد شوید.', denied:'نقش شما اجازهٔ آپلود ندارد.',
     nocfg:'فضای ابری هنوز تنظیم نشده است (مدیریت کاربران ← محل آپلود).', bad:'نشانی فایل معتبر نیست.'};
-  function s3Err(r){ const e = new Error(S3_ERR[r && r.reason] || 'فضای ابری پاسخ نداد'); e.status = (r && r.reason) ? 403 : 0; return e; }
+  const S3_SLOT = {1:'فضای اصلی', 2:'فضای جایگزین'};
+  function s3Err(r){ const e = new Error(S3_ERR[r && r.reason] || 'فضای ابری پاسخ نداد'); e.status = (r && r.reason) ? 403 : 0; e.reason = r && r.reason; return e; }
   async function s3Rpc(fn, args){
     let r;
     try{ r = await supaRpc(fn, args); }
-    catch(er){ const m = String(er && er.message || ''); if(/404|PGRST202|Could not find/i.test(m)){ const e = new Error('فایل storage_s3.sql هنوز در Supabase اجرا نشده است.'); e.status = 404; throw e; } throw er; }
+    catch(er){ const m = String(er && er.message || ''); if(/404|PGRST202|Could not find/i.test(m)){ const e = new Error('فایل storage_s3.sql (نسخهٔ تازه) هنوز در Supabase اجرا نشده است.'); e.status = 404; throw e; } throw er; }
     if(Array.isArray(r)) r = r[0];
     if(r && r[fn]) r = r[fn];
     if(!r || !r.ok) throw s3Err(r);
     return r;
   }
-  function uploadToS3(file, onProgress, kind){
-    return s3Rpc('pm_file_upload_url', {p_kind: kind || 'other', p_name: file.name}).then(r => new Promise((resolve, reject) => {
+  /* آپلود به یک فضای مشخص (۱ اصلی، ۲ جایگزین) */
+  function uploadToS3(file, onProgress, kind, slot){
+    return s3Rpc('pm_file_upload_url', {p_kind: kind || 'other', p_name: file.name, p_slot: slot || 1}).then(r => new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', r.url);
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.upload.onprogress = e => { if(e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
       xhr.onload = () => {
-        if(xhr.status >= 200 && xhr.status < 300) resolve('s3:' + r.key + '#' + encodeURIComponent(file.name));
+        if(xhr.status >= 200 && xhr.status < 300) resolve((slot === 2 ? 's3b:' : 's3:') + r.key + '#' + encodeURIComponent(file.name));
         else{
           const code = (String(xhr.responseText || '').match(/<Code>([^<]+)</) || [])[1] || '';
           const er = new Error(code === 'SignatureDoesNotMatch' || code === 'InvalidAccessKeyId' ? 'فضای ابری کلیدها را نپذیرفت (' + code + ') — کلید دسترسی، محرمانه و منطقه را بررسی کنید.' : code === 'NoSuchBucket' ? 'سطل با این نام در فضای ابری پیدا نشد.' : 'فضای ابری فایل را نپذیرفت' + (code ? ' (' + code + ')' : ' — کد ' + toFa(xhr.status)));
@@ -50079,67 +50077,117 @@
       xhr.send(file);
     }));
   }
+  /* اول فضای اصلی؛ اگر در دسترس نبود یا تنظیم نشده بود، فضای جایگزین */
+  async function uploadS3Any(file, onProgress, kind){
+    try{ return await uploadToS3(file, onProgress, kind, 1); }
+    catch(er){
+      if(er.reason === 'login' || er.reason === 'denied') throw er;
+      if(onProgress) onProgress(0);
+      try{ return await uploadToS3(file, onProgress, kind, 2); }
+      catch(er2){ throw er2.reason === 'nocfg' ? er : er2; }
+    }
+  }
+  /* آیا این لینک واقعاً جواب می‌دهد؟ (فقط بایت اول، حداکثر ۴ ثانیه) */
+  async function s3Probe(u){
+    const ac = typeof AbortController === 'function' ? new AbortController() : null;
+    const tm = setTimeout(() => ac && ac.abort(), 4000);
+    try{ const r = await fetch(u, {headers:{Range:'bytes=0-0'}, cache:'no-store', signal: ac ? ac.signal : undefined}); return r.ok; }
+    catch(e){ return false; }
+    finally{ clearTimeout(tm); }
+  }
   const s3Cache = new Map();
-  async function s3Url(key, name, dl){
+  async function s3Url(key, name, dl, slot){
     const ck = key + '|' + (dl ? name : '');
     const c = s3Cache.get(ck);
     if(c && c.t > Date.now()) return c.u;
-    const r = await s3Rpc('pm_file_url', {p_key: key, p_name: name || '', p_download: !!dl});
-    s3Cache.set(ck, {u: r.url, t: Date.now() + 8 * 60000});
-    return r.url;
+    const r = await s3Rpc('pm_file_url', {p_key: key, p_name: name || '', p_download: !!dl, p_slot: slot === 2 ? 2 : 1});
+    let u = r.url;
+    if(r.alt && !(await s3Probe(u))) u = r.alt;
+    s3Cache.set(ck, {u, t: Date.now() + 8 * 60000});
+    return u;
   }
   /* هر پیوند #s3dl / #s3open: لینک امضاشده گرفته و همان‌جا باز یا دانلود می‌شود */
+  function s3Href(a, dl){ return '#s3' + (dl ? 'dl' : 'open') + ':' + (a.slot === 2 ? 2 : 1) + ':' + a.key + '|' + encodeURIComponent(a.name); }
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('a[href^="#s3dl:"], a[href^="#s3open:"]');
     if(!t) return;
     e.preventDefault(); e.stopPropagation();
     const h = t.getAttribute('href'), dl = h.startsWith('#s3dl:');
-    const body = h.slice(dl ? 6 : 8), bar = body.indexOf('|');
-    const key = bar === -1 ? body : body.slice(0, bar);
-    let name = ''; try{ name = decodeURIComponent(bar === -1 ? '' : body.slice(bar + 1)); }catch(er){}
+    const m = h.slice(dl ? 6 : 8).match(/^([12]):([^|]+)\|?(.*)$/);
+    if(!m) return;
+    const slot = +m[1], key = m[2];
+    let name = ''; try{ name = decodeURIComponent(m[3] || ''); }catch(er){}
     const ck = key + '|' + (dl ? name : ''), c = s3Cache.get(ck);
     const go = (w, u) => { if(dl){ const f = document.createElement('iframe'); f.hidden = true; f.src = u; document.body.appendChild(f); setTimeout(() => f.remove(), 60000); } else if(w) w.location.href = u; else location.href = u; };
     if(c && c.t > Date.now()){ if(dl) go(null, c.u); else window.open(c.u, '_blank', 'noopener'); return; }
     /* پنجره پیش از درخواست باز می‌شود تا مرورگر جلویش را نگیرد */
     const w = dl ? null : window.open('', '_blank');
     t.classList.add('s3-busy');
-    s3Url(key, name, dl).then(u => go(w, u)).catch(er => { if(w) w.close(); showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
+    s3Url(key, name, dl, slot).then(u => go(w, u)).catch(er => { if(w) w.close(); showDialog('err', 'فایل باز نشد', friendlyErr(er)); })
       .finally(() => t.classList.remove('s3-busy'));
   }, true);
+  function s3SecHtml(slot){
+    return '<div class="upc-sec" data-upc-for="s3" data-s3slot="' + slot + '"><b class="upc-st">' + S3_SLOT[slot]
+      + (slot === 2 ? ' <small>(اختیاری — اگر فضای اصلی در دسترس نبود)</small>' : ' <small>(فضای ابری S3)</small>') + '</b>'
+      +   '<div class="upc-g"><label><span>نشانی سرویس (Endpoint)</span><input type="text" class="s3-ep" dir="ltr" placeholder="' + (slot === 2 ? 'https://storage.c2.liara.space' : 'https://s3.ir-thr-at1.arvanstorage.ir') + '" autocomplete="off"></label>'
+      +   '<label><span>نام سطل (Bucket)</span><input type="text" class="s3-bk" dir="ltr" autocomplete="off"></label>'
+      +   '<label><span>منطقه (Region)</span><input type="text" class="s3-rg" dir="ltr" placeholder="us-east-1" autocomplete="off"></label>'
+      +   '<label><span>کلید دسترسی (Access Key)</span><input type="text" class="s3-ak" dir="ltr" autocomplete="off"></label>'
+      +   '<label><span>کلید محرمانه (Secret Key)</span><input type="password" class="s3-sk" dir="ltr" autocomplete="new-password" placeholder="کلید محرمانه"></label></div>'
+      +   '<small class="upc-hint s3-st">در حال خواندن…</small>'
+      +   '<div class="upc-row"><button type="button" class="mini" data-s3-save="1">ذخیرهٔ اتصال</button><button type="button" class="mini" data-s3-test="1">بررسی اتصال</button>'
+      +     (slot === 2 ? '<button type="button" class="mini s3-del" data-s3-del="1" hidden>حذف این اتصال</button>' : '')
+      +     '<span class="upc-res s3-res"></span></div>'
+      + '</div>';
+  }
+  const s3Date = at => { const d = new Date(at); if(isNaN(d)) return ''; const [jy, jm, jd] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return toFa(jy + '/' + String(jm).padStart(2, '0') + '/' + String(jd).padStart(2, '0')); };
   async function s3InfoPaint(box){
-    const st = box.querySelector('.s3-st'); if(!st) return;
-    try{
-      const r = await s3Rpc('pm_storage_info', {});
-      const v = (s, x) => { const i = box.querySelector(s); if(i && x && !i.value) i.value = x; };
+    const secs = box.querySelectorAll('[data-s3slot]'); if(!secs.length) return;
+    let slots = [], err = null;
+    try{ slots = (await s3Rpc('pm_storage_info', {})).slots || []; }catch(er){ err = er; }
+    secs.forEach(sec => {
+      const slot = +sec.dataset.s3slot, r = slots.find(x => x.slot === slot) || {};
+      const st = sec.querySelector('.s3-st');
+      if(err){ st.className = 'upc-hint s3-st'; st.textContent = friendlyErr(err); return; }
+      const v = (s, x) => { const i = sec.querySelector(s); if(i && x && !i.value) i.value = x; };
       v('.s3-ep', r.endpoint); v('.s3-bk', r.bucket); v('.s3-rg', r.region); v('.s3-ak', r.access);
-      const sk = box.querySelector('.s3-sk'); if(sk) sk.placeholder = r.hasSecret ? 'ذخیره شده — برای تغییر، کلید تازه بگذارید' : 'کلید محرمانه';
+      const sk = sec.querySelector('.s3-sk'); if(sk) sk.placeholder = r.hasSecret ? 'ذخیره شده — برای تغییر، کلید تازه بگذارید' : 'کلید محرمانه';
+      const del = sec.querySelector('.s3-del'); if(del) del.hidden = !r.endpoint;
       st.className = 'upc-hint s3-st' + (r.ready ? ' ok' : '');
-      st.textContent = r.ready ? 'اتصال ذخیره شده است' + (r.by ? ' · ' + r.by : '') + (r.at ? ' · ' + (() => { const d = new Date(r.at); if(isNaN(d)) return ''; const [jy, jm, jd] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return toFa(jy + '/' + String(jm).padStart(2, '0') + '/' + String(jd).padStart(2, '0')); })() : '') + '. کلید محرمانه فقط روی سرور است و دیگر نمایش داده نمی‌شود.'
-        : 'هنوز اتصالی ذخیره نشده است.';
-    }catch(er){ st.className = 'upc-hint s3-st'; st.textContent = friendlyErr(er); }
+      st.textContent = r.ready ? 'اتصال ذخیره شده است' + (r.by ? ' · ' + r.by : '') + (r.at ? ' · ' + s3Date(r.at) : '') + '. کلید محرمانه فقط روی سرور است و دیگر نمایش داده نمی‌شود.'
+        : r.endpoint ? 'اتصال کامل نیست؛ همهٔ خانه‌ها را پر کنید.' : (slot === 2 ? 'تنظیم نشده — فایل‌ها فقط در فضای اصلی ذخیره می‌شوند.' : 'هنوز اتصالی ذخیره نشده است.');
+    });
   }
   new MutationObserver(() => {
     document.querySelectorAll('.upc:not([data-s3i])').forEach(b => { b.dataset.s3i = '1'; s3InfoPaint(b); });
   }).observe(document.documentElement, {childList:true, subtree:true});
   document.addEventListener('click', async e => {
-    const sv = e.target.closest && e.target.closest('[data-s3-save], [data-s3-test]');
+    const sv = e.target.closest && e.target.closest('[data-s3-save], [data-s3-test], [data-s3-del]');
     if(!sv) return;
-    const box = sv.closest('.upc'), res = box.querySelector('.s3-res');
-    const v = s => String((box.querySelector(s) || {}).value || '').trim();
+    const sec = sv.closest('[data-s3slot]'), slot = +sec.dataset.s3slot, res = sec.querySelector('.s3-res');
+    const v = s => String((sec.querySelector(s) || {}).value || '').trim();
+    if(sv.dataset.s3Del && !(await askConfirm('حذف اتصال «' + S3_SLOT[slot] + '»؟', 'فایل‌های داخل خودِ فضای ابری پاک نمی‌شوند؛ فقط سامانه دیگر به آن وصل نمی‌شود.', 'حذف اتصال'))) return;
     sv.disabled = true; res.className = 'upc-res s3-res'; res.textContent = 'در حال انجام…';
     try{
-      if(sv.dataset.s3Save){
+      if(sv.dataset.s3Del){
+        await s3Rpc('pm_storage_set', {p_slot: slot, p_endpoint: '', p_region: '', p_bucket: '', p_access: '', p_secret: ''});
+        sec.querySelectorAll('input').forEach(i => { i.value = ''; });
+        res.className = 'upc-res s3-res ok'; res.textContent = 'اتصال حذف شد ✓';
+        s3InfoPaint(sec.closest('.upc'));
+      }else if(sv.dataset.s3Save){
         if(!/^https:\/\/[^\s/]+/.test(v('.s3-ep'))) throw new Error('نشانی سرویس باید با https:// شروع شود.');
         if(!v('.s3-bk') || !v('.s3-ak')) throw new Error('نام سطل و کلید دسترسی را وارد کنید.');
-        await s3Rpc('pm_storage_set', {p_endpoint: v('.s3-ep'), p_region: v('.s3-rg'), p_bucket: v('.s3-bk'), p_access: v('.s3-ak'), p_secret: v('.s3-sk')});
-        const sk = box.querySelector('.s3-sk'); if(sk) sk.value = '';
+        await s3Rpc('pm_storage_set', {p_slot: slot, p_endpoint: v('.s3-ep'), p_region: v('.s3-rg'), p_bucket: v('.s3-bk'), p_access: v('.s3-ak'), p_secret: v('.s3-sk')});
+        const sk = sec.querySelector('.s3-sk'); if(sk) sk.value = '';
+        s3Cache.clear();
         res.className = 'upc-res s3-res ok'; res.textContent = 'اتصال ذخیره شد ✓';
-        s3InfoPaint(box);
+        s3InfoPaint(sec.closest('.upc'));
       }else{
         const f = new File(['pm-test ' + new Date().toISOString()], 'test.txt', {type:'text/plain'});
-        const u = await uploadToS3(f, null, 'test');
+        const u = await uploadToS3(f, null, 'test', slot);
         const a = attachList(u)[0];
-        const r = await fetch(await s3Url(a.key, a.name, false), {cache:'no-store'});
+        const g = await s3Rpc('pm_file_url', {p_key: a.key, p_name: a.name, p_download: false, p_slot: slot});
+        const r = await fetch(g.url, {cache:'no-store'});
         if(!r.ok) throw new Error('آپلود شد ولی خواندن فایل ناموفق بود (کد ' + toFa(r.status) + ').');
         res.className = 'upc-res s3-res ok'; res.textContent = 'آپلود و دانلود آزمایشی موفق بود ✓';
       }
@@ -50149,7 +50197,7 @@
   async function uploadAny(file, onProgress, kind){
     if(file.size > upMaxMB() * 1024 * 1024)
       throw new Error('حجم «' + file.name + '» بیشتر از ' + upMaxTxt() + ' است');
-    if(upCfg.mode === 's3') return await uploadToS3(file, onProgress, kind);
+    if(upCfg.mode === 's3') return await uploadS3Any(file, onProgress, kind);
     if(upCfg.mode !== 'drive' && !(storageOff && upCfg.mode === 'auto')){
       try{ return await uploadToStorage(file, onProgress, kind); }
       catch(er){
@@ -50398,7 +50446,7 @@
     if(a.src === 's3' && (k === 'img' || k === 'pdf')){
       const el = m.querySelector('.fv-img, .fv-frame'), keep = S;
       if(el){ el.classList.add('s3-wait');
-        s3Url(a.key, a.name, false).then(u => { if(fvS === keep && keep.L[keep.i] === a){ el.src = u; el.classList.remove('s3-wait'); } })
+        s3Url(a.key, a.name, false, a.slot).then(u => { if(fvS === keep && keep.L[keep.i] === a){ el.src = u; el.classList.remove('s3-wait'); } })
           .catch(er => { if(fvS === keep) el.outerHTML = '<div class="fv-none"><b>' + esc(a.name) + '</b><small>' + esc(friendlyErr(er)) + '</small></div>'; });
       }
     }
@@ -50413,7 +50461,7 @@
   function fvDownloadAll(L){
     (L || []).forEach((a, i) => setTimeout(async () => {
       let u = attachDownloadUrl(a);
-      if(a.src === 's3'){ try{ u = await s3Url(a.key, a.name, true); }catch(er){ showDialog('err', 'دانلود نشد', a.name + '\n' + friendlyErr(er)); return; } }
+      if(a.src === 's3'){ try{ u = await s3Url(a.key, a.name, true, a.slot); }catch(er){ showDialog('err', 'دانلود نشد', a.name + '\n' + friendlyErr(er)); return; } }
       const f = document.createElement('iframe'); f.hidden = true; f.src = u;
       document.body.appendChild(f); setTimeout(() => f.remove(), 60000);
     }, i * 700));

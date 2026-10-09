@@ -25,7 +25,7 @@ say(){ printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 say "۱/۸ به‌روزرسانی سیستم و ابزارها"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y ca-certificates curl git openssl ufw cron jq python3 postgresql-client unattended-upgrades
+apt-get install -y ca-certificates curl git openssl ufw cron jq python3 postgresql-client unattended-upgrades rclone
 dpkg-reconfigure -f noninteractive unattended-upgrades || true   # به‌روزرسانی امنیتی خودکار
 
 say "۲/۸ نصب Docker (از مخزن خود Ubuntu) و آینهٔ داخلی"
@@ -135,9 +135,11 @@ docker run -d --name pm-caddy --restart unless-stopped --network host \
 
 say "۸/۸ به‌روزرسانی خودکار سایت از گیت‌هاب و پشتیبان شبانه"
 install -m 755 "$BASE/site/server/backup.sh" /usr/local/bin/pm-backup
+install -m 755 "$BASE/site/server/storage_sync.sh" /usr/local/bin/pm-storage-sync
 cat > /etc/cron.d/pm <<CRON
 */5 * * * * root cd $BASE/site && git pull -q --ff-only >/dev/null 2>&1
 30 2 * * *  root /usr/local/bin/pm-backup >> /var/log/pm-backup.log 2>&1
+30 3 * * *  root /usr/local/bin/pm-storage-sync >> /var/log/pm-storage-sync.log 2>&1
 CRON
 chmod 644 /etc/cron.d/pm
 
