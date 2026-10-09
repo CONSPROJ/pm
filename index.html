@@ -2771,6 +2771,25 @@
   .upc-sec[data-upc-for="s3"] .upc-hint{display:block;direction:rtl;text-align:right;margin-top:8px;font-size:10.5px;line-height:1.8;}
   .s3-st.ok{color:var(--ok);font-weight:700;}
   .s3-busy{opacity:.55;pointer-events:none;cursor:progress;}
+  .rw-ph{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;}
+  .rw-ph-l{display:contents;}
+  .rw-ph-add{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:11px;border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;}
+  .rw-ph-add svg{width:16px;height:16px;} .rw-ph-add:hover{color:var(--sky);border-color:var(--sky);}
+  .rw-ph.has .rw-ph-add{width:52px;height:52px;padding:0;justify-content:center;flex-direction:column;gap:2px;font-size:9.5px;}
+  .ph-it{position:relative;width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--field);flex:0 0 auto;}
+  .ph-th{all:unset;display:block;width:100%;height:100%;cursor:pointer;}
+  .ph-th i{display:grid;place-items:center;width:100%;height:100%;font-style:normal;font-size:9px;font-weight:900;color:var(--muted);}
+  .ph-x{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:7px;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;}
+  .ph-x svg{width:11px;height:11px;}
+  .ph-it.busy .att-th{opacity:.55;filter:saturate(.6);}
+  .ph-pg{position:absolute;left:5px;right:5px;bottom:5px;height:4px;border-radius:3px;background:rgba(255,255,255,.6);overflow:hidden;}
+  .ph-pg i{display:block;height:100%;width:0;background:var(--sky);transition:width .2s;}
+  .ph-it.fail{outline:2px solid var(--alert);outline-offset:-2px;}
+  .ph-strip{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;width:100%;}
+  .ph-s{all:unset;cursor:pointer;width:46px;height:46px;border-radius:10px;overflow:hidden;background:var(--field);display:grid;place-items:center;font-size:11px;font-weight:900;color:var(--muted);flex:0 0 auto;}
+  .ph-s.more{direction:ltr;}
+  .ph-s:hover{outline:2px solid var(--sky);outline-offset:1px;}
+  .tdi-t .ph-strip{margin-top:5px;}
   .up-ext.has-th, .fv-th i.has-th{padding:0;overflow:hidden;background:var(--field) !important;}
   .fv-th i.has-th{width:26px;height:26px;border-radius:7px;}
   .att-th{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .2s;}
@@ -34790,7 +34809,8 @@
               +   (r.__balance ? '<span class="rp2-t bal">از گزارش کارگری</span>' : '') + '</span>'
               + '</div>'
               + '<div class="rp2-a' + (a2 ? '' : ' none') + '">' + (a2 ? esc(a2) : 'شرح فعالیت نوشته نشده')
-              +   (z ? '<span class="rp2-sub z">' + esc(z) + (z2 ? ' · ' + esc(z2) : '') + '</span>' : '') + '</div>'
+              +   (z ? '<span class="rp2-sub z">' + esc(z) + (z2 ? ' · ' + esc(z2) : '') + '</span>' : '')
+              +   (pick(r,F.photos) ? phStripHtml(pick(r,F.photos), c) : '') + '</div>'
               + '<div class="rp2-m"><b>' + toFa(o + sh) + '</b><u>نفر</u>'
               +   (r.__balance ? '' : '<span class="rp2-os"><i class="o"></i>' + toFa(o) + '<i class="s"></i>' + toFa(sh) + '</span>') + '</div>'
               + (me && pick(r,F.id) && !r.__balance ? '<span class="row-act rp2-x">' + editIcons(pick(r,F.id)) + '</span>' : '')
@@ -36853,6 +36873,67 @@
     }
   }
 
+  /* ====== عکس هر ردیف گزارش ======
+     هر ردیف پیمانکار و هر مشکل می‌تواند چند عکس داشته باشد. عکس پیش از آپلود
+     فشرده می‌شود و یک نسخهٔ کوچک هم کنارش می‌رود؛ گزارش‌ها فقط نسخهٔ کوچک را
+     (آن هم وقتی دیده شود) بارگیری می‌کنند و عکس اصلی فقط با باز کردن می‌آید. */
+  function rwPhItem(a){
+    return '<span class="ph-it" data-url="' + esc(a.full) + '"><button type="button" class="ph-th" data-phv="1" title="نمایش ' + esc(a.name) + '">' + (attThumb(a) || '<i>' + esc((a.ext || 'IMG').toUpperCase()) + '</i>') + '</button>'
+      + '<button type="button" class="ph-x" data-phx="1" title="حذف عکس" aria-label="حذف عکس">' + UP_I.x + '</button></span>';
+  }
+  function rwPhotoHtml(cls, val){
+    const L = attachList(val);
+    return '<div class="rw-ph' + (L.length ? ' has' : '') + '"><input type="hidden" class="' + cls + '" value="' + esc(L.map(a => a.full).join('\n')) + '">'
+      + '<div class="rw-ph-l">' + L.map(rwPhItem).join('') + '</div>'
+      + '<button type="button" class="rw-ph-add">' + UP_I.cam + '<span>عکس</span></button>'
+      + '<input type="file" class="rw-ph-f" accept="image/*" multiple hidden></div>';
+  }
+  function rwPhSync(box){
+    const urls = Array.from(box.querySelectorAll('.ph-it[data-url]:not(.busy)')).map(x => x.dataset.url).filter(Boolean);
+    box.querySelector('input[type=hidden]').value = urls.join('\n');
+    box.classList.toggle('has', !!box.querySelector('.ph-it'));
+  }
+  async function rwPhAdd(box, files){
+    const list = box.querySelector('.rw-ph-l');
+    await Promise.all(Array.from(files || []).filter(f => /^image\//.test(f.type || '') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || '')).map(async f0 => {
+      const it = document.createElement('span');
+      it.className = 'ph-it busy';
+      let loc = ''; try{ loc = URL.createObjectURL(f0); }catch(e){}
+      it.innerHTML = '<span class="ph-th">' + (loc ? '<img class="att-th" src="' + esc(loc) + '" alt="">' : '') + '</span><span class="ph-pg"><i></i></span>';
+      list.appendChild(it); box.classList.add('has');
+      const bar = it.querySelector('.ph-pg i');
+      try{
+        const f = await upPrep(f0);
+        const url = await upEnqueue(() => upTry(f, p => { bar.style.width = Math.round(p * 100) + '%'; }, 'report'));
+        const a = attachList(url)[0];
+        if(!a) throw new Error('آپلود نشد');
+        if(loc && a.src === 's3') s3Local.set(a.key, loc);
+        it.outerHTML = rwPhItem(a);
+      }catch(er){
+        it.classList.remove('busy'); it.classList.add('fail'); it.removeAttribute('data-url');
+        it.title = friendlyErr(er);
+        it.querySelector('.ph-pg').outerHTML = '<button type="button" class="ph-x" data-phx="1" title="کنار گذاشتن" aria-label="کنار گذاشتن">' + UP_I.x + '</button>';
+        showDialog('err', 'عکس آپلود نشد', (f0.name || 'عکس') + '\n' + friendlyErr(er));
+      }
+      rwPhSync(box); saveDraft();
+    }));
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.rw-ph-add, [data-phx], [data-phv]');
+    if(!b || !b.closest('.rw-ph')) return;
+    const box = b.closest('.rw-ph');
+    if(b.classList.contains('rw-ph-add')){ box.querySelector('.rw-ph-f').click(); return; }
+    if(b.dataset.phx){ b.closest('.ph-it').remove(); rwPhSync(box); saveDraft(); return; }
+    const items = Array.from(box.querySelectorAll('.ph-it[data-url]:not(.busy)'));
+    const L = items.map(x => attachList(x.dataset.url)[0]).filter(Boolean);
+    fvOpen(L, Math.max(0, items.indexOf(b.closest('.ph-it'))), 'عکس‌های ردیف');
+  });
+  document.addEventListener('change', e => {
+    const f = e.target.closest && e.target.closest('.rw-ph-f');
+    if(!f) return;
+    const files = Array.from(f.files || []); f.value = '';
+    if(files.length) rwPhAdd(f.closest('.rw-ph'), files);
+  });
   function addCrew(d){
     d = d || {};
     const id = {n:nid('n'), k:nid('k'), o:nid('o'), s:nid('s'), z:nid('z'), z2:nid('z2'), a:nid('a')};
@@ -36875,6 +36956,7 @@
       '</div>',
       '<div class="field rw-act"><label for="'+id.a+'">شرح فعالیت</label>',
         '<textarea id="'+id.a+'" class="c-act" placeholder="فعالیت انجام‌شده در این محل...">'+esc(d.activity)+'</textarea></div>',
+      rwPhotoHtml('c-photos', d.photos),
       '</div>'
     ].join('');
     el.querySelector('.rm').addEventListener('click', () => {
@@ -36929,7 +37011,7 @@
           '<input type="text" id="'+idZ+'" class="i-zone" placeholder="انتخاب یا تایپ" value="'+esc(data.zone)+'" data-list="zoneList" autocomplete="off"></div>',
         '<div class="field" style="margin-bottom:0;"><label for="'+idW+'">شخص / پیمانکار مربوطه</label>',
           '<input type="text" id="'+idW+'" class="i-who" placeholder="انتخاب یا تایپ" value="'+esc(data.who)+'" data-list="contractorList" autocomplete="off"></div>',
-      '</div></div>'
+      '</div>', rwPhotoHtml('i-photos', data.photos), '</div>'
     ].join('');
     el.querySelector('.rm').addEventListener('click', () => {
       rwRemove(el, () => {
@@ -37500,13 +37582,15 @@
       shagerd: c.querySelector('.c-shagerd').value.trim(),
       zone: c.querySelector('.c-zone').value.trim(),
       sub: c.querySelector('.c-sub').value.trim(),
-      activity: c.querySelector('.c-act').value.trim()
+      activity: c.querySelector('.c-act').value.trim(),
+      photos: ((c.querySelector('.c-photos') || {}).value || '').trim()
     }));
     const issues = [];
     issueRows.querySelectorAll('.issue').forEach(el => issues.push({
       text: el.querySelector('.i-text').value.trim(),
       zone: el.querySelector('.i-zone').value.trim(),
-      who:  el.querySelector('.i-who').value.trim()
+      who:  el.querySelector('.i-who').value.trim(),
+      photos: ((el.querySelector('.i-photos') || {}).value || '').trim()
     }));
     const machines = [];
     machineRows.querySelectorAll('.machine').forEach(el => machines.push({
@@ -38027,7 +38111,7 @@
     activity:['شرح فعالیت','فعالیت','activity'],
     skill:['تخصص','رشته','skill'], id:['شناسه','id'],
     time:['زمان ثبت','تاریخ ثبت','timestamp'], date:['تاریخ'], rid:['شناسه گزارش'],
-    project:['پروژه','نام پروژه','project']
+    project:['پروژه','نام پروژه','project'], photos:['عکس','photos']
   };
   // نام ستون‌ها با فاصلهٔ اضافه یا نیم‌فاصله هم درست تشخیص داده شود
   function normKey(k){
@@ -40330,7 +40414,7 @@
       if(st && (!g.time || st < g.time)) g.time = st;
       if(c || a){
         const rid = rowId;
-        g.rows.push({c,k,o,s,z,z2,a,id:rid}); g.o += o; g.s += s; tO += o; tS += s;
+        g.rows.push({c,k,o,s,z,z2,a,id:rid,ph:pick(r,F.photos)}); g.o += o; g.s += s; tO += o; tS += s;
         if(isAmani(c)) amaniWorkers += o + s; else peymaniWorkers += o + s;
         if(c) { const cl = contractorLabel(c, k); byC.set(cl, (byC.get(cl)||0) + o + s); }
         if(z) byZ.set(z, (byZ.get(z)||0) + o + s);
@@ -40454,7 +40538,7 @@
               const own = eng === meNow();
               return '<div class="iss-line tdi" data-id="' + esc(id) + '" data-scope="view" data-target="issue">'
                 + '<span class="tdi-dot"></span>'
-                + '<span class="tdi-t">' + esc(pick(r,I.text)) + '</span>'
+                + '<span class="tdi-t">' + esc(pick(r,I.text)) + (pick(r,I.photos) ? phStripHtml(pick(r,I.photos), 'مانع' + (pick(r,I.zone) ? ' · ' + pick(r,I.zone) : '')) : '') + '</span>'
                 + (pick(r,I.who) ? '<span class="pill sk">' + esc(pick(r,I.who)) + '</span>' : '')
                 + (eng ? '<span class="tdi-by" title="' + esc(eng) + '">' + avatarHtml(eng, 'xs', true) + '</span>' : '')
                 + ((id && ((own && can('write.editOwn')) || can('rep.editAny'))) ? '<span class="row-act">' + editIcons(id) + '</span>' : '')
@@ -40497,7 +40581,7 @@
             const id = pick(r,I.id), own = (pick(r,F.engineer) || '') === meNow();
             return '<div class="iss-line tdi" data-id="' + esc(id) + '" data-scope="view" data-target="issue">'
               + '<span class="tdi-dot"></span>'
-              + '<span class="tdi-t">' + esc(pick(r,I.text)) + '</span>'
+              + '<span class="tdi-t">' + esc(pick(r,I.text)) + (pick(r,I.photos) ? phStripHtml(pick(r,I.photos), 'مانع' + (pick(r,I.zone) ? ' · ' + pick(r,I.zone) : '')) : '') + '</span>'
               + (pick(r,I.zone) ? '<span class="rp2-sub">' + esc(pick(r,I.zone)) + '</span>' : '')
               + (pick(r,I.who) ? '<button type="button" class="rp2-t pe rp2-iw" data-hrprof="' + esc(pick(r,I.who)) + '">' + esc(pick(r,I.who)) + '</button>' : '')
               + ((id && ((own && can('write.editOwn')) || can('rep.editAny'))) ? '<span class="row-act">' + editIcons(id) + '</span>' : '')
@@ -40523,7 +40607,8 @@
           + '</div>'
           + '<div class="rp2-a' + (r.a ? '' : ' none') + '">' + (r.a ? esc(r.a) : 'شرح فعالیت نوشته نشده')
           +   ((r.z || r.z2) ? '<span class="rp2-loc">' + RP_PIN
-                + (r.z ? '<b>' + esc(r.z) + '</b>' : '') + (r.z2 ? '<em>' + esc(r.z2) + '</em>' : '') + '</span>' : '') + '</div>'
+                + (r.z ? '<b>' + esc(r.z) + '</b>' : '') + (r.z2 ? '<em>' + esc(r.z2) + '</em>' : '') + '</span>' : '')
+          +   (r.ph ? phStripHtml(r.ph, (r.c || '') + (r.z ? ' · ' + r.z : '')) : '') + '</div>'
           + '<div class="rp2-m" title="استادکار ' + toFa(r.o) + ' · شاگرد ' + toFa(r.s) + '">'
           +   '<b>' + toFa(men) + '</b><u>نفر</u>'
           +   (String(r.id || '').indexOf('balance:') === 0 ? '' : '<span class="rp2-os"><i class="o"></i>' + toFa(r.o) + '<i class="s"></i>' + toFa(r.s) + '</span>')
@@ -42105,8 +42190,8 @@
   function loadReportIntoForm(d, eng, ex){
     crewRows.innerHTML = ''; issueRows.innerHTML = ''; machineRows.innerHTML = '';
     ex.rows.forEach(r => addCrew({name: pick(r,F.contractor), skill: pick(r,F.skill), ostad: String(num(pick(r,F.ostad))),
-      shagerd: String(num(pick(r,F.shagerd))), zone: pick(r,F.zone), sub: pick(r,F.sub), activity: pick(r,F.activity)}));
-    ex.issues.forEach(r => addIssue({text: pick(r,I.text), zone: pick(r,I.zone), who: pick(r,I.who)}));
+      shagerd: String(num(pick(r,F.shagerd))), zone: pick(r,F.zone), sub: pick(r,F.sub), activity: pick(r,F.activity), photos: pick(r,F.photos)}));
+    ex.issues.forEach(r => addIssue({text: pick(r,I.text), zone: pick(r,I.zone), who: pick(r,I.who), photos: pick(r,I.photos)}));
     ex.machines.forEach(r => addMachine({name: pick(r,M.name), zone: pick(r,M.zone), sub: pick(r,M.sub)}));
     if(!crewRows.querySelector('.crew')) addCrew();
     if(!issueRows.querySelector('.issue')) addIssue();
@@ -42170,12 +42255,17 @@
     if(submitting) return;          // ارسالِ در جریان، دوباره شروع نشود
     const raw = collect();
     const d = normDate(raw.date);
+    if(document.querySelector('#crewRows .ph-it.busy, #issueRows .ph-it.busy')){
+      msg('warn', 'چند لحظه صبر کنید تا آپلود عکس‌ها تمام شود، بعد ثبت کنید.');
+      return;
+    }
     const contractors = raw.contractors.filter(c => c.name || c.activity)
-      .map(c => ({name:c.name, skill:c.skill, ostad:String(num(c.ostad)), shagerd:String(num(c.shagerd)), zone:c.zone, subzone:c.sub, activity:c.activity}));
+      .map(c => ({name:c.name, skill:c.skill, ostad:String(num(c.ostad)), shagerd:String(num(c.shagerd)), zone:c.zone, subzone:c.sub, activity:c.activity, photos:c.photos || ''}));
     const issues = [];
     (raw.issues || []).forEach(it => {
+      /* عکس‌های یک ردیف چندخطی روی بند اولش ثبت می‌شود */
       String(it.text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean)
-        .forEach(t => issues.push({text:t, zone: it.zone || '', who: it.who || ''}));
+        .forEach((t, k) => issues.push({text:t, zone: it.zone || '', who: it.who || '', photos: k ? '' : (it.photos || '')}));
     });
     const machines = (raw.machines || [])
       .filter(m => m.name)
@@ -43116,7 +43206,7 @@
   const I = {
     id:['شناسه','id'], rid:['شناسه گزارش'], time:['زمان ثبت'],
     text:['شرح مانع','مشکلات و موانع','مشکل'],
-    zone:['محل مشکل','محل'], who:['پیمانکار مربوطه','پیمانکار']
+    zone:['محل مشکل','محل'], who:['پیمانکار مربوطه','پیمانکار'], photos:['عکس','photos']
   };
   const M = {
     id:['شناسه','id'], rid:['شناسه گزارش'], time:['زمان ثبت'],
@@ -43473,9 +43563,9 @@
   const SUPA_MAP = {
     activities:{'شناسه':'id','شناسه گزارش':'report_id','زمان ثبت':'created_at','تاریخ':'date_fa',
       'پروژه':'project','مهندس':'engineer','پیمانکار':'contractor','تخصص':'skill',
-      'استادکار':'ostad','شاگرد':'shagerd','محل کارکرد':'zone','موقعیت جزء':'subzone','شرح فعالیت':'activity'},
+      'استادکار':'ostad','شاگرد':'shagerd','محل کارکرد':'zone','موقعیت جزء':'subzone','شرح فعالیت':'activity','عکس':'photos'},
     issues:{'شناسه':'id','شناسه گزارش':'report_id','زمان ثبت':'created_at','تاریخ':'date_fa',
-      'پروژه':'project','مهندس':'engineer','شرح مانع':'text','محل مشکل':'zone','پیمانکار مربوطه':'party'},
+      'پروژه':'project','مهندس':'engineer','شرح مانع':'text','محل مشکل':'zone','پیمانکار مربوطه':'party','عکس':'photos'},
     machines:{'شناسه':'id','شناسه گزارش':'report_id','زمان ثبت':'created_at','تاریخ':'date_fa',
       'پروژه':'project','مهندس':'engineer','ماشین‌آلات':'name','محل کارکرد':'zone','موقعیت جزء':'subzone'},
     statements:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
@@ -44669,6 +44759,30 @@
   const HEAVY_TTL = 4 * 60 * 1000;
 
   let designsOff = false;   // جدول اسناد طراحی هنوز ساخته نشده
+  /* ستون «عکس» (report_photos.sql) هست؟ یک بار پرسیده می‌شود */
+  let PHOTO_COL = null;
+  async function photoColOk(){
+    if(PHOTO_COL !== null) return PHOTO_COL;
+    try{ await supaFetch('activities?select=photos&limit=1', {prefer:'return=representation'}); PHOTO_COL = true; }
+    catch(e){ if(/photos|42703|400|PGRST/i.test(String(e && e.message || ''))) PHOTO_COL = false; else return false; }
+    return PHOTO_COL;
+  }
+  /* اگر تابع‌های bundle2/day_only ستون عکس را برنگردانند، فقط همان ستون جدا خوانده می‌شود */
+  async function withPhotos(j){
+    if(!j) return;
+    const sets = [['activities', j.rows], ['issues', j.issues]].filter(([t, a]) => Array.isArray(a) && a.length && !a.some(r => r && Object.prototype.hasOwnProperty.call(r, 'photos')));
+    if(!sets.length || !(await photoColOk())) return;
+    await Promise.all(sets.map(async ([t, arr]) => {
+      const ids = arr.map(r => r && r.id).filter(x => x != null);
+      for(let i = 0; i < ids.length; i += 150){
+        try{
+          const got = await supaFetch(t + '?select=id,photos&photos=not.is.null&id=in.(' + ids.slice(i, i + 150).map(encodeURIComponent).join(',') + ')', {prefer:'return=representation'}) || [];
+          const m = new Map(got.map(x => [String(x.id), x.photos]));
+          arr.forEach(r => { if(r && m.has(String(r.id))) r.photos = m.get(String(r.id)); });
+        }catch(e){}
+      }
+    }));
+  }
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
 
@@ -44678,6 +44792,7 @@
         method:'POST', prefer:'return=representation',
         body:{p_date: dateFa || '', p_prev: prevFa || ''}
       });
+      await withPhotos(d);
       const mapd = (t, arr) => (arr || []).map(r => fromSupa(t, r));
       return Object.assign({}, heavyCache.data, {
         day: {rows: mapd('activities', d.rows), issues: mapd('issues', d.issues),
@@ -44690,6 +44805,7 @@
       method:'POST', prefer:'return=representation',
       body:{p_date: dateFa || '', p_prev: prevFa || ''}
     });
+    await withPhotos(j);
     const map = (t, arr) => (arr || []).map(r => fromSupa(t, r));
     const lists = {};
     (j.lists || []).forEach(x => {
@@ -44819,13 +44935,16 @@
         return {state:'confirmed', created};
       }
 
+      const anyPh = (payload.contractors || []).some(c => c.photos) || (payload.issues || []).some(i => i.photos);
+      const phOk = anyPh ? await photoColOk() : false;
+      if(anyPh && !phOk) throw new Error('برای ثبت عکس در گزارش، مدیر سامانه باید فایل report_photos.sql را یک بار در Supabase اجرا کند. فعلاً عکس‌ها را بردارید و ثبت کنید.');
       const acts = (payload.contractors || []).map(c => Object.assign({}, base, {
         contractor:c.name, skill:c.skill, ostad:Number(c.ostad) || 0, shagerd:Number(c.shagerd) || 0,
         zone:c.zone, subzone:c.subzone, activity:c.activity
-      }));
+      }, phOk ? {photos: c.photos || null} : {}));
       const iss = (payload.issues || []).map(i => Object.assign({}, base, {
         text:i.text, zone:i.zone, party:i.who
-      }));
+      }, phOk ? {photos: i.photos || null} : {}));
       const mac = (payload.machines || []).map(m => Object.assign({}, base, {
         name:m.name, zone:m.zone, subzone:m.sub
       }));
@@ -50147,6 +50266,16 @@
       if(m) return '<img class="att-th" src="https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w240" loading="lazy" referrerpolicy="no-referrer" alt="">';
     }
     return '';
+  }
+  /* نوار عکس‌های یک ردیف گزارش: فقط نسخهٔ کوچک، با زدن ← نمایشگر */
+  function phStripHtml(val, title, max){
+    const L = attachList(val).filter(a => ATT_KIND(a.ext) === 'img');
+    if(!L.length) return '';
+    const n = max || 4;
+    return '<span class="ph-strip" data-fvl="' + esc(L.map(a => a.full).join('\n')) + '"' + (title ? ' data-fvtitle="' + esc(title) + '"' : '') + '>'
+      + L.slice(0, n).map((a, i) => '<button type="button" class="ph-s" data-fv="' + i + '" title="' + esc(a.name) + '">' + attThumb(a) + '</button>').join('')
+      + (L.length > n ? '<button type="button" class="ph-s more" data-fv="' + n + '">+' + toFa(L.length - n) + '</button>' : '')
+      + '</span>';
   }
   function s3ThumbSet(img, r){
     if(!r || !r.u){ img.classList.add('th-bad'); return; }
