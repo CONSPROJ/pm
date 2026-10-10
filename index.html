@@ -27523,7 +27523,15 @@
       }catch(e){}
       el = await revealItem(id, '#adminView');
     }
-    if(el) flashItem(el);
+    if(el){
+      /* از جست‌وجوی اصلی یا اعلان: خود کارت باز می‌شود، نه فقط سطر فهرست */
+      try{
+        let card = el.classList.contains('rv') ? el : el.closest('.rv.adm-k');
+        if(!card && el.classList.contains('afr')){ wrkOpenFastRow(el, true); const b = el.parentNode.querySelector('[data-afrbody="' + CSS.escape(String(id)) + '"]'); card = b && b.querySelector('.rv.adm-k'); }
+        if(card) admExpandCard(card, true);
+      }catch(e){}
+      flashItem(el);
+    }
     else showDialog('warn','یافت نشد','این مورد دیگر در فهرست نیست.');
     return el;
   }
@@ -54210,7 +54218,32 @@
     admGrpOpen.set(g.dataset.grp, open);
   });
 
+  /* کارت دفتر فنی را کامل باز می‌کند (و در صورت خواست، «جزئیات بیشتر» را هم) */
+  function admExpandCard(card, more){
+    if(!card || !card.classList) return;
+    card.classList.add('open');
+    const ax = card.querySelector('.adm-exp .ax'); if(ax) ax.textContent = '▴';
+    if(more && !card.classList.contains('more')){
+      card.classList.add('more');
+      const t = card.querySelector(':scope > .adm-toggle');
+      if(t){ const txt = t.querySelector('.tg-txt'), ar = t.querySelector('.tg-ar');
+        if(txt && ar){ txt.textContent = 'بستن جزئیات'; ar.textContent = '▴'; } else t.textContent = 'بستن جزئیات ▴'; }
+    }
+  }
   function renderAdminList(items){
+    /* جست‌وجو: نتیجه‌ها به شکل کارتِ باز، نه سطر فهرست */
+    const srchQ = !!String(qAdmin || '').trim();
+    const viewKeep = admView;
+    if(srchQ) admView = 'card';
+    try{ renderAdminListIn(items); }
+    finally{ admView = viewKeep; }
+    if(srchQ){
+      const cards = document.querySelectorAll('#adminView .rv.adm-k[data-id]');
+      cards.forEach(c => admExpandCard(c, cards.length <= 2));
+      if(cards.length === 1){ try{ setTimeout(() => centerOn(cards[0]), 80); }catch(e){} }
+    }
+  }
+  function renderAdminListIn(items){
     adminOpenSnap = snapAdminOpen();
     if(!document.getElementById('admList-statement')) renderAdminSkeleton();
     refreshAdmPending();
