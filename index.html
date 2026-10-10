@@ -20103,6 +20103,17 @@
   :is(#adminView, .adm-host) .rv .adm-toggle:hover{color:var(--ink) !important;}
   :is(#adminView, .adm-host) .rv .cm-bar{border-top-color:var(--line-soft) !important;}
   :is(#adminView, .adm-host) .rv .cm-bar button{font-size:11px;color:var(--muted);}
+  /* کاشی‌های «فعالیت اجرایی» و «مانع» در کارت پیمانکار؛ هر کاشی فهرست خودش را زیرش باز می‌کند */
+  .rct-row .cfd{cursor:pointer;}
+  .rct-row .cfd.on{outline:2px solid color-mix(in srgb, var(--sky) 55%, transparent);outline-offset:-2px;}
+  .rc-pane{margin-top:8px;}
+  .rct-l{display:flex;flex-direction:column;gap:6px;}
+  .rct-it{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);}
+  .rct-it:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));}
+  .rct-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .rct-tx b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rct-tx small{font-size:10.5px;color:var(--muted);} .rct-tx em{font-style:normal;color:var(--alert);font-weight:700;}
+  .rct-it > i{font-style:normal;color:var(--muted);}
   /* بخش تاشو در کارت پیمانکار (موانع مربوطه) */
   .rc-fold{margin:0;}
   .rc-fold > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;}
@@ -39712,24 +39723,50 @@
                         + '<small>' + esc(toFa(admDate(faDateOf(it.date)) || '')) + (it.skill ? ' · ' + esc(it.skill) : '')
                         + (tr ? ' · ' + esc(pick(tr,T.title) || '') : '') + ' · ' + (it.open ? 'باز' : 'رفع شده') + '</small></div>';
                     }).join('') : '';
-                  if(!rel.length && !act.length) return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">۰</span></summary><div class="hr-note">در این بازه مانعی برای این پیمانکار ثبت نشده است. ✓</div></details>';
-                  if(!rel.length) return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">' + toFa(act.filter(x => x.open).length) + '</span></summary><div class="hr-iss">' + actHtml + '</div></details>';
-                  const byZ = new Map();
-                  rel.forEach(r => { const z = String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
-                  /* همهٔ موانع، تازه‌ترین بالا؛ چهار تای اول باز و بقیه با «نمایش همه».
-                     با زدن روی هر طبقه/محل فقط موانع همان‌جا دیده می‌شود. */
-                  const all = rel.slice().sort((x, y) => String(pick(y,F.date) || '').localeCompare(String(pick(x,F.date) || '')));
-                  return '<details class="rc-fold"><summary class="rc-title">موانع مربوطه<span class="n">' + toFa(rel.length) + '</span></summary>'
-                    + '<div class="hr-iss" data-hri="1"><div class="hri-z">'
-                    + '<button type="button" class="on" data-hriz="">همه<b>' + toFa(rel.length) + '</b></button>'
-                    + Array.from(byZ).sort((a2, b2) => b2[1] - a2[1]).map(([z, c]) =>
-                        '<button type="button" data-hriz="' + esc(z) + '">' + esc(z) + '<b>' + toFa(c) + '</b></button>').join('') + '</div>'
-                    + all.map((r, i) => '<div class="hri-r' + (i >= 4 ? ' more' : '') + '" data-z="' + esc(String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل') + '"><i></i><span>' + esc(String(pick(r,I.text) || '—')) + '</span>'
-                        + '<small>' + esc(toFa(stampFa(pick(r,F.date)) || pick(r,F.date) || '')) + (pick(r,I.zone) ? ' · ' + esc(pick(r,I.zone)) : '')
-                        + (pick(r,I.who) ? ' · ' + esc(pick(r,I.who)) : '') + '</small></div>').join('')
-                    + (all.length > 4 ? '<button type="button" class="hri-all" data-hriall="1">نمایش همهٔ ' + toFa(all.length) + ' مانع</button>' : '')
-                    + actHtml
-                    + '</div></details>';
+                  /* بدنهٔ موانع (همان قبلی، بدون پنجرهٔ تاشو) */
+                  let blkBody = '';
+                  if(!rel.length && !act.length) blkBody = '<div class="hr-note">در این بازه مانعی برای این پیمانکار ثبت نشده است. ✓</div>';
+                  else if(!rel.length) blkBody = '<div class="hr-iss">' + actHtml + '</div>';
+                  else{
+                    const byZ = new Map();
+                    rel.forEach(r => { const z = String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
+                    /* همهٔ موانع، تازه‌ترین بالا؛ چهار تای اول باز و بقیه با «نمایش همه».
+                       با زدن روی هر طبقه/محل فقط موانع همان‌جا دیده می‌شود. */
+                    const all = rel.slice().sort((x, y) => String(pick(y,F.date) || '').localeCompare(String(pick(x,F.date) || '')));
+                    blkBody = '<div class="hr-iss" data-hri="1"><div class="hri-z">'
+                      + '<button type="button" class="on" data-hriz="">همه<b>' + toFa(rel.length) + '</b></button>'
+                      + Array.from(byZ).sort((a2, b2) => b2[1] - a2[1]).map(([z, c]) =>
+                          '<button type="button" data-hriz="' + esc(z) + '">' + esc(z) + '<b>' + toFa(c) + '</b></button>').join('') + '</div>'
+                      + all.map((r, i) => '<div class="hri-r' + (i >= 4 ? ' more' : '') + '" data-z="' + esc(String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل') + '"><i></i><span>' + esc(String(pick(r,I.text) || '—')) + '</span>'
+                          + '<small>' + esc(toFa(stampFa(pick(r,F.date)) || pick(r,F.date) || '')) + (pick(r,I.zone) ? ' · ' + esc(pick(r,I.zone)) : '')
+                          + (pick(r,I.who) ? ' · ' + esc(pick(r,I.who)) : '') + '</small></div>').join('')
+                      + (all.length > 4 ? '<button type="button" class="hri-all" data-hriall="1">نمایش همهٔ ' + toFa(all.length) + ' مانع</button>' : '')
+                      + actHtml
+                      + '</div>';
+                  }
+                  const blkN = rel.length + act.filter(x => x.open).length;
+                  /* فعالیت‌های اجرایی همین پیمانکار، همان ردیف‌های لیست فعالیت */
+                  let tks = [];
+                  try{ tks = (tasksAll || []).filter(t => !t.__adm && taskGroupOf(t) === 'اجرایی' && taskCtrKeys(t).some(c => c !== TK_NO_CTR && sameEntity(c, name))); }catch(e){}
+                  const stOrd = {todo:0, doing:1, none:1, done:2};
+                  tks.sort((x, y) => ((stOrd[taskStatus(x).cls] || 0) - (stOrd[taskStatus(y).cls] || 0)) || ((flrLate(y) ? 1 : 0) - (flrLate(x) ? 1 : 0)));
+                  const tOpen = tks.filter(t => taskStatus(t).cls !== 'done').length, tLate = tks.filter(t => { try{ return flrLate(t); }catch(e){ return false; } }).length;
+                  const actList = tks.length ? '<div class="rct-l">' + tks.map(t => {
+                      const st = taskStatus(t), due = pick(t,T.due), pl = (function(){ try{ return taskPlaceText(t); }catch(e){ return ''; } })();
+                      let late = false; try{ late = flrLate(t); }catch(e){}
+                      return '<button type="button" class="rct-it" data-ctpgo="task¦' + esc(pick(t,T.id) || '') + '"><span class="st ' + st.cls + '"><span class="st-dot"></span></span>'
+                        + '<span class="rct-tx"><b>' + esc(pick(t,T.title) || 'بدون عنوان') + '</b><small>' + [st.label, pick(t,T.m1), pl, due ? 'موعد ' + taskDate(due) : ''].filter(Boolean).map(esc).join(' · ')
+                        + (late ? ' <em>دیرکرد</em>' : '') + '</small></span><i>‹</i></button>';
+                    }).join('') + '</div>'
+                    : '<div class="hr-note">فعالیت اجرایی‌ای در لیست فعالیت به این پیمانکار ابلاغ نشده است.</div>';
+                  const I2 = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+                  const tile2 = (key, ic, n, lb, sub, al) => '<button type="button" class="cfd rct-t' + (n ? '' : ' zero') + '" data-rctile="' + key + '">'
+                    + '<span class="cfd-ic">' + ic + '</span><span class="cfd-tx"><b>' + toFa(n) + '<u>' + lb + '</u></b><small>' + sub + '</small></span>'
+                    + (al ? '<em class="cfd-al">' + toFa(al) + '</em>' : '') + '</button>';
+                  return '<div class="rc-tw"><div class="rc-title">موانع و فعالیت‌ها</div><div class="cf-docs rct-row">'
+                    + tile2('act', I2('<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>'), tOpen, 'فعالیت اجرایی باز', tks.length ? 'از ' + toFa(tks.length) + ' فعالیت' + (tLate ? ' · ' + toFa(tLate) + ' دیرکرد' : '') : 'ابلاغ نشده', tLate)
+                    + tile2('blk', I2('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), blkN, 'مانع', blkN ? 'در این بازه و لیست فعالیت' : 'مانعی نیست ✓', act.filter(x => x.open).length)
+                    + '</div><div class="rc-pane" data-rcp="act" hidden>' + actList + '</div><div class="rc-pane" data-rcp="blk" hidden>' + blkBody + '</div></div>';
                 })()
               + '<div class="rc-title">پروندهٔ اداری</div>' + docTiles;
             const workPane = o.onlyAdm
@@ -40107,6 +40144,15 @@
     const m = document.getElementById('ctProfModal'); if(m){ m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open'); }
     const fm = document.getElementById('flrModal'); if(fm && !fm.hidden){ fm.hidden = true; document.body.style.overflow = ''; }
     try{ gotoAdminItem(k, id); }catch(err){}
+  });
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-rctile]'); if(!t) return;
+    e.preventDefault();
+    const w = t.closest('.rc-tw'); if(!w) return;
+    const k = t.dataset.rctile, pane = w.querySelector('[data-rcp="' + k + '"]'), show = pane && pane.hidden;
+    w.querySelectorAll('[data-rcp]').forEach(p => { p.hidden = true; });
+    w.querySelectorAll('[data-rctile]').forEach(b => b.classList.remove('on'));
+    if(pane && show){ pane.hidden = false; t.classList.add('on'); }
   });
   async function openContractorProfile(name){
     /* بدون نام، پنجره‌ای باز نمی‌شود: پیش از این کارتِ بی‌عنوان
@@ -51357,6 +51403,12 @@
     return (sec && sec.querySelector('[data-fsadd]')) ? sec : null;
   };
   const isFileDrag = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') !== -1;
+  const fsRowTarget = el => {
+    const fr = el && el.closest && el.closest('.afr[data-afr]');
+    if(!fr || fr.dataset.afrkind === 'design') return null;
+    try{ const r = admRowById(fr.dataset.afr); if(!r || !canUploadAdm(fr.dataset.afrkind, r)) return null; }catch(e){ return null; }
+    return fr;
+  };
   let fsOver = null;
   const fsOverSet = (sec, card) => {
     const box = card || sec;
@@ -51369,6 +51421,9 @@
     /* رها کردن فایل در جای دیگرِ صفحه، فایل را به‌جای سایت باز نکند */
     if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault();
     const sec = fsTarget(e.target);
+    /* حالت فهرستی: رها کردن روی سطر سند هم پیوست می‌کند */
+    const fr = !sec && fsRowTarget(e.target);
+    if(fr){ e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; fsOverSet(null, fr); return; }
     if(!sec){ fsOverSet(null); return; }
     e.preventDefault();
     if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
@@ -51377,8 +51432,16 @@
   document.addEventListener('dragleave', e => { if(!e.relatedTarget || !document.documentElement.contains(e.relatedTarget)) fsOverSet(null); });
   document.addEventListener('drop', e => {
     if(!isFileDrag(e)) return;
-    const sec = fsTarget(e.target);
+    let sec = fsTarget(e.target);
+    const fr = !sec && fsRowTarget(e.target);
     fsOverSet(null);
+    if(fr){
+      /* سطر فهرست باز می‌شود تا بخش پیوستِ کارتش ساخته شود و پیشرفت آپلود دیده شود */
+      try{ wrkOpenFastRow(fr, true); }catch(er){}
+      const body = fr.parentNode && fr.parentNode.querySelector('[data-afrbody="' + CSS.escape(fr.dataset.afr) + '"]');
+      sec = body && body.querySelector('.fsec[data-fskind]');
+      if(sec && !sec.querySelector('[data-fsadd]')) sec = null;
+    }
     if(!sec){ if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault(); return; }
     e.preventDefault();
     const fs = e.dataTransfer && e.dataTransfer.files; if(!fs || !fs.length) return;
