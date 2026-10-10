@@ -1691,6 +1691,22 @@
   .dz3 .dz-foot .dz-go{background:transparent;border:1px solid color-mix(in srgb, var(--c) 40%, var(--line));color:var(--c);}
   .dz3 .dz-foot .dz-go:hover{background:color-mix(in srgb, var(--c) 9%, transparent);}
   .dz3 .dz-foot{padding:2px 8px 6px 6px;}
+  /* وضعیت فعلی پررنگ‌تر: زمینهٔ کم‌رنگ هم‌رنگِ طرف و برچسب «وضعیت فعلی» با نقطهٔ زنده */
+  .dz3 .dz-panel{background:color-mix(in srgb, var(--c) 7%, transparent);border-color:color-mix(in srgb, var(--c) 30%, var(--line));}
+  .dz-now{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;letter-spacing:.2px;color:var(--c);margin-bottom:1px;}
+  .dz-now i{width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 50%, transparent);animation:dzNow 2s ease-out infinite;}
+  .dz-panel.s-done .dz-now i{animation:none;}
+  @keyframes dzNow{0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent);}70%{box-shadow:0 0 0 6px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+  /* ویرایش‌های قبلی: باز، زیر تیتر کوچک */
+  .dzl-oldh{font-size:10.5px;font-weight:800;color:var(--muted);margin:4px 2px 0;display:flex;align-items:center;gap:6px;}
+  .dzl-oldh i{font-style:normal;font-size:10px;padding:0 6px;border-radius:7px;background:var(--field);}
+  .dzl-w:not(.cur) > .dzl{opacity:.88;}
+  /* آخرین ویرایش: همان جلوهٔ قبلی — نوار نورانی کنار، برچسب «آخرین» و درخشش فایل‌ها */
+  .dzl-w.newest > .dzl{position:relative;overflow:hidden;background:color-mix(in srgb, var(--sky) 5%, transparent);animation:dzrIn .5s ease-out both;}
+  .dzl-w.newest > .dzl::before{content:'';position:absolute;inset-block:6px;inset-inline-start:0;width:3px;border-radius:3px;background:linear-gradient(180deg, transparent, var(--sky), transparent);background-size:100% 200%;animation:dzrBar 2.4s ease-in-out infinite;}
+  .dzl-w.newest .dzr-new{animation:dzrBadge 2.4s ease-in-out infinite;}
+  .dzl-w.newest .dzl-f{animation:dzfPulse 1.8s ease-out 2;}
+  @media (prefers-reduced-motion:reduce){ .dzl-w.newest > .dzl, .dzl-w.newest > .dzl::before, .dzl-w.newest .dzr-new, .dzl-w.newest .dzl-f, .dz-now i{animation:none;} }
   /* پنل جمع‌وجور سند طراحی */
   .dz3 .dz-panel > .dz-bar{padding:8px 12px 4px;gap:9px;}
   .dz3 .dz-main{font-size:12px;} .dz-who2{font-weight:500;color:var(--muted);} .dz-who2 .dz-hw, .dz-who2 .ds-hl{color:var(--c);font-weight:700;} .dz3 .dz-bar .dz-who{font-size:11px;} .dz3 .dz-id2{font-size:10.5px;}
@@ -55247,15 +55263,16 @@
           + (flow ? '<div class="dz-flow">' + flow + '</div>' : '') + '</div>' : '';
       const chBtn = chart ? '<button type="button" class="dzl-ch" data-dzlch="1" title="نمودار گردش Rev ' + esc(rv.rev) + '" aria-label="نمودار گردش Rev ' + esc(rv.rev) + '">'
           + I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>') + (tot != null ? '<span>' + toFa(tot) + ' روز</span>' : '') + '</button>' : '';
-      return '<div class="dzl-w' + (last ? ' cur' : '') + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
-        + '<span class="dzl-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + res + '</span>'
+      return '<div class="dzl-w' + (last ? ' cur' : '') + (last && revs.length > 1 ? ' newest' : '') + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
+        + '<span class="dzl-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + res + (last && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '') + '</span>'
         + (fl.length ? filePillsHtml(fl, {title: 'Rev ' + rv.rev}) : '<span class="dzl-fs"><small class="dzl-none">بدون فایل</small></span>')
         + chBtn
         + ((editable && id) ? '<button type="button" class="dzl-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="افزودن یا حذف فایل‌های Rev ' + esc(rv.rev) + '" aria-label="فایل‌های Rev ' + esc(rv.rev) + '">' + I('<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>') + '</button>' : '')
         + '</div>' + chart + '</div>';
     }).reverse();
-    const body = rows.length <= 2 ? rows.join('')
-      : rows.slice(0, 1).join('') + '<details class="dzl-old"><summary>ویرایش‌های قبلی <i>' + toFa(rows.length - 1) + '</i></summary>' + rows.slice(1).join('') + '</details>';
+    /* همهٔ ویرایش‌ها باز و دیده می‌شوند؛ قبلی‌ها زیر یک تیتر کوچک */
+    const body = rows.length <= 1 ? rows.join('')
+      : rows.slice(0, 1).join('') + '<div class="dzl-oldh">ویرایش‌های قبلی <i>' + toFa(rows.length - 1) + '</i></div>' + rows.slice(1).join('');
     const addPast = (editable && id) ? '<button type="button" class="dzl-add" data-dspast="' + esc(id) + '">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>افزودن ویرایش قبلی (سابقه)</span></button>' : '';
     return '<div class="dzl-box">' + body + addPast + '</div>';
   }
@@ -55492,7 +55509,7 @@
                  disc ? '<span class="dz-disc2" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : ''].filter(Boolean).join('<i></i>');
     const top = '<div class="dz-bar s-' + side + ' t-' + tone + '">'
       + '<i class="dz-dot2"></i>'
-      + '<div class="dz-bm"><div class="dz-main">' + (main || 'بدون وضعیت') + '</div><div class="dz-id2">' + idl + '</div></div>'
+      + '<div class="dz-bm"><span class="dz-now"><i></i>' + (hn ? 'وضعیت فعلی' : 'آخرین وضعیت') + '</span><div class="dz-main">' + (main || 'بدون وضعیت') + '</div><div class="dz-id2">' + idl + '</div></div>'
       + (days != null ? '<div class="dz-dn ' + dTone + '" title="' + esc(dCap) + '"><b>' + toFa(days) + '<u>روز</u></b><small>' + dCap + '</small></div>' : '')
       + '</div>';
     const kv = [];
