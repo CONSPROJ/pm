@@ -26553,10 +26553,10 @@
             + '<span><b>ارسال ' + (nF > 1 ? 'فایل‌ها' : 'فایل') + (shareCtx.noText ? '' : ' + متن') + '</b><small>' + st.txt + '</small></span></button>'; })() : '')
       + '<div class="sx-apps">'
       +   app('wa', CTC_I.wa, 'واتساپ') + app('tg', CTC_I.tg, 'تلگرام') + app('mail', CTC_I.mail, 'ایمیل') + app('sms', CTC_I.sms, 'پیامک')
-      +   app('copy', CTC_I.copy, 'کپی متن') + (navigator.share ? app('native', CTC_I.share, 'بیشتر') : '')
+      +   app('copy', CTC_I.copy, 'کپی متن') + (navigator.share && shrMobile() ? app('native', CTC_I.share, 'بیشتر') : '')
       +   (shareCtx.link ? app('link', CTC_I.link, 'پیوست') : '')
       + '</div>'
-      + (nF ? '<p class="sx-note">با واتساپ و تلگرام، فایل‌های تیک‌خورده هم همراه متن فرستاده می‌شوند (روی گوشی از برگهٔ اشتراک).</p>' : '')
+      + (nF ? '<p class="sx-note">' + (shrMobile() ? 'با واتساپ و تلگرام، فایل‌های تیک‌خورده هم همراه متن فرستاده می‌شوند (از برگهٔ اشتراک گوشی).' : 'روی رایانه واتساپ وب یا تلگرام باز می‌شود؛ فایل‌ها دانلود و متن کپی می‌شود — فایل را داخل گفت‌وگو بکشید.') + '</p>' : '')
       + '</div>';
   }
   function openShare(title, body, link, party, files){
@@ -26589,6 +26589,9 @@
          .catch(er => { try{ console.warn('share prefetch', a.name, er); }catch(e){} if(tok === shareCtx.tok){ shareCtx.ready.set(i, {st: 'err', er: String(er && (er.big ? 'big' : er.message) || er)}); shrFilesPaint(); } });
     });
   }
+  /* برگهٔ اشتراکِ دستگاه فقط روی گوشی و تبلت؛ روی رایانه (ویندوز و…) واتساپ و تلگرام وب باز می‌شوند */
+  const shrMobile = () => { const ua = navigator.userAgent || ''; return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1); };
+  const shrCanFiles = files => shrMobile() && files.length && typeof navigator.canShare === 'function' && navigator.canShare({files});
   function shrFilesHtml(){
     const L = shareCtx.files || [];
     if(!L.length) return '';
@@ -26654,7 +26657,7 @@
         const idx = Array.from(shareCtx.sel);
         const files = idx.map(i => shareCtx.ready.get(i)).filter(r => r && r.st === 'ok').map(r => r.f);
         if(idx.some(i => (shareCtx.ready.get(i) || {}).st === 'load')){ shrToast('فایل‌ها هنوز آماده نشده‌اند؛ چند لحظه صبر کنید'); return; }
-        if(files.length && typeof navigator.canShare === 'function' && navigator.canShare({files})){
+        if(shrCanFiles(files)){
           /* برگهٔ اشتراک دستگاه: واتساپ، تلگرام، ایمیل و هر برنامهٔ دیگر */
           navigator.share(txt ? {files, text: txt, title: shareCtx.title || undefined} : {files}).then(() => { close(); }).catch(err => {
             if(err && err.name === 'AbortError') return;
@@ -26692,7 +26695,7 @@
         const idx = Array.from(shareCtx.sel);
         if(idx.some(i => (shareCtx.ready.get(i) || {}).st === 'load')){ shrToast('فایل‌ها هنوز آماده نشده‌اند؛ چند لحظه صبر کنید'); return; }
         const files = idx.map(i => shareCtx.ready.get(i)).filter(r => r && r.st === 'ok').map(r => r.f);
-        if(files.length && typeof navigator.canShare === 'function' && navigator.canShare({files})){
+        if(shrCanFiles(files)){
           shrToast('در برگهٔ اشتراک، ' + (how0 === 'wa' ? 'واتساپ' : 'تلگرام') + ' را انتخاب کنید');
           navigator.share(txt ? {files, text: txt} : {files}).then(() => close()).catch(err => { if(!err || err.name !== 'AbortError') navigator.share({files}).then(() => close()).catch(() => {}); });
           return;
@@ -26705,13 +26708,13 @@
       const rc = ctrContactOf(shareCtx.to || shareCtx.party);
       if(d){
         const how = d.dataset.shd, ph = rc && rc.p && rc.p[0];
-        if(how === 'wa') window.open('https://wa.me/' + waOf(rc.w || ph) + '?text=' + t, '_blank', 'noopener');
+        if(how === 'wa') window.open(shrMobile() ? 'https://wa.me/' + waOf(rc.w || ph) + '?text=' + t : 'https://web.whatsapp.com/send?phone=' + waOf(rc.w || ph) + '&text=' + t, '_blank', 'noopener');
         else if(how === 'sms') window.location.href = 'sms:' + telOf(ph) + '?&body=' + t;
         else if(how === 'mail') window.location.href = 'mailto:' + encodeURIComponent(rc.e) + '?subject=' + encodeURIComponent(shareCtx.title || 'گزارش پروژه') + '&body=' + t;
         close(); return;
       }
       const how = b.dataset.sh;
-      if(how === 'wa') window.open('https://wa.me/?text=' + t, '_blank', 'noopener');
+      if(how === 'wa') window.open(shrMobile() ? 'https://wa.me/?text=' + t : 'https://web.whatsapp.com/send?text=' + t, '_blank', 'noopener');
       else if(how === 'tg') window.open('https://t.me/share/url?url=' + encodeURIComponent(url || location.href) + '&text=' + t, '_blank', 'noopener');
       else if(how === 'mail') window.location.href = 'mailto:' + (rc && rc.e ? encodeURIComponent(rc.e) : '') + '?subject=' + encodeURIComponent(shareCtx.title || 'گزارش پروژه') + '&body=' + t;
       else if(how === 'sms') window.location.href = 'sms:' + (rc && rc.p && rc.p[0] ? telOf(rc.p[0]) : '') + '?&body=' + t;
