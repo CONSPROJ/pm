@@ -30839,9 +30839,13 @@
     const c = ctrContactOf(e.canon) || {}, dx = di.get(e.k) || {nc: 0, ns: 0};
     const nc = Math.max(dx.nc, 0) + ctrTagsOf(c.ct).length, sk = ctrTagsOf(c.s);
     const skills = sk.length ? sk : (e.skills && e.skills.size ? Array.from(e.skills.keys()) : []);
-    const chk = [['تلفن', !!(c.p && c.p.length)], ['نام قراردادی', !!c.cn || dx.nc + dx.ns > 0], ['دیسیپلین', !!c.d], ['تخصص', skills.length > 0], ['قرارداد', nc > 0]];
+    const tel = !!(c.p && c.p.length) || (Array.isArray(c.r) && c.r.some(x => x && x.p));
+    /* هر نوع، اقلام خودش: مشاور ← تلفن، دیسیپلین، سمت؛ کارفرما ← تلفن، سمت؛ پیمانکار ← هر پنج قلم */
+    const chk = c.t === 'cons' ? [['تلفن', tel], ['دیسیپلین', !!c.d], ['سمت', !!c.ro]]
+      : c.t === 'emp' ? [['تلفن', tel], ['سمت', !!c.ro]]
+      : [['تلفن', tel], ['نام قراردادی', !!c.cn || dx.nc + dx.ns > 0], ['دیسیپلین', !!c.d], ['تخصص', skills.length > 0], ['قرارداد', nc > 0]];
     const miss = chk.filter(x => !x[1]).map(x => x[0]);
-    return {c, nc, ns: dx.ns, skills, miss, score: 5 - miss.length, has: !!ctrContactOf(e.canon)};
+    return {c, nc, ns: dx.ns, skills, miss, score: 5 - Math.round(miss.length * 5 / chk.length), has: !!ctrContactOf(e.canon)};
   }
   let ctdSugCache = {sig: '', v: null};
   function ctdSug(){
@@ -41063,7 +41067,6 @@
     const rTot = R.A + R.B + R.C + R.D;
     const tone = x => (x.lim && x.days != null) ? (x.days > x.lim[1] ? 'bad' : x.days > x.lim[0] ? 'warn' : 'ok') : '';
     /* تماس: همان دکمهٔ «تماس» کارت پیمانکاران (با زدنش اطلاعات تماس باز می‌شود) */
-    const quick = (function(){ try{ const m = ctcMiniHtml(name); return m ? '<div class="ptx-bar">' + m + '</div>' : ''; }catch(e){ return ''; } })();
     /* شاخص‌ها */
     const kpi = (v, u, l, cls, ic) => '<div class="ptx-k' + (cls ? ' ' + cls : '') + '">' + (ic ? '<span class="ptx-ki">' + I(ic) + '</span>' : '') + '<span class="ptx-kt"><b>' + v + (u ? '<u>' + u + '</u>' : '') + '</b><small>' + l + '</small></span></div>';
     const okPct = rTot ? Math.round((R.A + R.B) / rTot * 100) : null;
@@ -41095,7 +41098,6 @@
         + (g[k].length > 30 ? '<div class="ptx-more">' + toFa(g[k].length - 30) + ' مورد دیگر در دفتر فنی</div>' : '') + '</details>').join('');
     return '<div class="ptx t-' + t + '">'
       + (c.cn && normName(c.cn) !== normName(name) ? '<div class="ptx-hero"><span class="ptx-cn">نام قراردادی: ' + esc(c.cn) + '</span></div>' : '')
-      + '<div class="ptx-top">' + (c.d && t !== 'emp' ? '<span class="ptx-disc">' + esc(c.d) + '</span>' : '') + quick + '</div>'
       + kpis + tiles + nowH + res + docsH
       + (!D.length && !S.length ? '<div class="ptx-empty">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div>' : '')
       + '</div>';
@@ -41143,7 +41145,7 @@
     bg.innerHTML = '<div class="modal-card ct-card">'
       + '<div class="mc-head"><b class="mc-title">' + esc(name) + '</b>'
       /* پروندهٔ پیمانکار و (برای مشاور و کارفرما) دکمهٔ تماس، کنار دکمهٔ بستن؛ بخش یادداشت پایین کارت حذف شد */
-      +   (function(){ try{ const ty = ctrTypeOf(name); return (isContractorName(name) || ty === 'cons' || ty === 'emp') ? '' : ctcMiniHtml(name); }catch(e){ return ''; } })()
+      +   (function(){ try{ const ty = ctrTypeOf(name); return (isContractorName(name) && ty !== 'cons' && ty !== 'emp') ? '' : ctcMiniHtml(name); }catch(e){ return ''; } })()
       +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ico-btn ct-hfile" data-ctcedit="' + esc(name) + '" title="پروندهٔ پیمانکار: نام، قراردادها و تماس" aria-label="پروندهٔ پیمانکار"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9.5" cy="11" r="2.3"/><path d="M6 16.5c.7-1.7 2-2.6 3.5-2.6s2.8.9 3.5 2.6M15 10h3M15 13.5h3"/></svg></button>' : ''; }catch(e){ return ''; } })()
       +   '<button type="button" class="ico-btn" data-ctx>✕</button></div>'
       + (als.length
