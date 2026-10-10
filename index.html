@@ -21353,6 +21353,8 @@
   .ptx-row{border:1px solid transparent;transition:border-color .15s;} .ptx-row:hover{border-color:color-mix(in srgb, var(--c) 30%, var(--line));}
   .ptx-st{padding:2px 8px;border-radius:99px;background:var(--surface);font-weight:700;} .ptx-st.t-ok{color:var(--ok);} .ptx-st.t-bad{color:var(--alert);} .ptx-st.t-info{color:var(--sky);}
   .ptx-more{font-size:11px;color:var(--muted);padding:2px 6px;}
+
+  #adminView.adm-newest .adm-sorted-h{display:none;}
 </style>
 <script>
   (function(){
@@ -21825,6 +21827,7 @@
       <div class="admview-seg" role="group" aria-label="نحوهٔ نمایش">
         <button type="button" class="avs" data-admview="fast" title="هر مورد یک سطر؛ همه در یک نگاه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>فهرست</span></button>
         <button type="button" class="avs" data-admview="card" title="هر مورد کارت کامل با جزئیات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span>کارت</span></button>
+        <button type="button" class="avs" data-admview="new" title="همهٔ موارد پشت سر هم، تازه‌ترین بالا؛ بدون گروه‌بندی"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>تازه‌ترین‌ها</span></button>
       </div>
       <button type="button" class="avb-sw" data-admgroupsw="1" role="switch" aria-checked="false" title="داخل هر گروهِ ابلاغ، موارد به تفکیک مرحلهٔ رسیدگی (بررسی داخلی، نزد کارفرما، …) هم بیایند">
         <span class="sw" aria-hidden="true"><i></i></span><span>تفکیک رسیدگی</span>
@@ -47729,7 +47732,7 @@
   let admView = 'fast';   // حالت پایه: فهرست سریع
   try{
     const sv = localStorage.getItem('admView');
-    if(sv === 'card' || sv === 'fast') admView = sv;
+    if(sv === 'card' || sv === 'fast' || sv === 'new') admView = sv;
   }catch(e){}
 
   /* فایل‌های قابل دانلودِ یک سند: سند طراحی فایل‌های آخرین ویرایشی که فایل دارد، بقیه پیوست سند */
@@ -55046,10 +55049,14 @@
   function renderAdminList(items){
     /* جست‌وجو: نتیجه‌ها به شکل کارتِ باز، نه سطر فهرست */
     const srchQ = !!String(qAdmin || '').trim();
-    const viewKeep = admView;
+    const viewKeep = admView, sortKeep = admSort;
+    /* «تازه‌ترین‌ها»: همان فهرست سریع، بی‌گروه، به ترتیب تاریخ از تازه به قدیم */
+    const isNew = admView === 'new';
+    if(isNew){ admView = 'fast'; admSort = 'date-desc'; }
+    try{ const av = document.getElementById('adminView'); if(av) av.classList.toggle('adm-newest', isNew && !srchQ); }catch(e){}
     if(srchQ) admView = 'card';
     try{ renderAdminListIn(items); }
-    finally{ admView = viewKeep; }
+    finally{ admView = viewKeep; admSort = sortKeep; }
     if(srchQ){
       const cards = document.querySelectorAll('#adminView .rv.adm-k[data-id]');
       cards.forEach(c => admExpandCard(c, cards.length <= 2));
