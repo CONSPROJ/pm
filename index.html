@@ -2371,6 +2371,10 @@
   .cct-gx b{font-weight:800;color:var(--ink);} .cct-gx b.warn{color:#b07512;} .cct-gx b.bad{color:var(--alert);} .cct-gx b small{font-weight:600;color:var(--muted);}
   .cct-gx s{opacity:.7;}
   .cct-en{color:var(--sky) !important;}
+  .cct-st{font-weight:800;} .cct-st.warm{color:#b07512 !important;} .cct-st.hot{color:var(--alert) !important;} .cct-st.ok{color:var(--ok) !important;}
+  .cct-pen{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb, var(--alert) 6%, var(--field));margin-bottom:8px;}
+  .cct-dn{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;cursor:pointer;} .cct-dn small{color:var(--muted);font-weight:500;}
+  .cct-pnow{font-size:12px;color:var(--alert);} .cct-pnow b{font-weight:900;}
   .cct-no{flex:none;direction:ltr;font-size:11.5px;font-weight:900;padding:3px 8px;border-radius:8px;background:var(--field);}
   .cct-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;} .cct-t b{font-size:13px;font-weight:800;} .cct-t b i{font-style:normal;font-size:10.5px;color:var(--warn);}
   .cct-t small{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11px;color:var(--muted);}
@@ -23805,7 +23809,21 @@
         note: toFa(dl) + ' روز از ارسال گذشته و هنوز تسویه نشده'});
     });
 
+    /* اتمام قرارداد: نزدیک اتمام یا گذشته از آن (با جریمهٔ تأخیر) */
+    const endSeen = new Set();
     (A.contracts || []).forEach(r => {
+      let S = null; try{ S = window.ctrEndState(r, A.contracts); }catch(e){}
+      if(!S || !S.level) return;
+      const who = pick(r, AD_OWNER.contract);
+      if(!mine(who) && !mgrView) return;
+      endSeen.add(String(pick(r,AD.id)));
+      out.push({level: S.level, kind:'contract', id: pick(r,AD.id), who,
+        stage: 'اتمام قرارداد', stageDays: S.over || 0,
+        title: 'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
+        note: window.ctrEndMsg(S) + (S.over ? ' — الحاقیهٔ تمدید ثبت نشده' : '')});
+    });
+    (A.contracts || []).forEach(r => {
+      if(endSeen.has(String(pick(r,AD.id)))) return;
       if(inInternal(r)) return;
       const n = pick(r,AD.cNotify);
       const od = dueOver(r);
@@ -24252,6 +24270,7 @@
   }
   function admCardHot(kind, r){
     if(!admCardAlert(kind, r)) return false;
+    if(kind === 'contract'){ try{ const S = window.ctrEndState(r); if(S && S.level === 'hot') return true; }catch(e){} }
     if(kind === 'minute'){ const d = daysSince(pick(r,AD.mDate)); return d != null && d > 0; }
     if(kind === 'letter' && String(pick(r,AD.lNotify) || '') === 'برون‌سازمانی') return false;
     if(kind === 'design'){ const sn = dsStageNow(r); return !!(sn && sn.days > sn.lim[1]); }
@@ -24276,6 +24295,7 @@
     const id = pick(r,AD.id);
     if(!id) return '';
     if(alertOffSet().has(String(id))) return '';   // برای امروز بسته شده
+    if(kind === 'contract'){ try{ const m = window.ctrEndMsg(window.ctrEndState(r)); if(m) return m; }catch(e){} }
 
     if(kind === 'minute'){
       const done = String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true;
@@ -30326,6 +30346,57 @@
     return {own, base, end, by, n: grp.filter(x => cctAddV(x)).length};
   }
   window.cctEndOf = cctEndOf;
+  /* ====== اتمام قرارداد و جریمهٔ تأخیر ======
+     ۳۰ روز مانده به اتمام مؤثر (با احتساب الحاقیه‌ها) هشدار، ۱۵ روز مانده و بعد از آن بحرانی.
+     بعد از اتمام، اگر الحاقیهٔ تمدید ثبت نشده و کار «تکمیل‌شده» زده نشده، به ازای هر روز جریمه حساب می‌شود.
+     نرخ روزانه برای هر قرارداد قابل تعیین است؛ اگر نباشد، پیش‌فرض یک‌هزارم مبلغ قرارداد در روز.
+     تنظیم هر قرارداد در lists (kind = CEND_KIND) به شکل «کلید¦JSON» ذخیره می‌شود. */
+  const CEND_KIND = 'اتمام قرارداد', CEND_NEAR = 30, CEND_HOT = 15, CEND_DEF_RATE = 0.001;
+  const cendCfg = (() => { const m = new Map(); try{ Object.entries(JSON.parse(localStorage.getItem('siteLogM.cend') || '{}')).forEach(([k, v]) => m.set(k, v)); }catch(e){} return m; })();
+  const cendKey = r => cctNoK(r) || ('#' + String(pick(r, AD.id) || ''));
+  function cendStore(){ try{ localStorage.setItem('siteLogM.cend', JSON.stringify(Object.fromEntries(cendCfg))); }catch(e){} }
+  async function cendLoad(){
+    if(BACKEND !== 'supabase') return;
+    try{
+      const rows = await supaFetch('lists?kind=eq.' + encodeURIComponent(CEND_KIND) + '&select=value&limit=2000') || [];
+      cendCfg.clear();
+      rows.forEach(x => { const v = String(x.value || ''), i = v.indexOf('¦'); if(i < 1) return; try{ cendCfg.set(v.slice(0, i), JSON.parse(v.slice(i + 1))); }catch(e){} });
+      cendStore();
+    }catch(e){}
+  }
+  async function cendSave(k, o){
+    if(BACKEND === 'supabase'){
+      await supaFetch('lists?kind=eq.' + encodeURIComponent(CEND_KIND) + '&value=like.' + encodeURIComponent(k + '¦*'), {method:'DELETE'});
+      if(o && (o.done || o.rate)) await kxListAdd(CEND_KIND, k + '¦' + JSON.stringify(o));
+    }
+    if(o && (o.done || o.rate)) cendCfg.set(k, o); else cendCfg.delete(k);
+    cendStore();
+  }
+  setTimeout(() => { cendLoad().then(() => { try{ if(typeof applyAdminFilters === 'function' && document.querySelector('#adminView:not([hidden])')) applyAdminFilters(); }catch(e){} }); }, 2500);
+  /* وضعیت اتمام یک قرارداد (فقط ردیف اصلی؛ الحاقیه‌ها جزو همان گروه‌اند) */
+  function ctrEndState(r, all){
+    if(!r || cctAddV(r)) return null;
+    let E; try{ E = cctEndOf(r, all); }catch(e){ return null; }
+    if(!E || !E.end) return null;
+    const k = cendKey(r), cfg = cendCfg.get(k) || {};
+    const grp = cctNoK(r) ? (all || cctRows()).filter(x => cctNoK(x) === cctNoK(r)) : [r];
+    const amt = grp.reduce((t, x) => t + (moneyNum2(pick(x, AD.cAmount)) || 0), 0);
+    const rate = +cfg.rate || Math.round(amt * CEND_DEF_RATE);
+    const d = daysSince(E.end);
+    if(d == null) return null;
+    const over = d > 0 ? d : 0, left = d <= 0 ? -d : null;
+    const level = cfg.done ? '' : over ? 'hot' : left <= CEND_HOT ? 'hot' : left <= CEND_NEAR ? 'warm' : '';
+    return {k, end: E.end, by: E.by, over, left, done: !!cfg.done, doneAt: cfg.doneAt || '', rate, rateSet: !!+cfg.rate, amt,
+      pen: cfg.done ? 0 : over * rate, level};
+  }
+  window.ctrEndState = ctrEndState;
+  /* متن کوتاه برای کارت و اعلان */
+  function ctrEndMsg(S){
+    if(!S || S.done || !S.level) return '';
+    if(S.over) return toFa(S.over) + ' روز از اتمام قرارداد گذشته' + (S.pen ? ' · جریمهٔ تأخیر ' + arToman(S.pen) + ' تومان' : '');
+    return S.left === 0 ? 'قرارداد امروز تمام می‌شود' : toFa(S.left) + ' روز تا اتمام قرارداد';
+  }
+  window.ctrEndMsg = ctrEndMsg;
   function cctRows(){
     return ((typeof adminAll !== 'undefined' && adminAll) || []).filter(x => x.kind === 'contract').map(x => x.row);
   }
@@ -30340,6 +30411,16 @@
       +   '<input type="text" class="cct-pin" data-list="contractPartyList" autocomplete="off" placeholder="+ افزودن طرف قرارداد"></div></div>'
       + '<div class="cct-g">' + f('amt', 'مبلغ قرارداد (ریال)', pick(r, AD.cAmount), ' inputmode="numeric" class="money-in"') + f('d', 'تاریخ شروع', toFa(admDate(pick(r, AD.cStart)) || ''), ' inputmode="numeric"') + '</div>'
       + '<div class="cct-g">' + f('end', pick(r, AD.cAdd) ? 'تاریخ اتمام تمدیدشده با این الحاقیه' : 'تاریخ اتمام قرارداد', toFa(admDate(pick(r, AD.cEnd)) || ''), ' inputmode="numeric" placeholder="بدون تاریخ"') + '</div>'
+      + (function(){
+          if(!id || cctAddV(r)) return '';
+          const S = ctrEndState(r), cfg = cendCfg.get(cendKey(r)) || {};
+          const amt = S ? S.amt : moneyNum2(pick(r, AD.cAmount));
+          return '<div class="cct-pen">'
+            + '<label class="cct-dn"><input type="checkbox" data-cck="done"' + (cfg.done ? ' checked' : '') + '><span>کار این قرارداد تکمیل شده است <small>(جریمهٔ تأخیر حساب نمی‌شود)</small></span></label>'
+            + f('rate', 'جریمهٔ تأخیر روزانه (ریال)', cfg.rate ? String(cfg.rate) : '', ' inputmode="numeric" class="money-in" placeholder="پیش‌فرض: ' + (amt ? toFa(Math.round(amt * CEND_DEF_RATE).toLocaleString('en')) + ' — یک‌هزارم مبلغ' : 'یک‌هزارم مبلغ قرارداد') + '"')
+            + (S && S.over && !S.done ? '<div class="cct-pnow">' + toFa(S.over) + ' روز تأخیر × ' + esc(arToman(S.rate)) + ' تومان = <b>' + esc(arToman(S.pen)) + ' تومان</b></div>' : '')
+            + '</div>';
+        })()
       + '<div class="cct-a"><button type="button" class="mx-btn pri" data-cctsave="1">ذخیره</button>'
       +   (id ? '<button type="button" class="mx-btn" data-cctgo="' + esc(id) + '">در دفتر فنی</button><button type="button" class="mx-btn dng" data-cctdel="' + esc(id) + '">حذف</button>' : '')
       +   '<button type="button" class="mx-btn" data-cctx="1">بستن</button></div></div>';
@@ -30364,7 +30445,9 @@
               + '<button type="button" class="cct-h" data-cctop="' + esc(id) + '">' + (sub ? '<span class="cct-no ad">الحاقیه ' + esc(toFa(ad)) + '</span>' : '<span class="cct-no">' + esc(toFa(pick(r, AD.cNo) || '—')) + '</span>')
               + '<span class="cct-t"><b>' + esc(pick(r, AD.cTitle) || 'بی‌عنوان') + (!sub && ad ? ' <i>الحاقیه ' + esc(toFa(ad)) + '</i>' : '') + '</b>'
               + '<small>' + (sub ? '' : (P.length ? P.map(p1 => '<em>' + esc(p1) + '</em>').join('') : '<em class="none">بدون طرف قرارداد</em>')) + (amt ? '<u>' + esc(arToman(amt)) + ' تومان</u>' : '')
-              + (en ? '<u class="cct-en">' + (sub ? 'تمدید تا ' : 'اتمام ') + esc(toFa(en)) + '</u>' : '') + '</small></span>'
+              + (en ? '<u class="cct-en">' + (sub ? 'تمدید تا ' : 'اتمام ') + esc(toFa(en)) + '</u>' : '')
+              + (function(){ if(sub) return ''; const S = ctrEndState(r); if(!S) return ''; if(S.done) return '<u class="cct-st ok">تکمیل‌شده</u>'; const m = ctrEndMsg(S); return m ? '<u class="cct-st ' + S.level + '">' + esc(m) + '</u>' : ''; })()
+              + '</small></span>'
               + '<span class="cct-ar">' + (op ? '▴' : '▾') + '</span></button>'
               + (op ? cctEditHtml(r) : '') + '</div>';
           };
@@ -30434,6 +30517,15 @@
       { const r0 = id ? cctRows().find(x => String(pick(x, AD.id)) === id) : null, ne = normDate(g('end')) || g('end'), oe = r0 ? (normDate(String(pick(r0, AD.cEnd) || '')) || String(pick(r0, AD.cEnd) || '')) : '';
         if(ne !== oe) vals['تاریخ اتمام قرارداد'] = ne; }
       sv.disabled = true;
+      /* تکمیل کار و نرخ جریمه (جدا از ستون‌های قرارداد) */
+      { const dn = ed.querySelector('[data-cck="done"]');
+        if(dn && id){ const r0 = cctRows().find(x => String(pick(x, AD.id)) === id);
+          if(r0){ const k = cendKey(r0), old = cendCfg.get(k) || {}, rate = +toEn(g('rate')).replace(/[^\d]/g, '') || 0;
+            const o = {done: dn.checked, doneAt: dn.checked ? (old.doneAt || todayShamsi()) : '', rate};
+            if(!!old.done !== o.done || (+old.rate || 0) !== rate){ try{ await cendSave(k, o); }catch(err){ sv.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); return; } } } } }
+      if(id && !Object.keys(vals).some(k => { const r0 = cctRows().find(x => String(pick(x, AD.id)) === id); return r0 && String(pick(r0, [k]) || '') !== String(vals[k] || ''); })){
+        sv.disabled = false; cct.open = ''; ctcRepaint(); try{ applyAdminFilters(); }catch(err){} showDialog('ok', 'ذخیره شد', 'تنظیم اتمام قرارداد ذخیره شد.'); return;
+      }
       let ok;
       if(id) ok = await sendAction({action:'update', target:'contract', id, values: vals});
       else{
@@ -50538,6 +50630,10 @@
       if(pick(r,AD.cAdd)) rows.push(row('الحاقیه', 'شمارهٔ ' + esc(toFa(pick(r,AD.cAdd)))));
       rows.push(row('تاریخ شروع', esc(admDate(pick(r,AD.cStart)))));
       try{ const E = window.cctEndOf(r); if(E.end) rows.push(row('تاریخ اتمام', esc(toFa(E.end)) + (E.end !== E.own && E.by ? ' <small>(تمدید با الحاقیه ' + toFa(E.by) + ')</small>' : ''))); }catch(e){}
+      try{ const S = window.ctrEndState(r);
+        if(S && S.done) rows.push(row('وضعیت کار', 'تکمیل‌شده' + (S.doneAt ? ' — ' + esc(toFa(S.doneAt)) : ''), 'ok'));
+        else if(S && S.over) rows.push(row('جریمهٔ تأخیر', esc(toFa(S.over)) + ' روز × ' + esc(arToman(S.rate)) + ' = <b>' + esc(arToman(S.pen)) + ' تومان</b>' + (S.rateSet ? '' : ' <small>(نرخ پیش‌فرض: یک‌هزارم مبلغ)</small>'), 'bad'));
+        else if(S && S.level) rows.push(row('تا اتمام', esc(toFa(S.left)) + ' روز', S.level === 'hot' ? 'bad' : 'warn')); }catch(e){}
     }else{
       // بقیهٔ انواع: همان ردیف‌های قبلی (قالب تازه)
       const tmp = document.createElement('div'); tmp.innerHTML = head.rows || '';
