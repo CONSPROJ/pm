@@ -34282,9 +34282,9 @@
     abPaint();
   }
   /* فعالیت اجرایی: یک ردیف با یک یا دو مسئول؛ شرح، اولین نظرش می‌شود */
-  async function createExec(owners, title, startFa, dueFa, note, pos, floor, cat){
+  async function createExec(owners, title, startFa, dueFa, note, pos, floor, cat, ctr){
     const me = activeUserName();
-    const row = {title, owner1: owners[0], owner2: owners[1] || null, side: EXEC_SIDE, position: pos || null,
+    const row = {title, owner1: owners[0], owner2: owners[1] || null, side: String(ctr || '').trim() || EXEC_SIDE, position: pos || null,
       start_date: startFa || todayShamsi(), due_date: dueFa || null};
     if(floor && await probeTaskFloorCol()) row.floor = floor;
     if(cat && await probeTaskPlanCol()) row.category = cat;
@@ -58107,18 +58107,21 @@
     const nameSel = (cls, cur, opt) => '<select class="' + cls + '">' + (opt ? '<option value="">—</option>' : '') + names.map(n => '<option' + (nameKey(n) === nameKey(cur || '') ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>';
     const flr = String(pick(r,T.floor) || '');
     const exec = isNew || String(pick(r,T.side) || '').trim() === EXEC_SIDE || !isNoteSide(r);
+    /* پیمانکارِ فعالیت اجرایی همان «طرف عملیات» است؛ «اجرایی» یعنی بدون پیمانکار */
+    const ctrNow = (function(){ const k = taskCtrKeys(r)[0]; return k && k !== TK_NO_CTR ? k : ''; })();
     box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + RF_I.flow + '</span><div><b>' + (isNew ? 'فعالیت اجرایی تازه' : 'ویرایش فعالیت') + '</b><small>' + esc(isNew ? 'به مسئول اعلان می‌رود و در لیست فعالیت می‌نشیند' : (pick(r,T.title) || '')) + '</small></div>'
       + '<button type="button" class="tx-x" data-teclose="1" aria-label="بستن">✕</button></div>'
       + '<div class="rf-body te-body">'
       + '<label class="te-f wide"><u>عنوان فعالیت</u><input type="text" class="te-title" value="' + esc(pick(r,T.title) || '') + '"></label>'
-      + '<div class="te-g2"><label class="te-f"><u>مسئول</u>' + nameSel('te-m1', pick(r,T.m1), false) + '</label>'
+      + '<div class="te-g2"><label class="te-f"><u>مسئول</u>' + nameSel('te-m1', pick(r,T.m1), !pick(r,T.m1)) + '</label>'
       +   '<label class="te-f"><u>مسئول دوم</u>' + nameSel('te-m2', pick(r,T.m2), true) + '</label></div>'
       + '<div class="te-g2"><label class="te-f"><u>تاریخ ابلاغ</u><input type="text" class="te-start" inputmode="numeric" value="' + esc(toFa(faDateOf(pick(r,T.start)) || '')) + '" placeholder="۱۴۰۵/۰۷/۰۱"></label>'
       +   '<label class="te-f"><u>موعد اتمام</u><input type="text" class="te-due" inputmode="numeric" value="' + esc(toFa(faDateOf(pick(r,T.due)) || '')) + '" placeholder="بدون موعد"></label></div>'
       + (exec ? '<div class="te-g2"><label class="te-f"><u>طبقه</u><select class="te-floor"><option value="">از روی محل کارکرد</option>'
           + BUILDING.map(f => '<option value="' + f.key + '"' + (f.key === flr ? ' selected' : '') + '>' + esc(f.label) + '</option>').join('')
           + '<option value="ALL"' + (flr === 'ALL' ? ' selected' : '') + '>کل ساختمان / چند طبقه</option></select></label>'
-          + '<label class="te-f"><u>محل کارکرد</u><input type="text" class="te-pos" data-list="zoneList" autocomplete="off" value="' + esc(pick(r,T.pos) || '') + '"></label></div>' : '')
+          + '<label class="te-f"><u>محل کارکرد</u><input type="text" class="te-pos" data-list="zoneList" autocomplete="off" value="' + esc(pick(r,T.pos) || '') + '"></label></div>'
+          + '<label class="te-f wide"><u>پیمانکار</u><input type="text" class="te-ctr" data-list="contractorList" autocomplete="off" value="' + esc(ctrNow) + '" placeholder="بدون پیمانکار (داخلی)"></label>' : '')
       + '<div class="te-sec"><h4>رشته</h4><div class="te-cats"></div>'
       +   '<div class="te-catnew"><input type="text" id="teCatNew" placeholder="رشتهٔ تازه، مثلاً «تأسیسات آتش‌نشانی»"><button type="button" class="mini" data-tecatnew="1">افزودن</button></div></div>'
       + (exec ? '<div class="te-sec"><h4>پیش‌نیازها <small>مثل برنامهٔ زمان‌بندی</small></h4>'
@@ -58155,7 +58158,9 @@
     if(m.querySelector('.te-deps')) teReadDeps();
     const deps = S.deps.filter(d => d.id);
     if(!S.isNew && tkHasCycle(S.id, deps)){ showDialog('warn','پیوستگی حلقه‌ای','این پیش‌نیازها حلقه می‌سازند (فعالیتی به خودش برمی‌گردد). یکی را بردارید.'); return; }
+    if(!q('te-m1').value){ showDialog('warn','مسئول لازم است','مسئول فعالیت را انتخاب کنید.'); return; }
     const body = {title, owner1: q('te-m1').value || null, owner2: (q('te-m2').value || '') || null, start_date: start, due_date: due || null};
+    if(q('te-ctr')){ let c = String(q('te-ctr').value || '').trim(); try{ c = c ? (canonicalName(c) || c) : ''; }catch(e){} body.side = c || EXEC_SIDE; }
     if(q('te-pos')) body.position = String(q('te-pos').value || '').trim() || null;
     if(q('te-floor') && await probeTaskFloorCol()) body.floor = q('te-floor').value || null;
     if(await probeTaskPlanCol()){ body.category = S.cat || null; if(m.querySelector('.te-deps')) body.deps = deps.length ? deps : null; }
@@ -58163,7 +58168,7 @@
     if(S.isNew){
       try{
         const owners = [body.owner1, body.owner2].filter(Boolean);
-        const made = await createExec(owners, title, start, due, '', body.position || '', body.floor || '', body.category || '');
+        const made = await createExec(owners, title, start, due, '', body.position || '', body.floor || '', body.category || '', body.side && body.side !== EXEC_SIDE ? body.side : '');
         const nid = made && made[0] && made[0].id;
         if(nid && body.deps && body.deps.length){ try{ await supaFetch('tasks?id=eq.' + encodeURIComponent(nid), {method:'PATCH', body:{deps: body.deps}}); }catch(e){} }
         if(S.newCat && S.cat === S.newCat){
@@ -58187,6 +58192,7 @@
       set('عنوان فعالیت', body.title); set('مسئول 1', body.owner1); set('مسئول 2', body.owner2);
       set('تاریخ ابلاغ', body.start_date); set('موعد اتمام', body.due_date);
       if('position' in body) set('موقعیت', body.position);
+      if('side' in body) set('طرف عملیات', body.side);
       if('floor' in body) set('طبقه', body.floor);
       if('category' in body) set('رشته', body.category);
       if('deps' in body) r['پیش‌نیازها'] = body.deps || [];
