@@ -23918,6 +23918,13 @@
     rvWaiting(A.contracts, 'contract', r =>
       'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''));
 
+    /* قرارداد بدون تاریخ اتمام بحرانی نمی‌شود؛ فقط هشدار عادی */
+    out.forEach(x => {
+      if(x.kind !== 'contract' || x.level !== 'hot') return;
+      const r = (A.contracts || []).find(y => String(pick(y,AD.id)) === String(x.id));
+      let S = null; try{ S = r && window.ctrEndState(r, A.contracts); }catch(e){}
+      if(!S) x.level = 'warm';
+    });
     return out.sort((a,b) => (a.level === b.level) ? 0 : (a.level === 'hot' ? -1 : 1));
   }
 
@@ -24270,7 +24277,7 @@
   }
   function admCardHot(kind, r){
     if(!admCardAlert(kind, r)) return false;
-    if(kind === 'contract'){ try{ const S = window.ctrEndState(r); if(S && S.level === 'hot') return true; }catch(e){} }
+    if(kind === 'contract'){ try{ const S = window.ctrEndState(r); if(!S) return false; if(S.level === 'hot') return true; }catch(e){ return false; } }
     if(kind === 'minute'){ const d = daysSince(pick(r,AD.mDate)); return d != null && d > 0; }
     if(kind === 'letter' && String(pick(r,AD.lNotify) || '') === 'برون‌سازمانی') return false;
     if(kind === 'design'){ const sn = dsStageNow(r); return !!(sn && sn.days > sn.lim[1]); }
@@ -30337,12 +30344,12 @@
   const cctNoK = r => toEn(String(pick(r, AD.cNo) || '')).replace(/\s+/g, '').toUpperCase();
   const cctAddV = r => +(toEn(String(pick(r, AD.cAdd) || '')).match(/\d+/) || [0])[0] || (String(pick(r, AD.cAdd) || '').trim() ? 1 : 0);
   function cctEndOf(r, all){
-    const k = cctNoK(r), own = normDate(String(pick(r, AD.cEnd) || '')) || '';
+    const k = cctNoK(r), own = normDate(String(cEndRaw(r) || '')) || '';
     const grp = k ? (all || cctRows()).filter(x => cctNoK(x) === k) : [r];
     const main = grp.find(x => !cctAddV(x)) || r;
-    const base = normDate(String(pick(main, AD.cEnd) || '')) || '';
+    const base = normDate(String(cEndRaw(main) || '')) || '';
     let end = base, by = 0;
-    grp.forEach(x => { const e = normDate(String(pick(x, AD.cEnd) || '')) || ''; if(e && (!end || faToDate(e) > faToDate(end))){ end = e; by = cctAddV(x); } });
+    grp.forEach(x => { const e = normDate(String(cEndRaw(x) || '')) || ''; if(e && (!end || faToDate(e) > faToDate(end))){ end = e; by = cctAddV(x); } });
     return {own, base, end, by, n: grp.filter(x => cctAddV(x)).length};
   }
   window.cctEndOf = cctEndOf;
@@ -30410,7 +30417,7 @@
       +   '<div class="cct-ps">' + P.map(p1 => '<span class="cct-p">' + esc(p1) + '<i data-cctpx="1" title="برداشتن">✕</i></span>').join('')
       +   '<input type="text" class="cct-pin" data-list="contractPartyList" autocomplete="off" placeholder="+ افزودن طرف قرارداد"></div></div>'
       + '<div class="cct-g">' + f('amt', 'مبلغ قرارداد (ریال)', pick(r, AD.cAmount), ' inputmode="numeric" class="money-in"') + f('d', 'تاریخ شروع', toFa(admDate(pick(r, AD.cStart)) || ''), ' inputmode="numeric"') + '</div>'
-      + '<div class="cct-g">' + f('end', pick(r, AD.cAdd) ? 'تاریخ اتمام تمدیدشده با این الحاقیه' : 'تاریخ اتمام قرارداد', toFa(admDate(pick(r, AD.cEnd)) || ''), ' inputmode="numeric" placeholder="بدون تاریخ"') + '</div>'
+      + '<div class="cct-g">' + f('end', pick(r, AD.cAdd) ? 'تاریخ اتمام تمدیدشده با این الحاقیه' : 'تاریخ اتمام قرارداد', toFa(admDate(cEndRaw(r)) || ''), ' inputmode="numeric" placeholder="بدون تاریخ"') + '</div>'
       + (function(){
           if(!id || cctAddV(r)) return '';
           const S = ctrEndState(r), cfg = cendCfg.get(cendKey(r)) || {};
@@ -30440,7 +30447,7 @@
       + '<div class="cct-l">' + (rows.length ? cctGroups(rows).map(G => {
           const one = (r, sub) => {
             const id = String(pick(r, AD.id) || ''), P = ctrPartySplit(ctrRawParty(r)), op = cct.open === id;
-            const amt = moneyNum2(pick(r, AD.cAmount)), ad = pick(r, AD.cAdd), en = normDate(String(pick(r, AD.cEnd) || ''));
+            const amt = moneyNum2(pick(r, AD.cAmount)), ad = pick(r, AD.cAdd), en = normDate(String(cEndRaw(r) || ''));
             return '<div class="cct-r' + (op ? ' op' : '') + (sub ? ' sub' : '') + '">'
               + '<button type="button" class="cct-h" data-cctop="' + esc(id) + '">' + (sub ? '<span class="cct-no ad">الحاقیه ' + esc(toFa(ad)) + '</span>' : '<span class="cct-no">' + esc(toFa(pick(r, AD.cNo) || '—')) + '</span>')
               + '<span class="cct-t"><b>' + esc(pick(r, AD.cTitle) || 'بی‌عنوان') + (!sub && ad ? ' <i>الحاقیه ' + esc(toFa(ad)) + '</i>' : '') + '</b>'
@@ -30514,7 +30521,7 @@
       const P = cctReadParties(ed);
       if(!g('no') && !g('t')){ showDialog('warn', 'فرم خالی است', 'دست‌کم شماره یا عنوان قرارداد را بنویسید.'); return; }
       const vals = {'شماره قرارداد': g('no'), 'عنوان قرارداد': g('t'), 'طرف قرارداد': P.join('، '), 'مبلغ قرارداد': toEn(g('amt')).replace(/[^\d]/g, ''), 'تاریخ شروع قرارداد': normDate(g('d')) || g('d'), 'شماره الحاقیه': g('add')};
-      { const r0 = id ? cctRows().find(x => String(pick(x, AD.id)) === id) : null, ne = normDate(g('end')) || g('end'), oe = r0 ? (normDate(String(pick(r0, AD.cEnd) || '')) || String(pick(r0, AD.cEnd) || '')) : '';
+      { const r0 = id ? cctRows().find(x => String(pick(x, AD.id)) === id) : null, ne = normDate(g('end')) || g('end'), oe = r0 ? (normDate(String(cEndRaw(r0) || '')) || String(cEndRaw(r0) || '')) : '';
         if(ne !== oe) vals['تاریخ اتمام قرارداد'] = ne; }
       sv.disabled = true;
       /* تکمیل کار و نرخ جریمه (جدا از ستون‌های قرارداد) */
@@ -39468,6 +39475,10 @@
     }
     return kk;
   };
+  /* تاریخ اتمام قرارداد فقط از ستون خودش؛ تطابق تقریبی ممکن بود «موعد اتمام» یا «تاریخ شروع» را بردارد
+     و قراردادِ بی‌تاریخ اتمام را بحرانی کند. */
+  const cEndRaw = row => { try{ if(!row || typeof row !== 'object') return ''; if(row['تاریخ اتمام قرارداد'] != null) return String(row['تاریخ اتمام قرارداد']).trim(); const kk = pickKeys(row), k = kk.map[normKey('تاریخ اتمام قرارداد')]; const v = k === undefined ? '' : row[k]; return v == null ? '' : String(v).trim(); }catch(e){ return ''; } };
+  window.cEndRaw = cEndRaw;
   const pick = (row, keys) => {
     if(!row || typeof row !== 'object') return '';
     if(!keys) return '';               // کلید نامعتبر، به‌جای خطا مقدار خالی
@@ -51235,7 +51246,7 @@
           + fm('a-cPaid','مبلغ پرداختی (ریال)', pick(r,AD.cPaid)), 'two')
         + sec('cal', 'زمان‌بندی و مسئول',
             fd('a-cStart','تاریخ شروع قرارداد', pick(r,AD.cStart))
-          + f('a-cEnd','تاریخ اتمام قرارداد', admDate(pick(r,AD.cEnd)) || '').replace('class="a-cEnd"', 'class="a-cEnd date-in" placeholder="بدون تاریخ" data-orig="' + esc(admDate(pick(r,AD.cEnd)) || '') + '"')
+          + f('a-cEnd','تاریخ اتمام قرارداد', admDate(cEndRaw(r)) || '').replace('class="a-cEnd"', 'class="a-cEnd date-in" placeholder="بدون تاریخ" data-orig="' + esc(admDate(cEndRaw(r)) || '') + '"')
           + fd('a-cDate','تاریخ ابلاغ', pick(r,AD.cDate))
           + fd('a-due','موعد پیگیری', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.contract)))
