@@ -4163,6 +4163,12 @@
   .tkl-ar{margin-inline-start:auto;width:8px;height:8px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-4px;transition:transform .2s;}
   .tkl-sec.open .tkl-ar{transform:rotate(-135deg);margin-top:4px;}
   .tkl-b{display:none;padding:0 10px 10px;} .tkl-sec.open .tkl-b{display:block;}
+  /* کنار کاشی‌ها سرتیتر جدا لازم نیست: کاشی همان سرتیتر است و فقط بخش بازِ آن زیرش می‌آید */
+  .tkl-tiles ~ .tkl-sec{border:0;background:none;border-radius:0;margin:0;overflow:visible;}
+  .tkl-tiles ~ .tkl-sec > .tkl-h{display:none;}
+  .tkl-tiles ~ .tkl-sec:not(.open){display:none;}
+  .tkl-tiles ~ .tkl-sec > .tkl-b{padding:0;animation:tklIn .22s ease;}
+  @keyframes tklIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
   .tk-jsep{
     display:inline-flex;align-items:center;padding:0 8px;font-size:10.5px;font-weight:700;color:var(--muted);
     border-inline-start:1px solid var(--line);margin-inline-start:4px;white-space:nowrap;
@@ -59510,10 +59516,11 @@
     const sec = root.querySelector('[data-tklsec="' + k + '"]'); if(!sec) return;
     let open;
     if(t.dataset.tklv){
-      /* کاشی: همان سطح باز، بقیه بسته */
-      root.querySelectorAll('[data-tklsec]').forEach(x => x.classList.toggle('open', x === sec));
-      open = [k];
-      setTimeout(() => { try{ scrollToSection(sec); }catch(err){ sec.scrollIntoView({behavior:'smooth', block:'start'}); } }, 30);
+      /* کاشی: همان سطح باز، بقیه بسته؛ زدن دوبارهٔ کاشیِ باز، می‌بندد */
+      const was = t.classList.contains('on') && sec.classList.contains('open');
+      root.querySelectorAll('[data-tklsec]').forEach(x => x.classList.toggle('open', !was && x === sec));
+      open = was ? [] : [k];
+      if(!was) setTimeout(() => { try{ scrollToSection(sec); }catch(err){ sec.scrollIntoView({behavior:'smooth', block:'start'}); } }, 30);
     }else{
       sec.classList.toggle('open');
       open = Array.from(root.querySelectorAll('[data-tklsec].open')).map(x => x.dataset.tklsec);
