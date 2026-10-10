@@ -2227,6 +2227,18 @@
   .dsc2-add .dz-b{flex:0 0 auto;padding:0 16px;}
   .dsc2-list{display:flex;flex-direction:column;gap:6px;}
   .dsc2-r{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden;}
+  .skx-r{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;}
+  .skx-r > .dsc2-ed{grid-column:1 / -1;}
+  .skx-r.ck{border-color:color-mix(in srgb, var(--alert) 45%, var(--line));background:color-mix(in srgb, var(--alert) 5%, var(--surface));}
+  .skx-ck{width:22px;height:22px;margin-inline-start:12px;border-radius:50%;border:1.6px solid var(--line);background:none;color:#fff;cursor:pointer;font-size:12px;font-weight:900;display:grid;place-items:center;padding:0;}
+  .skx-r.ck .skx-ck{background:var(--alert);border-color:var(--alert);}
+  .skx-hint{font-size:11px;color:var(--muted);padding:0 2px;}
+  .skx-bulk{position:sticky;top:0;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;border:1px solid color-mix(in srgb, var(--alert) 40%, var(--line));background:var(--surface);box-shadow:0 8px 24px -16px rgba(0,0,0,.5);}
+  .skx-bh{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;} .skx-bh b{font-size:13px;font-weight:900;} .skx-bh small{flex:1 1 200px;font-size:11px;color:var(--muted);}
+  .skx-bc{all:unset;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--muted);}
+  .skx-br{display:flex;gap:8px;} .skx-br input{flex:1;min-width:0;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:13px var(--f);padding:0 10px;box-sizing:border-box;}
+  .skx-del{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .skx-del > span{font-size:12px;font-weight:800;} .skx-del small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;}
   .dsc2-r.op{border-color:var(--sky);}
   .dsc2-h{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:11px 12px;}
   .dsc2-c{--c:var(--sky);width:12px;height:12px;border-radius:4px;background:var(--c);flex:0 0 12px;}
@@ -30058,6 +30070,7 @@
      کاربرد. تخصص‌های شبیه (تکراری) پیشنهاد می‌شوند تا یکی شوند. تغییر نام یا
      یکی کردن، گزارش‌ها، پرونده‌ها، فهرست کشویی و تفکیک پیمانکارها را با هم عوض می‌کند. */
   let skOpen = '', skBusy = false, skQ = '';
+  const skSel = new Set();
   function skUsage(){
     const m = new Map();
     const g = v => { v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); if(!v) return null; let o = m.get(v); if(!o){ o = {n: v, r: 0, c: 0, l: 0}; m.set(v, o); } return o; };
@@ -30093,14 +30106,30 @@
             + '<button type="button" class="ctm-n" data-skno="1">جدا هستند</button></div>').join('') + '</div>' : '')
       + '<div class="dsc2-add"><input type="text" class="dsc2-in skx-in" placeholder="تخصص تازه، مثلاً جوشکار" autocomplete="off"><button type="button" class="dz-b pri" data-skadd="1">+ افزودن</button></div>'
       + '<label class="mx-q">' + DC_I.search + '<input type="search" id="skQ" placeholder="جست‌وجوی تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
+      + (function(){
+          /* حذف گروهی: تخصص‌های انتخاب‌شده حذف و همه‌جا (گزارش‌ها، پرونده‌ها) با یک تخصص دیگر جایگزین می‌شوند */
+          Array.from(skSel).forEach(n => { if(!U.some(o => o.n === n)) skSel.delete(n); });
+          if(!skSel.size) return '<div class="skx-hint">برای حذف چند تخصص با هم، دایرهٔ کنار هر کدام را بزنید.</div>';
+          const sel = U.filter(o => skSel.has(o.n)), used = sel.reduce((t, o) => t + o.r + o.c, 0);
+          return '<div class="skx-bulk"><div class="skx-bh"><b>' + toFa(skSel.size) + ' تخصص انتخاب شده</b>'
+            + '<small>' + (used ? toFa(used) + ' کاربرد در گزارش‌ها و پرونده‌ها با تخصصی که انتخاب می‌کنید جایگزین می‌شود' : 'در هیچ گزارشی به کار نرفته‌اند') + '</small>'
+            + '<button type="button" class="skx-bc" data-skselclr="1">لغو انتخاب</button></div>'
+            + '<div class="skx-br"><input type="text" class="skx-rep" list="skxList" autocomplete="off" placeholder="' + (used ? 'جایگزین با… (الزامی)' : 'جایگزین با… (اختیاری)') + '">'
+            + '<button type="button" class="dz-b dng" data-skbulk="1">حذف' + (used ? ' و جایگزینی' : '') + '</button></div></div>';
+        })()
       + '<div class="dsc2-list">' + list.slice(0, 120).map(o => {
-          const used = o.r + o.c, op = skOpen === o.n;
-          return '<div class="dsc2-r' + (op ? ' op' : '') + '">'
+          const used = o.r + o.c, op = skOpen === o.n, ck = skSel.has(o.n);
+          return '<div class="dsc2-r skx-r' + (op ? ' op' : '') + (ck ? ' ck' : '') + '">'
+            + '<button type="button" class="skx-ck" data-skck="' + esc(o.n) + '" aria-pressed="' + ck + '" title="انتخاب برای حذف">' + (ck ? '✓' : '') + '</button>'
             + '<button type="button" class="dsc2-h" data-skop="' + esc(o.n) + '"><b>' + esc(o.n) + '</b>'
             + '<span class="dsc2-u">' + (used ? cnt(o).map(t => '<i>' + t + '</i>').join('') : '<i class="z">فقط در فهرست</i>') + '</span><em>ویرایش ›</em></button>'
             + (op ? '<div class="dsc2-ed"><label class="ctc-f"><span>نام درست <small>اگر نام یکی از تخصص‌های دیگر را بنویسید، این دو یکی می‌شوند</small></span><input type="text" class="skx-nn" value="' + esc(o.n) + '" list="skxList" autocomplete="off"></label>'
                 + '<div class="dsc2-acts"><button type="button" class="dz-b pri" data-skren="' + esc(o.n) + '">ثبت</button>'
-                + '<button type="button" class="dz-b dng" data-skdel="' + esc(o.n) + '"' + (used ? ' disabled title="اول با تخصص دیگری یکی کنید"' : '') + '>حذف</button></div></div>' : '')
+                + (used ? '' : '<button type="button" class="dz-b dng" data-skdel="' + esc(o.n) + '">حذف</button>') + '</div>'
+                + (used ? '<div class="skx-del"><span>حذف و جایگزینی <small>' + esc(cnt(o).join(' و ')) + ' به تخصص زیر منتقل می‌شود</small></span>'
+                    + '<div class="skx-br"><input type="text" class="skx-rep" list="skxList" autocomplete="off" placeholder="جایگزین با…">'
+                    + '<button type="button" class="dz-b dng" data-skdelrep="' + esc(o.n) + '">حذف</button></div></div>' : '')
+                + '</div>' : '')
             + '</div>'; }).join('') + (list.length > 120 ? '<div class="mx-empty">' + toFa(list.length - 120) + ' تخصص دیگر؛ جست‌وجو کنید</div>' : '') + '</div>'
       + '<datalist id="skxList">' + U.map(o => '<option value="' + esc(o.n) + '">').join('') + '</datalist></div>';
   }
@@ -30135,6 +30164,30 @@
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest || !t.closest('.skx')) return;
     const op = t.closest('[data-skop]'); if(op){ skOpen = skOpen === op.dataset.skop ? '' : op.dataset.skop; ctcRepaint(); return; }
+    const ck = t.closest('[data-skck]'); if(ck){ const n = ck.dataset.skck; if(skSel.has(n)) skSel.delete(n); else skSel.add(n); ctcRepaint(); return; }
+    if(t.closest('[data-skselclr]')){ skSel.clear(); ctcRepaint(); return; }
+    const dr = t.closest('[data-skdelrep]'), bk = t.closest('[data-skbulk]');
+    if(dr || bk){
+      const names = dr ? [dr.dataset.skdelrep] : Array.from(skSel);
+      const rep = String(((dr || bk).closest('.skx-del, .skx-bulk').querySelector('.skx-rep') || {}).value || '').replace(/\s+/g, ' ').trim();
+      const U = skUsage(), used = names.some(n => { const o = U.find(x => x.n === n); return o && (o.r || o.c); });
+      if(rep && names.indexOf(rep) !== -1){ showDialog('warn', 'جایگزین نادرست', '«' + rep + '» خودش جزو تخصص‌هایی است که حذف می‌شوند.'); return; }
+      if(used && !rep){ showDialog('warn', 'جایگزین لازم است', 'این تخصص‌ها در گزارش‌ها یا پرونده‌ها به کار رفته‌اند؛ تخصصی را که جایشان بنشیند انتخاب کنید.'); return; }
+      if(rep && !U.some(x => x.n === rep) && !(await askConfirm('تخصص تازه', '«' + rep + '» در فهرست نیست؛ به‌عنوان تخصص تازه ساخته شود؟', 'بساز'))) return;
+      if(!(await askConfirm('حذف تخصص', toFa(names.length) + ' تخصص (' + names.join('، ') + ') حذف ' + (rep ? 'و هر جا به کار رفته با «' + rep + '» جایگزین' : '') + ' می‌شود.', 'حذف'))) return;
+      (dr || bk).disabled = true;
+      for(const n of names){
+        const o = U.find(x => x.n === n);
+        if(rep && o && (o.r || o.c)){ if(!(await skRename(n, rep, true))) break; }
+        else{ try{ await kxListDel('تخصص', n); }catch(err){} skHidden.add(n); try{ await kxListAdd(SK_HIDE_KIND, n); }catch(err){}
+          try{ const sl = document.getElementById('skillList'); if(sl) Array.from(sl.options).forEach(op2 => { if(op2.value === n) op2.remove(); }); }catch(err){} }
+        skSel.delete(n);
+      }
+      if(rep){ try{ await kxListAdd('تخصص', rep); mergeIntoList('skillList', [rep]); }catch(err){} skHidden.delete(rep); }
+      skPersist(); skOpen = ''; clearNetCache(); ctcRepaint();
+      showDialog('ok', 'انجام شد', toFa(names.length) + ' تخصص حذف شد' + (rep ? ' و جایش «' + rep + '» نشست.' : '.'));
+      return;
+    }
     const kp = t.closest('[data-skkeep]');
     if(kp){ const p = kp.closest('.skx-p'), keep = kp.dataset.skkeep === 'a' ? p.dataset.ska : p.dataset.skb, drop = kp.dataset.skkeep === 'a' ? p.dataset.skb : p.dataset.ska;
       kp.disabled = true; await skRename(drop, keep); ctcRepaint(); return; }
