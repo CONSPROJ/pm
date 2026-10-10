@@ -3544,6 +3544,15 @@
   .ltr-seg button svg{width:16px;height:16px;} .ltr-seg button i{font-style:normal;font-size:11px;padding:1px 8px;border-radius:99px;background:color-mix(in srgb, var(--ink) 8%, transparent);}
   .ltr-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
   .ltr-seg button[data-ltrseg="دریافتی"].on svg{color:var(--ok);} .ltr-seg button[data-ltrseg="ارسالی"].on svg{color:var(--sky);}
+  .ltr-nol{display:flex !important;align-items:center;gap:8px;}
+  .ltr-tplb{all:unset;cursor:pointer;margin-inline-start:auto;font-size:10.5px;font-weight:800;color:var(--sky);padding:2px 8px;border-radius:8px;background:var(--sky-soft);}
+  .ltt .ccl-h > span:first-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .ltt-b{display:flex;flex-direction:column;gap:10px;padding:14px 16px 16px;}
+  .ltt-tok{display:flex;flex-wrap:wrap;gap:6px;} .ltt-tok button{all:unset;cursor:pointer;font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:9px;background:var(--field);color:var(--sky);}
+  .ltt-h{margin:0;font-size:11px;line-height:1.8;color:var(--muted);}
+  .ltt-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .ltt-pv{padding:10px 12px;border-radius:12px;background:var(--field);font-size:12px;color:var(--muted);} .ltt-pv b{font-size:15px;color:var(--ink);margin-inline-start:6px;}
+  .ltt-a{display:flex;gap:8px;}
   .ltr-dsg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:12px;background:var(--field);}
   .ltr-dsg button{all:unset;cursor:pointer;text-align:center;height:36px;line-height:36px;border-radius:9px;font-size:13px;font-weight:800;color:var(--muted);}
   .ltr-dsg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
@@ -47061,22 +47070,113 @@
   };
   const ST_TYPES = ['موقت', 'مستقل', 'قطعی'];
   /* نامه‌ها دو دسته‌اند: ارسالی (پیش‌فرض همهٔ نامه‌های قبلی) و دریافتی از پیمانکار یا کارفرما */
-  /* شمارهٔ بعدیِ نامهٔ ارسالی: آخرین شماره (بزرگ‌ترین) و یک واحد به عدد آخرش */
-  function ltrNextNo(){
-    const all = (typeof adminAll !== 'undefined' && adminAll) ? adminAll.filter(x => x.kind === 'letter' && ltrDirOf(x.row) === 'ارسالی') : [];
-    const nums = all.map(x => toEn(String(pick(x.row, AD.lNo) || '')).trim()).filter(n => /\d+\s*$/.test(n));
-    if(!nums.length) return '';
-    const val = t => (t.match(/\d+/g) || []).reduce((n, x) => n * 10000 + (+x), 0);
-    const last = nums.sort((a, b) => val(b) - val(a))[0];
-    const m = last.match(/^(.*?)(\d+)(\s*)$/); if(!m) return '';
-    const nx = String(+m[2] + 1).padStart(m[2].length, '0');
-    return toFa(m[1] + nx);
+  /* ====== کدینگ شمارهٔ نامه (قابل تغییر) ======
+     قالب با چند جانشین ساخته می‌شود: {ماه} دو رقم ماه، {سال} دو رقم سال، {سال۴} چهار رقم سال،
+     {شماره} شمارهٔ ردیف. هر چیز دیگر (مثل «آ» و خط تیره) همان‌طور می‌ماند. پیش‌فرض: «آ-{ماه}-{شماره}».
+     شمارهٔ ردیف می‌تواند هر ماه یا هر سال از ۱ شروع شود. قالب در جدول فهرست‌ها برای همه ذخیره می‌شود. */
+  const LTR_TPL_KIND = 'کدینگ شماره نامه';
+  const LTR_TPL_DEF = {t: 'آ-{ماه}-{شماره}', pad: 2, reset: 'none'};
+  let ltrTpl = (function(){ try{ const v = JSON.parse(localStorage.getItem('siteLogM.ltrTpl') || 'null'); if(v && v.t) return v; }catch(e){} return Object.assign({}, LTR_TPL_DEF); })();
+  let ltrTplLoaded = false;
+  async function ltrTplLoad(){
+    if(ltrTplLoaded || BACKEND !== 'supabase') return ltrTpl;
+    try{
+      const rows = await supaFetch('lists?kind=eq.' + encodeURIComponent(LTR_TPL_KIND) + '&select=value&limit=5', {prefer:'return=representation'}) || [];
+      const v = rows.length ? JSON.parse(rows[rows.length - 1].value) : null;
+      if(v && v.t){ ltrTpl = v; try{ localStorage.setItem('siteLogM.ltrTpl', JSON.stringify(v)); }catch(e){} }
+      ltrTplLoaded = true;
+    }catch(e){}
+    return ltrTpl;
   }
+  async function ltrTplSave(v){
+    const old = await supaFetch('lists?kind=eq.' + encodeURIComponent(LTR_TPL_KIND) + '&select=value', {prefer:'return=representation'}).catch(() => []) || [];
+    for(const o of old){ try{ await kxListDel(LTR_TPL_KIND, o.value); }catch(e){} }
+    await kxListAdd(LTR_TPL_KIND, JSON.stringify(v));
+    ltrTpl = v; ltrTplLoaded = true;
+    try{ localStorage.setItem('siteLogM.ltrTpl', JSON.stringify(v)); }catch(e){}
+  }
+  function ltrNow(){ const p = toEn(todayShamsi()).split(/\D+/).filter(Boolean); return {y4: p[0] || '', y2: String(p[0] || '').slice(-2), m: String(p[1] || '').padStart(2, '0')}; }
+  const LTR_TOK = /\{(ماه|سال۴|سال4|سال|شماره)\}/g;
+  /* قالب ← عبارت منظم برای خواندن شماره‌های قبلی */
+  function ltrTplRe(t){
+    let re = '', last = 0, m, groups = [];
+    LTR_TOK.lastIndex = 0;
+    while((m = LTR_TOK.exec(t))){
+      re += t.slice(last, m.index).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[-‐–—]/g, '[-‐–—]');
+      const k = m[1] === 'سال4' ? 'سال۴' : m[1];
+      re += k === 'ماه' ? '(\\d{1,2})' : k === 'سال' ? '(\\d{2})' : k === 'سال۴' ? '(\\d{4})' : '(\\d+)';
+      groups.push(k); last = m.index + m[0].length;
+    }
+    re += t.slice(last).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[-‐–—]/g, '[-‐–—]');
+    return {re: new RegExp('^\\s*' + re + '\\s*$'), groups};
+  }
+  function ltrFormat(tpl, seq){
+    const n = ltrNow();
+    return toFa(String(tpl.t).replace(LTR_TOK, (x, k) => k === 'ماه' ? n.m : k === 'سال' ? n.y2 : (k === 'سال۴' || k === 'سال4') ? n.y4 : String(seq).padStart(+tpl.pad || 1, '0')));
+  }
+  /* شمارهٔ بعدیِ نامهٔ ارسالی طبق قالب */
+  function ltrNextNo(tpl){
+    tpl = tpl || ltrTpl;
+    if(!tpl || !tpl.t || tpl.t.indexOf('{شماره}') === -1) return '';
+    const {re, groups} = ltrTplRe(toEn(tpl.t)), n = ltrNow();
+    const all = (typeof adminAll !== 'undefined' && adminAll) ? adminAll.filter(x => x.kind === 'letter' && ltrDirOf(x.row) === 'ارسالی') : [];
+    let mx = 0;
+    all.forEach(x => {
+      const m = toEn(String(pick(x.row, AD.lNo) || '')).match(re); if(!m) return;
+      const g = {}; groups.forEach((k, i) => { g[k] = m[i + 1]; });
+      if(tpl.reset === 'month' && ((g['ماه'] && String(g['ماه']).padStart(2, '0') !== n.m) || (g['سال'] && g['سال'] !== n.y2) || (g['سال۴'] && g['سال۴'] !== n.y4))) return;
+      if(tpl.reset === 'year' && ((g['سال'] && g['سال'] !== n.y2) || (g['سال۴'] && g['سال۴'] !== n.y4))) return;
+      const v = parseInt(g['شماره'], 10); if(!isNaN(v) && v > mx) mx = v;
+    });
+    return ltrFormat(tpl, mx + 1);
+  }
+  /* پنجرهٔ تنظیم کدینگ */
+  function ltrTplOpen(input){
+    let m = document.getElementById('ltrTplModal');
+    if(!m){ m = document.createElement('div'); m.id = 'ltrTplModal'; m.className = 'modal-bg ccl-bg'; m.innerHTML = '<div class="modal ccl ltt" role="dialog" aria-modal="true" aria-label="کدینگ شمارهٔ نامه"></div>'; document.body.appendChild(m); }
+    const T = Object.assign({}, LTR_TPL_DEF, ltrTpl);
+    const box = m.querySelector('.ltt');
+    const paint = () => { const v = read(); box.querySelector('.ltt-pv b').textContent = ltrNextNo(v) || ltrFormat(v, 1); };
+    const read = () => ({t: box.querySelector('.ltt-t').value.trim() || LTR_TPL_DEF.t, pad: +box.querySelector('.ltt-pad').value || 1, reset: box.querySelector('.ltt-rs').value});
+    box.innerHTML = '<div class="ccl-h"><span><b>کدینگ شمارهٔ نامه</b><small>قالب شمارهٔ نامه‌های ارسالی؛ برای همه یکی است</small></span><button type="button" class="ccl-x" data-lttx="1" aria-label="بستن">✕</button></div>'
+      + '<div class="ltt-b">'
+      + '<label class="ctc-f"><span>قالب</span><input type="text" class="ltt-t" value="' + esc(T.t) + '" dir="rtl" autocomplete="off"></label>'
+      + '<div class="ltt-tok">' + ['{ماه}', '{سال}', '{سال۴}', '{شماره}'].map(x => '<button type="button" data-ltttok="' + x + '">' + x + '</button>').join('') + '</div>'
+      + '<p class="ltt-h">{ماه}: دو رقم ماه · {سال}: دو رقم سال · {سال۴}: سال کامل · {شماره}: شمارهٔ ردیف. حرف‌ها و خط تیره همان‌طور می‌مانند؛ مثلاً «آ-{ماه}-{شماره}» یا «ف/{سال}/{شماره}».</p>'
+      + '<div class="ltt-g"><label class="ctc-f"><span>تعداد رقم شماره</span><select class="ltt-pad">' + [1,2,3,4].map(n => '<option value="' + n + '"' + (+T.pad === n ? ' selected' : '') + '>' + toFa(n) + ' رقم</option>').join('') + '</select></label>'
+      + '<label class="ctc-f"><span>شروع دوباره از ۱</span><select class="ltt-rs">' + [['none','هرگز (پشت سر هم)'],['month','هر ماه'],['year','هر سال']].map(([k, l]) => '<option value="' + k + '"' + (T.reset === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label></div>'
+      + '<div class="ltt-pv">شمارهٔ بعدی: <b></b></div>'
+      + '<div class="ltt-a"><button type="button" class="mx-btn pri" data-lttsave="1">ذخیره</button><button type="button" class="mx-btn" data-lttdef="1">پیش‌فرض</button></div></div>';
+    m.hidden = false; paint();
+    box.oninput = box.onchange = paint;
+    box.onclick = async e => {
+      const t = e.target;
+      if(t === m || t.closest('[data-lttx]')){ m.hidden = true; return; }
+      const tk = t.closest('[data-ltttok]'); if(tk){ const i = box.querySelector('.ltt-t'); const p = i.selectionStart != null ? i.selectionStart : i.value.length; i.value = i.value.slice(0, p) + tk.dataset.ltttok + i.value.slice(p); i.focus(); paint(); return; }
+      if(t.closest('[data-lttdef]')){ box.querySelector('.ltt-t').value = LTR_TPL_DEF.t; box.querySelector('.ltt-pad').value = '2'; box.querySelector('.ltt-rs').value = 'none'; paint(); return; }
+      if(t.closest('[data-lttsave]')){
+        const v = read();
+        if(v.t.indexOf('{شماره}') === -1){ showDialog('warn', 'قالب ناقص', 'قالب باید {شماره} داشته باشد.'); return; }
+        t.disabled = true;
+        try{ await ltrTplSave(v); m.hidden = true;
+          if(input && input.isConnected && (!input.value.trim() || input.value === input.dataset.sug)){ const sg = ltrNextNo(); input.value = sg; input.dataset.sug = sg; }
+          showDialog('ok', 'ذخیره شد', 'کدینگ تازه برای نامه‌های بعدی به کار می‌رود.'); }
+        catch(err){ t.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
+      }
+    };
+    m.onclick = e => { if(e.target === m) m.hidden = true; };
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ltrtpl]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const input = b.closest('.field') && b.closest('.field').querySelector('.a-lNo');
+    ltrTplLoad().then(() => ltrTplOpen(input));
+  }, true);
   document.addEventListener('focusin', e => {
     const i = e.target; if(!i || !i.classList || !i.classList.contains('a-lNo') || i.value.trim()) return;
     const host = i.closest('[data-new-kind="letter"]'); if(!host) return;
     const dr = host.querySelector('.a-lDir'); if(dr && dr.value === 'دریافتی') return;
-    const sug = ltrNextNo(); if(sug){ i.value = sug; i.dataset.sug = sug; try{ i.select(); }catch(err){} }
+    ltrTplLoad().then(() => { if(i.value.trim()) return; const sug = ltrNextNo(); if(sug){ i.value = sug; i.dataset.sug = sug; try{ i.select(); }catch(err){} } });
   });
   const ltrDirOf = r => String((r && exact(r,'جهت نامه')) || '').trim() === 'دریافتی' ? 'دریافتی' : 'ارسالی';
   let admLtrDir = 'ارسالی';
@@ -50794,9 +50894,12 @@
         + f('a-lSubject','موضوع نامه', pick(r,AD.lSubject), false, 'contractSubjectList')
         + (function(){
             /* شمارهٔ نامهٔ ارسالی به شکل «آ-۰۷-۶۰»: برای نامهٔ تازه، شمارهٔ بعدی پیشنهاد می‌شود */
-            const sug = (id === 'new' && (typeof admLtrDir === 'undefined' || admLtrDir !== 'دریافتی')) ? ltrNextNo() : '';
-            const v = pick(r,AD.lNo) || sug;
-            return f('a-lNo','شماره نامه', v).replace('class="a-lNo"', 'class="a-lNo" placeholder="مثلاً آ-۰۷-۶۰" data-sug="' + esc(sug) + '"');
+            /* شمارهٔ پیشنهادی هنگام ورود به خانه پر می‌شود (آن موقع فهرست نامه‌ها خوانده شده) */
+            const sug = '';
+            const v = pick(r,AD.lNo) || '';
+            const canTpl = myLevel() === 1 || myLevel() === 2 || can('db.edit');
+            return f('a-lNo','شماره نامه', v).replace('class="a-lNo"', 'class="a-lNo" placeholder="' + esc('مثلاً ' + ltrFormat(ltrTpl, 60)) + '" data-sug="' + esc(sug) + '"')
+              .replace('<label>شماره نامه</label>', '<label class="ltr-nol">شماره نامه' + (canTpl ? '<button type="button" class="ltr-tplb" data-ltrtpl="1" title="کدینگ شمارهٔ نامه">کدینگ ⚙</button>' : '') + '</label>');
           })()
         /* طرف مقابل: فهرست گروه‌بندی‌شدهٔ پیمانکاران، کارفرما، مشاوران و ... */
         + f('a-lParty','طرف مقابل', pick(r,AD.lParty), false, 'letterPartyList'), 'three')
