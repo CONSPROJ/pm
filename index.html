@@ -1675,6 +1675,28 @@
   .dzl-ch{all:unset;cursor:pointer;flex:0 0 auto;height:32px;padding:0 7px;border-radius:10px;display:inline-flex;align-items:center;gap:3px;color:var(--muted);font-size:10.5px;font-weight:800;}
   .dzl-ch svg{width:15px;height:15px;} .dzl-ch:hover, .dzl-ch.on{color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);}
   .dz-panel > .dz-act3{padding:4px 12px 10px;}
+  .dzl-rvn{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.15;padding:3px 8px;border-radius:8px;background:color-mix(in srgb, var(--sky) 10%, transparent);color:var(--sky);}
+  .dzl-rvn bdi{font-size:12px;font-weight:900;} .dzl-rvn small{font-size:9px;font-weight:600;color:var(--muted);}
+  .dzl-w:not(.cur) .dzl-rvn{background:var(--field);color:var(--ink);}
+  .dzl-desc{display:block;margin:4px 6px 0;padding:6px 10px;border-radius:10px;background:var(--field);font-size:11.5px;line-height:1.8;color:var(--ink);white-space:pre-wrap;cursor:default;}
+  .dzl-desc[data-dsfiles]{cursor:pointer;} .dzl-desc u{text-decoration:none;font-size:10px;font-weight:800;color:var(--muted);margin-inline-end:6px;}
+  button.dzl-desc.add{all:unset;cursor:pointer;margin:4px 8px 0;font-size:10.5px;font-weight:700;color:var(--muted);}
+  button.dzl-desc.add:hover{color:var(--sky);}
+  /* گردش کل خوانا: جای کافی برای هر نقطه، اسکرول افقی به‌جای روی‌هم افتادن */
+  .dz-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:thin;}
+  .dz-scroll > .dz-flow{min-width:max(100%, calc(var(--n, 4) * 92px));}
+  .dz-fmore{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:6px 4px 0;padding:5px 10px;border-radius:9px;font-size:11px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 9%, transparent);}
+  .dz-fmore svg{width:13px;height:13px;}
+  .dz-fsum .dz-flow, .dz-scroll .dz-flow{font-size:11px;}
+  /* نوار مرحلهٔ سند طراحی (هم‌شکل کارت‌های دیگر دفتر فنی) */
+  .dz3 .dz-panel2{background:transparent;border:0;padding:0;}
+  .dsb-wrap{display:block;padding:2px 0 4px;}
+  .dsb-wrap .rfb{display:flex;width:100%;}
+  .dsb-wrap .rfb-main{flex:1;min-width:0;}
+  .dsb-code{font-style:normal;font-size:10px;font-weight:900;padding:1px 6px;border-radius:6px;margin-inline-end:5px;color:#fff;background:currentColor;}
+  .dsb.t-bad .dsb-code{background:var(--alert);color:#fff;} .dsb.t-ok .dsb-code{background:var(--ok);color:#fff;} .dsb.t-go .dsb-code{background:#c98a12;color:#fff;}
+  .dz3 .dz-panel2 .dz-foot{padding:2px 2px 4px;}
+  .dz3 .dz-panel2 .dz-fdc{border-top:0;padding:4px 0 8px;}
   /* پنل سند طراحی v4: قاب نازک با نوار رنگیِ طرفِ نگه‌دارنده، بی‌زمینهٔ پر */
   .dz-panel{--c:var(--sky);}
   .dz-panel.s-cons{--c:#6d5bb5;} .dz-panel.s-emp{--c:#2a8a86;} .dz-panel.s-ctr{--c:#b07512;}
@@ -17632,7 +17654,9 @@
 
 
   /* ================= تب اداری v2 ================= */
-  :is(#adminView, .adm-host) > #admJumpBar{display:none !important;}
+  /* نوار پرش دفتر فنی: چسبان، با دسته‌ها؛ زدن هر کدام همان دسته را باز می‌کند */
+  #adminView > #admJumpBar{position:sticky;top:calc(var(--sticky-top, 0px) + 6px);z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:6px;margin:4px 0 10px;border-radius:14px;background:color-mix(in srgb, var(--surface) 88%, transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line-soft, var(--line));}
+  #adminView > #admJumpBar .mini{flex:0 0 auto;}
   .adm-cats{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px;margin:0 0 16px;}
   .acat{--c:var(--sky);position:relative;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 10px;
     padding:13px 13px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:start;
@@ -53085,6 +53109,7 @@
       const on = c.dataset.admcat === k;
       c.classList.toggle('on', on); c.setAttribute('aria-selected', on ? 'true' : 'false');
     });
+    box.querySelectorAll('#admJumpBar [data-jumpadm]').forEach(c => c.classList.toggle('on', c.dataset.jumpadm === 'secAdm' + k));
     const sec = document.getElementById('secAdm' + k);
     if(sec && !sec.classList.contains('open')){
       sec.classList.add('open');
@@ -54267,7 +54292,7 @@
     refreshGenPeople();
     const admBar = document.getElementById('admJumpBar');
     if(admBar) admBar.innerHTML = ADM_ORDER.map(k =>
-      '<button type="button" class="mini" data-jumpadm="secAdm'+k+'">'
+      '<button type="button" class="mini' + (typeof admCat !== 'undefined' && admCat === k ? ' on' : '') + '" data-jumpadm="secAdm'+k+'">'
       + '<span class="jlbl">' + KIND_LABEL[k] + ' (' + toFa(items.filter(x => x.kind === k).length) + ')</span></button>').join('');
     const kindFilter = document.getElementById('fAdmKind').value;
     const otherFilter = !!(document.getElementById('fAdmParty').value
@@ -55091,6 +55116,8 @@
     if(!b) return;
     const t = document.getElementById(b.dataset.jumpadm);
     if(!t) return;
+    /* دفتر فنی دسته‌ای است: پرش یعنی رفتن به همان دسته */
+    try{ const av = document.getElementById('adminView'); if(av && av.dataset.cat != null && b.closest('#admJumpBar')){ admSetCat(b.dataset.jumpadm.replace('secAdm', '')); } }catch(err){}
     if(t.classList.contains('adm-sec') && !t.classList.contains('open')){
       t.classList.add('open');
       const ar = t.querySelector('.sec-ar');
@@ -55362,16 +55389,19 @@
       const chart = (flow || segs.length) ? '<div class="dzl-fl">'
           + (segs.length ? '<div class="dzl-bar">' + segs.map(x => '<i class="t-' + dsTone(x.st) + (x.open ? ' live' : '') + '" style="width:' + (x.days / sum * 100).toFixed(1) + '%" title="' + esc(x.st + ': ' + toFa(x.days) + ' روز') + '"><span>' + toFa(x.days) + '</span></i>').join('') + '</div>'
               + '<div class="dsc-leg"><span><i class="t-info"></i>بررسی داخلی</span><span><i class="t-ext"></i>نزد مشاور/کارفرما</span><span><i class="t-bad"></i>اصلاح</span></div>' : '')
-          + (note ? '<p class="dzl-note">' + esc(note) + '</p>' : '')
           + (flow ? '<div class="dz-flow">' + flow + '</div>' : '') + '</div>' : '';
       const chBtn = chart ? '<button type="button" class="dzl-ch" data-dzlch="1" title="نمودار گردش Rev ' + esc(rv.rev) + '" aria-label="نمودار گردش Rev ' + esc(rv.rev) + '">'
           + I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>') + (tot != null ? '<span>' + toFa(tot) + ' روز</span>' : '') + '</button>' : '';
       return '<div class="dzl-w' + (last ? ' cur' : '') + (last && revs.length > 1 ? ' newest' : '') + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
-        + '<span class="dzl-rv"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + res + (last && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '') + '</span>'
+        + '<span class="dzl-rv"><span class="dzl-rvn"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + (rv.date || (rv.log && rv.log[0] && rv.log[0].d) ? '<small>' + esc(toFa(admDate(rv.date || rv.log[0].d))) + '</small>' : '') + '</span>' + res + (last && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '') + '</span>'
         + (fl.length ? filePillsHtml(fl, {title: 'Rev ' + rv.rev}) : '<span class="dzl-fs"><small class="dzl-none">بدون فایل</small></span>')
         + chBtn
         + ((editable && id) ? '<button type="button" class="dzl-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="افزودن یا حذف فایل‌های Rev ' + esc(rv.rev) + '" aria-label="فایل‌های Rev ' + esc(rv.rev) + '">' + I('<path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>') + '</button>' : '')
-        + '</div>' + chart + '</div>';
+        + '</div>'
+        /* شرح همین ویرایش، همیشه دیده می‌شود؛ با «نوشتن شرح» یا لمس، پنجرهٔ ویرایش باز می‌شود */
+        + (note ? '<div class="dzl-desc"' + ((editable && id) ? ' role="button" tabindex="0" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="ویرایش شرح"' : '') + '><u>شرح</u>' + esc(note) + '</div>'
+            : ((editable && id) ? '<button type="button" class="dzl-desc add" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '">+ نوشتن شرح Rev ' + esc(rv.rev) + '</button>' : ''))
+        + chart + '</div>';
     }).reverse();
     /* همهٔ ویرایش‌ها باز و دیده می‌شوند؛ قبلی‌ها زیر یک تیتر کوچک */
     const body = rows.length <= 1 ? rows.join('')
@@ -55379,6 +55409,14 @@
     const addPast = (editable && id) ? '<button type="button" class="dzl-add" data-dspast="' + esc(id) + '">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>افزودن ویرایش قبلی (سابقه)</span></button>' : '';
     return '<div class="dzl-box">' + body + addPast + '</div>';
   }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-dzfull]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const c = b.closest('.dz-fdc'); if(!c) return;
+    const full = b.dataset.dzfull === '1';
+    const sm = c.querySelector('.dz-fsum'), fl = c.querySelector('.dz-ffull');
+    if(sm) sm.hidden = full; if(fl) fl.hidden = !full;
+  }, true);
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-dzfd]'); if(!b) return;
     e.preventDefault(); e.stopPropagation();
@@ -55582,6 +55620,32 @@
         + '</div>';
     }catch(e){ return ''; }
   }
+  /* نوار مرحلهٔ سند طراحی، هم‌شکل نوار رسیدگی صورت وضعیت و قرارداد: چهار گام،
+     نام مرحله و نگه‌دارنده، روزشمار؛ با لمس، پنجرهٔ «ثبت مرحلهٔ جدید» باز می‌شود */
+  const DSB_SEG = ['داخلی', 'مشاور/کارفرما', 'نتیجه', 'اجرا'];
+  function dsBarHtml(r, editable, id){
+    const revs = dsRevsOf(r), cur = revs[revs.length - 1];
+    const L = (cur.log || []).filter(x => x && x.st), st = L.length ? L[L.length - 1].st : (pick(r,AD.dStatus) || '');
+    const lane = !st ? -1 : (st === 'برای اجرا' ? 3 : (DS_CODE[st] ? 2 : (st === 'نزد مشاور/کارفرما' ? 1 : 0)));
+    const tn = st ? dsTone(st) : '';
+    const bad = tn === 'bad', fin = st === 'برای اجرا' || st === 'تأیید شده';
+    const segs = DSB_SEG.map((t, i) => '<span class="rfb-s ' + (i < lane ? 'done' : i === lane ? (bad ? 'bad' : fin ? 'done' : 'now') : 'ahead') + '" title="' + t + '"><i></i></span>').join('');
+    const tone = bad ? 'bad' : fin ? 'ok' : !st ? 'idle' : 'go';
+    const hn = dsHolderNow(r);
+    const cap = (hn ? 'نزد ' + hn.txt + ' · ' : '') + (lane >= 0 ? 'مرحلهٔ ' + DSB_SEG[lane] : 'گردش سند');
+    const days = hn && hn.days != null ? hn.days : null;
+    const lim = hn ? DS_STAGE_LIM[hn.st] : null;
+    const lateD = days != null && lim && days > lim[1];
+    const nx = dsNextOf(st);
+    const main = '<span class="rfb-track">' + segs + '</span>'
+      + '<span class="rfb-tx"><u>' + esc(cap) + '</u><b>' + (DS_CODE[st] ? '<i class="dsb-code">' + DS_CODE[st] + '</i>' : '') + esc(st || 'بدون گردش') + '</b></span>'
+      + (days != null ? '<span class="rfb-d' + (lateD ? ' late' : '') + '" title="' + toFa(days) + ' روز در این مرحله"><b>' + toFa(days) + '</b>روز</span>' : '')
+      + (editable && id ? '<span class="rfb-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></span>' : '');
+    const head = (editable && id)
+      ? '<button type="button" class="rfb-main" data-dsstep="' + esc(id) + '"' + (nx && nx.st ? ' data-dsto="' + esc(nx.st) + '"' : '') + ' title="ثبت مرحلهٔ جدید' + (nx ? ' — پیشنهاد: ' + esc(nx.t) : '') + '">' + main + '</button>'
+      : '<span class="rfb-main">' + main + '</span>';
+    return '<span class="rfb dsb t-' + tone + '">' + head + '</span>';
+  }
   function designDocHtml(r, editable, id){
     const revs = dsRevsOf(r);
     revs.forEach(x => { try{ Object.defineProperty(x, '__r', {value: r, enumerable: false, configurable: true}); }catch(e){} });
@@ -55634,7 +55698,7 @@
       const pri = '<button type="button" class="dz-go" data-dsstep="' + esc(id) + '"' + (nx && nx.st ? ' data-dsto="' + esc(nx.st) + '"' : '') + ' title="' + esc(nx ? 'پیشنهاد: ' + nx.t : 'ثبت مرحلهٔ تازه برای این سند') + '">'
           + '<b>ثبت مرحلهٔ جدید</b>' + I('<path d="M14 7l-5 5 5 5"/>') + '</button>';
       const ln = (attr, ic, t, tip) => '<button type="button" class="dz-ln" ' + attr + '="' + esc(id) + '" title="' + tip + '" aria-label="' + tip + '">' + I(ic) + '<span>' + t + '</span></button>';
-      return '<div class="dz-act3">' + pri + '<span class="dz-alt">'
+      return '<div class="dz-act3"><span class="dz-alt">'
         + ln('data-dsedit', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', 'اصلاح', 'اصلاح همین مرحله: اگر تاریخ، مرحله یا نگه‌دارنده اشتباه ثبت شده؛ مرحلهٔ تازه‌ای اضافه نمی‌شود')
         + ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', '<bdi dir="ltr">Rev ' + esc(dsNextRev(cur.rev)) + '</bdi>', 'ویرایش جدید: نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود')
         + '</span></div>';
@@ -55648,7 +55712,16 @@
       try{
         const full = dsAllFlowHtml(r, revs, false);
         if(!full) return '';
-        return '<div class="dz-fdc" hidden><div class="dz-flow dz-all">' + full + '</div>'
+        /* گردش کل: اگر نقطه‌ها زیاد است، اول نمای خلاصه (هر ویرایش قبلی فقط شروع و نتیجه)
+           و دکمهٔ «نمایش کامل»؛ نمای کامل افقی جا باز می‌کند تا برچسب‌ها روی هم نیفتند */
+        const nPts = revs.reduce((a, rv) => a + (rv.log || []).filter(x => x && x.st).length, 0);
+        const many = nPts > 6;
+        const fullBox = '<div class="dz-scroll" style="--n:' + (nPts + 1) + '"><div class="dz-flow dz-all">' + full + '</div></div>';
+        return '<div class="dz-fdc" hidden>'
+          + (many ? '<div class="dz-fsum">' + '<div class="dz-flow dz-all">' + dsAllFlowHtml(r, revs, true) + '</div>'
+              + '<button type="button" class="dz-fmore" data-dzfull="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg>نمایش کامل گردش · ' + toFa(nPts) + ' مرحله</button></div>'
+              + '<div class="dz-ffull" hidden>' + fullBox + '<button type="button" class="dz-fmore" data-dzfull="0">نمای خلاصه</button></div>'
+            : fullBox)
           + (revs.length > 1 ? (function(){ try{ return dsCycleChartHtml(revs); }catch(e){ return ''; } })() : '')
           + '</div>';
       }catch(e){ return ''; }
@@ -55657,7 +55730,7 @@
     const fdBtn = flowDet ? '<button type="button" class="dz-fdb" data-dzfd="1" title="' + (tot != null ? toFa(tot) + ' روز از دریافت اول' : 'جزئیات گردش') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>گردش</span><i>▾</i></button>' : '';
     const foot = (act || fdBtn) ? '<div class="dz-foot">' + (act || '<span></span>') + fdBtn + '</div>' : '';
     return '<div class="dsx2 dz dz3" data-dsid="' + esc(id || pick(r,AD.id) || '') + '" data-dsed="' + (editable && id ? '1' : '') + '">'
-      + '<div class="dz-panel s-' + side + ' t-' + tone + '">' + top + foot + flowDet + '</div>'
+      + '<div class="dz-panel dz-panel2 s-' + side + ' t-' + tone + '">' + (function(){ try{ return '<div class="dsb-wrap">' + dsBarHtml(r, editable, id) + '</div>'; }catch(e){ return top; } })() + foot + flowDet + '</div>'
       + filesH
       + '</div>';
     /* نمای قبلی (گردش همیشه باز و جدول ویرایش‌ها) */
