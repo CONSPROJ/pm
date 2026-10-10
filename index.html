@@ -21428,6 +21428,11 @@
   body{background-attachment:scroll !important;background-size:0 0;}
   body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:inherit;background-repeat:no-repeat;transform:translateZ(0);}
   @media print{ body::before{display:none;} }
+  .ptx-dl{display:inline-flex !important;align-items:center;gap:4px;width:auto !important;padding:0 10px !important;border-radius:99px !important;}
+  .ptx-dl::after{content:"دانلود";font-size:11.5px;font-weight:800;}
+  .ptx-dla{display:flex;}
+  .ptx-dla .flr-dl{all:unset;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:13px;border:1px solid color-mix(in srgb, var(--ok) 40%, var(--line));background:color-mix(in srgb, var(--ok) 10%, var(--surface));color:var(--ok);font-size:13px;}
+  .ptx-dla .flr-dl svg{width:18px;height:18px;} .ptx-dla .flr-dl b{font-weight:900;} .ptx-dla .flr-dl i{font-style:normal;font-size:11.5px;color:var(--muted);}
 </style>
 <script>
   (function(){
@@ -41282,7 +41287,7 @@
     /* الان نزد او */
     const nowH = now.length ? '<div class="ptx-sec"><div class="ptx-h"><b>الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او') + '</b></div>'
       + now.slice(0, 8).map(x => '<button type="button" class="ptx-row k-design" data-ctpgo="design¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I.design || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev].filter(Boolean).join(' · ')) + '</small></span>'
-          + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>' + (x.row ? admDlBtnHtml('design', x.row, 'flr-dl') : '') + '</button>').join('') + '</div>' : '';
+          + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>' + (x.row ? admDlBtnHtml('design', x.row, 'flr-dl ptx-dl') : '') + '</button>').join('') + '</div>' : '';
     /* بقیهٔ اسناد، گروه‌بندی */
     const nowIds = new Set(now.map(x => String(x.id)));
     const rest = D.filter(x => !(x.kind === 'design' && nowIds.has(String(x.id))));
@@ -41293,11 +41298,19 @@
     const stTone = st => /تأیید|اجرا|تسویه|پرداخت/.test(st) ? 'ok' : /رد|اصلاح/.test(st) ? 'bad' : st ? 'info' : '';
     const docsH = ord.filter(k => g[k]).map(k => '<details class="ptx-sec ptx-dt" data-ptxsec="' + k + '"' + (g[k].length <= 4 ? ' open' : '') + '><summary class="ptx-h"><span class="ptx-hi k-' + k + '">' + (CF_I[k] || '') + '</span><b>' + esc(KIND_LABEL[k] || k) + '</b><i>' + toFa(g[k].length) + '</i></summary>'
         + g[k].slice(0, 30).map(x => '<button type="button" class="ptx-row k-' + esc(x.kind) + '" data-ctpgo="' + esc(x.kind) + '¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I[x.kind] || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small>' + esc([x.rel, x.d ? toFa(admDate(x.d)) : ''].filter(Boolean).join(' · ')) + '</small></span>'
-            + (x.st ? '<span class="ptx-st t-' + stTone(x.st) + '">' + esc(x.st) + '</span>' : '') + (x.row ? admDlBtnHtml(x.kind, x.row, 'flr-dl') : '') + '</button>').join('')
+            + (x.st ? '<span class="ptx-st t-' + stTone(x.st) + '">' + esc(x.st) + '</span>' : '') + (x.row ? admDlBtnHtml(x.kind, x.row, 'flr-dl ptx-dl') : '') + '</button>').join('')
         + (g[k].length > 30 ? '<div class="ptx-more">' + toFa(g[k].length - 30) + ' مورد دیگر در دفتر فنی</div>' : '') + '</details>').join('');
     return '<div class="ptx t-' + t + '">'
       + (c.cn && normName(c.cn) !== normName(name) ? '<div class="ptx-hero"><span class="ptx-cn">نام قراردادی: ' + esc(c.cn) + '</span></div>' : '')
-      + kpis + tiles + nowH + res + docsH
+      + kpis + (function(){
+          /* همهٔ فایل‌های اسناد این طرف، یک‌جا */
+          try{
+            const seen = new Set(), L = [];
+            D.forEach(x => { if(!x.row) return; attachList(admFilesTxt(x.kind, x.row)).forEach(a => { if(!seen.has(a.full)){ seen.add(a.full); L.push(a.full); } }); });
+            if(!L.length) return '';
+            return '<div class="ptx-dla"><span class="flr-dl" role="button" tabindex="0" data-admdl="' + esc(L.join('\n')) + '" data-admttl="' + esc('اسناد ' + name) + '">' + UP_I.dl + '<b>دانلود اسناد</b><i>' + toFa(L.length) + ' فایل</i></span></div>';
+          }catch(e){ return ''; }
+        })() + tiles + nowH + res + docsH
       + (!D.length && !S.length ? '<div class="ptx-empty">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div>' : '')
       + '</div>';
   }
