@@ -17787,6 +17787,8 @@
   /* نوار پرش دفتر فنی: چسبان، با دسته‌ها؛ زدن هر کدام همان دسته را باز می‌کند */
   #adminView > #admJumpBar{position:sticky;top:calc(var(--sticky-top, 0px) + 6px);z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:6px;margin:4px 0 10px;border-radius:14px;background:color-mix(in srgb, var(--surface) 88%, transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line-soft, var(--line));}
   #adminView > #admJumpBar .mini{flex:0 0 auto;}
+  #admJumpBar .jb-sep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line);}
+  #admJumpBar .jb-sub u{text-decoration:none;font-size:10.5px;opacity:.7;margin-inline-start:3px;}
   .adm-cats{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px;margin:0 0 16px;}
   .acat{--c:var(--sky);position:relative;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 10px;
     padding:13px 13px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:start;
@@ -53508,6 +53510,23 @@
      می‌گردند. دکمهٔ + هر کارت مستقیم فرم ثبت همان دسته را باز می‌کند. */
   let admCat = 'statement';
   try{ const c0 = localStorage.getItem('admCat'); if(c0) admCat = c0; }catch(e){}
+  /* نوار پرش دفتر فنی: بعد از دسته‌ها، زیرگروه‌های دستهٔ باز (مثلاً در صورت وضعیت و
+     قرارداد: در حال تنظیم، درون‌سازمانی، برون‌سازمانی …) تا مثل بقیهٔ برگه‌ها با
+     اسکرول روشن شوند و از هر جای صفحه بشود به گروه دیگر پرید */
+  function admSubJump(){
+    const bar = document.getElementById('admJumpBar'); if(!bar) return;
+    bar.querySelectorAll('.jb-sub, .jb-sep').forEach(x => x.remove());
+    const k = (typeof admCat !== 'undefined' && admCat) || '';
+    const list = document.getElementById('admList-' + k); if(!list) return;
+    const grps = Array.from(list.querySelectorAll('.adm-grp')).filter(g => !g.parentElement.closest('.adm-grp'));
+    if(grps.length < 2) return;
+    grps.forEach((g, i) => { if(!g.id) g.id = 'admG-' + k + '-' + i; });
+    bar.insertAdjacentHTML('beforeend', '<span class="jb-sep" aria-hidden="true"></span>' + grps.map(g => {
+      const t = (g.querySelector(':scope > .adm-grp-head .g-tx b, :scope > .adm-grp-head .mtg-t b') || {}).textContent || '';
+      const n = (g.querySelector(':scope > .adm-grp-head .gn') || {}).textContent || '';
+      return '<button type="button" class="mini jb-sub" data-jumpadm="' + esc(g.id) + '"><span class="jlbl">' + esc(t) + (n ? ' <u>' + esc(n.replace(/\s*مورد/, '')) + '</u>' : '') + '</span></button>';
+    }).join(''));
+  }
   function admSetCat(k, quiet){
     const box = document.getElementById('adminView');
     if(!box) return;
@@ -53521,6 +53540,7 @@
       c.classList.toggle('on', on); c.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     box.querySelectorAll('#admJumpBar [data-jumpadm]').forEach(c => c.classList.toggle('on', c.dataset.jumpadm === 'secAdm' + k));
+    try{ admSubJump(); }catch(e){}
     const sec = document.getElementById('secAdm' + k);
     if(sec && !sec.classList.contains('open')){
       sec.classList.add('open');
@@ -55541,7 +55561,13 @@
     const t = document.getElementById(b.dataset.jumpadm);
     if(!t) return;
     /* دفتر فنی دسته‌ای است: پرش یعنی رفتن به همان دسته */
-    try{ const av = document.getElementById('adminView'); if(av && av.dataset.cat != null && b.closest('#admJumpBar')){ admSetCat(b.dataset.jumpadm.replace('secAdm', '')); } }catch(err){}
+    try{ const av = document.getElementById('adminView'); if(av && av.dataset.cat != null && b.closest('#admJumpBar') && /^secAdm/.test(b.dataset.jumpadm)){ admSetCat(b.dataset.jumpadm.replace('secAdm', '')); } }catch(err){}
+    /* زیرگروه‌های همین دسته (وضعیت ابلاغ و …): باز می‌شود و صفحه به آن می‌رود */
+    if(t.classList.contains('adm-grp') && !t.classList.contains('open')){
+      t.classList.add('open'); const hd = t.querySelector(':scope > .adm-grp-head'); if(hd) hd.setAttribute('aria-expanded', 'true');
+      const ar = t.querySelector(':scope > .adm-grp-head .grp-ar'); if(ar) ar.textContent = '▴';
+      try{ admGrpOpen.set(t.dataset.grp, true); }catch(err){}
+    }
     if(t.classList.contains('adm-sec') && !t.classList.contains('open')){
       t.classList.add('open');
       const ar = t.querySelector('.sec-ar');
