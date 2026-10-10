@@ -31026,7 +31026,13 @@
     return m;
   }
   /* پرونده‌ها از روی پیوندهای «یکی هستند» ساخته می‌شوند */
+  /* سرعت: ctrBuild در هر تبدیل نام (هزاران بار در هر رسم صفحه) صدا زده می‌شود؛ امضای
+     داده‌ها حداکثر هر ۴۰۰ میلی‌ثانیه یک بار حساب می‌شود (هر تغییر صریح، ctrVer را بالا می‌برد) */
+  let ctrSigMemo = {t: 0, v: -1};
   function ctrBuild(){
+    const nowT = Date.now();
+    if(ctrCache && ctrSigMemo.v === ctrVer && nowT - ctrSigMemo.t < 400) return ctrCache;
+    ctrSigMemo = {t: nowT, v: ctrVer};
     let docSig = 0; try{ docSig = ((typeof adminAll !== 'undefined' && adminAll) ? adminAll.length : 0) * 7 + (lastAdminDay ? ((lastAdminDay.contracts || []).length + (lastAdminDay.statements || []).length) : 0); }catch(e){}
     let cnSig = ''; try{ ctrContacts.forEach(o => { if(o && o.cn) cnSig += o.name + '>' + o.cn + ';'; }); }catch(e){}
     const sig = ctrVer + '|' + cnSig.length + ':' + cnSig.slice(-40) + '|' + docSig + '|' + ((allRows || []).length) + '|' + ((typeof mtAllRows !== 'undefined' && mtAllRows) ? mtAllRows.length : 0) + '|' + Object.keys(loadLinks()).length;
@@ -61457,7 +61463,18 @@
     document.addEventListener('click', () => setTimeout(syncAll, 0), true);
     document.addEventListener('change', syncAll, true);
     const scan = () => document.querySelectorAll(NS_SEL).forEach(enhance);
-    new MutationObserver(muts => { if(muts.some(m => m.addedNodes.length)) { scan(); syncAll(); } }).observe(document.documentElement, {childList:true, subtree:true});
+    /* سرعت: فقط گره‌های تازه بررسی می‌شوند و در هر قاب حداکثر یک بار */
+    let nsPend = [], nsT = 0;
+    new MutationObserver(muts => {
+      muts.forEach(m => m.addedNodes.forEach(n => { if(n.nodeType === 1) nsPend.push(n); }));
+      if(!nsPend.length || nsT) return;
+      nsT = requestAnimationFrame(() => {
+        nsT = 0; const L = nsPend; nsPend = []; let hit = false;
+        L.forEach(n => { if(!n.isConnected) return; if(n.matches && n.matches('select')){ if(n.matches(NS_SEL)){ enhance(n); hit = true; } return; }
+          if(n.querySelector && n.querySelector('select')){ n.querySelectorAll(NS_SEL).forEach(x => { enhance(x); hit = true; }); } });
+        if(hit) syncAll();
+      });
+    }).observe(document.documentElement, {childList:true, subtree:true});
     if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan); else setTimeout(scan, 0);
   })();
 
@@ -69572,10 +69589,13 @@
     if(typeof IntersectionObserver !== 'function') return;
     const SEL = '.rv, .tfr-item, .adm-grp, .dk-card, .prc-card, .cct-r, .ctdk-c, .tkp, .afr, .hr-card, .dzl-w, .flr-it';
     const io = new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('anim-off', !e.isIntersecting)), {rootMargin: '200px 0px'});
-    let t = 0;
-    const scan = () => { t = 0; document.querySelectorAll(SEL).forEach(el => { if(el.__io) return; el.__io = 1; io.observe(el); }); };
-    new MutationObserver(() => { if(!t) t = setTimeout(scan, 250); }).observe(document.body, {childList: true, subtree: true});
-    scan();
+    const add = el => { if(el.__io) return; el.__io = 1; io.observe(el); };
+    let pend = [], t = 0;
+    const flush = () => { t = 0; const L = pend; pend = [];
+      L.forEach(n => { if(!n.isConnected) return; if(n.matches(SEL)) add(n); if(n.firstElementChild) n.querySelectorAll(SEL).forEach(add); }); };
+    new MutationObserver(ms => { ms.forEach(m => m.addedNodes.forEach(n => { if(n.nodeType === 1) pend.push(n); })); if(pend.length && !t) t = setTimeout(flush, 300); })
+      .observe(document.body, {childList: true, subtree: true});
+    document.querySelectorAll(SEL).forEach(add);
   })();
 
   /* ====== دکمهٔ برگشت گوشی و مرورگر ======
@@ -69595,8 +69615,9 @@
       if(el.classList.contains('s3s-bg') && el.isConnected) el.remove();
     }
     function sync(){
-      document.querySelectorAll(SEL).forEach(el => {
-        if(visible(el) && !OV.some(o => o.el === el)){ OV.push({el}); try{ history.pushState({ov: OV.length}, ''); }catch(e){} }
+      Array.prototype.forEach.call(document.body.children, el => {
+        if(!el.matches(SEL)) return;
+        if(!el.hidden && !OV.some(o => o.el === el) && visible(el)){ OV.push({el}); try{ history.pushState({ov: OV.length}, ''); }catch(e){} }
       });
       for(let i = OV.length - 1; i >= 0; i--){
         const o = OV[i];
@@ -69604,8 +69625,11 @@
       }
     }
     let t = 0;
-    new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; sync(); }); })
-      .observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']});
+    /* فقط پنجره‌هایی که مستقیم زیر body هستند (همهٔ پنجره‌ها همین‌جا ساخته می‌شوند) */
+    new MutationObserver(ms => {
+      if(!ms.some(m => m.type === 'childList' ? m.target === document.body : (m.target.parentElement === document.body))) return;
+      if(!t) t = requestAnimationFrame(() => { t = 0; sync(); });
+    }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']});
     window.addEventListener('popstate', () => {
       if(skip){ skip--; return; }
       const o = OV.pop(); if(o && o.el.isConnected) closeEl(o.el);
