@@ -26473,7 +26473,10 @@
     L.push('با سلام و احترام؛');
     const ttl = shareCtx.title ? '«' + shareCtx.title + '»' : 'مدارک این موضوع';
     L.push('بدین‌وسیله ' + ttl + (files.length ? ' به پیوست' : '') + ' جهت استحضار و اقدام لازم ارسال می‌گردد.');
-    const body = String(shareCtx.body || '').split('\n').map(x => x.trim()).filter(x => x && (!shareCtx.title || x !== shareCtx.title));
+    /* اطلاعات داخلی (موعد، ابلاغ، مسئول، وضعیت بررسی و…) هرگز در متنِ ارسالی نمی‌آید */
+    const PRIV = /^(مسئول|موعد|تاریخ ابلاغ|ابلاغ|وضعیت|بررسی|تهیه|مانع|توضیحات داخلی|روز از)/;
+    const body = String(shareCtx.body || '').split('\n').map(x => x.trim()).filter(x => x && (!shareCtx.title || x !== shareCtx.title) && !PRIV.test(x)
+      && !(to && /^طرف\s*:/.test(x) && nameKey(x.replace(/^طرف\s*:\s*/, '')) === nameKey(to)));
     if(shareCtx.mode !== 'link' && body.length){ L.push(''); L.push('مشخصات:'); body.forEach(x => L.push('• ' + x)); }
     if(files.length){ L.push(''); L.push('پیوست' + (files.length > 1 ? '‌ها (' + toFa(files.length) + ' فایل)' : '') + ':'); files.forEach(a => L.push('• ' + a.name)); }
     if(shareCtx.mode !== 'text' && shareCtx.link) L.push('', 'لینک پیوست: ' + shareCtx.link);
@@ -49899,11 +49902,14 @@
       + commentBarHtml(kind, id, head.title, {
           owner: owner || '', party: party || '',
           link: (attachList(pick(r,AD.link)).find(a => a.src !== 's3') || {}).url || '',
+          /* فقط مشخصاتی که برای طرف بیرونی مناسب است؛ موعد، تاریخ ابلاغ، مسئول
+             داخلی و وضعیت بررسی در متن اشتراک نمی‌آید */
           shareBody: [
             KIND_LABEL[kind] + (docNo ? ' شمارهٔ ' + toFa(docNo) : ''),
-            party ? 'طرف: ' + party : '',
-            owner ? 'مسئول: ' + owner : '',
-            dueRaw ? 'موعد: ' + admDate(dueRaw) : ''
+            kind === 'statement' && pick(r,AD.sName) ? 'قرارداد: ' + pick(r,AD.sName) : '',
+            kind === 'contract' && pick(r,AD.cTitle) ? 'عنوان: ' + pick(r,AD.cTitle) : '',
+            kind === 'letter' && pick(r,AD.lSubject) ? 'موضوع: ' + pick(r,AD.lSubject) : '',
+            kind === 'statement' && pick(r,AD.sAmount) ? 'مبلغ: ' + moneyFa(pick(r,AD.sAmount)) + ' ریال' : ''
           ].filter(Boolean).join('\n')
         })
 
