@@ -17812,7 +17812,9 @@
 
   /* ================= تب اداری v2 ================= */
   /* نوار پرش دفتر فنی: چسبان، با دسته‌ها؛ زدن هر کدام همان دسته را باز می‌کند */
-  #adminView > #admJumpBar{position:sticky;top:calc(var(--sticky-top, 0px) + 6px);z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:6px;margin:4px 0 10px;border-radius:14px;background:color-mix(in srgb, var(--surface) 88%, transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line-soft, var(--line));}
+  /* همان رفتار نوار پرش بقیهٔ برگه‌ها: چسبیده به بالای صفحه، تمام‌عرض، روی همهٔ کارت‌ها */
+  #adminView > #admJumpBar{position:sticky;top:0;z-index:26;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 2px;margin:0 0 10px;background:var(--canvas);border-bottom:1px solid var(--line);}
+  @media (max-width:640px){ #adminView > #admJumpBar{margin:0 -18px 12px;padding:8px 16px;} }
   #adminView > #admJumpBar .mini{flex:0 0 auto;}
   footer:not(:has(#sheetLink:not([style*="none"]))){display:none !important;}
   #admJumpBar .jb-sep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line);}
@@ -28971,7 +28973,9 @@
          .replace(/[^\u0600-\u06FF\w\s]/g,' ')
          .replace(/\s+/g,' ').trim().toLowerCase();
     const words = x.split(' ').filter(w => w && NAME_NOISE.indexOf(w) === -1);
-    return words.join(' ').trim();
+    /* نام شرکتی که همه‌اش کلمه‌های عمومی است (مثل «خدمات ساختمانی») خالی نشود؛
+       پیش‌تر کلیدش خالی می‌شد و آن پیمانکار از فهرست‌ها و جست‌وجو جا می‌ماند */
+    return words.join(' ').trim() || x;
   }
   const nameTokens = v => normName(v).split(' ').filter(Boolean);
 
@@ -29276,7 +29280,7 @@
   const ctrSetHidden = arr => { ctrHidden.clear(); (arr || []).forEach(v => { const k = normName(v); if(k) ctrHidden.add(k); }); };
   function ctrIsHidden(n){
     if(!ctrHidden.size || !n) return false;
-    const k = normName(n); if(ctrHidden.has(k)) return true;
+    const k = normName(n); if(!k) return false; if(ctrHidden.has(k)) return true;
     try{ return ctrHidden.has(normName(ctrCanon(n))); }catch(e){ return false; }
   }
   let ctrPrimary = new Set(), ctrMulti = new Set();     // کلید: normName
@@ -43757,11 +43761,11 @@
       if(rc.length && !hit.some(o => o.g)) html += '<div class="combo-g pk-g">همه</div>';
     }
     let lastG = null;
-    hit.slice(0, 150).forEach(o => {
+    hit.slice(0, 600).forEach(o => {
       if(!words.length && o.g && o.g !== lastG){ html += '<div class="combo-g pk-g">' + esc(o.g) + '</div>'; lastG = o.g; }
       html += rowOf(o);
     });
-    if(hit.length > 150) html += '<div class="combo-empty">' + toFa(hit.length - 150) + ' مورد دیگر؛ دقیق‌تر بنویسید.</div>';
+    if(hit.length > 600) html += '<div class="combo-empty">' + toFa(hit.length - 600) + ' مورد دیگر؛ دقیق‌تر بنویسید.</div>';
     if(!hit.length) html += '<div class="combo-empty pk-empty">' + esc(cfg.empty || 'موردی پیدا نشد.') + '</div>';
     return html;
   }
