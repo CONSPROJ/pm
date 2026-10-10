@@ -63585,9 +63585,54 @@
      سر هم زبانه عوض شود فقط آخرین درخواست نقاشی می‌شود — پیش‌تر نتیجهٔ
      درخواست کندترِ قبلی گاهی روی زبانهٔ تازه می‌نشست. */
   let wrkRenderTok = 0, wrkRenderedTab = '';
+  /* ====== هماهنگی زنده ======
+     وقتی برگهٔ کارگری باز است و تغییرِ ثبت‌نشده‌ای ندارید، هر چند ثانیه دادهٔ
+     همان روز چک می‌شود؛ اگر کس دیگری چیزی ثبت یا عوض کرده باشد، صفحه بی‌صدا
+     و سر جای خودش به‌روز می‌شود — بدون ریفرش */
+  let wrkSyncSig = null, wrkSyncDay = '', wrkSyncBusy = false;
+  function wrkHasLocalEdits(){
+    try{
+      if(['daily', 'ot'].some(k => wrkDirty[k].size || wrkGone[k].size)) return true;
+      if(wrkEditing && wrkEditing.size) return true;
+      if(wrkMatGone && wrkMatGone.size) return true;
+      const a = document.activeElement, box = document.getElementById('wrkBody');
+      if(a && box && box.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    }catch(e){ return true; }
+    return false;
+  }
+  async function wrkSyncTick(){
+    if(wrkSyncBusy || wrkBusy || document.visibilityState !== 'visible') return;
+    const box = document.getElementById('wrkBody');
+    if(!box || !box.offsetParent || ['daily', 'ot', 'mat', 'hrs'].indexOf(wrkTab) === -1) return;
+    if(document.querySelector('.modal-bg:not([hidden])')) return;
+    const d = wrkDateVal();
+    if(d !== wrkSyncDay){ wrkSyncDay = d; wrkSyncSig = null; }
+    wrkSyncBusy = true;
+    try{
+      const q = 'date_fa=eq.' + encodeURIComponent(d);
+      const [a, b, c] = await Promise.all([
+        supaFetch('worker_daily?select=*&' + q + '&order=worker_code.asc', {prefer:'return=representation'}).catch(() => null),
+        supaFetch('worker_ot?select=*&' + q + '&order=worker_code.asc', {prefer:'return=representation'}).catch(() => null),
+        supaFetch('material_move?select=*&' + q + '&order=id.asc', {prefer:'return=representation'}).catch(() => null)]);
+      if(a == null && b == null && c == null) return;
+      const sig = JSON.stringify([a, b, c]);
+      const changed = wrkSyncSig != null && sig !== wrkSyncSig;
+      wrkSyncSig = sig;
+      if(changed && !wrkHasLocalEdits() && wrkDateVal() === d){
+        const y = window.scrollY;
+        wrkForce = true;
+        await wrkRender();
+        try{ window.scrollTo(0, y); }catch(e){}
+      }
+    }catch(e){}
+    finally{ wrkSyncBusy = false; }
+  }
+  setInterval(() => { wrkSyncTick(); }, 25000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') setTimeout(wrkSyncTick, 400); });
   async function wrkRender(){
     const box = document.getElementById('wrkBody');
     if(!box) return;
+    wrkSyncSig = null;
     const tok = ++wrkRenderTok;
     const tab0 = wrkTab;
     const had = box.firstElementChild && !box.querySelector(':scope > .empty');
