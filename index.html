@@ -1686,6 +1686,9 @@
   .dzl-w .fpills .dzl-fn{height:24px;} .dzl-w .fpills .dzl-fn span{min-width:56px;} .dzl-w .fpills .dzl-dl{height:24px;width:24px;}
   .dzl-w > .dzl-desc{margin:0 8px 6px !important;padding:3px 8px;font-size:11px;line-height:1.6;}
   .dzl-oldh{margin:2px 2px 0 !important;}
+  .dzl-cap{font-size:11.5px;line-height:1.6;color:var(--muted);padding:0 6px;margin-bottom:-3px;white-space:pre-wrap;}
+  .dzl-cap[data-dsfiles]{cursor:pointer;} .dzl-cap[data-dsfiles]:hover{color:var(--ink);}
+  .dzl-cap bdi{font-size:10px;font-weight:800;color:var(--sky);margin-inline-end:6px;}
   .dzl-w.cur{box-shadow:0 4px 16px -10px color-mix(in srgb, var(--sky) 60%, transparent);}
   .dzl-w > .dzl-desc{margin:0 10px 10px;}
   .dzl > .fpills, .dzl > .dzl-fs{flex:1 1 0;min-width:0;}
@@ -55744,15 +55747,16 @@
           + I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>') + (tot != null ? '<span>' + toFa(tot) + ' روز</span>' : '') + '</button>' : '';
       /* طیف رنگ: قدیمی‌ترین کم‌رنگ، تازه‌ترین پررنگ */
       const rvk = revs.length > 1 ? (0.18 + 0.82 * ri / (revs.length - 1)) : 1;
-      return '<div class="dzl-w' + (last ? ' cur' : '') + (last && revs.length > 1 ? ' newest' : '') + '" style="--rvk:' + rvk.toFixed(2) + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
+      /* شرح بالای کارت ویرایش، بی‌پس‌زمینه؛ تا همهٔ کارت‌های Rev هم‌اندازه بمانند */
+      return (note ? '<div class="dzl-cap"' + ((editable && id) ? ' role="button" tabindex="0" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="اصلاح شرح"' : '') + '>' + esc(note) + '</div>' : '')
+        + '<div class="dzl-w' + (last ? ' cur' : '') + (last && revs.length > 1 ? ' newest' : '') + '" style="--rvk:' + rvk.toFixed(2) + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
         + '<span class="dzl-rv"><span class="dzl-rvn"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + (rv.date || (rv.log && rv.log[0] && rv.log[0].d) ? '<small>' + esc(toFa(admDate(rv.date || rv.log[0].d))) + '</small>' : '') + '</span>' + res + (last && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '') + '</span>'
         + (fl.length ? filePillsHtml(fl, {title: 'Rev ' + rv.rev}) : '<span class="dzl-fs"><small class="dzl-none">بدون فایل</small></span>')
         + chBtn
         + ((editable && id) ? '<button type="button" class="dzl-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="اصلاح Rev ' + esc(rv.rev) + ' — شرح و فایل‌ها" aria-label="اصلاح Rev ' + esc(rv.rev) + '">' + I('<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/>') + '</button>' : '')
         + '</div>'
         /* شرح همین ویرایش اگر نوشته شده باشد؛ نوشتن و اصلاحش با مداد کنار Rev */
-        + (note ? '<div class="dzl-desc"' + ((editable && id) ? ' role="button" tabindex="0" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="ویرایش شرح"' : '') + '><u>شرح</u>' + esc(note) + '</div>'
-            : '')
+
         + chart + '</div>';
     }).reverse();
     /* همهٔ ویرایش‌ها باز و دیده می‌شوند؛ قبلی‌ها زیر یک تیتر کوچک */
