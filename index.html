@@ -1650,6 +1650,9 @@
   .dzl-old > summary::-webkit-details-marker{display:none;}
   .dzl-old > summary i{font-style:normal;background:var(--field);border-radius:7px;padding:1px 6px;margin-inline-start:4px;}
   .dzl-old[open]{display:flex;flex-direction:column;gap:6px;}
+  .dzl-add{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;align-self:flex-start;height:30px;padding:0 10px;border-radius:10px;border:1px dashed var(--line);font-size:11px;font-weight:800;color:var(--muted);}
+  .dzl-add:hover{color:var(--sky);border-color:var(--sky);} .dzl-add svg{width:14px;height:14px;}
+  .dzl.past .dzl-rv bdi{opacity:.85;}
   .dsg-seg{display:flex;align-items:center;gap:4px;margin:0 0 10px;font-size:11.5px;color:var(--muted);}
   .dsg-seg span{margin-inline-end:4px;}
   .dsg-seg button{all:unset;cursor:pointer;height:28px;padding:0 12px;border-radius:99px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);}
@@ -45170,7 +45173,7 @@
         if(b0 && (obj.values['وضعیت مدرک'] != null || obj.values['ویرایش'] != null)){
           const v2 = Object.assign({}, obj.values);
           v2['ویرایش‌ها'] = dsApply(b0, v2);
-          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink; delete v2.__dsSide; delete v2.__dsAt; delete v2.__dsEdit; delete v2.__dsUndo; delete v2.__dsFiles; delete v2.__dsFilesRi; delete v2.__dsRevNote;
+          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink; delete v2.__dsSide; delete v2.__dsAt; delete v2.__dsEdit; delete v2.__dsUndo; delete v2.__dsFiles; delete v2.__dsFilesRi; delete v2.__dsRevNote; delete v2.__dsPast;
           obj = Object.assign({}, obj, {values: v2});
         }
       }catch(e){}
@@ -54503,6 +54506,22 @@
     const when = normDate(values.__dsDate || '') || todayShamsi();
     const curRev = String(pick(before,AD.dRev) || (revs.length ? revs[revs.length - 1].rev : '0'));
     const newRev = values['ویرایش'] != null ? String(values['ویرایش']).trim() : curRev;
+    /* ویرایشِ قبلیِ ثبت‌نشده (سابقه): کنار بقیه به ترتیب تاریخ گذاشته می‌شود؛ ویرایش جاری همان آخر می‌ماند */
+    if(values.__dsPast){
+      let P = {}; try{ P = typeof values.__dsPast === 'string' ? JSON.parse(values.__dsPast) : values.__dsPast; }catch(e){}
+      const d = normDate(P.d || '') || '';
+      const log = [{st:'دریافت', d, by: me}];
+      if(P.res) log.push({st: P.res, d: normDate(P.rd || '') || d, by: me});
+      const nr = {rev: String(P.rev || '').trim() || '?', date: d, by: me, note: String(P.note || ''), link: String(P.link || ''), log, sup: true, past: true};
+      const cur0 = revs.pop();
+      revs.push(nr);
+      const rn = x => { const t = toEn(String(x || '')); return /^\d+$/.test(t) ? +t : null; };
+      revs.sort((a, b) => { const A = rn(a.rev), B = rn(b.rev);
+        if(A != null && B != null && A !== B) return A - B;
+        return String(a.date || '').localeCompare(String(b.date || '')) || String(a.rev).localeCompare(String(b.rev), 'fa'); });
+      if(cur0) revs.push(cur0);
+      return revs.slice(-40);
+    }
     /* فایل‌های یک ویرایش (جاری یا قبلی) */
     if(values.__dsFiles != null){
       const ri = parseInt(values.__dsFilesRi, 10), t = revs[isNaN(ri) ? revs.length - 1 : Math.max(0, Math.min(ri, revs.length - 1))];
@@ -54626,7 +54645,8 @@
     }).reverse();
     const body = rows.length <= 2 ? rows.join('')
       : rows.slice(0, 1).join('') + '<details class="dzl-old"><summary>ویرایش‌های قبلی <i>' + toFa(rows.length - 1) + '</i></summary>' + rows.slice(1).join('') + '</details>';
-    return '<div class="dzl-box">' + body + '</div>';
+    const addPast = (editable && id) ? '<button type="button" class="dzl-add" data-dspast="' + esc(id) + '">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>افزودن ویرایش قبلی (سابقه)</span></button>' : '';
+    return '<div class="dzl-box">' + body + addPast + '</div>';
   }
   function dsRevTableHtml(r, revs, editable, id){
     const I = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
@@ -54867,15 +54887,13 @@
     if(pick(r,AD.link)){ try{ add('پیوست', attachChipsHtml(pick(r,AD.link), 3)); }catch(e){} }
     const act = (editable && id) ? (function(){
       const nx = dsNextOf(lastSt || st), I = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
-      const pri = nx
-        ? '<button type="button" class="dz-go" ' + (nx.rev ? 'data-dsrev' : 'data-dsstep') + '="' + esc(id) + '"' + (nx.st ? ' data-dsto="' + esc(nx.st) + '"' : '') + ' title="قدم بعد">'
-          + '<b>' + esc(nx.t) + '</b>' + I('<path d="M14 7l-5 5 5 5"/>') + '</button>'
-        : '';
+      /* دکمهٔ اصلی همیشه «ثبت مرحلهٔ جدید»؛ قدم معمولِ بعد از پیش انتخاب شده است */
+      const pri = '<button type="button" class="dz-go" data-dsstep="' + esc(id) + '"' + (nx && nx.st ? ' data-dsto="' + esc(nx.st) + '"' : '') + ' title="' + esc(nx ? 'پیشنهاد: ' + nx.t : 'ثبت مرحلهٔ تازه برای این سند') + '">'
+          + '<b>ثبت مرحلهٔ جدید</b>' + I('<path d="M14 7l-5 5 5 5"/>') + '</button>';
       const ln = (attr, ic, t, tip) => '<button type="button" class="dz-ln" ' + attr + '="' + esc(id) + '" title="' + tip + '" aria-label="' + tip + '">' + I(ic) + '<span>' + t + '</span></button>';
       return '<div class="dz-act3">' + pri + '<span class="dz-alt">'
         + ln('data-dsedit', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', 'اصلاح', 'اصلاح همین مرحله: اگر تاریخ، مرحله یا نگه‌دارنده اشتباه ثبت شده؛ مرحلهٔ تازه‌ای اضافه نمی‌شود')
-        + (nx && !nx.rev ? '' : ln('data-dsstep', '<path d="M4 12h14M13 6l6 6-6 6"/>', 'مرحله', 'انتخاب آزاد مرحلهٔ بعدی'))
-        + (nx && nx.rev ? '' : ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', '<bdi dir="ltr">Rev ' + esc(dsNextRev(cur.rev)) + '</bdi>', 'ویرایش جدید: نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود'))
+        + ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', '<bdi dir="ltr">Rev ' + esc(dsNextRev(cur.rev)) + '</bdi>', 'ویرایش جدید: نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود')
         + '</span></div>';
     })() : '';
     const cyc = (function(){ try{ return dsCycleDays(cur, true); }catch(e){ return null; } })();
@@ -55004,7 +55022,31 @@
       m.hidden = false;
       return;
     }
-    const hd = mode === 'rev' ? 'ویرایش جدید سند' : ed ? 'اصلاح مرحلهٔ فعلی' : 'تغییر مرحلهٔ سند';
+    if(mode === 'past'){
+      /* شمارهٔ پیشنهادی: کوچک‌ترین شمارهٔ ثبت‌نشده پیش از ویرایش جاری */
+      let sug = '';
+      const cn = toEn(String(cur.rev || '')); const have = new Set(revs.map(x => toEn(String(x.rev))));
+      if(/^\d+$/.test(cn)){ for(let i = 0; i < +cn; i++){ if(!have.has(String(i))){ sug = String(i); break; } } }
+      dsS.st = ''; dsS.cur = last;
+      const finals = ['تأیید شده','تأیید مشروط','نیاز به اصلاح','رد شده'];
+      box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + DESIGN_ICON_SVG + '</span><div><b>افزودن ویرایش قبلی</b><small>' + esc(title) + ' · ویرایش جاری Rev ' + esc(toFa(cur.rev)) + '</small></div>'
+        + '<button type="button" class="tx-x" data-dsclose="1" aria-label="بستن">✕</button></div>'
+        + '<div class="rf-body ds-body">'
+        + '<p class="rf-hint">برای ثبت سابقه: ویرایشی که قبلاً بوده ولی در سامانه ثبت نشده. ویرایش جاری و مرحله‌اش دست نمی‌خورد.</p>'
+        + '<div class="te-g2"><label class="te-f"><u>شمارهٔ ویرایش</u><input type="text" class="ds-rev" value="' + esc(sug) + '" dir="ltr" placeholder="مثلاً 1"></label>'
+        + '<label class="te-f"><u>تاریخ دریافت</u><input type="text" class="ds-date" inputmode="numeric" placeholder="۱۴۰۵/۰۵/۰۱"></label></div>'
+        + '<div class="ds-blk"><u>نتیجهٔ بررسی (اگر داشت)</u><div class="ds-sts">'
+        +   '<button type="button" class="ds-st on" data-dsst="">بدون نتیجه</button>' + finals.map(x => '<button type="button" class="ds-st t-' + dsTone(x) + '" data-dsst="' + esc(x) + '"><b>' + DS_CODE[x] + '</b>' + esc(x) + '</button>').join('') + '</div></div>'
+        + '<label class="te-f"><u>تاریخ نتیجه</u><input type="text" class="ds-rdate" inputmode="numeric" placeholder="اختیاری"></label>'
+        + '<label class="te-f"><u>توضیح این ویرایش</u><textarea class="ds-note" rows="2" placeholder="اختیاری"></textarea></label>'
+        + '<div class="ds-blk"><u>فایل‌های این ویرایش</u>' + attachFieldHtml('', 'design') + '</div>'
+        + '</div>'
+        + '<div class="rf-foot"><div class="rf-btns"><button type="button" class="mini" data-dsclose="1">انصراف</button>'
+        + '<button type="button" class="send rf-go" data-dsgo="1">ثبت ویرایش قبلی</button></div></div>';
+      m.hidden = false;
+      return;
+    }
+    const hd = mode === 'rev' ? 'ویرایش جدید سند' : ed ? 'اصلاح مرحلهٔ فعلی' : 'ثبت مرحلهٔ جدید';
     const lastLine = last ? '<div class="ds-now"><span>مرحلهٔ فعلی</span><b class="t-' + dsTone(last) + '">' + (DS_CODE[last] ? '<i dir="ltr">' + DS_CODE[last] + '</i>' : '') + esc(last) + '</b>'
       + (lastE.d ? '<em>' + esc(toFa(lastE.d)) + '</em>' : '') + '</div>' : '';
     box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + DESIGN_ICON_SVG + '</span><div><b>' + hd + '</b><small>' + esc(title) + ' · Rev ' + esc(toFa(cur.rev)) + '</small></div>'
@@ -55067,6 +55109,27 @@
       clearNetCache(); setTimeout(loadAdmin, 300);
       return;
     }
+    if(S.mode === 'past'){
+      const rv = String((m.querySelector('.ds-rev') || {}).value || '').trim();
+      const d = normDate((m.querySelector('.ds-date') || {}).value || '');
+      const rdRaw = String((m.querySelector('.ds-rdate') || {}).value || '').trim();
+      const rd = rdRaw ? normDate(rdRaw) : '';
+      if(!rv){ showDialog('warn','شماره لازم است','شمارهٔ ویرایش را بنویسید.'); return; }
+      if(!d){ showDialog('warn','تاریخ نادرست','تاریخ دریافت را به شکل ۱۴۰۵/۰۵/۰۱ بنویسید.'); return; }
+      if(rdRaw && !rd){ showDialog('warn','تاریخ نادرست','تاریخ نتیجه را به شکل ۱۴۰۵/۰۵/۰۱ بنویسید.'); return; }
+      const r1 = admRowById(S.id); if(!r1) return;
+      if(dsRevsOf(r1).some(x => toEn(String(x.rev)) === toEn(rv))){ showDialog('warn','شماره تکراری','ویرایش ' + rv + ' از قبل در این سند هست.'); return; }
+      const note1 = String((m.querySelector('.ds-note') || {}).value || '').trim();
+      const v1 = {'وضعیت مدرک': S.cur || pick(r1,AD.dStatus) || '', __dsPast: JSON.stringify({rev: rv, d, res: S.st || '', rd, note: note1, link: files})};
+      S.busy = true;
+      const b1 = m.querySelector('[data-dsgo]'); if(b1){ b1.disabled = true; b1.textContent = 'در حال ثبت…'; }
+      const ok1 = await sendAction({action:'update', target:'design', id: S.id, values: v1});
+      if(!ok1){ S.busy = false; if(b1){ b1.disabled = false; b1.textContent = 'ثبت ویرایش قبلی'; } showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); lastServerError = ''; return; }
+      m.hidden = true; dsS = null;
+      try{ window.__admMarkEdited && window.__admMarkEdited('design', S.id); }catch(e){}
+      clearNetCache(); setTimeout(loadAdmin, 300);
+      return;
+    }
     const date = normDate((m.querySelector('.ds-date') || {}).value || '');
     if(!undo && !date){ showDialog('warn','تاریخ نادرست','تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
     const note = String((m.querySelector('.ds-note') || {}).value || '').trim();
@@ -55104,10 +55167,11 @@
     clearNetCache(); setTimeout(loadAdmin, 300);
   }
   document.addEventListener('click', e => {
-    const a = e.target.closest('[data-dsstep], [data-dsrev], [data-dsedit], [data-dsfiles]');
+    const a = e.target.closest('[data-dsstep], [data-dsrev], [data-dsedit], [data-dsfiles], [data-dspast]');
     if(!a) return;
     e.preventDefault(); e.stopPropagation();
-    if(a.dataset.dsfiles) dsOpen(a.dataset.dsfiles, 'files', a.dataset.dsri != null ? a.dataset.dsri : '');
+    if(a.dataset.dspast) dsOpen(a.dataset.dspast, 'past');
+    else if(a.dataset.dsfiles) dsOpen(a.dataset.dsfiles, 'files', a.dataset.dsri != null ? a.dataset.dsri : '');
     else if(a.dataset.dsedit) dsOpen(a.dataset.dsedit, 'edit');
     else if(a.dataset.dsrev) dsOpen(a.dataset.dsrev, 'rev');
     else dsOpen(a.dataset.dsstep, 'step', a.dataset.dsto || '');
