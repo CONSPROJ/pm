@@ -1492,6 +1492,12 @@
   .prc-fl{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;font-size:15px;}
   .prc-menu{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border-radius:12px;background:var(--field);}
   .prf-flow{padding-top:16px !important;}
+  .prc-t{flex:1;}
+  .prc-ph{flex:none;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center;}
+  .prc-ph svg{width:16px;height:16px;} .prc-ph:hover{color:var(--sky);border-color:var(--sky);} .prc-ph.busy{opacity:.5;animation:upWait 1s ease infinite;}
+  .prc-note{font-size:12px;color:var(--muted);line-height:1.8;}
+  .prc-files{display:flex;flex-wrap:wrap;gap:6px;}
+  .prf-ph > u em{font-style:normal;font-weight:600;color:var(--muted);font-size:10.5px;margin-inline-start:6px;}
   @media (max-width:560px){ .prc-ir{grid-template-columns:24px minmax(0,1fr) 30px;} .prc-ir .prc-age{grid-column:2;justify-self:start;} .prc-ir .prc-st{grid-column:2;justify-self:start;} .prc-ir .prc-fl{grid-column:3;grid-row:1;} }
   /* گزارش تدارکاتی */
   .prr{display:flex;flex-direction:column;gap:12px;}
@@ -56087,14 +56093,14 @@
         const r = fromSupa('nudges', x);
         let o = {}; try{ o = JSON.parse(pick(r,N.msg) || '{}') || {}; }catch(e){}
         return {id: String(pick(r,N.id)), code: String(pick(r,N.title) || ''), by: pick(r,N.from) || '', at: pick(r,N.time) || '',
-          date: o.date || pick(r,N.date) || '', unit: o.unit || '', requester: o.requester || '', note: o.note || '', sig: o.sig || {},
+          date: o.date || pick(r,N.date) || '', unit: o.unit || '', requester: o.requester || '', note: o.note || '', sig: o.sig || {}, files: o.files || '',
           items: (Array.isArray(o.items) ? o.items : []).map(it => Object.assign({st: PR_ST[0], log: []}, it))};
       });
       prcState.t = Date.now();
     }catch(e){}
     return prcState.list;
   }
-  const prPack = req => JSON.stringify({date: req.date, unit: req.unit, requester: req.requester, note: req.note, sig: req.sig, items: req.items});
+  const prPack = req => JSON.stringify({date: req.date, unit: req.unit, requester: req.requester, note: req.note, sig: req.sig, files: req.files || '', items: req.items});
   function prNextCode(){
     let mx = 0;
     prcState.list.forEach(r => { const n = parseInt(toEn(String(r.code)).replace(/\D/g, ''), 10); if(!isNaN(n) && n > mx) mx = n; });
@@ -56151,13 +56157,16 @@
       dl.innerHTML = Array.from(new Set(vals.filter(Boolean))).map(v => '<option value="' + esc(v) + '">').join(''); };
     mk('prUnitList', PR_UNITS.concat(prcState.list.flatMap(r => r.items.map(it => it.u))));
     mk('prCcList', prcState.list.flatMap(r => r.items.map(it => it.cc)).concat(['ساختمان اصلی','محوطه','کارگاه','تأسیسات']));
+    /* درخواست‌کننده: کارکنان پروژه یا پیمانکاران */
+    const opts = id => { const dl = document.getElementById(id); return dl ? Array.from(dl.options).map(o => o.value) : []; };
+    mk('prReqList', opts('engineerList').concat(opts('contractorList'), prcState.list.map(r => r.requester)));
     mk('prUnitReqList', prcState.list.map(r => r.unit).concat(['دفتر فنی','اجرا','تأسیسات مکانیکی','تأسیسات برقی','انبار','ایمنی']));
   }
   function prNewHtml(){
     const D = prcState.draft || (prcState.draft = {date: todayShamsi(), unit: '', requester: activeUserName(), note: '', sig: {}, items: [{}]});
     return '<div class="prf">'
       + '<div class="prf-g">'
-      +   '<label class="te-f"><u>درخواست‌کننده</u><input type="text" class="pr-req" data-list="engineerList" autocomplete="off" value="' + esc(D.requester) + '"></label>'
+      +   '<label class="te-f"><u>درخواست‌کننده</u><input type="text" class="pr-req" data-list="prReqList" autocomplete="off" placeholder="کارکنان یا پیمانکار" value="' + esc(D.requester) + '"></label>'
       +   '<label class="te-f"><u>واحد</u><input type="text" class="pr-unit" data-list="prUnitReqList" autocomplete="off" value="' + esc(D.unit) + '" placeholder="اجرا، تأسیسات، دفتر فنی…"></label>'
       +   '<label class="te-f"><u>تاریخ</u><input type="text" class="pr-date" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
       + '</div>'
@@ -56166,6 +56175,7 @@
       +   '<button type="button" class="prf-add" data-pradd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>قلم دیگر</button>'
       + '</div>'
       + '<label class="te-f"><u>توضیح درخواست</u><textarea class="pr-note" rows="2" placeholder="اختیاری — مثلاً برای کدام فعالیت یا تا چه تاریخی لازم است">' + esc(D.note) + '</textarea></label>'
+      + '<div class="te-f prf-ph"><u>عکس و پیوست <em>اختیاری — عکس کالا، نمونه یا پیش‌فاکتور</em></u>' + attachFieldHtml(D.files || '', 'prc') + '</div>'
       + '<div class="prf-foot"><button type="button" class="mini" data-prclear="1">پاک کردن</button>'
       +   '<button type="button" class="send rf-go" data-prsave="1"' + (prcState.busy ? ' disabled' : '') + '>' + (prcState.busy ? 'در حال ثبت…' : 'ثبت درخواست خرید') + '</button></div>'
       + '</div>';
@@ -56174,6 +56184,7 @@
     const host = document.getElementById('prcArea'); if(!host || !prcState.draft) return;
     const D = prcState.draft, v = c => String((host.querySelector('.' + c) || {}).value || '').trim();
     D.date = normDate(v('pr-date')) || D.date; D.unit = v('pr-unit'); D.requester = v('pr-req'); D.note = v('pr-note');
+    const fl = host.querySelector('.prf-ph .a-link'); if(fl) D.files = fl.value.trim();
     host.querySelectorAll('.pr-sig').forEach(x => { D.sig[x.dataset.sig] = x.value.trim(); });
     D.items = Array.from(host.querySelectorAll('.prf-it')).map(rw => ({d: rw.querySelector('.pr-d').value.trim(), q: rw.querySelector('.pr-q').value.trim(),
       u: rw.querySelector('.pr-u').value.trim(), cc: rw.querySelector('.pr-cc').value.trim(), n: rw.querySelector('.pr-n').value.trim()}));
@@ -56237,7 +56248,10 @@
           const hotN = r.items.filter(it => prHot(r, it)).length;
           return '<div class="prc-card' + (hotN ? ' hot' : '') + (openN(r) ? '' : ' closed') + '">'
             + '<div class="prc-h"><span class="prc-code">' + esc(toFa(r.code)) + '</span><div class="prc-t"><b>' + esc(r.unit || 'درخواست خرید') + (r.requester ? ' · ' + esc(r.requester) : '') + '</b>'
-            +   '<small>' + esc(toFa(admDate(r.date) || r.date)) + ' · ' + toFa(r.items.length) + ' قلم · ' + toFa(openN(r)) + ' باز' + (hotN ? ' · <em>' + toFa(hotN) + ' بحرانی</em>' : '') + '</small></div></div>'
+            +   '<small>' + esc(toFa(admDate(r.date) || r.date)) + ' · ' + toFa(r.items.length) + ' قلم · ' + toFa(openN(r)) + ' باز' + (hotN ? ' · <em>' + toFa(hotN) + ' بحرانی</em>' : '') + '</small></div>'
+            +   (canEd ? '<button type="button" class="prc-ph" data-prph="' + esc(r.id) + '" title="افزودن عکس یا پیوست">' + UP_I.cam + '</button>' : '') + '</div>'
+            + (r.note ? '<div class="prc-note">' + esc(r.note) + '</div>' : '')
+            + (attachList(r.files).length ? '<div class="prc-files">' + filePillsHtml(r.files, {max: 6, cls: 'sm'}) + '</div>' : '')
             + its.map(({it, i}) => {
                 const age = prAge(r, it), hot = prHot(r, it), warn = prIsOpen(it) && age > PR_WARN;
                 const key = r.id + ':' + i, op = prcState.open.has(key);
@@ -56284,9 +56298,10 @@
       const items = D.items.filter(it => it.d).map(it => Object.assign({}, it, {st: PR_ST[0], log: []}));
       if(!items.length){ showDialog('warn','ردیفی نیست','دست‌کم یک قلم کالا یا خدمت بنویسید.'); return; }
       if(!D.date){ showDialog('warn','تاریخ نادرست','تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
+      if(host.querySelector('.prf-ph .up-field.up-busy')){ showDialog('warn','آپلود تمام نشده','تا پایان آپلود عکس‌ها صبر کنید.'); return; }
       prcState.busy = true; prcRender();
       try{
-        const code = await prSaveReq({date: D.date, unit: D.unit, requester: D.requester, note: D.note, sig: Object.assign({}, D.sig), items});
+        const code = await prSaveReq({date: D.date, unit: D.unit, requester: D.requester, note: D.note, sig: Object.assign({}, D.sig), files: D.files || '', items});
         prcState.draft = null; prcState.busy = false; prcState.tab = 'list'; prcState.f = 'open'; prcState.q = '';
         await prcRender();
         showDialog('ok','ثبت شد','درخواست خرید \u2066' + code + '\u2069 با ' + toFa(items.length) + ' قلم ثبت شد و در «گزارش و پیگیری خریدها» نشست.');
@@ -56295,6 +56310,29 @@
     }
     const pf = t.closest('[data-prf]');
     if(pf){ prcState.f = pf.dataset.prf; prcRender(); return; }
+    const ph = t.closest('[data-prph]');
+    if(ph){
+      const req = prcState.list.find(r => r.id === ph.dataset.prph); if(!req) return;
+      const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = 'image/*,application/pdf';
+      inp.onchange = async () => {
+        const files = Array.from(inp.files || []); if(!files.length) return;
+        ph.disabled = true; ph.classList.add('busy');
+        const got = [];
+        for(const f0 of files){
+          try{ const f = await upPrep(f0); got.push(await upEnqueue(() => upTry(f, null, 'prc'))); }
+          catch(err){ showDialog('err','آپلود نشد', esc(f0.name) + ' — ' + friendlyErr(err)); }
+        }
+        if(got.length){
+          const prev = req.files || '';
+          req.files = (prev ? prev + '\n' : '') + got.join('\n');
+          try{ await prUpdate(req); try{ upLog && upLog(got, 'تدارکات ' + req.code); }catch(e){} }
+          catch(err){ req.files = prev; showDialog('err','ثبت نشد', friendlyErr(err)); }
+        }
+        prcRender();
+      };
+      inp.click();
+      return;
+    }
     const fl = t.closest('[data-prfl]');
     if(fl){ const k = fl.dataset.prfl; if(prcState.open.has(k)) prcState.open.delete(k); else prcState.open.add(k); prcRender(); return; }
     const sb = t.closest('[data-prst]');
