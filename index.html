@@ -18538,7 +18538,8 @@
   .sx-f em{font-style:normal;font-size:8.5px;font-weight:900;color:#7a8696;}
   .sx-f em.k-pdf{color:#c0392b;} .sx-f em.k-img{color:#6d5bb5;} .sx-f em.k-cad{color:#b0632f;}
   .sx-f span{flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .sx-f small{font-size:10px;color:var(--muted);} .sx-f.st-ok small{color:var(--ok);} .sx-f.st-err small{color:var(--alert);}
+  .sx-f small{font-size:10px;color:var(--muted);}
+  .sx-fer{font-size:10px;color:var(--alert);margin:-2px 6px 2px;line-height:1.6;word-break:break-word;} .sx-f.st-ok small{color:var(--ok);} .sx-f.st-err small{color:var(--alert);}
   .sx-f.st-load small{animation:sxPulse 1.2s ease-in-out infinite;}
   @keyframes sxPulse{50%{opacity:.4;}}
   .sx-mode{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:3px;padding:3px;border-radius:11px;background:var(--field);}
@@ -26575,12 +26576,17 @@
       if(shareCtx.ready.has(i)) return;
       shareCtx.ready.set(i, {st: 'load'});
       (async () => {
-        let blob = null;
-        if(a.src === 's3') blob = await s3Blob(a);
-        else{ const r = await fetch(a.url || a.full); if(!r.ok) throw new Error('fetch'); blob = await r.blob(); }
-        return new File([blob], a.name || 'file', {type: blob.type || 'application/octet-stream'});
+        const once = async () => {
+          if(a.src === 's3') return await s3Blob(a);
+          const u = attachDownloadUrl(a) && !/^#/.test(attachDownloadUrl(a)) ? attachDownloadUrl(a) : (a.url || '').split('#')[0];
+          const r = await fetch(u, {referrerPolicy: 'no-referrer'}); if(!r.ok) throw new Error('کد ' + r.status);
+          const blob = await r.blob();
+          return new File([blob], a.name || 'file', {type: blob.type || 'application/octet-stream'});
+        };
+        try{ return await once(); }
+        catch(e1){ if(e1 && e1.big) throw e1; await new Promise(z => setTimeout(z, 1200)); return await once(); }
       })().then(f => { if(tok === shareCtx.tok){ shareCtx.ready.set(i, {st: 'ok', f}); shrFilesPaint(); } })
-         .catch(() => { if(tok === shareCtx.tok){ shareCtx.ready.set(i, {st: 'err'}); shrFilesPaint(); } });
+         .catch(er => { try{ console.warn('share prefetch', a.name, er); }catch(e){} if(tok === shareCtx.tok){ shareCtx.ready.set(i, {st: 'err', er: String(er && (er.big ? 'big' : er.message) || er)}); shrFilesPaint(); } });
     });
   }
   function shrFilesHtml(){
@@ -26590,7 +26596,8 @@
       + L.map((a, i) => { const r = shareCtx.ready.get(i) || {st: 'load'}, on = shareCtx.sel.has(i);
           return '<button type="button" class="sx-f' + (on ? ' on' : '') + ' st-' + r.st + '" data-shf="' + i + '"><i class="sx-ck"></i>'
             + '<em class="k-' + ATT_KIND(a.ext) + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</em><span>' + esc(a.name) + '</span>'
-            + '<small>' + (r.st === 'ok' ? 'آماده' : r.st === 'err' ? 'دریافت نشد' : 'آماده‌سازی…') + '</small></button>'; }).join('')
+            + '<small' + (r.st === 'err' && r.er ? ' title="' + esc(r.er) + '"' : '') + '>' + (r.st === 'ok' ? 'آماده' : r.st === 'err' ? 'دریافت نشد · دوباره' : 'آماده‌سازی…') + '</small></button>'
+            + (r.st === 'err' && r.er ? '<div class="sx-fer">' + esc(r.er) + '</div>' : ''); }).join('')
       + '</div>';
   }
   function shrFilesPaint(){
@@ -26638,6 +26645,7 @@
       if(e.target.closest('[data-shreset]')){ shareCtx.edited = null; shareRender(); return; }
       if(e.target.closest('[data-shrtxt]')){ const ta = document.getElementById('shrText'); if(ta && ta.value !== shareBuild()) shareCtx.edited = ta.value; shareCtx.noText = !shareCtx.noText; shareRender(); return; }
       const fb = e.target.closest('[data-shf]');
+      if(fb && (shareCtx.ready.get(+fb.dataset.shf) || {}).st === 'err' && e.target.closest('small')){ shareCtx.ready.delete(+fb.dataset.shf); shrFilesPaint(); shrPrefetch(); return; }
       if(fb){ const i = +fb.dataset.shf; if(shareCtx.sel.has(i)) shareCtx.sel.delete(i); else shareCtx.sel.add(i); shrFilesPaint();
         if(shareCtx.edited == null){ const ta = document.getElementById('shrText'); if(ta) ta.value = shareBuild(); } return; }
       if(e.target.closest('[data-sh="files"]')){
