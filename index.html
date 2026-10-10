@@ -18703,6 +18703,8 @@
   .ulx-l1 i.c-task{color:var(--ok);background:color-mix(in srgb, var(--ok) 10%, var(--surface));}
   .ulx-l1 i.c-adm{color:#7a5cc4;background:color-mix(in srgb, #7a5cc4 11%, var(--surface));}
   .ulx-l1 i.c-wrk{color:var(--warn);background:color-mix(in srgb, var(--warn) 11%, var(--surface));}
+  .ulx-l1 i.c-up{color:var(--sky);background:var(--sky-soft);}
+  .ulx-det > .ulx-files{grid-column:1 / -1;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;background:none;padding:0;}
   .ulx-m small{font-size:11px;line-height:1.7;color:var(--muted);word-break:break-word;}
   .ulx-det{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px;padding:2px 12px 12px 12px;padding-inline-start:59px;}
   @media (max-width:480px){ .ulx-det{padding-inline-start:12px;grid-template-columns:1fr 1fr;} }
@@ -32183,7 +32185,7 @@
     {t:'worker_changes', who:['requested_by'], what:'تغییر کارگر', c:'wrk', txt:['worker_name','kind','new_role']},
     {t:'nudges', who:['from_name'], what:'پیام و تلنگر', c:'msg', txt:['message','to_name']}
   ];
-  const ULX_CAT = {rep:'گزارش', iss:'موانع', task:'فعالیت‌ها', adm:'دفتر فنی', wrk:'کارگری', msg:'پیام‌ها'};
+  const ULX_CAT = {rep:'گزارش', iss:'موانع', task:'فعالیت‌ها', adm:'دفتر فنی', wrk:'کارگری', up:'آپلودها', msg:'پیام‌ها'};
   const ULX_HIDE = /^(id|created_at|updated_at|.*_id|edit_log|stage_log|send_history|periods|payload)$/;
   const ULX_LABEL = {date_fa:'تاریخ', project:'پروژه', engineer:'ثبت‌کننده', contractor:'پیمانکار', skill:'تخصص', ostad:'استادکار', shagerd:'شاگرد',
     zone:'محل', subzone:'موقعیت جزء', activity:'فعالیت', text:'شرح', title:'عنوان', owner1:'مسئول', owner2:'مسئول دوم', party:'طرف قرارداد',
@@ -32203,6 +32205,11 @@
         return (rows || []).map(x => {
           const who = src.who.map(k => x[k]).find(v => v && String(v).trim()) || '—';
           const txt = src.txt.map(k => x[k]).filter(v => v != null && String(v).trim()).map(String).join(' · ');
+          if(src.t === 'nudges' && x.kind === 'آپلود'){
+            const L = attachList(x.message || '');
+            return {at: x.created_at, who: String(who).trim(), what: 'آپلود فایل', c: 'up', t: src.t, raw: x, files: x.message || '',
+              txt: (x.title || '') + (L.length ? ' — ' + L.map(a => a.name).join('، ') : ''), id: src.t + ':' + (x.id || x.created_at)};
+          }
           return {at: x.created_at, who: String(who).trim(), what: src.what, c: src.c, t: src.t, txt: txt.trim(), raw: x,
                   id: src.t + ':' + (x.id || x.created_at)};
         });
@@ -32252,7 +32259,7 @@
         const d = stampFa(x.at) || '';
         const head = d !== last ? (last = d, '<div class="ulx-day">' + esc(d) + '</div>') : '';
         const op = ulx.open === x.id;
-        const det = op ? '<div class="ulx-det">' + Object.keys(x.raw || {}).filter(k => !ULX_HIDE.test(k) && x.raw[k] != null && String(x.raw[k]).trim() !== '' && typeof x.raw[k] !== 'object')
+        const det = op ? '<div class="ulx-det">' + (x.files ? '<div class="ulx-files">' + filePillsHtml(x.files, {max: 12, cls: 'sm'}) + '</div>' : '') + Object.keys(x.raw || {}).filter(k => !ULX_HIDE.test(k) && !(x.files && /^(message|seen|to_name|kind|date_fa)$/.test(k)) && x.raw[k] != null && String(x.raw[k]).trim() !== '' && typeof x.raw[k] !== 'object')
             .map(k => '<div><u>' + esc(ULX_LABEL[k] || k) + '</u><b>' + esc(toFa(String(x.raw[k])).slice(0, 300)) + '</b></div>').join('')
             + '<div><u>زمان دقیق</u><b>' + esc(stampFa(x.at)) + ' — ' + esc(clockOf(x.at)) + '</b></div></div>' : '';
         return head + '<div class="ulx-r' + (op ? ' open' : '') + '"><button type="button" class="ulx-rh" data-ulo="' + esc(x.id) + '">'
@@ -51412,10 +51419,32 @@
     }catch(e){ return file; }
   }
   const upSleep = ms => new Promise(r => setTimeout(r, ms));
+  /* هر آپلود در «لاگ کاربران» می‌نشیند: آپلودهای پشت‌سرهمِ یک بخش
+     (تا ۴ ثانیه) یک ردیف می‌شوند — نوع «آپلود» در جدول پیام‌ها که همه‌جا
+     جزو ردیف‌های سیستمی است و به زنگوله و پیام‌ها نمی‌رود. */
+  const UP_LOG_KIND = 'آپلود';
+  const UP_KIND_FA = {statement:'صورت وضعیت', contract:'قرارداد', letter:'نامه', minute:'صورتجلسه', design:'اسناد طراحی',
+    report:'گزارش پیمانکاری', prc:'تدارکات', issue:'موانع', other:'سایر'};
+  const upLogQ = new Map();
+  function upLog(links, kind){
+    const k = kind || 'other';
+    const q = upLogQ.get(k) || {links: [], t: 0};
+    q.links = q.links.concat((links || []).filter(Boolean));
+    clearTimeout(q.t);
+    q.t = setTimeout(() => {
+      upLogQ.delete(k);
+      if(!q.links.length) return;
+      const me = activeUserName(); if(!me) return;
+      const names = attachList(q.links.join('\n')).map(a => a.name);
+      supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: me, to_name: me, kind: UP_LOG_KIND,
+        item_id: k, title: (UP_KIND_FA[k] || k) + ' (' + toFa(names.length) + ' فایل)', message: q.links.join('\n'), seen: true}]}).catch(() => {});
+    }, 4000);
+    upLogQ.set(k, q);
+  }
   async function upTry(file, onP, kind){
     let last = null;
     for(let i = 0; i < 3; i++){
-      try{ return await uploadAny(file, onP, kind); }
+      try{ const u = await uploadAny(file, onP, kind); try{ upLog([u], kind); }catch(e){} return u; }
       catch(er){
         last = er;
         const st = er && er.status;
@@ -56325,7 +56354,7 @@
         if(got.length){
           const prev = req.files || '';
           req.files = (prev ? prev + '\n' : '') + got.join('\n');
-          try{ await prUpdate(req); try{ upLog && upLog(got, 'تدارکات ' + req.code); }catch(e){} }
+          try{ await prUpdate(req); }
           catch(err){ req.files = prev; showDialog('err','ثبت نشد', friendlyErr(err)); }
         }
         prcRender();
@@ -57376,7 +57405,7 @@
      به‌روز می‌شود تا گزارش‌ها و کارت‌ها مثل قبل کار کنند.
      برای فعالیت عمومی و کار اداری همان ستون «توضیحات» است، نه مانع. */
   const TB_KIND = 'مانع', TB_EV_KIND = 'مانع-رخداد';
-  const isTbRow = r => { const k = pick(r,N.kind); return k === TB_KIND || k === TB_EV_KIND || k === 'پیشرفت' || k === 'تغییر کارگری'; };
+  const isTbRow = r => { const k = pick(r,N.kind); return k === TB_KIND || k === TB_EV_KIND || k === 'پیشرفت' || k === 'تغییر کارگری' || k === 'آپلود'; };
   const isNoteSide = r => {
     const sd = String(pick(r,T.side) || '').trim();
     return sd === 'فعالیت عمومی' || sd === 'کار اداری';
