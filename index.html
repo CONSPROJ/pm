@@ -4241,6 +4241,7 @@
   .tkd-hold i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5;}
   #tkViewBar{gap:8px;} #tkViewBar .tk-more{order:2;} #tkViewBar .tk-addbtn{order:3;margin-inline-start:auto;} #tkViewBar .tk-grpseg{order:4;flex-basis:100%;justify-content:space-between;margin-inline-start:0;}
   #taskJumpBar .mini u{text-decoration:none;font-size:10.5px;color:var(--muted);margin-inline-start:3px;}
+  .k-flr{--c:#5b7fa8;} [data-theme="dark"] .k-flr{--c:#8fb3dc;}
   .k-in{--c:var(--sky);} .k-emp{--c:#2a8a86;} .k-cons{--c:#6d5bb5;} .k-ctr{--c:#b07512;}
   [data-theme="dark"] .k-emp{--c:#5cc4be;} [data-theme="dark"] .k-cons{--c:#a898e6;} [data-theme="dark"] .k-ctr{--c:#e0b050;}
   .tkl-sec{margin:0 0 10px;border-radius:18px;border:1px solid var(--line);background:color-mix(in srgb, var(--c) 3%, var(--surface));overflow:hidden;}
@@ -59257,8 +59258,8 @@
   let taskView = 'list';
   try{ const tv = localStorage.getItem('taskView'); if(tv === 'card' || tv === 'list') taskView = tv; }catch(e){}
   /* دسته‌بندی لیست فعالیت: پرسنل (مسئول)، پیمانکار، یا طبقه */
+  /* دسته‌بندی همیشه با کاشی‌هاست (افراد، کارفرما، مشاور، پیمانکاران، طبقه)؛ دکمه‌های جدا حذف شد */
   let taskGroup = 'person';
-  try{ const tg = localStorage.getItem('taskGroup'); if(tg === 'person' || tg === 'ctr' || tg === 'floor') taskGroup = tg; }catch(e){}
   let tfrScope = false;
   const tfrCards = new Map();   // کارت کامل هر سطر؛ فقط با باز شدن سطر ساخته می‌شود
   let tfrSeq = 0;
@@ -59998,6 +59999,7 @@
   /* ====== سطح‌های لیست فعالیت: کاشی بالای فهرست + پنجرهٔ تاشوی هر سطح ======
      با لمس کاشی همان پنجره باز می‌شود (و بقیه بسته)؛ وضعیت باز بودن روی همین دستگاه می‌ماند. */
   const TKL_IC = {
+    flr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14M10 21v-3h4v3"/></svg>',
     in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/></svg>',
     emp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="11" height="18" rx="1.5"/><path d="M15 9h4.5a.5.5 0 0 1 .5.5V21"/><path d="M7.5 7h4M7.5 11h4M7.5 15h4M3 21h18"/></svg>',
     cons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-14 4 9 3-5 4 10"/><path d="M3 19h18"/></svg>',
@@ -60007,21 +60009,21 @@
   function tkLevelsHtml(sp, people, blockFn, pre){
     let idx = 0;
     const today0 = faToDate(todayShamsi());
-    const stat = names => { let n = 0, late = 0, open = 0; const seen = new Set();
-      names.forEach(p => (people.get(p) || []).forEach(r => { const id = pick(r,T.id) || r.__admId || ''; if(id && seen.has(id)) return; if(id) seen.add(id); n++;
+    const stat = (names, M) => { let n = 0, late = 0, open = 0; const seen = new Set();
+      names.forEach(p => ((M || people).get(p) || []).forEach(r => { const id = pick(r,T.id) || r.__admId || ''; if(id && seen.has(id)) return; if(id) seen.add(id); n++;
         const c = taskStatus(r).cls; if(c !== 'done'){ open++; const d = faToDate(faDateOf(pick(r,T.due) || '')); if(d && today0 && d < today0) late++; } }));
       return {n, open, late}; };
     const L = sp.levels || [{k:'in', t:'همه', names: sp.names}];
     if(L.length < 2) return L.map(x => x.names.map(p => blockFn(p, idx++)).join('')).join('');
-    const S = L.map(x => Object.assign({}, x, stat(x.names)));
+    const S = L.map(x => Object.assign({}, x, stat(x.names, x.map)));
     return '<div class="tkl-tiles" data-tklpre="' + (pre || '') + '">' + S.map(x => '<button type="button" class="tkl-t k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' on' : '') + '" data-tklv="' + x.k + '">'
           + '<span class="tkl-ic">' + TKL_IC[x.k] + '</span><span class="tkl-tx"><b>' + esc(x.t) + '</b>'
-          + '<small>' + toFa(x.names.length) + ' نفر' + (x.late ? ' · <em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '</small></span>'
+          + '<small>' + toFa(x.names.length) + (x.k === 'flr' ? ' طبقه' : ' نفر') + (x.late ? ' · <em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '</small></span>'
           + '<span class="tkl-n"><b>' + toFa(x.open) + '</b><small>باز</small></span></button>').join('') + '</div>'
       + S.map(x => '<section class="tkl-sec k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' open' : '') + '" data-tklsec="' + x.k + '" id="tkl-' + (pre || 'x') + '-' + x.k + '">'
           + '<button type="button" class="tkl-h" data-tklh="' + x.k + '"><span class="tkl-ic">' + TKL_IC[x.k] + '</span><b>' + esc(x.t) + '</b>'
           + '<u>' + toFa(x.names.length) + '</u>' + (x.late ? '<em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '<i class="tkl-ar"></i></button>'
-          + '<div class="tkl-b">' + x.names.map(p => blockFn(p, idx++)).join('') + '</div></section>').join('');
+          + '<div class="tkl-b">' + x.names.map(p => blockFn(p, idx++, x.map, x.md)).join('') + '</div></section>').join('');
   }
   document.addEventListener('click', e => {
     const t = e.target.closest && e.target.closest('[data-tklv], [data-tklh]'); if(!t) return;
@@ -60499,7 +60501,7 @@
   function renderTasksByPerson(list){
     renderTaskCalendar(list);
     const box = document.getElementById('taskInner') || document.getElementById('taskView');
-    const mode = taskGroup;
+    const mode = taskGroup, mode0 = mode;
     const people = new Map();
     const push = (p, r) => {
       if(!people.has(p)) people.set(p, []);
@@ -60532,7 +60534,18 @@
       })); }catch(e){}
     }
     let sp;
-    if(mode === 'person') sp = taskPeopleSplit(people, ctrForced);
+    if(mode === 'person'){
+      sp = taskPeopleSplit(people, ctrForced);
+      /* کاشی «طبقه»: همان فعالیت‌ها به تفکیک طبقه */
+      const fm = new Map();
+      list.forEach(r => taskFloorKeys(r).forEach(k => { if(!fm.has(k)) fm.set(k, []); fm.get(k).push(r); }));
+      const ord = taskFloorOrder(), fn = Array.from(fm.keys()).sort((a, b2) => ord(a) - ord(b2));
+      if(fn.length){
+        if(!sp.levels || !sp.levels.length) sp.levels = [{k:'in', t:'همه', names: sp.names}];
+        sp.levels.push({k:'flr', t:'طبقه', names: fn, map: fm, md: 'floor'});
+      }
+      flrList = list;
+    }
     else{
       const names = Array.from(people.keys());
       if(mode === 'ctr'){
@@ -60560,8 +60573,9 @@
     if(window.updateJumpActive) setTimeout(window.updateJumpActive, 60);
     return;
 
-    function personBlock(p, i){
-      const items = people.get(p);
+    function personBlock(p, i, M, md){
+      const items = (M || people).get(p);
+      const mode = md || mode0;
       let done = 0, late = 0;
       const today0 = faToDate(todayShamsi());
       items.forEach(r => {
@@ -61249,14 +61263,6 @@
         +       '<button type="button" data-txxl="out" title="دانلود فعالیت‌های اجرایی برای اصلاح طبقه و محل">' + TX_I.down + 'دانلود فایل</button>'
         +       '<button type="button" data-txxl="in" title="بارگذاری فایل اصلاح‌شده">' + TX_I.up + 'بارگذاری فایل اصلاح‌شده</button>' : '')
         +     '</div></details>' : '')
-        +     '<div class="tk-grpseg" role="group" aria-label="دسته‌بندی بر اساس">'
-        +       '<button type="button" data-tkgrp="person"' + (taskGroup === 'person' ? ' class="on"' : '') + '>'
-        +         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6S13.7 16 14.5 19"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.6c2.3.2 4 1.6 4.7 4.4"/></svg>پرسنل</button>'
-        +       '<button type="button" data-tkgrp="ctr"' + (taskGroup === 'ctr' ? ' class="on"' : '') + '>'
-        +         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 0116 0"/><path d="M2.5 11h19v2.5h-19z"/><path d="M12 3v4"/></svg>پیمانکار</button>'
-        +       '<button type="button" data-tkgrp="floor"' + (taskGroup === 'floor' ? ' class="on"' : '') + '>'
-        +         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14M10 21v-3h4v3"/></svg>طبقه</button>'
-        +     '</div>'
         +   '</div>'
         +   '<div id="taskInner"></div>'
         + '</div></div>';
@@ -62224,11 +62230,18 @@
     if(ar) ar.textContent = open ? '▴' : '▾';
   });
 
+  function bar0Mark(b){ const bar = b.closest('.jump-bar'); if(bar) bar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }
   document.getElementById('taskJumpBar').addEventListener('click', e => {
     const b = e.target.closest('button[data-jumpt]');
     if(!b) return;
     const t = document.getElementById(b.dataset.jumpt);
     if(!t) return;
+    /* پرش به یک دسته = همان کاشی؛ فقط همان دسته باز می‌شود */
+    if(t.classList.contains('tkl-sec')){
+      const tl = t.parentElement.querySelector('[data-tklv="' + t.dataset.tklsec + '"]');
+      if(tl){ if(!tl.classList.contains('on')) tl.click(); else{ try{ scrollToSection(t); }catch(err){} } }
+      bar0Mark(b); return;
+    }
     /* اگر نفر داخل سطحِ بسته است، آن سطح هم باز می‌شود */
     if(t.classList.contains('tkl-sec') && !t.classList.contains('open')){ t.classList.add('open'); const tl0 = t.parentElement.querySelector('[data-tklv="' + t.dataset.tklsec + '"]'); if(tl0) tl0.classList.add('on'); }
     const lsec = t.closest('.tkl-sec'); if(lsec && !lsec.classList.contains('open')){ lsec.classList.add('open'); const tl = lsec.parentElement.querySelector('[data-tklv="' + lsec.dataset.tklsec + '"]'); if(tl) tl.classList.add('on'); }
