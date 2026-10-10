@@ -21327,12 +21327,31 @@
     *:not(.modal-bg):not(.ccl-bg){-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}
   }
   .anim-off, .anim-off *, .anim-off::before, .anim-off::after, .anim-off *::before, .anim-off *::after{animation-play-state:paused !important;}
-  [hidden] *{animation-play-state:paused !important;}
+
 
   /* دکمهٔ برگشت داخل پنجره‌های نمایش و دانلود فایل */
   .fv-back{all:unset;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 10px 0 8px;border-radius:10px;background:var(--field);color:var(--ink);font-size:12.5px;font-weight:800;}
   .fv-back svg{width:16px;height:16px;} .fv-back:hover{background:color-mix(in srgb, var(--sky) 14%, var(--field));}
   .s3s-h{display:flex;align-items:center;gap:8px;} .s3s-h > b{flex:1;min-width:0;}
+
+  /* کارت مشاور و کارفرما — طرح تازه */
+  .ptx-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .ptx-top .ptx-bar{margin:0 0 0 auto;margin-inline-start:auto;}
+  .ptx-disc{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:99px;font-size:11.5px;font-weight:700;background:var(--field);color:var(--ink);}
+  .ptx-k{flex-direction:row !important;align-items:center;gap:10px !important;background:linear-gradient(140deg, color-mix(in srgb, var(--kc, var(--c)) 14%, var(--surface)), var(--field)) !important;border:1px solid color-mix(in srgb, var(--kc, var(--c)) 22%, var(--line));}
+  .ptx-k.k2{--kc:var(--sky);} .ptx-k.k3{--kc:var(--ok);} .ptx-k.k4{--kc:#b07512;} .ptx-k.bad{--kc:var(--alert);}
+  .ptx-ki{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb, var(--kc, var(--c)) 18%, transparent);color:var(--kc, var(--c));}
+  .ptx-ki svg{width:18px;height:18px;} .ptx-kt{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .ptx-tl{display:grid;grid-template-columns:repeat(auto-fit, minmax(84px, 1fr));gap:6px;}
+  .ptx-tile{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border-radius:13px;border:1px solid var(--line);background:var(--surface);text-align:center;}
+  .ptx-tile:hover{border-color:color-mix(in srgb, var(--c) 45%, var(--line));}
+  .ptx-ti{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:var(--field);color:var(--c);} .ptx-ti svg{width:16px;height:16px;}
+  .ptx-tile b{font-size:16px;font-weight:900;} .ptx-tile small{font-size:10.5px;color:var(--muted);}
+  .ptx-hi{width:22px;height:22px;display:grid;place-items:center;border-radius:7px;background:var(--field);color:var(--c);} .ptx-hi svg{width:13px;height:13px;}
+  .ptx-ri{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--surface);color:var(--c);} .ptx-ri svg{width:16px;height:16px;}
+  .ptx-row{border:1px solid transparent;transition:border-color .15s;} .ptx-row:hover{border-color:color-mix(in srgb, var(--c) 30%, var(--line));}
+  .ptx-st{padding:2px 8px;border-radius:99px;background:var(--surface);font-weight:700;} .ptx-st.t-ok{color:var(--ok);} .ptx-st.t-bad{color:var(--alert);} .ptx-st.t-info{color:var(--sky);}
+  .ptx-more{font-size:11px;color:var(--muted);padding:2px 6px;}
 </style>
 <script>
   (function(){
@@ -29916,20 +29935,28 @@
     const used = []; try{ ctrContacts.forEach(o => { if(o && o.t === t && o.ro) used.push(o.ro); }); }catch(e){}
     dl.innerHTML = Array.from(new Set((CTR_ROLE_SUG[t] || []).concat(used))).map(v => '<option value="' + esc(v) + '">').join('');
   }
-  function ctypHtml(cur, ro){
+  function ctypHtml(cur, ro, d){
     cur = cur || 'ctr';
     try{ ctrRoleListFor(cur); }catch(e){}
     return '<div class="ctyp"><span class="ctyp-l">نوع</span><input type="hidden" data-ctk="t" value="' + esc(cur) + '"><div class="ctyp-s" role="radiogroup">'
       + CTR_TYPES.map(([k, lb]) => '<button type="button" role="radio" class="ctyp-b t-' + k + (k === cur ? ' on' : '') + '" aria-checked="' + (k === cur) + '" data-ctyp="' + k + '">' + lb + '</button>').join('') + '</div></div>'
       + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + (cur === 'emp' ? 'سمت در تیم کارفرما' : 'تخصص مشاور') + ' <small>مثلاً ' + (cur === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : 'مشاور سازه، مشاور تأسیسات') + '</small></span>'
-      + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>';
+      + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
+      /* دیسیپلین کنار نوع: برای پیمانکار و مشاور (مثلاً مشاور سازه ← سازه) */
+      + '<label class="ctc-f ctyp-d"' + (cur === 'emp' ? ' hidden' : '') + '><span>دیسیپلین</span><input type="text" data-ctk="d2" data-list="ctdDiscList" autocomplete="off" value="' + esc(d || '') + '" placeholder="ابنیه، سازه، مکانیکال، الکتریکال…"></label>';
   }
+  document.addEventListener('input', e => {
+    const i = e.target; if(!i || !i.dataset || (i.dataset.ctk !== 'd2' && i.dataset.ctk !== 'd')) return;
+    const box = i.closest('.ctc-ed'); if(!box) return;
+    const o = box.querySelector('[data-ctk="' + (i.dataset.ctk === 'd2' ? 'd' : 'd2') + '"]'); if(o) o.value = i.value;
+  });
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-ctyp]'); if(!b) return;
     e.stopPropagation();
     const box = b.closest('.ctyp'), t = b.dataset.ctyp; box.querySelector('[data-ctk="t"]').value = t;
     box.querySelectorAll('[data-ctyp]').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
     const ro = box.nextElementSibling && box.nextElementSibling.classList.contains('ctyp-ro') ? box.nextElementSibling : null;
+    { const dd = box.parentElement && box.parentElement.querySelector('.ctyp-d'); if(dd) dd.hidden = t === 'emp'; }
     if(ro){ ro.hidden = t === 'ctr'; try{ ctrRoleListFor(t); }catch(err){}
       ro.querySelector('span').innerHTML = (t === 'emp' ? 'سمت در تیم کارفرما' : 'تخصص مشاور') + ' <small>مثلاً ' + (t === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : 'مشاور سازه، مشاور تأسیسات') + '</small>'; }
   }, true);
@@ -29951,7 +29978,7 @@
     const canon = ctrCanon(name), P = ctrNameParts(canon, c), ed = can('ctr.contact');
     const f = (k, lb, v, ph) => '<label class="ctc-f"><span>' + lb + '</span><input type="text" data-ctk="' + k + '" class="cnm-in" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off"' + (ed ? '' : ' disabled') + '></label>';
     return '<div class="cnm" data-cnm="' + esc(canon) + '"><div class="ctx-sh"><b>نام پیمانکار</b><small>با تغییر نام و «ذخیره»، نام روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها عوض می‌شود؛ نام قبلی هم به همین پرونده وصل می‌ماند</small></div>'
-      + ctypHtml((c && c.t) || '', (c && c.ro) || '')
+      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '')
       + '<div class="cnm-g">' + f('fn', 'نام', P.fn, 'مثلاً حسین') + f('ln', 'نام خانوادگی', P.ln, 'مثلاً ناظری') + '</div>'
       + f('co', 'نام شرکت <small>اختیاری؛ اگر پیمانکار شرکت است و نام شخص ندارد، فقط همین را بنویسید</small>', P.co, 'مثلاً آسمان بالابر توان')
       + '<div class="cnm-pv"><u>روی کارت</u><b>' + esc(canon) + '</b><i hidden>تغییر می‌کند</i></div></div>';
@@ -30173,6 +30200,7 @@
       if(!v) return;
       if(k === 'p') o.p.push(v); else o[k] = v;
     });
+    if(o.d2){ o.d = o.d2; } delete o.d2;
     return o;
   }
   document.addEventListener('click', async e => {
@@ -30911,7 +30939,7 @@
             + '<input type="hidden" class="cnw-n" value="' + esc(q || '') + '"><div class="cnm-pv"><u>روی کارت</u><b>' + esc(q || '—') + '</b></div>'; })()
       + '<div class="cnw-dup"></div>'
       + '<label class="ctc-f"><span>نام قراردادی <small>اگر در قرارداد و صورت وضعیت به نام دیگری آمده</small></span><input type="text" class="cnw-cn" data-list="contractPartyList" autocomplete="off" placeholder="اختیاری"></label>'
-      + '<label class="ctc-f"><span>دیسیپلین</span><input type="text" class="cnw-d" data-list="ctdDiscList" autocomplete="off" placeholder="ابنیه، مکانیکال، الکتریکال…"></label>'
+
       + '<div class="ctc-phs"><label class="ctc-f"><span>نام نماینده / مسئول</span><input type="text" class="cnw-c" placeholder="اختیاری"></label><label class="ctc-f"><span>تلفن همراه</span><input type="tel" dir="ltr" inputmode="tel" class="cnw-p" placeholder="09xxxxxxxxx"></label></div>'
       + '<div class="ctc-eact"><button type="button" class="mx-btn pri" data-cnwsave="1">ثبت و تکمیل پرونده</button><button type="button" class="mx-btn" data-ctcx="1">انصراف</button></div></div>';
   }
@@ -30948,14 +30976,14 @@
     e.stopPropagation();
     const box = sv.closest('.cnw'), val = c => String((box.querySelector(c) || {}).value || '').replace(/\s+/g, ' ').trim();
     const fn = val('.cnw-fn'), ln = val('.cnw-ln'), co = val('.cnw-co');
-    const name = ctrNameJoin({fn, ln, co}), cn = val('.cnw-cn'), d = val('.cnw-d'), c = val('.cnw-c'), p = val('.cnw-p'), ty = val('[data-ctk="t"]');
+    const name = ctrNameJoin({fn, ln, co}), cn = val('.cnw-cn'), d = val('[data-ctk="d2"]') || val('.cnw-d'), c = val('.cnw-c'), p = val('.cnw-p'), ty = val('[data-ctk="t"]'), ro = val('[data-ctk="ro"]');
     if(name.length < 2){ showDialog('warn','نام پیمانکار','نام و نام خانوادگی، یا نام شرکت را بنویسید.'); return; }
     if(p && telOf(p).replace(/^\+/, '').length < 7){ showDialog('warn','شماره درست نیست','«' + p + '» شمارهٔ تلفن معتبری نیست.'); return; }
     const same = ctdEntities().find(x => normName(x.canon) === normName(name) || ctrNamesOf(x.canon).some(n => normName(n) === normName(name)));
     if(same){ showDialog('warn','از قبل هست','«' + same.canon + '» در فهرست هست؛ پرونده‌اش باز شد.'); ctcOpen(same.canon); return; }
     sv.disabled = true;
     try{
-      await ctrContactSave(name, {ad: todayShamsi(), cn, d, c, p: p ? [p] : [], fn, ln, co, t: ty});
+      await ctrContactSave(name, {ad: todayShamsi(), cn, d, c, p: p ? [p] : [], fn, ln, co, t: ty, ro});
       /* در فهرست انتخاب پیمانکار و طرف قرارداد، روی همهٔ دستگاه‌ها */
       try{ await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:(ty === 'cons' || ty === 'emp' ? [] : [{kind:'پیمانکار', value:name}]).concat([{kind:'طرف قرارداد', value: cn || name}])}); }catch(err){}
       try{ if(ty !== 'cons' && ty !== 'emp') mergeIntoList('contractorList', [name]); mergeIntoList('contractPartyList', [cn || name]); }catch(err){}
@@ -40986,7 +41014,7 @@
       const t = x.kind === 'design' ? (pick(r,AD.dTitle) || 'سند طراحی') : x.kind === 'minute' ? (pick(r,AD.mText) || pick(r,AD.mSubject) || '')
               : x.kind === 'letter' ? (pick(r,AD.lSubject) || 'نامه') : x.kind === 'contract' ? (pick(r,AD.cTitle) || pick(r,AD.cSubject) || 'قرارداد') : (pick(r,AD.sName) || 'صورت وضعیت');
       const st = x.kind === 'design' ? (pick(r,AD.dStatus) || '') : '';
-      out.push({kind: x.kind, id: pick(r,AD.id), t, rel, st, now: rel === 'الان نزد اوست'});
+      out.push({kind: x.kind, id: pick(r,AD.id), t, rel, st, now: rel === 'الان نزد اوست', row: r, d: (function(){ try{ return admSentDate(x.kind, r) || ''; }catch(e){ return ''; } })()});
     });
     return out.sort((a, b) => (b.now - a.now));
   }
@@ -41003,7 +41031,7 @@
           const nx = L[i + 1], open = !nx && isCur && !dsDone(y.st);
           const end = nx ? nx.d : (open ? todayShamsi() : '');
           const dd = (y.d && end) ? faDiff(y.d, end) : null;
-          out.push({id: pick(x.row,AD.id), t: pick(x.row,AD.dTitle) || 'سند طراحی', no: pick(x.row,AD.dNo) || '', rev: rv.rev, st: y.st,
+          out.push({row: x.row, id: pick(x.row,AD.id), t: pick(x.row,AD.dTitle) || 'سند طراحی', no: pick(x.row,AD.dNo) || '', rev: rv.rev, st: y.st,
             days: dd != null && dd >= 0 ? dd : null, open, res: nx && DS_CODE[nx.st] ? DS_CODE[nx.st] : '', lim: DS_STAGE_LIM[y.st]});
         });
       });
@@ -41023,12 +41051,13 @@
     /* تماس: همان دکمهٔ «تماس» کارت پیمانکاران (با زدنش اطلاعات تماس باز می‌شود) */
     const quick = (function(){ try{ const m = ctcMiniHtml(name); return m ? '<div class="ptx-bar">' + m + '</div>' : ''; }catch(e){ return ''; } })();
     /* شاخص‌ها */
-    const kpi = (v, u, l, cls) => '<div class="ptx-k' + (cls ? ' ' + cls : '') + '"><b>' + v + (u ? '<u>' + u + '</u>' : '') + '</b><small>' + l + '</small></div>';
-    const maxNow = now.length ? now[0].days : null;
+    const kpi = (v, u, l, cls, ic) => '<div class="ptx-k' + (cls ? ' ' + cls : '') + '">' + (ic ? '<span class="ptx-ki">' + I(ic) + '</span>' : '') + '<span class="ptx-kt"><b>' + v + (u ? '<u>' + u + '</u>' : '') + '</b><small>' + l + '</small></span></div>';
+    const okPct = rTot ? Math.round((R.A + R.B) / rTot * 100) : null;
     const kpis = '<div class="ptx-ks">'
-      + kpi(toFa(now.length), 'سند', 'الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او'), now.some(x => tone(x) === 'bad') ? 'bad' : now.length ? 'on' : '')
-      + (t === 'cons' || S.length ? kpi(avg != null ? toFa(avg) : '—', avg != null ? 'روز' : '', 'میانگین هر بررسی') : '')
-      + kpi(toFa(D.length), 'مورد', 'اسناد و مکاتبات')
+      + kpi(toFa(now.length), 'سند', 'الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او'), now.some(x => tone(x) === 'bad') ? 'bad' : now.length ? 'on' : '', '<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8.5"/>')
+      + (t === 'cons' || S.length ? kpi(avg != null ? toFa(avg) : '—', avg != null ? 'روز' : '', 'میانگین هر بررسی', 'k2', '<path d="M4 19V9M10 19V5M16 19v-6M21 19H3"/>') : '')
+      + (okPct != null ? kpi(toFa(okPct) + '٪', '', 'تأیید یا مشروط', 'k3', '<path d="M5 12.5l4.5 4.5L19 7.5"/>') : '')
+      + kpi(toFa(D.length), 'مورد', 'اسناد و مکاتبات', 'k4', '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>')
       + '</div>';
     /* نتیجهٔ بررسی‌ها */
     const res = rTot ? '<div class="ptx-sec"><div class="ptx-h"><b>نتیجهٔ بررسی‌ها</b></div>'
@@ -41036,22 +41065,32 @@
       + '<div class="ptx-rl">' + [['A','تأیید'],['B','مشروط'],['C','اصلاح'],['D','رد']].map(([k, l]) => '<span class="r-' + k + '"><i></i>' + l + ' <b>' + toFa(R[k]) + '</b></span>').join('') + '</div></div>' : '';
     /* الان نزد او */
     const nowH = now.length ? '<div class="ptx-sec"><div class="ptx-h"><b>الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او') + '</b></div>'
-      + now.slice(0, 8).map(x => '<button type="button" class="ptx-row" data-ctpgo="design¦' + esc(x.id) + '"><span class="ptx-rt"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev].filter(Boolean).join(' · ')) + '</small></span>'
-          + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span></button>').join('') + '</div>' : '';
+      + now.slice(0, 8).map(x => '<button type="button" class="ptx-row k-design" data-ctpgo="design¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I.design || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev].filter(Boolean).join(' · ')) + '</small></span>'
+          + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>' + (x.row ? admDlBtnHtml('design', x.row, 'flr-dl') : '') + '</button>').join('') + '</div>' : '';
     /* بقیهٔ اسناد، گروه‌بندی */
     const nowIds = new Set(now.map(x => String(x.id)));
     const rest = D.filter(x => !(x.kind === 'design' && nowIds.has(String(x.id))));
     const g = {}; rest.forEach(x => { (g[x.kind] = g[x.kind] || []).push(x); });
     const ord = ['design','contract','statement','letter','minute'];
-    const docsH = ord.filter(k => g[k]).map(k => '<details class="ptx-sec ptx-dt"' + (g[k].length <= 4 ? ' open' : '') + '><summary class="ptx-h"><b>' + esc(KIND_LABEL[k] || k) + '</b><i>' + toFa(g[k].length) + '</i></summary>'
-        + g[k].slice(0, 20).map(x => '<button type="button" class="ptx-row" data-ctpgo="' + esc(x.kind) + '¦' + esc(x.id) + '"><span class="ptx-rt"><b>' + esc(x.t) + '</b><small>' + esc(x.rel) + '</small></span>'
-            + (x.st ? '<span class="ptx-st">' + esc(x.st) + '</span>' : '') + '</button>').join('') + '</details>').join('');
+    /* کاشی هر نوع سند؛ با زدنش همان بخش باز می‌شود */
+    const tiles = ord.filter(k => g[k]).length > 1 ? '<div class="ptx-tl">' + ord.filter(k => g[k]).map(k => '<button type="button" class="ptx-tile k-' + k + '" data-ptxk="' + k + '"><span class="ptx-ti">' + (CF_I[k] || '') + '</span><b>' + toFa(g[k].length) + '</b><small>' + esc(KIND_LABEL[k] || k) + '</small></button>').join('') + '</div>' : '';
+    const stTone = st => /تأیید|اجرا|تسویه|پرداخت/.test(st) ? 'ok' : /رد|اصلاح/.test(st) ? 'bad' : st ? 'info' : '';
+    const docsH = ord.filter(k => g[k]).map(k => '<details class="ptx-sec ptx-dt" data-ptxsec="' + k + '"' + (g[k].length <= 4 ? ' open' : '') + '><summary class="ptx-h"><span class="ptx-hi k-' + k + '">' + (CF_I[k] || '') + '</span><b>' + esc(KIND_LABEL[k] || k) + '</b><i>' + toFa(g[k].length) + '</i></summary>'
+        + g[k].slice(0, 30).map(x => '<button type="button" class="ptx-row k-' + esc(x.kind) + '" data-ctpgo="' + esc(x.kind) + '¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I[x.kind] || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small>' + esc([x.rel, x.d ? toFa(admDate(x.d)) : ''].filter(Boolean).join(' · ')) + '</small></span>'
+            + (x.st ? '<span class="ptx-st t-' + stTone(x.st) + '">' + esc(x.st) + '</span>' : '') + (x.row ? admDlBtnHtml(x.kind, x.row, 'flr-dl') : '') + '</button>').join('')
+        + (g[k].length > 30 ? '<div class="ptx-more">' + toFa(g[k].length - 30) + ' مورد دیگر در دفتر فنی</div>' : '') + '</details>').join('');
     return '<div class="ptx t-' + t + '">'
       + (c.cn && normName(c.cn) !== normName(name) ? '<div class="ptx-hero"><span class="ptx-cn">نام قراردادی: ' + esc(c.cn) + '</span></div>' : '')
-      + quick + kpis + nowH + res + docsH
+      + '<div class="ptx-top">' + (c.d && t !== 'emp' ? '<span class="ptx-disc">' + esc(c.d) + '</span>' : '') + quick + '</div>'
+      + kpis + tiles + nowH + res + docsH
       + (!D.length && !S.length ? '<div class="ptx-empty">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div>' : '')
       + '</div>';
   }
+  document.addEventListener('click', e => {
+    const k = e.target.closest && e.target.closest('[data-ptxk]'); if(!k) return;
+    const sec = k.closest('.ptx').querySelector('[data-ptxsec="' + k.dataset.ptxk + '"]'); if(!sec) return;
+    sec.open = true; sec.scrollIntoView({behavior:'smooth', block:'start'});
+  });
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-ctpgo]'); if(!b) return;
     const [k, id] = b.dataset.ctpgo.split('¦');
