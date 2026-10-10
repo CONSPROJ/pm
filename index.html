@@ -2362,6 +2362,15 @@
   .cct-r{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden;}
   .cct-r.op{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));}
   .cct-h{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;}
+  .cct-grp{border-radius:15px;padding:4px;background:linear-gradient(160deg, color-mix(in srgb, var(--sky) 9%, var(--surface)), color-mix(in srgb, #8a5cf6 7%, var(--surface)));border:1px solid color-mix(in srgb, var(--sky) 26%, var(--line));display:flex;flex-direction:column;gap:4px;}
+  .cct-grp > .cct-r{border-color:transparent;}
+  .cct-r.sub{margin-inline-start:16px;background:color-mix(in srgb, #8a5cf6 6%, var(--surface));border-color:color-mix(in srgb, #8a5cf6 22%, var(--line));position:relative;}
+  .cct-r.sub::before{content:"";position:absolute;inset-inline-start:-10px;top:-6px;bottom:50%;width:8px;border-inline-start:2px solid color-mix(in srgb, #8a5cf6 40%, transparent);border-bottom:2px solid color-mix(in srgb, #8a5cf6 40%, transparent);border-end-start-radius:8px;}
+  .cct-no.ad{direction:rtl;background:color-mix(in srgb, #8a5cf6 16%, var(--field));color:#8a5cf6;}
+  .cct-gx{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 12px;font-size:11.5px;color:var(--muted);}
+  .cct-gx b{font-weight:800;color:var(--ink);} .cct-gx b.warn{color:#b07512;} .cct-gx b.bad{color:var(--alert);} .cct-gx b small{font-weight:600;color:var(--muted);}
+  .cct-gx s{opacity:.7;}
+  .cct-en{color:var(--sky) !important;}
   .cct-no{flex:none;direction:ltr;font-size:11.5px;font-weight:900;padding:3px 8px;border-radius:8px;background:var(--field);}
   .cct-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;} .cct-t b{font-size:13px;font-weight:800;} .cct-t b i{font-style:normal;font-size:10.5px;color:var(--warn);}
   .cct-t small{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11px;color:var(--muted);}
@@ -30247,6 +30256,20 @@
      تاریخ همین‌جا اصلاح می‌شود. قراردادی که برای دو نفر است، هر دو طرف را می‌گیرد و در
      پروندهٔ هر دو پیمانکار دیده می‌شود. */
   const cct = {q: '', open: '', neu: false};
+  /* قرارداد اصلی و الحاقیه‌هایش: یک گروه با همان شمارهٔ قرارداد.
+     تاریخ اتمام مؤثر = دیرترین تاریخ اتمام میان اصل و الحاقیه‌ها (تمدید با الحاقیه). */
+  const cctNoK = r => toEn(String(pick(r, AD.cNo) || '')).replace(/\s+/g, '').toUpperCase();
+  const cctAddV = r => +(toEn(String(pick(r, AD.cAdd) || '')).match(/\d+/) || [0])[0] || (String(pick(r, AD.cAdd) || '').trim() ? 1 : 0);
+  function cctEndOf(r, all){
+    const k = cctNoK(r), own = normDate(String(pick(r, AD.cEnd) || '')) || '';
+    const grp = k ? (all || cctRows()).filter(x => cctNoK(x) === k) : [r];
+    const main = grp.find(x => !cctAddV(x)) || r;
+    const base = normDate(String(pick(main, AD.cEnd) || '')) || '';
+    let end = base, by = 0;
+    grp.forEach(x => { const e = normDate(String(pick(x, AD.cEnd) || '')) || ''; if(e && (!end || faToDate(e) > faToDate(end))){ end = e; by = cctAddV(x); } });
+    return {own, base, end, by, n: grp.filter(x => cctAddV(x)).length};
+  }
+  window.cctEndOf = cctEndOf;
   function cctRows(){
     return ((typeof adminAll !== 'undefined' && adminAll) || []).filter(x => x.kind === 'contract').map(x => x.row);
   }
@@ -30260,6 +30283,7 @@
       +   '<div class="cct-ps">' + P.map(p1 => '<span class="cct-p">' + esc(p1) + '<i data-cctpx="1" title="برداشتن">✕</i></span>').join('')
       +   '<input type="text" class="cct-pin" data-list="contractPartyList" autocomplete="off" placeholder="+ افزودن طرف قرارداد"></div></div>'
       + '<div class="cct-g">' + f('amt', 'مبلغ قرارداد (ریال)', pick(r, AD.cAmount), ' inputmode="numeric" class="money-in"') + f('d', 'تاریخ شروع', toFa(admDate(pick(r, AD.cStart)) || ''), ' inputmode="numeric"') + '</div>'
+      + '<div class="cct-g">' + f('end', pick(r, AD.cAdd) ? 'تاریخ اتمام تمدیدشده با این الحاقیه' : 'تاریخ اتمام قرارداد', toFa(admDate(pick(r, AD.cEnd)) || ''), ' inputmode="numeric" placeholder="بدون تاریخ"') + '</div>'
       + '<div class="cct-a"><button type="button" class="mx-btn pri" data-cctsave="1">ذخیره</button>'
       +   (id ? '<button type="button" class="mx-btn" data-cctgo="' + esc(id) + '">در دفتر فنی</button><button type="button" class="mx-btn dng" data-cctdel="' + esc(id) + '">حذف</button>' : '')
       +   '<button type="button" class="mx-btn" data-cctx="1">بستن</button></div></div>';
@@ -30276,16 +30300,41 @@
       + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="cctQ" placeholder="شماره، عنوان یا طرف قرارداد…" value="' + esc(q) + '" autocomplete="off"></label>'
       +   (can('write.adm') ? '<button type="button" class="cdx-new" data-cctnew="1">' + CDX_I.plus + '<span>قرارداد تازه</span></button>' : '') + '</div>'
       + (cct.neu ? '<div class="cct-r op new"><div class="cct-h"><b>قرارداد تازه</b></div>' + cctEditHtml({}) + '</div>' : '')
-      + '<div class="cct-l">' + (rows.length ? rows.map(r => {
-          const id = String(pick(r, AD.id) || ''), P = ctrPartySplit(ctrRawParty(r)), op = cct.open === id;
-          const amt = moneyNum2(pick(r, AD.cAmount));
-          return '<div class="cct-r' + (op ? ' op' : '') + '">'
-            + '<button type="button" class="cct-h" data-cctop="' + esc(id) + '"><span class="cct-no">' + esc(toFa(pick(r, AD.cNo) || '—')) + '</span>'
-            + '<span class="cct-t"><b>' + esc(pick(r, AD.cTitle) || 'بی‌عنوان') + (pick(r, AD.cAdd) ? ' <i>الحاقیه ' + esc(toFa(pick(r, AD.cAdd))) + '</i>' : '') + '</b>'
-            + '<small>' + (P.length ? P.map(p1 => '<em>' + esc(p1) + '</em>').join('') : '<em class="none">بدون طرف قرارداد</em>') + (amt ? '<u>' + esc(arToman(amt)) + ' تومان</u>' : '') + '</small></span>'
-            + '<span class="cct-ar">' + (op ? '▴' : '▾') + '</span></button>'
-            + (op ? cctEditHtml(r) : '') + '</div>';
+      + '<div class="cct-l">' + (rows.length ? cctGroups(rows).map(G => {
+          const one = (r, sub) => {
+            const id = String(pick(r, AD.id) || ''), P = ctrPartySplit(ctrRawParty(r)), op = cct.open === id;
+            const amt = moneyNum2(pick(r, AD.cAmount)), ad = pick(r, AD.cAdd), en = normDate(String(pick(r, AD.cEnd) || ''));
+            return '<div class="cct-r' + (op ? ' op' : '') + (sub ? ' sub' : '') + '">'
+              + '<button type="button" class="cct-h" data-cctop="' + esc(id) + '">' + (sub ? '<span class="cct-no ad">الحاقیه ' + esc(toFa(ad)) + '</span>' : '<span class="cct-no">' + esc(toFa(pick(r, AD.cNo) || '—')) + '</span>')
+              + '<span class="cct-t"><b>' + esc(pick(r, AD.cTitle) || 'بی‌عنوان') + (!sub && ad ? ' <i>الحاقیه ' + esc(toFa(ad)) + '</i>' : '') + '</b>'
+              + '<small>' + (sub ? '' : (P.length ? P.map(p1 => '<em>' + esc(p1) + '</em>').join('') : '<em class="none">بدون طرف قرارداد</em>')) + (amt ? '<u>' + esc(arToman(amt)) + ' تومان</u>' : '')
+              + (en ? '<u class="cct-en">' + (sub ? 'تمدید تا ' : 'اتمام ') + esc(toFa(en)) + '</u>' : '') + '</small></span>'
+              + '<span class="cct-ar">' + (op ? '▴' : '▾') + '</span></button>'
+              + (op ? cctEditHtml(r) : '') + '</div>';
+          };
+          if(!G.adds.length) return one(G.main);
+          const E = cctEndOf(G.main, G.all), today = todayShamsi(), left = E.end ? Math.round((faToDate(E.end) - faToDate(today)) / 86400000) : null;
+          return '<div class="cct-grp">'
+            + one(G.main)
+            + '<div class="cct-gx"><span>' + toFa(G.adds.length) + ' الحاقیه</span>'
+            +   (E.end ? '<b class="' + (left != null && left < 0 ? 'bad' : left != null && left <= 30 ? 'warn' : '') + '">اتمام مؤثر ' + esc(toFa(E.end)) + (E.by ? ' <small>(با الحاقیه ' + toFa(E.by) + ')</small>' : '') + '</b>' : '')
+            +   (E.base && E.end && E.base !== E.end ? '<s>' + esc(toFa(E.base)) + '</s>' : '') + '</div>'
+            + G.adds.map(r => one(r, true)).join('') + '</div>';
         }).join('') : '<div class="mx-empty">قراردادی پیدا نشد.</div>') + '</div></div>';
+  }
+  function cctGroups(rows){
+    const all = cctRows(), by = new Map(), out = [];
+    rows.forEach(r => {
+      const k = cctNoK(r);
+      if(!k){ out.push({rs: [r]}); return; }
+      let G = by.get(k);
+      if(!G){ G = {rs: []}; by.set(k, G); out.push(G); }
+      G.rs.push(r);
+    });
+    return out.map(G => {
+      const rs = G.rs.slice().sort((a, b) => cctAddV(a) - cctAddV(b));
+      return {main: rs[0], adds: rs.slice(1), all};
+    });
   }
   function cctReadParties(ed){
     const P = Array.from(ed.querySelectorAll('.cct-p')).map(x => x.firstChild.textContent.trim()).filter(Boolean);
@@ -30326,6 +30375,8 @@
       const P = cctReadParties(ed);
       if(!g('no') && !g('t')){ showDialog('warn', 'فرم خالی است', 'دست‌کم شماره یا عنوان قرارداد را بنویسید.'); return; }
       const vals = {'شماره قرارداد': g('no'), 'عنوان قرارداد': g('t'), 'طرف قرارداد': P.join('، '), 'مبلغ قرارداد': toEn(g('amt')).replace(/[^\d]/g, ''), 'تاریخ شروع قرارداد': normDate(g('d')) || g('d'), 'شماره الحاقیه': g('add')};
+      { const r0 = id ? cctRows().find(x => String(pick(x, AD.id)) === id) : null, ne = normDate(g('end')) || g('end'), oe = r0 ? (normDate(String(pick(r0, AD.cEnd) || '')) || String(pick(r0, AD.cEnd) || '')) : '';
+        if(ne !== oe) vals['تاریخ اتمام قرارداد'] = ne; }
       sv.disabled = true;
       let ok;
       if(id) ok = await sendAction({action:'update', target:'contract', id, values: vals});
@@ -30333,7 +30384,7 @@
         /* همان مسیر ثبت دفتر فنی */
         try{
           const r0 = await post({type:'admin', date: todayShamsi(), project: (document.getElementById('projectName') || {}).value || '', engineer: activeUserName(),
-            contracts: [{title: vals['عنوان قرارداد'], number: vals['شماره قرارداد'], party: vals['طرف قرارداد'], amount: vals['مبلغ قرارداد'], startDate: vals['تاریخ شروع قرارداد'], addendum: vals['شماره الحاقیه'], owner: activeUserName()}]});
+            contracts: [{title: vals['عنوان قرارداد'], number: vals['شماره قرارداد'], party: vals['طرف قرارداد'], amount: vals['مبلغ قرارداد'], startDate: vals['تاریخ شروع قرارداد'], endDate: vals['تاریخ اتمام قرارداد'] || '', addendum: vals['شماره الحاقیه'], owner: activeUserName()}]});
           ok = r0 && r0.state !== 'failed';
         }catch(err){ ok = false; }
       }
@@ -44805,7 +44856,7 @@
       'عنوان قرارداد':'title','شماره قرارداد':'number','طرف قرارداد':'party','موضوع قرارداد':'subject',
       'مبلغ قرارداد':'amount','مبلغ پرداختی':'paid','تاریخ شروع قرارداد':'start_date',
       'تاریخ ارسال':'sent_date','موعد اتمام':'due_date','وضعیت ابلاغ':'notify','وضعیت رسیدگی':'review','مسئول':'owner',
-      'شماره الحاقیه':'addendum_no',
+      'شماره الحاقیه':'addendum_no','تاریخ اتمام قرارداد':'end_date',
       'تاریخچهٔ ارسال':'send_history','لینک':'link'},
     /* اسناد طراحی (دفتر فنی): جدول designs — سکوی ساخت آن در design_docs.sql */
     designs:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
@@ -46119,7 +46170,7 @@
           paid: x.paid ? Number(toEn(String(x.paid)).replace(/[^\d.]/g,'')) : null,
           start_date:x.startDate, sent_date:x.sentDate, due_date:x.dueDate || null, notify:x.notify, review:x.review,
           owner:x.owner, link:x.link
-        }, x.addendum ? {addendum_no: String(x.addendum)} : {})]));
+        }, x.addendum ? {addendum_no: String(x.addendum)} : {}, x.endDate ? {end_date: String(x.endDate)} : {})]));
         (payload.minutes || []).forEach(m => {
           const mid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
           (m.items || []).forEach((it, k) => jobs.push(['minutes', Object.assign({
@@ -47256,7 +47307,7 @@
     cTitle:['عنوان قرارداد'], cNo:['شماره قرارداد'], cParty:['طرف قرارداد'],
     cSubject:['موضوع قرارداد'], cAmount:['مبلغ قرارداد'], cPaid:['مبلغ پرداختی'],
     cDate:['تاریخ ارسال'], cNotify:['وضعیت ابلاغ'], cStart:['تاریخ شروع قرارداد'],
-    cAdd:['شماره الحاقیه'],
+    cAdd:['شماره الحاقیه'], cEnd:['تاریخ اتمام قرارداد'],
     hist:['تاریخچهٔ ارسال'], review:['وضعیت رسیدگی'], mTeam:['تیم انجام'],
     rvWho:['rvWho'], rvDone:['rvDone'],
     rvIS:['rvISent'], rvIO:['rvIOk'],
@@ -50430,6 +50481,7 @@
     }else if(kind === 'contract'){
       if(pick(r,AD.cAdd)) rows.push(row('الحاقیه', 'شمارهٔ ' + esc(toFa(pick(r,AD.cAdd)))));
       rows.push(row('تاریخ شروع', esc(admDate(pick(r,AD.cStart)))));
+      try{ const E = window.cctEndOf(r); if(E.end) rows.push(row('تاریخ اتمام', esc(toFa(E.end)) + (E.end !== E.own && E.by ? ' <small>(تمدید با الحاقیه ' + toFa(E.by) + ')</small>' : ''))); }catch(e){}
     }else{
       // بقیهٔ انواع: همان ردیف‌های قبلی (قالب تازه)
       const tmp = document.createElement('div'); tmp.innerHTML = head.rows || '';
@@ -50495,7 +50547,8 @@
       contract: () => ({
         title: pick(r,AD.cTitle) || 'قرارداد',
         rows: (pick(r,AD.cAdd) ? kv('الحاقیه', 'شمارهٔ ' + toFa(pick(r,AD.cAdd)), 'ok') : '')
-            + kv('تاریخ شروع', admDate(pick(r,AD.cStart))),
+            + kv('تاریخ شروع', admDate(pick(r,AD.cStart)))
+            + (function(){ try{ const E = window.cctEndOf(r); return E.end ? kv('تاریخ اتمام', toFa(E.end) + (E.end !== E.own && E.by ? ' (الحاقیه ' + toFa(E.by) + ')' : '')) : ''; }catch(e){ return ''; } })(),
         note: pick(r,AD.cSubject)
       }),
       minute: () => {
@@ -51030,8 +51083,9 @@
           + fm('a-cPaid','مبلغ پرداختی (ریال)', pick(r,AD.cPaid)), 'two')
         + sec('cal', 'زمان‌بندی و مسئول',
             fd('a-cStart','تاریخ شروع قرارداد', pick(r,AD.cStart))
+          + f('a-cEnd','تاریخ اتمام قرارداد', admDate(pick(r,AD.cEnd)) || '').replace('class="a-cEnd"', 'class="a-cEnd date-in" placeholder="بدون تاریخ" data-orig="' + esc(admDate(pick(r,AD.cEnd)) || '') + '"')
           + fd('a-cDate','تاریخ ابلاغ', pick(r,AD.cDate))
-          + fd('a-due','موعد اتمام', pick(r,AD.due))
+          + fd('a-due','موعد پیگیری', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.contract)))
         + sec('flow', 'ابلاغ و رسیدگی',
             chips(notifySel('a-cNotify', pick(r,AD.cNotify)))
@@ -52884,6 +52938,9 @@
         const v = (tg && !tg.checked) ? '' : toEn(String(ai.value || '').trim());
         if(v !== toEn(String(ai.dataset.orig || ''))) o['شماره الحاقیه'] = v;
       })();
+      /* تاریخ اتمام هم فقط اگر عوض شده (ستون end_date) */
+      (() => { const el = host.querySelector('.a-cEnd'); if(!el) return; const v = el.value.trim(), w = String(el.dataset.orig || '');
+        if((normDate(v) || v) !== (normDate(w) || w)) o['تاریخ اتمام قرارداد'] = normDate(v) || v; })();
       put(o,'وضعیت ابلاغ','a-cNotify'); put(o,'موضوع قرارداد','a-cSubject'); put(o,'مسئول','a-owner');
       put(o,'وضعیت رسیدگی','a-cReview'); put(o,'rvWho','a-rvWho');
       if(o['rvWho']) o['rvISentIfNew'] = '1';
@@ -53097,7 +53154,7 @@
     }else if(kind === 'contract'){
       Object.assign(item, {title:v['عنوان قرارداد'], number:v['شماره قرارداد'], party:v['طرف قرارداد'],
         subject:v['موضوع قرارداد'], amount:v['مبلغ قرارداد'], paid:v['مبلغ پرداختی'],
-        startDate:v['تاریخ شروع قرارداد'], addendum:v['شماره الحاقیه'],
+        startDate:v['تاریخ شروع قرارداد'], addendum:v['شماره الحاقیه'], endDate:v['تاریخ اتمام قرارداد'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک'],
         review:v['وضعیت رسیدگی']});
     }else if(kind === 'minute'){
