@@ -2304,6 +2304,11 @@
   .ctdk-go{background:color-mix(in srgb, var(--sky) 12%, transparent);color:var(--sky);} .ctdk-go svg{width:16px;height:16px;}
   .ctdk-go:hover{background:var(--sky);color:#fff;}
   .ctdk-x{color:var(--muted);font-size:12px;} .ctdk-x:hover{color:var(--alert);background:var(--field);}
+  .ctdk-go.ed{background:var(--field);color:var(--ink);} .ctdk-x.rm svg{width:15px;height:15px;}
+  .ctdk-new{all:unset;cursor:pointer;margin-inline-start:auto;height:32px;padding:0 12px;border-radius:10px;background:var(--ink);color:var(--surface);font-size:12px;font-weight:800;display:inline-flex;align-items:center;}
+  .ctdk-form{position:relative;z-index:0;isolation:isolate;border:1.5px solid color-mix(in srgb, var(--sky) 45%, var(--line)) !important;border-radius:16px !important;padding:12px !important;margin:0 0 10px !important;background:var(--surface);}
+  .ctdk-form.busy{opacity:.6;pointer-events:none;}
+  .ctdk-fh{display:flex;align-items:center;gap:8px;margin-bottom:8px;} .ctdk-fh b{flex:1;font-size:13.5px;font-weight:900;}
   .ctdk-m{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:8px;}
   .ctdk-m span{display:flex;flex-direction:column;gap:2px;min-width:0;} .ctdk-m u{text-decoration:none;font-size:10px;color:var(--muted);}
   .ctdk-m b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -29581,10 +29586,12 @@
       const ct = o.ct, billed = o.stm.reduce((t, s) => t + s.amt, 0), paid = o.stm.reduce((t, s) => t + s.paid, 0);
       const base = ct.amt || billed;
       const src = o.src === 'auto' ? '<i class="ctm-s d">طرف قرارداد</i>' : o.src === 'man' ? '<i class="ctm-s r">افزوده‌شده</i>' : '<i class="ctm-s w">خارج از دفتر فنی</i>';
-      return '<div class="ctdk-c ' + o.src + '">'
+      return '<div class="ctdk-c ' + o.src + '"' + (ct.id ? ' data-ctid="' + esc(ct.id) + '"' : '') + '>'
         + '<div class="ctdk-ch"><span class="ctdk-no">' + esc(ct.no ? toFa(ct.no) : '—') + '</span>'
         +   '<span class="ctdk-ct"><b>' + esc(ct.t || 'بی‌عنوان') + '</b><small>' + src
         +     esc([ct.p && !nm.has(ctrExK(ct.p)) ? 'به نام «' + ct.p + '»' : '', ct.d, ct.add ? 'الحاقیه ' + toFa(ct.add) : ''].filter(Boolean).join(' · ')) + '</small></span>'
+        +   (ct.id && can('write.adm') ? '<button type="button" class="ctdk-go ed" data-ctdked="' + esc(ct.id) + '" title="ویرایش این قرارداد">' + CTC_I.edit + '</button>'
+              + '<button type="button" class="ctdk-x rm" data-ctdkrm="' + esc(ct.id) + '" title="حذف این قرارداد از دفتر فنی">' + ADM_ICON.trash + '</button>' : '')
         +   (ct.id ? '<button type="button" class="ctdk-go" data-ctdkgo="contract" data-id="' + esc(ct.id) + '" title="باز کردن این قرارداد در دفتر فنی">' + CTX_I.open + '</button>' : '')
         +   (ed && o.src !== 'auto' ? '<button type="button" class="ctdk-x" data-ctdkdel="' + esc(o.txt) + '" title="برداشتن از این پیمانکار">✕</button>' : '')
         + '</div>'
@@ -29595,7 +29602,8 @@
         + '</div>';
     };
     const empty = !D.list.length && !D.orph.length;
-    return '<section class="ctx-s ctdk" data-ctxsec="docs" data-ctdk="1"><div class="ctx-h">' + CTX_I.doc + '<b>قراردادها و صورت وضعیت‌ها</b><small>مبالغ به تومان</small></div>'
+    return '<section class="ctx-s ctdk" data-ctxsec="docs" data-ctdk="1"><div class="ctx-h">' + CTX_I.doc + '<b>قراردادها و صورت وضعیت‌ها</b><small>مبالغ به تومان</small>'
+      + (can('write.adm') ? '<button type="button" class="ctdk-new" data-ctdknew="1">+ قرارداد تازه</button>' : '') + '</div>'
       + '<input type="hidden" data-ctk="ct" value="' + esc((man || []).join(' | ')) + '">'
       + (empty ? '' : '<div class="ctdk-k"><span><b>' + toFa(T.nc) + '</b><u>قرارداد</u></span><span><b>' + ctdkMoney(T.amt) + '</b><u>جمع قراردادها</u></span><span><b>' + toFa(T.ns) + '</b><u>صورت وضعیت</u></span><span class="ok"><b>' + ctdkMoney(T.paid) + '</b><u>پرداخت‌شده</u></span><span class="' + (T.rest ? 'warn' : '') + '"><b>' + ctdkMoney(T.rest) + '</b><u>مانده</u></span></div>')
       + (empty ? '<div class="ctdk-empty">' + (loading ? '<i class="ctdk-spin"></i>در حال خواندن قراردادها و صورت وضعیت‌های دفتر فنی…' : 'قرارداد یا صورت وضعیتی به نام این پیمانکار پیدا نشد.' + (ed ? ' اگر به نام دیگری ثبت شده، از پیشنهادهای زیر یکی کنید یا از جست‌وجو اضافه کنید.' : '')) + '</div>' : '')
@@ -29625,6 +29633,81 @@
       + (qq ? '<button type="button" class="ctdk-r free" data-ctdkpick="' + esc(String(q).trim()) + '"><span class="ctdk-no">+</span><span class="ctdk-ct"><b>«' + esc(String(q).trim()) + '»</b><small>قراردادی که در دفتر فنی ثبت نشده؛ به همین شکل نگه داشته می‌شود</small></span></button>' : '');
     return out || '<div class="ctm-none">' + (all.length ? 'همهٔ قراردادهای دفتر فنی برای این پیمانکار افزوده شده‌اند' : 'قراردادی در دفتر فنی ثبت نشده') + '</div>';
   }
+  /* ====== قراردادهای پیمانکار: افزودن، ویرایش و حذف همین‌جا ======
+     همان فرم و همان مسیر ثبت دفتر فنی؛ بعد از ثبت، بخش قراردادها تازه می‌شود. */
+  function ctdkFormHtml(name, id){
+    const isNew = !id;
+    const x = isNew ? null : (adminAll || []).find(a => a.kind === 'contract' && String(pick(a.row, AD.id)) === String(id));
+    const r = x ? x.row : {};
+    return '<div class="ctdk-form adm-k adm-contract nf open" data-new-kind="contract" data-persist="0" data-ctdkid="' + esc(id || '') + '">'
+      + '<div class="ctdk-fh"><b>' + (isNew ? 'قرارداد تازه برای ' + esc(ctrCanon(name)) : 'ویرایش قرارداد') + '</b><button type="button" class="ctc-x" data-ctdkfx="1" aria-label="بستن">✕</button></div>'
+      + '<div class="nf-body">' + admEditHtml('contract', r, isNew ? 'new' : id) + '</div></div>';
+  }
+  async function ctdkAfterChange(box){
+    try{ clearNetCache(); }catch(e){}
+    try{ await loadAdmin(); }catch(e){}
+    try{ ctrInvalidate(); }catch(e){}
+    if(box && box.isConnected) ctxRefresh(box, null, ['docs']);
+    try{ ctcRepaint(); }catch(e){}
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest) return;
+    const sec = t.closest('[data-ctdk]'); if(!sec) return;
+    const box = sec.closest('.ctc-ed'); if(!box) return;
+    const name = box.dataset.ctced;
+    const nw = t.closest('[data-ctdknew]'), ed = t.closest('[data-ctdked]'), rm = t.closest('[data-ctdkrm]');
+    const fx = t.closest('[data-ctdkfx]') || t.closest('.ctdk-form button[data-cancel]');
+    const sv = t.closest('.ctdk-form button[data-save]');
+    if(!(nw || ed || rm || fx || sv)) return;
+    e.preventDefault(); e.stopPropagation();
+    if(!can('write.adm')) return;
+    if(nw || ed){
+      sec.querySelectorAll('.ctdk-form').forEach(f => f.remove());
+      const html = ctdkFormHtml(name, ed ? ed.dataset.ctdked : '');
+      if(ed) ed.closest('.ctdk-c').insertAdjacentHTML('afterend', html);
+      else sec.querySelector('.ctx-h').insertAdjacentHTML('afterend', html);
+      const f = sec.querySelector('.ctdk-form');
+      if(nw){ const c = ctrContactOf(name) || {}; const pi = f.querySelector('.a-cParty'); if(pi) pi.value = c.cn || ctrCanon(name); }
+      try{ f.scrollIntoView({block:'nearest', behavior:'smooth'}); }catch(err){}
+      return;
+    }
+    if(fx){ const f = fx.closest('.ctdk-form'); if(f) f.remove(); return; }
+    if(sv){
+      const f = sv.closest('.ctdk-form'), id = f.dataset.ctdkid;
+      if(!id){
+        const ao = document.getElementById('admOwner'); if(ao && !ao.value.trim()) ao.value = activeUserName();
+        sv.disabled = true;
+        await saveNewAdmin(f, sv);
+        sv.disabled = false;
+        if(f.isConnected && !f.querySelector('.queued-note')) return;   // فرم کامل نبود
+        f.remove();
+        showDialog('ok', 'ثبت شد', 'قرارداد ثبت شد و در دفتر فنی و پروندهٔ پیمانکار نشست.');
+      }else{
+        const vals = admValues('contract', f);
+        sv.disabled = true; f.classList.add('busy');
+        const ok = await sendAction({action:'update', target:'contract', id, values: vals});
+        f.classList.remove('busy'); sv.disabled = false;
+        if(!ok){ showDialog('err', 'ذخیره نشد', lastServerError || 'اتصال را بررسی کنید.'); lastServerError = ''; return; }
+        const rNow = (typeof rowMap !== 'undefined' && rowMap.get(id)) || ((adminAll || []).find(a => a.kind === 'contract' && String(pick(a.row, AD.id)) === String(id)) || {}).row;
+        if(rNow) Object.keys(vals).forEach(k => { try{ setCell(rNow, k, vals[k]); }catch(err){} });
+        f.remove();
+        showDialog('ok', 'ذخیره شد', 'تغییرات قرارداد ذخیره شد.');
+      }
+      ctdkAfterChange(box);
+      return;
+    }
+    if(rm){
+      const id = rm.dataset.ctdkrm, card = rm.closest('.ctdk-c');
+      const ttl = card ? (card.querySelector('.ctdk-ct b') || {}).textContent : '';
+      if(!(await askConfirm('حذف قرارداد', 'قرارداد «' + (ttl || '') + '» از دفتر فنی حذف شود؟ صورت وضعیت‌هایش حذف نمی‌شوند.', 'حذف'))) return;
+      if(card) card.style.opacity = '.45';
+      const ok = await sendAction({action:'delete', target:'contract', id});
+      if(!ok){ if(card) card.style.opacity = ''; showDialog('err', 'حذف نشد', lastServerError || 'اتصال را بررسی کنید.'); lastServerError = ''; return; }
+      try{ adminAll = adminAll.filter(a => !(a.kind === 'contract' && String(pick(a.row, AD.id)) === String(id))); }catch(err){}
+      if(card) card.remove();
+      ctdkAfterChange(box);
+    }
+  }, true);
   /* بازسازی بخش‌های فرم بی‌آنکه نوشته‌های ذخیره‌نشده از دست برود */
   function ctxRefresh(box, canon, only){
     if(!box) return;
