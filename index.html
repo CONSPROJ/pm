@@ -21355,6 +21355,10 @@
   .ptx-more{font-size:11px;color:var(--muted);padding:2px 6px;}
 
   #adminView.adm-newest .adm-sorted-h{display:none;}
+
+  .prf-edh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb, var(--sky) 10%, var(--field));}
+  .prf-edh b{flex:1;font-size:13px;font-weight:900;}
+  .prf-g{grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)) !important;}
 </style>
 <script>
   (function(){
@@ -56890,7 +56894,9 @@
   }
   async function prSaveReq(req){
     await prcLoad(true);
-    req.code = prNextCode();
+    const want = String(req.code || '').trim();
+    if(want && prcState.list.some(r => String(r.code).toUpperCase() === want.toUpperCase())){ const er = new Error('کد «' + want + '» قبلاً ثبت شده است؛ کد دیگری بنویسید.'); er.raw = true; throw er; }
+    req.code = want || prNextCode();
     await supaFetch('nudges', {method:'POST', body:[{date_fa: req.date, from_name: activeUserName(), to_name: req.requester || activeUserName(),
       kind: PR_KIND, item_id: req.code, title: req.code, message: prPack(req), seen: true}]});
     await prNotify(req.code, 'درخواست خرید ' + req.code,
@@ -56900,8 +56906,10 @@
     await prcLoad(true);
     return req.code;
   }
-  async function prUpdate(req){
-    await supaFetch('nudges?id=eq.' + encodeURIComponent(req.id), {method:'PATCH', body:{message: prPack(req)}});
+  async function prUpdate(req, codeChanged){
+    const body = {message: prPack(req)};
+    if(codeChanged){ body.title = req.code; body.item_id = req.code; }
+    await supaFetch('nudges?id=eq.' + encodeURIComponent(req.id), {method:'PATCH', body});
     prcState.t = Date.now();
   }
   /* اقلامی که تازه بحرانی شده‌اند یک بار اعلان می‌گیرند */
@@ -56942,30 +56950,33 @@
     /* درخواست‌کننده: کارکنان پروژه یا پیمانکاران */
     const opts = id => { const dl = document.getElementById(id); return dl ? Array.from(dl.options).map(o => o.value) : []; };
     mk('prReqList', opts('engineerList').concat(opts('contractorList'), prcState.list.map(r => r.requester)));
-    mk('prUnitReqList', prcState.list.map(r => r.unit).concat(['دفتر فنی','اجرا','تأسیسات مکانیکی','تأسیسات برقی','انبار','ایمنی']));
+    mk('prUnitReqList', prcState.list.map(r => r.unit).concat(['دفتر فنی','اجرا','تأسیسات مکانیکی','تأسیسات الکتریکی','انبار','ایمنی']));
   }
   function prNewHtml(){
     const D = prcState.draft || (prcState.draft = {date: todayShamsi(), unit: '', requester: activeUserName(), note: '', sig: {}, items: [{}]});
+    const ed = !!D.editId;
     return '<div class="prf">'
+      + (ed ? '<div class="prf-edh"><b>ویرایش درخواست ' + esc(toFa(D.code || '')) + '</b><button type="button" class="mini" data-prclear="1">انصراف از ویرایش</button></div>' : '')
       + '<div class="prf-g">'
       +   '<label class="te-f"><u>درخواست‌کننده</u><input type="text" class="pr-req" data-list="prReqList" autocomplete="off" placeholder="کارکنان یا پیمانکار" value="' + esc(D.requester) + '"></label>'
       +   '<label class="te-f"><u>واحد</u><input type="text" class="pr-unit" data-list="prUnitReqList" autocomplete="off" value="' + esc(D.unit) + '" placeholder="اجرا، تأسیسات، دفتر فنی…"></label>'
       +   '<label class="te-f"><u>تاریخ</u><input type="text" class="pr-date" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
+      +   '<label class="te-f"><u>کد درخواست</u><input type="text" class="pr-code" dir="ltr" autocomplete="off" value="' + esc(D.code || '') + '" placeholder="' + esc(prNextCode()) + '"></label>'
       + '</div>'
-      + '<div class="prf-items"><div class="prf-ih"><b>اقلام</b><em>کد ' + esc(toFa(prNextCode())) + ' پس از ثبت داده می‌شود</em></div>'
+      + '<div class="prf-items"><div class="prf-ih"><b>اقلام</b><em>' + (ed ? '' : 'اگر کد را خالی بگذارید، ' + esc(toFa(prNextCode())) + ' داده می‌شود') + '</em></div>'
       +   D.items.map(prItemRowHtml).join('')
       +   '<button type="button" class="prf-add" data-pradd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>قلم دیگر</button>'
       + '</div>'
       + '<label class="te-f"><u>توضیح درخواست</u><textarea class="pr-note" rows="2" placeholder="اختیاری — مثلاً برای کدام فعالیت یا تا چه تاریخی لازم است">' + esc(D.note) + '</textarea></label>'
       + '<div class="te-f prf-ph"><u>عکس و پیوست <em>اختیاری — عکس کالا، نمونه یا پیش‌فاکتور</em></u>' + attachFieldHtml(D.files || '', 'prc') + '</div>'
       + '<div class="prf-foot"><button type="button" class="mini" data-prclear="1">پاک کردن</button>'
-      +   '<button type="button" class="send rf-go" data-prsave="1"' + (prcState.busy ? ' disabled' : '') + '>' + (prcState.busy ? 'در حال ثبت…' : 'ثبت درخواست خرید') + '</button></div>'
+      +   '<button type="button" class="send rf-go" data-prsave="1"' + (prcState.busy ? ' disabled' : '') + '>' + (prcState.busy ? 'در حال ثبت…' : (ed ? 'ذخیرهٔ تغییرات' : 'ثبت درخواست خرید')) + '</button></div>'
       + '</div>';
   }
   function prReadDraft(){
     const host = document.getElementById('prcArea'); if(!host || !prcState.draft) return;
     const D = prcState.draft, v = c => String((host.querySelector('.' + c) || {}).value || '').trim();
-    D.date = normDate(v('pr-date')) || D.date; D.unit = v('pr-unit'); D.requester = v('pr-req'); D.note = v('pr-note');
+    D.date = normDate(v('pr-date')) || D.date; D.unit = v('pr-unit'); D.requester = v('pr-req'); D.note = v('pr-note'); D.code = toEn(v('pr-code')).toUpperCase();
     const fl = host.querySelector('.prf-ph .a-link'); if(fl) D.files = fl.value.trim();
     host.querySelectorAll('.pr-sig').forEach(x => { D.sig[x.dataset.sig] = x.value.trim(); });
     D.items = Array.from(host.querySelectorAll('.prf-it')).map(rw => ({d: rw.querySelector('.pr-d').value.trim(), q: rw.querySelector('.pr-q').value.trim(),
@@ -57031,7 +57042,7 @@
           return '<div class="prc-card' + (hotN ? ' hot' : '') + (openN(r) ? '' : ' closed') + '">'
             + '<div class="prc-h"><span class="prc-code">' + esc(toFa(r.code)) + '</span><div class="prc-t"><b>' + esc(r.unit || 'درخواست خرید') + (r.requester ? ' · ' + esc(r.requester) : '') + '</b>'
             +   '<small>' + esc(toFa(admDate(r.date) || r.date)) + ' · ' + toFa(r.items.length) + ' قلم · ' + toFa(openN(r)) + ' باز' + (hotN ? ' · <em>' + toFa(hotN) + ' بحرانی</em>' : '') + '</small></div>'
-            +   (canEd ? '<button type="button" class="prc-ph" data-prph="' + esc(r.id) + '" title="افزودن عکس یا پیوست">' + UP_I.cam + '</button>' : '') + '</div>'
+            +   (canEd ? '<button type="button" class="prc-ph" data-pred="' + esc(r.id) + '" title="ویرایش درخواست (کد، تاریخ، اقلام…)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16v4z"/></svg></button><button type="button" class="prc-ph" data-prph="' + esc(r.id) + '" title="افزودن عکس یا پیوست">' + UP_I.cam + '</button>' : '') + '</div>'
             + (r.note ? '<div class="prc-note">' + esc(r.note) + '</div>' : '')
             + (attachList(r.files).length ? '<div class="prc-files">' + filePillsHtml(r.files, {max: 6, cls: 'sm'}) + '</div>' : '')
             + its.map(({it, i}) => {
@@ -57081,9 +57092,23 @@
       if(!items.length){ showDialog('warn','ردیفی نیست','دست‌کم یک قلم کالا یا خدمت بنویسید.'); return; }
       if(!D.date){ showDialog('warn','تاریخ نادرست','تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
       if(host.querySelector('.prf-ph .up-field.up-busy')){ showDialog('warn','آپلود تمام نشده','تا پایان آپلود عکس‌ها صبر کنید.'); return; }
+      if(D.editId){
+        const req = prcState.list.find(r => r.id === D.editId); if(!req){ prcState.draft = null; prcRender(); return; }
+        const nc = String(D.code || '').trim() || req.code;
+        if(nc.toUpperCase() !== String(req.code).toUpperCase() && prcState.list.some(r => r.id !== req.id && String(r.code).toUpperCase() === nc.toUpperCase())){ showDialog('warn','کد تکراری','کد «' + nc + '» برای درخواست دیگری ثبت شده است.'); return; }
+        const old = Object.assign({}, req, {items: req.items.slice()});
+        /* اقلام: گردش و وضعیت قلم‌های قبلی حفظ می‌شود */
+        const merged = D.items.filter(it => it.d).map((it, i) => Object.assign({st: PR_ST[0], log: []}, req.items[i] || {}, {d: it.d, q: it.q, u: it.u, cc: it.cc, n: it.n}));
+        const codeChanged = nc !== req.code;
+        Object.assign(req, {code: nc, date: D.date, unit: D.unit, requester: D.requester, note: D.note, files: D.files || '', items: merged});
+        prcState.busy = true; prcRender();
+        try{ await prUpdate(req, codeChanged); prcState.draft = null; prcState.busy = false; prcState.tab = 'list'; await prcRender(); showDialog('ok','ذخیره شد','درخواست ' + nc + ' ویرایش شد.'); }
+        catch(err){ Object.assign(req, old); prcState.busy = false; prcRender(); showDialog('err','ذخیره نشد', friendlyErr(err)); }
+        return;
+      }
       prcState.busy = true; prcRender();
       try{
-        const code = await prSaveReq({date: D.date, unit: D.unit, requester: D.requester, note: D.note, sig: Object.assign({}, D.sig), files: D.files || '', items});
+        const code = await prSaveReq({code: D.code, date: D.date, unit: D.unit, requester: D.requester, note: D.note, sig: Object.assign({}, D.sig), files: D.files || '', items});
         prcState.draft = null; prcState.busy = false; prcState.tab = 'list'; prcState.f = 'open'; prcState.q = '';
         await prcRender();
         showDialog('ok','ثبت شد','درخواست خرید \u2066' + code + '\u2069 با ' + toFa(items.length) + ' قلم ثبت شد و در «گزارش و پیگیری خریدها» نشست.');
@@ -57092,6 +57117,14 @@
     }
     const pf = t.closest('[data-prf]');
     if(pf){ prcState.f = pf.dataset.prf; prcRender(); return; }
+    const pe = t.closest('[data-pred]');
+    if(pe){
+      const req = prcState.list.find(r => r.id === pe.dataset.pred); if(!req) return;
+      prcState.draft = {editId: req.id, code: req.code, date: req.date, unit: req.unit, requester: req.requester, note: req.note, sig: Object.assign({}, req.sig), files: req.files || '',
+        items: req.items.map(it => ({d: it.d, q: it.q, u: it.u, cc: it.cc, n: it.n}))};
+      prcState.tab = 'new'; prcRender(); try{ document.getElementById('prcArea').scrollIntoView({behavior:'smooth', block:'start'}); }catch(err){}
+      return;
+    }
     const ph = t.closest('[data-prph]');
     if(ph){
       const req = prcState.list.find(r => r.id === ph.dataset.prph); if(!req) return;
@@ -60231,6 +60264,11 @@
     if(flrLatest.d && Date.now() - flrLatest.t < 300000) return flrLatest.d;
     const today = todayShamsi();
     let d = today;
+    /* یک پرس‌وجوی سبک به جای خواندن گزارش کامل روزها */
+    try{
+      const r = await supaFetch('activities?select=date_fa&date_fa=lte.' + encodeURIComponent(today) + '&date_fa=gte.' + encodeURIComponent(flrDates(today, 15)[0]) + '&order=date_fa.desc&limit=1');
+      if(r && r[0] && r[0].date_fa){ flrLatest = {t: Date.now(), d: String(r[0].date_fa)}; return flrLatest.d; }
+    }catch(e){}
     for(let i = 0; i < 10; i++){
       const dd = flrDates(today, i + 1)[0];
       try{ const v = await flrLoad(dd, 1); if(v && v.rows && v.rows.length){ d = dd; break; } }catch(e){}
@@ -60253,13 +60291,15 @@
     const key = endFa + '|' + n;
     if(flrCache.has(key)) return flrCache.get(key);
     /* روزانه: همان گزارش روزی که در «گزارش روزانه» دیده می‌شود */
-    if(n === 1){
+    let hot = false;
+    try{ hot = n === 1 && bundleCache.key === (BACKEND === 'supabase' ? 'sb:' : 'gs:') + endFa && !!bundleCache.data; }catch(e){}
+    if(hot || (n === 1 && BACKEND !== 'supabase')){
       const b = await fetchBundle(endFa);
       const v = {dates: [endFa], rows: (b && b.day && b.day.rows) || [], issues: (b && b.day && b.day.issues) || [], mapped: true};
       flrCache.set(key, v);
       return v;
     }
-    const all = flrDates(endFa, n * 2), from = all[0], to = all[all.length - 1];
+    const all = flrDates(endFa, n === 1 ? 1 : n * 2), from = all[0], to = all[all.length - 1];
     const q = 'date_fa=gte.' + encodeURIComponent(from) + '&date_fa=lte.' + encodeURIComponent(to) + '&select=*&limit=10000';
     let rw = [], is = [];
     try{ [rw, is] = await Promise.all([supaFetch('activities?' + q), supaFetch('issues?' + q).catch(() => [])]); }
@@ -60411,8 +60451,14 @@
     const cMax = Math.max(1, ...ctrs.map(c => c[1].men));
     /* محل‌های کارکرد: از گزارش روزانه، و محل‌هایی که فقط در فعالیت‌ها آمده‌اند */
     const zones = new Map();
-    S.zones.forEach((v, z) => zones.set(z, {men: v.men / S.days, subs: v.subs, ctr: v.ctr, n: 0}));
-    x.rows.forEach(r => { const p = String(pick(r,T.pos) || '').trim(); if(!p) return; const z = Array.from(zones.keys()).find(q => txKey(q) === txKey(p)) || p; const y = zones.get(z) || {men:0, subs:new Set(), ctr:new Set(), n:0}; y.n++; zones.set(z, y); });
+    /* نام پیمانکار، محل کارکرد نیست */
+    const ctrK = new Set();
+    const addK = c => { try{ const k = normName(c); if(k) ctrK.add(k); const k2 = normName(ctrCanon(c)); if(k2) ctrK.add(k2); }catch(e){} };
+    ctr.forEach((v, c) => addK(c));
+    try{ ctrContacts.forEach((c, k) => { if(k) ctrK.add(k); addK(c.name); }); }catch(e){}
+    const isCtr = z => { if(!z || z === '—') return false; try{ const k = normName(z); return !!k && (ctrK.has(k) || ctrK.has(normName(ctrCanon(z)))); }catch(e){ return false; } };
+    S.zones.forEach((v, z) => { if(isCtr(z)) return; zones.set(z, {men: v.men / S.days, subs: v.subs, ctr: v.ctr, n: 0}); });
+    x.rows.forEach(r => { const p = String(pick(r,T.pos) || '').trim(); if(!p || isCtr(p)) return; const z = Array.from(zones.keys()).find(q => txKey(q) === txKey(p)) || p; const y = zones.get(z) || {men:0, subs:new Set(), ctr:new Set(), n:0}; y.n++; zones.set(z, y); });
     const zs = Array.from(zones.entries()).sort((a, b) => (b[1].men - a[1].men) || (b[1].n - a[1].n));
     const zMax = Math.max(1, ...zs.map(z => z[1].men));
     const blks = [].concat(...x.rows.map(flrOpenBlk));
