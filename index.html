@@ -3385,6 +3385,11 @@
   .afr .afr-ava{display:inline-flex;gap:2px;flex:0 0 auto;}
   .afr .afr-d{font-family:var(--m);font-size:10.5px;color:var(--muted);flex:0 0 auto;min-width:42px;text-align:end;}
   .afr.hot .afr-d{color:var(--alert);font-weight:700;}
+  .afr .afr-dl{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;height:28px;padding:0 7px;border-radius:9px;color:var(--ok);background:color-mix(in srgb, var(--ok) 11%, transparent);cursor:pointer;}
+  .afr .afr-dl svg{width:15px;height:15px;} .afr .afr-dl i{font-style:normal;font-size:10.5px;font-weight:800;}
+  .afr .afr-dl:hover{background:var(--ok);color:#fff;}
+  .adm-acts .ico-btn.dl, .ico-btn.dl{display:inline-flex;align-items:center;justify-content:center;gap:2px;color:var(--ok);cursor:pointer;}
+  .ico-btn.dl svg{width:16px;height:16px;} .ico-btn.dl i{font-style:normal;font-size:10px;font-weight:800;}
   .afr .afr-ar{font-size:14px;color:var(--muted);flex:0 0 auto;transition:transform .2s ease;}
   .afr.open .afr-ar{transform:rotate(90deg);}
   .afr-body{display:none;padding:4px 0 8px;}
@@ -46486,6 +46491,32 @@
     if(sv === 'card' || sv === 'fast') admView = sv;
   }catch(e){}
 
+  /* فایل‌های قابل دانلودِ یک سند: سند طراحی فایل‌های آخرین ویرایشی که فایل دارد، بقیه پیوست سند */
+  function admFilesTxt(kind, r){
+    try{
+      if(kind === 'design'){
+        const revs = dsRevsOf(r);
+        for(let i = revs.length - 1; i >= 0; i--){ const t = dsRevFiles(r, revs, i); if(t && attachList(t).length) return t; }
+        return '';
+      }
+      return String(pick(r,AD.link) || '').trim();
+    }catch(e){ return ''; }
+  }
+  function admDlBtnHtml(kind, r, cls){
+    const t = admFilesTxt(kind, r); if(!t) return '';
+    const L = attachList(t); if(!L.length) return '';
+    const tip = L.length === 1 ? 'دانلود ' + L[0].name : 'دانلود ' + toFa(L.length) + ' فایل';
+    return '<span class="' + cls + '" role="button" tabindex="0" data-admdl="' + esc(L.map(a => a.full).join('\n')) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">'
+      + UP_I.dl + (L.length > 1 ? '<i>' + toFa(L.length) + '</i>' : '') + '</span>';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-admdl]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    try{ fvDownloadAll(attachList(b.dataset.admdl)); }catch(err){}
+  }, true);
+  document.addEventListener('keydown', e => {
+    if((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.admdl != null){ e.preventDefault(); e.stopPropagation(); e.target.click(); }
+  }, true);
   function admFastRow(kind, r){
     const id = String(pick(r,AD.id) || '');
     const no = (kind === 'statement') ? pick(r,AD.sNo)
@@ -46560,6 +46591,7 @@
             + rvWho.slice(0,3).map(n2 => rvAva(n2, dn.has(nameKey(n2)))).join('')
             + '</span>' : '')
       + '<span class="afr-d">' + esc(dTxt) + '</span>'
+      + admDlBtnHtml(kind, r, 'afr-dl')
       + '<span class="afr-ar">›</span>'
       + '</button>'
       + '<div class="afr-body" data-afrbody="' + esc(id) + '"></div>';
@@ -49356,6 +49388,7 @@
               + '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'
               + '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
               + '</button>' : '')
+      +     (id ? admDlBtnHtml(kind, r, 'ico-btn dl') : '')
       +     ((id && (() => { try{ return canUploadAdm(kind, r); }catch(e){ return false; } })())
             ? '<button type="button" class="ico-btn upl" data-admup="' + esc(kind) + '" title="افزودن فایل (یا فایل را روی کارت رها کنید)" '
               + 'aria-label="افزودن فایل">' + UP_I.up + '</button>' : '')
@@ -51220,7 +51253,8 @@
       errs.push('ثبت در سند: ' + friendlyErr(er));
       sec.querySelectorAll('.fs-it.busy').forEach(t => t.remove());
     }finally{ sec.classList.remove('busy'); }
-    if(errs.length) showDialog('err', 'بخشی از فایل‌ها ثبت نشد', errs.join('\n'));
+    if(errs.length) showDialog('err', urls.length ? 'بخشی از فایل‌ها ثبت نشد' : 'آپلود با خطا مواجه شد', errs.join('\n'));
+    else if(urls.length) showDialog('ok', 'آپلود شد', (urls.length > 1 ? toFa(urls.length) + ' فایل' : 'فایل') + ' با موفقیت آپلود و در سند ثبت شد.');
   }
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-fsadd]');
@@ -51263,7 +51297,12 @@
     fsOverSet(null);
     if(!sec){ if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault(); return; }
     e.preventDefault();
-    const fs = e.dataTransfer && e.dataTransfer.files; if(fs && fs.length) fsAddFiles(sec, Array.from(fs));
+    const fs = e.dataTransfer && e.dataTransfer.files; if(!fs || !fs.length) return;
+    const arr = Array.from(fs), ttl = sec.dataset.fvtitle || '';
+    /* پیش از آپلود می‌پرسد؛ رها کردن اشتباهی روی کارت دیگری چیزی ثبت نمی‌کند */
+    askConfirm('آپلود ' + (arr.length > 1 ? toFa(arr.length) + ' فایل' : 'فایل') + '؟',
+      (ttl ? 'به «' + ttl + '» اضافه شود:\n' : 'این فایل‌ها به همین سند اضافه شوند:\n') + arr.slice(0, 8).map(f => '• ' + f.name).join('\n') + (arr.length > 8 ? '\n…' : ''),
+      'آپلود').then(ok => { if(ok) fsAddFiles(sec, arr); });
   });
   /* دکمهٔ آپلود سربرگ کارت: کارت باز می‌شود و انتخاب فایل (چندتایی) می‌آید */
   document.addEventListener('click', e => {
