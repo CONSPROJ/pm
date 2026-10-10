@@ -17483,6 +17483,11 @@
   .cfd-al{position:absolute;top:-6px;left:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--alert);color:#fff;
     font-style:normal;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface);}
   .cf-feed{display:flex;flex-direction:column;border-radius:16px;border:1px solid var(--line);background:var(--surface);overflow:hidden;}
+  .cf-feed:not(.all) .cff-x{display:none;} .cf-feed.all .cff-more{display:none;}
+  button.cff-more{all:unset;cursor:pointer;display:block;text-align:center;padding:8px;font-size:11.5px;font-weight:700;color:var(--sky);}
+  .cff-dl{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;height:26px;padding:0 7px;border-radius:8px;color:var(--ok);border:1px solid color-mix(in srgb, var(--ok) 35%, var(--line));cursor:pointer;}
+  .cff-dl svg{width:13px;height:13px;} .cff-dl i{font-style:normal;font-size:10px;font-weight:700;}
+  .cff-dl:hover{background:var(--ok);color:#fff;}
   .cff{--kc:var(--sky);position:relative;display:flex;align-items:center;gap:10px;padding:9px 12px;border:0;border-bottom:1px solid var(--line-soft);
     background:transparent;font-family:var(--f);text-align:start;cursor:pointer;transition:background .15s;}
   .cff:last-child{border-bottom:0;} .cff:hover{background:var(--canvas);}
@@ -40015,19 +40020,20 @@
               if(kd === 'design'){ const v = String(pick(r,AD.dStatus) || ''); return [v || '—', /تأیید|اجرا/.test(v) ? 'ok' : (/رد|اصلاح/.test(v) ? 'bad' : '')]; }
               return [notifyLabel(admNotify(kd, r)) || '—', ''];
             };
-            const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.slice(0, 6).map(({kd, r, d}) => {
+            const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.map(({kd, r, d}, fi) => {
                 const [stx, scl] = stateOf(kd, r);
                 let al = false; try{ al = !!admCardAlert(kd, r); }catch(e){}
                 const ago = d ? daysSince(d) : null;
-                return '<button type="button" class="cff k-' + kd + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
+                return '<button type="button" class="cff k-' + kd + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
                   + '<span class="cff-ic">' + (CF_I[kd] || '') + '</span>'
                   + '<span class="cff-tx"><b>' + esc(arTitleOf(kd, r)) + '</b>'
                   +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + toFa(ago) + ' روز پیش' : '') + '</small></span>'
                   + '<span class="cff-st' + (scl ? ' ' + scl : '') + '">' + esc(stx) + '</span>'
+                  + admDlBtnHtml(kd, r, 'cff-dl')
                   + (al ? '<i class="cff-al" title="نیازمند پیگیری"></i>' : '')
                   + '</button>';
               }).join('')
-              + (feedRows.length > 6 ? '<span class="cff-more">' + toFa(feedRows.length - 6) + ' سند دیگر در دفتر فنی</span>' : '')
+              + (feedRows.length > 6 ? '<button type="button" class="cff-more" data-cffall="1">نمایش ' + toFa(feedRows.length - 6) + ' سند دیگر</button>' : '')
               + '</div>' : '';
 
             const pct = amt ? Math.min(100, Math.round(paid / amt * 100)) : 0;
@@ -40518,6 +40524,11 @@
     w.querySelectorAll('[data-rctile]').forEach(b => b.classList.remove('on'));
     if(pane && show){ pane.hidden = false; t.classList.add('on'); }
   });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-cffall]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const f = b.closest('.cf-feed'); if(f) f.classList.add('all');
+  }, true);
   async function openContractorProfile(name){
     /* بدون نام، پنجره‌ای باز نمی‌شود: پیش از این کارتِ بی‌عنوان
        باز می‌شد و کاربر فکر می‌کرد پروندهٔ پیمانکار خالی است. */
