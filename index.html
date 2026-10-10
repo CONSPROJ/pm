@@ -21328,6 +21328,11 @@
   }
   .anim-off, .anim-off *, .anim-off::before, .anim-off::after, .anim-off *::before, .anim-off *::after{animation-play-state:paused !important;}
   [hidden] *{animation-play-state:paused !important;}
+
+  /* دکمهٔ برگشت داخل پنجره‌های نمایش و دانلود فایل */
+  .fv-back{all:unset;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 10px 0 8px;border-radius:10px;background:var(--field);color:var(--ink);font-size:12.5px;font-weight:800;}
+  .fv-back svg{width:16px;height:16px;} .fv-back:hover{background:color-mix(in srgb, var(--sky) 14%, var(--field));}
+  .s3s-h{display:flex;align-items:center;gap:8px;} .s3s-h > b{flex:1;min-width:0;}
 </style>
 <script>
   (function(){
@@ -51834,7 +51839,7 @@
     m = document.createElement('div');
     m.id = 's3Sheet'; m.className = 's3s-bg';
     const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
-    m.innerHTML = '<div class="s3s" role="dialog" aria-modal="true"><div class="s3s-h"><b>' + esc(title || (L.length > 1 ? 'دانلود ' + toFa(L.length) + ' فایل' : 'دانلود فایل')) + '</b>'
+    m.innerHTML = '<div class="s3s" role="dialog" aria-modal="true"><div class="s3s-h"><button type="button" class="fv-back" data-s3sx="1" aria-label="برگشت">' + UP_I.prev + '<span>برگشت</span></button><b>' + esc(title || (L.length > 1 ? 'دانلود ' + toFa(L.length) + ' فایل' : 'دانلود فایل')) + '</b>'
       + '<button type="button" class="s3s-x" data-s3sx="1" aria-label="بستن">' + UP_I.x + '</button></div>'
       + '<div class="s3s-l">' + L.map((a, i) => '<div class="s3s-it k-' + ATT_KIND(a.ext) + '" data-i="' + i + '">'
         + '<span class="up-ext">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
@@ -52285,6 +52290,7 @@
       + '<b>' + esc(a.name) + '</b><small>پیش‌نمایش این نوع فایل در مرورگر ممکن نیست؛ دانلود کنید و با برنامهٔ خودش باز کنید.</small>'
       + '<a class="fv-dlbig" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener">' + UP_I.dl + 'دانلود فایل</a></div>';
     m.querySelector('.fv').innerHTML = '<div class="fv-head">'
+      + '<button type="button" class="fv-back" data-fvx="1" aria-label="برگشت">' + UP_I.prev + '<span>برگشت</span></button>'
       + '<span class="fv-ext k-' + k + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
       + '<span class="fv-t"><b title="' + esc(a.name) + '">' + esc(a.name) + '</b><small>' + (n > 1 ? toFa(S.i + 1) + ' از ' + toFa(n) + ' · ' : '') + (S.title ? esc(S.title) : (a.src === 's3' ? 'فضای ابری' : a.src === 'sb' ? 'فضای سامانه' : a.src === 'drive' ? 'گوگل درایو' : 'لینک')) + '</small></span>'
       + '<span class="fv-acts">'
@@ -69531,6 +69537,40 @@
     const scan = () => { t = 0; document.querySelectorAll(SEL).forEach(el => { if(el.__io) return; el.__io = 1; io.observe(el); }); };
     new MutationObserver(() => { if(!t) t = setTimeout(scan, 250); }).observe(document.body, {childList: true, subtree: true});
     scan();
+  })();
+
+  /* ====== دکمهٔ برگشت گوشی و مرورگر ======
+     هر پنجره‌ای که باز می‌شود (نمایش فایل، دانلود، پرونده، کارت‌ها، فرم‌ها) یک قدم در تاریخچه
+     می‌گیرد؛ دکمهٔ «برگشت» گوشی همان پنجره را می‌بندد و آدم را به جای قبلی برمی‌گرداند،
+     نه این‌که از سایت بیرون ببرد. */
+  (function(){
+    const SEL = '.modal-bg, .fv-bg, .s3s-bg';
+    const CLOSE = '[data-fvx], [data-s3sx], [data-ctcx], [data-ctcclose], [data-cclx], [data-flrclose], [data-lttx], #shareX, .sx-x, .tx-x, .ccl-x, .modal-x, .mx-x, [aria-label="بستن"]';
+    const OV = []; let skip = 0;
+    const visible = el => el.isConnected && !el.hidden && getComputedStyle(el).display !== 'none';
+    function closeEl(el){
+      if(el.id === 'fvModal' && typeof fvClose === 'function'){ fvClose(); return; }
+      const x = el.querySelector(CLOSE);
+      if(x){ x.click(); }
+      else{ const no = Array.from(el.querySelectorAll('button')).find(b => /^(انصراف|بستن|باشه)$/.test(b.textContent.trim())); if(no) no.click(); else el.hidden = true; }
+      if(el.classList.contains('s3s-bg') && el.isConnected) el.remove();
+    }
+    function sync(){
+      document.querySelectorAll(SEL).forEach(el => {
+        if(visible(el) && !OV.some(o => o.el === el)){ OV.push({el}); try{ history.pushState({ov: OV.length}, ''); }catch(e){} }
+      });
+      for(let i = OV.length - 1; i >= 0; i--){
+        const o = OV[i];
+        if(!visible(o.el)){ OV.splice(i, 1); skip++; try{ history.back(); }catch(e){ skip--; } }
+      }
+    }
+    let t = 0;
+    new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; sync(); }); })
+      .observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']});
+    window.addEventListener('popstate', () => {
+      if(skip){ skip--; return; }
+      const o = OV.pop(); if(o && o.el.isConnected) closeEl(o.el);
+    });
   })();
 </script>
 </body>
