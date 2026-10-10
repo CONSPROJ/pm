@@ -43916,6 +43916,13 @@
     }
     else if(dl && /^(contractorList|contractPartyList|letterPartyList|mtNameList)$/.test(dl.id) && typeof ctrCanon === 'function'){
       const seen = new Set();
+      /* نام روی کارت همهٔ پرونده‌ها (حتی پیمانکاری که فقط نام شرکت دارد) هم بیاید،
+         نه فقط نام‌هایی که در فهرست‌های قدیمی بوده‌اند */
+      if(dl.id !== 'mtNameList') try{ ctdEntities().forEach(e => {
+        if(!e || !e.canon) return; let t = ''; try{ if(ctrIsHidden(e.canon)) return; t = ctrTypeOf(e.canon); }catch(err){}
+        if(dl.id === 'contractorList' && (t === 'cons' || t === 'emp')) return;
+        opts.push({v: e.canon, g: dl.id === 'letterPartyList' ? (t === 'emp' ? 'کارفرما' : t === 'cons' ? 'مشاوران و طراحان' : 'پیمانکاران') : '', s: ''});
+      }); }catch(err){}
       opts = opts.filter(o => { try{ return !ctrIsHidden(o.v); }catch(e){ return true; } })
         .map(o => { let c = o.v; try{ c = ctrCanon(canonicalName(o.v)); const sp = splitParts(c); if(sp && dl.id === 'contractorList') c = sp.n; }catch(e){} return {v: c, g: o.g, s: o.s}; })
         .filter(o => { const k = normName(o.v) || o.v; if(seen.has(k)) return false; seen.add(k); return true; });
@@ -47054,6 +47061,23 @@
   };
   const ST_TYPES = ['موقت', 'مستقل', 'قطعی'];
   /* نامه‌ها دو دسته‌اند: ارسالی (پیش‌فرض همهٔ نامه‌های قبلی) و دریافتی از پیمانکار یا کارفرما */
+  /* شمارهٔ بعدیِ نامهٔ ارسالی: آخرین شماره (بزرگ‌ترین) و یک واحد به عدد آخرش */
+  function ltrNextNo(){
+    const all = (typeof adminAll !== 'undefined' && adminAll) ? adminAll.filter(x => x.kind === 'letter' && ltrDirOf(x.row) === 'ارسالی') : [];
+    const nums = all.map(x => toEn(String(pick(x.row, AD.lNo) || '')).trim()).filter(n => /\d+\s*$/.test(n));
+    if(!nums.length) return '';
+    const val = t => (t.match(/\d+/g) || []).reduce((n, x) => n * 10000 + (+x), 0);
+    const last = nums.sort((a, b) => val(b) - val(a))[0];
+    const m = last.match(/^(.*?)(\d+)(\s*)$/); if(!m) return '';
+    const nx = String(+m[2] + 1).padStart(m[2].length, '0');
+    return toFa(m[1] + nx);
+  }
+  document.addEventListener('focusin', e => {
+    const i = e.target; if(!i || !i.classList || !i.classList.contains('a-lNo') || i.value.trim()) return;
+    const host = i.closest('[data-new-kind="letter"]'); if(!host) return;
+    const dr = host.querySelector('.a-lDir'); if(dr && dr.value === 'دریافتی') return;
+    const sug = ltrNextNo(); if(sug){ i.value = sug; i.dataset.sug = sug; try{ i.select(); }catch(err){} }
+  });
   const ltrDirOf = r => String((r && exact(r,'جهت نامه')) || '').trim() === 'دریافتی' ? 'دریافتی' : 'ارسالی';
   let admLtrDir = 'ارسالی';
   try{ const v = localStorage.getItem('siteLogM.ltrDir'); if(v === 'دریافتی' || v === 'ارسالی') admLtrDir = v; }catch(e){}
@@ -47063,6 +47087,14 @@
     const f = b.closest('.ltr-dirf'); if(!f) return;
     f.querySelectorAll('[data-ltrdir]').forEach(x => x.classList.toggle('on', x === b));
     const sel = f.querySelector('.a-lDir'); if(sel) sel.value = b.dataset.ltrdir;
+    /* شمارهٔ پیشنهادی فقط برای نامهٔ ارسالی؛ نامهٔ دریافتی شمارهٔ فرستنده را دارد */
+    const host = f.closest('.nf-body, [data-new-kind], .nf') || f.parentElement;
+    const no = host && host.querySelector('.a-lNo');
+    if(no && no.dataset.sug != null){
+      const sug = no.dataset.sug || ltrNextNo();
+      if(b.dataset.ltrdir === 'دریافتی'){ if(no.value === sug) no.value = ''; }
+      else if(!no.value.trim()){ no.value = sug; no.dataset.sug = sug; }
+    }
   }, true);
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-ltrseg]'); if(!b) return;
@@ -50760,7 +50792,12 @@
               + ['ارسالی','دریافتی'].map(v => '<button type="button" role="radio" class="' + (cur === v ? 'on' : '') + '" data-ltrdir="' + v + '">' + v + '</button>').join('')
               + '</div><select class="a-lDir" data-had="' + had + '" hidden>' + ['ارسالی','دریافتی'].map(v => '<option' + (cur === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>'; })()
         + f('a-lSubject','موضوع نامه', pick(r,AD.lSubject), false, 'contractSubjectList')
-        + f('a-lNo','شماره نامه', pick(r,AD.lNo))
+        + (function(){
+            /* شمارهٔ نامهٔ ارسالی به شکل «آ-۰۷-۶۰»: برای نامهٔ تازه، شمارهٔ بعدی پیشنهاد می‌شود */
+            const sug = (id === 'new' && (typeof admLtrDir === 'undefined' || admLtrDir !== 'دریافتی')) ? ltrNextNo() : '';
+            const v = pick(r,AD.lNo) || sug;
+            return f('a-lNo','شماره نامه', v).replace('class="a-lNo"', 'class="a-lNo" placeholder="مثلاً آ-۰۷-۶۰" data-sug="' + esc(sug) + '"');
+          })()
         /* طرف مقابل: فهرست گروه‌بندی‌شدهٔ پیمانکاران، کارفرما، مشاوران و ... */
         + f('a-lParty','طرف مقابل', pick(r,AD.lParty), false, 'letterPartyList'), 'three')
       + sec('cal', 'زمان‌بندی و مسئول',
