@@ -20744,6 +20744,8 @@
   /* بخش پیوست‌های کارت */
   .fsec{position:relative;transition:background .15s, box-shadow .15s;border-radius:14px;}
   .fsec.over{box-shadow:0 0 0 2px var(--sky);background:var(--sky-soft);}
+  .drop-over{outline:2px dashed var(--sky) !important;outline-offset:-2px;background:color-mix(in srgb, var(--sky) 6%, transparent) !important;}
+  .ico-btn.upl{color:var(--sky);} .ico-btn.upl svg{width:17px;height:17px;}
   .fs-h{display:flex;align-items:center;gap:6px;}
   .fs-acts{margin-inline-start:auto;display:flex;gap:6px;}
   .fs-b{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border-radius:99px;font-size:11px;font-weight:800;color:var(--sky);background:var(--sky-soft);}
@@ -20794,7 +20796,13 @@
   .fv-b.ic{width:36px;padding:0;justify-content:center;}
   .fv-body{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:var(--field);}
   [data-theme="dark"] .fv-body{background:#111418;}
-  .fv-img{max-width:100%;max-height:100%;object-fit:contain;}
+  .fv-img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;cursor:zoom-in;}
+  .fv-body{overflow:hidden;}
+  .fv-body.zoomed .fv-img{cursor:grab;} .fv-body.zoomed .fv-nav{opacity:.25;}
+  .fv-zm{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:14px;
+    background:rgba(20,24,30,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3;}
+  .fv-zm button{all:unset;cursor:pointer;min-width:36px;height:34px;padding:0 6px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;}
+  .fv-zm button:hover{background:rgba(255,255,255,.14);} .fv-zm .fv-zp{font-size:11.5px;min-width:52px;}
   .fv-frame{width:100%;height:100%;border:0;background:#fff;}
   .fv-none{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center;max-width:360px;}
   .fv-big{--kc:var(--sky);width:76px;height:76px;display:grid;place-items:center;border-radius:20px;font-size:15px;font-weight:900;color:#fff;background:var(--kc);}
@@ -44768,32 +44776,32 @@
     catch(e){ if(/photos|42703|400|PGRST/i.test(String(e && e.message || ''))) PHOTO_COL = false; else return false; }
     return PHOTO_COL;
   }
-  /* اگر تابع‌های bundle2/day_only ستون عکس را برنگردانند، فقط همان ستون جدا خوانده می‌شود */
-  async function withPhotos(j){
-    if(!j) return;
-    const sets = [['activities', j.rows], ['issues', j.issues]].filter(([t, a]) => Array.isArray(a) && a.length && !a.some(r => r && Object.prototype.hasOwnProperty.call(r, 'photos')));
-    if(!sets.length || !(await photoColOk())) return;
-    await Promise.all(sets.map(async ([t, arr]) => {
-      const ids = arr.map(r => r && r.id).filter(x => x != null);
-      for(let i = 0; i < ids.length; i += 150){
-        try{
-          const got = await supaFetch(t + '?select=id,photos&photos=not.is.null&id=in.(' + ids.slice(i, i + 150).map(encodeURIComponent).join(',') + ')', {prefer:'return=representation'}) || [];
-          const m = new Map(got.map(x => [String(x.id), x.photos]));
-          arr.forEach(r => { if(r && m.has(String(r.id))) r.photos = m.get(String(r.id)); });
-        }catch(e){}
-      }
-    }));
+  /* اگر تابع‌های bundle2/day_only ستون عکس را برنگردانند، همان ستون جدا خوانده
+     می‌شود — هم‌زمان با خود بسته (نه بعد از آن) تا بازشدن صفحه‌ها کند نشود */
+  function photosStart(dates){
+    const ds = (dates || []).filter(Boolean);
+    if(!ds.length || PHOTO_COL === false) return Promise.resolve(null);
+    const inList = encodeURIComponent('(' + ds.map(d => '"' + d + '"').join(',') + ')');
+    const q = t => supaFetch(t + '?select=id,photos&photos=not.is.null&date_fa=in.' + inList + '&limit=5000', {prefer:'return=representation'})
+      .then(a => new Map((a || []).map(x => [String(x.id), x.photos]))).catch(() => null);
+    return photoColOk().then(ok => ok ? Promise.all([q('activities'), q('issues')]) : null).catch(() => null);
+  }
+  function photosApply(j, got){
+    if(!j || !got) return;
+    const put = (arr, m) => { if(m && Array.isArray(arr)) arr.forEach(r => { if(r && !r.photos && m.has(String(r.id))) r.photos = m.get(String(r.id)); }); };
+    put(j.rows, got[0]); put(j.prev_rows, got[0]); put(j.issues, got[1]);
   }
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
 
     // اگر بخش سنگین تازه است، فقط دادهٔ روز خوانده می‌شود
     if(fresh){
+      const phP = photosStart([dateFa, prevFa]);
       const d = await supaFetch('rpc/day_only', {
         method:'POST', prefer:'return=representation',
         body:{p_date: dateFa || '', p_prev: prevFa || ''}
       });
-      await withPhotos(d);
+      photosApply(d, await phP);
       const mapd = (t, arr) => (arr || []).map(r => fromSupa(t, r));
       return Object.assign({}, heavyCache.data, {
         day: {rows: mapd('activities', d.rows), issues: mapd('issues', d.issues),
@@ -44802,11 +44810,12 @@
       });
     }
 
+    const phP = photosStart([dateFa, prevFa]);
     const j = await supaFetch('rpc/bundle2', {
       method:'POST', prefer:'return=representation',
       body:{p_date: dateFa || '', p_prev: prevFa || ''}
     });
-    await withPhotos(j);
+    photosApply(j, await phP);
     const map = (t, arr) => (arr || []).map(r => fromSupa(t, r));
     const lists = {};
     (j.lists || []).forEach(x => {
@@ -46067,6 +46076,15 @@
 
   /* ویرایش و حذف در بخش اداری فقط برای:
      ادمین، تهیه‌کنندهٔ همان گزارش، و مسئول همان مورد */
+  /* افزودن فایل به سند: هر کس ویرایش می‌کند، به‌علاوهٔ ادمین، مدیر پروژه و کارشناس دفتر فنی */
+  function canUploadAdm(kind, r){
+    try{ if(canEditAdm(kind, r)) return true; }catch(e){}
+    const lv = myLevel();
+    if(lv === 1 || lv === 2) return true;
+    if(lv !== 3) return false;
+    let rl = ''; try{ rl = String(roleOf(activeUserName()) || ''); }catch(e){}
+    return /دفتر\s*فنی/.test(rl);
+  }
   function canEditAdm(kind, r){
     const lv = myLevel();
     if(lv === 1) return true;
@@ -48996,7 +49014,7 @@
     // ۴) همهٔ پیوست‌ها
     /* اسناد طراحی فایل‌ها را به تفکیک هر Rev دارند؛ بقیه یک بخش پیوست با «افزودن فایل» */
     if(kind !== 'design'){
-      let canAdd = false; try{ canAdd = !!pick(r,AD.id) && canEditAdm(kind, r); }catch(e){}
+      let canAdd = false; try{ canAdd = !!pick(r,AD.id) && canUploadAdm(kind, r); }catch(e){}
       const fs = fileSecHtml(pick(r,AD.link), {kind, id: pick(r,AD.id), canAdd, title: head && head.title ? head.title : ''});
       if(fs) out.push(fs);
     }else{
@@ -49182,6 +49200,9 @@
               + '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'
               + '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
               + '</button>' : '')
+      +     ((id && (() => { try{ return canUploadAdm(kind, r); }catch(e){ return false; } })())
+            ? '<button type="button" class="ico-btn upl" data-admup="' + esc(kind) + '" title="افزودن فایل (یا فایل را روی کارت رها کنید)" '
+              + 'aria-label="افزودن فایل">' + UP_I.up + '</button>' : '')
       +     ((kind === 'statement' && !isPaid(r) && id && editable)
             ? '<button type="button" class="ico-btn pay" data-pay="'+esc(id)+'" '
               + 'title="ثبت پرداخت" aria-label="ثبت پرداخت">' + ADM_ICON.pay + '</button>' : '')
@@ -50307,11 +50328,14 @@
     es.forEach(e => { if(!e.isIntersecting) return; s3TIO.unobserve(e.target);
       s3TQ.push({img: e.target, tk: e.target.dataset.tk}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); });
   }, {rootMargin:'300px'}) : null;
-  new MutationObserver(() => {
-    document.querySelectorAll('img.s3t:not([data-q])').forEach(img => {
-      img.dataset.q = '1';
-      if(s3TIO) s3TIO.observe(img); else { s3TQ.push({img, tk: img.dataset.tk}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); }
-    });
+  const s3TWatch = img => { if(img.dataset.q) return; img.dataset.q = '1';
+    if(s3TIO) s3TIO.observe(img); else { s3TQ.push({img, tk: img.dataset.tk}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); } };
+  new MutationObserver(ms => {
+    for(const m of ms) for(const n of m.addedNodes){
+      if(n.nodeType !== 1) continue;
+      if(n.matches('img.s3t')) s3TWatch(n);
+      else if(n.firstElementChild) n.querySelectorAll('img.s3t:not([data-q])').forEach(s3TWatch);
+    }
   }).observe(document.documentElement, {childList:true, subtree:true});
   /* اول فضای اصلی؛ اگر در دسترس نبود یا تنظیم نشده بود، فضای جایگزین */
   async function s3UpMain(file, onProgress, kind){
@@ -50510,8 +50534,12 @@
         : r.endpoint ? 'اتصال کامل نیست؛ همهٔ خانه‌ها را پر کنید.' : (slot === 2 ? 'تنظیم نشده — فایل‌ها فقط در فضای اصلی ذخیره می‌شوند.' : 'هنوز اتصالی ذخیره نشده است.');
     });
   }
-  new MutationObserver(() => {
-    document.querySelectorAll('.upc:not([data-s3i])').forEach(b => { b.dataset.s3i = '1'; s3InfoPaint(b); });
+  new MutationObserver(ms => {
+    for(const m of ms) for(const n of m.addedNodes){
+      if(n.nodeType !== 1) continue;
+      const L = n.matches('.upc') ? [n] : (n.querySelector('.upc') ? n.querySelectorAll('.upc:not([data-s3i])') : []);
+      L.forEach(b => { if(!b.dataset.s3i){ b.dataset.s3i = '1'; s3InfoPaint(b); } });
+    }
   }).observe(document.documentElement, {childList:true, subtree:true});
   document.addEventListener('click', async e => {
     const sv = e.target.closest && e.target.closest('[data-s3-save], [data-s3-test], [data-s3-del]');
@@ -50811,7 +50839,7 @@
     m.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, {passive:true});
     m.addEventListener('touchend', e => {
       if(x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
-      if(Math.abs(dx) > 60 && !e.target.closest('iframe')) fvGo(dx > 0 ? 1 : -1);   // راست‌به‌چپ: کشیدن به راست = بعدی
+      if(Math.abs(dx) > 60 && !e.target.closest('iframe') && !(fvZ && fvZ.s > 1.02) && !fvZ.multi) fvGo(dx > 0 ? 1 : -1);   // راست‌به‌چپ: کشیدن به راست = بعدی
     }, {passive:true});
     document.addEventListener('keydown', e => {
       if(m.hidden) return;
@@ -50847,6 +50875,7 @@
       + '</div>'
       + (n > 1 ? '<div class="fv-strip">' + S.L.map((x, i) => '<button type="button" class="fv-th k-' + ATT_KIND(x.ext) + (i === S.i ? ' on' : '') + '" data-fvi="' + i + '" title="' + esc(x.name) + '"><i' + (attThumb(x) ? ' class="has-th"' : '') + '>' + (attThumb(x) || esc((x.ext || 'فایل').toUpperCase())) + '</i><span>' + esc(x.name) + '</span></button>').join('') + '</div>' : '');
     const on = m.querySelector('.fv-th.on'); if(on) on.scrollIntoView({block:'nearest', inline:'center'});
+    fvZoomInit(m);
     if(a.src === 's3' && (k === 'img' || k === 'pdf')){
       const el = m.querySelector('.fv-img, .fv-frame'), keep = S;
       const pre = k === 'img' && (s3Local.get(a.key) || (a.thumb && ((s3ThumbC.get((a.slot === 2 ? 2 : 1) + ':' + a.thumb) || {}).u)));
@@ -50856,6 +50885,83 @@
           .catch(er => { if(fvS === keep) el.outerHTML = '<div class="fv-none"><b>' + esc(a.name) + '</b><small>' + esc(friendlyErr(er)) + '</small></div>'; });
       }
     }
+  }
+  /* بزرگ‌نمایی عکس: دو انگشت (pinch)، دو بار زدن، چرخ ماوس و دکمه‌های + و −؛
+     وقتی بزرگ است با کشیدن جابه‌جا می‌شود و ورق زدن غیرفعال است */
+  let fvZ = {s:1, x:0, y:0, multi:false};
+  function fvZoomInit(m){
+    fvZ = {s:1, x:0, y:0, multi:false};
+    const body = m.querySelector('.fv-body'), img = body && body.querySelector('.fv-img');
+    const old = body && body.querySelector('.fv-zm'); if(old) old.remove();
+    if(!img) return;
+    body.insertAdjacentHTML('beforeend', '<div class="fv-zm"><button type="button" data-fvz="-1" aria-label="کوچک‌نمایی">−</button>'
+      + '<button type="button" data-fvz="0" class="fv-zp" aria-label="اندازهٔ اصلی">۱۰۰٪</button><button type="button" data-fvz="1" aria-label="بزرگ‌نمایی">+</button></div>');
+    const lbl = body.querySelector('.fv-zp');
+    const clamp = () => {
+      fvZ.s = Math.max(1, Math.min(6, fvZ.s));
+      if(fvZ.s <= 1.001){ fvZ.s = 1; fvZ.x = 0; fvZ.y = 0; }
+      const r = body.getBoundingClientRect(), w = img.offsetWidth * fvZ.s, h = img.offsetHeight * fvZ.s;
+      const mx = Math.max(0, (w - r.width) / 2), my = Math.max(0, (h - r.height) / 2);
+      fvZ.x = Math.max(-mx, Math.min(mx, fvZ.x)); fvZ.y = Math.max(-my, Math.min(my, fvZ.y));
+    };
+    const apply = (anim) => {
+      clamp();
+      img.style.transition = anim ? 'transform .18s ease' : 'none';
+      img.style.transform = 'translate(' + fvZ.x + 'px,' + fvZ.y + 'px) scale(' + fvZ.s + ')';
+      body.classList.toggle('zoomed', fvZ.s > 1);
+      lbl.textContent = toFa(Math.round(fvZ.s * 100)) + '٪';
+    };
+    /* بزرگ‌نمایی حول یک نقطه (مختصات صفحه) */
+    const zoomAt = (ns, cx, cy, anim) => {
+      const r = body.getBoundingClientRect();
+      const ox = cx - (r.left + r.width / 2), oy = cy - (r.top + r.height / 2);
+      const k = ns / fvZ.s;
+      fvZ.x = ox - (ox - fvZ.x) * k; fvZ.y = oy - (oy - fvZ.y) * k; fvZ.s = ns;
+      apply(anim);
+    };
+    body.querySelector('.fv-zm').addEventListener('click', e => {
+      const b = e.target.closest('[data-fvz]'); if(!b) return;
+      e.stopPropagation();
+      const r = body.getBoundingClientRect(), d = +b.dataset.fvz;
+      if(!d){ fvZ.s = 1; apply(true); return; }
+      zoomAt(d > 0 ? fvZ.s * 1.5 : fvZ.s / 1.5, r.left + r.width / 2, r.top + r.height / 2, true);
+    });
+    body.addEventListener('wheel', e => {
+      if(!body.contains(img)) return;
+      e.preventDefault();
+      zoomAt(fvZ.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022)), e.clientX, e.clientY, false);
+    }, {passive:false});
+    let lastTap = 0;
+    img.addEventListener('dblclick', e => { e.preventDefault(); zoomAt(fvZ.s > 1 ? 1 : 2.5, e.clientX, e.clientY, true); });
+    const pts = new Map(); let pinch = null, drag = null;
+    img.style.touchAction = 'none';
+    img.addEventListener('pointerdown', e => {
+      img.setPointerCapture && img.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, {x: e.clientX, y: e.clientY});
+      if(pts.size === 2){
+        const [a, b] = Array.from(pts.values());
+        pinch = {d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: fvZ.s}; drag = null; fvZ.multi = true;
+      }else if(pts.size === 1){
+        drag = {x: e.clientX, y: e.clientY, ox: fvZ.x, oy: fvZ.y, moved: false};
+        if(e.pointerType === 'touch'){ const now = Date.now();
+          if(now - lastTap < 300){ zoomAt(fvZ.s > 1 ? 1 : 2.5, e.clientX, e.clientY, true); lastTap = 0; drag = null; return; }
+          lastTap = now; }
+      }
+    });
+    img.addEventListener('pointermove', e => {
+      if(!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, {x: e.clientX, y: e.clientY});
+      if(pinch && pts.size >= 2){
+        const [a, b] = Array.from(pts.values());
+        const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        zoomAt(pinch.s * d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2, false);
+      }else if(drag && fvZ.s > 1){
+        fvZ.x = drag.ox + (e.clientX - drag.x); fvZ.y = drag.oy + (e.clientY - drag.y); drag.moved = true; apply(false);
+      }
+    });
+    const up = e => { pts.delete(e.pointerId); if(pts.size < 2) pinch = null; if(!pts.size){ drag = null; setTimeout(() => { fvZ.multi = false; }, 50); } };
+    img.addEventListener('pointerup', up); img.addEventListener('pointercancel', up);
+    apply(false);
   }
   function fvOpen(L, i, title){
     if(!L || !L.length) return;
@@ -50969,18 +51075,58 @@
     inp.onchange = () => { const fs = Array.from(inp.files || []); inp.value = ''; if(fs.length) fsAddFiles(sec, fs); };
     inp.click();
   });
+  /* بخش پیوستِ مقصد: خودِ بخش، یا بخش پیوستِ کارتی که فایل روی آن رها می‌شود */
+  const fsTarget = el => {
+    if(!el || !el.closest) return null;
+    let sec = el.closest('.fsec[data-fskind]');
+    if(!sec){ const card = el.closest('.rv.adm-k, .am2, [data-fvcard]'); sec = card && card.querySelector('.fsec[data-fskind]'); }
+    return (sec && sec.querySelector('[data-fsadd]')) ? sec : null;
+  };
+  const isFileDrag = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') !== -1;
+  let fsOver = null;
+  const fsOverSet = (sec, card) => {
+    const box = card || sec;
+    if(fsOver && fsOver !== box) fsOver.classList.remove('over', 'drop-over');
+    fsOver = box;
+    if(box) box.classList.add(card ? 'drop-over' : 'over');
+  };
   ['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => {
-    const sec = e.target.closest && e.target.closest('.fsec[data-fskind]');
-    if(!sec || !sec.querySelector('[data-fsadd]')) return;
-    e.preventDefault(); sec.classList.add('over');
+    if(!isFileDrag(e)) return;
+    /* رها کردن فایل در جای دیگرِ صفحه، فایل را به‌جای سایت باز نکند */
+    if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault();
+    const sec = fsTarget(e.target);
+    if(!sec){ fsOverSet(null); return; }
+    e.preventDefault();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    fsOverSet(sec, sec.contains(e.target) ? null : e.target.closest('.rv.adm-k, .am2, [data-fvcard]'));
   }));
-  document.addEventListener('dragleave', e => { const sec = e.target.closest && e.target.closest('.fsec'); if(sec) sec.classList.remove('over'); });
+  document.addEventListener('dragleave', e => { if(!e.relatedTarget || !document.documentElement.contains(e.relatedTarget)) fsOverSet(null); });
   document.addEventListener('drop', e => {
-    const sec = e.target.closest && e.target.closest('.fsec[data-fskind]');
-    if(!sec || !sec.querySelector('[data-fsadd]')) return;
-    e.preventDefault(); sec.classList.remove('over');
+    if(!isFileDrag(e)) return;
+    const sec = fsTarget(e.target);
+    fsOverSet(null);
+    if(!sec){ if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault(); return; }
+    e.preventDefault();
     const fs = e.dataTransfer && e.dataTransfer.files; if(fs && fs.length) fsAddFiles(sec, Array.from(fs));
   });
+  /* دکمهٔ آپلود سربرگ کارت: کارت باز می‌شود و انتخاب فایل (چندتایی) می‌آید */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-admup]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const card = b.closest('.rv.adm-k');
+    if(b.dataset.admup === 'design'){
+      const id = card && (card.dataset.id || (card.querySelector('[data-edit]') || {dataset:{}}).dataset.edit);
+      if(id && typeof dsOpen === 'function'){ dsOpen(id, 'files'); return; }
+    }
+    if(card && !card.classList.contains('open')){
+      card.classList.add('open'); const ax = card.querySelector('.adm-exp .ax'); if(ax) ax.textContent = '▴';
+    }
+    const sec = card && card.querySelector('.fsec[data-fskind]');
+    const add = sec && sec.querySelector('[data-fsadd]');
+    if(add){ add.click(); setTimeout(() => { try{ sec.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(er){} }, 60); }
+    else showDialog('warn', 'افزودن فایل', 'برای این سند امکان افزودن فایل نیست.');
+  }, true);
 
   document.addEventListener('click', e => {
     const pickBtn = e.target.closest && e.target.closest('.up-pick');
