@@ -1688,6 +1688,19 @@
   .dz-fmore{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:6px 4px 0;padding:5px 10px;border-radius:9px;font-size:11px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 9%, transparent);}
   .dz-fmore svg{width:13px;height:13px;}
   .dz-fsum .dz-flow, .dz-scroll .dz-flow{font-size:11px;}
+  /* کاشی‌های دسته‌های لیست فعالیت و کنترل گروه‌بندی: یکدست و هم‌اندازه */
+  .tkl-tiles{grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)) !important;gap:8px !important;}
+  .tkl-t{padding:10px 12px !important;gap:10px !important;min-height:64px;}
+  .tkl-t .tkl-ic{flex:0 0 38px !important;width:38px !important;height:38px !important;border-radius:12px !important;background:linear-gradient(140deg, color-mix(in srgb, var(--c) 22%, transparent), color-mix(in srgb, var(--c) 8%, transparent)) !important;}
+  .tkl-t .tkl-ic svg{width:20px !important;height:20px !important;}
+  .tkl-t .tkl-tx{flex:1;}
+  .tkl-n{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:34px;line-height:1.1;}
+  .tkl-n b{font-size:18px;font-weight:900;color:var(--c);} .tkl-n small{font-size:9.5px;color:var(--muted);}
+  .tkl-t.k-ctr{--c:#c98a12;} .tkl-t.k-emp{--c:#2a8a86;} .tkl-t.k-cons{--c:#6d5bb5;} .tkl-t.k-in{--c:var(--sky);}
+  [data-theme="dark"] .tkl-t.k-ctr{--c:#e0b050;} [data-theme="dark"] .tkl-t.k-emp{--c:#5cc4be;} [data-theme="dark"] .tkl-t.k-cons{--c:#a898e6;}
+  #tkViewBar .tk-grpseg, .tk-grpseg{display:grid !important;grid-template-columns:repeat(3, minmax(0, 1fr));width:100%;margin-inline-start:0 !important;}
+  .tk-grpseg > span{display:none;}
+  .tk-grpseg button{justify-content:center !important;width:100%;padding:0 6px !important;}
   /* نوار مرحلهٔ سند طراحی (هم‌شکل کارت‌های دیگر دفتر فنی) */
   .dz3 .dz-panel2{background:transparent;border:0;padding:0;}
   .dsb-wrap{display:block;padding:2px 0 4px;}
@@ -59172,9 +59185,9 @@
      با لمس کاشی همان پنجره باز می‌شود (و بقیه بسته)؛ وضعیت باز بودن روی همین دستگاه می‌ماند. */
   const TKL_IC = {
     in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/></svg>',
-    emp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/></svg>',
+    emp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="11" height="18" rx="1.5"/><path d="M15 9h4.5a.5.5 0 0 1 .5.5V21"/><path d="M7.5 7h4M7.5 11h4M7.5 15h4M3 21h18"/></svg>',
     cons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-14 4 9 3-5 4 10"/><path d="M3 19h18"/></svg>',
-    ctr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20V10l7-4 7 4v10"/><path d="M9 20v-4h6v4M12 6V3"/></svg>'
+    ctr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M10 8.3V5.5h4v2.8"/><path d="M2.5 16h19v2.5h-19z"/></svg>'
   };
   let tklOpen = (function(){ try{ const v = JSON.parse(localStorage.getItem('siteLogM.tkLv') || 'null'); return Array.isArray(v) ? v : ['in']; }catch(e){ return ['in']; } })();
   function tkLevelsHtml(sp, people, blockFn, pre){
@@ -59189,7 +59202,8 @@
     const S = L.map(x => Object.assign({}, x, stat(x.names)));
     return '<div class="tkl-tiles" data-tklpre="' + (pre || '') + '">' + S.map(x => '<button type="button" class="tkl-t k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' on' : '') + '" data-tklv="' + x.k + '">'
           + '<span class="tkl-ic">' + TKL_IC[x.k] + '</span><span class="tkl-tx"><b>' + esc(x.t) + '</b>'
-          + '<small>' + toFa(x.open) + ' باز' + (x.late ? ' · <em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '</small></span></button>').join('') + '</div>'
+          + '<small>' + toFa(x.names.length) + ' نفر' + (x.late ? ' · <em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '</small></span>'
+          + '<span class="tkl-n"><b>' + toFa(x.open) + '</b><small>باز</small></span></button>').join('') + '</div>'
       + S.map(x => '<section class="tkl-sec k-' + x.k + (tklOpen.indexOf(x.k) !== -1 ? ' open' : '') + '" data-tklsec="' + x.k + '" id="tkl-' + (pre || 'x') + '-' + x.k + '">'
           + '<button type="button" class="tkl-h" data-tklh="' + x.k + '"><span class="tkl-ic">' + TKL_IC[x.k] + '</span><b>' + esc(x.t) + '</b>'
           + '<u>' + toFa(x.names.length) + '</u>' + (x.late ? '<em>' + toFa(x.late) + ' دیرکرد</em>' : '') + '<i class="tkl-ar"></i></button>'
@@ -59215,11 +59229,12 @@
   });
   /* نام‌های لیست فعالیت در دو دسته: پرسنل (کاربران سامانه) و خارج سازمان
      (کارفرما و پیمانکارانی که سندی در گردش آن‌هاست). people: نام → ردیف‌ها */
-  function taskPeopleSplit(people){
+  function taskPeopleSplit(people, forced){
     const staff = new Set();
     try{ listNames().forEach(n => staff.add(nameKey(n))); }catch(e){}
     try{ Object.keys(ROLE_OF).forEach(n => staff.add(nameKey(n))); }catch(e){}
-    const isOut = p => p !== 'بدون مسئول' && (p === 'کارفرما'
+    const isForced = p => !!(forced && forced.has(p) && !staff.has(nameKey(p)));
+    const isOut = p => p !== 'بدون مسئول' && (p === 'کارفرما' || isForced(p)
       || (!staff.has(nameKey(p)) && (people.get(p) || []).some(r => r.__offsite)));
     const byName = (a,b) => a.localeCompare(b,'fa');
     /* پرسنل به ترتیب جایگاه: سطح ۱ (مدیریت) بالاتر، بعد ۲، ۳ و …؛ «بدون مسئول» ته فهرست */
@@ -59239,6 +59254,7 @@
       if(p === 'بدون مسئول') return 'in';
       if(p === 'کارفرما') return 'emp';
       let t = ''; try{ t = ctrTypeOf(p); }catch(e){}
+      if(isForced(p)) return t === 'emp' ? 'emp' : t === 'cons' ? 'cons' : 'ctr';
       if(staff.has(nameKey(p))){
         const rl = String((function(){ try{ return roleOf(p); }catch(e){ return ''; } })() || '');
         return /کارفرما/.test(rl) ? 'emp' : /مشاور/.test(rl) ? 'cons' : 'in';
@@ -59246,7 +59262,15 @@
       return t === 'emp' ? 'emp' : t === 'cons' ? 'cons' : 'ctr';
     };
     const all = inNames.concat(outNames);
-    const levels = [['in','پرسنل پروژه'],['emp','کارفرما'],['cons','مشاور'],['ctr','پیمانکاران']].map(([k, t]) => ({k, t, names: all.filter(p => lvOf(p) === k)})).filter(L => L.names.length);
+    /* پیمانکاران: آن‌که فعالیت تازه‌تری دارد بالاتر */
+    const lastOf = p => (people.get(p) || []).reduce((m, r) => {
+      const d = faToDate(faDateOf(pick(r,T.start) || '') || '') || null;
+      return d && d.getTime() > m ? d.getTime() : m; }, 0);
+    const levels = [['in','پرسنل پروژه'],['emp','کارفرما'],['cons','مشاور'],['ctr','پیمانکاران']].map(([k, t]) => {
+      let names = all.filter(p => lvOf(p) === k);
+      if(k === 'ctr') names = names.slice().sort((a, b) => lastOf(b) - lastOf(a) || a.localeCompare(b, 'fa'));
+      return {k, t, names};
+    }).filter(L => L.names.length);
     return {
       levels,
       inNames, outNames, names: levels.reduce((a, L) => a.concat(L.names), []),
@@ -59672,8 +59696,25 @@
       if(who.length) who.forEach(p => push(p, r));
       else push('بدون مسئول', r);
     });
+    /* دستهٔ «پیمانکاران» در نمای افراد: هر پیمانکاری که فعالیتی (اجرایی یا دیگر) به نامش
+       ثبت شده، یا در موانع فعالیت‌ها گیر اوست — حتی اگر مسئول فعالیت نباشد */
+    const ctrForced = new Set();
+    if(mode === 'person'){
+      const has = (c, r) => (people.get(c) || []).indexOf(r) !== -1;
+      list.forEach(r => taskCtrKeys(r).forEach(c => {
+        if(!c || c === TK_NO_CTR) return;
+        if([pick(r,T.m1), pick(r,T.m2)].some(n => n && nameKey(n) === nameKey(c))) return;
+        if(!has(c, r)){ push(c, r); ctrForced.add(c); }
+      }));
+      try{ tbCache.items.forEach(lst => lst.forEach(it => {
+        if(!it || !it.ctr || !it.open) return;
+        const tr = taskById(it.task); if(!tr || list.indexOf(tr) === -1) return;
+        let c = it.ctr; try{ c = ctrCanonLoose(c) || c; }catch(e){}
+        if(!has(c, tr)){ push(c, tr); ctrForced.add(c); }
+      })); }catch(e){}
+    }
     let sp;
-    if(mode === 'person') sp = taskPeopleSplit(people);
+    if(mode === 'person') sp = taskPeopleSplit(people, ctrForced);
     else{
       const names = Array.from(people.keys());
       if(mode === 'ctr'){
