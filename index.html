@@ -3998,6 +3998,10 @@
   .tfr-dst{flex:0 0 auto;font-size:11px;padding:3px 8px;}
   .tkd.in-row{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:4px 2px 2px;} .tkd.in-row > *{min-width:0;width:100%;box-sizing:border-box;}
   .flr-dzs{display:flex;flex-direction:column;gap:4px;}
+  .flr-tabs{display:flex;gap:4px;margin:0 16px 4px;padding:3px;border-radius:12px;background:var(--field);}
+  .flr-tabs button{all:unset;cursor:pointer;flex:1;text-align:center;height:32px;line-height:32px;border-radius:9px;font-size:12px;font-weight:700;color:var(--muted);}
+  .flr-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .flr-tabs button i{font-style:normal;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:7px;background:color-mix(in srgb, var(--sky) 14%, transparent);color:var(--sky);margin-inline-start:3px;}
   .flr-dzw{display:flex;flex-direction:column;gap:5px;padding-bottom:6px;border-bottom:1px solid var(--line-soft, var(--line));}
   .flr-dzw:last-child{border-bottom:0;}
   .flr-dzf{padding-inline-start:22px;}
@@ -58824,7 +58828,20 @@
     const t = taskBlockText(r);
     return t ? [{kind:(blockersOf(r)[0] || ''), text:t, r}] : [];
   };
-  const flrEnd = () => normDate((typeof dateInput !== 'undefined' && dateInput && dateInput.value) || '') || todayShamsi();
+  /* پایان دورهٔ پروندهٔ طبقه: آخرین روزی که گزارش دارد (تا امروز)، نه تاریخِ انتخاب‌شده در صفحهٔ گزارش */
+  const flrEnd = () => (typeof flrS !== 'undefined' && flrS.end) || todayShamsi();
+  let flrLatest = {t: 0, d: ''};
+  async function flrLatestDay(){
+    if(flrLatest.d && Date.now() - flrLatest.t < 300000) return flrLatest.d;
+    const today = todayShamsi();
+    let d = today;
+    for(let i = 0; i < 10; i++){
+      const dd = flrDates(today, i + 1)[0];
+      try{ const v = await flrLoad(dd, 1); if(v && v.rows && v.rows.length){ d = dd; break; } }catch(e){}
+    }
+    flrLatest = {t: Date.now(), d};
+    return d;
+  }
   const FLR_PER = {day:['روزانه', 1], week:['هفتگی', 7], month:['ماهانه', 30]};
   function flrDates(endFa, n){
     const end = faToDate(endFa); if(!end) return [endFa];
@@ -58940,6 +58957,8 @@
       if(e.target === m || e.target.closest('[data-flrclose]')){ m.hidden = true; return; }
       const mo = e.target.closest('[data-flrmore]');
       if(mo){ const sc = mo.closest('.flr-sec'); if(sc){ sc.classList.add('all'); } return; }
+      const tb = e.target.closest('[data-flrtab]');
+      if(tb){ flrS.tab = tb.dataset.flrtab; flrPaint(); return; }
       const pr = e.target.closest('[data-flrper]');
       if(pr){ flrS.per = pr.dataset.flrper; flrPaint(); return; }
       const t = e.target.closest('[data-flrtask]');
@@ -58965,17 +58984,24 @@
     const m = flrModal(), box = m.querySelector('.flr-sh'), k = flrS.k, per = flrS.per, n = FLR_PER[per][1];
     const x = flrStats(flrList).get(k) || {rows:[], done:0, doing:0, todo:0, late:0, blk:0};
     const nT = x.rows.length, pp = nT ? Math.round(x.done / nT * 100) : 0;
+    const tab = flrS.tab === 'ds' ? 'ds' : 'rep';
     const seg = '<div class="flr-seg" role="tablist">' + Object.keys(FLR_PER).map(p => '<button type="button" data-flrper="' + p + '"' + (p === per ? ' class="on"' : '') + '>' + FLR_PER[p][0] + '</button>').join('') + '</div>';
-    const head = '<div class="flr-hd"><span class="flr-ic">' + FLR_BLD + '</span><div><b>' + esc(flrName(k)) + '</b><small>'
-      + (k !== 'ALL' ? '<em>' + esc(floorCode(k)) + '</em>' : '') + toFa(nT) + ' فعالیت · گزارش تا ' + esc(toFa(flrEnd())) + '</small></div>'
+    const headHtml = endTxt => '<div class="flr-hd"><span class="flr-ic">' + FLR_BLD + '</span><div><b>' + esc(flrName(k)) + '</b><small>'
+      + (k !== 'ALL' ? '<em>' + esc(floorCode(k)) + '</em>' : '') + toFa(nT) + ' فعالیت' + (endTxt ? ' · گزارش تا ' + esc(toFa(endTxt)) : '') + '</small></div>'
       + '<button type="button" class="tx-x" data-flrclose="1" aria-label="بستن">✕</button></div>';
-    box.innerHTML = head + '<div class="flr-body">' + seg + '<div class="flr-load"><i></i><i></i><i></i></div></div>';
+    const tabsHtml = nDs => '<div class="flr-tabs" role="tablist">'
+      + '<button type="button" data-flrtab="rep"' + (tab === 'rep' ? ' class="on"' : '') + '>گزارش طبقه</button>'
+      + '<button type="button" data-flrtab="ds"' + (tab === 'ds' ? ' class="on"' : '') + '>اسناد طراحی' + (nDs != null ? ' <i>' + toFa(nDs) + '</i>' : '') + '</button></div>';
+    box.innerHTML = headHtml(flrS.end || '') + tabsHtml(null) + '<div class="flr-body">' + (tab === 'rep' ? seg : '') + '<div class="flr-load"><i></i><i></i><i></i></div></div>';
     const tk = (flrS.tk = (flrS.tk || 0) + 1);
     let D = null;
     const dsP = dsRowsAll().catch(() => []);
+    try{ flrS.end = await flrLatestDay(); }catch(e){ flrS.end = todayShamsi(); }
     try{ D = await flrLoad(flrEnd(), n); }catch(e){ D = {dates: flrDates(flrEnd(), n * 2), rows: [], issues: []}; }
     const DSR = await dsP;
     if(tk !== flrS.tk || m.hidden) return;
+    const nDs = DSR.filter(r => { try{ return dsFloorKeys(r).some(q => q === k || (k !== 'ALL' && q === 'ALL')); }catch(e){ return false; } }).length;
+    { const h = box.querySelector('.flr-hd'); if(h) h.outerHTML = headHtml(flrEnd()); const t = box.querySelector('.flr-tabs'); if(t) t.outerHTML = tabsHtml(nDs); }
     const S = flrMenStats(D, k, n);
     const fa = v => { const r1 = Math.round(v * 10) / 10; return toFa(v >= 10 || Number.isInteger(r1) ? Math.round(v) : r1.toFixed(1)); };
     const delta = S.prevAvg ? Math.round((S.avg - S.prevAvg) / S.prevAvg * 100) : null;
@@ -59010,7 +59036,7 @@
           const tx = {ok:'تأیید', ext:'نزد مشاور', info:'در بررسی', bad:'اصلاحی'};
           /* به ترتیب رشته، بعد شمارهٔ مدرک؛ هر سند با فایل‌های آخرین ویرایش (نمایش و دانلود) */
           const srt = D0.slice().sort((a, b) => String(pick(a,AD.dDisc) || '').localeCompare(String(pick(b,AD.dDisc) || ''), 'fa') || String(pick(a,AD.dNo) || '').localeCompare(String(pick(b,AD.dNo) || ''), 'en', {numeric: true}));
-          return sec('نقشه‌ها و اسناد طراحی <span class="flr-sub">' + toFa(ok) + ' تأییدشده</span>', D0.length, '<div class="flr-dzs">' + cap(srt, 6, r => {
+          return sec('نقشه‌ها و اسناد طراحی <span class="flr-sub">' + toFa(ok) + ' تأییدشده</span>', D0.length, '<div class="flr-dzs">' + cap(srt, tab === 'ds' ? 999 : 6, r => {
             const c = dsCls(r), hn = (function(){ try{ return dsHolderNow(r); }catch(e){ return null; } })();
             let fl = [], rv = pick(r,AD.dRev) || '0';
             try{ const revs = dsRevsOf(r); rv = revs[revs.length - 1].rev; for(let i = revs.length - 1; i >= 0 && !fl.length; i--) fl = attachList(dsRevFiles(r, revs, i)); }catch(e){}
@@ -59028,7 +59054,7 @@
       + kp(toFa(x.blk), 'مانع باز', x.blk ? 'bad' : '')
       + kp(toFa(x.late), 'دیرکرد', x.late ? 'warn' : '')
       + '</div>'
-      + dzSec
+
       + (per !== 'day'
           ? sec('نیروی کار روزانه <span class="flr-lg"><i class="b"></i>نفر در روز<i class="a"></i>میانگین</span>', null,
               (S.tot ? '<div class="flr-chart">' + flrTrendSvg(S) + '</div>' : empty('در این دوره گزارشی برای این طبقه ثبت نشده.')))
@@ -59061,7 +59087,7 @@
                 + (flrLate(r) ? ' <em class="l">دیرکرد</em>' : '') + '</small></span><i>‹</i></button>'; })
             : empty('فعالیتی در این طبقه نیست.')));
 
-    box.querySelector('.flr-body').innerHTML = seg + html;
+    box.querySelector('.flr-body').innerHTML = tab === 'ds' ? dzSec : seg + html;
   }
   /* لمس نام طبقه در سرگروه (مثل نام افراد): پرونده باز می‌شود، گروه باز و بسته نمی‌شود */
   document.addEventListener('click', e => {
