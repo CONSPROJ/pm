@@ -18545,6 +18545,11 @@
   .sx-mode button{height:30px;border:0;border-radius:8px;background:none;font:700 11.5px var(--f);color:var(--muted);cursor:pointer;}
   .sx-mode button.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px -5px rgba(15,20,35,.5);} .sx-mode button[disabled]{opacity:.4;}
   .sx-msg{position:relative;}
+  .sx-tg{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;padding:4px 2px;}
+  .sx-tg .sw{position:relative;width:32px;height:19px;flex:0 0 32px;border-radius:99px;background:var(--line);transition:background .18s;}
+  .sx-tg .sw i{position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .18s;}
+  .sx-tg.on .sw{background:var(--sky);} .sx-tg.on .sw i{inset-inline-start:15px;}
+  .sx-tg b{font-size:12px;font-weight:800;color:var(--ink);} .sx-tg small{font-size:10.5px;color:var(--muted);}
   .sx-txt{width:100%;box-sizing:border-box;min-height:84px;max-height:220px;padding:11px 13px;border-radius:14px;border:1px solid var(--line);background:var(--field);font:12.5px/1.9 var(--f);color:var(--ink);resize:vertical;}
   .sx-reset{all:unset;cursor:pointer;font-size:10.5px;font-weight:700;color:var(--sky);margin-top:4px;display:inline-block;}
   .sx-go{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:8px 16px;border-radius:16px;color:#fff;
@@ -21129,7 +21134,7 @@
   })();
 </script>
 </head>
-<body>
+<body class="wpick-idle">
 <div id="errBar" hidden></div>
 <div class="page">
 
@@ -26449,17 +26454,34 @@
      اشتراک دستگاه). */
   let shareCtx = {title:'', body:'', link:'', mode:'text', party:'', to:'', edited:null, kind:''};
   const SH_SIGN = '— سامانهٔ گزارش‌های پروژه';
+  /* متن آمادهٔ رسمی: خطاب به گیرنده، معرفی سند، مشخصات به شکل فهرست، نام
+     فایل‌های پیوست، و امضا با نام، سمت و نام پروژه */
   function shareBuild(){
     if(shareCtx.edited != null) return shareCtx.edited;
-    const t = shareCtx.title ? '📌 ' + shareCtx.title : '';
-    const lines = [];
-    const greet = shareCtx.to ? (() => { const c = ctrContactOf(shareCtx.to); return 'جناب ' + ((c && c.c) || shareCtx.to) + '، با سلام'; })() : '';
-    if(greet) lines.push(greet);
-    if(t) lines.push(t);
-    if(shareCtx.mode !== 'link' && shareCtx.body) lines.push(shareCtx.body);
-    if(shareCtx.mode !== 'text' && shareCtx.link) lines.push((shareCtx.mode === 'both' ? 'پیوست: ' : '') + shareCtx.link);
-    lines.push(SH_SIGN);
-    return lines.filter(Boolean).join('\n');
+    const to = shareCtx.to || shareCtx.party;
+    const c = to ? ctrContactOf(to) : null;
+    const me = activeUserName() || '';
+    let role = ''; try{ role = roleOf(me) || ''; }catch(e){}
+    let proj = ''; try{ proj = (document.getElementById('projectName') || {}).value || ''; }catch(e){}
+    const files = (shareCtx.files || []).filter((a, i) => shareCtx.sel && shareCtx.sel.has(i));
+    const L = [];
+    if(to){
+      L.push(ctrCanon(to) + ' محترم');
+      if(c && c.c && nameKey(c.c) !== nameKey(to)) L.push(c.c + ' گرامی');
+    }
+    L.push('با سلام و احترام؛');
+    const ttl = shareCtx.title ? '«' + shareCtx.title + '»' : 'مدارک این موضوع';
+    L.push('بدین‌وسیله ' + ttl + (files.length ? ' به پیوست' : '') + ' جهت استحضار و اقدام لازم ارسال می‌گردد.');
+    const body = String(shareCtx.body || '').split('\n').map(x => x.trim()).filter(x => x && (!shareCtx.title || x !== shareCtx.title));
+    if(shareCtx.mode !== 'link' && body.length){ L.push(''); L.push('مشخصات:'); body.forEach(x => L.push('• ' + x)); }
+    if(files.length){ L.push(''); L.push('پیوست' + (files.length > 1 ? '‌ها (' + toFa(files.length) + ' فایل)' : '') + ':'); files.forEach(a => L.push('• ' + a.name)); }
+    if(shareCtx.mode !== 'text' && shareCtx.link) L.push('', 'لینک پیوست: ' + shareCtx.link);
+    L.push('');
+    L.push('در صورت نیاز به توضیح بیشتر، در خدمت هستیم.');
+    L.push('با تشکر');
+    L.push([me, role].filter(Boolean).join(' — '));
+    if(proj) L.push('پروژهٔ ' + proj);
+    return L.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
   function shareUrl(){ return shareCtx.link || ''; }
   function shrRecipientHtml(name, lead){
@@ -26520,19 +26542,20 @@
       + '<div class="sx-sec">' + (nF ? '' : '<div class="sx-lbl">متن</div>')
       +   shrFilesHtml()
       +   (shareCtx.link && !nF ? '<div class="sx-mode">' + modeBtn('text', 'متن') + modeBtn('link', 'لینک') + modeBtn('both', 'هر دو') + '</div>' : '')
-      +   '<div class="sx-msg"><textarea id="shrText" class="sx-txt" rows="' + (nF ? 3 : 5) + '" aria-label="متن پیام">' + esc(shareBuild()) + '</textarea>'
-      +   (shareCtx.edited != null ? '<button type="button" class="sx-reset" data-shreset="1">متن پیش‌فرض</button>' : '') + '</div>'
+      +   '<button type="button" class="sx-tg' + (shareCtx.noText ? '' : ' on') + '" data-shrtxt="1" role="switch" aria-checked="' + (shareCtx.noText ? 'false' : 'true') + '"><span class="sw"><i></i></span><b>همراه با متن</b><small>' + (shareCtx.noText ? 'فقط فایل فرستاده می‌شود' : 'متن آماده؛ قابل ویرایش') + '</small></button>'
+      +   (shareCtx.noText ? '' : '<div class="sx-msg"><textarea id="shrText" class="sx-txt" rows="' + (nF ? 3 : 5) + '" aria-label="متن پیام">' + esc(shareBuild()) + '</textarea>'
+      +   (shareCtx.edited != null ? '<button type="button" class="sx-reset" data-shreset="1">متن پیش‌فرض</button>' : '') + '</div>')
       + '</div>'
       /* ارسال */
       + (nF ? (function(){ const st = shrFileState();
           return '<button type="button" class="sx-go' + (st.wait ? ' wait' : '') + '" data-sh="files">' + CTC_I.share
-            + '<span><b>ارسال ' + (nF > 1 ? 'فایل‌ها' : 'فایل') + ' + متن</b><small>' + st.txt + '</small></span></button>'; })() : '')
+            + '<span><b>ارسال ' + (nF > 1 ? 'فایل‌ها' : 'فایل') + (shareCtx.noText ? '' : ' + متن') + '</b><small>' + st.txt + '</small></span></button>'; })() : '')
       + '<div class="sx-apps">'
       +   app('wa', CTC_I.wa, 'واتساپ') + app('tg', CTC_I.tg, 'تلگرام') + app('mail', CTC_I.mail, 'ایمیل') + app('sms', CTC_I.sms, 'پیامک')
       +   app('copy', CTC_I.copy, 'کپی متن') + (navigator.share ? app('native', CTC_I.share, 'بیشتر') : '')
       +   (shareCtx.link ? app('link', CTC_I.link, 'پیوست') : '')
       + '</div>'
-      + (nF ? '<p class="sx-note">دکمه‌های واتساپ و تلگرام فقط متن را می‌فرستند؛ برای خودِ فایل «ارسال فایل» را بزنید.</p>' : '')
+      + (nF ? '<p class="sx-note">با واتساپ و تلگرام، فایل‌های تیک‌خورده هم همراه متن فرستاده می‌شوند (روی گوشی از برگهٔ اشتراک).</p>' : '')
       + '</div>';
   }
   function openShare(title, body, link, party, files){
@@ -26613,17 +26636,19 @@
       const w = e.target.closest('[data-shw]');
       if(w){ if(w.disabled) return; shareCtx.mode = w.dataset.shw; shareCtx.edited = null; shareRender(); return; }
       if(e.target.closest('[data-shreset]')){ shareCtx.edited = null; shareRender(); return; }
+      if(e.target.closest('[data-shrtxt]')){ const ta = document.getElementById('shrText'); if(ta && ta.value !== shareBuild()) shareCtx.edited = ta.value; shareCtx.noText = !shareCtx.noText; shareRender(); return; }
       const fb = e.target.closest('[data-shf]');
-      if(fb){ const i = +fb.dataset.shf; if(shareCtx.sel.has(i)) shareCtx.sel.delete(i); else shareCtx.sel.add(i); shrFilesPaint(); return; }
+      if(fb){ const i = +fb.dataset.shf; if(shareCtx.sel.has(i)) shareCtx.sel.delete(i); else shareCtx.sel.add(i); shrFilesPaint();
+        if(shareCtx.edited == null){ const ta = document.getElementById('shrText'); if(ta) ta.value = shareBuild(); } return; }
       if(e.target.closest('[data-sh="files"]')){
         const ta = document.getElementById('shrText'); if(ta && shareCtx.edited == null && ta.value !== shareBuild()) shareCtx.edited = ta.value;
-        const txt = shareBuild();
+        const txt = shareCtx.noText ? '' : shareBuild();
         const idx = Array.from(shareCtx.sel);
         const files = idx.map(i => shareCtx.ready.get(i)).filter(r => r && r.st === 'ok').map(r => r.f);
         if(idx.some(i => (shareCtx.ready.get(i) || {}).st === 'load')){ shrToast('فایل‌ها هنوز آماده نشده‌اند؛ چند لحظه صبر کنید'); return; }
         if(files.length && typeof navigator.canShare === 'function' && navigator.canShare({files})){
           /* برگهٔ اشتراک دستگاه: واتساپ، تلگرام، ایمیل و هر برنامهٔ دیگر */
-          navigator.share({files, text: txt, title: shareCtx.title || undefined}).then(() => { close(); }).catch(err => {
+          navigator.share(txt ? {files, text: txt, title: shareCtx.title || undefined} : {files}).then(() => { close(); }).catch(err => {
             if(err && err.name === 'AbortError') return;
             navigator.share({files}).then(() => close()).catch(() => {});
           });
@@ -26632,8 +26657,8 @@
         /* مرورگری که فرستادن فایل را پشتیبانی نمی‌کند (بیشتر رایانه‌ها): فایل دانلود و
            متن کپی می‌شود تا در تلگرام یا واتساپ دسکتاپ پیوست شود */
         try{ fvDownloadAll(idx.map(i => shareCtx.files[i]).filter(Boolean)); }catch(err){}
-        try{ await navigator.clipboard.writeText(txt); }catch(err){}
-        shrToast('فایل‌ها دانلود شدند و متن کپی شد؛ در تلگرام یا واتساپ پیوست کنید');
+        if(txt){ try{ await navigator.clipboard.writeText(txt); }catch(err){} }
+        shrToast(txt ? 'فایل‌ها دانلود شدند و متن کپی شد؛ در تلگرام یا واتساپ پیوست کنید' : 'فایل‌ها دانلود شدند؛ در تلگرام یا واتساپ پیوست کنید');
         return;
       }
       if(e.target.closest('[data-shrclear]')){ shareCtx.to = ''; shareCtx.pickOpen = false; shareCtx.edited = null; shareRender(); return; }
@@ -26651,7 +26676,24 @@
       const d = e.target.closest('[data-shd]');
       const b = e.target.closest('[data-sh]');
       if(!d && !b) return;
-      const txt = shareBuild(), t = encodeURIComponent(txt), url = shareUrl();
+      const txt = shareCtx.noText ? '' : shareBuild(), t = encodeURIComponent(txt), url = shareUrl();
+      /* واتساپ و تلگرام با فایل: لینک‌های wa.me و t.me فقط متن می‌گیرند؛ برای خودِ
+         فایل، برگهٔ اشتراک دستگاه باز می‌شود و همان‌جا واتساپ یا تلگرام انتخاب می‌شود */
+      const how0 = d ? d.dataset.shd : b.dataset.sh;
+      if((how0 === 'wa' || how0 === 'tg') && (shareCtx.files || []).length && shareCtx.sel.size){
+        const idx = Array.from(shareCtx.sel);
+        if(idx.some(i => (shareCtx.ready.get(i) || {}).st === 'load')){ shrToast('فایل‌ها هنوز آماده نشده‌اند؛ چند لحظه صبر کنید'); return; }
+        const files = idx.map(i => shareCtx.ready.get(i)).filter(r => r && r.st === 'ok').map(r => r.f);
+        if(files.length && typeof navigator.canShare === 'function' && navigator.canShare({files})){
+          shrToast('در برگهٔ اشتراک، ' + (how0 === 'wa' ? 'واتساپ' : 'تلگرام') + ' را انتخاب کنید');
+          navigator.share(txt ? {files, text: txt} : {files}).then(() => close()).catch(err => { if(!err || err.name !== 'AbortError') navigator.share({files}).then(() => close()).catch(() => {}); });
+          return;
+        }
+        /* رایانه: فایل دانلود و متن کپی می‌شود، بعد گفت‌وگو باز می‌شود تا فایل را بکشید داخلش */
+        try{ fvDownloadAll(idx.map(i => shareCtx.files[i]).filter(Boolean)); }catch(err){}
+        if(txt){ try{ await navigator.clipboard.writeText(txt); }catch(err){} }
+        shrToast('فایل‌ها دانلود شد' + (txt ? ' و متن کپی شد' : '') + '؛ در ' + (how0 === 'wa' ? 'واتساپ' : 'تلگرام') + ' پیوست کنید');
+      }
       const rc = ctrContactOf(shareCtx.to || shareCtx.party);
       if(d){
         const how = d.dataset.shd, ph = rc && rc.p && rc.p[0];
