@@ -3539,6 +3539,14 @@
   .avb-sort svg{width:15px;height:15px;flex:0 0 15px;}
   .avb-sort select{all:unset;cursor:pointer;font:inherit;color:inherit;max-width:150px;}
   .admview-bar.sorted .avb-sort{color:var(--sky);border-color:color-mix(in srgb, var(--sky) 45%, var(--line));background:color-mix(in srgb, var(--sky) 8%, var(--surface));}
+  .ltr-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:2px 0 10px;border-radius:14px;background:var(--field);}
+  .ltr-seg button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;height:38px;border-radius:11px;font-size:13px;font-weight:800;color:var(--muted);}
+  .ltr-seg button svg{width:16px;height:16px;} .ltr-seg button i{font-style:normal;font-size:11px;padding:1px 8px;border-radius:99px;background:color-mix(in srgb, var(--ink) 8%, transparent);}
+  .ltr-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .ltr-seg button[data-ltrseg="دریافتی"].on svg{color:var(--ok);} .ltr-seg button[data-ltrseg="ارسالی"].on svg{color:var(--sky);}
+  .ltr-dsg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:12px;background:var(--field);}
+  .ltr-dsg button{all:unset;cursor:pointer;text-align:center;height:36px;line-height:36px;border-radius:9px;font-size:13px;font-weight:800;color:var(--muted);}
+  .ltr-dsg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
   .adm-sorted-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px;font-size:11.5px;font-weight:700;color:var(--muted);}
   .avs.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px -4px rgba(20,25,45,.5);}
   .admview-hint{font-size:10.5px;color:var(--muted);}
@@ -44586,7 +44594,7 @@
       'انجام شده':'done','تاریخ تکمیل':'done_date','مسئول پیگیری':'follower'},
     letters:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
       'موضوع نامه':'subject','شماره نامه':'number','طرف مقابل':'party','تاریخ ارسال':'sent_date','موعد اتمام':'due_date',
-      'وضعیت ابلاغ':'notify','مسئول':'owner','تاریخچهٔ ارسال':'send_history','لینک':'link'},
+      'وضعیت ابلاغ':'notify','مسئول':'owner','تاریخچهٔ ارسال':'send_history','لینک':'link','جهت نامه':'direction'},
     tasks:{'شناسه':'id','عنوان فعالیت':'title','ابلاغ‌کننده':'created_by','تأیید شده':'approved','مسئول 1':'owner1','مسئول 2':'owner2',
       'طرف عملیات':'side','موقعیت':'position','انجام شده':'done','انجام نشده':'not_done',
       'در حال اجرا':'doing','تاریخ ابلاغ':'start_date','موعد اتمام':'due_date','موانع فعلی':'blockers',
@@ -45758,6 +45766,7 @@
     const put = (arr, m) => { if(m && Array.isArray(arr)) arr.forEach(r => { if(r && !r.photos && m.has(String(r.id))) r.photos = m.get(String(r.id)); }); };
     put(j.rows, got[0]); put(j.prev_rows, got[0]); put(j.issues, got[1]);
   }
+  let LTR_DIR_COL = null;
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
 
@@ -45783,6 +45792,14 @@
       body:{p_date: dateFa || '', p_prev: prevFa || ''}
     });
     photosApply(j, await phP);
+    /* جهت نامه (ارسالی/دریافتی): اگر bundle2 این ستون را برنگرداند، جدا خوانده می‌شود */
+    if(LTR_DIR_COL !== false && Array.isArray(j.letters) && j.letters.length && !j.letters.some(x => x && 'direction' in x)){
+      try{
+        const a = await supaFetch('letters?select=id,direction&direction=not.is.null&limit=5000', {prefer:'return=representation'}) || [];
+        const m = new Map(a.map(x => [String(x.id), x.direction])); LTR_DIR_COL = true;
+        j.letters.forEach(x => { if(x && m.has(String(x.id))) x.direction = m.get(String(x.id)); });
+      }catch(e){ LTR_DIR_COL = false; }
+    }
     const map = (t, arr) => (arr || []).map(r => fromSupa(t, r));
     const lists = {};
     (j.lists || []).forEach(x => {
@@ -45889,7 +45906,8 @@
         (payload.letters || []).forEach(x => jobs.push(['letters', {
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
           subject:x.subject, number:x.number, party:x.party, sent_date:x.sentDate,
-          due_date:x.dueDate || null, notify:x.notify, owner:x.owner, link:x.link
+          due_date:x.dueDate || null, notify:x.notify, owner:x.owner, link:x.link,
+          ...(x.direction === 'دریافتی' ? {direction: x.direction} : {})
         }]));
         (payload.designs || []).forEach(x => jobs.push(['designs', Object.assign({
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
@@ -47033,6 +47051,23 @@
     link:['لینک']
   };
   const ST_TYPES = ['موقت', 'مستقل', 'قطعی'];
+  /* نامه‌ها دو دسته‌اند: ارسالی (پیش‌فرض همهٔ نامه‌های قبلی) و دریافتی از پیمانکار یا کارفرما */
+  const ltrDirOf = r => String((r && exact(r,'جهت نامه')) || '').trim() === 'دریافتی' ? 'دریافتی' : 'ارسالی';
+  let admLtrDir = 'ارسالی';
+  try{ const v = localStorage.getItem('siteLogM.ltrDir'); if(v === 'دریافتی' || v === 'ارسالی') admLtrDir = v; }catch(e){}
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ltrdir]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const f = b.closest('.ltr-dirf'); if(!f) return;
+    f.querySelectorAll('[data-ltrdir]').forEach(x => x.classList.toggle('on', x === b));
+    const sel = f.querySelector('.a-lDir'); if(sel) sel.value = b.dataset.ltrdir;
+  }, true);
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ltrseg]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    admLtrDir = b.dataset.ltrseg; try{ localStorage.setItem('siteLogM.ltrDir', admLtrDir); }catch(err){}
+    try{ applyAdminFilters(); }catch(err){}
+  }, true);
   const KIND_LABEL = {statement:'صورت وضعیت', contract:'قرارداد', minute:'صورتجلسه', letter:'نامه', design:'اسناد طراحی'};
   // نام مفرد هر دسته، برای «ثبت ... تازه» و شناسهٔ کارت
   const KIND_ONE = k => (k === 'design' ? 'سند طراحی' : KIND_LABEL[k]);
@@ -50718,7 +50753,11 @@
     }
     return wrap(
       sec('doc', 'مشخصات نامه',
-          f('a-lSubject','موضوع نامه', pick(r,AD.lSubject), false, 'contractSubjectList')
+          (function(){ const cur = (id === 'new' && typeof admLtrDir !== 'undefined') ? admLtrDir : ltrDirOf(r), had = String(exact(r,'جهت نامه') || '').trim() ? '1' : '0';
+            return '<div class="field ltr-dirf" style="margin-bottom:8px;"><label>نوع نامه</label><div class="ltr-dsg" role="radiogroup">'
+              + ['ارسالی','دریافتی'].map(v => '<button type="button" role="radio" class="' + (cur === v ? 'on' : '') + '" data-ltrdir="' + v + '">' + v + '</button>').join('')
+              + '</div><select class="a-lDir" data-had="' + had + '" hidden>' + ['ارسالی','دریافتی'].map(v => '<option' + (cur === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>'; })()
+        + f('a-lSubject','موضوع نامه', pick(r,AD.lSubject), false, 'contractSubjectList')
         + f('a-lNo','شماره نامه', pick(r,AD.lNo))
         /* طرف مقابل: فهرست گروه‌بندی‌شدهٔ پیمانکاران، کارفرما، مشاوران و ... */
         + f('a-lParty','طرف مقابل', pick(r,AD.lParty), false, 'letterPartyList'), 'three')
@@ -52520,6 +52559,8 @@
       put(o,'موضوع نامه','a-lSubject'); put(o,'شماره نامه','a-lNo'); put(o,'طرف مقابل','a-lParty');
       put(o,'تاریخ ارسال','a-lDate'); put(o,'موعد اتمام','a-due');
       put(o,'وضعیت ابلاغ','a-lNotify'); put(o,'مسئول','a-owner');
+      /* جهت نامه: فقط وقتی «دریافتی» است یا قبلاً ثبت شده، تا ستونش اجباری نباشد */
+      { const dr = host.querySelector('.a-lDir'); if(dr && (dr.value === 'دریافتی' || dr.dataset.had === '1')) o['جهت نامه'] = dr.value; }
       put(o,'لینک','a-link');
     }
     // صورت وضعیت و قرارداد: نوع ابلاغ از مرحلهٔ رسیدگی پیروی می‌کند
@@ -52720,7 +52761,7 @@
         notify:v['وضعیت ابلاغ'], dueDate:v['موعد اتمام'], owner:v['مسئول'], link:v['لینک'], note:v['توضیحات'],
         docType:v['نوع سند'], origin:v['مبدأ'], floor:v['طبقه'], zone:v['محل کارکرد']});
     }else{
-      Object.assign(item, {subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'],
+      Object.assign(item, {direction:v['جهت نامه'] || '', subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک']});
     }
     delete v.__bands;
@@ -54686,6 +54727,7 @@
       return false;
     };
 
+    let ltrSeg = '';
     ADM_ORDER.forEach(k => {
       const raw = items.filter(x => x.kind === k);
       const list = raw.filter(x => !admFinished(x)).concat(raw.filter(admFinished));
@@ -54731,11 +54773,22 @@
         }
       }
       if(!box || hide) return;
+      if(k === 'letter' && box && !hide){
+        const nIn = list.filter(x => ltrDirOf(x.row) === 'دریافتی').length, nOut = list.length - nIn;
+        ltrSeg = '<div class="ltr-seg" role="tablist">'
+          + [['ارسالی', nOut, 'M4 12h13M12 6l6 6-6 6'], ['دریافتی', nIn, 'M20 12H7M12 6l-6 6 6 6']].map(([v, n, d]) => '<button type="button" role="tab" class="' + (admLtrDir === v ? 'on' : '') + '" data-ltrseg="' + v + '">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'
+            + 'نامه‌های ' + v + '<i>' + toFa(n) + '</i></button>').join('') + '</div>';
+      }
       if(!list.length){
         box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">موردی ثبت نشده است.</div>';
         return;
       }
-      const rows = sortAdmin(k, list.map(x => x.row));
+      let rows = sortAdmin(k, list.map(x => x.row));
+      if(k === 'letter'){
+        rows = rows.filter(r => ltrDirOf(r) === admLtrDir);
+        if(!rows.length){ box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">نامهٔ ' + admLtrDir + ' ثبت نشده است.</div>'; return; }
+      }
 
       // صورتجلسه: هر جلسه یک پنجره، بندها داخلش
       if(k === 'minute'){
@@ -54801,6 +54854,7 @@
          داخل هر زیرپنجره همان ترتیب قبلی (تاریخ و شمارهٔ سند) می‌ماند. */
       box.innerHTML = admGroupsHtml(k, rows, bodyHtml);
     });
+    if(ltrSeg){ const lb = document.getElementById('admList-letter'); if(lb && lb.style.display !== 'none') lb.insertAdjacentHTML('afterbegin', ltrSeg); }
     restoreAdminOpen(adminOpenSnap);
     refreshSecAlerts();
     markAlertCards('#adminView');
