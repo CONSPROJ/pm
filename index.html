@@ -1686,6 +1686,23 @@
   .dzl-w .fpills .dzl-fn{height:24px;} .dzl-w .fpills .dzl-fn span{min-width:56px;} .dzl-w .fpills .dzl-dl{height:24px;width:24px;}
   .dzl-w > .dzl-desc{margin:0 8px 6px !important;padding:3px 8px;font-size:11px;line-height:1.6;}
   .dzl-oldh{margin:2px 2px 0 !important;}
+  /* فهرست ویرایش‌ها: یک قاب، سطرهای هم‌ارتفاع با جداکنندهٔ نازک */
+  .dzl-box:has(.dzl-li){gap:0 !important;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .dzl-box > .dzl-add{margin:8px;}
+  .dzl-w.dzl-li{border:0 !important;border-radius:0 !important;box-shadow:none !important;}
+  .dzl-w.dzl-li + .dzl-w.dzl-li{border-top:1px solid var(--line-soft) !important;}
+  .dzl-li > .dzl{display:grid !important;grid-template-columns:auto minmax(22px,auto) minmax(0,1fr) 40px 30px 30px;align-items:center;gap:8px;height:44px;padding:0 10px 0 8px !important;border:0 !important;border-radius:0 !important;background:none !important;opacity:1 !important;}
+  .dzl-li .dzl-rvn{min-width:118px;justify-content:space-between;}
+  .dzl-li .dzl-c{justify-self:center;} .dzl-li .dzl-c.none{width:0;padding:0;}
+  .dzl-dsc{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink);}
+  .dzl-dsc i{font-style:normal;color:var(--muted);opacity:.7;font-size:11px;}
+  .dzl-fb{display:inline-flex;align-items:center;justify-content:center;gap:2px;height:28px;border-radius:8px;color:var(--ok);border:1px solid color-mix(in srgb, var(--ok) 35%, var(--line));cursor:pointer;font-size:10px;font-weight:800;}
+  .dzl-fb svg{width:13px;height:13px;} .dzl-fb i{font-style:normal;} .dzl-fb:hover{background:var(--ok);color:#fff;}
+  .dzl-fb.none{border:0;color:var(--muted);cursor:default;opacity:.5;} .dzl-fb.none:hover{background:none;color:var(--muted);}
+  .dzl-li .dzl-ch{width:30px;padding:0 !important;justify-content:center;} .dzl-li .dzl-ch span{display:none;} .dzl-li .dzl-ch.none{visibility:hidden;}
+  .dzl-li .dzl-up{width:30px;height:30px;}
+  .dzl-li .dzl-fl{border-top:1px dashed var(--line-soft);}
+  @media (max-width:480px){ .dzl-li > .dzl{grid-template-columns:auto minmax(20px,auto) minmax(0,1fr) 36px 28px 28px;gap:6px;padding:0 8px 0 6px !important;} .dzl-li .dzl-rvn{min-width:0;} .dzl-li .dzl-rvn small{display:none;} }
   .dzl-cap{font-size:11.5px;line-height:1.6;color:var(--muted);padding:0 6px;margin-bottom:-3px;white-space:pre-wrap;}
   .dzl-cap[data-dsfiles]{cursor:pointer;} .dzl-cap[data-dsfiles]:hover{color:var(--ink);}
   .dzl-cap bdi{font-size:10px;font-weight:800;color:var(--sky);margin-inline-end:6px;}
@@ -50127,7 +50144,7 @@
         title: pick(r,AD.dTitle) || (pick(r,AD.dType) ? pick(r,AD.dType) + (pick(r,AD.dDisc) ? ' ' + pick(r,AD.dDisc) : '') : (pick(r,AD.dNo) || 'سند طراحی')),
         rows: kv('شمارهٔ مدرک', pick(r,AD.dNo))
             + kv('رشته', pick(r,AD.dDisc))
-            + kv('ویرایش', pick(r,AD.dRev) ? toFa(pick(r,AD.dRev)) : '')
+
             + kv('طراح / مشاور', pick(r,AD.dParty))
             + kv('تاریخ دریافت', exact(r,'تاریخ ارسال') ? admDate(exact(r,'تاریخ ارسال')) : '')
             + kv('وضعیت مدرک', exact(r,'وضعیت مدرک')),
@@ -50188,7 +50205,7 @@
                   ['تاریخ اقدام', pick(r,AD.mDate) ? admDate(pick(r,AD.mDate)) : '', ''],
                   ['نوع بند', pick(r,AD.mCat) || 'اداری', '']],
       design:    [['رشته', pick(r,AD.dDisc), ''],
-                  ['ویرایش', pick(r,AD.dRev) ? toFa(pick(r,AD.dRev)) : '', ''],
+
                   ['تاریخ دریافت', exact(r,'تاریخ ارسال') ? admDate(exact(r,'تاریخ ارسال')) : '', '']],
       letter:    [['تاریخ ابلاغ', pick(r,AD.lDate) ? admDate(pick(r,AD.lDate)) : '', ''],
                   ['موعد', dueRaw ? admDate(dueRaw) : '', ''],
@@ -55747,21 +55764,22 @@
           + I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>') + (tot != null ? '<span>' + toFa(tot) + ' روز</span>' : '') + '</button>' : '';
       /* طیف رنگ: قدیمی‌ترین کم‌رنگ، تازه‌ترین پررنگ */
       const rvk = revs.length > 1 ? (0.18 + 0.82 * ri / (revs.length - 1)) : 1;
-      /* شرح بالای کارت ویرایش، بی‌پس‌زمینه؛ تا همهٔ کارت‌های Rev هم‌اندازه بمانند */
-      return (note ? '<div class="dzl-cap"' + ((editable && id) ? ' role="button" tabindex="0" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="اصلاح شرح"' : '') + '>' + esc(note) + '</div>' : '')
-        + '<div class="dzl-w' + (last ? ' cur' : '') + (last && revs.length > 1 ? ' newest' : '') + '" style="--rvk:' + rvk.toFixed(2) + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
-        + '<span class="dzl-rv"><span class="dzl-rvn"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + (rv.date || (rv.log && rv.log[0] && rv.log[0].d) ? '<small>' + esc(toFa(admDate(rv.date || rv.log[0].d))) + '</small>' : '') + '</span>' + res + (last && revs.length > 1 ? '<span class="dzr-new">آخرین</span>' : '') + '</span>'
-        + (fl.length ? filePillsHtml(fl, {title: 'Rev ' + rv.rev}) : '<span class="dzl-fs"><small class="dzl-none">بدون فایل</small></span>')
-        + chBtn
+      /* فهرست یکدست: هر ویرایش یک سطر هم‌ارتفاع — شماره و تاریخ، نتیجه، شرح، فایل، نمودار، اصلاح */
+      const fb = fl.length ? '<span class="dzl-fb" role="button" tabindex="0" data-admdl="' + esc(fl.map(a => a.full).join('\n')) + '" data-admttl="' + esc('Rev ' + rv.rev) + '" title="' + esc(fl.length === 1 ? 'نمایش و دانلود ' + fl[0].name : 'نمایش و دانلود ' + toFa(fl.length) + ' فایل') + '">' + UP_I.dl + '<i>' + toFa(fl.length) + '</i></span>'
+                           : '<span class="dzl-fb none" title="بدون فایل">—</span>';
+      return '<div class="dzl-w dzl-li' + (last ? ' cur' : '') + '" style="--rvk:' + rvk.toFixed(2) + '"><div class="dzl' + (last ? ' cur' : '') + '"' + (note ? ' title="' + esc(note) + '"' : '') + '>'
+        + '<span class="dzl-rvn"><bdi dir="ltr">Rev ' + esc(rv.rev) + '</bdi>' + (rv.date || (rv.log && rv.log[0] && rv.log[0].d) ? '<small>' + esc(toFa(admDate(rv.date || rv.log[0].d))) + '</small>' : '') + '</span>'
+        + (res || '<span class="dzl-c none"></span>')
+        + '<span class="dzl-dsc">' + (note ? esc(note) : '<i>بدون شرح</i>') + '</span>'
+        + fb
+        + (chBtn || '<span class="dzl-ch none"></span>')
         + ((editable && id) ? '<button type="button" class="dzl-up" data-dsfiles="' + esc(id) + '" data-dsri="' + ri + '" title="اصلاح Rev ' + esc(rv.rev) + ' — شرح و فایل‌ها" aria-label="اصلاح Rev ' + esc(rv.rev) + '">' + I('<path d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/>') + '</button>' : '')
         + '</div>'
-        /* شرح همین ویرایش اگر نوشته شده باشد؛ نوشتن و اصلاحش با مداد کنار Rev */
-
         + chart + '</div>';
     }).reverse();
     /* همهٔ ویرایش‌ها باز و دیده می‌شوند؛ قبلی‌ها زیر یک تیتر کوچک */
     const body = rows.length <= 1 ? rows.join('')
-      : rows.slice(0, 1).join('') + '<div class="dzl-oldh">ویرایش‌های قبلی <i>' + toFa(rows.length - 1) + '</i></div>' + rows.slice(1).join('');
+      : rows.join('');
     const addPast = (editable && id) ? '<button type="button" class="dzl-add" data-dspast="' + esc(id) + '">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>افزودن ویرایش قبلی (سابقه)</span></button>' : '';
     return '<div class="dzl-box">' + body + addPast + '</div>';
   }
@@ -56028,7 +56046,7 @@
       main = code + esc(st);
       if(dsDone(st)){ const cyc0 = (function(){ try{ return dsCycleDays(cur, true); }catch(e){ return null; } })(); days = cyc0; dCap = 'کل گردش'; }
     }
-    const idl = [no ? '<span dir="ltr">' + esc(no) + '</span>' : '', '<span dir="ltr">Rev ' + esc(cur.rev) + '</span>',
+    const idl = [no ? '<span dir="ltr">' + esc(no) + '</span>' : '',
                  disc ? '<span class="dz-disc2" style="--dc:' + dsDiscColor(disc) + '">' + esc(disc) + '</span>' : ''].filter(Boolean).join('<i></i>');
     const top = '<div class="dz-bar s-' + side + ' t-' + tone + '">'
       + '<i class="dz-dot2"></i>'
@@ -56056,7 +56074,7 @@
       const ln = (attr, ic, t, tip) => '<button type="button" class="dz-ln" ' + attr + '="' + esc(id) + '" title="' + tip + '" aria-label="' + tip + '">' + I(ic) + '<span>' + t + '</span></button>';
       return '<div class="dz-act3"><span class="dz-alt">'
         + ln('data-dsedit', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', 'اصلاح', 'اصلاح همین مرحله: اگر تاریخ، مرحله یا نگه‌دارنده اشتباه ثبت شده؛ مرحلهٔ تازه‌ای اضافه نمی‌شود')
-        + ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', '<bdi dir="ltr">Rev ' + esc(dsNextRev(cur.rev)) + '</bdi>', 'ویرایش جدید: نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود')
+        + ln('data-dsrev', '<path d="M12 5v14M5 12h14"/>', 'ویرایش جدید', 'ویرایش جدید (Rev ' + esc(dsNextRev(cur.rev)) + '): نسخهٔ تازهٔ سند رسیده است؛ گردش از «دریافت» شروع می‌شود')
         + '</span></div>';
     })() : '';
     const cyc = (function(){ try{ return dsCycleDays(cur, true); }catch(e){ return null; } })();
