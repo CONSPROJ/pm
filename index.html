@@ -38273,27 +38273,45 @@
       .replace(/\s+/g, ' ')
       .trim();
   }
+  /* نام ستون‌ها یک بار نرمال می‌شوند (نقشهٔ «نام نرمال ← نام اصلی»)، ولی مقدار هر بار
+     از خودِ ردیف خوانده می‌شود؛ پیش‌تر مقدارها هم بار اول کپی می‌شدند و هر تغییرِ
+     محلی (مثل فایلِ تازه آپلودشده) تا تازه‌سازی صفحه دیده نمی‌شد */
+  const pickKeys = (row, force) => {
+    let kk = row.__kk;
+    if(!kk || force){
+      const ks = Object.keys(row);
+      kk = {map: {}, n: ks.length};
+      ks.forEach(k => { kk.map[normKey(k)] = k; });
+      try{ Object.defineProperty(row, '__kk', {value: kk, enumerable: false, configurable: true, writable: true}); }
+      catch(e){ try{ row.__kk = kk; }catch(e2){} }
+    }
+    return kk;
+  };
   const pick = (row, keys) => {
     if(!row || typeof row !== 'object') return '';
     if(!keys) return '';               // کلید نامعتبر، به‌جای خطا مقدار خالی
-    if(!row.__km){
-      const m = {};
-      Object.keys(row).forEach(k => { m[normKey(k)] = row[k]; });
-      try{ Object.defineProperty(row, '__km', {value:m, enumerable:false}); }
-      catch(e){ row.__km = m; }
-    }
+    let kk = pickKeys(row);
+    const exactHit = () => {
+      for(const k of keys){
+        const ok = kk.map[normKey(k)];
+        if(ok === undefined) continue;
+        const v = row[ok];
+        if(v != null && String(v).trim() !== '') return String(v).trim();
+      }
+      return null;
+    };
     // ۱) تطابق دقیق نام ستون
-    for(const k of keys){
-      const v = row.__km[normKey(k)];
-      if(v != null && String(v).trim() !== '') return String(v).trim();
-    }
+    let hit = exactHit();
+    if(hit != null) return hit;
+    /* ستونی که بعداً به ردیف اضافه شده (مثلاً پیوست تازه) */
+    if(keys.some(k => Object.prototype.hasOwnProperty.call(row, k) && kk.map[normKey(k)] === undefined)){ kk = pickKeys(row, true); hit = exactHit(); if(hit != null) return hit; }
     // ۲) تطابق تقریبی: اگر نام ستون در شیت کمی فرق داشته باشد
-    const names = Object.keys(row.__km);
+    const names = Object.keys(kk.map);
     for(const k of keys){
       const nk = normKey(k);
       for(const n of names){
         if(n && (n.indexOf(nk) !== -1 || nk.indexOf(n) !== -1)){
-          const v = row.__km[n];
+          const v = row[kk.map[n]];
           if(v != null && String(v).trim() !== '') return String(v).trim();
         }
       }
@@ -45238,6 +45256,53 @@
   /* ارسال به کارفرما و پرداخت صورت وضعیت/قرارداد، مثل تکمیل فعالیت، به
      مدیران (سطح ۱ و ۲) در دستهٔ «تکمیل‌شده»ی اعلان‌ها خبر داده می‌شود */
   const PY_CANCEL = 'ثبت پرداخت لغو شد؛ چیزی تغییر نکرد.';
+  const ADM_LIVE_KINDS = ['statement', 'contract', 'letter', 'minute', 'design'];
+  function admApplyLocal(kind, id, values){
+    const row = admRowById(id); if(!row) return;
+    Object.keys(values).forEach(h => {
+      if(/^__/.test(h)) return;
+      const nk = normKey(h);
+      const key = Object.keys(row).find(k => normKey(k) === nk) || h;
+      row[key] = values[h] == null ? '' : values[h];
+    });
+    admLiveRefresh(kind, id);
+  }
+  /* بازسازیِ درجای یک سند: سطر فهرست، کارت دفتر فنی و پنل‌های سند طراحی؛
+     بازبودن کارت حفظ می‌شود و بقیهٔ صفحه دست نمی‌خورد */
+  const admLiveQ = new Map();
+  function admLiveRefresh(kind, id){
+    admLiveQ.set(String(id), kind);
+    if(admLiveRefresh.t) return;
+    admLiveRefresh.t = setTimeout(() => {
+      admLiveRefresh.t = 0;
+      const q = Array.from(admLiveQ.entries()); admLiveQ.clear();
+      q.forEach(([id2, k2]) => { try{ admLiveOne(k2, id2); }catch(e){} });
+      try{ markAlertCards('#adminView'); }catch(e){}
+      try{ deckReindex(); }catch(e){}
+    }, 30);
+  }
+  function admLiveOne(kind, id){
+    const row = admRowById(id); if(!row) return;
+    const sel = CSS.escape(id);
+    const frag = html => { const t = document.createElement('div'); t.innerHTML = html; return t; };
+    document.querySelectorAll('.afr[data-afr="' + sel + '"]').forEach(b => {
+      const nb = frag(admFastRow(kind, row)).querySelector('.afr'); if(!nb) return;
+      if(b.classList.contains('open')) nb.classList.add('open');
+      b.replaceWith(nb);
+    });
+    if(kind !== 'minute') document.querySelectorAll('#adminView .rv.adm-k[data-id="' + sel + '"]').forEach(c => {
+      if(c.closest('.dk-adm')) return;
+      const nc = frag(admCard(kind, row, true)).querySelector('.rv.adm-k'); if(!nc) return;
+      if(c.classList.contains('open')){ nc.classList.add('open'); const ax = nc.querySelector('.adm-exp .ax'); if(ax) ax.textContent = '▴'; }
+      c.querySelectorAll('details[open]').forEach(d => { const cls = d.className && d.className.split(' ')[0]; const nd = cls && nc.querySelector('details.' + CSS.escape(cls)); if(nd) nd.open = true; });
+      c.replaceWith(nc);
+    });
+    if(kind === 'design') document.querySelectorAll('.dz3[data-dsid="' + sel + '"]').forEach(d => {
+      if(d.closest('#adminView .rv.adm-k')) return;
+      const nd = frag(designDocHtml(row, d.dataset.dsed === '1', id)).firstElementChild; if(!nd) return;
+      d.replaceWith(nd);
+    });
+  }
   async function sendAction(obj){
     let admBefore = null;
     try{
@@ -45282,6 +45347,9 @@
       }catch(e){}
     }
     const ok = await sendActionRaw(obj);
+    /* تغییرِ ثبت‌شده همان لحظه روی ردیف محلی و هر جای صفحه که این سند دیده می‌شود */
+    if(ok && obj && obj.action === 'update' && obj.values && ADM_LIVE_KINDS.indexOf(obj.target) !== -1)
+      try{ admApplyLocal(obj.target, obj.id, obj.values); }catch(e){}
     if(ok && admBefore) try{ notifyAdmMilestone(obj.target, obj.id, admBefore, obj.values, pay); }catch(e){}
     if(ok && mnFol) try{ mnNotify(obj.id, mnFol.subject, mnFol.text, mnFol.f, mnFol.owner, mnFol.due); }catch(e){}
     return ok;
@@ -46505,14 +46573,16 @@
   function admDlBtnHtml(kind, r, cls){
     const t = admFilesTxt(kind, r); if(!t) return '';
     const L = attachList(t); if(!L.length) return '';
-    const tip = L.length === 1 ? 'دانلود ' + L[0].name : 'دانلود ' + toFa(L.length) + ' فایل';
-    return '<span class="' + cls + '" role="button" tabindex="0" data-admdl="' + esc(L.map(a => a.full).join('\n')) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">'
+    const tip = L.length === 1 ? 'نمایش و دانلود ' + L[0].name : 'نمایش و دانلود ' + toFa(L.length) + ' فایل';
+    let ttl = ''; try{ ttl = (KIND_LABEL[kind] || '') + ' ' + (pick(r, AD[ADM_NO_KEYS[kind]] || []) || ''); }catch(e){}
+    return '<span class="' + cls + '" role="button" tabindex="0" data-admdl="' + esc(L.map(a => a.full).join('\n')) + '" data-admttl="' + esc(ttl.trim()) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">'
       + UP_I.dl + (L.length > 1 ? '<i>' + toFa(L.length) + '</i>' : '') + '</span>';
   }
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-admdl]'); if(!b) return;
     e.preventDefault(); e.stopPropagation();
-    try{ fvDownloadAll(attachList(b.dataset.admdl)); }catch(err){}
+    /* اول پیش‌نمایش؛ دانلود (یک فایل یا همه) از نوار بالای همان پنجره */
+    try{ const L = attachList(b.dataset.admdl); if(L.length) fvOpen(L, 0, b.dataset.admttl || ''); }catch(err){}
   }, true);
   document.addEventListener('keydown', e => {
     if((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.admdl != null){ e.preventDefault(); e.stopPropagation(); e.target.click(); }
@@ -54138,7 +54208,6 @@
     const nk = normKey(fa);
     const key = Object.keys(row).find(k => normKey(k) === nk) || fa;
     row[key] = (val == null) ? '' : val;
-    if(row.__km) row.__km[nk] = row[key];
   }
 
   let rvMergedAt = 0;
@@ -55102,7 +55171,7 @@
           + '</details>';
       }catch(e){ return ''; }
     })();
-    return '<div class="dsx2 dz dz3">'
+    return '<div class="dsx2 dz dz3" data-dsid="' + esc(id || pick(r,AD.id) || '') + '" data-dsed="' + (editable && id ? '1' : '') + '">'
       + '<div class="dz-panel">' + top + act + flowDet + '</div>'
       + filesH
       + '</div>';
@@ -59174,7 +59243,6 @@
     const nk = normKey(header);
     const target = Object.keys(r).find(k => normKey(k) === nk) || header;
     r[target] = value;
-    if(r.__km) r.__km[nk] = value;
   }
   /* هیچ رندر دوباره‌ای در کار نیست. تغییر فقط در همان ردیف اعمال
      می‌شود و نوار «ثبت تغییرات» به‌روز می‌گردد. ردیف تا زمانی که
@@ -67528,7 +67596,6 @@
         tk.disabled = false;
         if(ok){
           row['rvDone'] = next.join('|');
-          try{ if(row.__km) delete row.__km; }catch(e2){}
           tk.classList.toggle('on', !on);
           const chip = tk.closest('.dk-rvn'); if(chip) chip.classList.toggle('ok', !on);
           if(typeof invalidateAdmin === 'function') invalidateAdmin();
