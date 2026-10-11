@@ -21434,6 +21434,14 @@
   body{background-attachment:scroll !important;background-size:0 0;}
   body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:inherit;background-repeat:no-repeat;transform:translateZ(0);}
   @media print{ body::before{display:none;} }
+  .prc-mst{display:flex;flex-wrap:wrap;gap:6px;} .prc-mst .prc-st.on{outline:2px solid currentColor;}
+  .prc-mdt{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:12px;} .prc-mdt input{width:120px;}
+  .prf-eb{all:unset;cursor:pointer;display:block;margin:6px 0 2px;font-size:12px;font-weight:800;color:var(--sky);}
+  .prf-ed{margin-top:8px;padding:10px;border-radius:12px;background:var(--field);display:flex;flex-direction:column;gap:6px;}
+  .prfe-h{font-size:12.5px;font-weight:900;} .prfe-h small{font-weight:500;color:var(--muted);margin-inline-start:6px;}
+  .prf-er{display:flex;gap:6px;align-items:center;} .prf-er select{flex:1;min-width:0;} .prf-er input{width:118px;}
+  .prf-ex{all:unset;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;color:var(--alert);}
+  .prf-ea{display:flex;gap:6px;align-items:center;} .prf-ea span{flex:1;}
 </style>
 <script>
   (function(){
@@ -57302,7 +57310,7 @@
       + '<div class="prf-g">'
       +   '<label class="te-f"><u>درخواست‌کننده</u><input type="text" class="pr-req" data-list="prReqList" autocomplete="off" placeholder="کارکنان یا پیمانکار" value="' + esc(D.requester) + '"></label>'
       +   '<label class="te-f"><u>واحد</u><input type="text" class="pr-unit" data-list="prUnitReqList" autocomplete="off" value="' + esc(D.unit) + '" placeholder="اجرا، تأسیسات، دفتر فنی…"></label>'
-      +   '<label class="te-f"><u>تاریخ</u><input type="text" class="pr-date" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
+      +   '<label class="te-f"><u>تاریخ</u><input type="text" class="pr-date date-in" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
       +   '<label class="te-f"><u>کد درخواست</u><input type="text" class="pr-code" dir="ltr" autocomplete="off" value="' + esc(D.code || '') + '" placeholder="' + esc(prNextCode()) + '"></label>'
       + '</div>'
       + '<div class="prf-items"><div class="prf-ih"><b>اقلام</b><em>' + (ed ? '' : 'اگر کد را خالی بگذارید، ' + esc(toFa(prNextCode())) + ' داده می‌شود') + '</em></div>'
@@ -57354,7 +57362,14 @@
     });
     const age = prAge(req, it);
     const total = open ? '<b>' + toFa(age) + '</b> روز از درخواست تا امروز' : 'بسته شد در <b>' + toFa(age) + '</b> روز';
-    return msTrackHtml(msHeadHtml('گردش قلم', '', '', total), items, 'pr-ms');
+    const key = req.id + ':' + req.items.indexOf(it);
+    const ed = can('write.prc') ? (prcState.fed === key
+      ? '<div class="prf-ed" data-prfed="' + esc(key) + '"><div class="prfe-h">ویرایش گردش <small>مرحله، تاریخ هر مرحله؛ مرحلهٔ اشتباه را حذف کنید</small></div>'
+        + (it.log || []).map((x, j) => '<div class="prf-er" data-j="' + j + '"><select class="prf-es">' + PR_ST.map(s1 => '<option' + (s1 === x.st ? ' selected' : '') + '>' + esc(s1) + '</option>').join('') + '</select>'
+          + '<input type="text" class="date-in prf-ed-d" inputmode="numeric" value="' + esc(toFa(x.d || '')) + '"><button type="button" class="prf-ex" data-prfdel="' + j + '" title="حذف این مرحله">✕</button></div>').join('')
+        + '<div class="prf-ea"><button type="button" class="mini" data-prfadd="1">+ مرحله</button><span></span><button type="button" class="mini" data-prfx="1">انصراف</button><button type="button" class="mini pri" data-prfsave="1">ذخیره</button></div></div>'
+      : '<button type="button" class="prf-eb" data-prfopen="' + esc(key) + '">ویرایش گردش و تاریخ‌ها</button>') : '';
+    return msTrackHtml(msHeadHtml('گردش قلم', '', '', total), items, 'pr-ms') + ed;
   }
   function prMatch(req, q){
     if(!q) return true;
@@ -57498,16 +57513,51 @@
       const old = host.querySelector('.prc-menu'); if(old){ const same = old.dataset.for === sb.dataset.prst; old.remove(); if(same) return; }
       const req = prcState.list.find(r => r.id === rid); const it = req && req.items[+ii]; if(!it) return;
       const m = document.createElement('div'); m.className = 'prc-menu'; m.dataset.for = sb.dataset.prst;
-      m.innerHTML = PR_ST.filter(x => x !== it.st).map(x => '<button type="button" class="prc-st t-' + prTone(x) + '" data-prset="' + esc(x) + '">' + esc(x) + '</button>').join('');
+      m.innerHTML = '<div class="prc-mst">' + PR_ST.filter(x => x !== it.st).map(x => '<button type="button" class="prc-st t-' + prTone(x) + '" data-prpick="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'
+        + '<div class="prc-mdt" hidden><span>تاریخ <b></b>:</span><input type="text" class="date-in prc-dt" inputmode="numeric" value="' + esc(toFa(todayShamsi())) + '">'
+        + '<button type="button" class="mini pri" data-prset="">ثبت</button><button type="button" class="mini" data-prmx="1">انصراف</button></div>';
       sb.closest('.prc-it').appendChild(m);
       return;
     }
+    const pk = t.closest('[data-prpick]');
+    if(pk){
+      const m = pk.closest('.prc-menu'); m.querySelectorAll('[data-prpick]').forEach(b => b.classList.toggle('on', b === pk));
+      const dt = m.querySelector('.prc-mdt'); dt.hidden = false; dt.querySelector('b').textContent = '«' + pk.dataset.prpick + '»';
+      dt.querySelector('[data-prset]').dataset.prset = pk.dataset.prpick;
+      return;
+    }
+    const fo = t.closest('[data-prfopen]'); if(fo){ prcState.fed = fo.dataset.prfopen; prcRender(); return; }
+    if(t.closest('[data-prfx]')){ prcState.fed = ''; prcRender(); return; }
+    const fdl = t.closest('[data-prfdel]'); if(fdl){ fdl.closest('.prf-er').remove(); return; }
+    const fad = t.closest('[data-prfadd]');
+    if(fad){ const box = fad.closest('.prf-ed'); fad.parentElement.insertAdjacentHTML('beforebegin', '<div class="prf-er" data-j="new"><select class="prf-es">' + PR_ST.map(s1 => '<option>' + esc(s1) + '</option>').join('') + '</select><input type="text" class="date-in prf-ed-d" inputmode="numeric" value="' + esc(toFa(todayShamsi())) + '"><button type="button" class="prf-ex" data-prfdel="n" title="حذف">✕</button></div>'); return; }
+    const fsv = t.closest('[data-prfsave]');
+    if(fsv){
+      const box = fsv.closest('.prf-ed'), [rid, ii] = box.dataset.prfed.split(':');
+      const req = prcState.list.find(r => r.id === rid); const it = req && req.items[+ii]; if(!it) return;
+      const old = (it.log || []).slice(), oldSt = it.st;
+      const L = [];
+      for(const row of box.querySelectorAll('.prf-er')){
+        const j = row.dataset.j, base = j === 'new' ? {by: activeUserName()} : Object.assign({}, old[+j]);
+        const dd = normDate(row.querySelector('.prf-ed-d').value);
+        if(!dd){ showDialog('warn','تاریخ نادرست','تاریخ همهٔ مرحله‌ها را درست وارد کنید.'); return; }
+        L.push(Object.assign(base, {st: row.querySelector('.prf-es').value, d: dd}));
+      }
+      L.sort((a, b) => String(dayKey(a.d)).localeCompare(String(dayKey(b.d))));
+      it.log = L; it.st = L.length ? L[L.length - 1].st : PR_ST[0];
+      fsv.disabled = true;
+      try{ await prUpdate(req); prcState.fed = ''; }catch(err){ it.log = old; it.st = oldSt; showDialog('err','ثبت نشد', friendlyErr(err)); }
+      prcRender(); return;
+    }
+    if(t.closest('[data-prmx]')){ const m = t.closest('.prc-menu'); if(m) m.remove(); return; }
     const ps = t.closest('[data-prset]');
     if(ps){
       const m = ps.closest('.prc-menu'); const [rid, ii] = m.dataset.for.split(':');
-      const req = prcState.list.find(r => r.id === rid); const it = req && req.items[+ii]; if(!it) return;
+      const req = prcState.list.find(r => r.id === rid); const it = req && req.items[+ii]; if(!it || !ps.dataset.prset) return;
+      const dIn = m.querySelector('.prc-dt'), dd = normDate(dIn ? dIn.value : '') ;
+      if(!dd){ showDialog('warn','تاریخ نادرست','تاریخ را از تقویم انتخاب کنید یا به شکل ۱۴۰۵/۰۷/۲۰ بنویسید.'); return; }
       const prev = it.st;
-      it.st = ps.dataset.prset; it.log = (it.log || []).concat([{st: it.st, d: todayShamsi(), by: activeUserName()}]);
+      it.st = ps.dataset.prset; it.log = (it.log || []).concat([{st: it.st, d: dd, by: activeUserName()}]);
       prcState.open.add(m.dataset.for);
       try{ await prUpdate(req); }catch(err){ it.st = prev; it.log.pop(); showDialog('err','ثبت نشد', friendlyErr(err)); }
       prcRender();
