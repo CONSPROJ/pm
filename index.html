@@ -21260,6 +21260,12 @@
   .fv-zm button{all:unset;cursor:pointer;min-width:36px;height:34px;padding:0 6px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;}
   .fv-zm button:hover{background:rgba(255,255,255,.14);} .fv-zm .fv-zp{font-size:11.5px;min-width:52px;}
   .fv-frame{width:100%;height:100%;border:0;background:#fff;}
+  .fv-pdf{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior:contain;}
+  .fv-pdfw{padding:8px;box-sizing:border-box;min-width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:8px;transform-origin:0 0;}
+  .fv-pg{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.25);flex:none;}
+  .fv-pg canvas{display:block;width:100%;height:100%;}
+  .fv-pdfl{margin:40vh auto 0;display:flex;gap:6px;} .fv-pdfl i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:flrDot 1s infinite ease-in-out;} .fv-pdfl i:nth-child(2){animation-delay:.15s;} .fv-pdfl i:nth-child(3){animation-delay:.3s;}
+  .fv-pgn{position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:3px 12px;border-radius:99px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;font-weight:700;pointer-events:none;z-index:3;direction:rtl;}
   .fv-none{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center;max-width:360px;}
   .fv-big{--kc:var(--sky);width:76px;height:76px;display:grid;place-items:center;border-radius:20px;font-size:15px;font-weight:900;color:#fff;background:var(--kc);}
   .fv-none b{font-size:14px;word-break:break-word;} .fv-none small{font-size:11.5px;color:var(--muted);line-height:1.8;}
@@ -26880,9 +26886,7 @@
       +   (shareCtx.edited != null ? '<button type="button" class="sx-reset" data-shreset="1">متن پیش‌فرض</button>' : '') + '</div>')
       + '</div>'
       /* ارسال */
-      + (nF ? (function(){ const st = shrFileState();
-          return '<button type="button" class="sx-go' + (st.wait ? ' wait' : '') + '" data-sh="files">' + CTC_I.share
-            + '<span><b>ارسال ' + (nF > 1 ? 'فایل‌ها' : 'فایل') + (shareCtx.noText ? '' : ' + متن') + '</b><small>' + st.txt + '</small></span></button>'; })() : '')
+      /* دکمهٔ جدای «ارسال فایل + متن» حذف شد؛ دکمه‌های پایین همین کار را می‌کنند */
       + '<div class="sx-apps">'
       +   app('wa', CTC_I.wa, 'واتساپ') + app('tg', CTC_I.tg, 'تلگرام') + app('mail', CTC_I.mail, 'ایمیل') + app('sms', CTC_I.sms, 'پیامک')
       +   app('copy', CTC_I.copy, 'کپی متن') + (navigator.share && shrMobile() ? app('native', CTC_I.share, 'بیشتر') : '')
@@ -27046,10 +27050,15 @@
         close(); return;
       }
       const how = b.dataset.sh;
-      if(how === 'wa') window.open(shrMobile() ? 'https://wa.me/?text=' + t : 'https://web.whatsapp.com/send?text=' + t, '_blank', 'noopener');
-      else if(how === 'tg') window.open('https://t.me/share/url?url=' + encodeURIComponent(url || location.href) + '&text=' + t, '_blank', 'noopener');
+      /* مثل دکمهٔ تماس: اگر گیرنده شماره دارد، گفت‌وگوی خودِ او باز می‌شود */
+      const P1 = ctcPeople(rc)[0] || {}, ph1 = P1.p || '', wa1 = P1.w || ph1;
+      if(how === 'wa') window.open(wa1 ? (shrMobile() ? 'https://wa.me/' + waOf(wa1) + '?text=' + t : 'https://web.whatsapp.com/send?phone=' + waOf(wa1) + '&text=' + t) : (shrMobile() ? 'https://wa.me/?text=' + t : 'https://web.whatsapp.com/send?text=' + t), '_blank', 'noopener');
+      else if(how === 'tg'){
+        if(ph1){ if(txt){ try{ await navigator.clipboard.writeText(txt); shrToast('متن کپی شد؛ در گفت‌وگوی تلگرام بچسبانید'); }catch(err){} } window.open('https://t.me/+' + waOf(ph1), '_blank', 'noopener'); }
+        else window.open('https://t.me/share/url?url=' + encodeURIComponent(url || location.href) + '&text=' + t, '_blank', 'noopener');
+      }
       else if(how === 'mail') window.location.href = 'mailto:' + (rc && rc.e ? encodeURIComponent(rc.e) : '') + '?subject=' + encodeURIComponent(shareCtx.title || 'گزارش پروژه') + '&body=' + t;
-      else if(how === 'sms') window.location.href = 'sms:' + (rc && rc.p && rc.p[0] ? telOf(rc.p[0]) : '') + '?&body=' + t;
+      else if(how === 'sms') window.location.href = 'sms:' + (ph1 ? telOf(ph1) : '') + '?&body=' + t;
       else if(how === 'copy'){ try{ await navigator.clipboard.writeText(txt); shrToast('متن کپی شد ✓'); }catch(err){ shrToast('کپی انجام نشد'); } }
       else if(how === 'link' && shareCtx.link) window.open(shareCtx.link, '_blank', 'noopener');
       else if(how === 'native' && navigator.share){ try{ await navigator.share({title: shareCtx.title, text: txt, url: url || undefined}); }catch(err){} }
@@ -52539,7 +52548,7 @@
     m.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, {passive:true});
     m.addEventListener('touchend', e => {
       if(x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
-      if(Math.abs(dx) > 60 && !e.target.closest('iframe') && !(fvZ && fvZ.s > 1.02) && !fvZ.multi) fvGo(dx > 0 ? 1 : -1);   // راست‌به‌چپ: کشیدن به راست = بعدی
+      if(Math.abs(dx) > 60 && !e.target.closest('iframe') && !e.target.closest('.fv-pdf') && !(fvZ && fvZ.s > 1.02) && !fvZ.multi) fvGo(dx > 0 ? 1 : -1);   // راست‌به‌چپ: کشیدن به راست = بعدی
     }, {passive:true});
     document.addEventListener('keydown', e => {
       if(m.hidden) return;
@@ -52557,6 +52566,7 @@
     let body;
     if(k === 'img' && a.src !== 'drive') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
     else if(k === 'img') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
+    else if(k === 'pdf' && a.src !== 'drive' && fvPdfTouch()) body = '<div class="fv-pdf" dir="ltr"><div class="fv-pdfw"><div class="fv-pdfl"><i></i><i></i><i></i></div></div></div>';
     else if(k === 'pdf' || a.src === 'drive') body = '<iframe class="fv-frame" src="' + esc(pv) + '" title="' + esc(a.name) + '" referrerpolicy="no-referrer"></iframe>';
     else body = '<div class="fv-none"><span class="fv-big k-' + k + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
       + '<b>' + esc(a.name) + '</b><small>پیش‌نمایش این نوع فایل در مرورگر ممکن نیست؛ دانلود کنید و با برنامهٔ خودش باز کنید.</small>'
@@ -52577,6 +52587,7 @@
       + (n > 1 ? '<div class="fv-strip">' + S.L.map((x, i) => '<button type="button" class="fv-th k-' + ATT_KIND(x.ext) + (i === S.i ? ' on' : '') + '" data-fvi="' + i + '" title="' + esc(x.name) + '"><i' + (attThumb(x) ? ' class="has-th"' : '') + '>' + (attThumb(x) || esc((x.ext || 'فایل').toUpperCase())) + '</i><span>' + esc(x.name) + '</span></button>').join('') + '</div>' : '');
     const on = m.querySelector('.fv-th.on'); if(on) on.scrollIntoView({block:'nearest', inline:'center'});
     fvZoomInit(m);
+    if(m.querySelector('.fv-pdf')){ fvPdfOpen(m, a, S); return; }
     if(a.src === 's3' && (k === 'img' || k === 'pdf')){
       const el = m.querySelector('.fv-img, .fv-frame'), keep = S;
       const pre = k === 'img' && (s3Local.get(a.key) || (a.thumb && ((s3ThumbC.get((a.slot === 2 ? 2 : 1) + ':' + a.thumb) || {}).u)));
@@ -52586,6 +52597,115 @@
           .catch(er => { if(fvS === keep) el.outerHTML = '<div class="fv-none"><b>' + esc(a.name) + '</b><small>' + esc(friendlyErr(er)) + '</small></div>'; });
       }
     }
+  }
+  /* ====== PDF روی گوشی ======
+     آیفون PDF داخل iframe را فقط صفحهٔ اول و بدون زوم نشان می‌دهد؛ این‌جا با pdf.js
+     (کتابخانهٔ داخل سایت، lib/) همهٔ صفحه‌ها زیر هم کشیده می‌شوند، با دو انگشت یا
+     دکمه‌های + و − زوم می‌شوند، دو بار زدن بزرگ/کوچک می‌کند، و شمارهٔ صفحه دیده می‌شود. */
+  const fvPdfTouch = () => { const ua = navigator.userAgent || ''; return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1); };
+  let pdfjsP = null;
+  function pdfjsLoad(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(pdfjsP) return pdfjsP;
+    pdfjsP = new Promise((ok, no) => {
+      const sc = document.createElement('script'); sc.src = 'lib/pdfjs-3.11.174.min.js';
+      sc.onload = () => { try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdfjs-3.11.174.worker.min.js'; ok(window.pdfjsLib); }catch(e){ no(e); } };
+      sc.onerror = () => { pdfjsP = null; no(new Error('نمایشگر PDF بارگذاری نشد')); };
+      document.head.appendChild(sc);
+    });
+    return pdfjsP;
+  }
+  async function fvPdfBytes(a){
+    if(a.src === 's3'){ const f = await s3Blob(a); return new Uint8Array(await f.arrayBuffer()); }
+    const u = attachDownloadUrl(a) && !/^#/.test(attachDownloadUrl(a)) ? attachDownloadUrl(a) : (a.url || '').split('#')[0];
+    const r = await fetch(u, {referrerPolicy: 'no-referrer'}); if(!r.ok) throw new Error('کد ' + r.status);
+    return new Uint8Array(await r.arrayBuffer());
+  }
+  async function fvPdfOpen(m, a, keep){
+    const box = m.querySelector('.fv-pdf'), wrap = box.querySelector('.fv-pdfw'), body = m.querySelector('.fv-body');
+    const alive = () => fvS === keep && keep.L[keep.i] === a && box.isConnected;
+    let doc;
+    try{
+      const [lib, bytes] = await Promise.all([pdfjsLoad(), fvPdfBytes(a)]);
+      if(!alive()) return;
+      doc = await lib.getDocument({data: bytes}).promise;
+    }catch(er){
+      if(alive()) box.outerHTML = '<div class="fv-none"><b>' + esc(a.name) + '</b><small>' + esc(friendlyErr(er)) + '</small>'
+        + '<a class="fv-dlbig" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener">' + UP_I.dl + 'دانلود فایل</a></div>';
+      return;
+    }
+    if(!alive()){ try{ doc.destroy(); }catch(e){} return; }
+    const N = doc.numPages, P = [];
+    for(let i = 1; i <= N; i++){ const pg = await doc.getPage(i); P.push({pg, vp: pg.getViewport({scale: 1}), el: null, cv: null, rs: 0, busy: false}); if(!alive()) return; }
+    const st = {z: 1, base: 0};
+    const fit = () => Math.max(200, box.clientWidth - 16);
+    st.base = fit();
+    wrap.innerHTML = P.map((x, i) => '<div class="fv-pg" data-pg="' + (i + 1) + '"><canvas></canvas></div>').join('');
+    P.forEach((x, i) => { x.el = wrap.children[i]; x.cv = x.el.firstChild; });
+    body.insertAdjacentHTML('beforeend', '<div class="fv-zm fv-pdz"><button type="button" data-pdz="-1" aria-label="کوچک‌نمایی">−</button><button type="button" data-pdz="0" class="fv-zp">۱۰۰٪</button><button type="button" data-pdz="1" aria-label="بزرگ‌نمایی">+</button></div>'
+      + '<div class="fv-pgn"><b>۱</b> / ' + toFa(N) + '</div>');
+    const lbl = body.querySelector('.fv-pdz .fv-zp'), pgn = body.querySelector('.fv-pgn b');
+    const size = () => { P.forEach(x => { const w = st.base * st.z; x.el.style.width = w + 'px'; x.el.style.height = (w * x.vp.height / x.vp.width) + 'px'; }); wrap.style.width = (st.base * st.z + 16) + 'px'; lbl.textContent = toFa(Math.round(st.z * 100)) + '٪'; };
+    const draw = async x => {
+      if(x.busy) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 3), w = st.base * st.z;
+      let sc = w * dpr / x.vp.width;
+      const maxPx = 9e6, px = x.vp.width * x.vp.height * sc * sc; if(px > maxPx) sc *= Math.sqrt(maxPx / px);
+      if(Math.abs(x.rs - sc) < 0.01) return;
+      x.busy = true;
+      try{
+        const v = x.pg.getViewport({scale: sc}), c = document.createElement('canvas');
+        c.width = Math.floor(v.width); c.height = Math.floor(v.height);
+        await x.pg.render({canvasContext: c.getContext('2d'), viewport: v}).promise;
+        if(!alive()) return;
+        x.el.replaceChild(c, x.cv); x.cv = c; x.rs = sc;
+      }catch(e){}
+      finally{ x.busy = false; }
+      if(alive() && near(x) && Math.abs(x.rs - curSc(x)) > 0.01) draw(x);
+    };
+    const curSc = x => { const dpr = Math.min(window.devicePixelRatio || 1, 3); let sc = st.base * st.z * dpr / x.vp.width; const px = x.vp.width * x.vp.height * sc * sc; if(px > 9e6) sc *= Math.sqrt(9e6 / px); return sc; };
+    const near = x => { const r = x.el.getBoundingClientRect(), b = box.getBoundingClientRect(); return r.bottom > b.top - b.height && r.top < b.bottom + b.height; };
+    /* فقط صفحه‌های نزدیک دید کشیده می‌شوند؛ صفحه‌های دور آزاد می‌شوند تا حافظهٔ گوشی پر نشود */
+    const sweep = () => {
+      if(!alive()) return;
+      let cur = 1; const b = box.getBoundingClientRect(), mid = b.top + b.height / 2;
+      P.forEach((x, i) => {
+        const r = x.el.getBoundingClientRect();
+        if(r.top <= mid) cur = i + 1;
+        if(near(x)) draw(x);
+        else if(x.rs && (r.bottom < b.top - b.height * 3 || r.top > b.bottom + b.height * 3)){ x.cv.width = 0; x.cv.height = 0; x.rs = 0; }
+      });
+      pgn.textContent = toFa(cur);
+    };
+    let sw = 0; box.addEventListener('scroll', () => { cancelAnimationFrame(sw); sw = requestAnimationFrame(sweep); }, {passive: true});
+    const zoomTo = (z, cx, cy) => {
+      z = Math.max(1, Math.min(5, z)); if(Math.abs(z - st.z) < 0.001) return;
+      const b = box.getBoundingClientRect(); cx = cx == null ? b.width / 2 : cx - b.left; cy = cy == null ? b.height / 2 : cy - b.top;
+      const fx = (box.scrollLeft + cx) / (st.base * st.z + 16), fy = (box.scrollTop + cy) / wrap.offsetHeight;
+      st.z = z; size();
+      box.scrollLeft = fx * (st.base * st.z + 16) - cx; box.scrollTop = fy * wrap.offsetHeight - cy;
+      clearTimeout(st.t); st.t = setTimeout(sweep, 120);
+    };
+    body.querySelector('.fv-pdz').addEventListener('click', e => { const b = e.target.closest('[data-pdz]'); if(!b) return; e.stopPropagation(); const d = +b.dataset.pdz; zoomTo(d === 0 ? 1 : st.z * (d > 0 ? 1.4 : 1 / 1.4)); });
+    /* دو انگشت: هنگام حرکت فقط بزرگ‌نمایی CSS (روان)، در پایان با کیفیت تازه کشیده می‌شود */
+    let pin = null, lastTap = 0;
+    box.addEventListener('touchstart', e => {
+      if(e.touches.length === 2){ const [t1, t2] = e.touches; pin = {d: Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY), cx: (t1.clientX + t2.clientX) / 2, cy: (t1.clientY + t2.clientY) / 2, r: 1};
+        const b = box.getBoundingClientRect(); wrap.style.transformOrigin = (box.scrollLeft + pin.cx - b.left) + 'px ' + (box.scrollTop + pin.cy - b.top) + 'px'; }
+      else if(e.touches.length === 1){ const now = Date.now(); if(now - lastTap < 300){ const t = e.touches[0]; zoomTo(st.z > 1.2 ? 1 : 2.5, t.clientX, t.clientY); lastTap = 0; } else lastTap = now; }
+    }, {passive: true});
+    box.addEventListener('touchmove', e => {
+      if(!pin || e.touches.length !== 2) return;
+      e.preventDefault();
+      const [t1, t2] = e.touches; pin.r = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY) / pin.d;
+      const r = Math.max(1 / st.z, Math.min(5 / st.z, pin.r)); wrap.style.transform = 'scale(' + r + ')';
+    }, {passive: false});
+    box.addEventListener('touchend', e => {
+      if(!pin || e.touches.length) return;
+      const p0 = pin; pin = null; wrap.style.transform = ''; zoomTo(st.z * p0.r, p0.cx, p0.cy);
+    }, {passive: true});
+    window.addEventListener('resize', () => { if(!alive()) return; st.base = fit(); size(); sweep(); });
+    size(); sweep();
   }
   /* بزرگ‌نمایی عکس: دو انگشت (pinch)، دو بار زدن، چرخ ماوس و دکمه‌های + و −؛
      وقتی بزرگ است با کشیدن جابه‌جا می‌شود و ورق زدن غیرفعال است */
