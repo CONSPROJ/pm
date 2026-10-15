@@ -17694,7 +17694,7 @@
   @media(max-width:640px){
     .cf-hero{padding:14px;gap:12px;} .cf-ring{flex-basis:64px;width:64px;height:64px;} .cf-main > b{font-size:21px;}
     .cf-kpis b{font-size:12.5px;} .cf-kpis > span{padding:8px 9px;}
-    .cf-docs{grid-template-columns:repeat(2, minmax(0,1fr));} .cf-docs .cfd.k-design{grid-column:1 / -1;}
+    .cf-docs{grid-template-columns:repeat(2, minmax(0,1fr));}
     .cf-leg .r{margin-inline-start:0;width:100%;}
   }
   @media (prefers-reduced-motion: reduce){ .cf-ring .fg, .cf-use i, .cf-age i, .cf-tr .lp{animation:none;stroke-dashoffset:var(--o, 0);} }
@@ -21863,6 +21863,15 @@
     .afr .afr-dls{flex-basis:80px;max-width:80px;}
     .afr .afr-st.nil{display:none;}
   }
+  /* کارت پیمانکار: سطر هر سند تماماً قابل زدن؛ جای دانلود ثابت */
+  .cfdl-r[data-goto-id]{cursor:pointer;transition:background .12s;}
+  .cfdl-r[data-goto-id]:hover{background:var(--field);}
+  .cfdl-r .cfdl-dls{flex:0 0 84px;display:inline-flex;justify-content:flex-end;}
+  .cfdl-r .cfdl-go{cursor:inherit;}
+  /* پنجرهٔ پرونده: تماس فقط در سربرگ (نه دوباره کنار بازه) */
+  #ctProfModal .hr-rng .ctc-mini{display:none !important;}
+  #ctProfModal .ct-alias + .ct-stats, #ctProfModal .ct-body > .ct-stats:first-child{padding-top:12px;}
+  .cfd-pane .cfdl-r .ptx-d{flex:0 0 auto;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -37424,14 +37433,15 @@
   window.pushNavBack = pushNavBack;
 
   document.addEventListener('click', e => {
-    const d = e.target.closest('.hrd[data-goto-id], .hr2 .stm[data-goto-id], .hr2 .cfd[data-goto-id], .hr2 .cf-st[data-goto-id], .hr2 .cff[data-goto-id]');
+    if(e.target.closest('[data-admdl]')) return;     // دکمهٔ دانلود داخل سطر: فقط دانلود
+    const d = e.target.closest('.hrd[data-goto-id], .hr2 .stm[data-goto-id], .hr2 .cfd[data-goto-id], .hr2 .cf-st[data-goto-id], .hr2 .cff[data-goto-id], .cfdl-r[data-goto-id]');
     if(!d) return;
     e.stopPropagation();
     const m = document.getElementById('ctProfModal');
     if(m){
       const name = m.dataset.ctname || '';
       if(name) pushNavBack('پروندهٔ ' + name, () => openContractorProfile(name));
-      m.remove(); document.body.style.overflow = '';
+      m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open');
     }
     try{ gotoAdminItem(d.dataset.gotoKind || 'statement', d.dataset.gotoId, ''); }catch(err){}
   }, true);
@@ -41310,71 +41320,7 @@
                بالا: مطالبات و درصد پرداخت؛ بعد مصرف قرارداد، سن
                بدهی، روند تجمعی صورت وضعیت و پرداخت، فهرست صورت‌وضعیت‌ها
                و در آخر پروندهٔ اسناد با آخرین موارد. همه قابل کلیک‌اند. */
-            const partyOf = (key, kd) => list(key).filter(r => ctrPartySplit(admParty(kd, r)).some(p1 => sameEntity(p1, name)));
-            const byDate = kd => (x, y) => {
-              const dx = faToDate(admSentDate(kd, x)), dy = faToDate(admSentDate(kd, y));
-              return (dy ? dy.getTime() : 0) - (dx ? dx.getTime() : 0);
-            };
-            const DK = [['contract','contracts','قرارداد'],['statement','statements','صورت وضعیت'],
-                        ['letter','letters','نامه'],['minute','minutes','صورتجلسه'],['design','designs','سند طراحی']];
-            const docs = DK.map(([kd, key, lb]) => {
-              const all = partyOf(key, kd).sort(byDate(kd));
-              const last = all[0] || null;
-              const al = all.filter(r => { try{ return !!admCardAlert(kd, r); }catch(e){ return false; } }).length;
-              const no = !last ? '' : (kd === 'statement' ? pick(last,AD.sNo) : kd === 'contract' ? pick(last,AD.cNo)
-                        : kd === 'letter' ? pick(last,AD.lNo) : kd === 'design' ? pick(last,AD.dNo) : pick(last,AD.mIdx));
-              return {kd, lb, all, cnt: all.length, al, no, d0: last ? admSentDate(kd, last) : '',
-                      id: last ? String(pick(last,AD.id) || '') : ''};
-            });
-            /* کاشی هر نوع سند: با زدنش فهرست همان اسناد همین‌جا باز می‌شود (با دانلود)، نه رفتن به دفتر فنی */
-            const docTiles = '<div class="rc-tw cf-dtw"><div class="cf-docs">' + docs.map(x =>
-                '<' + (x.cnt ? 'button type="button" data-rctile="d-' + x.kd + '"' : 'span')
-                + ' class="cfd k-' + x.kd + (x.cnt ? '' : ' zero') + '">'
-                + '<span class="cfd-ic">' + (CF_I[x.kd] || '') + '</span>'
-                + '<span class="cfd-tx"><b>' + toFa(x.cnt) + '<u>' + x.lb + '</u></b>'
-                + '<small>' + (x.cnt ? ((x.no ? 'آخرین ' + esc(toFa(x.no)) + ' · ' : '') + (x.d0 ? esc(admDate(x.d0)) : '')) : 'ثبت نشده') + '</small></span>'
-                + (x.al ? '<em class="cfd-al" title="نیازمند پیگیری">' + toFa(x.al) + '</em>' : '')
-                + '</' + (x.cnt ? 'button' : 'span') + '>').join('') + '</div>'
-              + docs.filter(x => x.cnt).map(x => {
-                  const rows = x.all.slice().sort((p1, p2) => { const a1 = faToDate(admSentDate(x.kd, p1)), b1 = faToDate(admSentDate(x.kd, p2)); return (b1 ? +b1 : 0) - (a1 ? +a1 : 0); });
-                  return '<div class="rc-pane cfd-pane" data-rcp="d-' + x.kd + '" hidden>' + rows.map(r => {
-                      const id = String(pick(r,AD.id) || ''), d = admSentDate(x.kd, r);
-                      let t = ''; try{ t = arTitleOf(x.kd, r); }catch(e){ t = x.lb; }
-                      return '<div class="cfdl-r"><span class="cfdl-ic k-' + x.kd + '">' + (CF_I[x.kd] || '') + '</span>'
-                        + '<span class="cfdl-t"><b>' + esc(t) + '</b><small>' + esc(d ? toFa(admDate(d)) : '') + '</small></span>'
-                        + admDlBtnHtml(x.kd, r, 'cfdl-dl')
-                        + (id ? '<button type="button" class="cfdl-go" data-goto-kind="' + x.kd + '" data-goto-id="' + esc(id) + '" title="باز کردن در دفتر فنی" aria-label="باز کردن در دفتر فنی">‹</button>' : '')
-                        + '</div>';
-                    }).join('') + '</div>';
-                }).join('') + '</div>';
-            const feedRows = [];
-            docs.forEach(x => x.all.forEach(r => feedRows.push({kd: x.kd, r, d: admSentDate(x.kd, r)})));
-            feedRows.sort((a, b) => { const x = faToDate(a.d), y = faToDate(b.d); return (y ? y.getTime() : 0) - (x ? x.getTime() : 0); });
-            const stateOf = (kd, r) => {
-              if(kd === 'statement' && isPaid(r)) return ['تسویه شده', 'ok'];
-              if(kd === 'statement' || kd === 'contract'){
-                const v = String(effectiveReview(r) || '');
-                return [v || notifyLabel(admNotify(kd, r)) || '—', /^رد/.test(v) ? 'bad' : (v === 'تایید شده' ? 'ok' : '')];
-              }
-              if(kd === 'minute' && (String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true)) return ['انجام شده', 'ok'];
-              if(kd === 'design'){ const v = String(pick(r,AD.dStatus) || ''); return [v || '—', /تأیید|اجرا/.test(v) ? 'ok' : (/رد|اصلاح/.test(v) ? 'bad' : '')]; }
-              return [notifyLabel(admNotify(kd, r)) || '—', ''];
-            };
-            const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.map(({kd, r, d}, fi) => {
-                const [stx, scl] = stateOf(kd, r);
-                let al = false; try{ al = !!admCardAlert(kd, r); }catch(e){}
-                const ago = d ? daysSince(d) : null;
-                return '<button type="button" class="cff k-' + kd + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
-                  + '<span class="cff-ic">' + (CF_I[kd] || '') + '</span>'
-                  + '<span class="cff-tx"><b>' + esc(arTitleOf(kd, r)) + '</b>'
-                  +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + toFa(ago) + ' روز پیش' : '') + '</small></span>'
-                  + '<span class="cff-st' + (scl ? ' ' + scl : '') + '">' + esc(stx) + '</span>'
-                  + admDlBtnHtml(kd, r, 'cff-dl')
-                  + (al ? '<i class="cff-al" title="نیازمند پیگیری"></i>' : '')
-                  + '</button>';
-              }).join('')
-              + (feedRows.length > 6 ? '<button type="button" class="cff-more" data-cffall="1">نمایش ' + toFa(feedRows.length - 6) + ' سند دیگر</button>' : '')
-              + '</div>' : '';
+            const {docs, docTiles, feedRows, feed} = ctDocsParts(name, list);
 
             const pct = amt ? Math.min(100, Math.round(paid / amt * 100)) : 0;
             const tile = (lb, v, sub, cls) => '<div class="hrk' + (cls ? ' ' + cls : '') + '"><u>' + lb + '</u><b>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
@@ -41806,50 +41752,140 @@
     });
     return out;
   }
+  /* پروندهٔ اسناد یک طرف (پیمانکار، مشاور، کارفرما): کاشی هر نوع سند با فهرست بازشوی همان‌جا،
+     و «آخرین اسناد». هم در کارت پیمانکار و هم در صفحهٔ مشاور/کارفرما همین یکی ساخته می‌شود.
+     list(key): ردیف‌های هر بخش؛ extra(kd): ردیف‌های اضافه (مثلاً سند طراحی که نزد مشاور است). */
+  function ctDocsParts(name, list, extra){
+    const partyOf = (key, kd) => {
+      const a = list(key).filter(r => ctrPartySplit(admParty(kd, r)).some(p1 => sameEntity(p1, name)));
+      if(extra){ const seen = new Set(a.map(r => String(pick(r,AD.id) || ''))); (extra(kd) || []).forEach(r => { const i = String(pick(r,AD.id) || ''); if(!seen.has(i)){ seen.add(i); a.push(r); } }); }
+      return a;
+    };
+    const byDate = kd => (x, y) => {
+      const dx = faToDate(admSentDate(kd, x)), dy = faToDate(admSentDate(kd, y));
+      return (dy ? dy.getTime() : 0) - (dx ? dx.getTime() : 0);
+    };
+    /* نامه‌ها دو کاشی جدا دارند: دریافتی (از او) و ارسالی (به او) */
+    const DK = [['contract','contracts','قرارداد'],['statement','statements','صورت وضعیت'],
+                ['letter','letters','نامهٔ دریافتی', r => ltrDirOf(r) === 'دریافتی', 'letter-in'],
+                ['letter','letters','نامهٔ ارسالی', r => ltrDirOf(r) !== 'دریافتی', 'letter-out'],
+                ['minute','minutes','صورتجلسه'],['design','designs','سند طراحی']];
+    const docs = DK.map(([kd, key, lb, flt, tk]) => {
+      const all = partyOf(key, kd).filter(flt || (() => true)).sort(byDate(kd));
+      const last = all[0] || null;
+      const al = all.filter(r => { try{ return !!admCardAlert(kd, r); }catch(e){ return false; } }).length;
+      const no = !last ? '' : (kd === 'statement' ? pick(last,AD.sNo) : kd === 'contract' ? pick(last,AD.cNo)
+                : kd === 'letter' ? pick(last,AD.lNo) : kd === 'design' ? pick(last,AD.dNo) : pick(last,AD.mIdx));
+      return {kd, tk: tk || kd, lb, all, cnt: all.length, al, no, d0: last ? admSentDate(kd, last) : '',
+              id: last ? String(pick(last,AD.id) || '') : ''};
+    });
+    /* کاشی هر نوع سند: با زدنش فهرست همان اسناد همین‌جا باز می‌شود (با دانلود)، نه رفتن به دفتر فنی */
+    const docTiles = '<div class="rc-tw cf-dtw"><div class="cf-docs">' + docs.map(x =>
+        '<' + (x.cnt ? 'button type="button" data-rctile="d-' + x.tk + '"' : 'span')
+        + ' class="cfd k-' + x.kd + (x.cnt ? '' : ' zero') + '">'
+        + '<span class="cfd-ic">' + (CF_I[x.kd] || '') + '</span>'
+        + '<span class="cfd-tx"><b>' + toFa(x.cnt) + '<u>' + x.lb + '</u></b>'
+        + '<small>' + (x.cnt ? ((x.no ? 'آخرین ' + esc(toFa(x.no)) + ' · ' : '') + (x.d0 ? esc(admDate(x.d0)) : '')) : 'ثبت نشده') + '</small></span>'
+        + (x.al ? '<em class="cfd-al" title="نیازمند پیگیری">' + toFa(x.al) + '</em>' : '')
+        + '</' + (x.cnt ? 'button' : 'span') + '>').join('') + '</div>'
+      + docs.filter(x => x.cnt).map(x => {
+          const rows = x.all.slice().sort((p1, p2) => { const a1 = faToDate(admSentDate(x.kd, p1)), b1 = faToDate(admSentDate(x.kd, p2)); return (b1 ? +b1 : 0) - (a1 ? +a1 : 0); });
+          return '<div class="rc-pane cfd-pane" data-rcp="d-' + x.tk + '" hidden>' + rows.map(r => {
+              const id = String(pick(r,AD.id) || ''), d = admSentDate(x.kd, r);
+              let t = ''; try{ t = arTitleOf(x.kd, r); }catch(e){ t = x.lb; }
+              /* کل سطر می‌برد به همان سند (با همان کارت کامل دفتر فنی)؛ دکمهٔ دانلود جدا عمل می‌کند */
+              return '<div class="cfdl-r"' + (id ? ' role="button" tabindex="0" data-goto-kind="' + x.kd + '" data-goto-id="' + esc(id) + '" title="باز کردن در دفتر فنی"' : '') + '>'
+                + '<span class="cfdl-ic k-' + x.kd + '">' + (CF_I[x.kd] || '') + '</span>'
+                + '<span class="cfdl-t"><b>' + esc(t) + '</b><small>' + esc(d ? toFa(admDate(d)) : '') + '</small></span>'
+                + '<span class="cfdl-dls">' + admDlBtnHtml(x.kd, r, 'cfdl-dl') + '</span>'
+                + (id ? '<span class="cfdl-go" aria-hidden="true">‹</span>' : '')
+                + '</div>';
+            }).join('') + '</div>';
+        }).join('') + '</div>';
+    const feedRows = [];
+    docs.forEach(x => x.all.forEach(r => feedRows.push({kd: x.kd, r, d: admSentDate(x.kd, r)})));
+    feedRows.sort((a, b) => { const x = faToDate(a.d), y = faToDate(b.d); return (y ? y.getTime() : 0) - (x ? x.getTime() : 0); });
+    const stateOf = (kd, r) => {
+      if(kd === 'statement' && isPaid(r)) return ['تسویه شده', 'ok'];
+      if(kd === 'statement' || kd === 'contract'){
+        const v = String(effectiveReview(r) || '');
+        return [v || notifyLabel(admNotify(kd, r)) || '—', /^رد/.test(v) ? 'bad' : (v === 'تایید شده' ? 'ok' : '')];
+      }
+      if(kd === 'minute' && (String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true)) return ['انجام شده', 'ok'];
+      if(kd === 'design'){ const v = String(pick(r,AD.dStatus) || ''); return [v || '—', /تأیید|اجرا/.test(v) ? 'ok' : (/رد|اصلاح/.test(v) ? 'bad' : '')]; }
+      return [notifyLabel(admNotify(kd, r)) || '—', ''];
+    };
+    const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.map(({kd, r, d}, fi) => {
+        const [stx, scl] = stateOf(kd, r);
+        let al = false; try{ al = !!admCardAlert(kd, r); }catch(e){}
+        const ago = d ? daysSince(d) : null;
+        return '<button type="button" class="cff k-' + kd + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
+          + '<span class="cff-ic">' + (CF_I[kd] || '') + '</span>'
+          + '<span class="cff-tx"><b>' + esc(arTitleOf(kd, r)) + '</b>'
+          +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + toFa(ago) + ' روز پیش' : '') + '</small></span>'
+          + '<span class="cff-st' + (scl ? ' ' + scl : '') + '">' + esc(stx) + '</span>'
+          + admDlBtnHtml(kd, r, 'cff-dl')
+          + (al ? '<i class="cff-al" title="نیازمند پیگیری"></i>' : '')
+          + '</button>';
+      }).join('')
+      + (feedRows.length > 6 ? '<button type="button" class="cff-more" data-cffall="1">نمایش ' + toFa(feedRows.length - 6) + ' سند دیگر</button>' : '')
+      + '</div>' : '';
+    return {docs, docTiles, feedRows, feed};
+  }
+  /* صفحهٔ مشاور و کارفرما با همان طراحی کارت پیمانکار: کپسول‌های بالا، زبانه‌های «خلاصه» و
+     «اسناد»، کاشی‌های پروندهٔ اسناد با فهرست بازشو و «آخرین اسناد». */
   function ctPartyHtml(name){
     const t = ctrTypeOf(name) || 'ctr', D = ctPartyDocs(name), S = ctPartyStints(name);
     const c = (function(){ try{ return ctrContactOf(name) || {}; }catch(e){ return {}; } })();
-    const I = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
     const now = S.filter(x => x.open).sort((p, q) => (q.days || 0) - (p.days || 0));
     const done = S.filter(x => !x.open && x.days != null);
     const avg = done.length ? Math.round(done.reduce((p, x) => p + x.days, 0) / done.length) : null;
     const R = {A:0, B:0, C:0, D:0}; S.forEach(x => { if(x.res === 'IFC') R.A++; else if(R[x.res] != null) R[x.res]++; });
     const rTot = R.A + R.B + R.C + R.D;
-    const tone = x => (x.lim && x.days != null) ? (x.days > x.lim[1] ? 'bad' : x.days > x.lim[0] ? 'warn' : 'ok') : '';
-    /* تماس: همان دکمهٔ «تماس» کارت پیمانکاران (با زدنش اطلاعات تماس باز می‌شود) */
-    /* شاخص‌ها */
-    const kpi = (v, u, l, cls, ic) => '<div class="ptx-k' + (cls ? ' ' + cls : '') + '">' + (ic ? '<span class="ptx-ki">' + I(ic) + '</span>' : '') + '<span class="ptx-kt"><b>' + v + (u ? '<u>' + u + '</u>' : '') + '</b><small>' + l + '</small></span></div>';
     const okPct = rTot ? Math.round((R.A + R.B) / rTot * 100) : null;
-    const kpis = '<div class="ptx-ks">'
-      + kpi(toFa(now.length), 'سند', 'الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او'), now.some(x => tone(x) === 'bad') ? 'bad' : now.length ? 'on' : '', '<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8.5"/>')
-      + (t === 'cons' || S.length ? kpi(avg != null ? toFa(avg) : '—', avg != null ? 'روز' : '', 'میانگین هر بررسی', 'k2', '<path d="M4 19V9M10 19V5M16 19v-6M21 19H3"/>') : '')
-      + (okPct != null ? kpi(toFa(okPct) + '٪', '', 'تأیید یا مشروط', 'k3', '<path d="M5 12.5l4.5 4.5L19 7.5"/>') : '')
-      + kpi(toFa(D.length), 'مورد', 'اسناد و مکاتبات', 'k4', '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>')
+    const tone = x => (x.lim && x.days != null) ? (x.days > x.lim[1] ? 'bad' : x.days > x.lim[0] ? 'warn' : 'ok') : '';
+    const them = t === 'emp' ? 'آن‌ها' : 'او';
+    /* پروندهٔ اسناد: همان سازندهٔ کارت پیمانکار، به‌اضافهٔ اسنادی که به هر شکل به این طرف مربوط‌اند */
+    const KEY = {contracts:'contract', statements:'statement', letters:'letter', minutes:'minute', designs:'design'};
+    const list = key => (adminAll || []).filter(x => x.kind === KEY[key]).map(x => x.row);
+    const byK = {}; D.forEach(x => { (byK[x.kind] = byK[x.kind] || []).push(x.row); });
+    const P = ctDocsParts(name, list, kd => byK[kd] || []);
+    const hs = (lb, v, cls) => '<span class="hv-s' + (cls ? ' ' + cls : '') + '"><u>' + esc(lb) + '</u><b>' + esc(v) + '</b></span>';
+    const nDocs = P.docs.reduce((p, x) => p + x.cnt, 0);
+    const stats = '<div class="ct-stats">'
+      + hs('الان نزد ' + them, toFa(now.length) + ' سند', now.some(x => tone(x) === 'bad') ? 'bad' : '')
+      + (avg != null ? hs('میانگین هر بررسی', toFa(avg) + ' روز') : '')
+      + (okPct != null ? hs('تأیید یا مشروط', toFa(okPct) + '٪', okPct >= 70 ? 'ok' : '') : '')
+      + hs('اسناد و مکاتبات', toFa(nDocs))
       + '</div>';
-    /* نتیجهٔ بررسی‌ها */
-    const res = rTot ? '<div class="ptx-sec"><div class="ptx-h"><b>نتیجهٔ بررسی‌ها</b></div>'
+    /* خلاصه: آنچه الان نزد اوست + نتیجهٔ بررسی‌ها */
+    const nowH = now.length
+      ? '<div class="rc-title">الان نزد ' + them + '<span class="n">' + toFa(now.length) + '</span></div>'
+        + '<div class="cfd-pane">' + now.slice(0, 12).map(x => '<div class="cfdl-r" role="button" tabindex="0" data-goto-kind="design" data-goto-id="' + esc(x.id) + '" title="باز کردن در دفتر فنی">'
+            + '<span class="cfdl-ic k-design">' + (CF_I.design || '') + '</span>'
+            + '<span class="cfdl-t"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev, x.st].filter(Boolean).join(' · ')) + '</small></span>'
+            + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>'
+            + '<span class="cfdl-dls">' + (x.row ? admDlBtnHtml('design', x.row, 'cfdl-dl') : '') + '</span>'
+            + '<span class="cfdl-go" aria-hidden="true">‹</span></div>').join('') + '</div>'
+      : '<div class="hr-note">الان سندی نزد ' + them + ' نیست. ✓</div>';
+    const res = rTot ? '<div class="rc-title">نتیجهٔ بررسی‌ها<span class="n">' + toFa(rTot) + '</span></div><div class="ptx-res">'
       + '<div class="ptx-rbar">' + ['A','B','C','D'].filter(k => R[k]).map(k => '<span class="r-' + k + '" style="flex:' + R[k] + '" title="' + k + ': ' + toFa(R[k]) + '"></span>').join('') + '</div>'
       + '<div class="ptx-rl">' + [['A','تأیید'],['B','مشروط'],['C','اصلاح'],['D','رد']].map(([k, l]) => '<span class="r-' + k + '"><i></i>' + l + ' <b>' + toFa(R[k]) + '</b></span>').join('') + '</div></div>' : '';
-    /* الان نزد او */
-    const nowH = now.length ? '<div class="ptx-sec"><div class="ptx-h"><b>الان نزد ' + (t === 'emp' ? 'آن‌ها' : 'او') + '</b></div>'
-      + now.slice(0, 8).map(x => '<button type="button" class="ptx-row k-design" data-ctpgo="design¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I.design || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev].filter(Boolean).join(' · ')) + '</small></span>'
-          + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>' + (x.row ? admDlBtnHtml('design', x.row, 'flr-dl') : '') + '</button>').join('') + '</div>' : '';
-    /* بقیهٔ اسناد، گروه‌بندی */
-    const nowIds = new Set(now.map(x => String(x.id)));
-    const rest = D.filter(x => !(x.kind === 'design' && nowIds.has(String(x.id))));
-    const g = {}; rest.forEach(x => { (g[x.kind] = g[x.kind] || []).push(x); });
-    const ord = ['design','contract','statement','letter','minute'];
-    /* کاشی هر نوع سند؛ با زدنش همان بخش باز می‌شود */
-    const tiles = ord.filter(k => g[k]).length > 1 ? '<div class="ptx-tl">' + ord.filter(k => g[k]).map(k => '<button type="button" class="ptx-tile k-' + k + '" data-ptxk="' + k + '"><span class="ptx-ti">' + (CF_I[k] || '') + '</span><b>' + toFa(g[k].length) + '</b><small>' + esc(KIND_LABEL[k] || k) + '</small></button>').join('') + '</div>' : '';
-    const stTone = st => /تأیید|اجرا|تسویه|پرداخت/.test(st) ? 'ok' : /رد|اصلاح/.test(st) ? 'bad' : st ? 'info' : '';
-    const docsH = ord.filter(k => g[k]).map(k => '<details class="ptx-sec ptx-dt" data-ptxsec="' + k + '"' + (g[k].length <= 4 ? ' open' : '') + '><summary class="ptx-h"><span class="ptx-hi k-' + k + '">' + (CF_I[k] || '') + '</span><b>' + esc(KIND_LABEL[k] || k) + '</b><i>' + toFa(g[k].length) + '</i></summary>'
-        + g[k].slice(0, 30).map(x => '<button type="button" class="ptx-row k-' + esc(x.kind) + '" data-ctpgo="' + esc(x.kind) + '¦' + esc(x.id) + '"><span class="ptx-ri">' + (CF_I[x.kind] || '') + '</span><span class="ptx-rt"><b>' + esc(x.t) + '</b><small>' + esc([x.rel, x.d ? toFa(admDate(x.d)) : ''].filter(Boolean).join(' · ')) + '</small></span>'
-            + (x.st ? '<span class="ptx-st t-' + stTone(x.st) + '">' + esc(x.st) + '</span>' : '') + (x.row ? admDlBtnHtml(x.kind, x.row, 'flr-dl') : '') + '</button>').join('')
-        + (g[k].length > 30 ? '<div class="ptx-more">' + toFa(g[k].length - 30) + ' مورد دیگر در دفتر فنی</div>' : '') + '</details>').join('');
-    return '<div class="ptx t-' + t + '">'
-      + (c.cn && normName(c.cn) !== normName(name) ? '<div class="ptx-hero"><span class="ptx-cn">نام قراردادی: ' + esc(c.cn) + '</span></div>' : '')
-      + kpis + tiles + nowH + res + docsH
-      + (!D.length && !S.length ? '<div class="ptx-empty">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div>' : '')
+    const sumPane = '<div class="cf">' + nowH + res
+      + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '')
+      + '</div>';
+    const docPane = '<div class="cf"><div class="rc-title">پروندهٔ اسناد</div>' + P.docTiles + '</div>';
+    if(!nDocs && !S.length)
+      return stats + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
+    return (c.cn && normName(c.cn) !== normName(name) ? '<div class="ct-alias"><u>نام قراردادی</u><span>' + esc(c.cn) + '</span></div>' : '')
+      + stats
+      + '<div class="hr-split hr2 ct2">'
+      +   '<div class="hr-tabs" role="tablist">'
+      +     '<button type="button" class="on" data-hrtab="sum">خلاصه' + (now.length ? '<i' + (now.some(x => tone(x) === 'bad') ? ' class="bad"' : '') + '>' + toFa(now.length) + '</i>' : '') + '</button>'
+      +     '<button type="button" data-hrtab="docs">اسناد<i>' + toFa(nDocs) + '</i></button>'
+      +   '</div>'
+      +   '<div class="hr-pane on" data-pane="sum">' + sumPane + '</div>'
+      +   '<div class="hr-pane" data-pane="docs">' + docPane + '</div>'
       + '</div>';
   }
   document.addEventListener('click', e => {
@@ -41858,9 +41894,11 @@
     sec.open = true; sec.scrollIntoView({behavior:'smooth', block:'start'});
   });
   document.addEventListener('click', e => {
+    if(e.target.closest && e.target.closest('[data-admdl]')) return;
     const b = e.target.closest && e.target.closest('[data-ctpgo]'); if(!b) return;
     const [k, id] = b.dataset.ctpgo.split('¦');
-    const m = document.getElementById('ctProfModal'); if(m){ m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open'); }
+    const m = document.getElementById('ctProfModal');
+    if(m){ const nm = m.dataset.ctname || ''; try{ if(nm) pushNavBack('پروندهٔ ' + nm, () => openContractorProfile(nm)); }catch(err){} m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open'); }
     const fm = document.getElementById('flrModal'); if(fm && !fm.hidden){ fm.hidden = true; document.body.style.overflow = ''; }
     try{ gotoAdminItem(k, id); }catch(err){}
   });
@@ -41895,7 +41933,8 @@
     bg.innerHTML = '<div class="modal-card ct-card">'
       + '<div class="mc-head"><b class="mc-title">' + esc(name) + '</b>'
       /* پروندهٔ پیمانکار و (برای مشاور و کارفرما) دکمهٔ تماس، کنار دکمهٔ بستن؛ بخش یادداشت پایین کارت حذف شد */
-      +   (function(){ try{ const ty = ctrTypeOf(name); return (isContractorName(name) && ty !== 'cons' && ty !== 'emp') ? '' : ctcMiniHtml(name); }catch(e){ return ''; } })()
+      /* دکمهٔ تماس برای همه (پیمانکار، مشاور، کارفرما) در یک جا: سربرگ پنجره */
+      +   (function(){ try{ return ctcMiniHtml(name); }catch(e){ return ''; } })()
       +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ico-btn ct-hfile" data-ctcedit="' + esc(name) + '" title="پروندهٔ پیمانکار: نام، قراردادها و تماس" aria-label="پروندهٔ پیمانکار"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9.5" cy="11" r="2.3"/><path d="M6 16.5c.7-1.7 2-2.6 3.5-2.6s2.8.9 3.5 2.6M15 10h3M15 13.5h3"/></svg></button>' : ''; }catch(e){ return ''; } })()
       +   '<button type="button" class="ico-btn" data-ctx>✕</button></div>'
       + (als.length
