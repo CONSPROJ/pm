@@ -53769,6 +53769,10 @@
     let kind = '', key = '';
     for(const k of Object.keys(CT_FIELDS)) for(const f of ['n', 's', 'p']) if(el.classList.contains(CT_FIELDS[k][f])){ kind = k; key = f; }
     if(!kind || el.__ctFilling) return;
+    /* زدن روی گزینهٔ فهرست، اول کادر را از فوکوس می‌اندازد و یک «change» با متنِ
+       نیمه‌تایپ‌شده می‌دهد؛ آن نادیده گرفته می‌شود تا انتخاب واقعی برسد (وگرنه
+       پنجرهٔ قرارداد باز می‌شد، فهرست بسته می‌شد و انتخاب از دست می‌رفت) */
+    if(e.isTrusted && !pop.hidden && popInput === el) return;
     const v = String(el.value || '').trim();
     /* همان مقدار یک بار بررسی می‌شود (انتخاب از فهرست و بعد ترک کادر دو رویداد می‌دهند) */
     if(el.__ctLast === v) return;
@@ -70953,20 +70957,18 @@
   }
   function homeNewDoc(k){
     switchTab('admin');
-    let n = 0;
+    /* همان مسیر دکمهٔ «+» روی کاشی هر دسته؛ صبر تا فهرست دفتر فنی بار شود
+       (وگرنه ساختن دوبارهٔ اسکلت، فرم بازشده را می‌بست) */
+    let n = 0, okN = 0;
     const t = setInterval(() => {
       n++;
-      const sec = document.getElementById('secAdm' + k);
-      if(!sec && n < 60) return;
-      clearInterval(t);
-      try{ admSetCat(k); }catch(e){}
+      const q = document.querySelector('[data-admquick="' + k + '"]');
       const nf = document.querySelector('#secAdm' + k + ' [data-new-kind="' + k + '"]');
-      if(nf){
-        const tg = nf.querySelector('.nf-toggle');
-        if(tg && !nf.classList.contains('open')) tg.click();
-        setTimeout(() => { try{ scrollToSection(nf); }catch(e){} }, 120);
-      }
-    }, 100);
+      if(nf && nf.classList.contains('open')){ if(++okN >= 6) clearInterval(t); return; }
+      okN = 0;
+      if(q && nf) q.click();
+      if(n > 100){ clearInterval(t); try{ admSetCat(k); }catch(e){} }
+    }, 120);
   }
   function homeNewTask(){
     switchTab('tasks');
