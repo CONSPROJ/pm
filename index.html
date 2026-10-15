@@ -21890,6 +21890,41 @@
   .up-field.drop-in .up-box{border-color:var(--sky) !important;background:color-mix(in srgb, var(--sky) 8%, var(--surface)) !important;}
   /* دکمهٔ حذف فایل در کادر پیوست: سبک عمومی .rm (مطلق) آن را زیر دکمهٔ «باز کردن» پنهان می‌کرد */
   .up-it .up-btn.rm{position:static;top:auto;left:auto;width:auto;min-width:32px;height:32px;border:0;font-size:inherit;}
+  /* ===== پنجره‌های روی هم: لایهٔ زیرین عقب، لایهٔ تازه با قاب ===== */
+  .ov-under > :first-child{transform:scale(.955) translateY(-10px) !important;filter:brightness(.9) saturate(.85);transition:transform .28s cubic-bezier(.2,.8,.2,1), filter .28s;pointer-events:none;}
+  .ov-stacked{background:rgba(10,14,22,.42) !important;}
+  .ov-stacked > :first-child{box-shadow:0 28px 80px rgba(0,0,0,.38), 0 0 0 1px color-mix(in srgb, var(--sky) 40%, transparent), inset 0 3px 0 var(--sky) !important;}
+
+  /* ===== کارت‌های فعالیت (پنجرهٔ کارت‌ها): خلوت و ظریف ===== */
+  /* صفحهٔ دسته‌ها: زیردسته‌ها یک سطر متن ساده، نه ابر کپسول */
+  #deckModal .dk-brsub{gap:2px 12px !important;margin-top:6px !important;}
+  #deckModal .dk-brsub i{background:none !important;border:0 !important;padding:0 !important;height:auto !important;font-size:10.5px !important;font-weight:600 !important;color:var(--muted) !important;}
+  #deckModal .dk-brsub i u{background:none !important;padding:0 !important;margin-inline-start:4px;color:var(--ink) !important;font-weight:800;text-decoration:none;}
+  #deckModal .dk-brsub i:hover{color:var(--sky) !important;}
+  /* نوار جایگاه: باریک */
+  #deckModal .dk-dots{height:6px !important;}
+  #deckModal .dk-dots > *{height:2px !important;}
+  /* سربرگ کارت: دکمه‌های کار پشت «…»، عنوان آزاد از نشان هشدار */
+  #deckModal .dk-adm .adm-acts > .ico-btn:not(.acts-more){display:none !important;}
+  #deckModal .dk-adm .adm-acts.open > .ico-btn:not(.acts-more){display:inline-flex !important;}
+  #deckModal .dk-adm .adm-titlewrap{margin-inline-start:8px !important;}
+  /* مشخصات: یک سطر متن کم‌رنگ، بی‌قاب */
+  #deckModal .dk-adm .adm-meta{background:none !important;border:0 !important;padding:2px 2px 0 !important;font-size:11px !important;color:var(--muted);}
+  /* نمودار زمانی ظریف: خط نازک، گره‌های کوچک، تاریخ و مدت با قلم ریز */
+  #deckModal .adm-ms .ms-bar{height:2px !important;}
+  #deckModal .adm-ms .ms-ln.rd .ms-bar{height:3px !important;}
+  #deckModal .adm-ms .ms-pt > i:not(.ms-ava){width:9px !important;height:9px !important;}
+  #deckModal .adm-ms .ms-pt.now > i{width:12px !important;height:12px !important;}
+  #deckModal .adm-ms .ms-pt.has-ava .ms-ava, #deckModal .adm-ms .ms-pt.has-ava .ms-ava .ava{width:20px !important;height:20px !important;font-size:8px !important;}
+  #deckModal .adm-ms .ms-pt u{font-size:10px !important;font-weight:600 !important;}
+  #deckModal .adm-ms .ms-pt b{font-size:10px !important;font-weight:600 !important;color:var(--muted) !important;}
+  #deckModal .adm-ms .ms-ln em{font-size:10px !important;font-weight:700 !important;}
+  #deckModal .adm-ms .ms-av .ava{width:16px !important;height:16px !important;font-size:7px !important;}
+  #deckModal .adm-ms .ms-head{font-size:11px !important;}
+  /* پیشرفت: یک خط نازک بدون دانه‌ها */
+  #deckModal .adm-ms .pgx-bar{height:3px !important;}
+  #deckModal .adm-ms .pgx-bar .pgx-t{display:none !important;}
+  #deckModal .adm-ms .pgx-l{font-size:10px !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -71833,8 +71868,16 @@
       });
       for(let i = OV.length - 1; i >= 0; i--){
         const o = OV[i];
-        if(!visible(o.el)){ OV.splice(i, 1); dropBack(o); skip++; try{ history.back(); }catch(e){ skip--; } }
+        if(!visible(o.el)){ OV.splice(i, 1); dropBack(o); skip++; try{ history.back(); }catch(e){ skip--; } o.el.classList.remove('ov-under', 'ov-stacked'); }
       }
+      /* پنجره‌های پشت‌سرهم: پنجرهٔ زیرین کمی عقب می‌رود و تیره می‌شود و پنجرهٔ تازه
+         قاب مشخص می‌گیرد تا چشم بفهمد پنجرهٔ جدید از کجا شروع شده */
+      const vis = OV.filter(o => visible(o.el) && !o.el.matches('#msgModal, #confirmModal, #askConfirmModal'));
+      vis.forEach((o, i) => {
+        const top = i === vis.length - 1;
+        o.el.classList.toggle('ov-under', !top);
+        o.el.classList.toggle('ov-stacked', top && vis.length > 1);
+      });
     }
     let t = 0;
     /* فقط پنجره‌هایی که مستقیم زیر body هستند (همهٔ پنجره‌ها همین‌جا ساخته می‌شوند) */
