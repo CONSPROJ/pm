@@ -2004,6 +2004,12 @@
   .adm-ms .ms-rejd{position:absolute;top:18px;z-index:3;width:48px;margin-inline-start:-24px;text-align:center;font-size:10px;font-weight:800;color:var(--c-bad);white-space:nowrap;cursor:help;}
   .adm-ms .ms-ln.rd .ms-rejd{top:auto;bottom:-29px;}
   .adm-ms .ms-rejd.up{top:-17px;}
+  /* ردیف دوم برای نوشته‌هایی که جا نداشتند */
+  .adm-ms.has-dc{padding-bottom:16px !important;}
+  .adm-ms .dc2{margin-top:30px !important;}
+  .adm-ms .ms-rejd.up.dc2, .adm-ms .ms-tbd.up.dc2{margin-top:-14px !important;}
+  .adm-ms .dc-x{visibility:hidden !important;}
+  .adm-ms .ms-pt.dcp > u, .adm-ms .ms-pt.dcp > b, .adm-ms .ms-pt.dcp > small{margin-top:30px !important;}
   .tk-addbtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:12px;border:0;background:var(--ink);color:var(--surface);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;}
   .tk-addbtn svg{width:16px;height:16px;}
   /* ====== صورتجلسه: نمای خلوت ====== */
@@ -51151,6 +51157,61 @@
       + '</span>';
   }
 
+  /* ====== جلوگیری از روی‌هم‌افتادن نوشته‌های نمودار گردش ======
+     وقتی دو مرحله یکی‌دو روز فاصله دارند، برچسب‌ها (نام مرحله، تاریخ،
+     «رد …»، تاریخ دور و موانع) روی هم می‌افتادند. بعد از کشیده شدن،
+     جای واقعی هر نوشته اندازه گرفته می‌شود: نوشتهٔ دومِ برخوردکرده یک
+     ردیف پایین‌تر می‌رود و اگر آنجا هم جا نبود پنهان می‌شود (تاریخش در
+     راهنمای همان نشان می‌ماند). */
+  function msDeclutter(root){
+    const R = el => el.getBoundingClientRect();
+    const hit = (a, b) => a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+    const pad = (r, p) => ({left: r.left - p, right: r.right + p, top: r.top, bottom: r.bottom, width: r.width});
+    root.querySelectorAll('.dc2, .dc-x, .dcp').forEach(el => el.classList.remove('dc2', 'dc-x', 'dcp'));
+    root.classList.remove('has-dc');
+    const placed = [];
+    /* ۱) برچسب نقطه‌ها: اگر به برچسب نقطهٔ قبلی خورد، یک ردیف پایین‌تر */
+    root.querySelectorAll('.ms-pt').forEach(pt => {
+      const parts = Array.from(pt.querySelectorAll(':scope > u, :scope > b, :scope > small')).filter(e => e.offsetParent);
+      if(!parts.length) return;
+      const boxes = () => parts.map(e => pad(R(e), 3));
+      if(boxes().some(bx => placed.some(p => hit(bx, p)))){ pt.classList.add('dcp'); root.classList.add('has-dc'); }
+      boxes().forEach(bx => placed.push(bx));
+    });
+    /* نوشته‌های ثابت دیگر: جمع دورها، برچسب روزهای بالای خط، عکس افراد */
+    root.querySelectorAll('.ms-rsum > span, .ms-ln > em, .ms-span > em').forEach(el => {
+      if(el.offsetParent) placed.push(pad(R(el), 2));
+    });
+    /* ۲) نوشته‌های روی خط: تاریخ رد، تاریخ دور، تاریخ مانع، یادداشت مرحله */
+    root.querySelectorAll('.ms-rejd, .ms-rdt, .ms-tbd, .ms-lnote').forEach(el => {
+      if(!el.offsetParent) return;
+      if(!placed.some(p => hit(pad(R(el), 2), p))){ placed.push(pad(R(el), 2)); return; }
+      el.classList.add('dc2'); root.classList.add('has-dc');
+      if(!placed.some(p => hit(pad(R(el), 2), p))){ placed.push(pad(R(el), 2)); return; }
+      el.classList.remove('dc2'); el.classList.add('dc-x');
+    });
+  }
+  let msDcT = 0;
+  function msDeclutterAll(){
+    clearTimeout(msDcT);
+    msDcT = setTimeout(() => requestAnimationFrame(() => {
+      document.querySelectorAll('.adm-ms').forEach(m => {
+        if(!m.offsetParent) return;
+        const w = Math.round(m.getBoundingClientRect().width) + ':' + m.querySelectorAll('.ms-pt').length;
+        if(m.__dcw === w) return;
+        m.__dcw = w;
+        try{ msDeclutter(m); }catch(e){}
+      });
+    }), 60);
+  }
+  window.msDeclutterAll = msDeclutterAll;
+  try{
+    new MutationObserver(ms => { if(ms.some(m => m.addedNodes && m.addedNodes.length)) msDeclutterAll(); })
+      .observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+  window.addEventListener('resize', () => { document.querySelectorAll('.adm-ms').forEach(m => { m.__dcw = ''; }); msDeclutterAll(); });
+  document.addEventListener('click', () => setTimeout(msDeclutterAll, 80), true);
+  try{ document.fonts && document.fonts.ready.then(() => { document.querySelectorAll('.adm-ms').forEach(m => { m.__dcw = ''; }); msDeclutterAll(); }); }catch(e){}
   /* وزن هر تکه (کمینه ۱): با وزن کمتر از ۱، خطِ تک‌تکه کل عرض را پر نمی‌کرد */
   const msW = d => d == null ? 1 : Math.min(7.15, 1 + Math.sqrt(Math.max(0, d)) * 0.786);
   function msTrackHtml(head, items, extraCls, foot){
