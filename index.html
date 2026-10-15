@@ -25878,6 +25878,20 @@
     });
   }
 
+  /* برچسب دکمهٔ دوم بر اساس نوعِ واقعیِ مورد، نه حدس */
+  function feedGoLabel(g){
+    const k = String((g && g.kind) || '').trim(), id = String((g && g.id) || '');
+    const ADMK = ['statement','contract','letter','minute','design'];
+    if(ADMK.indexOf(k) !== -1) return 'در دفتر فنی';
+    if(/^(prc|proc|procurement|تدارکات)$/.test(k)) return 'در تدارکات';
+    try{ if(id && (adminAll || []).some(a => String(pick(a.row,AD.id)) === id)) return 'در دفتر فنی'; }catch(e){}
+    try{
+      const t = (tasksAll || []).find(r => String(pick(r,T.id) || r.__admId || '') === id);
+      if(t && t.__adm) return 'در دفتر فنی';
+      if(t && String(pick(t,T.side) || '').trim() === 'تدارکات') return 'در تدارکات';
+    }catch(e){}
+    return 'در فعالیت‌ها';
+  }
   function feedCardHtml(x, i){
     const goto = x.goto && (x.goto.id || x.goto.kind === 'general');
     const shortNm = n => String(n || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '');
@@ -25921,7 +25935,7 @@
       /* راه دوم: خودِ مورد در بخش خودش (دفتر فنی یا کارها) */
       +     (goto && !x.openCm && x.goto.id && x.goto.id !== 'general'
               ? '<button type="button" class="fz-btn" data-fgo="doc">'
-                + (/^(task|tasks|activity|فعالیت)$/.test(String(x.goto.kind || '')) ? 'در کارها' : 'در دفتر فنی') + '</button>' : '')
+                + feedGoLabel(x.goto) + '</button>' : '')
       +     (x.reply ? '<button type="button" class="fz-btn" data-nreply="' + esc(x.reply) + '" '
                      + 'data-nreply-title="' + esc(x.title) + '">پاسخ</button>' : '')
       +     (x.canRemind ? '<button type="button" class="fz-btn" data-fremind="'
@@ -72576,7 +72590,12 @@
     const me = nameKey(activeUserName());
     const s = {open:0, late:0, mine:0, mineLate:0, blk:0};
     let mineL = null;
-    try{ mineL = kartWorkOf(activeUserName(), (tasksAll || []).filter(r => r && !r.__adm), (typeof lastAdminDay !== 'undefined' && lastAdminDay) || null).filter(r => taskStatus(r).cls !== 'done'); }catch(e){ mineL = null; }
+    /* همان منبع کارتابل: اگر دفتر فنی هنوز باز نشده، دادهٔ اداری از بستهٔ
+       دریافت‌شده خوانده می‌شود — وگرنه اسناد شخص شمرده نمی‌شد و عدد صفر بود. */
+    const admSrc = (typeof lastAdminDay !== 'undefined' && lastAdminDay)
+      || (bundleCache && bundleCache.data && bundleCache.data.admin)
+      || (heavyCache && heavyCache.data && heavyCache.data.admin) || null;
+    try{ mineL = kartWorkOf(activeUserName(), (tasksAll || []).filter(r => r && !r.__adm), admSrc).filter(r => taskStatus(r).cls !== 'done'); }catch(e){ mineL = null; }
     (tasksAll || []).forEach(r => {
       if(!r || r.__adm || !pick(r,T.id)) return;
       if(taskStatus(r).cls === 'done') return;
@@ -72591,6 +72610,8 @@
       const now0 = new Date(); now0.setHours(0,0,0,0);
       s.mine = mineL.length;
       s.mineLate = mineL.filter(r => { const d = taskDue(r); return d && d < now0; }).length;
+      const wk = new Date(now0); wk.setDate(wk.getDate() + 7);
+      s.mineSoon = mineL.filter(r => { const d = taskDue(r); return d && d >= now0 && d <= wk; }).length;
     }
     try{ tbCache.items.forEach(a => a.forEach(it => { if(it.open) s.blk++; })); }catch(e){}
     return s;
@@ -72838,7 +72859,6 @@
     const me = activeUserName();
     let nm = ''; try{ nm = welcomeName() || me; }catch(e){ nm = me; }
     let rl = ''; try{ rl = roleOf(me) || ''; }catch(e){}
-    const hot = work.filter(x => x.level === 'hot').length, warm = work.filter(x => x.level === 'warm').length;
     const h = new Date().getHours(), day = h >= 5 && h < 18;
     const st = (n, l, cls, attr) => '<button type="button" class="h3-hs' + (cls ? ' ' + cls : '') + '" ' + attr + '><b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b><span>' + l + '</span></button>';
     return '<section class="h3-hero h3-a" style="--i:0">'
@@ -72849,9 +72869,10 @@
       +   '<em>' + [rl ? esc(rl) : '', esc(faDateLong(todayShamsi()) || todayShamsi())].filter(Boolean).join(' · ') + '</em></span>'
       + '</div>'
       + '<div class="h3-hss">'
+      /* هر سه عدد از کارهای خودِ شخص، با همان تعریف کارتابل */
       +   st(tk ? tk.mine : 0, 'کار من', '', 'data-h3k="mine"')
-      +   st(hot, 'بحرانی', hot ? 'bad' : '', 'data-hm="deck"')
-      +   st(warm, 'نزدیک موعد', warm ? 'warn' : '', 'data-hm="deck"')
+      +   st(tk ? tk.mineLate : 0, 'گذشته از موعد', tk && tk.mineLate ? 'bad' : '', 'data-h3k="mine"')
+      +   st(tk ? (tk.mineSoon || 0) : 0, 'موعد تا ۷ روز', tk && tk.mineSoon ? 'warn' : '', 'data-h3k="mine"')
       + '</div>'
       + '</section>';
   }
