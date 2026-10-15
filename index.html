@@ -18568,6 +18568,12 @@
   .lgx-c.n.long{flex:0 1 auto;max-width:34%;} .lgx-c.n.long > b{font-size:13.5px;line-height:1.5;direction:ltr;}
   .lgx-c > b u{text-decoration:none;font-size:10.5px;font-weight:600;color:var(--muted);margin-inline-start:3px;}
   .lgx-c.w{flex:1.7 1 0;}
+  .lgx-c.f{flex:0 0 auto;align-items:center;justify-content:center;gap:3px;}
+  .lgx-c.f{padding-inline:8px;}
+  /* مبلغ و تاریخ به اندازهٔ خودشان؛ نام طرف بقیهٔ جا را می‌گیرد و فقط آن کوتاه می‌شود */
+  .lgx-c.a{flex:0 0 auto;max-width:40%;}
+  .lgx-c.f .dlc{margin:0 !important;height:26px !important;padding:0 8px !important;}
+  .lgx-c.f .dlc b, .lgx-c.f .dlc i{display:none !important;}
   button.lgx-v{all:unset;box-sizing:border-box;display:block;max-width:100%;font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;cursor:pointer;transition:color .15s;}
   button.lgx-v:hover{color:var(--sky);}
   button.lgx-v:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:4px;}
@@ -52724,7 +52730,8 @@
               + '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'
               + '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
               + '</button>' : '')
-      +     (id ? admDlBtnHtml(kind, r, 'adm-hdl') : '')
+      /* فایل سند در نوار دفتری می‌نشیند؛ فقط صورتجلسه و طراحی (بی‌نوار) در سربرگ */
+      +     ((id && (kind === 'minute' || kind === 'design')) ? admDlBtnHtml(kind, r, 'adm-hdl') : '')
       +     ((id && kind === 'contract' && !String(pick(r,AD.cAdd) || '').trim() && (() => { try{ return canEditAdm(kind, r); }catch(e){ return false; } })())
             ? '<button type="button" class="ico-btn adm-addend" data-ctaddend="' + esc(id) + '" title="افزودن الحاقیه به این قرارداد" aria-label="افزودن الحاقیه">' + UP_I.plus + '</button>' : '')
       +     ((id && (() => { try{ return canUploadAdm(kind, r); }catch(e){ return false; } })())
@@ -52826,8 +52833,16 @@
           return ledgerHtml([
             {k: 'شماره' + (sub ? ' · ' + esc(sub) : ''), v: docNo ? esc(toFa(docNo)) : '—', c: 'n' + (String(docNo || '').length > 4 ? ' long' : '')},
             party ? {k: pl, v: '<button type="button" class="lgx-v lk" data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">' + esc(party) + '</button>', c: 'w'} : null,
-            ms ? {k: 'مبلغ', v: '<b>' + ms.v + (ms.u !== 'تومان' ? '<u>' + ms.u + '</u>' : '') + '</b>', t: ms.v + ' ' + ms.u + (ms.u !== 'تومان' ? ' تومان' : '') + ' — ' + moneyFa(amt) + ' ریال'} : null,
-            dt ? {k: 'تاریخ', v: esc(dateShort(dt)), t: admDate(dt)} : null
+            ms ? {k: 'مبلغ', c: 'a', v: '<b>' + ms.v + (ms.u !== 'تومان' ? '<u>' + ms.u + '</u>' : '') + '</b>', t: ms.v + ' ' + ms.u + (ms.u !== 'تومان' ? ' تومان' : '') + ' — ' + moneyFa(amt) + ' ریال'} : null,
+            dt ? {k: 'تاریخ', c: 'a', v: esc(dateShort(dt)), t: admDate(dt)} : null,
+            (function(){
+              const f = id ? admDlBtnHtml(kind, r, 'lgx-dl') : ''; if(!f) return null;
+              /* برچسب خانه همان نوع فایل است (PDF، JPG…) و دکمه فقط آیکون دانلود؛ جای کمتری می‌گیرد */
+              let lb = 'فایل';
+              try{ const L = attachList(admFilesTxt(kind, r)); const ex = Array.from(new Set(L.map(a => String(a.ext || '').toUpperCase()).filter(Boolean)));
+                   lb = L.length > 1 ? toFa(L.length) + ' فایل' : (ex[0] || 'فایل'); }catch(e){}
+              return {k: esc(lb), v: f, c: 'f'};
+            })()
           ]);
         })()
       + payBoxHtml(kind, r, editable, id)
