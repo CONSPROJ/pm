@@ -21470,6 +21470,12 @@
     .afr .afr-meta .afr-d{min-width:0;margin-inline-start:auto;}
     .afr .afr-meta .afr-st{max-width:40%;overflow:hidden;text-overflow:ellipsis;}
   }
+  /* قرارداد و الحاقیه‌هایش: یک قاب، الحاقیه‌ها با رنگ بنفش زیر اصلی */
+  .afr-cg{display:flex;flex-direction:column;gap:4px;padding:4px;border-radius:16px;border:1px solid color-mix(in srgb, #8a5cf6 30%, var(--line));background:color-mix(in srgb, #8a5cf6 5%, transparent);}
+  .afr-cg > .afr{border-color:transparent;}
+  .afr-adds{display:flex;flex-direction:column;gap:4px;margin-inline-start:14px;padding-inline-start:10px;border-inline-start:2px solid color-mix(in srgb, #8a5cf6 45%, transparent);}
+  .afr-adh{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:var(--muted);padding:2px 4px;} .afr-adh b{color:#8a5cf6;font-weight:900;}
+  .afr.afr-add{background:color-mix(in srgb, #8a5cf6 7%, var(--surface));border-color:color-mix(in srgb, #8a5cf6 22%, var(--line));}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -39571,6 +39577,9 @@
      و قراردادِ بی‌تاریخ اتمام را بحرانی کند. */
   const cEndRaw = row => { try{ if(!row || typeof row !== 'object') return ''; if(row['تاریخ اتمام قرارداد'] != null) return String(row['تاریخ اتمام قرارداد']).trim(); const kk = pickKeys(row), k = kk.map[normKey('تاریخ اتمام قرارداد')]; const v = k === undefined ? '' : row[k]; return v == null ? '' : String(v).trim(); }catch(e){ return ''; } };
   window.cEndRaw = cEndRaw;
+  /* ویرایش (Rev) صورت وضعیت: فقط از ستون خودش */
+  const sRevRaw = row => { try{ if(!row || typeof row !== 'object') return ''; const v = row['ویرایش صورت وضعیت']; return v == null ? '' : String(v).trim(); }catch(e){ return ''; } };
+  window.sRevRaw = sRevRaw;
   const pick = (row, keys) => {
     if(!row || typeof row !== 'object') return '';
     if(!keys) return '';               // کلید نامعتبر، به‌جای خطا مقدار خالی
@@ -45126,7 +45135,7 @@
       'شماره صورت وضعیت':'number','مبلغ صورت وضعیت':'amount','مبلغ پرداختی':'paid',
       'تاریخ ارسال':'sent_date','موعد اتمام':'due_date','نوع ابلاغ':'notify','وضعیت رسیدگی':'review','مسئول':'owner',
       'وضعیت پرداخت':'pay_status','تاریخ پرداخت':'pay_date','تاریخچهٔ ارسال':'send_history',
-      'لینک':'link','توضیحات':'note','نوع صورت وضعیت':'st_type'},
+      'لینک':'link','توضیحات':'note','نوع صورت وضعیت':'st_type','ویرایش صورت وضعیت':'revision'},
     contracts:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
       'rvWho':'reviewers',
       'rvDone':'reviewers_done',
@@ -45224,6 +45233,13 @@
     return STMT_TYPE_COL;
   }
   setTimeout(() => { try{ probeStmtTypeCol(); }catch(e){} }, 3400);
+  /* ستون‌های تازه (ویرایش صورت وضعیت، تاریخ اتمام قرارداد): تا در پایگاه‌داده ساخته نشده، فرستاده نمی‌شوند */
+  let STMT_REV_COL = null, CTR_END_COL = null;
+  async function probeNewCols(){
+    try{ await supaFetch('statements?select=revision&limit=1'); STMT_REV_COL = true; }catch(e){ STMT_REV_COL = false; }
+    try{ await supaFetch('contracts?select=end_date&limit=1'); CTR_END_COL = true; }catch(e){ CTR_END_COL = false; }
+  }
+  setTimeout(() => { try{ probeNewCols(); }catch(e){} }, 3500);
 
   function toSupa(table, obj){
     const m = SUPA_MAP[table] || {};
@@ -45243,6 +45259,8 @@
       if(table === 'designs' && DESIGN_NEW_COLS.indexOf(col) !== -1 && DESIGN_COL !== true) return;
       if(table === 'minutes' && col === 'follower' && MINUTE_FOL_COL !== true) return;
       if(table === 'statements' && col === 'st_type' && STMT_TYPE_COL !== true) return;
+      if(table === 'statements' && col === 'revision' && STMT_REV_COL !== true) return;
+      if(table === 'contracts' && col === 'end_date' && CTR_END_COL !== true) return;
       let v = obj[k];
       if(table === 'tasks' && ['done','not_done','doing'].indexOf(col) !== -1) v = (String(v).trim() === '1');
       if(table === 'minutes' && col === 'done') v = (v === true || String(v) === 'true' || String(v).trim() === '1');
@@ -46446,7 +46464,7 @@
           amount: x.amount ? Number(toEn(String(x.amount)).replace(/[^\d.]/g,'')) : null,
           paid: x.paid ? Number(toEn(String(x.paid)).replace(/[^\d.]/g,'')) : null,
           sent_date:x.sentDate, due_date:x.dueDate || null, notify:x.notify, review:x.review, owner:x.owner, link:x.link, note:x.note
-        }, (x.stType && STMT_TYPE_COL === true) ? {st_type: x.stType} : {})]));
+        }, (x.stType && STMT_TYPE_COL === true) ? {st_type: x.stType} : {}, (x.revision && STMT_REV_COL === true) ? {revision: String(x.revision)} : {})]));
         (payload.contracts || []).forEach(x => jobs.push(['contracts', Object.assign({
           date_fa: payload.date, project: payload.project, engineer: payload.engineer,
           title:x.title, number:x.number, party:x.party, subject:x.subject,
@@ -46454,7 +46472,7 @@
           paid: x.paid ? Number(toEn(String(x.paid)).replace(/[^\d.]/g,'')) : null,
           start_date:x.startDate, sent_date:x.sentDate, due_date:x.dueDate || null, notify:x.notify, review:x.review,
           owner:x.owner, link:x.link
-        }, x.addendum ? {addendum_no: String(x.addendum)} : {}, x.endDate ? {end_date: String(x.endDate)} : {})]));
+        }, x.addendum ? {addendum_no: String(x.addendum)} : {}, (x.endDate && CTR_END_COL === true) ? {end_date: String(x.endDate)} : {})]));
         (payload.minutes || []).forEach(m => {
           const mid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
           (m.items || []).forEach((it, k) => jobs.push(['minutes', Object.assign({
@@ -47587,7 +47605,7 @@
     sType:['نوع صورت وضعیت'],
     sNo:['شماره صورت وضعیت'], sAmount:['مبلغ صورت وضعیت'], sPaid:['مبلغ پرداختی'],
     sDate:['تاریخ ارسال'], sNotify:['نوع ابلاغ'], sNote:['توضیحات'],
-    sPayStatus:['وضعیت پرداخت'], sPayDate:['تاریخ پرداخت'],
+    sPayStatus:['وضعیت پرداخت'], sPayDate:['تاریخ پرداخت'], sRev:['ویرایش صورت وضعیت'],
     cTitle:['عنوان قرارداد'], cNo:['شماره قرارداد'], cParty:['طرف قرارداد'],
     cSubject:['موضوع قرارداد'], cAmount:['مبلغ قرارداد'], cPaid:['مبلغ پرداختی'],
     cDate:['تاریخ ارسال'], cNotify:['وضعیت ابلاغ'], cStart:['تاریخ شروع قرارداد'],
@@ -48134,7 +48152,7 @@
              : (kind === 'letter')    ? pick(r,AD.lNo)
              : (kind === 'design')    ? pick(r,AD.dNo) : pick(r,AD.mIdx);
     const rawTitle = (kind === 'design') ? dsTitle(r)
-                   : (kind === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
+                   : (kind === 'statement') ? ((pick(r,AD.sName) || 'صورت وضعیت') + (sRevRaw(r) && sRevRaw(r) !== '0' ? ' · Rev ' + sRevRaw(r) : ''))
                    : (kind === 'contract')  ? ((pick(r,AD.cAdd) ? 'الحاقیه ' + toFa(pick(r,AD.cAdd)) + ' — ' : '') + (pick(r,AD.cTitle) || 'قرارداد'))
                    : (kind === 'letter')    ? (pick(r,AD.lSubject) || 'نامه')
                    : (pick(r,AD.mText) || pick(r,AD.mSubject) || 'صورتجلسه');
@@ -51416,6 +51434,7 @@
           + f('a-sParty','طرف قرارداد', pick(r,AD.sParty), false, 'contractPartyList')
           + f('a-sCno','شماره قرارداد', pick(r,AD.sCno), false, 'contractNoList')
           + f('a-sNo','شماره صورت وضعیت', pick(r,AD.sNo))
+          + f('a-sRev','ویرایش (Rev) — برای نسخهٔ اصلاحی همین صورت وضعیت', sRevRaw(r)).replace('class="a-sRev"', 'class="a-sRev" inputmode="numeric" placeholder="۰" data-orig="' + esc(sRevRaw(r)) + '"')
           + chips('<div class="field"><label>نوع صورت وضعیت</label><select class="a-sType"><option value="">—</option>'
               + ST_TYPES.map(v => '<option value="' + v + '"' + (pick(r,AD.sType) === v ? ' selected' : '') + '>' + v + '</option>').join('')
               + '</select></div>'))
@@ -53395,6 +53414,7 @@
       put(o,'نام قرارداد','a-sName'); put(o,'طرف قرارداد','a-sParty'); put(o,'شماره قرارداد','a-sCno');
       put(o,'شماره صورت وضعیت','a-sNo'); put(o,'مبلغ صورت وضعیت','a-sAmount'); put(o,'مبلغ پرداختی','a-sPaid');
       put(o,'نوع صورت وضعیت','a-sType');
+      { const el = host.querySelector('.a-sRev'); if(el){ const v = toEn(el.value.trim()); if(v !== toEn(String(el.dataset.orig || ''))) o['ویرایش صورت وضعیت'] = v; } }
       put(o,'تاریخ ارسال','a-sDate'); put(o,'موعد اتمام','a-due');
       put(o,'نوع ابلاغ','a-sNotify'); put(o,'توضیحات','a-sNote');
       put(o,'وضعیت رسیدگی','a-sReview'); put(o,'rvWho','a-rvWho');
@@ -53627,7 +53647,7 @@
       Object.assign(item, {contractName:v['نام قرارداد'], party:v['طرف قرارداد'], contractNo:v['شماره قرارداد'],
         number:v['شماره صورت وضعیت'], amount:v['مبلغ صورت وضعیت'], paid:v['مبلغ پرداختی'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['نوع ابلاغ'], note:v['توضیحات'], owner:v['مسئول'],
-        link:v['لینک'], review:v['وضعیت رسیدگی'], stType:v['نوع صورت وضعیت']});
+        link:v['لینک'], review:v['وضعیت رسیدگی'], stType:v['نوع صورت وضعیت'], revision:v['ویرایش صورت وضعیت']});
     }else if(kind === 'contract'){
       Object.assign(item, {title:v['عنوان قرارداد'], number:v['شماره قرارداد'], party:v['طرف قرارداد'],
         subject:v['موضوع قرارداد'], amount:v['مبلغ قرارداد'], paid:v['مبلغ پرداختی'],
@@ -55725,12 +55745,43 @@
       const noVal = t => (toEn(String(t || '')).match(/\d+/g) || [])
         .reduce((n, x) => n * 10000 + (+x), 0);
 
+      /* قرارداد: الحاقیه‌ها زیر قرارداد اصلی (همان شماره)، مثل ویرایش‌های سند طراحی؛
+         هر جا قرارداد اصلی هست الحاقیه‌اش همان‌جا می‌آید، نه جدا در گروه دیگر */
+      const cAdds = new Map();
+      if(k === 'contract'){
+        const mains = new Map();
+        rows.forEach(row => { const nk = cctNoK(row); if(nk && !cctAddV(row) && !mains.has(nk)) mains.set(nk, row); });
+        rows = rows.filter(row => { const nk = cctNoK(row); if(!nk || !cctAddV(row) || !mains.has(nk)) return true;
+          const m = mains.get(nk); if(!cAdds.has(m)) cAdds.set(m, []); cAdds.get(m).push(row); return false; });
+        cAdds.forEach(L => L.sort((a2, b2) => cctAddV(a2) - cctAddV(b2)));
+      }
+      /* صورت وضعیت: نسخه‌های اصلاحی (Rev) یک صورت وضعیت زیر آخرین نسخه */
+      if(k === 'statement'){
+        const rv = row => +(toEn(sRevRaw(row)).match(/\d+/) || [0])[0];
+        const keyOf = row => { const no = toEn(String(pick(row,AD.sNo) || '')).replace(/\s+/g, ''); if(!no) return ''; let p0 = ''; try{ p0 = normName(ctrCanon(String(pick(row,AD.sParty) || ''))); }catch(e){} return p0 + '|' + toEn(String(pick(row,AD.sCno) || '')).replace(/\s+/g, '') + '|' + no; };
+        const G = new Map();
+        rows.forEach(row => { const kk = keyOf(row); if(!kk) return; if(!G.has(kk)) G.set(kk, []); G.get(kk).push(row); });
+        const drop = new Set();
+        G.forEach(L => { if(L.length < 2 || !L.some(x => rv(x) > 0)) return; L.sort((a2, b2) => rv(b2) - rv(a2)); cAdds.set(L[0], L.slice(1)); L.slice(1).forEach(x => drop.add(x)); });
+        if(drop.size) rows = rows.filter(row => !drop.has(row));
+      }
+      const fastOf = row => {
+        const ad = cAdds.get(row);
+        if(!ad || !ad.length) return admFastRow(k, row);
+        let E = null; try{ if(k === 'contract') E = cctEndOf(row); }catch(e){}
+        if(k === 'statement') return '<div class="afr-cg">' + admFastRow(k, row)
+          + '<div class="afr-adds"><div class="afr-adh"><b>' + toFa(ad.length) + ' نسخهٔ قبلی</b></div>'
+          + ad.map(a2 => admFastRow(k, a2).replace('class="afr ', 'class="afr afr-add ')).join('') + '</div></div>';
+        return '<div class="afr-cg">' + admFastRow(k, row)
+          + '<div class="afr-adds"><div class="afr-adh"><b>' + toFa(ad.length) + ' الحاقیه</b>' + (E && E.end ? '<span>اتمام مؤثر ' + esc(toFa(E.end)) + (E.by ? ' (الحاقیه ' + toFa(E.by) + ')' : '') + '</span>' : '') + '</div>'
+          + ad.map(a2 => admFastRow(k, a2).replace('class="afr ', 'class="afr afr-add ')).join('') + '</div></div>';
+      };
       // در قرارداد و نامه، زیر نام هر فرد بر اساس شمارهٔ سند هم تیتر می‌خورد
       const bodyHtml = items => {
         /* فهرست سریع: بدون گروه‌بندی شماره، فقط سطرهای فشرده */
         if(admView === 'fast')
           return '<div class="adm-fast">'
-            + items.map(row => admFastRow(k, row)).join('') + '</div>';
+            + items.map(fastOf).join('') + '</div>';
         if(k !== 'contract' && k !== 'letter')
           return '<div class="adm-list-grid">'
             + items.map(row => admCard(k, row, true)).join('') + '</div>';
@@ -55738,7 +55789,7 @@
         const keys = (k === 'letter') ? AD.lNo : AD.cNo;
         const label = (k === 'letter') ? 'نامهٔ شمارهٔ' : 'قرارداد شمارهٔ';
         const byNo = new Map();
-        items.forEach(row => {
+        items.flatMap(row => [row].concat(cAdds.get(row) || [])).forEach(row => {
           const no = String(pick(row, keys) || '').trim() || 'بدون شماره';
           if(!byNo.has(no)) byNo.set(no, []);
           byNo.get(no).push(row);
