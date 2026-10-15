@@ -22287,6 +22287,7 @@
     .up-it > .up-btn:first-of-type{margin-inline-start:auto;}
     .up-it .up-desc{height:32px;font-size:12px;}
   }
+  .ctm-hit.add{border:1px dashed var(--ok) !important;} .ctm-hit.add em{color:var(--ok) !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -30567,7 +30568,7 @@
       + (ed && sug.length ? '<div class="ctm-sug"><u>شاید همین پیمانکار باشد</u>' + sug.slice(0, 6).map(x =>
           '<div class="ctm-sr"><span class="ctm-sim" title="شباهت"><i style="width:' + Math.round(x.sim * 100) + '%"></i></span><span class="ctm-sn"><b>' + esc(x.o.name) + '</b><small>' + toFa(Math.round(x.sim * 100)) + '٪ شبیه' + ctmSrcHtml(x.o) + '</small></span>'
           + '<button type="button" class="ctm-y" data-ctmlink="' + esc(x.o.name) + '">همین است</button><button type="button" class="ctm-n" data-ctmno="' + esc(x.o.name) + '">نه</button></div>').join('') + '</div>' : '')
-      + (ed ? '<div class="ctm-add"><label class="ctm-q">' + CTC_I.user + '<input type="search" class="ctm-in" placeholder="جست‌وجوی نام دیگر برای یکی کردن…" autocomplete="off"></label><div class="ctm-res"></div></div>'
+      + (ed ? '<div class="ctm-add"><label class="ctm-q">' + CTC_I.user + '<input type="search" class="ctm-in" placeholder="افزودن نام دیگر: بنویسید یا از نام‌های موجود انتخاب کنید…" autocomplete="off"></label><div class="ctm-res"></div></div>'
         : '')
       + '</div>';
   }
@@ -30608,8 +30609,10 @@
       if(!q){ res.innerHTML = ''; return; }
       const mem = new Set(ctrNamesOf(box.dataset.ctm).map(normName));
       const hits = Array.from(ctmAllNames().values()).filter(o => !mem.has(o.k) && toEn(o.name.toLowerCase()).indexOf(q) !== -1).slice(0, 8);
-      res.innerHTML = hits.length ? hits.map(o => '<button type="button" class="ctm-hit" data-ctmlink="' + esc(o.name) + '"><b>' + esc(o.name) + '</b><small>' + ctmSrcHtml(o) + (normName(ctrCanon(o.name)) !== o.k ? '<i class="ctm-s">زیر «' + esc(ctrCanon(o.name)) + '»</i>' : '') + '</small><em>+ یکی کن</em></button>').join('')
-        : '<div class="ctm-none">نامی پیدا نشد</div>';
+      /* نامی که هنوز جایی نیامده هم به‌عنوان نام دیگرِ همین پیمانکار اضافه می‌شود */
+      const raw = String(i.value || '').trim(), exact = hits.some(o => normName(o.name) === normName(raw)) || mem.has(normName(raw));
+      res.innerHTML = (raw.length >= 2 && !exact ? '<button type="button" class="ctm-hit add" data-ctmlink="' + esc(raw) + '"><b>«' + esc(raw) + '»</b><small>نام تازه</small><em>+ افزودن به نام‌های این پیمانکار</em></button>' : '')
+        + hits.map(o => '<button type="button" class="ctm-hit" data-ctmlink="' + esc(o.name) + '"><b>' + esc(o.name) + '</b><small>' + ctmSrcHtml(o) + (normName(ctrCanon(o.name)) !== o.k ? '<i class="ctm-s">زیر «' + esc(ctrCanon(o.name)) + '»</i>' : '') + '</small><em>+ یکی کن</em></button>').join('');
       return;
     }
     if(i && i.classList && i.classList.contains('ctcn-q')){
@@ -36020,6 +36023,29 @@
     ctr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 18.5h19"/><path d="M5 18.5V14a7 7 0 0114 0v4.5"/><path d="M10 7.5V5.5h4v2M12 7v4"/></svg>',
     open:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg>'
   };
+  /* کارهای کارتابل یک نفر (همان شمارشی که خانه و کارتابل هر دو نشان می‌دهند) */
+  function kartWorkOf(name, tasks, adm){
+    const myTasks = tasks.filter(r =>
+      nameKey(pick(r,T.m1)) === nameKey(name) || nameKey(pick(r,T.m2)) === nameKey(name));
+    /* کارتابل: مورد اداری فقط تا وقتی اینجاست که توپ در زمین همین شخص
+       است — مسئول بررسی داخلیِ هنوز تأییدنکرده، یا مسئول پیگیری. وقتی
+       سند در بررسی داخلی دیگران است، از کارتابل مسئولش بیرون می‌رود و با
+       برگشتنش دوباره می‌آید. بند صورتجلسه برای مسئول پیگیری هم می‌آید. */
+    const admTasks = (typeof adminAsTasks === 'function' ? adminAsTasks(adm) : [])
+      .filter(r => {
+        const k = nameKey(name);
+        const isMine = nameKey(pick(r,T.m1)) === k || (r.__admKind === 'minute' && nameKey(pick(r,T.m2)) === k);
+        if(!isMine) return false;
+        if(r.__rv || r.__admKind === 'minute') return true;
+        const ar = r.__admRow;
+        if(ar){
+          const st = String(pick(ar,AD.review) || '');
+          if((st === 'بررسی داخلی' || st === 'رد داخلی') && String(pick(ar,AD.rvWho) || '').trim()) return false;
+        }
+        return true;
+      });
+    return myTasks.concat(admTasks);
+  }
   function kartItemHtml(r, wIds, dleft){
     const id = String(pick(r,T.id) || r.__admId || '');
     const crit = wIds.has(id), st = taskStatus(r);
@@ -37329,26 +37355,7 @@
          این تب پیش‌تر همهٔ فهرست فعالیت‌ها را دوباره می‌ساخت (و کند و
          شلوغ بود). حالا فقط تقویم شخص را نشان می‌دهد و دو میان‌بر:
          لیست فعالیت‌ها و کارت‌های فعالیت خودش. */
-      const myTasks = tasks.filter(r =>
-        nameKey(pick(r,T.m1)) === nameKey(name) || nameKey(pick(r,T.m2)) === nameKey(name));
-      /* کارتابل: مورد اداری فقط تا وقتی اینجاست که توپ در زمین همین شخص
-         است — مسئول بررسی داخلیِ هنوز تأییدنکرده، یا مسئول پیگیری. وقتی
-         سند در بررسی داخلی دیگران است، از کارتابل مسئولش بیرون می‌رود و با
-         برگشتنش دوباره می‌آید. بند صورتجلسه برای مسئول پیگیری هم می‌آید. */
-      const admTasks = (typeof adminAsTasks === 'function' ? adminAsTasks(adm) : [])
-        .filter(r => {
-          const k = nameKey(name);
-          const isMine = nameKey(pick(r,T.m1)) === k || (r.__admKind === 'minute' && nameKey(pick(r,T.m2)) === k);
-          if(!isMine) return false;
-          if(r.__rv || r.__admKind === 'minute') return true;
-          const ar = r.__admRow;
-          if(ar){
-            const st = String(pick(ar,AD.review) || '');
-            if((st === 'بررسی داخلی' || st === 'رد داخلی') && String(pick(ar,AD.rvWho) || '').trim()) return false;
-          }
-          return true;
-        });
-      const all = myTasks.concat(admTasks);
+      const all = kartWorkOf(name, tasks, adm);
       const open = all.filter(r => taskStatus(r).cls !== 'done');
       const wIds = profileState.warnIds || new Set();
       const warn = open.filter(r => wIds.has(String(pick(r,T.id) || r.__admId || ''))).length;
@@ -71869,6 +71876,8 @@
   function homeTaskStats(){
     const me = nameKey(activeUserName());
     const s = {open:0, late:0, mine:0, mineLate:0, blk:0};
+    let mineL = null;
+    try{ mineL = kartWorkOf(activeUserName(), (tasksAll || []).filter(r => r && !r.__adm), (typeof lastAdminDay !== 'undefined' && lastAdminDay) || null).filter(r => taskStatus(r).cls !== 'done'); }catch(e){ mineL = null; }
     (tasksAll || []).forEach(r => {
       if(!r || r.__adm || !pick(r,T.id)) return;
       if(taskStatus(r).cls === 'done') return;
@@ -71877,8 +71886,13 @@
       const d = daysSince(pick(r,T.due));
       const late = d != null && d > 0;
       s.open++; if(late) s.late++;
-      if(nameKey(pick(r,T.m1)) === me || nameKey(pick(r,T.m2)) === me){ s.mine++; if(late) s.mineLate++; }
+      if(!mineL && (nameKey(pick(r,T.m1)) === me || nameKey(pick(r,T.m2)) === me)){ s.mine++; if(late) s.mineLate++; }
     });
+    if(mineL){
+      const now0 = new Date(); now0.setHours(0,0,0,0);
+      s.mine = mineL.length;
+      s.mineLate = mineL.filter(r => { const d = taskDue(r); return d && d < now0; }).length;
+    }
     try{ tbCache.items.forEach(a => a.forEach(it => { if(it.open) s.blk++; })); }catch(e){}
     return s;
   }
