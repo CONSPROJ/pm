@@ -21872,6 +21872,24 @@
   #ctProfModal .hr-rng .ctc-mini{display:none !important;}
   #ctProfModal .ct-alias + .ct-stats, #ctProfModal .ct-body > .ct-stats:first-child{padding-top:12px;}
   .cfd-pane .cfdl-r .ptx-d{flex:0 0 auto;}
+  /* آپلود: شرح هر فایل، «آپلود شد» در همان پنجره */
+  .up-it .up-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:5px;}
+  .up-it .up-col > .up-nm{flex:none;}
+  .up-it .up-desc{width:100%;box-sizing:border-box;height:28px;margin:0;padding:0 10px;border-radius:9px;border:1px dashed var(--line);background:transparent;font:inherit;font-size:11px;color:var(--ink);}
+  .up-it .up-desc:focus{outline:none;border-style:solid;border-color:var(--sky);background:var(--surface);}
+  .up-it .up-desc::placeholder{color:var(--muted);}
+  .up-it.just{animation:upJust 1.6s ease-out 1;border-color:color-mix(in srgb, var(--ok) 55%, var(--line));}
+  @keyframes upJust{0%{background:color-mix(in srgb, var(--ok) 16%, var(--surface));}100%{background:var(--surface);}}
+  .up-field .up-prog.done{color:var(--ok) !important;}
+  .fs-run{font-style:normal;font-size:10.5px;font-weight:700;color:var(--sky);margin-inline-start:6px;}
+  .fs-done{margin-top:8px;padding:8px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-size:11px;font-weight:800;transition:opacity .4s;}
+  .fs-done.out{opacity:0;}
+  .dzl-fn .dzl-nt{font-style:normal;font-size:10px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+  .dzl-fn .dzl-nt::before{content:'— ';}
+  /* رها کردن فایل روی هر جای فرم */
+  .up-field.drop-in .up-box{border-color:var(--sky) !important;background:color-mix(in srgb, var(--sky) 8%, var(--surface)) !important;}
+  /* دکمهٔ حذف فایل در کادر پیوست: سبک عمومی .rm (مطلق) آن را زیر دکمهٔ «باز کردن» پنهان می‌کرد */
+  .up-it .up-btn.rm{position:static;top:auto;left:auto;width:auto;min-width:32px;height:32px;border:0;font-size:inherit;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -52591,9 +52609,15 @@
   };
   function attachList(val){
     return String(val || '').split(/\s*\n\s*|\s+(?=https?:\/\/|s3b?:)/).map(s => s.trim()).filter(s => /^(https?:\/\/|s3b?:[a-z]+\/)/.test(s)).map(u => {
-      let name = '';
+      let name = '', note = '';
       const h = u.indexOf('#');
-      if(h !== -1){ try{ name = decodeURIComponent(u.slice(h + 1)); }catch(e){ name = u.slice(h + 1); } }
+      if(h !== -1){
+        /* «#نام|شرح» — هر دو کدشده؛ «|» خام فقط جداکننده است */
+        const fr = u.slice(h + 1), bar = fr.indexOf('|');
+        const dec = x => { try{ return decodeURIComponent(x); }catch(e){ return x; } };
+        name = dec(bar === -1 ? fr : fr.slice(0, bar));
+        if(bar !== -1) note = dec(fr.slice(bar + 1)).trim();
+      }
       const base = h === -1 ? u : u.slice(0, h);
       const src = /^s3b?:/.test(base) ? 's3' : /\/storage\/v1\/object\//.test(base) ? 'sb' : (/drive\.google|docs\.google/.test(base) ? 'drive' : 'web');
       if(!name){
@@ -52602,11 +52626,17 @@
         else{ try{ name = decodeURIComponent(base.split('?')[0].split('/').pop() || '') || 'پیوست'; }catch(e){ name = 'پیوست'; } }
       }
       const ext = (name.match(/\.([a-z0-9]{1,5})$/i) || ['', ''])[1].toLowerCase();
-      const a = {url: base, full: u, name, src, ext};
+      const a = {url: base, full: u, name, src, ext, note};
       /* فایل خصوصی: نشانیِ واقعی هنگام کلیک از سرور گرفته می‌شود */
       if(src === 's3'){ a.slot = /^s3b:/.test(base) ? 2 : 1; const kk = base.slice(base.indexOf(':') + 1).split(','); a.key = kk[0]; if(kk[1]) a.thumb = kk[1]; a.url = s3Href(a, false); }
       return a;
     });
+  }
+  /* نشانی کامل یک پیوست با نام و شرح (شرح خالی = بدون «|») */
+  function attachFullOf(full, name, note){
+    const h = String(full).indexOf('#'), base = h === -1 ? String(full) : String(full).slice(0, h);
+    note = String(note || '').trim();
+    return base + '#' + encodeURIComponent(name || '') + (note ? '|' + encodeURIComponent(note) : '');
   }
   function attachDownloadUrl(a){
     if(a.src === 's3') return s3Href(a, true);
@@ -52623,13 +52653,23 @@
     const th = attThumb(a);
     return '<div class="up-it k-' + ATT_KIND(a.ext) + '" data-url="' + esc(a.full) + '">'
       + '<span class="up-ext' + (th ? ' has-th' : '') + '">' + (th || esc((a.ext || 'فایل').toUpperCase())) + '</span>'
+      + (editable ? '<span class="up-col">' : '')
       + '<button type="button" class="up-nm" data-fv="1" title="نمایش ' + esc(a.name) + '"><b>' + esc(a.name) + '</b>'
-      +   '<small>' + (a.note ? esc(a.note) + ' · ' : '') + (a.src === 's3' ? 'فضای ابری' : a.src === 'sb' ? 'فضای سامانه' : a.src === 'drive' ? 'گوگل درایو' : 'لینک') + '</small></button>'
+      +   '<small>' + (a.info ? esc(a.info) + ' · ' : '') + (!editable && a.note ? esc(a.note) + ' · ' : '') + (a.src === 's3' ? 'فضای ابری' : a.src === 'sb' ? 'فضای سامانه' : a.src === 'drive' ? 'گوگل درایو' : 'لینک') + '</small></button>'
+      /* شرح هر فایل (اختیاری)، زیر نامش؛ همراه نشانی فایل ذخیره می‌شود */
+      + (editable ? '<input type="text" class="up-desc" maxlength="140" placeholder="شرح این فایل (اختیاری)" value="' + esc(a.note || '') + '" aria-label="شرح فایل ' + esc(a.name) + '"></span>' : '')
       + '<a class="up-btn dl" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود">' + UP_I.dl + '<span>دانلود</span></a>'
       + '<a class="up-btn" href="' + esc(a.url) + '" target="_blank" rel="noopener" title="باز کردن">' + UP_I.open + '</a>'
       + (editable ? '<button type="button" class="up-btn rm" data-uprm="1" title="حذف از این سند">' + UP_I.x + '</button>' : '')
       + '</div>';
   }
+  document.addEventListener('input', e => {
+    const d = e.target; if(!d || !d.classList || !d.classList.contains('up-desc')) return;
+    const row = d.closest('.up-it[data-url]'), field = d.closest('.up-field'); if(!row) return;
+    const a = attachList(row.dataset.url)[0]; if(!a) return;
+    row.dataset.url = attachFullOf(row.dataset.url, a.name, d.value);
+    if(field) upSync(field);
+  });
   function attachFieldHtml(val, kind){
     const L = attachList(val);
     return '<div class="field up-field" data-kind="' + esc(kind || '') + '">'
@@ -52671,7 +52711,7 @@
     const n = o.max || L.length;
     return '<span class="dzl-fs fpills' + (o.cls ? ' ' + o.cls : '') + '" data-fvl="' + esc(L.map(a => a.full).join('\n')) + '"' + (o.title ? ' data-fvtitle="' + esc(o.title) + '"' : '') + '>'
       + L.slice(0, n).map((a, i) => '<span class="dzl-f k-' + ATT_KIND(a.ext) + '">'
-          + '<button type="button" class="dzl-fn" data-fv="' + i + '" title="نمایش ' + esc(a.name) + '"><i>' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span></button>'
+          + '<button type="button" class="dzl-fn" data-fv="' + i + '" title="نمایش ' + esc(a.name) + (a.note ? ' — ' + esc(a.note) : '') + '"><i>' + esc((a.ext || 'فایل').toUpperCase()) + '</i><span>' + esc(a.name) + '</span>' + (a.note ? '<em class="dzl-nt">' + esc(a.note) + '</em>' : '') + '</button>'
           + '<a class="dzl-dl" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود ' + esc(a.name) + '" aria-label="دانلود ' + esc(a.name) + '">' + UP_I.dl + '</a></span>').join('')
       + (L.length > n ? '<button type="button" class="fp-more" data-fv="' + n + '" title="همهٔ پیوست‌ها">+' + toFa(L.length - n) + '</button>' : '')
       + '</span>';
@@ -53227,15 +53267,24 @@
     if(pg){
       const rows = Array.from(field.querySelectorAll('.up-it.busy'));
       const pct = rows.length ? Math.round(rows.reduce((n, r) => n + (+r.dataset.p || 0), 0) / rows.length * 100) : 0;
-      pg.hidden = !busy; if(hint) hint.hidden = !!busy;
-      pg.textContent = busy ? (toFa(busy) + ' فایل در حال آپلود · ' + toFa(pct) + '٪ — تا پایان صبر کنید') : '';
+      clearTimeout(pg.__t);
+      if(busy){
+        pg.hidden = false; pg.classList.remove('done'); if(hint) hint.hidden = true;
+        pg.textContent = toFa(busy) + ' فایل در حال آپلود · ' + toFa(pct) + '٪ — تا پایان صبر کنید';
+      }else if(field.__upOk){
+        /* پایان: همین‌جا در پنجره «آپلود شد» می‌آید */
+        const n = field.__upOk, bad = field.querySelectorAll('.up-it.fail').length; field.__upOk = 0;
+        pg.hidden = false; pg.classList.add('done'); if(hint) hint.hidden = true;
+        pg.textContent = '✓ ' + (n > 1 ? toFa(n) + ' فایل' : 'فایل') + ' آپلود شد' + (bad ? ' · ' + toFa(bad) + ' ناموفق' : '') + ' — با «ذخیره» در سند ثبت می‌شود';
+        pg.__t = setTimeout(() => { pg.hidden = true; pg.classList.remove('done'); if(hint) hint.hidden = false; }, 7000);
+      }else{ pg.hidden = true; if(hint) hint.hidden = false; pg.textContent = ''; }
     }
   }
   function upRowHtml(file, note){
     return '<span class="up-ext">' + esc(((file.name.match(/\.([a-z0-9]{1,5})$/i) || ['', 'فایل'])[1]).toUpperCase()) + '</span>'
       + '<span class="up-nm"><b>' + esc(file.name) + '</b><small>' + esc(note) + ' <em>۰٪</em></small><i class="up-bar"><i></i></i></span>';
   }
-  async function upOne(field, row, file0){
+  async function upOne(field, row, file0, old){
     row.className = 'up-it busy'; row.dataset.p = '0';
     row.innerHTML = upRowHtml(file0, 'آماده‌سازی…');
     upBusyPaint(field);
@@ -53248,10 +53297,16 @@
         row.dataset.p = String(p); bar.style.width = Math.round(p * 100) + '%'; pct.textContent = toFa(Math.round(p * 100)) + '٪';
         upBusyPaint(field);
       }, field.dataset.kind || ''));
-      const a = attachList(url)[0];
-      if(a) a.note = note;
-      row.outerHTML = attachItemHtml(a, true);
-      return url;
+      /* هم‌نام: فایل تازه جای قبلی می‌نشیند و شرح قبلی می‌ماند */
+      const keepNote = old && old.isConnected ? ((old.querySelector('.up-desc') || {}).value || '') : '';
+      const full = keepNote ? attachFullOf(url, attachList(url)[0].name, keepNote) : url;
+      const a = attachList(full)[0];
+      if(a) a.info = (old ? 'جایگزین شد · ' : '') + note;
+      const tmp = document.createElement('div'); tmp.innerHTML = attachItemHtml(a, true);
+      const neu = tmp.firstElementChild; neu.classList.add('just');
+      if(old && old.isConnected){ old.replaceWith(neu); row.remove(); } else row.replaceWith(neu);
+      field.__upOk = (field.__upOk || 0) + 1;
+      return full;
     }catch(err){
       row.className = 'up-it fail';
       row.innerHTML = '<span class="up-ext">!</span><span class="up-nm"><b>' + esc(file0.name) + '</b><small>آپلود نشد — ' + esc(friendlyErr(err)) + '</small></span>'
@@ -53268,18 +53323,21 @@
     const field = box && box.closest('.up-field');
     if(!field || !files || !files.length) return [];
     const list = field.querySelector('.up-list');
-    const have = new Set(Array.from(list.querySelectorAll('.up-it')).map(r => (r.querySelector('.up-nm b') || {}).textContent || ''));
-    const big = [], dup = [];
+    /* فایل هم‌نام با فایلی که از قبل هست: جایگزین می‌شود، نه اضافه */
+    const have = new Map(Array.from(list.querySelectorAll('.up-it[data-url]')).map(r => [(r.querySelector('.up-nm b') || {}).textContent || '', r]));
+    const big = [], rep = [], seen = new Set();
     const jobs = Array.from(files).filter(f => {
       if(f.size > upMaxMB() * 1048576 && !/^image\//.test(f.type)){ big.push(f.name); return false; }
-      if(have.has(f.name)){ dup.push(f.name); return false; }
-      have.add(f.name); return true;
+      if(seen.has(f.name)) return false;
+      seen.add(f.name); return true;
     }).map(file => {
+      const old = have.get(file.name) || null;
+      if(old) rep.push(file.name);
       const row = document.createElement('div');
-      list.appendChild(row);
-      return upOne(field, row, file);
+      if(old) old.insertAdjacentElement('afterend', row); else list.appendChild(row);
+      return upOne(field, row, file, old);
     });
-    if(dup.length) upNotice(field, toFa(dup.length) + ' فایل تکراری کنار گذاشته شد: ' + dup.join('، '));
+    if(rep.length) upNotice(field, toFa(rep.length) + ' فایل هم‌نام جایگزینِ نسخهٔ قبلی می‌شود: ' + rep.join('، '));
     if(big.length) showDialog('warn', 'حجم بیش از حد', big.join('\n') + '\nهر فایل حداکثر ' + upMaxTxt() + '. فایل‌های بزرگ را فشرده (zip) یا چندتکه کنید.');
     return (await Promise.all(jobs)).filter(Boolean);
   }
@@ -53391,7 +53449,7 @@
     m.querySelector('.fv').innerHTML = '<div class="fv-head">'
       + '<button type="button" class="fv-back" data-fvx="1" aria-label="برگشت">' + UP_I.prev + '<span>برگشت</span></button>'
       + '<span class="fv-ext k-' + k + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
-      + '<span class="fv-t"><b title="' + esc(a.name) + '">' + esc(a.name) + '</b><small>' + (n > 1 ? toFa(S.i + 1) + ' از ' + toFa(n) + ' · ' : '') + (S.title ? esc(S.title) : (a.src === 's3' ? 'فضای ابری' : a.src === 'sb' ? 'فضای سامانه' : a.src === 'drive' ? 'گوگل درایو' : 'لینک')) + '</small></span>'
+      + '<span class="fv-t"><b title="' + esc(a.name) + '">' + esc(a.name) + '</b><small>' + (n > 1 ? toFa(S.i + 1) + ' از ' + toFa(n) + ' · ' : '') + (a.note ? esc(a.note) + ' · ' : '') + (S.title ? esc(S.title) : (a.src === 's3' ? 'فضای ابری' : a.src === 'sb' ? 'فضای سامانه' : a.src === 'drive' ? 'گوگل درایو' : 'لینک')) + '</small></span>'
       + '<span class="fv-acts">'
       +   (n > 1 ? '<button type="button" class="fv-b fv-all" data-fvall="1" title="دانلود همهٔ ' + toFa(n) + ' فایل">' + UP_I.dl + '<span>همه (' + toFa(n) + ')</span><em>' + toFa(n) + '</em></button>' : '')
       +   '<a class="fv-b pri" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener" title="دانلود">' + UP_I.dl + '<span>دانلود</span></a>'
@@ -53666,6 +53724,7 @@
     if(sec.classList.contains('busy')) return;
     const row = (typeof rowMap !== 'undefined' && rowMap.get(id)) || null;
     sec.classList.add('busy');
+    { const h = sec.querySelector('.fs-h'); if(h && !h.querySelector('.fs-run')) h.insertAdjacentHTML('beforeend', '<em class="fs-run">در حال آپلود ' + toFa(files.length) + ' فایل…</em>'); }
     const grid = sec.querySelector('.fs-grid');
     const em = grid.querySelector('.fs-empty'); if(em) em.remove();
     const urls = [], errs = [];
@@ -53686,21 +53745,33 @@
     try{
       if(urls.length){
         const cur = String((row && pick(row, AD.link)) || attachList(sec.dataset.fvl).map(a => a.full).join('\n') || '').trim();
-        const nv = [cur].concat(urls).filter(Boolean).join('\n');
+        /* فایل هم‌نام جای نسخهٔ قبلی می‌نشیند (شرح قبلی می‌ماند)، نه این‌که دوباره اضافه شود */
+        const curL = attachList(cur), up = urls.map(u => attachList(u)[0]).filter(Boolean);
+        let nRep = 0;
+        const merged = curL.map(a => { const nw = up.find(b => b.name === a.name); if(!nw) return a.full; nRep++; nw.used = 1; return a.note ? attachFullOf(nw.full, nw.name, a.note) : nw.full; });
+        const nv = merged.concat(up.filter(b => !b.used).map(b => b.full)).filter(Boolean).join('\n');
+        sec.__rep = nRep;
         const ok = await sendAction({action:'update', target: kind, id: id, values: {'لینک': nv}});
         if(!ok) throw new Error(lastServerError || 'ثبت نشد');
         if(row){ try{ row['لینک'] = nv; }catch(e){} }
         const neu = document.createElement('div');
         neu.innerHTML = fileSecHtml(nv, {kind, id, canAdd: true, title: sec.dataset.fvtitle || ''});
-        sec.replaceWith(neu.firstElementChild);
+        const ns = neu.firstElementChild;
+        /* پایان آپلود همین‌جا، داخل همان بخش پیوست دیده می‌شود (نه پنجرهٔ جدا) */
+        if(!errs.length){
+          const nRep = sec.__rep || 0, nNew = urls.length - nRep;
+          ns.insertAdjacentHTML('beforeend', '<div class="fs-done" role="status">✓ ' + [nNew ? (nNew > 1 ? toFa(nNew) + ' فایل' : 'فایل') + ' آپلود و ثبت شد' : '', nRep ? toFa(nRep) + ' فایل هم‌نام جایگزین شد' : ''].filter(Boolean).join(' · ') + '</div>');
+          setTimeout(() => { const d = ns.querySelector('.fs-done'); if(d){ d.classList.add('out'); setTimeout(() => d.remove(), 500); } }, 6000);
+        }
+        sec.replaceWith(ns);
+        sec = ns;
         try{ clearNetCache(); }catch(e){}
       }
     }catch(er){
       errs.push('ثبت در سند: ' + friendlyErr(er));
       sec.querySelectorAll('.fs-it.busy').forEach(t => t.remove());
-    }finally{ sec.classList.remove('busy'); }
+    }finally{ sec.classList.remove('busy'); sec.querySelectorAll('.fs-run').forEach(x => x.remove()); }
     if(errs.length) showDialog('err', urls.length ? 'بخشی از فایل‌ها ثبت نشد' : 'آپلود با خطا مواجه شد', errs.join('\n'));
-    else if(urls.length) showDialog('ok', 'آپلود شد', (urls.length > 1 ? toFa(urls.length) + ' فایل' : 'فایل') + ' با موفقیت آپلود و در سند ثبت شد.');
   }
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-fsadd]');
@@ -53719,6 +53790,22 @@
     return (sec && sec.querySelector('[data-fsadd]')) ? sec : null;
   };
   const isFileDrag = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') !== -1;
+  /* سند طراحی: فایل‌ها مال هر Rev است؛ رها کردن روی سطر یا کارتش پنجرهٔ فایل‌های Rev جاری را باز می‌کند */
+  const dsDropTarget = el => {
+    if(!el || !el.closest) return null;
+    const fr = el.closest('.afr[data-afrkind="design"]'), cd = !fr && el.closest('.rv.adm-k.adm-design');
+    const id = fr ? fr.dataset.afr : cd ? (cd.dataset.id || '') : '';
+    if(!id) return null;
+    try{ const r = admRowById(id); if(!r || !canUploadAdm('design', r)) return null; }catch(e){ return null; }
+    return {el: fr || cd, id};
+  };
+  /* فرمی که کادر پیوست دارد: رها کردن روی هر جای همان پنجره به کادر پیوستش می‌رود */
+  const formDropField = el => {
+    if(!el || !el.closest || el.closest('.up-box')) return null;
+    const w = el.closest('.dsm, .modal-card, .af, .modal'); if(!w) return null;
+    const fs = Array.from(w.querySelectorAll('.up-field')).filter(f => f.offsetParent !== null);
+    return fs.length === 1 ? fs[0] : null;
+  };
   const fsRowTarget = el => {
     const fr = el && el.closest && el.closest('.afr[data-afr]');
     if(!fr || fr.dataset.afrkind === 'design') return null;
@@ -53736,6 +53823,12 @@
     if(!isFileDrag(e)) return;
     /* رها کردن فایل در جای دیگرِ صفحه، فایل را به‌جای سایت باز نکند */
     if(!(e.target.closest && e.target.closest('.up-box, .up-field, .rw-ph, input[type=file]'))) e.preventDefault();
+    if(e.target.closest && e.target.closest('.up-field')) return;   // کادر پیوست خودش رسیدگی می‌کند
+    const ff = formDropField(e.target);
+    document.querySelectorAll('.up-field.drop-in').forEach(f => { if(f !== ff) f.classList.remove('drop-in'); });
+    if(ff){ e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; ff.classList.add('drop-in'); fsOverSet(null); return; }
+    const dz = dsDropTarget(e.target);
+    if(dz){ e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; fsOverSet(null, dz.el); return; }
     const sec = fsTarget(e.target);
     /* حالت فهرستی: رها کردن روی سطر سند هم پیوست می‌کند */
     const fr = !sec && fsRowTarget(e.target);
@@ -53745,9 +53838,27 @@
     if(e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
     fsOverSet(sec, sec.contains(e.target) ? null : e.target.closest('.rv.adm-k, .am2, [data-fvcard]'));
   }));
-  document.addEventListener('dragleave', e => { if(!e.relatedTarget || !document.documentElement.contains(e.relatedTarget)) fsOverSet(null); });
+  document.addEventListener('dragleave', e => { if(!e.relatedTarget || !document.documentElement.contains(e.relatedTarget)){ fsOverSet(null); document.querySelectorAll('.up-field.drop-in').forEach(f => f.classList.remove('drop-in')); } });
   document.addEventListener('drop', e => {
     if(!isFileDrag(e)) return;
+    document.querySelectorAll('.up-field.drop-in').forEach(f => f.classList.remove('drop-in'));
+    if(e.target.closest && e.target.closest('.up-field')) return;   // کادر پیوست خودش رسیدگی می‌کند
+    const ff = formDropField(e.target);
+    if(ff){
+      e.preventDefault();
+      const fs0 = e.dataTransfer && e.dataTransfer.files;
+      if(fs0 && fs0.length) handleUpload(ff.querySelector('.up-box'), Array.from(fs0));
+      return;
+    }
+    const dz = dsDropTarget(e.target);
+    if(dz){
+      e.preventDefault(); fsOverSet(null);
+      const arr0 = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if(!arr0.length) return;
+      try{ dsOpen(dz.id, 'files'); }catch(er){ return; }
+      const box = document.querySelector('#dsModal .up-field .up-box') || (function(){ const m = (typeof dsModal === 'function') ? dsModal() : null; return m && m.querySelector('.up-field .up-box'); })();
+      if(box) handleUpload(box, arr0);
+      return;
+    }
     let sec = fsTarget(e.target);
     const fr = !sec && fsRowTarget(e.target);
     fsOverSet(null);
@@ -53819,18 +53930,19 @@
     if(el.files && el.files.length) handleUpload(box, Array.from(el.files));
     el.value = '';
   });
+  const upBoxAt = el => { const f = el && el.closest && el.closest('.up-field'); return f && f.querySelector('.up-box'); };
   ['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => {
-    const box = e.target.closest && e.target.closest('.up-box');
+    const box = upBoxAt(e.target);
     if(!box) return;
     e.preventDefault();
     box.classList.add('over');
   }));
   document.addEventListener('dragleave', e => {
-    const box = e.target.closest && e.target.closest('.up-box');
-    if(box) box.classList.remove('over');
+    const box = upBoxAt(e.target);
+    if(box && !(e.relatedTarget && box.closest('.up-field').contains(e.relatedTarget))) box.classList.remove('over');
   });
   document.addEventListener('drop', e => {
-    const box = e.target.closest && e.target.closest('.up-box');
+    const box = upBoxAt(e.target);
     if(!box) return;
     e.preventDefault();
     box.classList.remove('over');
