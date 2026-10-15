@@ -49930,7 +49930,7 @@
         const endD = (pts.filter(x => x.d && !x.due && !x.ghost).pop() || {}).d;
         const late = endD ? faDiff(dueRaw, endD) : null;
         tone = late == null ? 'flat' : (late > 0 ? 'bad' : 'ok');
-        sub = late == null ? '' : (late > 0 ? toFa(late) + ' روز دیرتر' : 'به‌موقع');
+        sub = late == null ? '' : (late > 0 ? toFa(late) + ' روز دیرتر' : late < 0 ? toFa(-late) + ' روز زودتر ✓' : 'سر موعد ✓');
       }else if(inHand){
         tone = left < 0 ? 'bad' : (left <= 3 ? 'warn' : '');
         /* روزهای گذشته روی خطِ بعد از موعد نوشته می‌شود؛ زیر نقطه تکرار نمی‌شود */
@@ -49940,6 +49940,18 @@
         sub = 'نزد ' + (stage === 'c' ? 'کارفرما' : 'دیگران') + (left < 0 ? ' · ' + toFa(-left) + ' روز گذشته' : '');
       }
       pts.splice(at, 0, {k:'due', t:'موعد', d:dueRaw, due:true, tone:tone, sub:sub});
+    }else if(ok(dueRaw)){
+      /* موعد مالِ مرحلهٔ «تنظیم» است: بعد از رفتن به مرحلهٔ بعد، فقط نشان می‌دهد
+         زودتر یا دیرتر از موعد بیرون آمده؛ زمان مرحلهٔ بعد از تاریخ خودِ مرحله شمرده می‌شود، نه از موعد */
+      const leave = pts.find(x => ['i','p','c','ok','pay'].indexOf(x.k) !== -1 && ok(x.d));
+      if(leave){
+        const diff = faDiff(dueRaw, leave.d), dT = faToDate(dueRaw);
+        let at = pts.findIndex((x, i) => i > 0 && (x.ghost || (!x.d || faToDate(x.d) > dT)));
+        if(at === -1) at = pts.length; if(at === 0) at = 1;
+        if(at <= reached) reached++;
+        pts.splice(at, 0, {k:'due', t:'موعد تنظیم', d:dueRaw, due:true, past:true, tone: diff > 0 ? 'bad' : 'ok',
+          sub: diff > 0 ? toFa(diff) + ' روز دیرتر' : diff < 0 ? toFa(-diff) + ' روز زودتر ✓' : 'سر موعد ✓'});
+      }
     }
 
     pts.forEach((x, i) => {
@@ -50001,10 +50013,15 @@
         if(!x.ahead){
           // مدت ماندن در مرحلهٔ قبلی
           const b = dateOf(x);
-          if(pv && b && x.due){
+          if(x.due && x.past){ /* نشانِ موعدِ گذشته روی خط؛ مدت روی خطِ بعدی، از شروع واقعی مرحله */ }
+          else if(pv && b && x.due){
             /* از شروع مرحله تا موعد */
             const g = faDiff(dateOf(pv), b);
             if(g != null && g >= 0){ ln.em = toFa(g) + ' روز تا موعد'; ln.tone = ''; }
+          }else if(prev.due && prev.past){
+            /* موعدِ گذشتهٔ مرحلهٔ قبل: خط بعدی از تاریخ مرحلهٔ واقعی شمرده می‌شود */
+            const g = pv ? faDiff(dateOf(pv), b) : null;
+            if(g != null && g >= 0) ln.em = toFa(g) + ' روز';
           }else if(prev.due && b && prev.d){
             /* از موعد تا مرحلهٔ بعد (یا امروز): همان تأخیر */
             const g = faDiff(prev.d, b);
@@ -50337,7 +50354,7 @@
     const dueP = dueRaw ? {k:'due', t:'موعد', d:dueRaw, due:true,
       tone: done ? (doneLate == null ? 'flat' : (doneLate > 0 ? 'bad' : 'ok')) : (late ? 'bad' : (left <= 3 ? 'warn' : '')),
       /* «چند روز گذشته» فقط یک‌بار، روی خط؛ زیر موعد فقط تاریخ */
-      sub: done ? (doneLate == null ? '' : (doneLate > 0 ? toFa(doneLate) + ' روز دیرتر' : 'به‌موقع'))
+      sub: done ? (doneLate == null ? '' : (doneLate > 0 ? toFa(doneLate) + ' روز دیرتر' : doneLate < 0 ? toFa(-doneLate) + ' روز زودتر ✓' : 'سر موعد ✓'))
                 : (left === 0 ? 'موعد امروز' : '')} : null;
     const midDate = faToDate(mid.d || today);
     if(dueP && midDate && faToDate(dueRaw) < midDate){ pts.push(dueP); pts.push(mid); }
