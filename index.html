@@ -21642,6 +21642,12 @@
   .dlc{flex:0 0 auto !important;display:inline-flex !important;align-items:center !important;gap:4px !important;height:28px !important;width:auto !important;min-width:0 !important;padding:0 9px !important;border-radius:9px !important;
     color:var(--ok) !important;background:color-mix(in srgb, var(--ok) 8%, var(--surface)) !important;border:1px solid color-mix(in srgb, var(--ok) 35%, var(--line)) !important;cursor:pointer;font-size:11px !important;line-height:1 !important;}
   .dlc svg{width:14px !important;height:14px !important;flex:none;}
+  /* دکمهٔ فایل بی‌نوشته: مربعی، خنثی؛ رنگ فقط روی آیکون قالب */
+  .dlc{padding:0 6px !important;min-width:28px !important;justify-content:center;}
+  .dlc:has(svg.dlf){background:var(--surface) !important;border-color:var(--line) !important;}
+  .dlc:has(svg.dlf):hover{background:var(--field) !important;}
+  .dlc svg.dlf{width:17px !important;height:17px !important;}
+  .dlc b{display:none !important;}
   .dlc b{font-weight:800;font-size:10.5px;letter-spacing:.2px;font-family:var(--m, inherit);}
   .dlc i{font-style:normal;font-size:10px;font-weight:800;min-width:16px;height:16px;padding:0 4px;border-radius:8px;display:inline-grid;place-items:center;background:var(--ok);color:#fff;}
   .dlc:hover{background:color-mix(in srgb, var(--ok) 16%, var(--surface)) !important;}
@@ -49759,9 +49765,30 @@
     try{ openShare(b.dataset.t, '', '', b.dataset.p, b.dataset.f); }catch(err){}
   }, true);
   /* یک شکل برای دکمهٔ دانلود همه‌جا: آیکون، نوع فایل (PDF، DWG…) و اگر چندتاست، شمارش */
+  /* دکمهٔ فایل: بی‌نوشته؛ هر قالب معروف آیکون و رنگ خودش را دارد
+     (PDF، اکسل، ورد، عکس، نقشهٔ CAD، فشرده، ویدیو، پاورپوینت). بقیه
+     همان علامت دانلود. نام فایل در راهنمای دکمه می‌ماند. */
+  const DLF_DOC = '<path d="M6.5 2.8h7.2l4.8 4.8v13.6H6.5z"/><path d="M13.7 2.8v4.8h4.8"/>';
+  const DLF_I = {
+    pdf:  {c:'#d6453a', p: DLF_DOC + '<rect x="4" y="12.6" width="11.6" height="5.4" rx="1.4" fill="currentColor" stroke="none"/><path d="M6.4 16.6v-2.6h1.1a.8.8 0 010 1.6H6.4M10 16.6v-2.6h.8a1.3 1.3 0 010 2.6zM13.4 16.6v-2.6h1.4M13.4 15.3h1.1" stroke="#fff" stroke-width="1"/>'},
+    xls:  {c:'#1f8a4c', p: DLF_DOC + '<path d="M9 11h6.5v7H9zM9 14.5h6.5M12.2 11v7"/>'},
+    doc:  {c:'#2b6cc4', p: DLF_DOC + '<path d="M8.8 11.5l1.3 5.5 1.9-4.2 1.9 4.2 1.3-5.5"/>'},
+    ppt:  {c:'#d0682a', p: DLF_DOC + '<path d="M12 11.2v3.6h3.6A3.6 3.6 0 1112 11.2z"/>'},
+    img:  {c:'#2a8a86', p: '<rect x="3.2" y="4.5" width="17.6" height="15" rx="2.6"/><circle cx="8.6" cy="9.4" r="1.6"/><path d="M4 17.5l4.6-4.4 3.3 3 3.1-2.6L20 17.6"/>'},
+    cad:  {c:'#6d5bb5', p: '<path d="M4 20L12 4l8 16z"/><path d="M8 20l4-8 4 8"/><circle cx="12" cy="4" r="1.2"/>'},
+    zip:  {c:'#b7811f', p: DLF_DOC + '<path d="M10.5 3v1.6M10.5 6.2v1.6M10.5 9.4V11"/><rect x="9.2" y="12" width="2.6" height="3.4" rx=".8"/>'},
+    vid:  {c:'#5a5fc7', p: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/>'}
+  };
+  const DLF_EXT = {pdf:'pdf', xls:'xls', xlsx:'xls', xlsm:'xls', csv:'xls', ods:'xls', doc:'doc', docx:'doc', odt:'doc', rtf:'doc',
+    ppt:'ppt', pptx:'ppt', jpg:'img', jpeg:'img', png:'img', heic:'img', heif:'img', webp:'img', gif:'img', bmp:'img', tif:'img', tiff:'img',
+    dwg:'cad', dxf:'cad', dwf:'cad', dwfx:'cad', swf:'cad', rvt:'cad', ifc:'cad', skp:'cad', zip:'zip', rar:'zip', '7z':'zip',
+    mp4:'vid', mov:'vid', avi:'vid', mkv:'vid'};
   function dlcInner(L){
-    const exts = Array.from(new Set(L.map(a => String(a.ext || '').toUpperCase()).filter(Boolean)));
-    return UP_I.dl + '<b>' + esc(exts.length === 1 ? exts[0] : (exts.length ? 'فایل' : 'فایل')) + '</b>' + (L.length > 1 ? '<i>' + toFa(L.length) + '</i>' : '');
+    const kinds = Array.from(new Set(L.map(a => DLF_EXT[String(a.ext || '').toLowerCase()] || '')));
+    const k = kinds.length === 1 ? kinds[0] : '';
+    const F = DLF_I[k];
+    const ic = F ? '<svg class="dlf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:' + F.c + '">' + F.p + '</svg>' : UP_I.dl;
+    return ic + (L.length > 1 ? '<i>' + toFa(L.length) + '</i>' : '');
   }
   function admDlBtnHtml(kind, r, cls){
     const t = admFilesTxt(kind, r); if(!t) return '';
