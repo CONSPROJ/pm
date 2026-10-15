@@ -3570,8 +3570,6 @@
   .avb-sw .sw i{position:absolute;top:2px;inset-inline-start:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .18s ease;}
   .avb-sw.on{color:var(--ink);} .avb-sw.on .sw{background:var(--sky);} .avb-sw.on .sw i{inset-inline-start:14px;}
   .avb-sw:focus-visible{outline:2px solid var(--sky);outline-offset:2px;}
-  .admview-bar.no-rv .avb-sw{display:none;}
-  .admview-bar.sorted .avb-sw{display:none;}
   .avb-sort{position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;}
   .avb-sort svg{width:15px;height:15px;flex:0 0 15px;}
   .avb-sort select{all:unset;cursor:pointer;font:inherit;color:inherit;max-width:150px;}
@@ -21801,6 +21799,37 @@
   .hma-it.sm .hma-ic svg{width:17px;height:17px;}
   .hma-it.sm .hma-tx b{font-size:var(--t-label);font-weight:700;}
   @media(max-width:380px){ .hma-items{grid-template-columns:minmax(0,1fr);} }
+
+  /* نوار ابزار یکسان فهرست‌های دفتر فنی: نما · گروه‌بندی (+ زیرگروه) · ترتیب — درست بالای فهرست */
+  #admViewBar{margin:4px 0 12px;padding:6px;gap:8px;border-radius:16px;border:1px solid var(--line);background:var(--surface);}
+  #admViewBar .admview-seg{border:0;}
+  #admViewBar .avs{font-size:var(--t-body);font-weight:700;padding:6px 12px;}
+  #admViewBar .avs.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  [data-theme="dark"] #admViewBar .avs.on{background:var(--line);color:var(--ink);}
+  .avb-sel{position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--muted);font-size:var(--t-body);font-weight:700;cursor:pointer;}
+  .avb-sel svg{width:15px;height:15px;flex:0 0 15px;}
+  .avb-sel select{all:unset;cursor:pointer;font:inherit;color:inherit;max-width:190px;}
+  .admview-bar.grouped .avb-grp, .admview-bar.sorted .avb-sort{color:var(--sky);border-color:color-mix(in srgb, var(--sky) 45%, var(--line));background:color-mix(in srgb, var(--sky) 8%, var(--surface));}
+  .avb-sw[hidden]{display:none !important;}
+  .avb-pre{text-decoration:none;font-weight:600;opacity:.8;white-space:nowrap;}
+  .avb-pre::after{content:":";}
+  .avb-sel select{color:var(--ink);font-weight:800;}
+  .admview-bar.grouped .avb-grp select, .admview-bar.sorted .avb-sort select{color:inherit;}
+  #admViewBar .avb-sw{font-size:var(--t-body);font-weight:700;}
+  #admViewBar .avb-sort{margin-inline-start:auto;}
+  #ltrSegHost:empty{display:none;}
+  @media(max-width:620px){
+    #admViewBar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;}
+    #admViewBar .admview-seg{justify-self:start;}
+    #admViewBar .avb-sw{justify-self:end;height:32px;padding:0 4px;}
+    #admViewBar .avb-sw[hidden] + .avb-sort{grid-column:auto;}
+    #admViewBar .avb-sel{min-width:0;height:34px;padding:0 9px;}
+    #admViewBar .avb-pre{display:none;}
+    #admViewBar .avb-sel select{max-width:none;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--t-label);}
+    #admViewBar .avb-sort{margin-inline-start:0;}
+    #admViewBar .avb-grp{grid-row:2;grid-column:1;}
+    #admViewBar .avb-sort{grid-row:2;grid-column:2;}
+  }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -22314,23 +22343,26 @@
       </div>
       <div id="admNewBox"></div>
     </div>
+    <!-- نوار یکسان همهٔ دسته‌ها: نما، گروه‌بندی (و زیرگروه)، ترتیب. همیشه درست بالای فهرست همان دسته -->
     <div class="admview-bar" id="admViewBar">
       <div class="admview-seg" role="group" aria-label="نحوهٔ نمایش">
         <button type="button" class="avs" data-admview="fast" title="هر مورد یک سطر؛ همه در یک نگاه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>فهرست</span></button>
         <button type="button" class="avs" data-admview="card" title="هر مورد کارت کامل با جزئیات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg><span>کارت</span></button>
-        <button type="button" class="avs" data-admview="new" title="همهٔ موارد پشت سر هم، تازه‌ترین بالا؛ بدون گروه‌بندی"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>تازه‌ترین‌ها</span></button>
       </div>
-      <button type="button" class="avb-sw" data-admgroupsw="1" role="switch" aria-checked="false" title="داخل هر گروهِ ابلاغ، موارد به تفکیک مرحلهٔ رسیدگی (بررسی داخلی، نزد کارفرما، …) هم بیایند">
-        <span class="sw" aria-hidden="true"><i></i></span><span>تفکیک رسیدگی</span>
+      <label class="avb-sel avb-grp" title="گروه‌بندی فهرست">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="6" rx="1.8"/><rect x="3.5" y="14" width="17" height="6" rx="1.8"/></svg>
+        <u class="avb-pre">گروه‌بندی</u><select id="admGrpSel" aria-label="گروه‌بندی"></select>
+      </label>
+      <button type="button" class="avb-sw" data-admgroupsw="1" role="switch" aria-checked="false">
+        <span class="sw" aria-hidden="true"><i></i></span><span class="avb-swl">تفکیک رسیدگی</span>
       </button>
-      <label class="avb-sort" title="مرتب‌سازی: با انتخاب شماره یا تاریخ، موارد هر بخش بدون گروه‌بندی و پشت سر هم می‌آیند">
+      <label class="avb-sel avb-sort" title="ترتیب موارد">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3.5 16.5L7 20l3.5-3.5"/><path d="M17 20V4M13.5 7.5L17 4l3.5 3.5"/></svg>
-        <select id="admSortSel" aria-label="مرتب‌سازی">
-          <option value="">ترتیب: پیش‌فرض</option>
-          <option value="no-desc">شماره: بزرگ به کوچک</option>
-          <option value="no-asc">شماره: کوچک به بزرگ</option>
-          <option value="date-desc">تاریخ: جدیدترین</option>
-          <option value="date-asc">تاریخ: قدیمی‌ترین</option>
+        <u class="avb-pre">ترتیب</u><select id="admSortSel" aria-label="ترتیب">
+          <option value="date-desc">تازه‌ترین</option>
+          <option value="date-asc">قدیمی‌ترین</option>
+          <option value="no-desc">شماره، بزرگ به کوچک</option>
+          <option value="no-asc">شماره، کوچک به بزرگ</option>
         </select>
       </label>
     </div>
@@ -48439,8 +48471,24 @@
   }catch(e){}
   /* مرتب‌سازی دستی دفتر فنی: '' یعنی همان گروه‌بندی همیشگی؛ با شماره یا تاریخ
      موارد هر بخش بی‌گروه و پشت سر هم می‌آیند */
-  let admSort = '';
+  let admSort = 'date-desc';
   try{ const so = localStorage.getItem('admSort'); if(['no-desc','no-asc','date-desc','date-asc'].indexOf(so) !== -1) admSort = so; }catch(e){}
+  /* گروه‌بندی هر دسته جدا ذخیره می‌شود؛ گزینه‌ها برای همه یک شکل‌اند.
+     نامه پیش‌فرض بی‌گروه و تازه‌ترین بالا. */
+  const ADM_GRP_OPTS = {
+    statement: [['notify','وضعیت ابلاغ'], ['party','طرف قرارداد'], ['none','بدون گروه']],
+    contract:  [['notify','وضعیت ابلاغ'], ['party','طرف قرارداد'], ['none','بدون گروه']],
+    letter:    [['none','بدون گروه'], ['notify','وضعیت ابلاغ'], ['party','طرف مکاتبه']],
+    minute:    [['meet','جلسه'], ['none','بدون گروه']],
+    design:    [['floor','طبقه'], ['hold','مرحلهٔ گردش'], ['designer','طراح'], ['none','بدون گروه']]
+  };
+  const ADM_GRP_DEF = {statement:'notify', contract:'notify', letter:'none', minute:'meet', design:'floor'};
+  function admGrpOf(k){
+    let v = ''; try{ v = localStorage.getItem('admGrp.' + k) || ''; }catch(e){}
+    if(!v && k === 'design'){ try{ v = localStorage.getItem('siteLogM.dsGrp2') || ''; }catch(e){} }
+    return (ADM_GRP_OPTS[k] || []).some(o => o[0] === v) ? v : (ADM_GRP_DEF[k] || 'none');
+  }
+  function admGrpSet(k, v){ try{ localStorage.setItem('admGrp.' + k, v); }catch(e){} }
   const ADM_NO_KEYS = {statement: 'sNo', contract: 'cNo', letter: 'lNo', design: 'dNo'};
   function admSortRows(kind, rows){
     const [by, dir] = admSort.split('-'), sg = dir === 'asc' ? 1 : -1;
@@ -48457,7 +48505,12 @@
   let admView = 'fast';   // حالت پایه: فهرست سریع
   try{
     const sv = localStorage.getItem('admView');
-    if(sv === 'card' || sv === 'fast' || sv === 'new') admView = sv;
+    if(sv === 'card' || sv === 'fast') admView = sv;
+    /* «تازه‌ترین‌ها»ی قدیم حالا همان «بدون گروه + تازه‌ترین» است */
+    if(sv === 'new'){
+      localStorage.setItem('admView', 'fast'); localStorage.setItem('admSort', 'date-desc');
+      ['statement','contract','letter','minute','design'].forEach(k => localStorage.setItem('admGrp.' + k, 'none'));
+    }
   }catch(e){}
 
   /* فایل‌های قابل دانلودِ یک سند: سند طراحی فایل‌های آخرین ویرایشی که فایل دارد، بقیه پیوست سند */
@@ -54726,6 +54779,7 @@
 
   function renderAdminSkeleton(){
     const box = document.getElementById('adminView');
+    { const vb = document.getElementById('admViewBar'); if(vb && box.contains(vb)) box.parentNode.insertBefore(vb, box); }
     box.innerHTML = '<div id="admPendingBar"></div><div class="jump-bar" id="admJumpBar"></div>'
       + '<div class="adm-cats" id="admCats" role="tablist" aria-label="دسته‌های دفتر فنی">'
       + ADM_ORDER.concat(['chore']).map(k => {
@@ -55723,9 +55777,13 @@
      وگرنه مسئول پرونده. روشن باشد، پنجره‌ها تا همین لایه باز می‌آیند و فقط
      خود کارت‌ها بسته‌اند. */
   let dsGrpPerson = (function(){ try{ return localStorage.getItem('siteLogM.dsGrpP') === '1'; }catch(e){ return false; } })();
+  /* «به تفکیک شخص» در اسناد طراحی یعنی کسی که نقشه را کشیده (طراح)،
+     نه مسئول پیگیری یا کسی که سند الان دستش است */
   function dsPersonOf(r){
-    try{ const hn = dsHolderNow(r); if(hn && hn.at) return hn.at; }catch(e){}
-    return String(pick(r, AD_OWNER.design) || '').trim() || 'بدون شخص';
+    let v = String(pick(r, AD.dParty) || '').trim();
+    if(!v) return 'بدون طراح';
+    try{ v = ctrCanon(canonicalName(v)) || v; const sp = splitParts(v); if(sp && sp.n) v = sp.n; }catch(e){}
+    return v;
   }
   function dsFloorKeys(r){
     const v = String(pick(r,AD.dFloor) || '').trim();
@@ -55857,17 +55915,12 @@
     /* سند طراحی: دسته‌ها بر اساس این‌که سند الان دست کیست، یا به تفکیک طبقه */
     if(kind === 'design'){
       const SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
-      const tg = '<div class="dsg-bar"><span class="dsg-l">گروه‌بندی اسناد</span><div class="admview-seg" role="group" aria-label="گروه‌بندی اسناد طراحی">'
-        + [['floor','طبقه', SVG + '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16"/></svg>', 'اسناد هر طبقه با هم، از بالای ساختمان تا زیرزمین'],
-           ['hold','مرحلهٔ گردش', SVG + '<path d="M4 12h4l3-7 4 14 3-7h2"/></svg>', 'بر اساس این‌که سند الان کجای گردش است: داخل پروژه، نزد مشاور، کارفرما، پیمانکار یا بسته‌شده']]
-          .map(([k, t, ic, tip]) => '<button type="button" class="avs' + (dsGrpMode === k ? ' on' : '') + '" data-dsgrp="' + k + '" title="' + tip + '"' + (dsGrpMode === k ? ' aria-pressed="true"' : '') + '>' + ic + '<span>' + t + '</span></button>').join('') + '</div>'
-        + '<button type="button" class="dsg-p' + (dsGrpPerson ? ' on' : '') + '" data-dsgrpp="1" aria-pressed="' + dsGrpPerson + '" title="داخل هر دسته، به تفکیک کسی که سند به او سپرده شده؛ پنجره‌ها تا همین لایه باز می‌مانند">'
-        +   '<i class="dsg-sw"></i><span>به تفکیک شخص</span></button></div>';
+      const tg = '';   // گزینه‌های گروه‌بندی حالا در نوار بالای فهرست‌اند
       /* زیرپنجره‌های شخص: باز، کارت‌ها بسته */
       const byPerson = (key0, list) => {
         const m = new Map();
         list.forEach(r => { const k = dsPersonOf(r); if(!m.has(k)) m.set(k, []); m.get(k).push(r); });
-        return Array.from(m.entries()).sort((a, b) => (a[0] === 'بدون شخص') - (b[0] === 'بدون شخص') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
+        return Array.from(m.entries()).sort((a, b) => (a[0] === 'بدون طراح') - (b[0] === 'بدون طراح') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
           .map(([pn, l]) => {
             const k = key0 + '|p:' + pn;
             if(!admGrpOpen.has(k)) admGrpOpen.set(k, true);
@@ -55876,6 +55929,16 @@
           }).join('');
       };
       const openP = k => { if(dsGrpPerson && !admGrpOpen.has(k)) admGrpOpen.set(k, true); return k; };
+      /* گروه‌بندی بر اساس طراح: هر طراح یک دسته */
+      if(dsGrpMode === 'designer'){
+        const m = new Map();
+        rows.forEach(r => { const k = dsPersonOf(r); if(!m.has(k)) m.set(k, []); m.get(k).push(r); });
+        return Array.from(m.entries()).sort((a, b) => (a[0] === 'بدون طراح') - (b[0] === 'بدون طراح') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
+          .map(([pn, l]) => {
+            const bad = l.filter(r => dsCls(r) === 'bad').length, ok = l.filter(r => dsCls(r) === 'ok').length;
+            return grpHtml('design|d:' + pn, {t: pn, c: bad ? 'bad' : (ok === l.length ? 'ok' : 'info')}, l, bodyHtml(l), false);
+          }).join('');
+      }
       if(dsGrpMode === 'floor'){
         const by = new Map();
         rows.forEach(r => { const k = dsFloorKeys(r)[0]; if(!by.has(k)) by.set(k, []); by.get(k).push(r); });
@@ -56019,10 +56082,6 @@
     /* جست‌وجو: نتیجه‌ها به شکل کارتِ باز، نه سطر فهرست */
     const srchQ = !!String(qAdmin || '').trim();
     const viewKeep = admView, sortKeep = admSort;
-    /* «تازه‌ترین‌ها»: همان فهرست سریع، بی‌گروه، به ترتیب تاریخ از تازه به قدیم */
-    const isNew = admView === 'new';
-    if(isNew){ admView = 'fast'; admSort = 'date-desc'; }
-    try{ const av = document.getElementById('adminView'); if(av) av.classList.toggle('adm-newest', isNew && !srchQ); }catch(e){}
     if(srchQ) admView = 'card';
     try{ renderAdminListIn(items); }
     finally{ admView = viewKeep; admSort = sortKeep; }
@@ -56120,7 +56179,10 @@
         box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">موردی ثبت نشده است.</div>';
         return;
       }
+      /* ترتیب: تازه‌ترین همان ترتیب کامل پیش‌فرض است (تاریخ، زمان ثبت، شماره)؛ بقیه دستی */
       let rows = sortAdmin(k, list.map(x => x.row));
+      if(admSort && admSort !== 'date-desc') rows = admSortRows(k, rows);
+      const grp = admGrpOf(k);
       if(k === 'letter'){
         rows = rows.filter(r => ltrDirOf(r) === admLtrDir);
         if(!rows.length){ box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">نامهٔ ' + admLtrDir + ' ثبت نشده است.</div>'; return; }
@@ -56128,6 +56190,10 @@
 
       // صورتجلسه: هر جلسه یک پنجره، بندها داخلش
       if(k === 'minute'){
+        if(grp === 'none'){
+          box.innerHTML = '<div class="adm-fast">' + rows.map(row => admFastRow('minute', row)).join('') + '</div>';
+          return;
+        }
         if(admView === 'fast'){
           /* هر جلسه یک کارت با خلاصه و پیشرفت؛ بندها زیرش به ترتیب ردیف */
           box.innerHTML = admGroupsHtml('minute', rows, items => '<div class="adm-fast">' + items.map(row => admFastRow('minute', row)).join('') + '</div>');
@@ -56206,22 +56272,27 @@
             + list2.map(row => admCard(k, row, true)).join('') + '</div>').join('');
       };
 
-      /* مرتب‌سازی دستی: یک فهرست پیوسته، بدون زیرپنجره و تیتر شماره */
-      if(admSort && ADM_NO_KEYS[k]){
-        const srt = admSortRows(k, rows);
-        const lbl = {'no-desc':'شماره، بزرگ به کوچک', 'no-asc':'شماره، کوچک به بزرگ', 'date-desc':'تاریخ، جدیدترین', 'date-asc':'تاریخ، قدیمی‌ترین'}[admSort];
-        box.innerHTML = '<div class="adm-sorted-h"><span>مرتب‌شده: ' + lbl + '</span><button type="button" class="mini" data-admsortclr="1">برگشت به گروه‌ها</button></div>'
-          + (admView === 'fast'
-              ? '<div class="adm-fast">' + srt.map(row => admFastRow(k, row)).join('') + '</div>'
-              : '<div class="adm-list-grid">' + srt.map(row => admCard(k, row, true)).join('') + '</div>');
+      /* بدون گروه: یک فهرست پیوسته به همان ترتیب انتخابی */
+      if(grp === 'none'){
+        box.innerHTML = admView === 'fast'
+          ? '<div class="adm-fast">' + rows.map(fastOf).join('') + '</div>'
+          : '<div class="adm-list-grid">' + rows.flatMap(row => [row].concat(cAdds.get(row) || [])).map(row => admCard(k, row, true)).join('') + '</div>';
         return;
       }
+      if(grp === 'party' && k !== 'design'){ box.innerHTML = admByPartyHtml(k, rows, bodyHtml, true); return; }
+      if(k === 'design') dsGrpMode = grp;
       /* زیرپنجره‌ها بر اساس وضعیت ابلاغ، به ترتیب مسیر کار:
          در حال تنظیم ← درون‌سازمانی ← برون‌سازمانی ← بن‌بست ← بدون وضعیت.
-         داخل هر زیرپنجره همان ترتیب قبلی (تاریخ و شمارهٔ سند) می‌ماند. */
+         داخل هر زیرپنجره همان ترتیب انتخابی می‌ماند. */
       box.innerHTML = admGroupsHtml(k, rows, bodyHtml);
     });
-    if(ltrSeg){ const lb = document.getElementById('admList-letter'); if(lb && lb.style.display !== 'none') lb.insertAdjacentHTML('afterbegin', ltrSeg); }
+    /* ارسالی / دریافتی: زبانه‌های بالای نوار ابزار نامه‌ها، نه داخل فهرست */
+    { const lb = document.getElementById('admList-letter');
+      if(lb && lb.parentNode){
+        let host = document.getElementById('ltrSegHost');
+        if(!host){ host = document.createElement('div'); host.id = 'ltrSegHost'; lb.parentNode.insertBefore(host, lb); }
+        host.innerHTML = (ltrSeg && lb.style.display !== 'none') ? ltrSeg : '';
+      } }
     restoreAdminOpen(adminOpenSnap);
     refreshSecAlerts();
     markAlertCards('#adminView');
@@ -56821,42 +56892,67 @@
   (function admViewBarInit(){
     const bar = document.getElementById('admViewBar');
     if(!bar) return;
+    const gs = document.getElementById('admGrpSel'), so = document.getElementById('admSortSel');
+    const sw = bar.querySelector('[data-admgroupsw]');
+    const curCat = () => { let c = ''; try{ c = admCat; }catch(e2){} return c && ADM_GRP_OPTS[c] ? c : 'statement'; };
+    /* نوار همیشه درست بالای فهرست دستهٔ فعال می‌نشیند (زیر فرم ثبت تازه) */
+    const place = () => {
+      const k = curCat();
+      const list = document.getElementById('admList-' + k);
+      if(!list || !list.parentNode) return;
+      if(bar.nextElementSibling !== list) list.parentNode.insertBefore(bar, list);
+      /* زبانه‌های ارسالی/دریافتی نامه بالای نوار می‌مانند */
+      const host = document.getElementById('ltrSegHost');
+      if(host && host.parentNode === list.parentNode && host.nextElementSibling !== bar) list.parentNode.insertBefore(host, bar);
+    };
     const paint = () => {
-      bar.querySelectorAll('[data-admview]').forEach(b =>
-        b.classList.toggle('on', b.dataset.admview === admView));
-      bar.querySelectorAll('[data-admgroupsw]').forEach(b => {
-        const on = admGroupMode === 'nested';
-        b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
-      });
-      /* کلید تفکیک فقط برای دسته‌هایی که رسیدگی دارند معنا دارد */
-      let cat = ''; try{ cat = admCat; }catch(e2){}
-      bar.classList.toggle('no-rv', !!cat && ADM_BY_REVIEW.indexOf(cat) === -1);
+      const k = curCat(), g = admGrpOf(k);
+      bar.querySelectorAll('[data-admview]').forEach(b => b.classList.toggle('on', b.dataset.admview === admView));
+      if(gs){
+        const opts = ADM_GRP_OPTS[k] || [];
+        const html = opts.map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('');
+        if(gs.__h !== html){ gs.innerHTML = html; gs.__h = html; }
+        gs.value = g;
+      }
+      bar.classList.toggle('grouped', g !== (ADM_GRP_DEF[k] || 'none'));
+      /* زیرگروه: صورت وضعیت، قرارداد و نامه زیر وضعیت ابلاغ ← رسیدگی؛ اسناد طراحی ← طراح */
+      let swOn = null, swT = '';
+      if(g === 'notify' && ADM_BY_REVIEW.indexOf(k) !== -1){ swOn = admGroupMode === 'nested'; swT = 'تفکیک رسیدگی'; }
+      else if(k === 'design' && (g === 'floor' || g === 'hold')){ swOn = !!dsGrpPerson; swT = 'تفکیک طراح'; }
+      if(sw){
+        sw.hidden = swOn == null;
+        if(swOn != null){
+          sw.classList.toggle('on', swOn); sw.setAttribute('aria-checked', swOn ? 'true' : 'false');
+          sw.querySelector('.avb-swl').textContent = swT;
+          sw.title = swT === 'تفکیک طراح' ? 'داخل هر دسته، اسناد به تفکیک طراح (کسی که نقشه را کشیده)' : 'داخل هر گروه ابلاغ، موارد به تفکیک مرحلهٔ رسیدگی';
+        }
+      }
+      if(so){
+        const noNum = k === 'minute';
+        so.querySelectorAll('option[value^="no-"]').forEach(o => { o.hidden = noNum; o.disabled = noNum; });
+        so.value = (noNum && /^no-/.test(admSort)) ? 'date-desc' : (admSort || 'date-desc');
+        bar.classList.toggle('sorted', so.value !== 'date-desc');
+      }
+      place();
     };
     window.__admBarPaint = paint;
     paint();
-    const so = document.getElementById('admSortSel');
-    const setSort = v => {
-      admSort = v; if(so) so.value = v; bar.classList.toggle('sorted', !!v);
-      try{ localStorage.setItem('admSort', v); }catch(e2){}
-      try{ applyAdminFilters(); }catch(e2){}
-    };
-    if(so){ so.value = admSort; bar.classList.toggle('sorted', !!admSort); so.addEventListener('change', () => setSort(so.value)); }
-    document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-admsortclr]')){ e.preventDefault(); setSort(''); } });
+    const redraw = () => { paint(); try{ applyAdminFilters(); }catch(e2){} };
+    if(so) so.addEventListener('change', () => { admSort = so.value; try{ localStorage.setItem('admSort', admSort); }catch(e2){} redraw(); });
+    if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
     bar.addEventListener('click', e => {
-      const gb = e.target.closest('[data-admgroupsw]');
-      if(gb){
-        admGroupMode = admGroupMode === 'nested' ? 'flat' : 'nested';
-        try{ localStorage.setItem('admGroupMode', admGroupMode); }catch(e2){}
-        paint();
-        try{ applyAdminFilters(); }catch(e2){}
+      if(e.target.closest('[data-admgroupsw]')){
+        const k = curCat();
+        if(k === 'design'){ dsGrpPerson = !dsGrpPerson; try{ localStorage.setItem('siteLogM.dsGrpP', dsGrpPerson ? '1' : ''); }catch(e2){} }
+        else{ admGroupMode = admGroupMode === 'nested' ? 'flat' : 'nested'; try{ localStorage.setItem('admGroupMode', admGroupMode); }catch(e2){} }
+        redraw();
         return;
       }
       const b = e.target.closest('[data-admview]');
       if(!b || b.dataset.admview === admView) return;
       admView = b.dataset.admview;
       try{ localStorage.setItem('admView', admView); }catch(e2){}
-      paint();
-      try{ applyAdminFilters(); }catch(e2){}
+      redraw();
     });
   })();
 
