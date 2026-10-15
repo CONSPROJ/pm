@@ -4229,9 +4229,10 @@
   .flr-tabs button{all:unset;cursor:pointer;flex:1;text-align:center;height:32px;line-height:32px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);}
   .flr-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
   .flr-tabs button i{font-style:normal;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:7px;background:color-mix(in srgb, var(--sky) 14%, transparent);color:var(--sky);margin-inline-start:3px;}
-  .flr-dzw{display:flex;flex-direction:column;gap:5px;padding-bottom:6px;border-bottom:1px solid var(--line-soft, var(--line));}
+  .flr-dzw{display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--line-soft, var(--line));}
+  .flr-dzw > .flr-it{flex:1 1 auto;min-width:0;}
+  .flr-dzw > .dlc{flex:0 0 auto;}
   .flr-dzw:last-child{border-bottom:0;}
-  .flr-dzf{padding-inline-start:22px;}
   .dk-dsk{display:flex;flex-direction:column;gap:10px;}
   .dk-dsk .dk-dsm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 7px;}
   .dk-dsk .dk-dsm > i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.45;}
@@ -21842,6 +21843,26 @@
   }
   .ov-nudge{animation:ovNudge .32s ease;}
   @keyframes ovNudge{0%,100%{transform:none;}30%{transform:scale(1.012);}60%{transform:scale(.996);}}
+  /* دکمهٔ دانلود سربرگ کارت: همان چیپ فهرست */
+  .adm-acts .dlc.adm-hdl{margin-inline-end:2px;}
+  /* فهرست‌ها: ستون‌های ثابت؛ بودن یا نبودن دانلود/وضعیت/روز چیزی را جابه‌جا نمی‌کند */
+  .afr .afr-st.nil{visibility:hidden;}
+  .afr .afr-dls{flex:0 0 84px;max-width:84px;display:inline-flex;justify-content:flex-end;align-items:center;overflow:hidden;}
+  .afr .afr-dls .dlc{padding:0 7px !important;}
+  @media(min-width:621px){
+    .afr .afr-party{flex:0 0 132px;max-width:132px;text-align:start;}
+    .afr .afr-st{flex:0 0 118px;max-width:118px;overflow:hidden;text-overflow:ellipsis;text-align:center;box-sizing:border-box;}
+    .afr .afr-ava{flex:0 0 56px;justify-content:center;}
+    .afr .afr-d{flex:0 0 84px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  }
+  @media(max-width:620px){
+    .afr .afr-ava:empty{display:none;}
+    .afr .afr-party{display:none;}
+    .afr .afr-meta .afr-d{flex:1 0 auto;text-align:end;white-space:nowrap;}
+    .afr .afr-meta .afr-st{flex:0 1 auto;min-width:0;}
+    .afr .afr-dls{flex-basis:80px;max-width:80px;}
+    .afr .afr-st.nil{display:none;}
+  }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -48683,15 +48704,15 @@
       + '<span class="afr-dot"></span>'
       + '<span class="afr-ttl">' + (no ? '<u>' + esc(toFa(no)) + '</u>' : '')
       +   esc(rawTitle) + '</span>'
-      + (party ? '<span class="afr-party">' + esc(party) + '</span>' : '')
+      /* ستون‌ها همیشه ساخته می‌شوند (حتی خالی) تا جای روز/دانلود/اشتراک در همهٔ سطرها یکی بماند */
+      + '<span class="afr-party">' + esc(party) + '</span>'
       + '<span class="afr-meta">'
-      + (stTxt ? '<span class="afr-st ' + stCls + '">' + esc(stTxt) + '</span>' : '')
-      + (rvWho.length
-          ? '<span class="afr-ava">'
-            + rvWho.slice(0,3).map(n2 => rvAva(n2, dn.has(nameKey(n2)))).join('')
-            + '</span>' : '')
+      + '<span class="afr-st' + (stTxt ? ' ' + stCls : ' nil') + '">' + esc(stTxt) + '</span>'
+      + '<span class="afr-ava">'
+      +   (rvWho.length ? rvWho.slice(0,3).map(n2 => rvAva(n2, dn.has(nameKey(n2)))).join('') : '')
+      + '</span>'
       + '<span class="afr-d">' + esc(dTxt) + '</span>'
-      + admDlBtnHtml(kind, r, 'afr-dl')
+      + '<span class="afr-dls">' + admDlBtnHtml(kind, r, 'afr-dl') + '</span>'
       + (function(){ try{ return '<span class="afr-sh" role="button" tabindex="0" title="اشتراک‌گذاری" aria-label="اشتراک‌گذاری" data-afrsh="1"'
           + ' data-t="' + esc(arTitleOf(kind, r)) + '" data-f="' + esc(admFilesTxt(kind, r) || '') + '" data-p="' + esc(admParty(kind, r) || '') + '">' + SH_ICON + '</span>'; }catch(e){ return ''; } })()
       + '</span>'
@@ -51584,7 +51605,7 @@
               + '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/>'
               + '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
               + '</button>' : '')
-      +     (id ? admDlBtnHtml(kind, r, 'ico-btn dl') : '')
+      +     (id ? admDlBtnHtml(kind, r, 'adm-hdl') : '')
       +     ((id && (() => { try{ return canUploadAdm(kind, r); }catch(e){ return false; } })())
             ? '<button type="button" class="ico-btn upl" data-admup="' + esc(kind) + '" title="افزودن فایل (یا فایل را روی کارت رها کنید)" '
               + 'aria-label="افزودن فایل">' + UP_I.up + '</button>' : '')
@@ -51690,9 +51711,8 @@
             ? (pick(r,AD.mMeet) || pick(r,AD.date))
             : (admSentDate(kind, r) || pick(r,AD.date));
           if(dt) bits.push('<span class="mi-t">' + esc(admDate(dt)) + '</span>');
-          /* فایل‌ها در سطر خودشان، با همان شکل یکسانِ همهٔ دفتر فنی */
-          const fl = (kind !== 'design' && pick(r,AD.link)) ? filePillsHtml(pick(r,AD.link), {max: 3, cls: 'sm', title: (KIND_ONE(kind) || '') + (docNo ? ' ' + toFa(docNo) : '')}) : '';
-          return '<div class="adm-meta">' + bits.join('<i></i>') + '</div>' + (fl ? '<div class="adm-files">' + fl + '</div>' : '');
+          /* فایل‌ها فقط با یک دکمهٔ دانلود (سربرگ کارت)، همان شکل فهرست؛ سطر تکراری فایل حذف شد */
+          return '<div class="adm-meta">' + bits.join('<i></i>') + '</div>';
         })()
       + payBoxHtml(kind, r, editable, id)
 
@@ -52594,7 +52614,18 @@
   /* پیوست‌های ثبت‌شده روی کارت: هر فایل یک کپسول با دکمهٔ دانلود */
   /* یک شکل برای همهٔ فایل‌های دفتر فنی (صورت وضعیت، قرارداد، نامه، صورتجلسه، اسناد طراحی):
      برچسب نوع، نام (با لمس پیش‌نمایش) و دکمهٔ سبز دانلود */
+  /* همهٔ دکمه‌های فایل در سامانه یک شکل‌اند: چیپ سبزِ «دانلود · نوع · تعداد».
+     با زدنش پیش‌نمایش (با نام همهٔ فایل‌ها) باز می‌شود و دانلود از نوار همان پنجره است. */
   function filePillsHtml(val, o){
+    o = o || {};
+    const L = Array.isArray(val) ? val : attachList(val);
+    if(!L.length) return '';
+    const tip = L.length === 1 ? 'نمایش و دانلود ' + L[0].name : 'نمایش و دانلود ' + toFa(L.length) + ' فایل';
+    return '<span class="dlc' + (o.cls ? ' ' + o.cls : '') + '" role="button" tabindex="0" data-admdl="' + esc(L.map(a => a.full).join('\n')) + '"'
+      + ' data-admttl="' + esc(o.title || '') + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + dlcInner(L) + '</span>';
+  }
+  /* فقط بخش «پیوست‌ها»ی پنجرهٔ جزئیات: فهرست نام فایل‌ها (نه دکمهٔ دانلود دوم) */
+  function fileRowsHtml(val, o){
     o = o || {};
     const L = Array.isArray(val) ? val : attachList(val);
     if(!L.length) return '';
@@ -53585,7 +53616,7 @@
       +   (o.canAdd && L.length ? '<button type="button" class="fs-b fs-add" data-fsadd="1">' + UP_I.plus + 'افزودن فایل</button>' : '')
       +   '</span></div>'
       + '<div class="fs-grid">'
-      +   (L.length ? filePillsHtml(L, {title: o.title || ''}) : '')
+      +   (L.length ? fileRowsHtml(L, {title: o.title || ''}) : '')
       +   (!L.length ? '<button type="button" class="fs-empty" data-fsadd="1">' + UP_I.up + '<span><b>هنوز فایلی پیوست نشده</b><small>برای افزودن بزنید یا فایل را اینجا رها کنید</small></span></button>' : '')
       + '</div></div>';
   }
