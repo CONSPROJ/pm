@@ -22305,6 +22305,16 @@
   .ca2-none{font-size:11px;color:var(--muted);padding:6px;}
   .afr-addend{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;font-weight:800;color:#8a5cf6;padding:3px 10px;border-radius:99px;border:1px dashed color-mix(in srgb, #8a5cf6 50%, transparent);}
   .ico-btn.adm-addend{color:#8a5cf6 !important;}
+  /* پیام‌ها: حباب خلوت؛ ابزارها با لمس/موس */
+  #msgList .bubble .b-rx button:not(:has(span)){display:none;}
+  #msgList .bubble.sel .b-rx button{display:inline-flex !important;}
+  @media (hover:hover){ #msgList .bubble:hover .b-rx button{display:inline-flex !important;} }
+  #msgList .bubble .b-acts{display:none;}
+  #msgList .bubble.sel .cm-react, #msgList .bubble.sel .b-acts{display:inline-flex !important;}
+  @media (hover:hover){ #msgList .bubble:hover .cm-react, #msgList .bubble:hover .b-acts{display:inline-flex !important;} }
+  #msgList .bubble .b-rx:not(:has(.cm-react span)){min-height:0;}
+  #msgList .bubble .b-meta{margin-top:2px;}
+  #msgList .chat-day span{font-size:10.5px;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -26219,6 +26229,19 @@
         const raw = await supaFetch('nudges?select=' + NUDGE_COLS
           + '&order=created_at.desc&limit=600');
         rows = (raw || []).map(x => fromSupa('nudges', x));
+        /* پیام‌های خودِ کاربر جدا گرفته می‌شوند: پیش‌تر ردیف‌های سیستمی (آپلود، نقص
+           گزارش، نظر…) جای پیام‌ها را در ۶۰۰ ردیف آخر می‌گرفتند و پیام‌ها گم می‌شدند */
+        try{
+          const me = activeUserName();
+          if(me){
+            const qv = v => '"' + String(v).replace(/"/g, '') + '"';
+            const orq = '(to_name.eq.' + qv(me) + ',from_name.eq.' + qv(me) + ',to_name.eq.' + qv(PUBLIC_ROOM) + ')';
+            const rawM = await supaFetch('nudges?select=' + NUDGE_COLS + '&kind=eq.' + encodeURIComponent(MSG_KIND)
+              + '&or=' + encodeURIComponent(orq) + '&order=created_at.desc&limit=1500');
+            const seen = new Set(rows.map(r => String(pick(r,N.id))));
+            (rawM || []).forEach(x => { const r = fromSupa('nudges', x); if(!seen.has(String(pick(r,N.id)))){ seen.add(String(pick(r,N.id))); rows.push(r); } });
+          }
+        }catch(e){}
       }else{
         const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
         rows = b.nudges || [];
@@ -28024,7 +28047,7 @@
           : '<div class="b-text">' + esc(pick(r,N.msg) || '') + '</div>')
       + (String(pick(r,N.msg) || '') !== MSG_DELETED && pick(r,N.id)
           ? '<div class="b-rx">' + reactOpsHtml(pick(r,N.id)) + '</div>' : '')
-      + (!mine && String(pick(r,N.msg) || '') !== MSG_DELETED
+      + (!mine && pick(r,N.to) === PUBLIC_ROOM && String(pick(r,N.msg) || '') !== MSG_DELETED
           ? '<button type="button" class="b-reply" data-reply-to="'+esc(pick(r,N.from) || '')+'" '
           + 'data-reply-title="'+esc(title || '')+'">پاسخ</button>' : '')
       + '<div class="b-meta">'
@@ -28033,7 +28056,7 @@
           + (pick(r,N.state) === 'خوانده‌شده' ? 'خوانده شد' : 'ارسال شد') + '">'
           + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12.5l4.5 4.5L15 8.5"/>'
           + (pick(r,N.state) === 'خوانده‌شده' ? '<path d="M11.5 16l1 1L21 8.5"/>' : '') + '</svg></span>' : '')
-      + (unread ? ' <button type="button" class="b-read" data-nread="'+esc(pick(r,N.id))+'">خواندم</button>' : '')
+
       + (msgLogOf(r).length
           ? '<button type="button" class="b-hist" data-msg-hist="'+esc(pick(r,N.id))+'">'
             + 'ویرایش شد · ' + toFa(msgLogOf(r).length) + '</button>' : '')
@@ -28102,7 +28125,8 @@
     const me = activeUserName();
     let list;
     // اعلان‌های خودکار سامانه فقط در زنگوله دیده می‌شوند، نه در پیام‌ها
-    const notSystem = r => pick(r,N.kind) !== MISS_KIND && pick(r,N.kind) !== COMMENT_KIND && !isReactRow(r) && !isRemindRow(r) && !isTbRow(r);
+    /* فقط پیام واقعی؛ تلنگر، نظر، یادآور و اعلان‌های سیستمی در زنگوله‌اند */
+    const notSystem = r => pick(r,N.kind) === MSG_KIND;
     if(withName === PUBLIC_ROOM){
       list = allMessages.filter(r => pick(r,N.to) === PUBLIC_ROOM && notSystem(r));
     }else{
@@ -28115,8 +28139,8 @@
       }
     }
     // از قدیمی به تازه مرتب می‌شود تا تازه‌ترین پیام پایین بنشیند
-    list = list.slice().sort((a,b) =>
-      String(pick(a,N.time)).localeCompare(String(pick(b,N.time))));
+    const tOf = r => { const t = Date.parse(String(pick(r,N.time) || '')); return isNaN(t) ? 0 : t; };
+    list = list.slice().sort((a,b) => (tOf(a) - tOf(b)) || ((+pick(a,N.id) || 0) - (+pick(b,N.id) || 0)));
 
     // اگر چیزی عوض نشده، صفحه دست‌نخورده می‌ماند (بدون پرش و لرزش)
     const sig = String(withName || '*') + '#' + list.length + '#'
@@ -28141,8 +28165,14 @@
   }
 
   /* جداکنندهٔ روز و پشت‌سرهم بودن پیام‌های یک نفر */
+  /* روز هر پیام به تاریخ شمسی (زمان ثبت ISO است، نه «تاریخ ساعت») */
+  function chatDayOf(t){
+    const ms = Date.parse(String(t || ''));
+    if(!isNaN(ms)){ const d = new Date(ms); const j = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0'); }
+    return String(t || '').split(' ')[0];
+  }
   function chatDayLabel(t){
-    const d = String(t || '').split(' ')[0];
+    const d = chatDayOf(t);
     const today = todayShamsi();
     if(normDate(d) === today) return 'امروز';
     try{ if(normDate(d) === faMinusDay(today)) return 'دیروز'; }catch(e){}
@@ -28152,7 +28182,7 @@
     let out = '', lastDay = '', lastFrom = '', lastMin = -1;
     list.forEach(r => {
       const t = String(pick(r,N.time) || '');
-      const day = t.split(' ')[0];
+      const day = chatDayOf(t);
       if(day !== lastDay){
         out += '<div class="chat-day"><span>' + esc(chatDayLabel(t)) + '</span></div>';
         lastDay = day; lastFrom = '';
@@ -28184,6 +28214,13 @@
     return el;
   }
 
+  /* لمس حباب: واکنش و ویرایش/حذف نمایان می‌شود (روی رایانه با رفتن موس) */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#msgList .bubble');
+    if(!b || e.target.closest('button, a')) return;
+    document.querySelectorAll('#msgList .bubble.sel').forEach(x => { if(x !== b) x.classList.remove('sel'); });
+    b.classList.toggle('sel');
+  });
   function renderPeoplePicker(sel){
     const box = document.getElementById('msgPeople');
     if(!box) return;
@@ -28216,12 +28253,13 @@
       if(!k) return;
       const t = String(pick(r,N.time) || '');
       const prev = lastBy.get(k);
-      if(!prev || t > prev.time) lastBy.set(k, {row:r, time:t});
+      if(!prev || (Date.parse(t) || 0) > (Date.parse(prev.time) || 0)) lastBy.set(k, {row:r, time:t});
     });
 
+    /* طرف گفت‌وگویی که در فهرست افراد نیست (مثلاً نامش عوض شده) هم دیده شود */
+    { const have = new Set(names.map(nameKey)); lastBy.forEach((v, k) => { if(have.has(k)) return; const r0 = v.row; const n0 = nameKey(pick(r0,N.from)) === nameKey(me) ? pick(r0,N.to) : pick(r0,N.from); if(n0){ names.push(n0); have.add(k); } }); }
     const withChat = names.filter(n => lastBy.has(nameKey(n)))
-      .sort((a,b) => (lastBy.get(nameKey(b)).time || '')
-                     .localeCompare(lastBy.get(nameKey(a)).time || ''));
+      .sort((a,b) => (Date.parse(lastBy.get(nameKey(b)).time) || 0) - (Date.parse(lastBy.get(nameKey(a)).time) || 0));
     const noChat = names.filter(n => !lastBy.has(nameKey(n)))
       .sort((a,b) => a.localeCompare(b,'fa'));
 
