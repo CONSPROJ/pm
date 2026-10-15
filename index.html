@@ -22337,6 +22337,13 @@
   .uh-t small em{font-style:normal;font-weight:700;}
   #upHud.done .uh-ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff;font-weight:900;}
   #upHud.done.bad .uh-ic{background:var(--alert);}
+  .rpt-dus{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;}
+  .rpt-du{display:inline-flex;align-items:center;gap:4px;border-radius:99px;border:1px dashed var(--line);padding:2px;}
+  .rpt-du.on{border-style:solid;border-color:color-mix(in srgb, var(--ok) 45%, var(--line));background:color-mix(in srgb, var(--ok) 7%, var(--surface));}
+  .rpt-du button{all:unset;cursor:pointer;padding:3px 9px;font-size:11px;font-weight:700;color:var(--muted);}
+  .rpt-du.on button{color:var(--ok);}
+  .rpt-du label{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);padding-inline-end:6px;}
+  .rpt-du input[type=time]{height:24px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:11px;padding:0 4px;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -35846,7 +35853,7 @@
     const req = REQUIRED_REPORTERS.slice();
     const missTot = req.reduce((t, w) => t + days.filter(d => !rptSeen.has(dayKey(d) + '|' + nameKey(w)) && !rptExcused(d, w)).length, 0);
     box.innerHTML = '<div class="rpt">'
-      + '<div class="rpt-hd"><b>گزارش‌دهندگان موظف</b><small>این افراد هر روز (جز جمعه) باید گزارش بدهند؛ تراز نیروی کارگری هم به‌محض تکمیل گزارش همهٔ آن‌ها ساخته می‌شود.</small></div>'
+      + '<div class="rpt-hd"><b>گزارش‌دهندگان موظف</b><small>این افراد هر روز (جز جمعه) باید گزارش بدهند. زیر نام هر نفر وظیفه‌ها و ساعت مهلتش را تعیین کنید؛ بعد از مهلت، یادآور می‌آید. یادآور گزارش کارگری فقط به خود شخص، مدیریت کارگری و ادمین می‌رسد.</small></div>'
       + '<div class="rpt-picks">' + cands.map(n =>
           '<button type="button" class="rpt-p' + (isReq(n) ? ' on' : '') + '" data-rptp="' + esc(n) + '">'
           + avatarHtml(n, '', true) + '<span>' + esc(n) + '</span><em>' + (isReq(n) ? '✓' : '+') + '</em></button>').join('') + '</div>'
@@ -35855,12 +35862,33 @@
       + '<div class="rpt-leg"><span><i class="ok"></i>گزارش داده</span><span><i class="miss"></i>گزارش نداده</span><span><i class="ex"></i>رفع ایراد</span></div>'
       + (req.length ? req.map(w => {
           const miss = days.filter(d => !rptSeen.has(dayKey(d) + '|' + nameKey(w)) && !rptExcused(d, w)).length;
+          const du = rptDuty(w), dk2 = esc(w);
+          const tg = (k, on, label, time, tk) => '<span class="rpt-du' + (on ? ' on' : '') + '"><button type="button" data-rptdu="' + dk2 + '|' + k + '">' + (on ? '✓ ' : '+ ') + label + '</button>'
+            + (time != null && on ? '<label>تا <input type="time" value="' + esc(toEn(time)) + '" data-rptdt="' + dk2 + '|' + tk + '"></label>' : '') + '</span>';
           return '<div class="rpt-row"><div class="rpt-who">' + avatarHtml(w, '', true) + '<b>' + esc(w) + '</b>'
             + (miss ? '<span class="rpt-n bad">' + toFa(miss) + ' روز</span>' : '<span class="rpt-n ok">کامل</span>') + '</div>'
+            + '<div class="rpt-dus">' + tg('d', du.d, 'گزارش روزانه', du.dt, 'dt') + tg('c', du.c, 'گزارش کارگری', du.ct, 'ct')
+            +   tg('o', du.o, 'اضافه‌کاری فردا') + tg('m', du.m, 'انتقال مصالح (اختیاری)') + '</div>'
             + '<div class="rpt-days">' + days.slice().reverse().map(d => cell(d, w)).join('') + '</div></div>';
         }).join('') : '<div class="empty">کسی انتخاب نشده است.</div>')
       + '</div>';
   }
+  async function rptDutySet(w, patch){
+    rptCfg.duty = rptCfg.duty || {};
+    const k = nameKey(w); rptCfg.duty[k] = Object.assign({}, rptCfg.duty[k] || {}, patch);
+    await rptCfgSave();
+  }
+  document.addEventListener('click', async e => {
+    const du = e.target.closest && e.target.closest('#rptPanel [data-rptdu]');
+    if(!du || !isAdminUser()) return;
+    const [w, k] = du.dataset.rptdu.split('|'), cur = rptDuty(w);
+    try{ await rptDutySet(w, {[k]: !cur[k]}); renderRptPanel(); try{ lastMissCheck = 0; }catch(e2){} }catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); }
+  });
+  document.addEventListener('change', async e => {
+    const t = e.target; if(!t.matches || !t.matches('#rptPanel [data-rptdt]') || !isAdminUser()) return;
+    const [w, k] = t.dataset.rptdt.split('|');
+    try{ await rptDutySet(w, {[k]: t.value || '17:00'}); }catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); }
+  });
   document.addEventListener('click', async e => {
     const p = e.target.closest('#rptPanel [data-rptp]');
     const x = e.target.closest('#rptPanel [data-rptx]');
@@ -40699,6 +40727,16 @@
       body:[{kind: RPT_KIND, value: JSON.stringify(rptCfg)}]});
     clearNetCache();
   }
+  /* وظیفهٔ هر گزارش‌دهنده: گزارش روزانه (با ساعت مهلت)، گزارش کارگری (مجموع روز، با ساعت
+     مهلت)، اضافه‌کاری فردا و انتقال مصالح (اختیاری). یادآورِ گزارش کارگری فقط به خودِ شخص،
+     مدیریت کارگری و ادمین می‌رود. */
+  const CREW_MISS_T = 'گزارش کارگری ثبت‌نشده';
+  function rptDuty(n){
+    const o = ((rptCfg.duty || {})[nameKey(n)]) || {};
+    return {d: o.d !== false, dt: o.dt || '17:00', c: !!o.c, ct: o.ct || '17:00', o: !!o.o, m: !!o.m};
+  }
+  const rptHM = s0 => { const m = /(\d{1,2}):(\d{2})/.exec(toEn(String(s0 || ''))); return m ? (+m[1]) * 60 + (+m[2]) : 17 * 60; };
+  const rptBefore = (fa, hm) => { if(dayKey(fa) !== dayKey(todayShamsi())) return false; const n = new Date(); return n.getHours() * 60 + n.getMinutes() < rptHM(hm); };
   /* روزی که ادمین برای این نفر «رفع ایراد» زده، گزارش‌داده حساب می‌شود */
   function rptExcused(dateFa, who){
     const dk = dayKey(dateFa), nk = nameKey(who);
@@ -40862,6 +40900,18 @@
       const olds = await supaFetch('nudges?kind=eq.' + MISS_KIND
         + '&select=id,title,to_name&limit=2000').catch(() => []);
       const had = new Set((olds || []).map(x => String(x.title || '')));
+      const hadTo = new Set((olds || []).map(x => String(x.title || '') + '|' + nameKey(x.to_name)));
+      /* گزارش کارگری: چه کسی برای کدام روز ثبت کرده */
+      const crewW = REQUIRED_REPORTERS.filter(w => rptDuty(w).c);
+      const crewSeen = new Set();
+      let crewOk = !crewW.length;
+      if(crewW.length){
+        try{
+          const cr = await supaFetch('worker_daily?select=date_fa,engineer&date_fa=in.(' + encodeURIComponent(inList) + ')&limit=5000');
+          (cr || []).forEach(r => { const dk = dayKey(r.date_fa); if(dk && r.engineer) crewSeen.add(dk + '|' + nameKey(r.engineer)); });
+          crewOk = true;
+        }catch(e){ crewOk = false; }
+      }
 
       // ---- پاک‌سازی: هر اعلانی که صاحبش بعداً گزارش داده، حذف می‌شود ----
       const staleIds = [];
@@ -40869,6 +40919,10 @@
       (olds || []).forEach(x => {
         const t = String(x.title || '');
         const pr = t.split(' — ');            // «گزارش ثبت‌نشده — تاریخ — نام»
+        if(pr[0] === CREW_MISS_T && pr.length >= 3){
+          if(!req(pr[2]) || !rptDuty(pr[2]).c || (crewOk && crewSeen.has(dayKey(pr[1]) + '|' + nameKey(pr[2])))){ missResolved.add(t); if(x.id) staleIds.push(x.id); }
+          return;
+        }
         if(pr.length < 3){                    // عنوان ناشناخته، کنار گذاشته می‌شود
           missResolved.add(t); if(x.id) staleIds.push(x.id); return;
         }
@@ -40903,8 +40957,20 @@
 
       const body = [];
 
+      /* گیرندگان یادآور کارگری: خودِ شخص، مدیریت کارگری (سطح ۵) و ادمین */
+      const crewTo = who => { const L = [who]; try{ listNames().forEach(n => { if(levelOf(n) === 5 || isAdminName(n)) L.push(n); }); }catch(e){} const sn = new Set(); return L.filter(n => { const k = nameKey(n); if(!k || sn.has(k)) return false; sn.add(k); return true; }); };
+      if(crewOk) days.forEach(fa => crewW.forEach(who => {
+        const du = rptDuty(who);
+        if(rptBefore(fa, du.ct) || rptExcused(fa, who) || crewSeen.has(dayKey(fa) + '|' + nameKey(who))) return;
+        const title = CREW_MISS_T + ' — ' + fa + ' — ' + who;
+        const msg = 'گزارش کارگری روز ' + faDate(fa) + ' (حضور، کارکرد' + (du.o ? '، اضافه‌کاری فردا' : '') + ') برای ' + who + ' تا ساعت ' + toFa(du.ct) + ' ثبت نشده است.';
+        crewTo(who).forEach(to => { if(hadTo.has(title + '|' + nameKey(to))) return;
+          body.push({date_fa: today, from_name: 'سامانه', to_name: to, kind: MISS_KIND, item_id: null, title, message: msg, seen:false}); });
+      }));
       days.forEach(fa => {
         REQUIRED_REPORTERS.forEach(who => {
+          const du0 = rptDuty(who);
+          if(!du0.d || rptBefore(fa, du0.dt)) return;
           if(seen.has(dayKey(fa) + '|' + nameKey(who))) return;
           const title = 'گزارش ثبت‌نشده — ' + fa + ' — ' + who;
           if(had.has(title)) return;
