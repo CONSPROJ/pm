@@ -59664,6 +59664,7 @@
   const HSE_TYPES = [['inc','حادثه'],['near','شبه‌حادثه'],['act','رفتار ناایمن'],['cond','شرایط ناایمن']];
   const HSE_SEV = [['low','جزئی'],['mid','متوسط'],['high','شدید']];
   const hseState = {tab:'new', list:[], t:0, draft:null, busy:false, f:'all', q:''};
+  window.hseSetTab = t => { hseState.tab = t === 'list' ? 'list' : 'new'; if(t === 'list') hseState.q = ''; };
   const hseTypeT = k => (HSE_TYPES.find(x => x[0] === k) || [0, 'گزارش'])[1];
   const hseSevT = k => (HSE_SEV.find(x => x[0] === k) || [0, ''])[1];
   async function hseLoad(force){
@@ -72815,6 +72816,7 @@
     crew: HM_P('<path d="M12 4.2c-3.8 0-6.8 3.2-6.8 7.1v3.3h13.6v-3.3c0-3.9-3-7.1-6.8-7.1z"/><path d="M12 4.2V2.6M8.6 14.6v-4.1M15.4 14.6v-4.1"/><path d="M3 18h18a1.3 1.3 0 001.3-1.3v-.4a1.3 1.3 0 00-1.3-1.3H3a1.3 1.3 0 00-1.3 1.3v.4A1.3 1.3 0 003 18z"/>'),
     wrk: HM_P('<circle cx="9" cy="7.5" r="3"/><circle cx="17" cy="8.5" r="2.4"/><path d="M3.5 19.5c.8-3.3 3-5 5.5-5s4.7 1.7 5.5 5"/><path d="M14.8 14.9c.7-.3 1.4-.4 2.2-.4 2.2 0 3.8 1.3 4.5 4"/>'),
     prc: HM_P('<path d="M12 2.8l8 4.4v9.6L12 21.2l-8-4.4V7.2z"/><path d="M4 7.2l8 4.5 8-4.5M12 11.7v9.5M8 5l8 4.5"/>'),
+    hse: HM_P('<path d="M12 2.8l7.5 3v5.6c0 4.6-3.1 8.4-7.5 9.8-4.4-1.4-7.5-5.2-7.5-9.8V5.8z"/><path d="M12 8v5M12 16.2h.01"/>'),
     prcList: HM_P('<path d="M4 6h3M4 12h3M4 18h3"/><path d="M10 6h10M10 12h10M10 18h6"/>'),
     doc: HM_P('<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M14 3v5h5"/>'),
     st: HM_P('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/>'),
@@ -72886,6 +72888,10 @@
     const tabW = tabOk('write');
     if(tabW && hmCan('write.daily')) L.push({g:'گزارش روزانه', k:'crew', t:'گزارش پیمانکاری', s:'پیمانکاران، نفرات، ماشین‌آلات و موانع', ic:'crew', c:'hc-sky', run: () => homeWrite('crew')});
     if(tabW && hmCan('write.crew')) L.push({g:'گزارش روزانه', k:'wrk', t:'گزارش کارگری', s:'حضور، کارکرد و اضافه‌کاری کارگران', ic:'wrk', c:'hc-grn', run: () => homeWrite('wrk')});
+    if(tabW && hmCan('write.hse')){
+      L.push({g:'ایمنی (HSE)', k:'hse', t:'گزارش HSE', s:'حادثه، عامل، تصویر و جریمه', ic:'hse', c:'hc-amb', run: () => homeWrite('hse', 'new')});
+      L.push({g:'ایمنی (HSE)', k:'hseList', t:'گزارش‌های ثبت‌شده', s:'فهرست حوادث و جریمه‌ها', ic:'prcList', c:'hc-amb', run: () => homeWrite('hse', 'list')});
+    }
     if(tabW && hmCan('write.prc')){
       L.push({g:'تدارکات', k:'prc', t:'درخواست خرید', s:'کالا یا خدمات تازه', ic:'prc', c:'hc-teal', run: () => homeWrite('prc', 'new')});
       L.push({g:'تدارکات', k:'prcList', t:'پیگیری خریدها', s:'وضعیت درخواست‌های ثبت‌شده', ic:'prcList', c:'hc-teal', run: () => homeWrite('prc', 'list')});
@@ -72898,6 +72904,7 @@
   }
   function homeWrite(m, sub){
     if(m === 'prc'){ try{ prcState.tab = sub || 'new'; if(sub === 'list'){ prcState.q = ''; } }catch(e){} }
+    if(m === 'hse'){ try{ window.hseSetTab && window.hseSetTab(sub || 'new'); }catch(e){} }
     switchTab('write');
     try{ window.wpickSetMode && window.wpickSetMode(m); }catch(e){}
     try{ window.scrollTo({top:0}); }catch(e){}
@@ -73107,7 +73114,8 @@
     const rank = x => (x.level === 'hot' ? 0 : x.level === 'warm' ? 1 : 2);
     return items.filter(x => { const m = meta.get(x.grp) || {}; return x && !m.news && !m.doneGrp; })
       .map(x => Object.assign({}, x, {__p: (meta.get(x.grp) || {}).p || ''}))
-      .sort((a, b) => rank(a) - rank(b));
+      /* اول اسناد دفتر فنی، بعد بقیه؛ در هر بخش به ترتیب فوریت */
+      .sort((a, b) => ((a.__p === 'b-adm' ? 0 : 1) - (b.__p === 'b-adm' ? 0 : 1)) || (rank(a) - rank(b)));
   }
 
   /* ---- ساخت صفحه ---- */
