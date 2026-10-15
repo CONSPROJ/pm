@@ -21811,6 +21811,7 @@
   .avb-sel select{all:unset;cursor:pointer;font:inherit;color:inherit;max-width:190px;}
   .admview-bar.grouped .avb-grp, .admview-bar.sorted .avb-sort{color:var(--sky);border-color:color-mix(in srgb, var(--sky) 45%, var(--line));background:color-mix(in srgb, var(--sky) 8%, var(--surface));}
   .avb-sw[hidden]{display:none !important;}
+  .ms-dok{color:var(--ok);font-weight:700;white-space:nowrap;}
   .avb-pre{text-decoration:none;font-weight:600;opacity:.8;white-space:nowrap;}
   .avb-pre::after{content:":";}
   .avb-sel select{color:var(--ink);font-weight:800;}
@@ -50353,18 +50354,8 @@
       pts.push({k:stage, t:LBL[stage] || rv, d: ok(cd) ? cd : '', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
     }
     if(!pts.length) return '';
-    /* چهرهٔ مسئول بررسی روی هر نقطهٔ «گردش داخلی»: از شروع همان دور در تاریخچه؛
-       برای دور جاری، مسئولین فعلی. پیش‌تر بعد از «رد داخلی» و سپردن دوباره، چهره‌ای نمی‌آمد. */
-    try{
-      const rvS = stageLogOf(r).filter(e => e && e.type === 'rv-start' && ok(e.date) && Array.isArray(e.who) && e.who.length);
-      pts.forEach((x, i) => {
-        if(x.k !== 'i' || x.ava) return;
-        const t0 = x.d ? faToDate(x.d) : null, nx = pts.slice(i + 1).find(y => y.d && ok(y.d)), t1 = nx ? faToDate(nx.d) : null;
-        const hit = rvS.filter(e => { const t = faToDate(e.date); return (!t0 || t >= t0) && (!t1 || t < t1); }).pop();
-        if(hit) x.ava = hit.who[0];
-        else if(stage === 'i' && i === pts.length - 1){ const R0 = reviewersOf(r); if(R0 && R0.length) x.ava = R0[0]; }
-      });
-    }catch(e){}
+    /* نقطهٔ «گردش داخلی» دایرهٔ ساده است؛ چهرهٔ بررسی‌کننده‌ها روی تکه‌های
+       همان دور می‌آید، نه روی شروع مرحله (پیش‌تر آخرین نفر آن‌جا می‌نشست). */
 
     // هنوز گردشی شروع نشده (یا به تنظیم برگشته): تا امروز
     if(!stage && !finished)
@@ -50422,11 +50413,18 @@
       const leave = pts.find(x => ['i','p','c','ok','pay'].indexOf(x.k) !== -1 && ok(x.d));
       if(leave){
         const diff = faDiff(dueRaw, leave.d), dT = faToDate(dueRaw);
-        let at = pts.findIndex((x, i) => i > 0 && (x.ghost || (!x.d || faToDate(x.d) > dT)));
-        if(at === -1) at = pts.length; if(at === 0) at = 1;
-        if(at <= reached) reached++;
-        pts.splice(at, 0, {k:'due', t:'موعد تنظیم', d:dueRaw, due:true, past:true, tone: diff > 0 ? 'bad' : 'ok',
-          sub: diff > 0 ? toFa(diff) + ' روز دیرتر' : diff < 0 ? toFa(-diff) + ' روز زودتر ✓' : 'سر موعد ✓'});
+        if(diff != null && diff <= 0){
+          /* زودتر یا سر موعد: نشانش همان‌جا که کار واقعاً تمام شد (لحظهٔ رفتن به مرحلهٔ بعد)،
+             نه در تاریخ موعد که بعد از همه‌چیز و ته نمودار می‌افتاد */
+          leave.dueSub = '<span class="ms-dok" title="موعد تنظیم ' + esc(admDate(dueRaw)) + '">'
+            + (diff < 0 ? toFa(-diff) + ' روز زودتر از موعد ✓' : 'سر موعد ✓') + '</span>';
+        }else{
+          let at = pts.findIndex((x, i) => i > 0 && (x.ghost || (!x.d || faToDate(x.d) > dT)));
+          if(at === -1) at = pts.length; if(at === 0) at = 1;
+          if(at <= reached) reached++;
+          pts.splice(at, 0, {k:'due', t:'موعد تنظیم', d:dueRaw, due:true, past:true, tone:'bad',
+            sub: toFa(diff) + ' روز دیرتر'});
+        }
       }
     }
 
@@ -50439,6 +50437,7 @@
         else if(!x.d && !x.txt && !x.isToday) x.txt = 'اکنون';
       }
       if(i === reached && finished) x.last = true;
+      if(x.dueSub) x.sub = (x.sub ? x.sub + ' · ' : '') + x.dueSub;
     });
 
     let rounds = [];
@@ -50882,7 +50881,12 @@
       sub: done ? (doneLate == null ? '' : (doneLate > 0 ? toFa(doneLate) + ' روز دیرتر' : doneLate < 0 ? toFa(-doneLate) + ' روز زودتر ✓' : 'سر موعد ✓'))
                 : (left === 0 ? 'موعد امروز' : '')} : null;
     const midDate = faToDate(mid.d || today);
-    if(dueP && midDate && faToDate(dueRaw) < midDate){ pts.push(dueP); pts.push(mid); }
+    if(dueP && done && doneLate != null && doneLate <= 0){
+      /* زودتر یا سر موعد انجام شد: نشان موعد روی همان نقطهٔ «انجام»، در زمان واقعی انجام */
+      mid.sub = '<span class="ms-dok" title="موعد ' + esc(taskDate(dueRaw)) + '">' + (doneLate < 0 ? toFa(-doneLate) + ' روز زودتر از موعد ✓' : 'سر موعد ✓') + '</span>';
+      pts.push(mid);
+    }
+    else if(dueP && midDate && faToDate(dueRaw) < midDate){ pts.push(dueP); pts.push(mid); }
     else{ pts.push(mid); if(dueP){ dueP.ahead = !done; pts.push(dueP); } }
     if(!done) pts.push({k:'ok', t:'انجام', d:'', ghost:true, ahead:true});
 
