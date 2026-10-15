@@ -29680,7 +29680,8 @@
     c = c || {}; D = D || ctrDocsCalc(name, ctrTagsOf(c.ct));
     const canon = ctrCanon(name), ed = can('ctr.contact');
     const ps = Array.from(D.parties.values()).sort((a, b) => (b.nc * 3 + b.ns) - (a.nc * 3 + a.ns));
-    if(cur == null || cur === '') cur = c.cn || (ps[0] ? ps[0].p : '');
+    /* نام قراردادی فقط با انتخاب خود کاربر؛ پیش‌تر اولین نامِ پیدا‌شده خودبه‌خود ثبت می‌شد */
+    if(cur == null) cur = c.cn || '';
     if(cur && !ps.some(o => ctrExK(o.p) === ctrExK(cur))) ps.unshift({p: cur, nc: 0, ns: 0});
     const cnt = o => [o.nc ? toFa(o.nc) + ' قرارداد' : '', o.ns ? toFa(o.ns) + ' صورت وضعیت' : ''].filter(Boolean).join(' · ') || 'در اسناد این پیمانکار نیامده';
     return '<div class="ctcn" data-ctcnbox="1"><div class="ctx-sh"><b>نام قراردادی</b><small>نامی که در قرارداد و صورت وضعیت آمده؛ می‌تواند همان نامِ روی کارت هم باشد</small></div>'
@@ -29689,6 +29690,7 @@
           return '<div class="ctcn-r' + (on ? ' on' : '') + '"><button type="button" class="ctm-pick" data-ctcn="' + esc(o.p) + '"><i class="ctm-rd"></i><span><b>' + esc(o.p) + '</b><small>' + cnt(o) + (oc ? '<i class="ctm-s on">روی کارت</i>' : '') + '</small></span></button>'
             + (on && !oc && ed ? '<button type="button" class="ctcn-card" data-ctcncard="' + esc(o.p) + '" title="همین نام روی کارت و گزارش پیمانکار نوشته شود">نمایش روی کارت</button>' : '') + '</div>'; }).join('')
           : '<div class="ctm-none">هنوز قرارداد یا صورت وضعیتی به نام این پیمانکار پیدا نشده</div>') + '</div>'
+      + (cur && ed ? '<button type="button" class="ctcn-more" data-ctcn="">برداشتن نام قراردادی</button>' : '')
       + '<button type="button" class="ctcn-more" data-ctcnmore="1">نام دیگری از قراردادها و صورت وضعیت‌ها…</button>'
       + '<div class="ctcn-pick" hidden><label class="ctm-q">' + CTC_I.user + '<input type="search" class="ctcn-q" placeholder="جست‌وجو در نام‌های قرارداد و صورت وضعیت…" autocomplete="off"></label><div class="ctcn-res"></div></div></div>';
   }
@@ -29823,7 +29825,11 @@
   function ctrDocsCalc(name, man){
     const names = ctrNamesOf(name), nk0 = new Set(names.map(normName));
     const memo = new Map();
-    const mine1 = p => { if(!p) return false; const k = normName(p); if(memo.has(k)) return memo.get(k); let v = nk0.has(k); if(!v){ try{ v = sameEntity(p, name); }catch(e){} } memo.set(k, v); return v; };
+    /* فقط نام‌هایی که واقعاً یکی شده‌اند (املاهای ثبت‌شده یا تطبیقِ تأییدشده)؛
+       شباهت حدسی نام (مثل «نوری» و «میثم نوری») دیگر سند را به این پیمانکار نمی‌چسباند */
+    const cn0 = (() => { try{ return normName(ctrCanon(name)); }catch(e){ return ''; } })();
+    const mine1 = p => { if(!p) return false; const k = normName(p); if(memo.has(k)) return memo.get(k); let v = nk0.has(k);
+      if(!v){ try{ v = linkState(p, name) === true || (!!cn0 && normName(ctrCanon(p)) === cn0); }catch(e){} } memo.set(k, v); return v; };
     const mine = p => ctrPartySplit(p).some(mine1);
     const C = ctrAllContracts(), S = ctrAllStatements();
     const list = [], byKey = new Map();
@@ -30944,6 +30950,8 @@
     ctrContacts.forEach((c, k) => { let cn = c.name; try{ cn = ctrCanon(c.name); }catch(e){} const ck = normName(cn) || k; if(!seen.has(ck) && !seen.has(k)){ seen.add(ck); ents.push({canon: cn, k: ck, n:0, docs:0, members:[], skills:new Map()}); } });
     /* طرف‌های قرارداد و صورت وضعیت، حتی اگر در گزارش روزانه نیامده باشند */
     try{ ctrDocParties().forEach(o => { let c = o.p; try{ c = ctrCanon(canonicalName(c)); const sp = splitParts(c); if(sp) c = sp.n; }catch(e){} const k = normName(c); if(!k || seen.has(k)) return; seen.add(k); ents.push({canon: c, k, n:0, docs: o.nc + o.ns, members:[], skills:new Map()}); }); }catch(e){}
+    /* پیمانکارانِ لیست فعالیت (مثل کارهایی که به پیمانکاری سپرده شده که هنوز در گزارش روزانه نیامده) */
+    try{ (typeof tasksAll !== 'undefined' ? tasksAll : []).forEach(r => { if(r && r.__adm) return; taskCtrKeys(r).forEach(c => { if(!c || c === TK_NO_CTR) return; let cn = c; try{ cn = ctrCanon(canonicalName(c)); const sp = splitParts(cn); if(sp) cn = sp.n; }catch(e){} const k = normName(cn); if(!k || seen.has(k)) return; seen.add(k); ents.push({canon: cn, k, n:0, docs:0, members:[], skills:new Map()}); }); }); }catch(e){}
     /* همهٔ پیمانکارانِ فهرست پروژه، حتی اگر گزارش‌ها هنوز بار نشده باشند */
     ['contractorList', 'contractPartyList'].forEach(id => {
       const dl = document.getElementById(id); if(!dl) return;
@@ -42445,8 +42453,9 @@
     : (admDoneState(k, r).cls === 'ok');
   const arDueOf = (k, r) => (k === 'minute') ? pick(r,AD.mDate) : (dueTracked(r) ? pick(r,AD.due) : '');
   function arTitleOf(k, r){
-    const no = (k === 'statement') ? pick(r,AD.sNo) : (k === 'contract') ? pick(r,AD.cNo) : (k === 'letter') ? pick(r,AD.lNo) : pick(r,AD.mIdx);
-    const t = (k === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
+    const no = (k === 'statement') ? pick(r,AD.sNo) : (k === 'contract') ? pick(r,AD.cNo) : (k === 'letter') ? pick(r,AD.lNo) : (k === 'design') ? pick(r,AD.dNo) : pick(r,AD.mIdx);
+    const t = (k === 'design') ? (pick(r,AD.dTitle) || 'سند طراحی')
+            : (k === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
             : (k === 'contract') ? (pick(r,AD.cTitle) || 'قرارداد')
             : (k === 'letter') ? (pick(r,AD.lSubject) || 'نامه')
             : (pick(r,AD.mText) || pick(r,AD.mSubject) || 'صورتجلسه');
@@ -44393,6 +44402,11 @@
        فقط نام‌های قراردادی، مشاور، کارفرما و پیمانکاران حذف‌شده نمی‌آیند */
     if(dl && dl.id === 'contractorList' && popInput.closest && popInput.closest('#panelWrite')){
       let cnK = new Set(); try{ ctrContacts.forEach(c => { if(c && c.cn && normName(c.cn) !== normName(c.name)) cnK.add(normName(c.cn)); }); }catch(e){}
+      /* فهرست اصلی: هر پرونده‌ای که در فهرست قدیمی با هیچ املایی نیامده، با نام روی کارتش اضافه می‌شود */
+      try{
+        const canonHave = new Set(opts.map(o => { try{ return normName(ctrCanon(canonicalName(o.v))); }catch(e){ return normName(o.v); } }));
+        allPartyNames().forEach(e => { if(e.t !== 'ctr') return; const k = normName(e.n); if(!canonHave.has(k)){ canonHave.add(k); opts.push({v: e.n, g: '', s: ''}); } });
+      }catch(e){}
       const seen = new Set();
       opts = opts.filter(o => {
         const k = normName(o.v); if(!k || seen.has(k) || cnK.has(k)) return false;
@@ -44417,6 +44431,20 @@
         let cnK = new Set(); try{ ctrContacts.forEach(c => { if(c && c.cn && normName(c.cn) !== normName(c.name)) cnK.add(normName(c.cn)); }); }catch(e){}
         opts = opts.filter(o => { try{ const t = ctrTypeOf(o.v); if(t === 'cons' || t === 'emp') return false; }catch(e){} return !cnK.has(normName(o.v)); });
       }
+    }
+    if(dl && dl.id === 'skillList'){
+      /* تخصص‌های اطلاعات پیمانکاران هم در فهرست؛ برای ردیف گزارشی که نام پیمانکار دارد، تخصص‌های خودش بالای فهرست */
+      try{
+        const have = new Set(opts.map(o => normName(o.v)));
+        ctrContacts.forEach(c => ctrTagsOf(c && c.s).forEach(x => { const k = normName(x); if(k && !have.has(k)){ have.add(k); opts.push({v: x, g: '', s: ''}); } }));
+        const row = popInput.closest && popInput.closest('.crew'), nm = row && row.querySelector('.c-name');
+        const c0 = nm && nm.value.trim() ? ctrContactOf(nm.value.trim()) : null, own = c0 ? ctrTagsOf(c0.s) : [];
+        if(own.length){
+          const ok = new Set(own.map(normName));
+          opts = own.map(x => ({v: x, g: 'تخصص‌های ' + (ctrCanon(nm.value.trim()) || 'این پیمانکار'), s: ''}))
+            .concat(opts.filter(o => !ok.has(normName(o.v))).map(o => Object.assign(o, {g: o.g || 'همهٔ تخصص‌ها'})));
+        }
+      }catch(e){}
     }
     if(dl && /^(skillList|ctdSkillList)$/.test(dl.id) && skHidden.size){ const seen = new Set(); opts = opts.filter(o => { const k = normName(o.v); if(skHidden.has(String(o.v).trim()) || seen.has(k)) return false; seen.add(k); return true; }); }
     const lid = dl ? dl.id : '';
@@ -49836,6 +49864,18 @@
       pts.push({k:stage, t:LBL[stage] || rv, d: ok(cd) ? cd : '', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
     }
     if(!pts.length) return '';
+    /* چهرهٔ مسئول بررسی روی هر نقطهٔ «گردش داخلی»: از شروع همان دور در تاریخچه؛
+       برای دور جاری، مسئولین فعلی. پیش‌تر بعد از «رد داخلی» و سپردن دوباره، چهره‌ای نمی‌آمد. */
+    try{
+      const rvS = stageLogOf(r).filter(e => e && e.type === 'rv-start' && ok(e.date) && Array.isArray(e.who) && e.who.length);
+      pts.forEach((x, i) => {
+        if(x.k !== 'i' || x.ava) return;
+        const t0 = x.d ? faToDate(x.d) : null, nx = pts.slice(i + 1).find(y => y.d && ok(y.d)), t1 = nx ? faToDate(nx.d) : null;
+        const hit = rvS.filter(e => { const t = faToDate(e.date); return (!t0 || t >= t0) && (!t1 || t < t1); }).pop();
+        if(hit) x.ava = hit.who[0];
+        else if(stage === 'i' && i === pts.length - 1){ const R0 = reviewersOf(r); if(R0 && R0.length) x.ava = R0[0]; }
+      });
+    }catch(e){}
 
     // هنوز گردشی شروع نشده (یا به تنظیم برگشته): تا امروز
     if(!stage && !finished)
@@ -51117,6 +51157,17 @@
   /* فهرست ترکیبی نفرات پروژه و پیمانکاران، برای «مسئول انجام» بندها */
   /* طراح سند: نفرات خود پروژه (وقتی طراحی داخل پروژه است) یا مشاور و شرکت طراح */
   /* هر پیمانکار فقط با «نام روی کارت»؛ نام‌های یکی‌شده (مستعار، قراردادی، فامیلی) جدا نمی‌آیند */
+  /* فهرست اصلی همهٔ طرف‌ها (پیمانکار، مشاور، کارفرما): پرونده‌ها + گزارش‌ها + اسناد + لیست فعالیت؛
+     همهٔ انتخابگرها از همین می‌خوانند تا فهرست‌ها یکی باشند */
+  function allPartyNames(){
+    let E = [];
+    try{ E = ctdEntities(); }catch(e){}
+    const out = [], seen = new Set();
+    E.forEach(e => { const n = e.canon; if(!n) return; try{ if(ctrIsHidden(n)) return; }catch(err){} const k = normName(n); if(!k || seen.has(k)) return; seen.add(k);
+      let t = ''; try{ t = ctrTypeOf(n); }catch(err){} out.push({n, t: t === 'cons' || t === 'emp' ? t : 'ctr'}); });
+    return out.sort((a, b) => String(a.n).localeCompare(String(b.n), 'fa'));
+  }
+  window.allPartyNames = allPartyNames;
   function ctrCardNames(ids){
     const seen = new Set(), out = [];
     (ids || ['contractorList', 'contractPartyList']).forEach(id => {
@@ -51135,11 +51186,13 @@
     let dl = document.getElementById('designerList');
     if(!dl){ dl = document.createElement('datalist'); dl.id = 'designerList'; document.body.appendChild(dl); }
     const people = (function(){ try{ return listNames(); }catch(e){ return []; } })();
-    const ext = ctrCardNames(['contractPartyList'])
-      .concat((adminAll || []).filter(x => x.kind === 'design').map(x => { let v = pick(x.row, AD.dParty); try{ v = ctrCanon(canonicalName(v)); }catch(e){} return v; }).filter(Boolean));
+    /* همهٔ طرف‌ها از پروندهٔ پیمانکاران (همان فهرست اصلی)، به تفکیک نوع */
+    const G = {cons:'مشاوران', emp:'کارفرما', ctr:'پیمانکاران'};
+    const ents = allPartyNames();
     const seen = new Set();
     const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
-    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + ext.map(n => opt(n, 'مشاور و شرکت طراح')).join('');
+    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('')
+      + ['cons','emp','ctr'].map(t => ents.filter(e => e.t === t).map(e => opt(e.n, G[t])).join('')).join('');
   }
   function mnWhoListEnsure(){
     let dl = document.getElementById('mnWhoList');
@@ -56418,13 +56471,14 @@
     let v = null;
     for(const k of ['ویرایش‌ها','revs']){ if(r && r[k] != null && r[k] !== ''){ v = r[k]; break; } }
     if(typeof v === 'string'){ try{ v = JSON.parse(v); }catch(e){ v = null; } }
-    if(Array.isArray(v) && v.length) return v.map(x => Object.assign({log: []}, x, {log: Array.isArray(x.log) ? x.log : []}));
+    const tag = o => { try{ Object.defineProperty(o, '__r', {value: r, enumerable: false, configurable: true, writable: true}); }catch(e){} return o; };
+    if(Array.isArray(v) && v.length) return v.map(x => tag(Object.assign({log: []}, x, {log: Array.isArray(x.log) ? x.log : []})));
     /* سند قدیمی بدون تاریخچه: یک ویرایش از روی ستون‌های فعلی */
     const d0 = faDateOf(exact(r,'تاریخ ارسال') || pick(r,AD.date) || '') || '';
     const st = String(exact(r,'وضعیت مدرک') || '');
     const log = [{st:'دریافت', d: d0}];
     if(st) log.push({st, d: ''});
-    return [{rev: String(pick(r,AD.dRev) || '0'), date: d0, log, legacy: true}];
+    return [tag({rev: String(pick(r,AD.dRev) || '0'), date: d0, log, legacy: true})];
   }
   function dsInitRevs(x){
     const d = faDateOf(x.sentDate || '') || todayShamsi();
@@ -56703,10 +56757,12 @@
     const pts = L.map((x, i) => {
       const h = dsHolderTxt(x, rev.__r);
       /* نفرِ داخل پروژه عکسش روی نقطه است؛ بقیه «نزد …» زیر تاریخ */
-      const ava = (dsSideAt(x, rev.__r) === 'in' && (x.at || (i === 0 && x.by))) ? (x.at || x.by) : '';
+      /* «دریافت»: سند از طراح رسیده؛ چهرهٔ ثبت‌کننده (که سند را تنظیم کرده) جای گیرنده نمی‌نشیند */
+      const ava = (dsSideAt(x, rev.__r) === 'in' && x.at && !(i === 0 && x.st === 'دریافت' && nameKey(x.at) === nameKey(x.by || ''))) ? x.at : '';
+      const from0 = (i === 0 && x.st === 'دریافت') ? String(pick(rev.__r || {}, AD.dParty) || '').trim() : '';
       return {k: kOf(x), t: x.lbl || (x.st + (DS_CODE[x.st] ? ' · ' + DS_CODE[x.st] : '')), d: x.d || '',
         rej: x.st === 'نیاز به اصلاح' || x.st === 'رد شده', ava, note: x.note || '', who: x.by || '',
-        sub: (!ava && h) ? dsHolderLink(dsSideAt(x, rev.__r), x.at || '', dsHolderShort(x, rev.__r)) : '', last: !open && i === L.length - 1, st: x.st};
+        sub: from0 && !ava ? 'از ' + esc(ctrCanon(from0)) : ((!ava && h) ? dsHolderLink(dsSideAt(x, rev.__r), x.at || '', dsHolderShort(x, rev.__r)) : ''), last: !open && i === L.length - 1, st: x.st};
     });
     if(open){ const lx = L[L.length - 1]; const h = dsHolderShort(lx, rev.__r); pts.push({k: kOf(lx), t:'امروز', d:'', now:true, isToday:true, txt: h || lastSt, st: lastSt}); }
     const items = [];
@@ -69999,6 +70055,22 @@
         }catch(e){}
         const v = norm(nameIn.value);
         if(!v) return;
+        /* تخصص‌های ثبت‌شده در اطلاعات پیمانکار مقدم‌اند: اگر یکی است همان می‌نشیند،
+           اگر چند تاست کپسول‌هایش برای انتخاب می‌آید (پرتکرارترینِ همان‌ها پیش‌فرض) */
+        let fileSk = [];
+        try{ const c0 = ctrContactOf(nameIn.value); fileSk = c0 ? ctrTagsOf(c0.s) : []; }catch(e){}
+        if(fileSk.length){
+          const hist = H.byName.get(v) || new Map();
+          const m = new Map(fileSk.map(x => [norm(x), hist.get(norm(x)) || 0]));
+          fileSk.forEach(x => { if(!H.orig.has('s:' + norm(x))) H.orig.set('s:' + norm(x), x); });
+          const curSk = norm(skillIn.value);
+          if(!curSk || skillIn.dataset.auto === '1' || !m.has(curSk)){
+            const best = Array.from(m.entries()).sort((a, b) => b[1] - a[1])[0][0];
+            if(curSk !== best){ skillIn.value = H.orig.get('s:' + best) || best; mark(skillIn); }
+          }
+          skChips(row, m, H);
+          return;
+        }
         const skills = H.byName.get(v);
         const t = topOf(skills);
         if(!t || !t.key) return;
