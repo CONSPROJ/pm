@@ -18535,6 +18535,29 @@
   #profileModal.pf2 #profileBody .tcal{border-radius:18px !important;}
   /* فهرست تنظیمات */
   .pf2-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface);}
+  /* ---- تنظیمات شخصی ---- */
+  .st2{display:flex;flex-direction:column;gap:16px;}
+  .st2-h{font-size:11.5px;font-weight:800;color:var(--muted);padding:0 6px 7px;}
+  .st2-ln{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);}
+  .st2-box > :first-child{border-top:0;}
+  .st2-ln .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;flex:none;color:var(--ink);background:var(--field);}
+  .st2-ln .ic svg{width:18px;height:18px;}
+  .st2-ln .stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .st2-ln .stx b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .st2-ln .stx small{font-size:11px;color:var(--muted);line-height:1.6;}
+  .st2-ln.col{flex-wrap:wrap;}
+  .st2-ln.col .st2-seg{flex:0 0 calc(100% - 48px);max-width:calc(100% - 48px);margin-inline-start:48px;box-sizing:border-box;}
+  .st2-ln .stx b, .st2-ln .stx small{overflow-wrap:anywhere;}
+  @media (min-width:640px){ .st2-ln.col{flex-wrap:nowrap;} .st2-ln.col .st2-seg{flex:0 0 auto;margin:0;max-width:none;} .st2 .st2-seg button{flex:0 0 auto;padding:0 14px;} }
+  .st2-seg{display:flex;padding:3px;border-radius:12px;background:var(--field);gap:2px;}
+  .st2-seg button{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--muted);height:32px;padding:0 6px;border-radius:9px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+  .st2-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .st2-tog{flex:none;position:relative;width:46px;height:28px;border-radius:99px;border:0;background:var(--line);cursor:pointer;transition:background .2s;padding:0;}
+  .st2-tog i{position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s;}
+  .st2-tog.on{background:var(--ok);}
+  .st2-tog.on i{transform:translateX(-18px);}
+  .st2-tog:disabled{opacity:.4;cursor:not-allowed;}
+  html.rm *, html.rm *::before, html.rm *::after{animation-duration:.001ms !important;animation-delay:0s !important;transition-duration:.001ms !important;}
   .pf2-row{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-top:1px solid var(--line);transition:background .15s;}
   .pf2-row:first-child{border-top:0;}
   .pf2-row:hover{background:var(--canvas);}
@@ -22431,6 +22454,10 @@
       var pref = localStorage.getItem('siteLogM.theme.v1') || 'auto';
       var dark = pref === 'dark' || (pref === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      var up = JSON.parse(localStorage.getItem('siteLogM.prefs.v1') || '{}');
+      var z = {s:.92, l:1.08, xl:1.16}[up.zoom];
+      if(z) document.documentElement.style.zoom = z;
+      if(up.motion === false) document.documentElement.classList.add('rm');
     }catch(e){}
   })();
 </script>
@@ -35215,6 +35242,92 @@
   };
   /* سربرگ پروفایل v2: نوار رنگی، آواتار بزرگ، نقش و سطح، و چهار عدد
      کلیدی همان روز. تب‌ها زیرش می‌چسبند. */
+  /* ====== تنظیمات شخصی، بخش‌بندی‌شده ======
+     پروفایل · ظاهر · اعلان‌ها · شروع کار · حساب · دربارهٔ سامانه.
+     همهٔ ترجیحات روی همین دستگاه ذخیره می‌شوند (upref). */
+  const ST2_I = {
+    sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21M5.6 5.6l1 1M17.4 17.4l1 1M18.4 5.6l-1 1M6.6 17.4l-1 1"/></svg>',
+    txt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-12 5 12M5.8 14h6.4"/><path d="M15 18l3-7 3 7M15.9 16h4.2"/></svg>',
+    mo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>',
+    snd:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"/></svg>',
+    bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 10-12 0c0 6.5-2.5 8-2.5 8h17S18 15.5 18 9"/><path d="M13.7 20.5a2 2 0 01-3.4 0"/></svg>',
+    badge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="15" height="15" rx="4"/><circle cx="18" cy="6" r="3" fill="currentColor" stroke="none"/></svg>',
+    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5V20H4z"/><path d="M10 20v-5h4v5"/></svg>',
+    deck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="12" height="14" rx="2.5"/><path d="M18.5 8.5c1 .4 1.5 1.2 1.5 2.2V18"/></svg>',
+    info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></svg>',
+    ref:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.4-5.7"/><path d="M20 4v5h-5"/></svg>'
+  };
+  function stSeg(key, cur, opts){
+    return '<span class="st2-seg" role="radiogroup">' + opts.map(([v, t]) =>
+      '<button type="button" role="radio" aria-checked="' + (String(cur) === String(v)) + '" class="' + (String(cur) === String(v) ? 'on' : '')
+      + '" data-stp="' + key + '|' + v + '">' + t + '</button>').join('') + '</span>';
+  }
+  function stTog(key, on, dis){
+    return '<button type="button" class="st2-tog' + (on ? ' on' : '') + '" role="switch" aria-checked="' + !!on + '" data-stt="' + key + '"' + (dis ? ' disabled' : '') + '><i></i></button>';
+  }
+  function stLine(ic, t, d, ctl, col){
+    return '<div class="st2-ln' + (col ? ' col' : '') + '"><span class="ic">' + ic + '</span><span class="stx"><b>' + t + '</b>'
+      + (d ? '<small>' + d + '</small>' : '') + '</span>' + ctl + '</div>';
+  }
+  function stPersonalHtml(name, me, row){
+    const sec = (t, body) => '<div class="st2-sec"><div class="st2-h">' + t + '</div><div class="pf2-list st2-box">' + body + '</div></div>';
+    let theme = 'auto'; try{ theme = localStorage.getItem('siteLogM.theme.v1') || 'auto'; }catch(e){}
+    const nOk = 'Notification' in window;
+    const nPerm = nOk ? Notification.permission : 'denied';
+    let h = '<div class="st2">';
+    h += sec('پروفایل',
+        row('pfAva', PF_I.cam, avatarOf(name) ? 'تغییر عکس پروفایل' : 'افزودن عکس پروفایل', 'عکس برای همه دیده می‌شود')
+      + (me ? row('pfName', PF_I.edit, 'نام نمایشی', esc(name) + (roleOf(name) ? ' · ' + esc(roleOf(name)) : '')) : ''));
+    if(!me) return h + '</div>';
+    h += sec('ظاهر',
+        stLine(ST2_I.sun, 'پوسته', '', stSeg('theme', theme, [['auto','خودکار'],['light','روز'],['dark','شب']]), true)
+      + stLine(ST2_I.txt, 'اندازهٔ نوشته‌ها', 'روی همین دستگاه', stSeg('zoom', upref('zoom'), [['s','ریز'],['m','معمولی'],['l','درشت'],['xl','خیلی درشت']]), true)
+      + stLine(ST2_I.mo, 'حرکت و انیمیشن', 'خاموش: صفحه‌ها بی‌حرکت و سریع‌تر عوض می‌شوند', stTog('motion', upref('motion') !== false)));
+    h += sec('اعلان‌ها',
+        stLine(ST2_I.snd, 'صدای پیام و اعلان تازه', 'یک صدای کوتاه و آرام', stTog('sound', upref('sound')))
+      + stLine(ST2_I.bell, 'اعلان روی گوشی یا رایانه', nOk ? (nPerm === 'denied' ? 'مرورگر اجازه نداده؛ از تنظیمات مرورگر باز کنید' : 'وقتی سامانه باز است ولی در صفحهٔ دیگری هستید') : 'این مرورگر پشتیبانی نمی‌کند', stTog('sysn', upref('sysn') && nPerm === 'granted', !nOk || nPerm === 'denied'))
+      + ('setAppBadge' in navigator ? stLine(ST2_I.badge, 'عدد روی آیکون برنامه', 'تعداد خوانده‌نشده‌ها روی آیکون صفحهٔ اصلی', stTog('badge', upref('badge'))) : ''));
+    h += sec('شروع کار',
+        stLine(ST2_I.home, 'صفحهٔ آغاز', 'بعد از باز کردن سامانه', stSeg('start', upref('start'), [['home','خانه'],['tasks','کارها'],['admin','اسناد'],['view','گزارش‌ها']]), true)
+      + stLine(ST2_I.deck, 'کارت‌های فعالیت در اولین ورود روز', 'هر روز یک بار، اگر کاری باز باشد', stTog('deck', upref('deck'))));
+    h += sec('حساب',
+        row('pfTour', PF_I.help, 'راهنمای برنامه', 'معرفی بخش‌ها و راهنمای گام‌به‌گام')
+      + (!appInstalled() ? row('pfInstall', A2HS_ICON, 'افزودن به صفحهٔ اصلی', 'سامانه مثل یک برنامه روی گوشی باز می‌شود') : '')
+      + row('pfSwitch', PF_I.swap, 'تغییر کاربر', 'ورود با نام دیگری روی همین دستگاه')
+      + row('pfLogoutAll', PF_I.out, 'خروج از همهٔ دستگاه‌ها', 'همهٔ نشست‌های دیگر شما بسته می‌شود')
+      + row('pfLogout', PF_I.out, 'خروج از حساب', 'نام شما از این دستگاه پاک می‌شود', 'danger'));
+    const bld = String((document.querySelector('meta[name="pm-build"]') || {}).content || '');
+    const bTxt = bld.length >= 12 ? toFa(bld.slice(0,4) + '/' + bld.slice(4,6) + '/' + bld.slice(6,8) + ' — ' + bld.slice(8,10) + ':' + bld.slice(10,12)) : '';
+    h += sec('دربارهٔ سامانه',
+        stLine(ST2_I.info, 'نسخهٔ فعلی', bTxt ? 'ساخت ' + bTxt + ' (UTC)' : '', '')
+      + row('stReload', ST2_I.ref, 'بارگذاری نسخهٔ تازه', 'اگر چیزی درست نمایش داده نمی‌شود'));
+    return h + '</div>';
+  }
+  /* کنترل‌های تنظیمات */
+  document.addEventListener('click', async e => {
+    const sp = e.target.closest('[data-stp]');
+    const st = e.target.closest('[data-stt]');
+    const rl = e.target.closest('#stReload');
+    if(!sp && !st && !rl) return;
+    if(rl){ try{ const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }catch(err){} location.reload(); return; }
+    if(sp){
+      const [k, v] = sp.dataset.stp.split('|');
+      if(k === 'theme'){ try{ window.__setTheme(v); }catch(err){} }
+      else uprefSet(k, v);
+      sp.parentElement.querySelectorAll('button').forEach(b => { const on = b === sp; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+      return;
+    }
+    if(st.disabled) return;
+    const k = st.dataset.stt;
+    let on = !st.classList.contains('on');
+    if(k === 'sysn' && on){
+      try{ const r = await Notification.requestPermission(); on = r === 'granted'; }catch(err){ on = false; }
+      if(!on){ try{ shrToast('مرورگر اجازهٔ اعلان نداد'); }catch(err){} }
+    }
+    uprefSet(k, on);
+    st.classList.toggle('on', on); st.setAttribute('aria-checked', on);
+    if(k === 'sound' && on) upChime();
+  });
   function profileHeader(name, st){
     const me = (nameKey(name) === nameKey(activeUserName()));
     const L = (typeof levelOf === 'function') ? levelOf(name) : 3;
@@ -37258,18 +37371,7 @@
         data:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/></svg>',
         rpt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8M6 7h12a1 1 0 011 1v11a1 1 0 01-1 1H6a1 1 0 01-1-1V8a1 1 0 011-1z"/><path d="M9 12l2 2 4-4"/></svg>'
       };
-      if(admTools){
-        h += '<div class="st-gh">حساب من</div>';
-      }
-      h += '<div class="pf2-list st-acc">'
-        +   row('pfAva', PF_I.cam, avatarOf(name) ? 'تغییر عکس پروفایل' : 'افزودن عکس پروفایل', 'عکس برای همه دیده می‌شود')
-        +   (me ? row('pfName', PF_I.edit, 'نام نمایشی', esc(name) + (roleOf(name) ? ' · ' + esc(roleOf(name)) : '')) : '')
-        +   (me ? row('pfTour', PF_I.help, 'راهنمای برنامه', 'معرفی بخش‌ها و راهنمای گام‌به‌گام') : '')
-        +   (me && !appInstalled() ? row('pfInstall', A2HS_ICON,'افزودن به صفحهٔ اصلی', 'سامانه مثل یک برنامه با لوگوی خودش روی گوشی باز می‌شود') : '')
-        +   (me ? row('pfSwitch', PF_I.swap, 'تغییر کاربر', 'ورود با نام دیگری روی همین دستگاه') : '')
-        +   (me ? row('pfLogoutAll', PF_I.out, 'خروج از همهٔ دستگاه‌ها', 'اگر روی گوشی یا رایانهٔ دیگری وارد شده‌اید، همه خارج می‌شوند') : '')
-        +   (me ? row('pfLogout', PF_I.out, 'خروج از حساب', 'نام شما از این دستگاه پاک می‌شود', 'danger') : '')
-        + '</div>';
+      h += stPersonalHtml(name, me, row);
       if(admTools) h += pf3NavHtml('settings', [['#adm', 'مدیریت سامانه'],
         ...(admUsers ? [['users', 'کاربران و دسترسی', 0, ST_I.users, 'افراد، نقش‌ها، دسترسی‌ها و زنجیرهٔ تأیید', 'sky']] : []),
         ...(ctTool ? [['ct', 'پرونده‌های پیمانکاران', 0, ST_I.ct, 'نام‌ها، قراردادها، تماس، دیسیپلین و تخصص', 'ok']] : []),
@@ -38179,7 +38281,7 @@
     const watch = (cntId, btnId) => {
       const c = document.getElementById(cntId), btn = document.getElementById(btnId);
       if(!c || !btn) return;
-      let last = 0;
+      let last = 0, inited = false;
       const num = () => {
         if(c.hidden) return 0;
         const t = String(c.textContent || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
@@ -38192,7 +38294,8 @@
           btn.classList.remove('ring'); void btn.offsetWidth; btn.classList.add('ring');
           setTimeout(() => btn.classList.remove('ring'), 1000);
         }
-        last = n;
+        try{ upOnCount(btnId === 'msgBtn' ? 'msg' : 'bell', n, inited && n > last); }catch(e){}
+        last = n; inited = true;
       };
       new MutationObserver(check).observe(c, {attributes:true, childList:true, characterData:true, subtree:true});
       check();
@@ -38200,6 +38303,60 @@
     watch('bellCount', 'bellBtn');
     watch('msgCount', 'msgBtn');
   })();
+  /* ====== تنظیمات شخصی (روی همین دستگاه) ====== */
+  const UPREF_KEY = 'siteLogM.prefs.v1';
+  const UPREF_DEF = {zoom:'m', motion:true, sound:false, sysn:false, badge:true, start:'home', deck:false};
+  function upref(k){
+    let o = {}; try{ o = JSON.parse(localStorage.getItem(UPREF_KEY) || '{}') || {}; }catch(e){}
+    return (k in o) ? o[k] : UPREF_DEF[k];
+  }
+  function uprefSet(k, v){
+    let o = {}; try{ o = JSON.parse(localStorage.getItem(UPREF_KEY) || '{}') || {}; }catch(e){}
+    o[k] = v;
+    try{ localStorage.setItem(UPREF_KEY, JSON.stringify(o)); }catch(e){}
+    uprefApply();
+  }
+  function uprefApply(){
+    const z = {s:.92, l:1.08, xl:1.16}[upref('zoom')];
+    document.documentElement.style.zoom = z ? String(z) : '';
+    document.documentElement.classList.toggle('rm', upref('motion') === false);
+    if(!upref('badge')){ try{ navigator.clearAppBadge && navigator.clearAppBadge(); }catch(e){} }
+  }
+  window.upref = upref; window.uprefSet = uprefSet;
+  /* صدای کوتاه برای پیام یا اعلان تازه */
+  let upAudio = null;
+  function upChime(){
+    try{
+      upAudio = upAudio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = upAudio.currentTime;
+      [[880, 0], [1320, .11]].forEach(([f, d]) => {
+        const o = upAudio.createOscillator(), g = upAudio.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(.12, t + d + .02);
+        g.gain.exponentialRampToValueAtTime(.0001, t + d + .28);
+        o.connect(g); g.connect(upAudio.destination); o.start(t + d); o.stop(t + d + .3);
+      });
+    }catch(e){}
+  }
+  window.upChime = upChime;
+  /* شمارنده‌ها بالا رفت: صدا، اعلان سیستم (وقتی برنامه پشت صفحه است) و
+     عدد روی آیکون برنامه — هر کدام فقط اگر کاربر روشنش کرده باشد. */
+  function upOnCount(kind, n, up){
+    if(up){
+      if(upref('sound')) upChime();
+      if(upref('sysn') && document.hidden && 'Notification' in window && Notification.permission === 'granted'){
+        try{ new Notification('سامانه پروژه', {body: kind === 'msg' ? 'پیام تازه دارید' : 'اعلان تازه دارید', icon: (document.querySelector('link[rel="apple-touch-icon"]') || {}).href, tag: 'pm-' + kind, lang: 'fa', dir: 'rtl'}); }catch(e){}
+      }
+    }
+    if(upref('badge') && navigator.setAppBadge){
+      const tot = ['bellCount', 'msgCount'].reduce((a, id) => {
+        const c = document.getElementById(id);
+        if(!c || c.hidden) return a;
+        return a + (parseInt(String(c.textContent || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0);
+      }, 0);
+      try{ tot ? navigator.setAppBadge(tot) : navigator.clearAppBadge(); }catch(e){}
+    }
+  }
   /* ====== حالت روز و شب ====== */
   const THEME_KEY = 'siteLogM.theme.v1';
   const THEME_ICONS = {
@@ -38211,6 +38368,7 @@
   const THEME_SHORT = {auto:'خودکار', light:'روز', dark:'شب'};
   const mqDark = window.matchMedia('(prefers-color-scheme: dark)');
 
+  window.__setTheme = v => { try{ localStorage.setItem(THEME_KEY, v); }catch(e){} applyTheme(); };
   function applyTheme(){
     let pref = 'auto';
     try{ pref = localStorage.getItem(THEME_KEY) || 'auto'; }catch(e){}
@@ -38387,6 +38545,7 @@
      ظاهر و حرکت
      ================================================================== */
   function uiReduced(){
+    if(document.documentElement.classList.contains('rm')) return true;
     try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
     catch(e){ return false; }
   }
@@ -71335,6 +71494,31 @@
     el.title = n ? (toFa(n) + ' مورد بحرانی') : '';
   }
   /* یک بار در هر روز، پس از بالا آمدن اطلاعات، خودش باز می‌شود */
+  /* ترجیحات «شروع کار»: صفحهٔ آغاز و کارت‌های روزانه. بعد از ورود و
+     رسیدن داده، فقط یک بار. */
+  (function upStartup(){
+    let tries = 0, tabDone = false;
+    const tick = () => {
+      tries++;
+      const who = (typeof activeUserName === 'function') && activeUserName();
+      const ix = document.documentElement.classList.contains('ix-open');
+      if(who && !ix && !tabDone){
+        tabDone = true;
+        try{
+          const st = window.upref ? window.upref('start') : 'home';
+          const ph = document.getElementById('panelHome');
+          if(st && st !== 'home' && ph && !ph.hidden) switchTab(st);
+        }catch(e){}
+      }
+      const ready = (adminAll || []).length || (tasksAll || []).length;
+      if(tabDone && ready){
+        try{ if(window.upref && window.upref('deck')) setTimeout(deckAutoOpen, 600); }catch(e){}
+        return;
+      }
+      if(tries < 60) setTimeout(tick, 500);
+    };
+    setTimeout(tick, 900);
+  })();
   async function deckAutoOpen(){
     let last = '';
     try{ last = localStorage.getItem(DECK_SEEN_KEY) || ''; }catch(e){}
