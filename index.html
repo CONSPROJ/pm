@@ -21925,6 +21925,29 @@
   #deckModal .adm-ms .pgx-bar{height:3px !important;}
   #deckModal .adm-ms .pgx-bar .pgx-t{display:none !important;}
   #deckModal .adm-ms .pgx-l{font-size:10px !important;}
+  /* روند مالی پیمانکار (خوانا): محور مبلغ، نقطهٔ رویدادها، تاریخ‌ها و نوار مانده */
+  .cf-leg2{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 10px;font-size:10.5px;color:var(--muted);}
+  .cf-leg2 span{display:inline-flex;align-items:center;gap:5px;}
+  .cf-leg2 i{width:10px;height:3px;border-radius:2px;background:var(--sky);}
+  .cf-leg2 .p i{background:var(--ok);} .cf-leg2 .g i{height:9px;background:color-mix(in srgb, var(--alert) 22%, transparent);border:1px solid color-mix(in srgb, var(--alert) 45%, transparent);}
+  .cf-leg2 b{font-weight:800;color:var(--ink);font-size:11px;margin-inline-start:2px;}
+  .cf-leg2 .g b{color:var(--alert);}
+  .cf-tr2{direction:ltr;padding-left:54px;}
+  .cf-plot{position:relative;height:140px;}
+  .cf-plot svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;}
+  .cf-plot path{fill:none;vector-effect:non-scaling-stroke;stroke-linejoin:round;}
+  .cf-plot .lb{stroke:var(--sky);stroke-width:2.2;} .cf-plot .lp{stroke:var(--ok);stroke-width:2.2;}
+  .cf-plot .pa{fill:color-mix(in srgb, var(--ok) 9%, transparent);stroke:none;}
+  .cf-plot .ga{fill:color-mix(in srgb, var(--alert) 13%, transparent);stroke:none;}
+  .cf-plot .tn{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.6;}
+  .cf-gy{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--line-soft, var(--line));}
+  .cf-gy u{position:absolute;right:calc(100% + 6px);top:-7px;white-space:nowrap;text-decoration:none;font-size:9.5px;color:var(--muted);direction:rtl;}
+  .cf-dot{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--surface);border:2px solid var(--sky);box-sizing:border-box;}
+  .cf-dot.p{border-color:var(--ok);}
+  .cf-tx2{position:relative;height:16px;margin-top:5px;font-size:9.5px;color:var(--muted);}
+  .cf-tx2 span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;}
+  .cf-tx2 span.now{transform:translateX(-100%);font-weight:700;color:var(--ink);}
+  .cf-tx2 span:first-child:not(.now){transform:translateX(-10%);}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -42958,42 +42981,64 @@
     letter:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>',
     minute:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8M9 2.5h6v3H9z"/><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 11l2 2 4-4M9 17h6"/></svg>'
   };
-  /* روند تجمعی صورت‌وضعیت‌شده و پرداخت‌شدهٔ یک پیمانکار، زمان از چپ به راست */
+  /* روند تجمعی صورت‌وضعیت‌شده و پرداخت‌شدهٔ یک پیمانکار، زمان از چپ به راست.
+     خط آبی: جمع صورت‌وضعیت‌ها؛ خط سبز: جمع پرداخت‌ها؛ نوار قرمز کم‌رنگ میان دو خط:
+     مانده (پرداخت‌نشده) در هر زمان. محور عمودی مبلغ دارد و زیر هر رویداد تاریخش. */
   function cfTrendHtml(stAll){
     const ev = [];
     stAll.forEach(r => {
-      const d0 = faToDate(admSentDate('statement', r));
+      const sd = admSentDate('statement', r), d0 = faToDate(sd);
       const a = amtNum(pick(r,AD.sAmount)), p = paidOf(r);
-      if(d0 && a) ev.push({t: d0.getTime(), a, p: 0, s: admSentDate('statement', r)});
-      const pd = faToDate(pick(r,AD.sPayDate));
-      if(pd && p) ev.push({t: pd.getTime(), a: 0, p});
-      else if(d0 && p) ev.push({t: d0.getTime(), a: 0, p});
+      if(d0 && a) ev.push({t: d0.getTime(), a, p: 0, s: sd});
+      const pdS = pick(r,AD.sPayDate), pd = faToDate(pdS);
+      if(pd && p) ev.push({t: pd.getTime(), a: 0, p, s: pdS});
+      else if(d0 && p) ev.push({t: d0.getTime(), a: 0, p, s: sd});
     });
     if(ev.length < 2) return '';
     ev.sort((x, y) => x.t - y.t);
     const now = Date.now();
     const t0 = ev[0].t, t1 = Math.max(now, ev[ev.length - 1].t);
     let A = 0, P = 0;
-    const pts = ev.map(e => { A += e.a; P += e.p; return {t: e.t, A, P}; });
-    const max = Math.max(1, A);
-    const W = 100, H = 40;
-    const X = t => ((t - t0) / Math.max(1, t1 - t0)) * (W - 4) + 2;
-    const Y = v => H - 2 - (v / max) * (H - 6);
-    const step = key => {
-      let d = 'M' + X(t0).toFixed(2) + ' ' + Y(0).toFixed(2), last = 0;
-      pts.forEach(q => { d += ' L' + X(q.t).toFixed(2) + ' ' + Y(last).toFixed(2) + ' L' + X(q.t).toFixed(2) + ' ' + Y(q[key]).toFixed(2); last = q[key]; });
-      return d + ' L' + X(t1).toFixed(2) + ' ' + Y(last).toFixed(2);
+    const pts = ev.map(e => { A += e.a; P += e.p; return {t: e.t, A, P, s: e.s, k: e.a ? 'a' : 'p'}; });
+    const max = Math.max(1, A) * 1.08;
+    const W = 1000, H = 300, PAD = 8;
+    const X = t => PAD + ((t - t0) / Math.max(1, t1 - t0)) * (W - 2 * PAD);
+    const Y = v => H - (v / max) * H;
+    const stepPts = key => {
+      const o = [[X(t0), Y(0)]]; let last = 0;
+      pts.forEach(q => { o.push([X(q.t), Y(last)]); o.push([X(q.t), Y(q[key])]); last = q[key]; });
+      o.push([X(t1), Y(last)]);
+      return o;
     };
-    const area = step('A') + ' L' + X(t1).toFixed(2) + ' ' + Y(0).toFixed(2) + ' Z';
-    const first = ev.find(e => e.s);
-    return '<div class="cf-box"><div class="cf-bh"><b>روند صورت‌وضعیت و پرداخت</b>'
-      + '<span class="cf-leg in"><span><i class="b"></i>صورت‌وضعیت‌شده</span><span><i class="p"></i>پرداخت‌شده</span></span></div>'
-      + '<div class="cf-tr"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
-      +   '<path class="ar" d="' + area + '"/><path class="lb" d="' + step('A') + '"/><path class="lp" d="' + step('P') + '"/></svg>'
-      +   '<span class="cf-gap" style="top:' + (Y(A) / H * 100).toFixed(1) + '%;height:' + ((Y(P) - Y(A)) / H * 100).toFixed(1) + '%" title="مانده">'
-      +     '<u>' + esc(arToman(A - P)) + '</u></span>'
+    const dOf = L => 'M' + L.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L');
+    const pA = stepPts('A'), pP = stepPts('P');
+    const gap = dOf(pA.concat(pP.slice().reverse())) + ' Z';
+    const paidArea = dOf(pP) + ' L' + X(t1).toFixed(1) + ' ' + H + ' L' + X(t0).toFixed(1) + ' ' + H + ' Z';
+    const pct = v => (v / W * 100).toFixed(2) + '%', pctY = v => (v / H * 100).toFixed(2) + '%';
+    /* خطوط راهنمای مبلغ: صفر، نیمه و بیشینه */
+    const grid = [0, A / 2, A].map(v => '<span class="cf-gy" style="top:' + pctY(Y(v)) + '"><u>' + (v ? esc(arToman(v)) : '۰') + '</u></span>').join('');
+    /* نقطهٔ هر رویداد (روی خط خودش) */
+    const dots = pts.map(q => '<i class="cf-dot ' + q.k + '" style="left:' + pct(X(q.t)) + ';top:' + pctY(Y(q.k === 'a' ? q.A : q.P)) + '" title="' + esc((q.k === 'a' ? 'صورت وضعیت ' : 'پرداخت ') + admDate(q.s)) + '"></i>').join('');
+    /* تاریخ زیر رویدادها؛ برچسب‌های خیلی نزدیک به هم حذف می‌شوند */
+    const ticks = []; let lastX = -1e9;
+    pts.forEach(q => { const x = X(q.t); if(x - lastX >= 150 && W - PAD - x >= 120){ ticks.push('<span style="left:' + pct(x) + '">' + esc(toFa(String(admDate(q.s) || '').replace(/^[\d۰-۹]{2,4}\//, ''))) + '</span>'); lastX = x; } });
+    ticks.push('<span class="now" style="left:' + pct(X(t1)) + '">امروز</span>');
+    const due = A - P;
+    return '<div class="cf-box"><div class="cf-bh"><b>روند صورت‌وضعیت و پرداخت</b></div>'
+      + '<div class="cf-leg2">'
+      +   '<span class="b"><i></i>صورت‌وضعیت‌شده<b>' + esc(arToman(A)) + '</b></span>'
+      +   '<span class="p"><i></i>پرداخت‌شده<b>' + esc(arToman(P)) + '</b></span>'
+      +   (due > 0 ? '<span class="g"><i></i>مانده<b>' + esc(arToman(due)) + '</b></span>' : '')
       + '</div>'
-      + '<div class="cf-tx"><span>' + (first ? esc(admDate(first.s)) : '') + '</span><span>امروز</span></div></div>';
+      + '<div class="cf-tr2"><div class="cf-plot">' + grid
+      +   '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
+      +     '<path class="pa" d="' + paidArea + '"/>'
+      +     (due > 0 ? '<path class="ga" d="' + gap + '"/>' : '')
+      +     '<path class="lb" d="' + dOf(pA) + '"/><path class="lp" d="' + dOf(pP) + '"/>'
+      +     '<path class="tn" d="M' + X(t1).toFixed(1) + ' 0 L' + X(t1).toFixed(1) + ' ' + H + '"/>'
+      +   '</svg>' + dots + '</div>'
+      +   '<div class="cf-tx2">' + ticks.join('') + '</div>'
+      + '</div></div>';
   }
   function arMoneyShort(n){
     n = Math.round(n || 0);
