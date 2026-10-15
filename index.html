@@ -47781,6 +47781,8 @@
     try{ if(canEditAdm(kind, r)) return true; }catch(e){}
     const lv = myLevel();
     if(lv === 1 || lv === 2) return true;
+    /* دفتر فنی (با سمت یا با اجازهٔ ثبت/ویرایش دفتر فنی) روی هر سندی فایل می‌گذارد */
+    try{ if(can('write.adm') || can('adm.editAny')) return true; }catch(e){}
     if(lv !== 3) return false;
     let rl = ''; try{ rl = String(roleOf(activeUserName()) || ''); }catch(e){}
     return /دفتر\s*فنی/.test(rl);
@@ -47789,6 +47791,8 @@
     const lv = myLevel();
     if(lv === 1) return true;
     if(lv >= 4) return false;              // سطح ۴ فقط مشاهده
+    /* اجازهٔ «ویرایش موارد اداریِ دیگران» پیش‌تر اینجا خوانده نمی‌شد و کسی که این اجازه را داشت باز نمی‌توانست ویرایش کند */
+    try{ if(can('adm.editAny')) return true; }catch(e){}
     const me = nameKey(activeUserName());
     if(!me) return false;
     const writer = nameKey(pick(r, AD.eng) || '');
@@ -59913,7 +59917,7 @@
     let h = 0; String(c || '').split('').forEach(ch => { h = (h * 31 + ch.charCodeAt(0)) >>> 0; });
     return TK_CAT_COLORS[(i >= 0 ? i : h) % TK_CAT_COLORS.length];
   }
-  const canEditTask = () => { try{ return isAdminUser() || can('task.edit'); }catch(e){ return false; } };
+  const canEditTask = () => { try{ return isAdminUser() || can('task.edit') || can('adm.editAny'); }catch(e){ return false; } };
   const canAddTask = () => { try{ return isAdminUser() || can('task.add'); }catch(e){ return false; } };
   const TK_DEP_T = {FS:'پایان به شروع', SS:'شروع به شروع', FF:'پایان به پایان', SF:'شروع به پایان'};
   function tkDepsOf(r){
