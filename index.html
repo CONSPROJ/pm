@@ -22253,6 +22253,40 @@
   #profileModal:not(.pg-mode) .pf3-nav[data-pf3="settings"]{display:none !important;}
   #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="users"], #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="ct"], #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="data"],
   #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="rpt"], #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="bc"], #profileModal:not(.pg-mode) .pf3-pane[data-pf3p="log"]{display:none !important;}
+  /* جعبهٔ پرداخت فشرده */
+  .pyb{padding:8px 11px !important;gap:6px !important;}
+  .pyb.one{flex-direction:row !important;align-items:center;gap:7px !important;flex-wrap:wrap;font-size:11.5px;}
+  .pyb.one .pyb-ok{font-style:normal;width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;background:var(--ok);color:#fff;font-size:10px;font-weight:900;}
+  .pyb.one b{color:var(--ok);font-weight:800;} .pyb.one span{color:var(--ink);font-weight:700;} .pyb.one small{margin-inline-start:auto;color:var(--muted);font-size:10.5px;}
+  .pyb-h{font-size:11.5px !important;} .pyb-h b{font-weight:800 !important;}
+  .pyb-bar{height:4px !important;}
+  .pyb-d > summary{list-style:none;cursor:pointer;font-size:10.5px;color:var(--muted);font-weight:700;}
+  .pyb-d > summary::-webkit-details-marker{display:none;}
+  .pyb-d > summary::after{content:" ▾";} .pyb-d[open] > summary::after{content:" ▴";}
+  .pyb-d .pyb-l{margin-top:6px;}
+  /* فهرست دفتر فنی روی گوشی: سطرهای کم‌ارتفاع‌تر */
+  @media (max-width:620px){
+    .afr{padding:7px 10px !important;row-gap:3px !important;border-radius:12px !important;}
+    .afr .afr-meta{gap:5px !important;padding-inline-start:13px !important;}
+    .afr .afr-st{font-size:10px !important;padding:1px 7px !important;}
+    .afr .afr-ava .ava, .afr .afr-ava img{width:18px !important;height:18px !important;font-size:7px !important;}
+    .afr-sh{width:24px !important;height:24px !important;border-radius:8px !important;border-color:transparent !important;}
+    .afr-sh svg{width:13px !important;height:13px !important;}
+    .afr .dlc{height:24px !important;padding:0 7px !important;}
+    .afr .afr-dls{flex-basis:76px !important;max-width:76px !important;}
+    .afr .afr-d{font-size:10px !important;}
+    .adm-fast{gap:5px !important;}
+  }
+  /* کادر پیوست روی گوشی: نام و شرح یک ستون پهن، دکمه‌ها کوچک و در یک ردیف */
+  @media (max-width:520px){
+    .up-it{flex-wrap:wrap;gap:8px !important;padding:8px !important;}
+    .up-it .up-ext{flex:0 0 34px !important;height:34px !important;}
+    .up-it .up-col{flex:1 1 calc(100% - 50px) !important;}
+    .up-it .up-btn{height:30px !important;min-width:30px !important;padding:0 8px !important;}
+    .up-it .up-btn.dl span{display:none;}
+    .up-it > .up-btn:first-of-type{margin-inline-start:auto;}
+    .up-it .up-desc{height:32px;font-size:12px;}
+  }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -59217,15 +59251,21 @@
     if(!L.length && st !== PAY_PART) return '';
     const amount = amtNum(pick(r,AD.sAmount)), paid = paidOf(r), fin = isPaid(r);
     const pct = amount > 0 ? Math.min(100, Math.round(paid / amount * 100)) : 100;
+    /* فشرده: تسویه با یک پرداخت = یک سطر؛ چند قسط = سطر خلاصه + فهرست تاشو */
+    const rows = L.slice().reverse().map(e => '<div class="pyb-r"><span>' + esc(toFa(admDate(e.date) || e.date)) + '</span><b>' + esc(arToman(amtNum(e.amount))) + ' تومان</b>'
+          + (e.final ? '<em>تسویه</em>' : '') + '<small>' + esc(e.by || '') + '</small></div>').join('');
+    const last = L[L.length - 1];
+    if(fin && L.length <= 1)
+      return '<div class="pyb fin one"><i class="pyb-ok">✓</i><b>تسویه شد</b><span>' + esc(arToman(paid)) + ' تومان' + (last && last.date ? ' · ' + esc(toFa(admDate(last.date) || last.date)) : '') + '</span>'
+        + (last && last.by ? '<small>' + esc(last.by) + '</small>' : '') + '</div>';
     return '<div class="pyb' + (fin ? ' fin' : '') + '">'
       + '<div class="pyb-h"><b>' + (fin ? 'تسویه شد' : 'پرداخت جزئی') + '</b>'
-      +   '<span>' + esc(arToman(paid)) + (amount ? ' از ' + esc(arToman(amount)) : '') + ' تومان · ' + toFa(pct) + '٪</span>'
-      +   ((editable && id && !fin) ? '<button type="button" class="pyb-add" data-paynew="' + esc(id) + '">+ ثبت پرداخت</button>' : '')
+      +   '<span>' + esc(arToman(paid)) + (amount && !fin ? ' از ' + esc(arToman(amount)) : '') + ' تومان' + (fin ? '' : ' · ' + toFa(pct) + '٪') + '</span>'
+      +   ((editable && id && !fin) ? '<button type="button" class="pyb-add" data-paynew="' + esc(id) + '">+ پرداخت</button>' : '')
       + '</div>'
-      + '<div class="pyb-bar"><i style="width:' + pct + '%"></i></div>'
-      + (L.length ? '<div class="pyb-l">' + L.slice().reverse().map(e => '<div class="pyb-r"><span>' + esc(toFa(admDate(e.date) || e.date)) + '</span><b>' + esc(arToman(amtNum(e.amount))) + ' تومان</b>'
-          + (e.final ? '<em>تسویه</em>' : '') + '<small>' + esc(e.by || '') + '</small></div>').join('') + '</div>' : '')
-      + ((!fin && amount > paid) ? '<div class="pyb-rest">مانده: <b>' + esc(arToman(amount - paid)) + '</b> تومان</div>' : '')
+      + (fin ? '' : '<div class="pyb-bar"><i style="width:' + pct + '%"></i></div>')
+      + (L.length ? '<details class="pyb-d"><summary>' + toFa(L.length) + ' پرداخت' + ((!fin && amount > paid) ? ' · مانده ' + esc(arToman(amount - paid)) + ' تومان' : '') + '</summary><div class="pyb-l">' + rows + '</div></details>'
+          : ((!fin && amount > paid) ? '<div class="pyb-rest">مانده: <b>' + esc(arToman(amount - paid)) + '</b> تومان</div>' : ''))
       + '</div>';
   }
   document.addEventListener('click', async e => {
