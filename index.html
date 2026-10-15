@@ -26169,6 +26169,12 @@
           else document.getElementById('notifModal').hidden = true;   // پشتیبان
           const wantCm = card.dataset.gotoCm === '1';
           const cmId = card.dataset.gotoId;
+          /* اعلانِ یک مورد، کارت فعالیت همان مورد را باز می‌کند */
+          if(!wantCm){
+            let opened = false;
+            try{ opened = window.deckOpenAt && window.deckOpenAt(card.dataset.gotoKind, cmId); }catch(e){}
+            if(opened) return;
+          }
           const itemEl = await gotoAdminItem(card.dataset.gotoKind, cmId, card.dataset.gotoWho);
           /* برای نظرها پنجرهٔ نظرهای همان کارت هم باز می‌شود؛
              دکمه‌ای انتخاب می‌شود که واقعاً روی صفحه دیده می‌شود. */
@@ -26221,6 +26227,7 @@
         else document.getElementById('notifModal').hidden = true;   // پشتیبان
         const go = gt.querySelector('[data-fgo]');
         if(go){ go.click(); return; }
+        try{ if(window.deckOpenAt && window.deckOpenAt(gt.dataset.gotoKind, gt.dataset.gotoId)) return; }catch(e){}
         gotoAdminItem(gt.dataset.gotoKind, gt.dataset.gotoId, gt.dataset.gotoWho);
         return;
       }
@@ -69291,16 +69298,58 @@
   /* دو دستهٔ اصلی. هر زیردسته با کلید p زیر یکی از این دو می‌نشیند و
      صفحهٔ اول کارت‌ها فقط همین دو کپسول است. */
   const DECK_BRANCHES = [
-    {g:'b-adm',  t:'موارد دفتر فنی',  d:'اسناد، بررسی‌ها و پرداخت‌ها'},
-    {g:'b-exec', t:'موارد اجرایی', d:'فعالیت‌ها، موانع و گزارش‌ها'}
+    {g:'b-adm',  t:'دفتر فنی',      d:'صورت وضعیت، قرارداد، نامه و صورتجلسه'},
+    {g:'b-exec', t:'اجرایی',        d:'فعالیت‌های کارگاه و گزارش‌ها'},
+    {g:'b-mgr',  t:'اخبار مدیریت',  d:'کارفرما، گیرها، پرداخت‌ها و تأییدها', mgr:true}
   ];
+  /* دسته‌ها بر اساس «نوع» مورد، نه منبعِ هشدار. پیش‌تر یک مورد بسته به
+     این‌که هشدار داشت یا نه، زیر «نیازمند پیگیری» یا «اسناد» می‌رفت و
+     صورت وضعیت و نامه و قرارداد در یک فهرست قاطی بودند. حالا هر نوع
+     دستهٔ خودش را دارد و فوریت با رنگ و ترتیب داخل همان دسته پیداست. */
   const DECK_GROUPS = [
-    {g:'follow-adm',  t:'نیازمند پیگیری',     p:'b-adm'},
-    {g:'adm',         t:'اسناد دفتر فنی',     p:'b-adm'},
-    {g:'gen',         t:'فعالیت‌های عمومی',   p:'b-adm'},
-    {g:'follow-exec', t:'نیازمند پیگیری',     p:'b-exec'},
-    {g:'exec',        t:'فعالیت‌های اجرایی',  p:'b-exec'}
+    {g:'k-st',   t:'صورت وضعیت‌ها',          p:'b-adm'},
+    {g:'k-ct',   t:'قراردادها',              p:'b-adm'},
+    {g:'k-lt',   t:'نامه‌ها',                p:'b-adm'},
+    {g:'k-mn',   t:'بندهای صورتجلسه',        p:'b-adm'},
+    {g:'k-ds',   t:'اسناد طراحی',            p:'b-adm'},
+    {g:'k-gen',  t:'ابلاغ‌ها و کارهای اداری', p:'b-adm'},
+    {g:'k-ex',   t:'فعالیت‌های اجرایی',       p:'b-exec'},
+    {g:'k-pr',   t:'خرید و تدارکات',          p:'b-exec'},
+    {g:'k-miss', t:'گزارش‌های ثبت‌نشده',      p:'b-exec'}
   ];
+  const DECK_KIND_GRP = {statement:'k-st', contract:'k-ct', letter:'k-lt', minute:'k-mn', design:'k-ds'};
+  const DECK_SIDE_GRP = {'صورت وضعیت':'k-st', 'قرارداد':'k-ct', 'نامه':'k-lt', 'صورتجلسه':'k-mn',
+                         'فعالیت عمومی':'k-gen', 'کار اداری':'k-gen', 'تدارکات':'k-pr'};
+  /* دستهٔ نهایی یک مورد باز */
+  function deckKindGrp(x){
+    if(x.cat === 'missing') return 'k-miss';
+    let k = '';
+    try{ k = deckKindOf(x); }catch(e){}
+    if(DECK_KIND_GRP[k]) return DECK_KIND_GRP[k];
+    if(k === 'task'){
+      const r = deckRowOf(x, 'task');
+      const sd = r ? String(pick(r,T.side) || '').trim() : '';
+      if(DECK_SIDE_GRP[sd]) return DECK_SIDE_GRP[sd];
+      if(r && r.__adm) return 'k-gen';
+      return 'k-ex';
+    }
+    return (x.grp === 'adm' || x.grp === 'gen' || x.grp === 'follow-adm') ? 'k-gen' : 'k-ex';
+  }
+  /* چند روز از موعد گذشته (منفی: چند روز مانده) — برای ترتیب داخل دسته */
+  function deckLateOf(x){
+    try{
+      const kind = deckKindOf(x), row = deckRowOf(x, kind);
+      if(!row) return null;
+      const due = kind === 'task' ? pick(row,T.due)
+                : kind === 'minute' ? pick(row,AD.mDate) : pick(row,AD.due);
+      let d = daysSince(due);
+      if(d == null && kind && kind !== 'task' && kind !== 'minute'){
+        const rv = rvInternalDays(row);
+        if(rv != null) d = rv - (typeof RV_HOT_DAYS === 'number' ? RV_HOT_DAYS : 7);
+      }
+      return d;
+    }catch(e){ return null; }
+  }
   function deckMineOnly(){
     try{ if(isAdminUser()) return false; }catch(e){}
     try{ if(can('deck.all')) return false; }catch(e){}
@@ -69465,17 +69514,20 @@
   }
   /* دو دستهٔ «تازه تمام‌شده»، یکی در هر شاخه */
   const DECK_DONE_GRP = [
-    {g:'done-adm',  t:'تکمیل‌شده‌های دفتر فنی',  p:'b-adm'},
-    {g:'done-exec', t:'تکمیل‌شده‌های اجرایی', p:'b-exec'}
+    {g:'done-adm',  t:'تمام‌شده‌های اخیر',  p:'b-adm'},
+    {g:'done-exec', t:'تمام‌شده‌های اخیر', p:'b-exec'}
   ];
   /* دسته‌های خبری برای مدیر و ادمین (از همان «اخبار و آخرین تغییرات») */
-  const DECK_BASE_N = 5;
+  const DECK_BASE_N = 9;
+  /* اخبار مدیریت: شاخهٔ جدا، فقط برای مدیر. هر دسته یک پرسش ملموس را
+     جواب می‌دهد و هر سند فقط در یک دسته می‌آید (به همین ترتیب). */
   const DECK_NEWS = [
-    {g:'n-hold', c:'hold', t:'به بن‌بست رسیده', p:'b-adm'},
-    {g:'n-rej',  c:'rej',  t:'رد شده‌ها',        p:'b-adm'},
-    {g:'n-blk',  c:'blk',  t:'موانع ثبت‌شده',    p:'b-exec'},
-    {g:'n-emp',  c:'emp',  t:'نزد کارفرما',      p:'b-adm'},
-    {g:'n-pay',  c:'pay',  t:'آخرین پرداخت‌ها',   p:'b-adm'}
+    {g:'n-stuck', c:['hold','rej'], t:'گیر کرده‌ها: بن‌بست و ردشده', p:'b-mgr'},
+    {g:'n-emp',   c:['emp'],        t:'منتظر کارفرما',              p:'b-mgr'},
+    {g:'n-rv',    c:['rv'], late:true, t:'بررسی داخلیِ طولانی',     p:'b-mgr'},
+    {g:'n-blk',   c:['blk'],        t:'موانع کارگاه',               p:'b-mgr'},
+    {g:'n-pay',   c:['pay'],        t:'پرداخت‌ها و تسویه‌ها',        p:'b-mgr'},
+    {g:'n-ok',    c:['ok'],         t:'تأییدهای اخیر',              p:'b-mgr'}
   ];
   /* ====== تازه تمام‌شده ======
      کارت‌ها تا حالا فقط کارِ مانده را نشان می‌دادند. این دسته آخرین
@@ -69582,15 +69634,23 @@
     if(deckMineOnly()) return [];
     let L = [];
     try{ L = mgChangeList(); }catch(e){ return []; }
-    const out = [];
+    const out = [], used = new Set();
     DECK_NEWS.forEach(z => {
-      let LL = L.filter(x => x.cat === z.c && x.id);
+      let LL = L.filter(x => z.c.indexOf(x.cat) !== -1 && x.id && !used.has(String(x.id))
+                          && (!z.late || (x.live && x.tone === 'bad')));
       /* پرداخت‌ها به ترتیب واقعیِ تاریخ پرداخت: تازه‌ترین اول («در حال پرداخت» بالای همه) */
-      if(z.c === 'pay') LL = LL.slice().sort((a, b) => String(dayKey(b.date) || '').localeCompare(String(dayKey(a.date) || '')));
+      if(z.g === 'n-pay') LL = LL.slice().sort((a, b) => String(dayKey(b.date) || '').localeCompare(String(dayKey(a.date) || '')));
+      /* «منتظر کارفرما» و گیرها: طولانی‌ترین انتظار اول */
+      else if(z.g !== 'n-ok') LL = LL.slice().sort((a, b) => (a.sortKey || 0) - (b.sortKey || 0));
+      const seenG = new Set();
       LL.forEach(x => {
-        const lvl = x.tone === 'bad' ? 'hot' : (z.c === 'emp' ? 'warm' : 'calm');
+        const id = String(x.id);
+        if(seenG.has(id)) return;
+        seenG.add(id); used.add(id);
+        const emp = x.cat === 'emp';
+        const lvl = x.tone === 'bad' ? 'hot' : (emp ? 'warm' : 'calm');
         out.push({cat:'due', grp: z.g, level: lvl,
-          side: z.c === 'emp' ? 'employer' : '',
+          side: emp ? 'employer' : '',
           who: x.by || '', title: x.title || '',
           text: String(x.raw ? String(x.what).replace(/<[^>]+>/g,'') : x.what || ''),
           goto:{kind: x.kind || '', id: x.id}, fid:'news:' + z.g + ':' + x.id, seen:true});
@@ -69670,8 +69730,32 @@
       if(doneItems.some(x => x.grp === z.g))
         DECK_GROUPS.push({g: z.g, t: z.t, p: z.p, doneGrp:true});
     });
-    return follow.concat(adm, ex, doneItems,
-      news.sort((a, b) => rank(a) - rank(b)));
+    /* همهٔ موارد باز در یک فهرست، هر کدام زیر دستهٔ نوعِ خودش؛ اگر
+       یک شناسه از دو مسیر آمده، فقط شدیدترینش می‌ماند. */
+    const open = new Map(), extra = [];
+    follow.concat(adm, ex).forEach(x => {
+      const y = Object.assign({}, x, {grp: deckKindGrp(x)});
+      try{ y.title = toFa(String(y.title || '')); }catch(e){}
+      const id = String((y.goto && y.goto.id) || '');
+      if(!id || y.cat === 'missing'){ extra.push(y); return; }
+      const had = open.get(id);
+      if(!had) open.set(id, y);
+      else if(rank(y) < rank(had)) open.set(id, Object.assign(y, {role: y.role || had.role}));
+    });
+    const lateC = new Map();
+    const late = x => { if(!lateC.has(x)) lateC.set(x, deckLateOf(x)); return lateC.get(x); };
+    const openL = Array.from(open.values()).concat(extra).sort((a, b) => {
+      const r = rank(a) - rank(b);
+      if(r) return r;
+      const la = late(a), lb = late(b);
+      if(la != null || lb != null){
+        if(la == null) return 1;
+        if(lb == null) return -1;
+        if(lb !== la) return lb - la;             // دیرکردِ بیشتر بالاتر
+      }
+      return (a.seen ? 1 : 0) - (b.seen ? 1 : 0);
+    });
+    return openL.concat(doneItems, news);
   }
   /* نوعِ واقعی مورد را پیدا می‌کند، حتی اگر اعلان نوعش را نگفته باشد */
   /* نمایهٔ شناسه → {نوع، ردیف}. پیش‌تر برای هر کارت روی همهٔ ردیف‌های
@@ -70504,13 +70588,13 @@
        list  : فهرست موارد همان دسته
        cards : کارت‌های همان دسته، با تب دسته‌ها در بالا
      deckView فهرست موارد دستهٔ جاری است و deckIdx در همین فهرست می‌چرخد. */
-  let deckMode = 'cats', deckGrp = 'follow-adm', deckView = [], deckWho = '';
+  let deckMode = 'cats', deckGrp = 'k-st', deckView = [], deckWho = '';
   /* '' یعنی صفحهٔ دو دستهٔ اصلی؛ وگرنه شناسهٔ شاخهٔ باز شده */
   let deckBranch = '';
 
   /* همهٔ موارد یک دسته، بدون فیلتر شخص (برای شمارنده‌ها و فهرست افراد) */
   function deckGrpAll(g){
-    return deckItems.filter(x => (x.grp || 'follow-exec') === g);
+    return deckItems.filter(x => (x.grp || 'k-ex') === g);
   }
   function deckWhosOf(x){
     const arr = (x && x.whos && x.whos.length) ? x.whos : [x && x.who];
@@ -70538,6 +70622,19 @@
     return deckSubsOf(b).reduce((a, z) => a.concat(deckGrpAll(z.g)), []);
   }
   const DECK_CAT_ICON = {
+    'k-ds':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3"/></svg>',
+    'k-pr':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 7H6.2"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>',
+    'k-st':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg>',
+    'k-ct':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 10h7M9 14h7"/><path d="M9 18c1-1.4 2-1.4 3 0s2 1.4 3 0"/></svg>',
+    'k-lt':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>',
+    'k-mn':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8M9 4v2h6V4"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 11h6M9 15h4"/></svg>',
+    'k-gen':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4l11 4V6z"/><path d="M15 9.5a3 3 0 0 1 0 5"/><path d="M7 14.8l1 4.2h3l-1-3.4"/></svg>',
+    'k-ex':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V9l6-5 6 5v11"/><path d="M10 20v-5h4v5"/></svg>',
+    'k-miss':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4"/><path d="M12 16v.5"/></svg>',
+    'n-stuck':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 8l8 8"/></svg>',
+    'n-rv':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    'n-ok':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.4 2.4 4.6-4.9"/></svg>',
+    'b-mgr':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
     'n-hold':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 8l8 8"/></svg>',
     'n-rej':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>',
     'n-blk':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>',
@@ -70557,7 +70654,8 @@
   /* صفحهٔ اول: فقط دو کپسول بزرگ. با زدن هرکدام، زیردسته‌هایش باز
      می‌شود. سطح سوم همان کارت‌هاست. */
   function deckBranchHtml(){
-    return '<div class="dk-caps dk-brs">' + DECK_BRANCHES.map((b, k) => {
+    const brs = DECK_BRANCHES.filter(b => !b.mgr || deckBranchAll(b.g).length);
+    return '<div class="dk-caps dk-brs">' + brs.map((b, k) => {
       const arr  = deckBranchAll(b.g);
       const hot  = arr.filter(y => y.level === 'hot').length;
       const warm = arr.filter(y => y.level === 'warm').length;
@@ -70590,9 +70688,11 @@
       + '<b>' + esc(b.t) + '</b>'
       + '<span class="dk-subn">' + toFa(deckBranchAll(deckBranch).length) + ' مورد</span>'
       + '</div>';
-    return head + '<div class="dk-caps">' + deckSubsOf(deckBranch).map((z, k) => {
-      const headH = (!newsHead && String(z.g).indexOf('n-') === 0)
-        ? ((newsHead = true), '<div class="dk-newsh">اخبار مدیریت</div>') : '';
+    /* دستهٔ خالی نشان داده نمی‌شود؛ «تمام‌شده‌ها» جدا و آخر فهرست */
+    const subs = deckSubsOf(deckBranch).filter(z => deckGrpAll(z.g).length);
+    return head + '<div class="dk-caps">' + subs.map((z, k) => {
+      const headH = (!newsHead && z.doneGrp)
+        ? ((newsHead = true), '<div class="dk-newsh">انجام‌شده</div>') : '';
       const arr = deckGrpAll(z.g);
       const hot = arr.filter(y => y.level === 'hot').length;
       const warm = arr.filter(y => y.level === 'warm').length;
@@ -70603,7 +70703,7 @@
         + '<span class="dk-captx"><b>' + esc(z.t) + '</b>'
         +   '<span>' + (arr.length
               ? (hot ? toFa(hot) + ' بحرانی' + (warm ? '، ' + toFa(warm) + ' نزدیک موعد' : '')
-                     : (warm ? toFa(warm) + ' نزدیک موعد' : 'در جریان'))
+                     : (warm ? toFa(warm) + ' نزدیک موعد' : (z.doneGrp ? '۴۵ روز گذشته' : (z.news ? 'برای اطلاع' : 'در جریان'))))
               : 'موردی نیست') + '</span></span>'
         + '<span class="dk-capn">' + toFa(arr.length) + '</span>'
         + '</button>';
@@ -70681,17 +70781,20 @@
     return full.map(z => {
       const arr = deckGrpAll(z.g);
       /* برچسب کوتاه در نوار تکه‌ای؛ نام کامل در راهنما */
-      const sh = ({'نیازمند پیگیری':'پیگیری', 'فعالیت‌های اجرایی':'اجرایی', 'اسناد دفتر فنی':'اسناد', 'تسویه و پرداخت':'تسویه', 'رد شده‌ها':'رد شده'})[z.t]
-        || String(z.t).replace(/‌?های (اجرایی|دفتر فنی)$/, '');
+      const sh = ({'k-st':'صورت وضعیت', 'k-ct':'قرارداد', 'k-lt':'نامه', 'k-mn':'صورتجلسه',
+                   'k-gen':'ابلاغ', 'k-ex':'فعالیت', 'k-ds':'طراحی', 'k-pr':'تدارکات', 'k-miss':'گزارش', 'done-adm':'تمام‌شده',
+                   'done-exec':'تمام‌شده', 'n-stuck':'گیرها', 'n-emp':'کارفرما', 'n-rv':'بررسی',
+                   'n-blk':'موانع', 'n-pay':'پرداخت', 'n-ok':'تأییدها'})[z.g] || z.t;
       return '<button type="button" class="dk-tab' + (z.g === deckGrp ? ' on' : '')
         + '" data-dk-tab="' + z.g + '" title="' + esc(z.t) + '">'
         + esc(sh) + '<span>' + toFa(arr.length) + '</span></button>';
     }).join('');
   }
   function deckRowHtml(x, i){
-    const m = DECK_META[x.cat] || {t:'مورد', ico:'•'};
     const kind = deckKindOf(x);
     const row = deckRowOf(x, kind);
+    const m = x.cat === 'missing' ? DECK_META.missing
+      : {t: (DECK_GROUPS.find(z => z.g === x.grp) || {}).t || (DECK_META[x.cat] || {}).t || 'مورد', ico: ''};
     let days = null;
     if(row){
       const d1 = (kind === 'task') ? daysSince(pick(row,T.due))
@@ -70709,7 +70812,7 @@
       + '<span class="dk-rdot"></span>'
       + '<span class="dk-rbody">'
       +   '<span class="dk-rtop">'
-      +     '<span class="dk-rkind">' + m.ico + ' ' + esc(m.t) + '</span>'
+      +     '<span class="dk-rkind">' + (m.ico ? m.ico + ' ' : '') + esc(m.t) + '</span>'
       +     ((x.level === 'hot' && (x.side === 'employer' || x.who === 'کارفرما'))
               ? '<span class="dk-rlvl emp">بحرانی کارفرما</span>'
             : x.level === 'hot' ? '<span class="dk-rlvl">بحرانی</span>'
@@ -70754,7 +70857,7 @@
     if(pos) pos.textContent = n ? (toFa(n) + ' مورد') : '';
   }
   function deckShowList(g, quiet){
-    deckGrp = g || deckGrp || 'follow-adm';
+    deckGrp = g || deckGrp || 'k-st';
     deckView = deckGrpItems(deckGrp);
     const lst = document.getElementById('deckList');
     if(lst){
@@ -70861,7 +70964,8 @@
   function deckRender(){
     /* اول دو دستهٔ اصلی؛ با کلیک، زیردسته‌ها و بعد کارت‌ها */
     deckBranch = '';
-    if(!DECK_GROUPS.some(z => z.g === deckGrp)) deckGrp = 'follow-adm';
+    if(!DECK_GROUPS.some(z => z.g === deckGrp))
+      deckGrp = (DECK_GROUPS.find(z => deckGrpAll(z.g).length) || DECK_GROUPS[0]).g;
     deckView = deckGrpItems(deckGrp);
     deckIdx = 0;
     deckShowCats();
@@ -71053,6 +71157,32 @@
     deckTouch();
     deckAutoStart();
   }
+  /* باز کردن کارت‌ها روی کارتِ یک مورد مشخص (از اعلان‌ها). اگر مورد در
+     کارت‌ها نیست (بسته شده، یا مال شخص دیگری است)، false برمی‌گرداند تا
+     همان مسیر قدیمی «رفتن به مورد» اجرا شود. */
+  function deckOpenAt(kind, id){
+    id = String(id || '');
+    if(!id || id === 'general') return false;
+    let items = [];
+    try{ deckReindex(); items = deckBuild() || []; }catch(e){ return false; }
+    const meta = new Map(DECK_GROUPS.map(z => [z.g, z]));
+    const hasId = x => String((x.goto && x.goto.id) || '') === id
+      || (x.genRows || []).some(r => String(r) === id)
+      || (x.genAll || []).some(r => r && String(r.id) === id);
+    /* کارِ باز اول، بعد خبرها، بعد تمام‌شده‌ها */
+    const rk = x => { const m = meta.get(x.grp) || {}; return m.doneGrp ? 2 : (m.news ? 1 : 0); };
+    const hit = items.filter(hasId).sort((a, b) => rk(a) - rk(b))[0];
+    if(!hit) return false;
+    deckWho = '';
+    openDeck();
+    deckBranch = deckBranchOf(hit.grp);
+    deckGrp = hit.grp;
+    const view = deckGrpItems(hit.grp);
+    const k = Math.max(0, view.findIndex(x => x.fid === hit.fid));
+    deckShowCards(k, hit.grp);
+    return true;
+  }
+  window.deckOpenAt = deckOpenAt;
   function closeDeck(){
     const bg = document.getElementById('deckModal');
     if(!bg) return;
