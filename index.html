@@ -23,6 +23,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>html.fw body{opacity:0;} html.fw-in body{transition:opacity .22s ease;}</style>
+<script>
+/* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
+   ظاهر می‌شود؛ وگرنه اول با قلم جایگزین کشیده می‌شد و با رسیدن قلم اصلی
+   همه‌چیز یک‌باره جابه‌جا می‌شد (پرش صفحهٔ اول). بار دوم قلم در حافظه است. */
+(function(){
+  try{
+    var d = document.documentElement;
+    if(!document.fonts || !document.fonts.load) return;
+    d.classList.add('fw');
+    var done = function(){ if(!d.classList.contains('fw')) return; d.classList.add('fw-in'); d.classList.remove('fw'); setTimeout(function(){ d.classList.remove('fw-in'); }, 400); };
+    Promise.all([document.fonts.load('400 1em Vazirmatn'), document.fonts.load('800 1em Vazirmatn')]).then(done, done);
+    setTimeout(done, 900);
+  }catch(e){ try{ document.documentElement.classList.remove('fw'); }catch(e2){} }
+})();
+</script>
 <script>
 /* کتابخانهٔ اکسل (۹۰۰ کیلوبایت) دیگر جلوی باز شدن صفحه را نمی‌گیرد: بعد از آماده شدن صفحه، در زمان بیکاری بارگذاری می‌شود */
 (function(){ function ld(){ if(window.XLSX || window.__xlsxLd) return; window.__xlsxLd = 1; var s = document.createElement('script'); s.src = 'lib/xlsx-0.18.5.full.min.js'; s.async = true; document.head.appendChild(s); }
@@ -22178,6 +22194,7 @@
   }
   /* ورود نرم، پله‌پله */
   .hm-in .h3-a{animation:h3Up .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i, 0) * 55ms);}
+  #homeView.hm-still > *, #homeView.hm-still .h3-a{animation:none !important;}
   @keyframes h3Up{from{opacity:0;transform:translateY(14px) scale(.985);}to{opacity:1;transform:none;}}
   @media (prefers-reduced-motion: reduce){ .hm-in .h3-a{animation:none;} .h3-blob{animation:none !important;} }
 
@@ -73080,7 +73097,12 @@
     box.__h = h;
     const y = window.scrollY;
     box.innerHTML = h;
-    if(first){ box.classList.remove('hm-in'); void box.offsetWidth; box.classList.add('hm-in'); h3Count(box); }
+    /* حرکت ورود فقط بار اول؛ رسیدن داده‌های بعدی (چند موج پشت هم)
+       صفحه را بی‌حرکت به‌روز می‌کند — پیش‌تر هر بار همهٔ کاشی‌ها از نو
+       بالا می‌آمدند و صفحهٔ اول چند بار پشت هم چشمک می‌زد. */
+    if(first){ box.classList.remove('hm-in', 'hm-still'); void box.offsetWidth; box.classList.add('hm-in'); h3Count(box);
+      clearTimeout(box.__stillT); box.__stillT = setTimeout(() => box.classList.add('hm-still'), 1400); }
+    else box.classList.add('hm-still');
     if(!first && Math.abs(window.scrollY - y) > 2) window.scrollTo({top: y});
   }
   window.homeRender = homeRender;
