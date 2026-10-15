@@ -18567,6 +18567,9 @@
   .lgx-c.n > b{font-size:13.5px;font-weight:700;line-height:1.45;}
   .lgx-c.w{flex:1.7 1 0;}
   .lgx-c.a{flex:0 0 auto;max-width:40%;}
+  .adm-meta .mi-dlw{margin-inline-start:auto;display:inline-flex;align-items:center;}
+  .adm-meta .mi-dl{height:20px !important;padding:0 6px !important;border-radius:6px !important;font-size:9.5px !important;}
+  .adm-meta .mi-dl svg{width:11px !important;height:11px !important;}
   .lgx-c.n.long{flex:0 1 auto;max-width:34%;} .lgx-c.n.long > b{font-size:12px;line-height:1.55;direction:ltr;}
   .lgx .lgx-c > b u{text-decoration:none !important;font-size:9.5px !important;font-weight:400 !important;color:var(--muted) !important;margin-inline-start:3px !important;}
   .lgx .lgx-c.f{flex:0 0 auto;align-items:center;justify-content:center;padding-inline:7px;}
@@ -52820,29 +52823,27 @@
       /* یک خط، یک وزن: نوع سند و شماره کنار هم به‌عنوان شناسه، بعد
          نام پیمانکار، و مبلغ ته خط. همه هم‌اندازه و هم‌رنگ، جز مبلغ
          که تنها عددِ تصمیم‌ساز است. */
-      /* نوار دفتری: شماره | طرف | مبلغ | تاریخ — هر عدد با برچسب خودش */
       + (function(){
-          if(kind === 'minute' || kind === 'design') return '';
-          const sub = (kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0) ? pick(r,AD.sType)
-                    : (kind === 'contract' && ctIsInvoice(r)) ? 'فاکتور' : '';
-          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : (kind === 'contract') ? pick(r,AD.cAmount) : '';
-          const ms = amt ? moneyShort(amt) : null;
-          const dt = admSentDate(kind, r) || pick(r,AD.date);
-          const pl = kind === 'statement' ? 'پیمانکار' : kind === 'contract' ? 'طرف قرارداد' : 'طرف مکاتبه';
-          return ledgerHtml([
-            {k: 'شماره' + (sub ? ' · ' + esc(sub) : ''), v: docNo ? esc(toFa(docNo)) : '—', c: 'n' + (String(docNo || '').length > 4 ? ' long' : '')},
-            party ? {k: pl, v: '<button type="button" class="lgx-v lk" data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">' + esc(party) + '</button>', c: 'w'} : null,
-            ms ? {k: 'مبلغ', c: 'a', v: '<b>' + ms.v + (ms.u !== 'تومان' ? '<u>' + ms.u + '</u>' : '') + '</b>', t: ms.v + ' ' + ms.u + (ms.u !== 'تومان' ? ' تومان' : '') + ' — ' + moneyFa(amt) + ' ریال'} : null,
-            dt ? {k: 'تاریخ', c: 'a', v: esc(dateShort(dt)), t: admDate(dt)} : null,
-            (function(){
-              const f = id ? admDlBtnHtml(kind, r, 'lgx-dl') : ''; if(!f) return null;
-              /* برچسب خانه همان نوع فایل است (PDF، JPG…) و دکمه فقط آیکون دانلود؛ جای کمتری می‌گیرد */
-              let lb = 'فایل';
-              try{ const L = attachList(admFilesTxt(kind, r)); const ex = Array.from(new Set(L.map(a => String(a.ext || '').toUpperCase()).filter(Boolean)));
-                   lb = L.length > 1 ? toFa(L.length) + ' فایل' : (ex[0] || 'فایل'); }catch(e){}
-              return {k: esc(lb), v: f, c: 'f'};
-            })()
-          ]);
+          const bits = [];
+          bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
+            + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
+          if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
+            bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
+          if(kind === 'contract' && ctIsInvoice(r)) bits.push('<span class="mi-st st-inv">فاکتور</span>');
+          if(party) bits.push('<button type="button" class="mi-p" '
+            + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
+            + esc(party) + '</button>');
+          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : '';
+          if(amt) bits.push('<span class="mi-a">' + moneyFa(amt) + '<u>ریال</u></span>');
+          /* تاریخ سند هم در همین خط: برای صورتجلسه تاریخ جلسه، برای
+             بقیه تاریخ ارسال. بدون آن، تاریخ فقط در جزئیات بود. */
+          const dt = (kind === 'minute')
+            ? (pick(r,AD.mMeet) || pick(r,AD.date))
+            : (admSentDate(kind, r) || pick(r,AD.date));
+          if(dt) bits.push('<span class="mi-t">' + esc(admDate(dt)) + '</span>');
+          /* فایل سند ته همین خط، کوچک؛ دیگر در سربرگ ردیف جدا نمی‌سازد */
+          const fdl = (id && kind !== 'minute' && kind !== 'design') ? admDlBtnHtml(kind, r, 'mi-dl') : '';
+          return '<div class="adm-meta">' + bits.join('<i></i>') + (fdl ? '<span class="mi-dlw">' + fdl + '</span>' : '') + '</div>';
         })()
       + payBoxHtml(kind, r, editable, id)
 
@@ -70822,18 +70823,16 @@
       : x.level === 'warm' ? '<span class="adm-crit warn"><i>نزدیک موعد</i>' + esc(why) + '</span>' : '';
     const ed = (function(){ try{ return canEditAdm('design', row); }catch(e){ return false; } })();
     const fk = pick(row,AD.dFloor), party = pick(row,AD.dParty);
-    const lg = ledgerHtml([
-      {k: 'سند طراحی', v: esc(pick(row,AD.dType) || 'نقشه'), c: 'w'},
-      fk ? {k: 'طبقه', v: '<button type="button" class="lgx-v lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button>'} : null,
-      pick(row,AD.dZone) ? {k: 'محدوده', v: esc(pick(row,AD.dZone))} : null,
-      party ? {k: 'طرف', v: '<button type="button" class="lgx-v lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>', c: 'w'} : null
-    ]);
+    const bits = ['<span class="mi-k">سند طراحی' + (pick(row,AD.dType) ? ' <b>' + esc(pick(row,AD.dType)) + '</b>' : '') + '</span>'];
+    if(fk) bits.push('<button type="button" class="dz-lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button>');
+    if(pick(row,AD.dZone)) bits.push('<span class="mi-p">' + esc(pick(row,AD.dZone)) + '</span>');
+    if(party) bits.push('<button type="button" class="dz-lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>');
     let body = ''; try{ body = designDocHtml(row, ed, id); }catch(e){ body = ''; }
     return '<div class="dk-adm adm-host"><div class="rv adm-k adm-gen dk-dsk" data-id="' + esc(id) + '">'
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
       +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
       + commentBarHtml('design', id, title, {owner: owner})
-      + '<div class="adm-body">' + lg
+      + '<div class="adm-body"><div class="adm-meta dk-dsm">' + bits.join('<i></i>') + '</div>'
       + '<div class="dk-dsb">' + body + '</div></div>'
       + '</div></div>'
       + dkCmPeek(x, i);
@@ -70853,15 +70852,12 @@
       : x.level === 'hot' ? '<span class="adm-crit' + (emp ? ' emp' : '') + '"><i>' + (emp ? 'بحرانی کارفرما' : 'بحرانی') + '</i>' + esc(why) + '</span>'
       : x.level === 'warm' ? '<span class="adm-crit warn"><i>نزدیک موعد</i>' + esc(why) + '</span>' : '';
     let grp = ''; try{ grp = taskGroupOf(row) || ''; }catch(e){}
-    const pos = pick(row,T.pos);
-    const due = taskDue(row);
-    const lg = ledgerHtml([
-      {k: 'فعالیت', v: esc(grp || String(pick(row,T.side) || '') || 'اجرایی'), c: 'w'},
-      pos ? {k: 'موقعیت', v: esc(pos)} : null,
-      (x.genAll && x.genAll.length > 1) ? {k: 'انجام', v: toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length)}
-        : owners.length > 1 ? {k: 'مسئولان', v: esc(owners.join('، '))} : null,
-      due ? {k: 'موعد', v: esc(dateShort(taskDate(due))), t: taskDate(due)} : null
-    ]);
+    const bits = ['<span class="mi-k">فعالیت' + (grp ? ' <b>' + esc(grp) + '</b>' : '') + '</span>'];
+    const pos = pick(row,T.pos); if(pos) bits.push('<span class="mi-p">' + esc(pos) + '</span>');
+    if(x.genAll && x.genAll.length > 1)
+      bits.push('<span class="mi-a">' + toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length) + ' انجام</span>');
+    else if(owners.length > 1) bits.push('<span class="mi-p">' + owners.map(esc).join('، ') + '</span>');
+    const due = taskDue(row); if(due) bits.push('<span class="mi-t">موعد ' + esc(taskDate(due)) + '</span>');
     let tl = ''; try{ tl = taskTlBlockHtml(row); }catch(e){ tl = ''; }
     /* موانع همیشه پیدا؛ فقط بررسی و فهرست افراد پشت «جزئیات» */
     const blk = deckBlockHtml(x, 'task', row, i);
@@ -70871,7 +70867,7 @@
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
       +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
       + commentBarHtml('task', id, title, {owner: owner, shareBody: ['فعالیت', owner ? 'مسئول: ' + owner : '', 'وضعیت: ' + st.label, due ? 'موعد: ' + taskDate(due) : ''].filter(Boolean).join('\n')})
-      + '<div class="adm-body">' + lg + tl + '</div>'
+      + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
       + '</div></div>'
       + dkCmPeek(x, i)
       + blk
@@ -72531,9 +72527,21 @@
   const homeDays = {};          // تاریخ ← {rows, issues, machines, prev}
   let homeWorkList = [];
   const homeVisible = () => { const p = document.getElementById('panelHome'); return !!(p && !p.hidden); };
+  /* بار اول، تا وقتی موج‌های داده می‌رسند، صفحه فقط یک بار (اسکلت) کشیده
+     می‌شود و بعد یک بار کامل — نه چند بار پشت هم با جابه‌جایی کاشی‌ها
+     (همان پرشِ صفحهٔ اول). سقف انتظار ۲٫۵ ثانیه. */
+  let homeFirstT0 = 0;
   function homeSoon(){
     clearTimeout(homeT);
-    homeT = setTimeout(() => { if(homeVisible()) try{ homeRender(); }catch(e){ console.error(e); } }, 140);
+    homeT = setTimeout(() => {
+      if(!homeVisible()) return;
+      const box = document.getElementById('homeView');
+      if(homeBusy && !homeAt && box && box.__h){
+        if(!homeFirstT0) homeFirstT0 = Date.now();
+        if(Date.now() - homeFirstT0 < 2500){ homeSoon(); return; }
+      }
+      try{ homeRender(); }catch(e){ console.error(e); }
+    }, 140);
   }
   window.homeSoon = homeSoon;
   /* نقش صفحهٔ اول: مدیر (ادمین و سطح ۲ یا اجازهٔ کارت مدیر)، کارشناس،
@@ -73184,6 +73192,9 @@
     /* حرکت ورود فقط بار اول؛ رسیدن داده‌های بعدی (چند موج پشت هم)
        صفحه را بی‌حرکت به‌روز می‌کند — پیش‌تر هر بار همهٔ کاشی‌ها از نو
        بالا می‌آمدند و صفحهٔ اول چند بار پشت هم چشمک می‌زد. */
+    /* اسکلتِ پیش از رسیدن داده بی‌حرکت؛ حرکت ورود فقط با اولین محتوای واقعی */
+    const hasData = !!(homeAt || (tasksAll || []).length || (adminAll || []).length);
+    if(first && !hasData){ homeWho = ''; box.classList.add('hm-still'); return; }
     if(first){ box.classList.remove('hm-in', 'hm-still'); void box.offsetWidth; box.classList.add('hm-in'); h3Count(box);
       clearTimeout(box.__stillT); box.__stillT = setTimeout(() => box.classList.add('hm-still'), 1400); }
     else box.classList.add('hm-still');
