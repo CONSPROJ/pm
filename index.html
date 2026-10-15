@@ -23,7 +23,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script defer src="lib/xlsx-0.18.5.full.min.js"></script>
+<script>
+/* کتابخانهٔ اکسل (۹۰۰ کیلوبایت) دیگر جلوی باز شدن صفحه را نمی‌گیرد: بعد از آماده شدن صفحه، در زمان بیکاری بارگذاری می‌شود */
+(function(){ function ld(){ if(window.XLSX || window.__xlsxLd) return; window.__xlsxLd = 1; var s = document.createElement('script'); s.src = 'lib/xlsx-0.18.5.full.min.js'; s.async = true; document.head.appendChild(s); }
+  window.addEventListener('load', function(){ setTimeout(function(){ if(window.requestIdleCallback) requestIdleCallback(ld, {timeout: 4000}); else setTimeout(ld, 1000); }, 2500); });
+  document.addEventListener('pointerdown', function(e){ var t = e.target; if(t && t.closest && t.closest('[class*="xls"], [data-xls], [id*="Xls"], [id*="xls"], [class*="export"], [data-exp]')) ld(); }, true);
+})();
+</script>
 <style>
   /* تا دسترسی‌ها نرسیده و زبانهٔ درست انتخاب نشده، صفحهٔ «ثبت گزارش» نشان
      داده نمی‌شود؛ پیش‌تر برای کسی که اجازهٔ ثبت ندارد چند لحظه فرم
@@ -21482,6 +21488,29 @@
   .pe-f{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);} .pe-f input{width:100%;box-sizing:border-box;}
   .pe-rd{display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:8px;padding:8px;border-radius:10px;background:var(--surface);border:1px solid var(--line);}
   .pe-rn{grid-column:1/-1;font-size:12px;font-weight:900;} .pe-rn i{font-style:normal;font-size:10.5px;color:var(--sky);margin-inline-start:6px;}
+
+  /* ================= لایهٔ یکپارچه‌سازی طراحی =================
+     یک زبان بصری برای همهٔ تب‌ها: سطح‌ها تخت و مات (بدون شیشه و براقی)،
+     کاشی‌های عدد (KPI) همه یک شکل، اعداد با همان فونت متن، عنوان‌های بخش یک اندازه. */
+  :root, html body{--glass:var(--surface);--glass-strong:var(--surface);--glass-brd:var(--line);--sheen:none;}
+  html[data-theme="dark"], html[data-theme="dark"] body, [data-theme="dark"]{--glass:var(--surface);--glass-strong:var(--surface);--glass-brd:var(--line);--sheen:none;}
+  /* کاشی عدد: همان شکل گزارش روزانه (.tdk) */
+  .stat, .rc-st, #panelView .rc-st, #reportView .stat, #taskView .stat{
+    background:var(--canvas) !important;background-image:none !important;border:1px solid var(--line) !important;border-radius:14px !important;
+    box-shadow:none !important;padding:10px 12px !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+  .stat b, .rc-st b, #panelView .stat b, #panelView .rc-st b{font-family:var(--f) !important;font-size:19px !important;font-weight:900 !important;letter-spacing:0 !important;line-height:1.2;}
+  .stat u, .stat small, .stat span:not(b), .rc-st u, .rc-st em{font-size:10.5px !important;font-weight:600;color:var(--muted);font-family:var(--f) !important;letter-spacing:0 !important;}
+  .rc-stats{display:grid !important;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:8px;}
+  /* پنجره‌های گزارش (زمانی، هفتگی، ماهانه) هم مثل بقیهٔ کارت‌ها: سطح ساده */
+  .tcal.rchart, .tcal{background:var(--surface) !important;background-image:none !important;box-shadow:none !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+  .rk-show::after, .kt-show::after{display:none !important;}
+  /* کاشی‌های لیست فعالیت: آیکون و عدد بالا، نام و زیرنویس زیرشان — دیگر نام بریده یا روی هم نمی‌افتد */
+  .tkl-t{display:grid !important;grid-template-columns:auto 1fr auto;grid-template-areas:"ic . n" "tx tx tx";align-items:center;row-gap:6px !important;min-height:0 !important;padding:10px 12px !important;}
+  .tkl-t .tkl-ic{grid-area:ic;}
+  .tkl-t .tkl-n{grid-area:n;flex-direction:row !important;align-items:baseline !important;gap:3px;min-width:0 !important;}
+  .tkl-t .tkl-tx{grid-area:tx;min-width:0;}
+  .tkl-t b{white-space:normal !important;overflow:visible !important;line-height:1.35;}
+  .tkl-t small{white-space:normal !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
