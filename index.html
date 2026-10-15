@@ -2668,6 +2668,7 @@
   .pyb-rest{font-size:11px;color:var(--muted);} .pyb-rest b{color:var(--ink);font-weight:900;}
   .mi-st{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;font-size:10.5px;font-weight:800;background:var(--field);color:var(--ink);white-space:nowrap;}
   .mi-st.st-1{background:color-mix(in srgb, var(--sky) 13%, transparent);color:var(--sky);}
+  .mi-st.st-inv{background:color-mix(in srgb, #c98a12 15%, transparent);color:#b07a10;} [data-theme="dark"] .mi-st.st-inv{color:#e0b050;}
   .mi-st.st-2{background:color-mix(in srgb, #8a63d2 14%, transparent);color:#7a55c4;}
   .mi-st.st-3{background:var(--ok-soft);color:var(--ok);}
   [data-theme="dark"] .mi-st.st-2{color:#b9a2ef;}
@@ -45552,7 +45553,7 @@
       'عنوان قرارداد':'title','شماره قرارداد':'number','طرف قرارداد':'party','موضوع قرارداد':'subject',
       'مبلغ قرارداد':'amount','مبلغ پرداختی':'paid','تاریخ شروع قرارداد':'start_date',
       'تاریخ ارسال':'sent_date','موعد اتمام':'due_date','وضعیت ابلاغ':'notify','وضعیت رسیدگی':'review','مسئول':'owner',
-      'شماره الحاقیه':'addendum_no','تاریخ اتمام قرارداد':'end_date',
+      'شماره الحاقیه':'addendum_no','تاریخ اتمام قرارداد':'end_date','نوع قرارداد':'doc_type',
       'تاریخچهٔ ارسال':'send_history','لینک':'link'},
     /* اسناد طراحی (دفتر فنی): جدول designs — سکوی ساخت آن در design_docs.sql */
     designs:{'شناسه':'id','زمان ثبت':'created_at','تاریخ':'date_fa','پروژه':'project','مهندس':'engineer',
@@ -45637,8 +45638,9 @@
   }
   setTimeout(() => { try{ probeStmtTypeCol(); }catch(e){} }, 3400);
   /* ستون‌های تازه (ویرایش صورت وضعیت، تاریخ اتمام قرارداد): تا در پایگاه‌داده ساخته نشده، فرستاده نمی‌شوند */
-  let STMT_REV_COL = null, CTR_END_COL = null;
+  let STMT_REV_COL = null, CTR_END_COL = null, CTR_TYPE_COL = null;
   async function probeNewCols(){
+    try{ await supaFetch('contracts?select=doc_type&limit=1'); CTR_TYPE_COL = true; }catch(e){ CTR_TYPE_COL = false; }
     try{ await supaFetch('statements?select=revision&limit=1'); STMT_REV_COL = true; }catch(e){ STMT_REV_COL = false; }
     try{ await supaFetch('contracts?select=end_date&limit=1'); CTR_END_COL = true; }catch(e){ CTR_END_COL = false; }
   }
@@ -45664,6 +45666,7 @@
       if(table === 'statements' && col === 'st_type' && STMT_TYPE_COL !== true) return;
       if(table === 'statements' && col === 'revision' && STMT_REV_COL !== true) return;
       if(table === 'contracts' && col === 'end_date' && CTR_END_COL !== true) return;
+      if(table === 'contracts' && col === 'doc_type' && CTR_TYPE_COL !== true) return;
       let v = obj[k];
       if(table === 'tasks' && ['done','not_done','doing'].indexOf(col) !== -1) v = (String(v).trim() === '1');
       if(table === 'minutes' && col === 'done') v = (v === true || String(v) === 'true' || String(v).trim() === '1');
@@ -48012,7 +48015,7 @@
     cTitle:['عنوان قرارداد'], cNo:['شماره قرارداد'], cParty:['طرف قرارداد'],
     cSubject:['موضوع قرارداد'], cAmount:['مبلغ قرارداد'], cPaid:['مبلغ پرداختی'],
     cDate:['تاریخ ارسال'], cNotify:['وضعیت ابلاغ'], cStart:['تاریخ شروع قرارداد'],
-    cAdd:['شماره الحاقیه'], cEnd:['تاریخ اتمام قرارداد'],
+    cAdd:['شماره الحاقیه'], cEnd:['تاریخ اتمام قرارداد'], cType:['نوع قرارداد'],
     hist:['تاریخچهٔ ارسال'], review:['وضعیت رسیدگی'], mTeam:['تیم انجام'],
     rvWho:['rvWho'], rvDone:['rvDone'],
     rvIS:['rvISent'], rvIO:['rvIOk'],
@@ -48033,6 +48036,24 @@
     link:['لینک']
   };
   const ST_TYPES = ['موقت', 'مستقل', 'قطعی'];
+  /* فاکتور: سندی در دستهٔ قراردادها که شمارهٔ خودِ فروشنده را دارد؛ در «آخرین شماره» حساب نمی‌شود.
+     سندهای قدیمی که «فاکتور» در عنوانشان آمده هم فاکتورند. */
+  function ctIsInvoice(r){
+    if(!r) return false;
+    if(String(pick(r,AD.cType) || '').trim() === 'فاکتور') return true;
+    return /فاکتور/.test(String(pick(r,AD.cTitle) || '') + ' ' + String(pick(r,AD.cSubject) || ''));
+  }
+  /* «آخرین شماره» فقط از شماره‌های فرم خودمان: الگوی غالب شماره‌ها (مثلاً «#-#» یا «RA-#-#»)؛
+     شماره‌هایی با الگوی دیگر (شمارهٔ طرف مقابل) و فاکتورها کنار می‌روند */
+  const noSig = v => toEn(String(v || '')).trim().replace(/\s+/g, '').replace(/\d+/g, '#');
+  function admOwnNoRows(kind, rows, noKey){
+    let L = rows.filter(r => String(pick(r, noKey) || '').trim());
+    if(kind === 'contract') L = L.filter(r => !ctIsInvoice(r));
+    const cnt = new Map();
+    L.forEach(r => { const g = noSig(pick(r, noKey)); cnt.set(g, (cnt.get(g) || 0) + 1); });
+    let best = '', bn = 0; cnt.forEach((n, g) => { if(n > bn){ bn = n; best = g; } });
+    return best ? L.filter(r => noSig(pick(r, noKey)) === best) : L;
+  }
   /* نامه‌ها دو دسته‌اند: ارسالی (پیش‌فرض همهٔ نامه‌های قبلی) و دریافتی از پیمانکار یا کارفرما */
   /* ====== کدینگ شمارهٔ نامه (قابل تغییر) ======
      قالب با چند جانشین ساخته می‌شود: {ماه} دو رقم ماه، {سال} دو رقم سال، {سال۴} چهار رقم سال،
@@ -51579,6 +51600,7 @@
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
           if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
             bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
+          if(kind === 'contract' && ctIsInvoice(r)) bits.push('<span class="mi-st st-inv">فاکتور</span>');
           if(party) bits.push('<span class="cl-p">' + esc(party) + '</span>');
           const amt2 = (kind === 'statement') ? pick(r,AD.sAmount)
                      : (kind === 'contract') ? pick(r,AD.cAmount) : '';
@@ -51630,6 +51652,7 @@
             + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
           if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
             bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
+          if(kind === 'contract' && ctIsInvoice(r)) bits.push('<span class="mi-st st-inv">فاکتور</span>');
           if(party) bits.push('<button type="button" class="mi-p" '
             + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
             + esc(party) + '</button>');
@@ -51937,7 +51960,10 @@
     if(kind === 'contract'){
       return wrap(
         sec('doc', 'مشخصات قرارداد',
-            f('a-cTitle','عنوان قرارداد', pick(r,AD.cTitle), false, 'contractSubjectList')
+            chips('<div class="field"><label>نوع سند</label><select class="a-cType" data-orig="' + esc(pick(r,AD.cType) || '') + '">'
+              + '<option value=""' + (ctIsInvoice(r) ? '' : ' selected') + '>قرارداد</option>'
+              + '<option value="فاکتور"' + (ctIsInvoice(r) ? ' selected' : '') + '>فاکتور</option></select></div>')
+          + f('a-cTitle','عنوان قرارداد', pick(r,AD.cTitle), false, 'contractSubjectList')
           + f('a-cNo','شماره قرارداد', pick(r,AD.cNo), false, 'contractNoList')
           + f('a-cParty','طرف قرارداد', pick(r,AD.cParty), false, 'contractPartyList')
           + '<div class="field add-field"><label>الحاقیه</label>'
@@ -53910,6 +53936,7 @@
       if(o['مبلغ پرداختی'] != null)   o['مبلغ پرداختی']   = String(moneyNum(o['مبلغ پرداختی']) || '');
     }else if(kind === 'contract'){
       put(o,'عنوان قرارداد','a-cTitle'); put(o,'شماره قرارداد','a-cNo'); put(o,'طرف قرارداد','a-cParty');
+      put(o,'نوع قرارداد','a-cType');
       put(o,'مبلغ قرارداد','a-cAmount'); put(o,'مبلغ پرداختی','a-cPaid');
       put(o,'تاریخ شروع قرارداد','a-cStart'); put(o,'تاریخ ارسال','a-cDate');
       put(o,'موعد اتمام','a-due');
@@ -54947,6 +54974,10 @@
     const dk = r => { const n = normDate(pick(r, F2[0]) || pick(r, AD.date) || ''); return n ? toEn(n) : ''; };
     const nk = r => { const v = F2[1] ? toEn(String(pick(r, F2[1]) || '')) : ''; const m = v.match(/\d+/g); return m ? +m.join('') : -1; };
     /* شمارهٔ بزرگ‌تر یعنی سند تازه‌تر (مثل ۱۴۰۵-۰۹ بعد از ۱۴۰۴-۱۱)؛ تاریخ فقط برای تساوی */
+    if(kind !== 'minute' && F2[1]){
+      const own = new Set(admOwnNoRows(kind, L.map(x => x.row), F2[1]));
+      L = L.filter(x => own.has(x.row));
+    }
     const best = kind === 'minute'
       ? L.slice().sort((a, b) => (dk(b.row) || '').localeCompare(dk(a.row) || ''))[0]
       : L.slice().sort((a, b) => nk(b.row) - nk(a.row) || (dk(b.row) || '').localeCompare(dk(a.row) || ''))[0];
@@ -56178,7 +56209,7 @@
         let lastNo = '';
         if(k === 'letter' || k === 'contract'){
           const keys = (k === 'letter') ? AD.lNo : AD.cNo;
-          const nums = list.map(x => pick(x.row, keys)).filter(Boolean);
+          const nums = admOwnNoRows(k, list.map(x => x.row), keys).map(r => pick(r, keys)).filter(Boolean);
           if(nums.length){
             lastNo = nums.slice().sort((a,b) => {
               const na = (toEn(a).match(/\d+/g) || []).reduce((s,n) => s*10000 + (+n), 0);
