@@ -18555,13 +18555,27 @@
     :root:not([data-theme="light"]) .ava.r-sup{box-shadow:0 0 0 1.5px var(--surface), 0 0 0 3px #c99550 !important;}
   }
   /* دکمهٔ بازگشت شناور */
-  #navBack{position:fixed;z-index:120;bottom:calc(env(safe-area-inset-bottom) + 96px);left:50%;transform:translateX(-50%);max-width:calc(100vw - 150px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-flex;align-items:center;gap:6px;
-    height:38px;padding:0 14px 0 10px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);font:700 12px var(--f);cursor:pointer;
-    box-shadow:0 12px 28px -14px rgba(15,20,35,.55);}
-  #navBack svg{width:16px;height:16px;}
-  #navBack.in{animation:navBackIn .35s cubic-bezier(.22,.8,.2,1);}
-  @keyframes navBackIn{from{opacity:0;transform:translate(-50%, 10px);}to{opacity:1;transform:translateX(-50%);}}
+  /* نوار «بازگشت»: کوچک، گوشهٔ آغاز صفحه بالای نوار پایین؛ هیچ‌وقت روی پنجرهٔ باز نمی‌نشیند */
+  #navBack{position:fixed;z-index:60;bottom:calc(env(safe-area-inset-bottom) + 82px);inset-inline-start:14px;max-width:calc(100vw - 28px);
+    display:inline-flex;align-items:center;gap:2px;height:38px;padding:0 4px;border-radius:999px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--surface) 94%, transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    box-shadow:0 12px 28px -14px rgba(15,20,35,.55);animation:navBackIn .32s cubic-bezier(.22,.8,.2,1);}
+  #navBack button{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:30px;border-radius:999px;font:700 12px var(--f);color:var(--ink);}
+  #navBack .nb-go{padding:0 10px 0 8px;min-width:0;max-width:calc(100vw - 90px);}
+  #navBack .nb-go span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #navBack .nb-go span::before{content:"بازگشت به ";color:var(--muted);font-weight:600;}
+  #navBack .nb-go:hover{background:var(--field);}
+  #navBack .nb-go svg{width:16px;height:16px;flex:none;color:var(--sky);}
+  #navBack .nb-x{width:30px;justify-content:center;color:var(--muted);font-size:11px;}
+  #navBack .nb-x:hover{background:var(--field);color:var(--ink);}
+  @keyframes navBackIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @media(min-width:641px){ #navBack{bottom:22px;} }
+  body:has(> .modal-bg:not([hidden])) #navBack, body:has(> .fv-bg:not([hidden])) #navBack{display:none;}
+  /* بازگشت به پنجرهٔ قبلی، کنار ✕ پنجره‌های تودرتو */
+  .ov-back{all:unset;box-sizing:border-box;cursor:pointer;flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;
+    color:var(--ink);background:var(--field);border:1px solid var(--line);margin-inline-end:6px;}
+  .ov-back svg{width:17px;height:17px;}
+  .ov-back:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));color:var(--sky);}
   /* مرکز داده و نام‌ها */
   .dc{display:flex;flex-direction:column;gap:12px;}
   .dc-hero{display:flex;align-items:center;gap:11px;padding:14px;border-radius:18px;border:1px solid var(--line);
@@ -21581,7 +21595,7 @@
     .app-head{justify-content:flex-end;}
     .page{max-width:1120px;}
     .dock{inset-inline-start:240px !important;}
-    #navBack{inset-inline-start:calc(240px + 16px);}
+    #navBack{inset-inline-start:calc(240px + 20px);}
   }
   @media print{ #tabBar.nav5{display:none !important;} body{padding:0 !important;} }
 
@@ -28294,8 +28308,13 @@
       return el2;
     }
 
+    /* سند از قبل بار شده: بی‌بارگذاری و رندر دوبارهٔ کل دفتر فنی، مستقیم به همان دسته و مورد
+       (پیش‌تر هر «رفتن به مورد» همهٔ فهرست‌ها را از نو می‌ساخت و کند بود) */
+    const had = adminLoaded && document.getElementById('admList-statement')
+      && (adminAll || []).find(x => String(pick(x.row,AD.id)) === String(id));
     switchTab('admin');
-    await loadAdmin();
+    if(had){ try{ admSetCat(had.kind, true); }catch(e){} }
+    else await loadAdmin();
     // اگر فیلتر یا جست‌وجویی مورد را پنهان کرده، اول پاکش کن
     let el = await revealItem(id, '#adminView');
     if(!el && (qAdmin || elVal('fAdmOwner') || elVal('fAdmParty') || elVal('fAdmNotify'))){
@@ -37349,7 +37368,7 @@
      که همان پنجره را دوباره باز می‌کند. */
   const navBackStack = [];
   function pushNavBack(label, fn){
-    navBackStack.push({label, fn});
+    navBackStack.push({label, fn, t: Date.now()});
     if(navBackStack.length > 6) navBackStack.shift();
     paintNavBack();
   }
@@ -37358,17 +37377,20 @@
     const top = navBackStack[navBackStack.length - 1];
     if(!top){ if(b) b.remove(); return; }
     if(!b){
-      b = document.createElement('button');
-      b.type = 'button'; b.id = 'navBack';
-      b.addEventListener('click', () => {
+      b = document.createElement('div');
+      b.id = 'navBack'; b.setAttribute('role', 'navigation');
+      b.addEventListener('click', e => {
+        /* ✕ کوچک: فقط بستن نوار بازگشت */
+        if(e.target.closest('.nb-x')){ navBackStack.length = 0; paintNavBack(); return; }
         const it = navBackStack.pop();
         paintNavBack();
-        if(it) try{ it.fn(); }catch(e){}
+        if(it) try{ it.fn(); }catch(err){}
       });
       document.body.appendChild(b);
     }
-    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
-      + '<span>بازگشت به ' + esc(top.label) + '</span>';
+    b.innerHTML = '<button type="button" class="nb-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+      + '<span>' + esc(top.label) + '</span></button>'
+      + '<button type="button" class="nb-x" aria-label="بستن نوار بازگشت">✕</button>';
     b.classList.remove('in'); void b.offsetWidth; b.classList.add('in');
   }
   /* با رفتن به زبانهٔ دیگری با دست، بازگشتِ قدیمی معنایی ندارد */
@@ -71494,24 +71516,86 @@
      نه این‌که از سایت بیرون ببرد. */
   (function(){
     const SEL = '.modal-bg, .fv-bg, .s3s-bg';
-    const CLOSE = '[data-fvx], [data-s3sx], [data-ctcx], [data-ctcclose], [data-cclx], [data-flrclose], [data-lttx], #shareX, .sx-x, .tx-x, .ccl-x, .modal-x, .mx-x, [aria-label="بستن"]';
+    const CLOSE = '[data-fvx], [data-s3sx], [data-ctcx], [data-ctcclose], [data-cclx], [data-flrclose], [data-lttx], [data-ctx], [data-ctch="-1"], #shareX, .sx-x, .tx-x, .ccl-x, .modal-x, .mx-x, .hma-x, [aria-label="بستن"]';
+    /* دکمهٔ بستن هر پنجره: از فهرست بالا، وگرنه هر دکمه‌ای که فقط «✕» دارد */
+    const findClose = el => el.querySelector(CLOSE) || Array.from(el.querySelectorAll('button')).find(b => /^[✕×✖]$/.test(String(b.textContent || '').trim()));
     const OV = []; let skip = 0;
     const visible = el => el.isConnected && !el.hidden && getComputedStyle(el).display !== 'none';
     function closeEl(el){
       if(el.id === 'fvModal' && typeof fvClose === 'function'){ fvClose(); return; }
-      const x = el.querySelector(CLOSE);
+      const x = findClose(el);
       if(x){ x.click(); }
       else{ const no = Array.from(el.querySelectorAll('button')).find(b => /^(انصراف|بستن|باشه)$/.test(b.textContent.trim())); if(no) no.click(); else el.hidden = true; }
       if(el.classList.contains('s3s-bg') && el.isConnected) el.remove();
     }
+    /* پنجره‌ای که از دل پنجرهٔ دیگری باز شده، کنار ✕ یک «بازگشت» می‌گیرد:
+       روی پنجرهٔ قبلی باز مانده باشد، همین را می‌بندد؛ اگر قبلی بسته شده بود
+       (مثلاً از پروفایل به پروندهٔ پیمانکار)، آن را دوباره باز می‌کند. */
+    const NO_BACK = '#msgModal, #confirmModal, #askConfirmModal, #userModal, #ctChooseModal, .hm-add-bg, .s3s-bg';
+    /* آخرین پنجره‌ای که کاربر داخلش چیزی را زد (برای بازگشت به آن) */
+    let lastIn = null;
+    document.addEventListener('click', e => {
+      const ov = e.target.closest && e.target.closest(SEL);
+      if(!ov || ov.parentElement !== document.body || ov.matches(NO_BACK) || e.target.closest('.ov-back')) return;
+      const h = ov.querySelector('h1, h2, h3, .mc-title, [class*="-title"], b');
+      lastIn = {el: ov, t: Date.now(), label: h ? String(h.textContent || '').trim().slice(0, 40) : ''};
+    }, true);
+    const BK_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+    function addBack(o){
+      const el = o.el;
+      if(el.matches(NO_BACK)) return;
+      let target = null, label = '';
+      const under = OV.filter(x => x !== o && visible(x.el) && !x.el.matches(NO_BACK));
+      if(under.length) target = 'stack';
+      else{
+        let top = null; try{ top = navBackStack[navBackStack.length - 1]; }catch(e){}
+        if(top && top.t && Date.now() - top.t < 2500){ target = navBackStack.pop(); label = top.label; try{ paintNavBack(); }catch(e){} }
+        /* از داخل پنجرهٔ دیگری آمده‌ایم که بسته شد (و هنوز در صفحه هست): همان دوباره باز می‌شود */
+        else if(lastIn && lastIn.el !== el && Date.now() - lastIn.t < 2500 && lastIn.el.isConnected && !visible(lastIn.el)){
+          const prev = lastIn.el;
+          label = lastIn.label;
+          target = {label, fn: () => { prev.hidden = false; prev.style.display = ''; try{ document.body.style.overflow = 'hidden'; }catch(e){} }};
+        }
+      }
+      if(!target) return;
+      o.back = target;
+      const put = () => {
+        if(el.querySelector('.ov-back')) return;
+        const x = findClose(el);
+        if(!x || !x.parentNode) return;
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'ov-back';
+        b.setAttribute('aria-label', 'بازگشت' + (label ? ' به ' + label : ''));
+        b.title = 'بازگشت' + (label ? ' به ' + label : ' به پنجرهٔ قبلی');
+        b.innerHTML = BK_I;
+        b.addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          closeEl(el);
+          if(target !== 'stack') setTimeout(() => { try{ target.fn(); }catch(err){} }, 30);
+        });
+        x.parentNode.insertBefore(b, x);
+      };
+      put();
+      /* محتوای پنجره ممکن است بعد از باز شدن از نو ساخته شود؛ دکمه دوباره می‌نشیند */
+      let rq = 0;
+      try{ o.mo = new MutationObserver(() => { if(!rq) rq = requestAnimationFrame(() => { rq = 0; if(visible(el)) put(); }); });
+        o.mo.observe(el, {childList:true, subtree:true}); }catch(e){}
+    }
+    function dropBack(o){
+      try{ if(o.mo) o.mo.disconnect(); }catch(e){}
+      o.el.querySelectorAll('.ov-back').forEach(b => b.remove());
+    }
     function sync(){
       Array.prototype.forEach.call(document.body.children, el => {
         if(!el.matches(SEL)) return;
-        if(!el.hidden && !OV.some(o => o.el === el) && visible(el)){ OV.push({el}); try{ history.pushState({ov: OV.length}, ''); }catch(e){} }
+        if(!el.hidden && !OV.some(o => o.el === el) && visible(el)){
+          const o = {el}; OV.push(o); try{ history.pushState({ov: OV.length}, ''); }catch(e){}
+          try{ addBack(o); }catch(e){}
+        }
       });
       for(let i = OV.length - 1; i >= 0; i--){
         const o = OV[i];
-        if(!visible(o.el)){ OV.splice(i, 1); skip++; try{ history.back(); }catch(e){ skip--; } }
+        if(!visible(o.el)){ OV.splice(i, 1); dropBack(o); skip++; try{ history.back(); }catch(e){ skip--; } }
       }
     }
     let t = 0;
