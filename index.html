@@ -42895,7 +42895,7 @@
     const body = fr && fr.nextElementSibling;
     if(!body || !body.classList.contains('afr-body') || body.firstChild) return;
     const r = arCards.get(fr.dataset.afrkind + '|' + fr.dataset.afr);
-    if(r) body.innerHTML = '<div class="adm-host tk-admhost">' + admCard(fr.dataset.afrkind, r, false)
+    if(r) body.innerHTML = '<div class="adm-host tk-admhost">' + admCard(fr.dataset.afrkind, r)
       + '<button type="button" class="tk-goadm" data-tkgoadm="' + esc(fr.dataset.afrkind) + '|' + esc(String(pick(r,AD.id) || '')) + '">باز کردن در دفتر فنی ‹</button></div>';
   }
   function adminSectionHtml(a, dateLabel){
@@ -60911,8 +60911,14 @@
       const r = tfrCards.get(item.dataset.tfr);
       /* سندِ دفتر فنی همان کارت دفتر فنی را می‌گیرد، نه نسخهٔ قدیمی کارت اداری */
       if(r && r.__admKind === 'design' && r.__admRow){ try{ inn.innerHTML = taskDesignCardHtml(r, true); }catch(e){ inn.innerHTML = taskCardHtml(r); } }
+      else if(r && r.__adm && r.__admRow && r.__admKind === 'minute'){
+        /* بند صورتجلسه: همان کارت صورتجلسهٔ دفتر فنی (با همهٔ اختیارات کاربر) */
+        try{ inn.innerHTML = '<div class="adm-host tk-admhost">' + minuteCard([r.__admRow])
+          + '<button type="button" class="tk-goadm" data-tkgoadm="minute|' + esc(r.__admId) + '">باز کردن در دفتر فنی ‹</button></div>'; }
+        catch(e){ inn.innerHTML = taskCardHtml(r); }
+      }
       else if(r && r.__adm && r.__admRow && ['statement','contract','letter'].indexOf(r.__admKind) !== -1)
-        inn.innerHTML = '<div class="adm-host tk-admhost">' + admCard(r.__admKind, r.__admRow, false)
+        inn.innerHTML = '<div class="adm-host tk-admhost">' + admCard(r.__admKind, r.__admRow)
           + '<button type="button" class="tk-goadm" data-tkgoadm="' + esc(r.__admKind) + '|' + esc(r.__admId) + '">باز کردن در دفتر فنی ‹</button></div>';
       else if(r && r.__admKind === 'prc' && r.__prc){
         const req = r.__prc;
@@ -61859,11 +61865,21 @@
      عوض کردن نمای فهرستی/کارتی کند بود. جست‌وجو، پرش به مورد و بازگشت
      پنجره‌های باز، بدنه را بی‌درنگ می‌سازند. */
   var TK_LAZY = new Map(); var tkLazySeq = 0;
-  function tkLazyBody(fn){ const k = 'lz' + (++tkLazySeq); TK_LAZY.set(k, fn); return '<div class="eng-body" data-lz="' + k + '"></div>'; }
+  /* نمای «فهرستی» یا «کارتی» همان لحظهٔ ساخت فهرست ثبت می‌شود؛ بدنه‌ای که بعداً (با باز شدن)
+     ساخته می‌شود، باید همان نما را داشته باشد — وگرنه در نمای فهرستی کارت‌های کامل می‌آمد */
+  function tkLazyBody(fn){ const k = 'lz' + (++tkLazySeq); TK_LAZY.set(k, {fn, list: !!tfrScope}); return '<div class="eng-body" data-lz="' + k + '"></div>'; }
   function tkLazyFill(el){
     if(!el) return;
     const list = el.matches && el.matches('[data-lz]') ? [el] : Array.from(el.querySelectorAll('[data-lz]'));
-    list.forEach(b => { const fn = TK_LAZY.get(b.dataset.lz); b.removeAttribute('data-lz'); if(!fn) return; try{ b.innerHTML = fn(); }catch(e){} TK_LAZY.delete(b.dataset.lz); });
+    list.forEach(b => {
+      const k = b.dataset.lz, it = TK_LAZY.get(k);
+      b.removeAttribute('data-lz'); TK_LAZY.delete(k);
+      if(!it) return;
+      const keep = tfrScope;
+      tfrScope = !!it.list;
+      try{ b.innerHTML = it.fn(); }catch(e){}
+      finally{ tfrScope = keep; }
+    });
   }
   window.tkLazyFill = tkLazyFill;
   (function(){
@@ -69485,7 +69501,7 @@
             + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg></button>' : '')
       /* صورت وضعیت، قرارداد و نامه: دقیقاً همان کارت دفتر فنی (با نظرات،
          تلنگر و اشتراک)، نه نسخهٔ خلاصهٔ جدا */
-      + (dkSameCard ? '<div class="dk-adm adm-host">' + admCard(kind, row, false) + '</div>'
+      + (dkSameCard ? '<div class="dk-adm adm-host">' + admCard(kind, row) + '</div>'
           + dkCmPeek(x, i) : '')
       + (dkTask ? dkTaskShellHtml(x, row, i) : '')
       + (dsRow ? (function(){ try{ return dkDesignShellHtml(x, dsRow, i); }catch(e){ return dkGenShellHtml(x, row, kind, i); } })() : '')
