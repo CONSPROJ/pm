@@ -18535,6 +18535,22 @@
   #profileModal.pf2 #profileBody .tcal{border-radius:18px !important;}
   /* فهرست تنظیمات */
   .pf2-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surface);}
+  /* ---------- نوار دفتری (شناسهٔ کارت‌ها) ---------- */
+  .lgx{display:flex;margin:10px 0 4px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);}
+  .lgx-c{flex:1 1 0;min-width:0;padding:7px 11px 8px;display:flex;flex-direction:column;gap:2px;}
+  .lgx-c + .lgx-c{border-inline-start:1px solid var(--line);}
+  .lgx-c small{font-size:10.5px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}
+  .lgx-c > b, .lgx-v{display:block;font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}
+  .lgx-c.n{flex:0 0 auto;min-width:58px;align-items:center;text-align:center;}
+  .lgx-c.n > b{font-size:17px;line-height:1.35;}
+  .lgx-c.n.long{flex:0 1 auto;max-width:34%;} .lgx-c.n.long > b{font-size:13.5px;line-height:1.5;direction:ltr;}
+  .lgx-c > b u{text-decoration:none;font-size:10.5px;font-weight:600;color:var(--muted);margin-inline-start:3px;}
+  .lgx-c.w{flex:1.7 1 0;}
+  button.lgx-v{all:unset;box-sizing:border-box;display:block;max-width:100%;font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;cursor:pointer;transition:color .15s;}
+  button.lgx-v:hover{color:var(--sky);}
+  button.lgx-v:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:4px;}
+  @media (max-width:420px){ .lgx-c{padding:6px 8px 7px;} .lgx-c > b, .lgx-v, button.lgx-v{font-size:13px;} .lgx-c.n{min-width:50px;} }
+
   /* ---- تنظیمات شخصی ---- */
   .st2{display:flex;flex-direction:column;gap:16px;}
   .st2-h{font-size:11.5px;font-weight:800;color:var(--muted);padding:0 6px 7px;}
@@ -49276,6 +49292,30 @@
     const n = moneyNum2(v);
     return n ? toFa(n.toLocaleString('en-US')) : '';
   }
+  /* ====== نوار دفتری ======
+     شناسهٔ هر کارت در خانه‌های برچسب‌دار (شماره | طرف | مبلغ | تاریخ)،
+     یک شکل در همهٔ بخش‌ها. cells: [{k:'برچسب', v:'html', c:'n|w|…', t:'title'}] */
+  function ledgerHtml(cells){
+    const L = (cells || []).filter(c => c && c.v);
+    if(!L.length) return '';
+    return '<div class="lgx">' + L.map(c => '<div class="lgx-c' + (c.c ? ' ' + c.c : '') + '"' + (c.t ? ' title="' + esc(c.t) + '"' : '') + '>'
+      + '<small>' + c.k + '</small>' + (/^<(button|span|b)\b/.test(c.v) ? c.v : '<b>' + c.v + '</b>') + '</div>').join('') + '</div>';
+  }
+  /* مبلغ ریالی به شکل کوتاه تومانی برای نوار: {v:'۱۸۵', u:'میلیون ت'} */
+  function moneyShort(v){
+    const r = moneyNum2(v); if(!r) return null;
+    const t = r / 10;
+    if(t >= 1e9) return {v: toFa((Math.round(t / 1e8) / 10).toString()), u:'میلیارد'};
+    if(t >= 1e6) return {v: toFa(Math.round(t / 1e6).toLocaleString('en-US')), u:'میلیون'};
+    return {v: toFa(Math.round(t).toLocaleString('en-US')), u:'تومان'};
+  }
+  /* تاریخ کوتاه: امسال «ماه/روز»، سال‌های دیگر کامل */
+  function dateShort(fa){
+    const d = admDate(fa) || ''; const m = toEn(d).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    if(!m) return d;
+    let y0 = ''; try{ y0 = toEn(todayShamsi()).slice(0, 4); }catch(e){}
+    return m[1] === y0 ? toFa(m[2].padStart(2,'0') + '/' + m[3].padStart(2,'0')) : toFa(m[1].slice(2) + '/' + m[2].padStart(2,'0') + '/' + m[3].padStart(2,'0'));
+  }
   function moneyFa(v){
     const n = moneyNum2(v);
     return n ? toFa(n.toLocaleString('en-US')) : '';
@@ -52687,26 +52727,21 @@
       /* یک خط، یک وزن: نوع سند و شماره کنار هم به‌عنوان شناسه، بعد
          نام پیمانکار، و مبلغ ته خط. همه هم‌اندازه و هم‌رنگ، جز مبلغ
          که تنها عددِ تصمیم‌ساز است. */
+      /* نوار دفتری: شماره | طرف | مبلغ | تاریخ — هر عدد با برچسب خودش */
       + (function(){
-          const bits = [];
-          bits.push('<span class="mi-k">' + esc(KIND_ONE(kind) || '')
-            + (docNo ? ' <b>' + esc(toFa(docNo)) + '</b>' : '') + '</span>');
-          if(kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0)
-            bits.push('<span class="mi-st st-' + (ST_TYPES.indexOf(pick(r,AD.sType)) + 1) + '">' + esc(pick(r,AD.sType)) + '</span>');
-          if(kind === 'contract' && ctIsInvoice(r)) bits.push('<span class="mi-st st-inv">فاکتور</span>');
-          if(party) bits.push('<button type="button" class="mi-p" '
-            + 'data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">'
-            + esc(party) + '</button>');
-          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : '';
-          if(amt) bits.push('<span class="mi-a">' + moneyFa(amt) + '<u>ریال</u></span>');
-          /* تاریخ سند هم در همین خط: برای صورتجلسه تاریخ جلسه، برای
-             بقیه تاریخ ارسال. بدون آن، تاریخ فقط در جزئیات بود. */
-          const dt = (kind === 'minute')
-            ? (pick(r,AD.mMeet) || pick(r,AD.date))
-            : (admSentDate(kind, r) || pick(r,AD.date));
-          if(dt) bits.push('<span class="mi-t">' + esc(admDate(dt)) + '</span>');
-          /* فایل‌ها فقط با یک دکمهٔ دانلود (سربرگ کارت)، همان شکل فهرست؛ سطر تکراری فایل حذف شد */
-          return '<div class="adm-meta">' + bits.join('<i></i>') + '</div>';
+          if(kind === 'minute' || kind === 'design') return '';
+          const sub = (kind === 'statement' && ST_TYPES.indexOf(pick(r,AD.sType)) >= 0) ? pick(r,AD.sType)
+                    : (kind === 'contract' && ctIsInvoice(r)) ? 'فاکتور' : '';
+          const amt = (kind === 'statement') ? pick(r,AD.sAmount) : (kind === 'contract') ? pick(r,AD.cAmount) : '';
+          const ms = amt ? moneyShort(amt) : null;
+          const dt = admSentDate(kind, r) || pick(r,AD.date);
+          const pl = kind === 'statement' ? 'پیمانکار' : kind === 'contract' ? 'طرف قرارداد' : 'طرف مکاتبه';
+          return ledgerHtml([
+            {k: 'شماره' + (sub ? ' · ' + esc(sub) : ''), v: docNo ? esc(toFa(docNo)) : '—', c: 'n' + (String(docNo || '').length > 4 ? ' long' : '')},
+            party ? {k: pl, v: '<button type="button" class="lgx-v lk" data-hrprof="' + esc(party) + '" title="پروندهٔ ' + esc(party) + '">' + esc(party) + '</button>', c: 'w'} : null,
+            ms ? {k: 'مبلغ', v: '<b>' + ms.v + (ms.u !== 'تومان' ? '<u>' + ms.u + '</u>' : '') + '</b>', t: ms.v + ' ' + ms.u + (ms.u !== 'تومان' ? ' تومان' : '') + ' — ' + moneyFa(amt) + ' ریال'} : null,
+            dt ? {k: 'تاریخ', v: esc(dateShort(dt)), t: admDate(dt)} : null
+          ]);
         })()
       + payBoxHtml(kind, r, editable, id)
 
@@ -70686,16 +70721,18 @@
       : x.level === 'warm' ? '<span class="adm-crit warn"><i>نزدیک موعد</i>' + esc(why) + '</span>' : '';
     const ed = (function(){ try{ return canEditAdm('design', row); }catch(e){ return false; } })();
     const fk = pick(row,AD.dFloor), party = pick(row,AD.dParty);
-    const bits = ['<span class="mi-k">سند طراحی' + (pick(row,AD.dType) ? ' <b>' + esc(pick(row,AD.dType)) + '</b>' : '') + '</span>'];
-    if(fk) bits.push('<button type="button" class="dz-lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button>');
-    if(pick(row,AD.dZone)) bits.push('<span class="mi-p">' + esc(pick(row,AD.dZone)) + '</span>');
-    if(party) bits.push('<button type="button" class="dz-lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>');
+    const lg = ledgerHtml([
+      {k: 'سند طراحی', v: esc(pick(row,AD.dType) || 'نقشه'), c: 'w'},
+      fk ? {k: 'طبقه', v: '<button type="button" class="lgx-v lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button>'} : null,
+      pick(row,AD.dZone) ? {k: 'محدوده', v: esc(pick(row,AD.dZone))} : null,
+      party ? {k: 'طرف', v: '<button type="button" class="lgx-v lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>', c: 'w'} : null
+    ]);
     let body = ''; try{ body = designDocHtml(row, ed, id); }catch(e){ body = ''; }
     return '<div class="dk-adm adm-host"><div class="rv adm-k adm-gen dk-dsk" data-id="' + esc(id) + '">'
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
       +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
       + commentBarHtml('design', id, title, {owner: owner})
-      + '<div class="adm-body"><div class="adm-meta dk-dsm">' + bits.join('<i></i>') + '</div>'
+      + '<div class="adm-body">' + lg
       + '<div class="dk-dsb">' + body + '</div></div>'
       + '</div></div>'
       + dkCmPeek(x, i);
@@ -70715,12 +70752,15 @@
       : x.level === 'hot' ? '<span class="adm-crit' + (emp ? ' emp' : '') + '"><i>' + (emp ? 'بحرانی کارفرما' : 'بحرانی') + '</i>' + esc(why) + '</span>'
       : x.level === 'warm' ? '<span class="adm-crit warn"><i>نزدیک موعد</i>' + esc(why) + '</span>' : '';
     let grp = ''; try{ grp = taskGroupOf(row) || ''; }catch(e){}
-    const bits = ['<span class="mi-k">فعالیت' + (grp ? ' <b>' + esc(grp) + '</b>' : '') + '</span>'];
-    const pos = pick(row,T.pos); if(pos) bits.push('<span class="mi-p">' + esc(pos) + '</span>');
-    if(x.genAll && x.genAll.length > 1)
-      bits.push('<span class="mi-a">' + toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length) + ' انجام</span>');
-    else if(owners.length > 1) bits.push('<span class="mi-p">' + owners.map(esc).join('، ') + '</span>');
-    const due = taskDue(row); if(due) bits.push('<span class="mi-t">موعد ' + esc(taskDate(due)) + '</span>');
+    const pos = pick(row,T.pos);
+    const due = taskDue(row);
+    const lg = ledgerHtml([
+      {k: 'فعالیت', v: esc(grp || String(pick(row,T.side) || '') || 'اجرایی'), c: 'w'},
+      pos ? {k: 'موقعیت', v: esc(pos)} : null,
+      (x.genAll && x.genAll.length > 1) ? {k: 'انجام', v: toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length)}
+        : owners.length > 1 ? {k: 'مسئولان', v: esc(owners.join('، '))} : null,
+      due ? {k: 'موعد', v: esc(dateShort(taskDate(due))), t: taskDate(due)} : null
+    ]);
     let tl = ''; try{ tl = taskTlBlockHtml(row); }catch(e){ tl = ''; }
     /* موانع همیشه پیدا؛ فقط بررسی و فهرست افراد پشت «جزئیات» */
     const blk = deckBlockHtml(x, 'task', row, i);
@@ -70730,7 +70770,7 @@
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
       +   '<div class="adm-titlewrap"><h4 class="adm-title">' + esc(title) + '</h4>' + crit + '</div></div>'
       + commentBarHtml('task', id, title, {owner: owner, shareBody: ['فعالیت', owner ? 'مسئول: ' + owner : '', 'وضعیت: ' + st.label, due ? 'موعد: ' + taskDate(due) : ''].filter(Boolean).join('\n')})
-      + '<div class="adm-body"><div class="adm-meta">' + bits.join('<i></i>') + '</div>' + tl + '</div>'
+      + '<div class="adm-body">' + lg + tl + '</div>'
       + '</div></div>'
       + dkCmPeek(x, i)
       + blk
