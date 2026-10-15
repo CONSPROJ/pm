@@ -21476,6 +21476,12 @@
   .afr-adds{display:flex;flex-direction:column;gap:4px;margin-inline-start:14px;padding-inline-start:10px;border-inline-start:2px solid color-mix(in srgb, #8a5cf6 45%, transparent);}
   .afr-adh{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:var(--muted);padding:2px 4px;} .afr-adh b{color:#8a5cf6;font-weight:900;}
   .afr.afr-add{background:color-mix(in srgb, #8a5cf6 7%, var(--surface));border-color:color-mix(in srgb, #8a5cf6 22%, var(--line));}
+  .pe-sec{display:flex;flex-direction:column;gap:8px;margin:10px 0;padding:10px;border-radius:12px;background:var(--field);}
+  .pe-sh{display:block;font-size:12.5px;font-weight:900;margin:6px 0 2px;}
+  .pe-g{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;}
+  .pe-f{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);} .pe-f input{width:100%;box-sizing:border-box;}
+  .pe-rd{display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:8px;padding:8px;border-radius:10px;background:var(--surface);border:1px solid var(--line);}
+  .pe-rn{grid-column:1/-1;font-size:12px;font-weight:900;} .pe-rn i{font-style:normal;font-size:10.5px;color:var(--sky);margin-inline-start:6px;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -50292,10 +50298,31 @@
     bg.innerHTML = '<div class="modal pe-modal" role="dialog" aria-modal="true" aria-label="ویرایش مسیر گردش">'
       + '<div class="modal-head"><b>ویرایش مسیر گردش</b><button type="button" class="x" data-pecancel="1" aria-label="بستن">×</button></div>'
       + '<div class="modal-body">'
+      + (function(){
+          /* همهٔ چیزهای قابل تغییر گردش، یک‌جا: تاریخ ابلاغ، موعد، مسئول، مراحل، و دورهای بررسی داخلی (چه کسی، از کی تا کی، چه کسی تأیید کرد) */
+          const dt = (cls, lb, v) => '<label class="pe-f"><span>' + lb + '</span><input type="text" class="' + cls + ' date-in" inputmode="text" value="' + esc(v ? toFa(normDate(v) || v) : '') + '" placeholder="—"></label>';
+          return '<div class="pe-sec"><b class="pe-sh">ابلاغ، موعد و مسئول</b><div class="pe-g">'
+            + dt('pe-sent', 'تاریخ ابلاغ', exact(row, 'تاریخ ارسال'))
+            + dt('pe-due', 'موعد (مرحلهٔ تنظیم)', exact(row, 'موعد اتمام'))
+            + '<label class="pe-f"><span>مسئول</span><input type="text" class="pe-own" data-list="engineerList" autocomplete="off" value="' + esc(pick(row, AD_OWNER[kind] || ['مسئول']) || '') + '"></label>'
+            + '</div></div>';
+        })()
+      + '<b class="pe-sh">مراحل</b>'
       + '<p class="pe-lead">گام‌ها به ترتیب تاریخ ذخیره می‌شوند. آخرین گام، وضعیت فعلی است. تاریخ و مدت هر مرحله از روی همین مسیر از نو حساب می‌شود.</p>'
       + '<div class="pe-head"><span>مرحله</span><span>تاریخ</span><span>ثبت‌کننده</span><span></span></div>'
       + '<div class="pe-list">' + steps.map(pathRowHtml).join('') + '</div>'
       + '<button type="button" class="mini pe-add">+ افزودن گام</button>'
+      + (function(){
+          const rds = (function(){ try{ return reviewRoundsOf(row); }catch(e){ return []; } })();
+          const rr = (x, i) => '<div class="pe-rd" data-i="' + i + '"' + (x.open ? ' data-open="1"' : '') + '>'
+            + '<span class="pe-rn">دور ' + toFa(x.n || i + 1) + (x.open ? ' <i>جاری</i>' : '') + '</span>'
+            + '<label class="pe-f"><span>مسئولین بررسی (با ، جدا)</span><input type="text" class="pe-rw" value="' + esc((x.who || []).join('، ')) + '"></label>'
+            + '<label class="pe-f"><span>تأیید کرده‌اند</span><input type="text" class="pe-rdn" value="' + esc((x.done || []).join('، ')) + '"></label>'
+            + '<label class="pe-f"><span>از</span><input type="text" class="pe-rf date-in" value="' + esc(x.from ? toFa(normDate(x.from) || x.from) : '') + '"></label>'
+            + '<label class="pe-f"><span>تا</span><input type="text" class="pe-rt date-in" value="' + esc(x.to ? toFa(normDate(x.to) || x.to) : '') + '" placeholder="' + (x.open ? 'هنوز باز' : '—') + '"></label>'
+            + '</div>';
+          return rds.length ? '<div class="pe-sec"><b class="pe-sh">دورهای بررسی داخلی</b>' + rds.map(rr).join('') + '</div>' : '';
+        })()
       + '<div class="auth-note pe-note"></div>'
       + '<div class="pe-acts"><button type="button" class="send pe-save">ذخیرهٔ مسیر</button>'
       +   '<button type="button" class="mini" data-pecancel="1">انصراف</button></div>'
@@ -50323,6 +50350,34 @@
       if(badRow){ note.textContent = 'تاریخ گام ' + toFa(badRow._i + 1) + ' نامعتبر است (مثل ۱۴۰۵/۰۷/۰۱).'; return; }
       rows.sort((a, b) => (faToDate(a.date) - faToDate(b.date)) || (a._i - b._i));
       const values = pathToValues(kind, row, rows.map(x => ({to: x.to, date: x.date, by: x.by})));
+      /* ابلاغ، موعد، مسئول */
+      { const g = c => { const el = bg.querySelector(c); return el ? el.value.trim() : null; };
+        const se = g('.pe-sent'), du = g('.pe-due'), ow = g('.pe-own');
+        if(se !== null){ const v = se ? normDate(se) : ''; if(se && !v){ note.textContent = 'تاریخ ابلاغ نامعتبر است.'; return; } if(v !== (normDate(exact(row, 'تاریخ ارسال') || '') || '')) values['تاریخ ارسال'] = v; }
+        if(du !== null){ const v = du ? normDate(du) : ''; if(du && !v){ note.textContent = 'موعد نامعتبر است.'; return; } if(v !== (normDate(exact(row, 'موعد اتمام') || '') || '')) values['موعد اتمام'] = v; }
+        if(ow !== null && ow !== String(pick(row, AD_OWNER[kind] || ['مسئول']) || '')) values['مسئول'] = ow; }
+      /* دورهای بررسی داخلی: دورهای بسته در تاریخچه بازنویسی می‌شوند؛ دور جاری در ستون مسئولین و تأییدکنندگان */
+      { const rdEls = Array.from(bg.querySelectorAll('.pe-rd'));
+        if(rdEls.length){
+          const split = v => String(v || '').split(/[،,|]/).map(x => x.trim()).filter(Boolean);
+          const closed = [], log = values['rvStageLog'];
+          let bad = '';
+          rdEls.forEach((el, i) => {
+            const who = split(el.querySelector('.pe-rw').value), done = split(el.querySelector('.pe-rdn').value);
+            const f0 = el.querySelector('.pe-rf').value.trim(), t0 = el.querySelector('.pe-rt').value.trim();
+            const from = f0 ? normDate(f0) : '', to = t0 ? normDate(t0) : '';
+            if((f0 && !from) || (t0 && !to)) bad = 'تاریخ دور ' + toFa(i + 1) + ' نامعتبر است.';
+            if(el.dataset.open){
+              values['rvWho'] = who.join('|'); values['rvDone'] = done.filter(d => who.some(w => nameKey(w) === nameKey(d))).join('|');
+              if(from) values['rvISent'] = from;
+              if(to) values['rvIOk'] = to;
+              /* شروع دور جاری در تاریخچه هم همان تاریخ */
+              for(let q = log.length - 1; q >= 0; q--) if(log[q] && log[q].type === 'rv-start'){ if(from) log[q] = Object.assign({}, log[q], {date: from, who}); break; }
+            }else closed.push({type:'rv-round', n: i + 1, who, done, from, to, days: (from && to) ? faDiff(from, to) : null, fix: activeUserName()});
+          });
+          if(bad){ note.textContent = bad; return; }
+          values['rvStageLog'] = log.filter(e => !(e && e.type === 'rv-round')).concat(closed);
+        } }
       sv.disabled = true; note.textContent = '';
       const ok = await sendAction({action:'update', target:kind, id:id, values:values});
       sv.disabled = false;
