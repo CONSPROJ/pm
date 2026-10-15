@@ -41306,7 +41306,7 @@
       else if(x.kind === 'letter'){ if(hit(pick(r,AD.lParty))) rel = 'طرف نامه'; }
       else if(x.kind === 'minute'){ if(hit(pick(r,AD.mOwner))) rel = 'مسئول انجام'; }
       if(!rel) return;
-      const t = x.kind === 'design' ? (pick(r,AD.dTitle) || 'سند طراحی') : x.kind === 'minute' ? (pick(r,AD.mText) || pick(r,AD.mSubject) || '')
+      const t = x.kind === 'design' ? dsTitle(r) : x.kind === 'minute' ? (pick(r,AD.mText) || pick(r,AD.mSubject) || '')
               : x.kind === 'letter' ? (pick(r,AD.lSubject) || 'نامه') : x.kind === 'contract' ? (pick(r,AD.cTitle) || pick(r,AD.cSubject) || 'قرارداد') : (pick(r,AD.sName) || 'صورت وضعیت');
       const st = x.kind === 'design' ? (pick(r,AD.dStatus) || '') : '';
       out.push({kind: x.kind, id: pick(r,AD.id), t, rel, st, now: rel === 'الان نزد اوست', row: r, d: (function(){ try{ return admSentDate(x.kind, r) || ''; }catch(e){ return ''; } })()});
@@ -42454,12 +42454,12 @@
   const arDueOf = (k, r) => (k === 'minute') ? pick(r,AD.mDate) : (dueTracked(r) ? pick(r,AD.due) : '');
   function arTitleOf(k, r){
     const no = (k === 'statement') ? pick(r,AD.sNo) : (k === 'contract') ? pick(r,AD.cNo) : (k === 'letter') ? pick(r,AD.lNo) : (k === 'design') ? pick(r,AD.dNo) : pick(r,AD.mIdx);
-    const t = (k === 'design') ? (pick(r,AD.dTitle) || 'سند طراحی')
+    const t = (k === 'design') ? dsTitle(r)
             : (k === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
             : (k === 'contract') ? (pick(r,AD.cTitle) || 'قرارداد')
             : (k === 'letter') ? (pick(r,AD.lSubject) || 'نامه')
             : (pick(r,AD.mText) || pick(r,AD.mSubject) || 'صورتجلسه');
-    return KIND_LABEL[k] + (no ? ' ' + toFa(no) : '') + ' — ' + t;
+    return (k === 'design' ? 'سند' : KIND_LABEL[k]) + (no ? ' ' + toFa(no) : '') + ' — ' + t;
   }
 
   const arCards = new Map();
@@ -47718,6 +47718,15 @@
   /* کد نتیجهٔ بررسی، مثل کنترل مدارک: A تأیید، B تأیید با ملاحظات، C اصلاح و ارسال مجدد، D رد */
   const DS_CODE = {'تأیید شده':'A','تأیید مشروط':'B','نیاز به اصلاح':'C','رد شده':'D','برای اجرا':'IFC'};
   const DOC_TYPES = ['نقشه','مدل‌سازی (BIM)','شاپ‌دراوینگ','دیتیل اجرایی','محاسبات','مشخصات فنی','گزارش فنی','دستورالعمل','سایر'];
+  /* عنوان سند طراحی: پسوند فایل (.pdf، .dwg…) از عنوان می‌افتد و نوع سند (نقشه، رندر…) کنار عنوان می‌نشیند */
+  function dsTitle(r){
+    let t = String(pick(r,AD.dTitle) || '').trim().replace(/\.(pdf|dwg|dxf|jpe?g|png|webp|zip|rar|docx?|xlsx?|pptx?|rvt|ifc|skp|max|3ds|heic|tiff?)$/i, '').trim();
+    const ty = String(pick(r,AD.dType) || '').trim();
+    if(!t) t = ty ? ty + (pick(r,AD.dDisc) ? ' ' + pick(r,AD.dDisc) : '') : 'سند طراحی';
+    else if(ty && ty !== 'سایر' && t.indexOf(ty) === -1) t += ' (' + ty + ')';
+    return t;
+  }
+  window.dsTitle = dsTitle;
   const DOC_ORIGINS = ['پیمانکار','کارفرما','مشاور','داخل پروژه'];
   const DESIGN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
     + 'stroke-linecap="round" stroke-linejoin="round">'
@@ -48072,7 +48081,7 @@
              : (kind === 'contract')  ? pick(r,AD.cNo)
              : (kind === 'letter')    ? pick(r,AD.lNo)
              : (kind === 'design')    ? pick(r,AD.dNo) : pick(r,AD.mIdx);
-    const rawTitle = (kind === 'design') ? (pick(r,AD.dTitle) || (pick(r,AD.dType) ? pick(r,AD.dType) + (pick(r,AD.dDisc) ? ' ' + pick(r,AD.dDisc) : '') : 'سند طراحی'))
+    const rawTitle = (kind === 'design') ? dsTitle(r)
                    : (kind === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
                    : (kind === 'contract')  ? ((pick(r,AD.cAdd) ? 'الحاقیه ' + toFa(pick(r,AD.cAdd)) + ' — ' : '') + (pick(r,AD.cTitle) || 'قرارداد'))
                    : (kind === 'letter')    ? (pick(r,AD.lSubject) || 'نامه')
@@ -50833,7 +50842,7 @@
         note: ''
       }),
       design: () => ({
-        title: pick(r,AD.dTitle) || (pick(r,AD.dType) ? pick(r,AD.dType) + (pick(r,AD.dDisc) ? ' ' + pick(r,AD.dDisc) : '') : (pick(r,AD.dNo) || 'سند طراحی')),
+        title: dsTitle(r),
         rows: kv('شمارهٔ مدرک', pick(r,AD.dNo))
             + kv('رشته', pick(r,AD.dDisc))
 
@@ -51182,7 +51191,7 @@
     });
     return out;
   }
-  function designerListEnsure(){
+  function designerListEnsure(origin){
     let dl = document.getElementById('designerList');
     if(!dl){ dl = document.createElement('datalist'); dl.id = 'designerList'; document.body.appendChild(dl); }
     const people = (function(){ try{ return listNames(); }catch(e){ return []; } })();
@@ -51191,9 +51200,18 @@
     const ents = allPartyNames();
     const seen = new Set();
     const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
-    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('')
-      + ['cons','emp','ctr'].map(t => ents.filter(e => e.t === t).map(e => opt(e.n, G[t])).join('')).join('');
+    /* «سند از طرف» تعیین می‌کند کدام گروه اول بیاید: نقشهٔ پیمانکار ← پیمانکاران، و… */
+    const first = {'پیمانکار':'ctr', 'مشاور':'cons', 'کارفرما':'emp', 'داخل پروژه':'in'}[origin || ''] || '';
+    const order = first === 'in' || !first ? ['in','cons','emp','ctr'] : [first].concat(['in','cons','emp','ctr'].filter(x => x !== first));
+    dl.innerHTML = order.map(t => t === 'in' ? people.map(n => opt(n, 'نفرات پروژه')).join('') : ents.filter(e => e.t === t).map(e => opt(e.n, G[t])).join('')).join('');
   }
+  document.addEventListener('change', e => {
+    const o = e.target && e.target.classList && e.target.classList.contains('a-dOrigin') ? e.target : null; if(!o) return;
+    try{ designerListEnsure(o.value); }catch(err){}
+    const host = o.closest('.adm-form, form, .af, .modal, .add-row') || document, inp = host.querySelector('.a-dParty');
+    const lb = inp && inp.closest('.field') && inp.closest('.field').querySelector('label');
+    if(lb) lb.textContent = o.value === 'پیمانکار' ? 'پیمانکارِ ارسال‌کننده' : o.value === 'مشاور' ? 'مشاور / شرکت طراح' : o.value === 'کارفرما' ? 'کارفرما' : 'طراح (نفرات پروژه، مشاور، پیمانکار یا شرکت طراح)';
+  });
   function mnWhoListEnsure(){
     let dl = document.getElementById('mnWhoList');
     if(!dl){ dl = document.createElement('datalist'); dl.id = 'mnWhoList'; document.body.appendChild(dl); }
@@ -51405,7 +51423,7 @@
           + chips(sel('a-dDisc','رشته', (function(){ try{ return Array.from(new Set(DESIGN_DISC.filter(x => !tkCatHidden.has(x)).concat(tkCatList))); }catch(e){ return DESIGN_DISC; } })(), pick(r,AD.dDisc))), 'two')
         + sec('flow', 'مبدأ و طراح',
             chips(sel('a-dOrigin','سند از طرف', DOC_ORIGINS, pick(r,AD.dOrigin)))
-          + f('a-dParty','طراح (نفرات پروژه یا مشاور / شرکت طراح)', pick(r,AD.dParty), false, (function(){ try{ designerListEnsure(); }catch(e){} return 'designerList'; })())
+          + f('a-dParty', pick(r,AD.dOrigin) === 'پیمانکار' ? 'پیمانکارِ ارسال‌کننده' : 'طراح (نفرات پروژه، مشاور، پیمانکار یا شرکت طراح)', pick(r,AD.dParty), false, (function(){ try{ designerListEnsure(pick(r,AD.dOrigin)); }catch(e){} return 'designerList'; })())
           + fo('a-owner','مسئول پیگیری در پروژه', pick(r,AD_OWNER.design)), 'two')
         + sec('cal', 'محل اجرا',
             '<div class="field" style="margin-bottom:8px;"><label>طبقه</label><select class="a-dFloor" data-flp="1"><option value="">—</option>'
@@ -55178,6 +55196,13 @@
     try{ return admDoneState(kind, row).cls === 'ok'; }catch(e){ return false; }
   }
   function admSortDoneLast(kind, rows){
+    /* اسناد طراحی: در آخرین لایه به ترتیب تاریخ آخرین گردش، تازه‌ترین بالا */
+    if(kind === 'design'){
+      const dOf = r => { let t = 0; try{ dsRevsOf(r).forEach(v => (v.log || []).forEach(x => { const d = x && x.d ? faToDate(x.d) : null; if(d && +d > t) t = +d; })); }catch(e){}
+        if(!t){ const d = faToDate(admDate(pick(r,AD.date)) || ''); if(d) t = +d; } return t; };
+      const m = new Map(rows.map(r => [r, dOf(r)]));
+      return rows.slice().sort((a, b) => ((admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0)) || (m.get(b) - m.get(a)));
+    }
     return rows.slice().sort((a, b) =>
       (admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0));
   }
