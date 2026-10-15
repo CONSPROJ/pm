@@ -44835,6 +44835,13 @@
        فقط نام‌های قراردادی، مشاور، کارفرما و پیمانکاران حذف‌شده نمی‌آیند */
     if(dl && dl.id === 'contractorList' && popInput.closest && popInput.closest('#panelWrite')){
       let cnK = new Set(); try{ ctrContacts.forEach(c => { if(c && c.cn && normName(c.cn) !== normName(c.name)) cnK.add(normName(c.cn)); }); }catch(e){}
+      /* نامی که در گزارش‌ها به کار رفته، حتی اگر با نام قراردادی کسی یکی باشد، حذف نمی‌شود */
+      try{
+        const used = new Set(opts.map(o => normName(o.v)));
+        ((typeof mtAllRows !== 'undefined' && mtAllRows) || []).forEach(r => { const k = normName(r && r.contractor); if(k) used.add(k); });
+        used.forEach(k => cnK.delete(k));
+      }catch(e){}
+      try{ ((typeof mtAllRows !== 'undefined' && mtAllRows) || []).forEach(r => { let v = String((r && r.contractor) || '').trim(); if(!v) return; try{ v = canonicalName(v) || v; }catch(e){} opts.push({v, g: '', s: ''}); }); }catch(e){}
       /* فهرست اصلی: هر پرونده‌ای که در فهرست قدیمی با هیچ املایی نیامده، با نام روی کارتش اضافه می‌شود */
       try{
         const canonHave = new Set(opts.map(o => { try{ return normName(ctrCanon(canonicalName(o.v))); }catch(e){ return normName(o.v); } }));
@@ -44843,6 +44850,9 @@
       const seen = new Set();
       opts = opts.filter(o => {
         const k = normName(o.v); if(!k || seen.has(k) || cnK.has(k)) return false;
+        let k2 = k; try{ k2 = normName(canonicalName(o.v)) || k; }catch(e){}
+        if(k2 !== k && seen.has(k2)) return false;
+        seen.add(k2);
         try{ if(ctrIsHidden(o.v)) return false; const t = ctrTypeOf(o.v); if(t === 'cons' || t === 'emp') return false; }catch(e){}
         seen.add(k); return true;
       });
@@ -44958,9 +44968,22 @@
   let popPickedEl = null, popPickedAt = 0;
   window.addEventListener('scroll', () => { if(!pop.hidden) placePop(); }, true);
 
+  /* فهرست کامل پیمانکاران فرم گزارش: پرونده‌ها، قراردادها و صورت وضعیت‌ها، لیست فعالیت
+     و همهٔ نام‌های گزارش‌های قبلی. اگر هنوز بار نشده‌اند، همین حالا (پس‌زمینه) خوانده
+     می‌شوند و فهرستِ باز بی‌پرش کامل می‌شود. */
+  const isCtrIn = el => !!(el && el.matches && el.matches('#panelWrite input[data-list="contractorList"]'));
+  async function ctrFormPrime(){
+    if(ctrFormPrime.busy || (ctrFormPrime.at && Date.now() - ctrFormPrime.at < 120000)) return;
+    ctrFormPrime.busy = true;
+    try{ await Promise.all([deckPrime().catch(() => {}), mtLoadAllNames().catch(() => {})]); }catch(e){}
+    ctrFormPrime.busy = false; ctrFormPrime.at = Date.now();
+    if(!pop.hidden && isCtrIn(popInput)){ const st = pop.scrollTop; drawPop(popInput.__pkTyped ? popInput.value : ''); pop.scrollTop = st; }
+  }
+  window.ctrFormPrime = ctrFormPrime;
   document.addEventListener('focusin', e => {
     const el = e.target.closest ? e.target.closest('input[data-list]') : null;
     if(el && el === popPickedEl && Date.now() - popPickedAt < 700) return;
+    if(isCtrIn(el)) ctrFormPrime();
     if(el) openPop(el, '');
     else if(!pop.contains(e.target)) closePop();
   });
@@ -67147,6 +67170,7 @@
       const wrk = (m === 'wrk'), prc = (m === 'prc');
       crewEls().forEach(el => { el.style.display = (wrk || prc || idle) ? 'none' : ''; });
       crewTabApply(m === 'crew');
+      if(m === 'crew') try{ window.ctrFormPrime && window.ctrFormPrime(); }catch(e){}
       const pa = document.getElementById('prcArea');
       if(pa){ pa.hidden = !prc; if(prc){ try{ prcRender(); }catch(e){} } }
       /* نوار چسبانِ «ثبت گزارش» مالِ فرم پیمانکاران است، نه کارگری */
