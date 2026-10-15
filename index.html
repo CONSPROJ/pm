@@ -22315,6 +22315,28 @@
   #msgList .bubble .b-rx:not(:has(.cm-react span)){min-height:0;}
   #msgList .bubble .b-meta{margin-top:2px;}
   #msgList .chat-day span{font-size:10.5px;}
+  .tc-lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding:8px 10px;border-radius:12px;background:var(--field);font-size:10.5px;color:var(--muted);}
+  .tc-lg span{display:inline-flex;align-items:center;gap:5px;}
+  .tc-lg i{width:14px;height:5px;border-radius:99px;}
+  .tc-lg i.late{background:var(--alert);} .tc-lg i.due{background:var(--sky);} .tc-lg i.done{background:var(--ok);} .tc-lg i.start{background:var(--warn);}
+  .tc-lg b{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font-size:9px;background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+  .tc-lg em{width:14px;height:14px;border-radius:5px;border:2px solid var(--ink);}
+  /* پنجرهٔ شناور آپلود */
+  #upHud{position:fixed;z-index:3000;left:50%;bottom:calc(84px + env(safe-area-inset-bottom, 0px));transform:translate(-50%, 20px);opacity:0;pointer-events:none;
+    display:flex;align-items:center;gap:12px;min-width:260px;max-width:calc(100vw - 32px);padding:12px 14px;border-radius:18px;background:var(--surface);color:var(--ink);
+    border:1px solid var(--line);box-shadow:0 18px 40px -14px rgba(0,0,0,.35);transition:opacity .25s, transform .3s cubic-bezier(.2,.9,.25,1);}
+  #upHud.on{opacity:1;transform:translate(-50%, 0);pointer-events:auto;}
+  @media (min-width:1024px){ #upHud{bottom:24px;left:calc(50% + 120px);} }
+  .uh-ring{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--sky) calc(var(--p) * 1%), var(--field) 0);transition:background .2s;}
+  .uh-ring b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface);font-size:10.5px;font-weight:800;}
+  .uh-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+  .uh-t > b{font-size:12.5px;font-weight:800;}
+  .uh-t small{position:relative;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);padding-bottom:3px;}
+  .uh-t small i{position:absolute;bottom:0;inset-inline-start:0;height:2px;border-radius:2px;background:var(--sky);transition:width .2s;}
+  .uh-t small span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .uh-t small em{font-style:normal;font-weight:700;}
+  #upHud.done .uh-ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff;font-weight:900;}
+  #upHud.done.bad .uh-ic{background:var(--alert);}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -53863,7 +53885,36 @@
     }, 4000);
     upLogQ.set(k, q);
   }
+  /* ====== پنجرهٔ شناور آپلود ======
+     هر آپلودی، از هر جای سامانه: نام فایل، درصد، و در پایان «آپلود کامل شد» */
+  const upHud = {m: new Map(), n: 0, ok: 0, bad: 0, t: 0};
+  function upHudPaint(){
+    let el = document.getElementById('upHud');
+    if(!el){ el = document.createElement('div'); el.id = 'upHud'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    const L = Array.from(upHud.m.values());
+    clearTimeout(upHud.t);
+    if(!L.length){
+      if(!upHud.ok && !upHud.bad){ el.classList.remove('on'); return; }
+      el.className = 'on done' + (upHud.bad ? ' bad' : '');
+      el.innerHTML = '<span class="uh-ic">' + (upHud.bad ? '!' : '✓') + '</span><span class="uh-t"><b>' + (upHud.bad ? (upHud.ok ? toFa(upHud.ok) + ' فایل آپلود شد، ' + toFa(upHud.bad) + ' ناموفق' : 'آپلود ناموفق بود') : (upHud.ok > 1 ? toFa(upHud.ok) + ' فایل' : 'فایل') + ' کامل آپلود شد') + '</b><small>' + (upHud.bad ? 'دوباره تلاش کنید' : 'برای ثبت در سند، ذخیره را بزنید (اگر در فرم هستید)') + '</small></span>';
+      upHud.t = setTimeout(() => { el.classList.remove('on'); upHud.ok = 0; upHud.bad = 0; }, 4500);
+      return;
+    }
+    const pct = Math.round(L.reduce((a, x) => a + x.p, 0) / L.length * 100);
+    el.className = 'on';
+    el.innerHTML = '<span class="uh-ring" style="--p:' + pct + '"><b>' + toFa(pct) + '٪</b></span>'
+      + '<span class="uh-t"><b>در حال آپلود ' + (L.length > 1 ? toFa(L.length) + ' فایل' : '') + '</b>'
+      + L.slice(0, 3).map(x => '<small><i style="width:' + Math.round(x.p * 100) + '%"></i><span>' + esc(x.name) + '</span><em>' + toFa(Math.round(x.p * 100)) + '٪</em></small>').join('') + '</span>';
+  }
   async function upTry(file, onP, kind){
+    const hid = ++upHud.n;
+    upHud.m.set(hid, {name: file.name || 'فایل', p: 0}); upHudPaint();
+    const onP2 = p => { const o = upHud.m.get(hid); if(o){ o.p = p; upHudPaint(); } if(onP) onP(p); };
+    try{ const u = await upTry0(file, onP2, kind); upHud.ok++; return u; }
+    catch(er){ upHud.bad++; throw er; }
+    finally{ upHud.m.delete(hid); upHudPaint(); }
+  }
+  async function upTry0(file, onP, kind){
     let last = null;
     for(let i = 0; i < 3; i++){
       try{ const u = await uploadAny(file, onP, kind); try{ upLog([u], kind); }catch(e){} return u; }
@@ -61156,6 +61207,9 @@
       +   '<div class="tc2-cal">'
       +     '<div class="jc-week">'+['ش','ی','د','س','چ','پ','ج'].map((d, i) => '<span' + (i === 6 ? ' class="fri"' : '') + '>'+d+'</span>').join('')+'</div>'
       +     '<div class="tc-grid">'+cells+'</div>'
+      /* راهنمای رنگ‌ها */
+      +     '<div class="tc-lg"><span><i class="late"></i>عقب‌افتاده</span><span><i class="due"></i>موعد پیش‌رو</span><span><i class="done"></i>انجام‌شده</span><span><i class="start"></i>ابلاغ (شروع کار)</span>'
+      +       '<span><b>۲</b>تعداد موعدهای آن روز</span><span><em></em>امروز</span></div>'
       +   '</div>'
       +   '<div class="tc2-side"><div class="tc-day">' + agendaHtml + '</div></div>'
       + '</div></div></div>';
