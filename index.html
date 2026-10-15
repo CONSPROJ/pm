@@ -22288,6 +22288,9 @@
     .up-it .up-desc{height:32px;font-size:12px;}
   }
   .ctm-hit.add{border:1px dashed var(--ok) !important;} .ctm-hit.add em{color:var(--ok) !important;}
+  .af-autonf label i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);padding:1px 7px;border-radius:99px;margin-inline-start:4px;}
+  .af-nf{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:99px;background:var(--field);font-size:12px;font-weight:800;color:var(--ink);}
+  .af-autonf small{display:block;margin-top:4px;font-size:10.5px;color:var(--muted);}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -52499,12 +52502,17 @@
       + '</select></div>';
     /* صورت وضعیت و قرارداد «در حال تنظیم» را در رسیدگی دارند، نه در ابلاغ */
     const noDraft = (kind === 'statement' || kind === 'contract');
-    const notifySel = (cls, cur) => '<div class="field" style="margin-bottom:8px;"><label>وضعیت ابلاغ</label>'
-      + '<select class="'+cls+'">'
-      + ['','درون‌سازمانی','برون‌سازمانی','در حال تنظیم','Hold']
-          .filter(v => !(noDraft && v === RV_DRAFT && cur !== RV_DRAFT)).map(v =>
-          '<option value="'+esc(v)+'"'+(cur === v ? ' selected' : '')+'>'+(v ? esc(notifyText(v)) : 'انتخاب کنید')+'</option>').join('')
-      + '</select></div>';
+    /* وضعیت ابلاغ خودکار است: صورت وضعیت و قرارداد از مرحلهٔ رسیدگی، نامه برون‌سازمانی؛
+       فیلد پنهان می‌ماند (برای سازگاری) و فقط یک نشان «خودکار» دیده می‌شود */
+    const notifySel = (cls, cur) => {
+      let v = cur || '';
+      if(kind === 'letter' && !v) v = 'برون‌سازمانی';
+      if(noDraft){ try{ const rv = String(effectiveReview(r) || pick(r,AD.review) || ''); if(NOTIFY_BY_REVIEW[rv]) v = NOTIFY_BY_REVIEW[rv]; }catch(e){} if(!v) v = 'درون‌سازمانی'; }
+      return '<div class="field af-autonf" style="margin-bottom:8px;"><label>وضعیت ابلاغ <i>خودکار</i></label>'
+        + '<select class="' + cls + '" hidden>' + ['','درون‌سازمانی','برون‌سازمانی','در حال تنظیم','Hold'].map(o => '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>'
+        + '<span class="af-nf" data-afnf="1">' + esc(v ? notifyText(v) : '—') + '</span>'
+        + '<small>' + (noDraft ? 'از مرحلهٔ رسیدگی تعیین می‌شود' : kind === 'letter' ? 'نامه با طرف بیرون از پروژه' : 'از گردش سند تعیین می‌شود') + '</small></div>';
+    };
     /* ====== فرم دفتر فنی v2 ======
        فیلدها در چند بخشِ عنوان‌دار (مشخصات، مبالغ، زمان‌بندی، ابلاغ و
        رسیدگی، پیوست، توضیحات)؛ وضعیت‌ها کپسولی‌اند و کنار مبلغ ریالی
@@ -54626,6 +54634,13 @@
     tm.textContent = n ? 'معادل ' + arToman(n) + ' تومان' : '';
   });
 
+  document.addEventListener('change', e => {
+    const t = e.target; if(!t || !t.matches || !t.matches('.a-sReview, .a-cReview')) return;
+    const f = t.closest('.af, form, .adm-form, .rv') || document; const v = NOTIFY_BY_REVIEW[t.value];
+    if(!v) return;
+    f.querySelectorAll('.a-sNotify, .a-cNotify').forEach(s2 => { s2.value = v; });
+    f.querySelectorAll('[data-afnf]').forEach(x => { x.textContent = notifyText(v); });
+  });
   function admValues(kind, host){
     const q = c => { const el = host.querySelector('.'+c); return el ? el.value.trim() : null; };
     const put = (o, key, c) => { const v = q(c); if(v !== null) o[key] = v; };
