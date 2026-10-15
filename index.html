@@ -21840,6 +21840,8 @@
     #admViewBar .avb-grp{grid-row:2;grid-column:1;}
     #admViewBar .avb-sort{grid-row:2;grid-column:2;}
   }
+  .ov-nudge{animation:ovNudge .32s ease;}
+  @keyframes ovNudge{0%,100%{transform:none;}30%{transform:scale(1.012);}60%{transform:scale(.996);}}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -71604,6 +71606,41 @@
       try{ if(o.mo) o.mo.disconnect(); }catch(e){}
       o.el.querySelectorAll('.ov-back').forEach(b => b.remove());
     }
+    /* زدن روی پس‌زمینهٔ تیرهٔ پنجره، پنجره را نمی‌بندد وقتی:
+       فهرست کشویی یا صفحه‌کلید باز است (آن لمس فقط همان را می‌بندد)، یا فرمِ
+       پنجره تغییرِ ذخیره‌نشده دارد (بستن فقط با ✕). پیش‌تر روی گوشی بعد از پاک
+       کردن یک کادر، لمسِ بیرونِ فهرست کل پنجره و نوشته‌ها را می‌بست. */
+    const dirtyIn = ov => Array.from(ov.querySelectorAll('input, textarea, select')).some(f => {
+      if(f.type === 'hidden' || f.disabled || f.readOnly) return false;
+      if(f.tagName === 'SELECT') return Array.from(f.options).some(o => o.selected !== o.defaultSelected);
+      if(f.type === 'checkbox' || f.type === 'radio') return f.checked !== f.defaultChecked;
+      if(f.type === 'file') return !!(f.files && f.files.length);
+      return f.value !== f.defaultValue;
+    });
+    let guardAt = 0, guardOv = null;
+    const onBackdropDown = e => {
+      const t = e.target;
+      guardOv = null;
+      if(!t || !t.matches || !t.matches(SEL) || t.parentElement !== document.body || t.matches('#msgModal, #confirmModal, #askConfirmModal')) return;
+      const popOpen = Array.from(document.querySelectorAll('.combo-pop, .pk-pop, .jcal')).some(x => !x.hidden && x.offsetParent !== null);
+      const ae = document.activeElement;
+      const typing = !!(ae && ae !== document.body && t.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+      if(popOpen || typing || dirtyIn(t)){
+        guardOv = t; guardAt = Date.now();
+        /* لمس برای اسکرول آزاد می‌ماند؛ فقط «کلیک» بستن بعدی گرفته می‌شود */
+        if(e.type === 'mousedown') e.stopImmediatePropagation();
+        try{ if(typing) ae.blur(); }catch(err){}
+        try{ document.querySelectorAll('.combo-pop').forEach(x => { x.hidden = true; }); }catch(err){}
+        if(!popOpen && !typing){
+          const card = t.firstElementChild;
+          if(card){ card.classList.remove('ov-nudge'); void card.offsetWidth; card.classList.add('ov-nudge'); }
+        }
+      }
+    };
+    ['pointerdown', 'mousedown'].forEach(ev => document.addEventListener(ev, onBackdropDown, true));
+    ['click', 'mouseup', 'pointerup'].forEach(ev => document.addEventListener(ev, e => {
+      if(guardOv && e.target === guardOv && Date.now() - guardAt < 900){ e.stopImmediatePropagation(); if(e.cancelable) e.preventDefault(); }
+    }, true));
     function sync(){
       Array.prototype.forEach.call(document.body.children, el => {
         if(!el.matches(SEL)) return;
