@@ -27770,6 +27770,7 @@
 
   const sleepMs = ms => new Promise(r => setTimeout(r, ms));
   function findItemEl(id, rootSel){
+    try{ if(/taskView|panelTasks/.test(rootSel)) tkLazyFill(document.querySelector(rootSel)); }catch(e){}
     const q = String(id).replace(/["\\]/g, '\\$&');
     const els = Array.from(document.querySelectorAll(
       rootSel + ' [data-id="' + q + '"], ' + rootSel + ' [data-task-id="' + q + '"]'));
@@ -61246,6 +61247,7 @@
   const TK_FLR_IC = '<span class="tk-gic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14"/></svg></span>';
 
   function renderTasksByPerson(list){
+    try{ TK_LAZY.clear(); }catch(e){}
     renderTaskCalendar(list);
     const box = document.getElementById('taskInner') || document.getElementById('taskView');
     const mode = taskGroup, mode0 = mode;
@@ -61344,9 +61346,28 @@
         +   '<span class="eng-prog" title="' + toFa(pp) + '٪ انجام شده"><i style="width:' + pp + '%"></i></span>'
         + '</span>'
         + '<span class="eng-ar">▾</span></button>'
-        + '<div class="eng-body">' + personOpenDoneHtml(items) + '</div></div>';
+        + tkLazyBody(() => personOpenDoneHtml(items)) + '</div>';
     }
   }
+  /* ====== بدنهٔ تنبل لیست فعالیت ======
+     کارت‌های هر نفر/پیمانکار/طبقه فقط وقتی پنجره‌اش باز می‌شود ساخته می‌شوند.
+     پیش‌تر همهٔ کارت‌ها (هزاران گره) حتی در پنجره‌های بسته ساخته می‌شد و
+     عوض کردن نمای فهرستی/کارتی کند بود. جست‌وجو، پرش به مورد و بازگشت
+     پنجره‌های باز، بدنه را بی‌درنگ می‌سازند. */
+  var TK_LAZY = new Map(); var tkLazySeq = 0;
+  function tkLazyBody(fn){ const k = 'lz' + (++tkLazySeq); TK_LAZY.set(k, fn); return '<div class="eng-body" data-lz="' + k + '"></div>'; }
+  function tkLazyFill(el){
+    if(!el) return;
+    const list = el.matches && el.matches('[data-lz]') ? [el] : Array.from(el.querySelectorAll('[data-lz]'));
+    list.forEach(b => { const fn = TK_LAZY.get(b.dataset.lz); b.removeAttribute('data-lz'); if(!fn) return; try{ b.innerHTML = fn(); }catch(e){} TK_LAZY.delete(b.dataset.lz); });
+  }
+  window.tkLazyFill = tkLazyFill;
+  (function(){
+    const tv = document.getElementById('taskView'); if(!tv) return;
+    /* هر پنجره‌ای که باز شد (با کلیک، پرش یا بازگرداندن حالت)، بدنه‌اش ساخته می‌شود */
+    new MutationObserver(ms => { ms.forEach(m => { const t = m.target; if(t.classList && t.classList.contains('open') && t.classList.contains('eng')){ const b = t.querySelector(':scope > [data-lz]'); if(b) tkLazyFill(b); } }); })
+      .observe(tv, {subtree: true, attributes: true, attributeFilter: ['class']});
+  })();
 
   /* کاشی‌های لیست فعالیت: فعالیت‌ها / تقویم. فقط پنجرهٔ انتخاب‌شده دیده
      می‌شود؛ نوار پرش فقط کنار پنجرهٔ باز فعالیت‌ها می‌آید (CSS). */
