@@ -48259,7 +48259,7 @@
   }
   function moneyView(v){
     const n = moneyNum2(v);
-    return n ? n.toLocaleString('en-US') : '';
+    return n ? toFa(n.toLocaleString('en-US')) : '';
   }
   function moneyFa(v){
     const n = moneyNum2(v);
@@ -48271,7 +48271,9 @@
     const t = e.target;
     if(t && t.classList && t.classList.contains('money-in')){
       const raw = toEn(t.value).replace(/[^0-9]/g, '');
-      t.value = raw ? Number(raw).toLocaleString('en-US') : '';
+      const tail = t.value.length - (t.selectionStart || 0);
+      t.value = raw ? toFa(Number(raw).toLocaleString('en-US')) : '';
+      try{ const pos = Math.max(0, t.value.length - tail); t.setSelectionRange(pos, pos); }catch(e2){}
     }
   }, true);
   const AD_OWNER = {statement:['مسئول'], contract:['مسئول'], minute:['مسئول'], letter:['مسئول'], design:['مسئول']};
@@ -58461,7 +58463,7 @@
       if(q){
         const S = pyS, rest = Math.max(S.amount - S.prev, 0);
         S.val = q.dataset.pyq === 'all' ? rest : Math.round(rest * (+q.dataset.pyq) / 100);
-        const inp = m.querySelector('#pyAmt'); if(inp) inp.value = S.val ? Number(S.val).toLocaleString('en-US') : '';
+        const inp = m.querySelector('#pyAmt'); if(inp) inp.value = S.val ? toFa(Number(S.val).toLocaleString('en-US')) : '';
         S.finTouched = false; pyPaintSum(); return;
       }
       if(e.target.closest('#pyFin')){ pyS.fin = !pyS.fin; pyS.finTouched = true; pyPaintSum(); return; }
@@ -58479,7 +58481,7 @@
         const n = moneyNum2(e.target.value);
         pyS.val = n; pyS.finTouched = false;
         const caret = e.target.value.length - e.target.selectionStart;
-        e.target.value = n ? Number(n).toLocaleString('en-US') : '';
+        e.target.value = n ? toFa(Number(n).toLocaleString('en-US')) : '';
         try{ const pos = Math.max(0, e.target.value.length - caret); e.target.setSelectionRange(pos, pos); }catch(e2){}
         pyPaintSum();
       }
@@ -71509,6 +71511,23 @@
   setInterval(() => { if(homeVisible() && !document.hidden) homeRefresh(); }, 120000);
   document.addEventListener('visibilitychange', () => { if(!document.hidden && homeVisible()) homeRefresh(); });
   setTimeout(() => { if(homeVisible()) homeRefresh(true); }, 0);
+
+  /* ====== رقم فارسی هنگام تایپ ======
+     صفحه‌کلید لاتین «123» می‌نویسد؛ در همهٔ کادرهای متنی همان لحظه «۱۲۳» می‌شود
+     (محاسبه‌ها همه با toEn انجام می‌شوند). تلفن، ایمیل، پیوند، رمز و کادرهای
+     چپ‌به‌راستِ کد (مثل شمارهٔ مدرک لاتین) دست نمی‌خورند. */
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if(!t || e.isComposing) return;
+    const isTxt = t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && /^(text|search)$/i.test(t.type || 'text'));
+    if(!isTxt || t.readOnly) return;
+    if(t.matches('[dir="ltr"], [data-latin], [inputmode="tel"], [inputmode="email"], [inputmode="url"], [autocomplete="username"], .no-fa')) return;
+    const v = t.value;
+    if(!/[0-9]/.test(v)) return;
+    const a = t.selectionStart, b = t.selectionEnd;
+    t.value = v.replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+    try{ if(a != null) t.setSelectionRange(a, b); }catch(err){}
+  }, true);
 
   /* ====== دکمهٔ برگشت گوشی و مرورگر ======
      هر پنجره‌ای که باز می‌شود (نمایش فایل، دانلود، پرونده، کارت‌ها، فرم‌ها) یک قدم در تاریخچه
