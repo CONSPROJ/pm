@@ -22291,6 +22291,20 @@
   .af-autonf label i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);padding:1px 7px;border-radius:99px;margin-inline-start:4px;}
   .af-nf{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:99px;background:var(--field);font-size:12px;font-weight:800;color:var(--ink);}
   .af-autonf small{display:block;margin-top:4px;font-size:10.5px;color:var(--muted);}
+  /* الحاقیه در فرم */
+  .ca2 .ca2-on{display:none;} .ca2.on .ca2-on{display:block;} .ca2.on .ca2-off{display:none;}
+  .ca2-row{display:flex;align-items:center;gap:8px;}
+  .ca2-row .a-cAdd{flex:0 0 90px;}
+  .ca2-of{flex:1;min-width:0;font-size:11px;color:#8a5cf6;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ca2-x{all:unset;cursor:pointer;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--muted);background:var(--field);}
+  .ca2-btn{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:#8a5cf6;padding:6px 0;}
+  .ca2-pk{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .ca2-res{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow:auto;}
+  .ca2-hit{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);}
+  .ca2-hit:hover{border-color:#8a5cf6;} .ca2-hit b{font-size:12px;} .ca2-hit small{font-size:10.5px;color:var(--muted);}
+  .ca2-none{font-size:11px;color:var(--muted);padding:6px;}
+  .afr-addend{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;font-weight:800;color:#8a5cf6;padding:3px 10px;border-radius:99px;border:1px dashed color-mix(in srgb, #8a5cf6 50%, transparent);}
+  .ico-btn.adm-addend{color:#8a5cf6 !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -37884,6 +37898,65 @@
     if(tg.checked){ if(!inp.value) inp.value = '۱'; setTimeout(() => { inp.focus(); inp.select(); }, 0); }
   });
 
+  /* ====== الحاقیه ======
+     قراردادهای اصلی (بدون شمارهٔ الحاقیه)، تازه‌ترین اول؛ شمارهٔ الحاقیهٔ بعدی هر قرارداد */
+  function ctMainContracts(){
+    return (adminAll || []).filter(x => x.kind === 'contract' && x.row && !String(pick(x.row,AD.cAdd) || '').trim() && pick(x.row,AD.cNo)).map(x => x.row)
+      .sort((a, b) => String(pick(b,AD.cDate) || '').localeCompare(String(pick(a,AD.cDate) || '')));
+  }
+  function ctNextAdd(row){
+    const k = cctNoK(row); let mx = 0;
+    (adminAll || []).forEach(x => { if(x.kind === 'contract' && x.row && cctNoK(x.row) === k) mx = Math.max(mx, cctAddV(x.row)); });
+    return mx + 1;
+  }
+  /* فرم را الحاقیهٔ قرارداد اصلی می‌کند: شماره، عنوان، طرف و نوع از اصلی، شمارهٔ الحاقیهٔ بعدی */
+  function ctAddFill(form, main){
+    if(!form || !main) return;
+    const set = (c, v) => { const el = form.querySelector('.' + c); if(el && v != null){ el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); } };
+    set('a-cNo', pick(main,AD.cNo) || ''); set('a-cTitle', pick(main,AD.cTitle) || ''); set('a-cParty', pick(main,AD.cParty) || '');
+    const ty = form.querySelector('.a-cType'); if(ty) ty.value = ctIsInvoice(main) ? 'فاکتور' : '';
+    const box = form.querySelector('.ca2'); if(!box) return;
+    box.classList.add('on');
+    const tg = box.querySelector('.a-cIsAdd'), ai = box.querySelector('.a-cAdd');
+    if(tg) tg.checked = true;
+    if(ai){ ai.disabled = false; ai.value = toFa(ctNextAdd(main)); }
+    const of = box.querySelector('[data-ca2of]'); if(of) of.textContent = 'از قرارداد ' + toFa(pick(main,AD.cNo) || '') + (pick(main,AD.cTitle) ? ' — ' + pick(main,AD.cTitle) : '');
+    const pk = box.querySelector('.ca2-pk'); if(pk) pk.hidden = true;
+  }
+  function ctAddendumOpen(id){
+    const main = (typeof admRowById === 'function') ? admRowById(id) : null; if(!main) return;
+    switchTab('admin');
+    let n = 0, done = false;
+    const t = setInterval(() => {
+      n++;
+      const nf = document.querySelector('#secAdmcontract [data-new-kind="contract"]');
+      if(nf && nf.classList.contains('open')){
+        if(!done){ done = true; setTimeout(() => { ctAddFill(nf, main); try{ nf.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 80); }
+        if(n > 6) clearInterval(t);
+        return;
+      }
+      const q = document.querySelector('[data-admquick="contract"]');
+      if(q && nf) q.click();
+      if(n > 100) clearInterval(t);
+    }, 120);
+  }
+  document.addEventListener('click', e => {
+    const ad = e.target.closest && e.target.closest('[data-ctaddend]');
+    if(ad){ e.preventDefault(); e.stopPropagation(); ctAddendumOpen(ad.dataset.ctaddend); return; }
+    const pkb = e.target.closest && e.target.closest('[data-ca2pick]');
+    if(pkb){ const pk = pkb.closest('.ca2').querySelector('.ca2-pk'); pk.hidden = !pk.hidden; if(!pk.hidden){ const q = pk.querySelector('.ca2-q'); q.dispatchEvent(new Event('input', {bubbles:true})); q.focus(); } return; }
+    const off = e.target.closest && e.target.closest('[data-ca2off]');
+    if(off){ const box = off.closest('.ca2'); box.classList.remove('on'); const tg = box.querySelector('.a-cIsAdd'), ai = box.querySelector('.a-cAdd'); if(tg) tg.checked = false; if(ai){ ai.disabled = true; } return; }
+    const hit = e.target.closest && e.target.closest('[data-ca2main]');
+    if(hit){ e.preventDefault(); const form = hit.closest('.af, .adm-form, form, [data-new-kind], .rv') || hit.closest('.ca2').parentElement; ctAddFill(form, admRowById(hit.dataset.ca2main)); }
+  });
+  document.addEventListener('input', e => {
+    const q = e.target; if(!q || !q.classList || !q.classList.contains('ca2-q')) return;
+    const v = toEn(String(q.value || '').trim()), res = q.parentElement.querySelector('.ca2-res');
+    const L = ctMainContracts().filter(r => !v || toEn([pick(r,AD.cNo), pick(r,AD.cTitle), pick(r,AD.cParty)].join(' ')).indexOf(v) !== -1).slice(0, 8);
+    res.innerHTML = L.length ? L.map(r => '<button type="button" class="ca2-hit" data-ca2main="' + esc(pick(r,AD.id)) + '"><b>' + esc(toFa(pick(r,AD.cNo) || '')) + ' — ' + esc(pick(r,AD.cTitle) || 'قرارداد') + '</b><small>' + esc(pick(r,AD.cParty) || '') + ' · الحاقیهٔ بعدی ' + toFa(ctNextAdd(r)) + '</small></button>').join('')
+      : '<div class="ca2-none">قراردادی پیدا نشد</div>';
+  });
   /* زبانه‌های کارت نیروی انسانی — هم در گزارش، هم در پنجرهٔ پرونده */
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-hrtab]');
@@ -52166,6 +52239,8 @@
               + '<circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'
               + '</button>' : '')
       +     (id ? admDlBtnHtml(kind, r, 'adm-hdl') : '')
+      +     ((id && kind === 'contract' && !String(pick(r,AD.cAdd) || '').trim() && (() => { try{ return canEditAdm(kind, r); }catch(e){ return false; } })())
+            ? '<button type="button" class="ico-btn adm-addend" data-ctaddend="' + esc(id) + '" title="افزودن الحاقیه به این قرارداد" aria-label="افزودن الحاقیه">' + UP_I.plus + '</button>' : '')
       +     ((id && (() => { try{ return canUploadAdm(kind, r); }catch(e){ return false; } })())
             ? '<button type="button" class="ico-btn upl" data-admup="' + esc(kind) + '" title="افزودن فایل (یا فایل را روی کارت رها کنید)" '
               + 'aria-label="افزودن فایل">' + UP_I.up + '</button>' : '')
@@ -52577,11 +52652,18 @@
           + f('a-cTitle','عنوان قرارداد', pick(r,AD.cTitle), false, 'contractSubjectList')
           + f('a-cNo','شماره قرارداد', pick(r,AD.cNo), false, 'contractNoList')
           + f('a-cParty','طرف قرارداد', pick(r,AD.cParty), false, 'contractPartyList')
-          + '<div class="field add-field"><label>الحاقیه</label>'
-          +   '<div class="add-row"><label class="add-tg"><input type="checkbox" class="a-cIsAdd"'
-          +     (pick(r,AD.cAdd) ? ' checked' : '') + '><span>این سند الحاقیه است</span></label>'
-          +   '<input type="text" class="a-cAdd" data-orig="' + esc(pick(r,AD.cAdd) || '') + '" value="' + esc(pick(r,AD.cAdd) || '') + '"'
-          +     ' placeholder="شمارهٔ الحاقیه، مثلاً ۱"' + (pick(r,AD.cAdd) ? '' : ' disabled') + '></div></div>')
+          /* الحاقیه: با دکمهٔ «+ الحاقیه» روی هر قرارداد ساخته می‌شود؛ این‌جا فقط اگر
+             الحاقیه است شماره‌اش، وگرنه انتخاب «الحاقیهٔ کدام قرارداد» (برای سابقه) */
+          + (function(){
+              const isA = !!pick(r,AD.cAdd);
+              return '<div class="field add-field ca2' + (isA ? ' on' : '') + '"><input type="checkbox" class="a-cIsAdd" hidden' + (isA ? ' checked' : '') + '>'
+                + '<div class="ca2-on"><label>شمارهٔ الحاقیه</label><div class="ca2-row"><input type="text" class="a-cAdd" data-orig="' + esc(pick(r,AD.cAdd) || '') + '" value="' + esc(pick(r,AD.cAdd) || '') + '" placeholder="مثلاً ۱"' + (isA ? '' : ' disabled') + '>'
+                + '<span class="ca2-of" data-ca2of="1">' + (isA ? 'از قرارداد ' + esc(toFa(pick(r,AD.cNo) || '')) : '') + '</span>'
+                + '<button type="button" class="ca2-x" data-ca2off="1" title="الحاقیه نیست">✕</button></div></div>'
+                + '<div class="ca2-off"><button type="button" class="ca2-btn" data-ca2pick="1">+ این سند الحاقیهٔ یک قرارداد است</button>'
+                + '<div class="ca2-pk" hidden><input type="search" class="ca2-q" placeholder="شماره، عنوان یا طرف قرارداد اصلی…" autocomplete="off"><div class="ca2-res"></div></div></div>'
+                + '</div>';
+            })())
         + sec('money', 'مبالغ',
             fm('a-cAmount','مبلغ قرارداد (ریال)', pick(r,AD.cAmount))
           + fm('a-cPaid','مبلغ پرداختی (ریال)', pick(r,AD.cPaid)), 'two')
@@ -57026,7 +57108,8 @@
           + '<div class="afr-adds"><div class="afr-adh"><b>' + toFa(ad.length) + ' نسخهٔ قبلی</b></div>'
           + ad.map(a2 => admFastRow(k, a2).replace('class="afr ', 'class="afr afr-add ')).join('') + '</div></div>';
         return '<div class="afr-cg">' + admFastRow(k, row)
-          + '<div class="afr-adds"><div class="afr-adh"><b>' + toFa(ad.length) + ' الحاقیه</b>' + (E && E.end ? '<span>اتمام مؤثر ' + esc(toFa(E.end)) + (E.by ? ' (الحاقیه ' + toFa(E.by) + ')' : '') + '</span>' : '') + '</div>'
+          + '<div class="afr-adds"><div class="afr-adh"><b>' + toFa(ad.length) + ' الحاقیه</b>' + (E && E.end ? '<span>اتمام مؤثر ' + esc(toFa(E.end)) + (E.by ? ' (الحاقیه ' + toFa(E.by) + ')' : '') + '</span>' : '')
+          + ((function(){ try{ return canEditAdm(k, row); }catch(e){ return false; } })() ? '<button type="button" class="afr-addend" data-ctaddend="' + esc(pick(row,AD.id)) + '">+ الحاقیهٔ تازه</button>' : '') + '</div>'
           + ad.map(a2 => admFastRow(k, a2).replace('class="afr ', 'class="afr afr-add ')).join('') + '</div></div>';
       };
       // در قرارداد و نامه، زیر نام هر فرد بر اساس شمارهٔ سند هم تیتر می‌خورد
