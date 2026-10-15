@@ -25917,7 +25917,11 @@
               + '</div>' : '')
       +   '<div class="fz-acts">'
       +     (goto ? '<button type="button" class="fz-go" data-fgo="1">'
-                    + (x.openCm ? 'خواندن نظرها' : 'رفتن به مورد') + FEED_ICON.arrow + '</button>' : '')
+                    + (x.openCm ? 'خواندن نظرها' : 'کارت فعالیت') + FEED_ICON.arrow + '</button>' : '')
+      /* راه دوم: خودِ مورد در بخش خودش (دفتر فنی یا کارها) */
+      +     (goto && !x.openCm && x.goto.id && x.goto.id !== 'general'
+              ? '<button type="button" class="fz-btn" data-fgo="doc">'
+                + (/^(task|tasks|activity|فعالیت)$/.test(String(x.goto.kind || '')) ? 'در کارها' : 'در دفتر فنی') + '</button>' : '')
       +     (x.reply ? '<button type="button" class="fz-btn" data-nreply="' + esc(x.reply) + '" '
                      + 'data-nreply-title="' + esc(x.title) + '">پاسخ</button>' : '')
       +     (x.canRemind ? '<button type="button" class="fz-btn" data-fremind="'
@@ -26246,7 +26250,7 @@
           const wantCm = card.dataset.gotoCm === '1';
           const cmId = card.dataset.gotoId;
           /* اعلانِ یک مورد، کارت فعالیت همان مورد را باز می‌کند */
-          if(!wantCm){
+          if(!wantCm && fg.dataset.fgo !== 'doc'){
             let opened = false;
             try{ opened = window.deckOpenAt && window.deckOpenAt(card.dataset.gotoKind, cmId); }catch(e){}
             if(opened) return;
@@ -26301,7 +26305,7 @@
       if(gt && !(gt.classList.contains('nz') && e.target.closest('button'))){
         if(window.__closeNotif) window.__closeNotif();
         else document.getElementById('notifModal').hidden = true;   // پشتیبان
-        const go = gt.querySelector('[data-fgo]');
+        const go = gt.querySelector('[data-fgo="1"]');
         if(go){ go.click(); return; }
         try{ if(window.deckOpenAt && window.deckOpenAt(gt.dataset.gotoKind, gt.dataset.gotoId)) return; }catch(e){}
         gotoAdminItem(gt.dataset.gotoKind, gt.dataset.gotoId, gt.dataset.gotoWho);
