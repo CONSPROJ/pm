@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261016185607">
+<meta name="pm-build" content="20261016190152">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -22804,6 +22804,34 @@
   .h3-hx h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;}
   .h3-hx em{font-style:normal;font-size:11px;opacity:.8;}
   .h3-hss{display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:16px;}
+  /* سربرگ v3: تاریخ، جملهٔ مهم و نوار چهار عدد */
+  .h3-hero{padding:16px 16px 14px;}
+  .h3-ht{align-items:center;}
+  .h3-hx{flex:1;}
+  .h3-hx h2{font-size:18px;}
+  .h3-dt{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:54px;padding:6px 8px;border-radius:16px;
+    background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);line-height:1.15;}
+  .h3-dt b{font-size:21px;font-weight:800;color:#fff;}
+  .h3-dt small{font-size:9.5px;font-weight:700;opacity:.85;}
+  .h3-sum{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;margin-top:14px;padding:10px 13px;border-radius:15px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);transition:background .2s;}
+  .h3-sum:hover{background:rgba(255,255,255,.18);}
+  .h3-sum b{font-size:13px;font-weight:800;color:#fff;flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .h3-sum span{font-size:11px;opacity:.82;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .h3-sum::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:#8fd3ff;box-shadow:0 0 0 4px rgba(143,211,255,.18);}
+  .h3-sum.bad::before{background:#ff8a7a;box-shadow:0 0 0 4px rgba(255,138,122,.22);animation:h3Dot 2s ease-out infinite;}
+  .h3-sum.warn::before{background:#ffd27a;box-shadow:0 0 0 4px rgba(255,210,122,.2);}
+  .h3-sum.ok{cursor:default;} .h3-sum.ok::before{background:#7be0a8;box-shadow:0 0 0 4px rgba(123,224,168,.2);}
+  .h3-sgo{flex:none;display:grid;opacity:.75;} .h3-sgo svg{width:14px;height:14px;}
+  @keyframes h3Dot{0%,100%{box-shadow:0 0 0 3px rgba(255,138,122,.28);}50%{box-shadow:0 0 0 7px rgba(255,138,122,0);}}
+  @media (prefers-reduced-motion:reduce){ .h3-sum.bad::before{animation:none;} }
+  .h3-hss.n4{grid-template-columns:repeat(4, minmax(0,1fr));gap:0;margin-top:10px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);overflow:hidden;}
+  .h3-hss.n4 .h3-hs{border:0;border-radius:0;background:none;align-items:center;padding:9px 4px;backdrop-filter:none;-webkit-backdrop-filter:none;}
+  .h3-hss.n4 .h3-hs + .h3-hs{border-right:1px solid rgba(255,255,255,.14);}
+  .h3-hss.n4 .h3-hs:hover{background:rgba(255,255,255,.08);}
+  .h3-hss.n4 .h3-hs b{font-size:18px;}
+  .h3-hss.n4 .h3-hs span{font-size:10px;white-space:nowrap;}
+  .h3-hss.n4 .h3-hs.bad{background:rgba(255,90,70,.16);}
   .h3-hs{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 12px;border-radius:16px;
     background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s, transform .2s;}
   .h3-hs:hover{background:rgba(255,255,255,.2);} .h3-hs:active{transform:scale(.96);}
@@ -79139,19 +79167,38 @@
     let nm = ''; try{ nm = welcomeName() || me; }catch(e){ nm = me; }
     let rl = ''; try{ rl = roleOf(me) || ''; }catch(e){}
     const h = new Date().getHours(), day = h >= 5 && h < 18;
-    const st = (n, l, cls, attr) => '<button type="button" class="h3-hs' + (cls ? ' ' + cls : '') + '" ' + attr + '>' + (tk ? '<b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b>' : '<b><i class="hm-dots"></i></b>') + '<span>' + l + '</span></button>';
+    /* منتظر تأیید شما: مرخصی‌ها و جریمه‌ها */
+    let lw = 0, nf = 0; try{ lw = leaveWaiting().length; }catch(e){} try{ nf = wrkFineApprover() ? (wrkPending || []).filter(isFineAny).length : 0; }catch(e){}
+    const appr = lw + nf;
+    /* گزارش روزانهٔ خودِ شخص */
+    let repDue = false;
+    try{ if(hmCan('write.daily')){ const dF = normDate(dateInput.value) || yesterdayShamsi(), D = homeDays[dF]; if(D) repDue = !homeDayStats(D).sub.has(nameKey(me)); } }catch(e){}
+    /* یک جملهٔ مهم: فوری‌ترین چیزی که همین حالا اقدام می‌خواهد */
+    const go = '<i class="h3-sgo">' + HM_I.go + '</i>';
+    let sum = '';
+    if(tk && tk.mineLate) sum = '<button type="button" class="h3-sum bad" data-h3k="mine"><b>' + toFa(tk.mineLate) + ' کار از موعدش گذشته</b><span>از قدیمی‌ترین شروع کنید</span>' + go + '</button>';
+    else if(appr) sum = '<button type="button" class="h3-sum warn" data-h3k="' + (nf ? 'fine' : 'leave') + '"><b>' + [nf ? toFa(nf) + ' جریمه' : '', lw ? toFa(lw) + ' مرخصی' : ''].filter(Boolean).join(' و ') + ' منتظر تأیید شماست</b><span>بررسی و تأیید</span>' + go + '</button>';
+    else if(repDue) sum = '<button type="button" class="h3-sum warn" data-hm="crew"><b>گزارش روزانهٔ شما هنوز ثبت نشده</b><span>ثبت گزارش</span>' + go + '</button>';
+    else if(tk && tk.mineSoon) sum = '<button type="button" class="h3-sum" data-h3k="mine"><b>' + toFa(tk.mineSoon) + ' موعد تا هفتهٔ آینده</b><span>همه هنوز در زمان‌اند</span>' + go + '</button>';
+    else if(tk) sum = '<div class="h3-sum ok"><b>همه‌چیز در موعد است</b><span>روز خوبی داشته باشید</span></div>';
+    const st = (n, l, cls, attr) => '<button type="button" class="h3-hs' + (cls && n ? ' ' + cls : '') + '" ' + attr + '>' + (tk ? '<b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b>' : '<b><i class="hm-dots"></i></b>') + '<span>' + l + '</span></button>';
+    const t = todayShamsi(), pp = faParts(t);
+    let wd = ''; try{ wd = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'][new Date().getDay()]; }catch(e){}
     return '<section class="h3-hero h3-a" style="--i:0">'
       + '<i class="h3-blob b1"></i><i class="h3-blob b2"></i><i class="h3-blob b3"></i>'
       + '<div class="h3-ht">'
       +   '<span class="h3-av">' + avatarHtml(me, 'lg', true) + '</span>'
       +   '<span class="h3-hx"><small>' + (day ? HM_I.sun : HM_I.moon) + hmGreeting() + '</small><h2>' + esc(nm) + '</h2>'
-      +   '<em>' + [rl ? esc(rl) : '', esc(faDateLong(todayShamsi()) || todayShamsi())].filter(Boolean).join(' · ') + '</em></span>'
+      +   (rl ? '<em>' + esc(rl) + '</em>' : '') + '</span>'
+      +   (pp ? '<span class="h3-dt"><small>' + wd + '</small><b>' + toFa(pp[2]) + '</b><small>' + FA_MONTHS[pp[1] - 1] + '</small></span>' : '')
       + '</div>'
-      + '<div class="h3-hss">'
-      /* هر سه عدد از کارهای خودِ شخص، با همان تعریف کارتابل */
-      +   st(tk ? tk.mine : 0, 'کار من', '', 'data-h3k="mine"')
-      +   st(tk ? tk.mineLate : 0, 'گذشته از موعد', tk && tk.mineLate ? 'bad' : '', 'data-h3k="mine"')
-      +   st(tk ? (tk.mineSoon || 0) : 0, 'موعد تا ۷ روز', tk && tk.mineSoon ? 'warn' : '', 'data-h3k="mine"')
+      + sum
+      + '<div class="h3-hss n4">'
+      /* هر عدد از کارهای خودِ شخص، با همان تعریف کارتابل */
+      +   st(tk ? tk.mine : 0, 'کار باز', '', 'data-h3k="mine"')
+      +   st(tk ? tk.mineLate : 0, 'عقب از موعد', 'bad', 'data-h3k="mine"')
+      +   st(tk ? (tk.mineSoon || 0) : 0, 'تا ۷ روز', 'warn', 'data-h3k="mine"')
+      +   st(appr, 'منتظر تأیید', 'warn', 'data-h3k="' + (nf ? 'fine' : 'leave') + '"')
       + '</div>'
       + '</section>';
   }
