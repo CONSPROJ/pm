@@ -22854,6 +22854,10 @@
   .nd2-sel:has(.ns-btn)::after{content:none !important;}
   .ns-o.on{background:color-mix(in srgb, var(--sky) 10%, transparent);}
   .ns-o.on i{color:var(--sky);}
+  .avb-vd{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:99px;font:700 11.5px var(--f);color:var(--muted);
+    background:transparent;border:1px dashed color-mix(in srgb, var(--ink) 18%, var(--line));margin-inline-start:auto;transition:color .15s, border-color .15s;}
+  .avb-vd:hover{color:var(--ink);border-color:var(--sky);}
+  .avb-vd svg{width:14px;height:14px;}
   .pf2-cover{position:relative;background-size:cover;background-position:center;}
   .pf2-cover.has-img{height:136px;border-bottom:0;}
   .pf2-cover.has-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.18), transparent 38%, transparent 62%, color-mix(in srgb, var(--surface) 55%, transparent));pointer-events:none;}
@@ -24243,6 +24247,21 @@
 <div id="printArea"></div>
 
 <script>
+  /* ====== نمای پیش‌فرض ادمین (بخش اول) ======
+     اگر ادمین نمای تازه‌ای برای همه ذخیره کرده که روی این دستگاه هنوز اعمال
+     نشده، پیش از خوانده شدن ترجیحات صفحه اعمال می‌شود. */
+  const VD_KIND = 'نمای پیش‌فرض', VD_LS = 'siteLogM.viewDef.v1', VD_AP = 'siteLogM.viewDefAt.v1';
+  function vdWrite(d){
+    if(!d || !d.v || typeof d.v !== 'object') return false;
+    let at = 0; try{ at = +localStorage.getItem(VD_AP) || 0; }catch(e){}
+    if(!(+d.ts > at)) return false;
+    try{
+      Object.keys(d.v).forEach(k => { if(/^(adm|task|tk|gt|tr|siteLogM\.(ds|ltr))/.test(k) && typeof d.v[k] === 'string') localStorage.setItem(k, d.v[k]); });
+      localStorage.setItem(VD_AP, String(+d.ts));
+    }catch(e){ return false; }
+    return true;
+  }
+  try{ vdWrite(JSON.parse(localStorage.getItem(VD_LS) || 'null')); }catch(e){}
   /* خطاهای شبکه و مرورگر به زبان کاربر */
   function friendlyErr(err){
     const raw = String(err && err.message ? err.message : (err == null ? '' : err));
@@ -48639,6 +48658,7 @@
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ tkCatLoad(lists); }catch(e2){}
+      try{ vdLoad(lists); }catch(e2){}
       try{ rptCfgLoad(lists); }catch(e2){}
       try{ leaveFromLists(lists); }catch(e2){}
       try{ aliasLoad(lists); }catch(e2){}
@@ -59075,6 +59095,82 @@
     }
   });
 
+  /* ====== نمای پیش‌فرض ادمین (بخش دوم) ======
+     ادمین نمای فعلی‌اش (نوع نما، ترتیب، گروه‌بندی در اسناد، فعالیت‌ها و برنامهٔ
+     اجرا) را برای همه ذخیره می‌کند: یک ردیف کوچک در lists. هر دستگاه یک بار
+     اعمالش می‌کند؛ بعد از آن هر کس می‌تواند برای خودش عوض کند. */
+  function vdSnap(){
+    const v = {};
+    const put = (k, x) => { if(x != null && x !== '') v[k] = String(x); };
+    const ls = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+    try{ put('admView', admView); }catch(e){}
+    try{ put('admSort', admSort); }catch(e){}
+    try{ put('admGroupMode', admGroupMode); }catch(e){}
+    try{ Object.keys(ADM_GRP_OPTS).forEach(k => put('admGrp.' + k, admGrpOf(k))); }catch(e){}
+    try{ put('siteLogM.dsGrpP', dsGrpPerson ? '1' : '0'); }catch(e){}
+    try{ put('siteLogM.ltrDir', admLtrDir); }catch(e){}
+    try{ put('taskView', taskView); }catch(e){}
+    try{ put('taskGroup', taskGroup); }catch(e){}
+    try{ put('gtPrefs2', JSON.stringify({src: gt.src, zoom: gt.zoom, grp: gt.grp, view: gt.view})); }catch(e){ put('gtPrefs2', ls('gtPrefs2')); }
+    put('tkWin', ls('tkWin')); put('trView', ls('trView'));
+    return v;
+  }
+  /* بعد از نوشتن در حافظه، همین حالا هم روی صفحه */
+  function vdLive(v){
+    const has = k => Object.prototype.hasOwnProperty.call(v, k);
+    try{ if(has('admView')) admView = v.admView; }catch(e){}
+    try{ if(has('admSort')) admSort = v.admSort; }catch(e){}
+    try{ if(has('admGroupMode')) admGroupMode = v.admGroupMode; }catch(e){}
+    try{ if(has('siteLogM.dsGrpP')) dsGrpPerson = v['siteLogM.dsGrpP'] === '1'; }catch(e){}
+    try{ if(has('siteLogM.ltrDir') && /^(ارسالی|دریافتی)$/.test(v['siteLogM.ltrDir'])) admLtrDir = v['siteLogM.ltrDir']; }catch(e){}
+    try{ if(has('taskView')) taskView = v.taskView; }catch(e){}
+    try{ if(has('taskGroup')) taskGroup = v.taskGroup; }catch(e){}
+    try{ if(has('gtPrefs2')){ const o = JSON.parse(v.gtPrefs2) || {}; ['src','zoom','grp','view'].forEach(k => { if(o[k] != null) gt[k] = o[k]; }); } }catch(e){}
+    try{ document.querySelectorAll('[data-admview]').forEach(x => x.classList.toggle('on', x.dataset.admview === admView)); }catch(e){}
+    try{ document.querySelectorAll('[data-tkview]').forEach(x => x.classList.toggle('on', x.dataset.tkview === taskView)); }catch(e){}
+    try{ document.querySelectorAll('[data-tkgrp]').forEach(x => x.classList.toggle('on', x.dataset.tkgrp === taskGroup)); }catch(e){}
+    try{ if(window.__admBarPaint) window.__admBarPaint(); }catch(e){}
+    try{ applyAdminFilters(); }catch(e){}
+    try{ applyTaskFilters(); }catch(e){}
+    try{ if(typeof gtRender === 'function' && document.getElementById('taskGantt')) gtRender(); }catch(e){}
+  }
+  function vdLoad(lists){
+    const raw = (lists && lists[VD_KIND]) || [];
+    if(!raw.length) return;
+    let d = null; try{ d = JSON.parse(raw[0]); }catch(e){ return; }
+    try{ localStorage.setItem(VD_LS, JSON.stringify(d)); }catch(e){}
+    if(vdWrite(d)) vdLive(d.v);
+  }
+  async function vdSave(){
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    if(!adm) return;
+    if(!(await askConfirm('پیش‌فرض برای همه', 'نمای فعلی شما — نوع نما، ترتیب و گروه‌بندی در اسناد، فعالیت‌ها و برنامهٔ اجرا — برای همه پیش‌فرض شود؟ هر کس بعداً می‌تواند برای خودش عوضش کند.', 'ذخیره برای همه'))) return;
+    const d = {ts: Date.now(), by: activeUserName() || '', v: vdSnap()};
+    try{
+      await supaFetch('lists?kind=eq.' + encodeURIComponent(VD_KIND), {method:'DELETE'}).catch(() => {});
+      await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{kind: VD_KIND, value: JSON.stringify(d)}]});
+      try{ localStorage.setItem(VD_LS, JSON.stringify(d)); localStorage.setItem(VD_AP, String(d.ts)); }catch(e){}
+      try{ clearNetCache(); }catch(e){}
+      try{ shrToast('نمای پیش‌فرض برای همه ذخیره شد'); }catch(e){}
+    }catch(err){ showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-vdsave]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const dt = b.closest('details'); if(dt) dt.open = false;
+    vdSave();
+  }, true);
+  const VD_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v4M8.5 3.5h7l-1 6 3 3.5h-11l3-3.5z"/></svg>';
+  /* دکمهٔ ادمین در نوار نمای اسناد */
+  setTimeout(function vdBtn(){
+    const bar = document.getElementById('admViewBar'); if(!bar) return;
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    let b = bar.querySelector('[data-vdsave]');
+    if(adm && !b){ bar.insertAdjacentHTML('beforeend', '<button type="button" class="avb-vd" data-vdsave="1" title="این نما (نوع نما، ترتیب، گروه‌بندی) برای همه پیش‌فرض شود">' + VD_PIN + '<span>پیش‌فرض همه</span></button>'); }
+    if(!adm && b) b.remove();
+    setTimeout(vdBtn, 4000);
+  }, 1500);
+
   /* کلید تعویض نما: کارتی ⇄ فهرست سریع. انتخاب هر کاربر روی همین
      دستگاه ذخیره می‌شود تا هر بار از نو انتخاب نکند. */
   (function admViewBarInit(){
@@ -65574,6 +65670,7 @@
         +     (canAddTask() ? '<button type="button" class="tk-addbtn" data-tkadd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>فعالیت</button>' : '')
         +     ((txCanBulk() || isAdminUser()) ? '<details class="tk-more"><summary title="ابزارهای بیشتر" aria-label="ابزارهای بیشتر"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary>'
         +       '<div class="tk-more-m">'
+        +       (isAdminUser() ? '<u>نما</u><button type="button" data-vdsave="1" title="نمای فعلی فعالیت‌ها، برنامهٔ اجرا و اسناد برای همه پیش‌فرض شود">' + VD_PIN + 'پیش‌فرض همه</button>' : '')
         +       (isAdminUser() ? '<u>خروجی</u><button type="button" data-tkpdf="1" title="چاپ یا PDF همین فهرست با فیلترهای فعلی">' + TX_I.down + 'PDF فهرست فعلی</button>' : '')
         +       (txCanBulk() ? '<u>' + TX_I.xls + 'اکسل فعالیت‌های اجرایی</u>'
         +       '<button type="button" data-txxl="out" title="دانلود فعالیت‌های اجرایی برای اصلاح طبقه و محل">' + TX_I.down + 'دانلود فایل</button>'
