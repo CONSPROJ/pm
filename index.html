@@ -23231,6 +23231,13 @@
   #netPill i{width:8px;height:8px;border-radius:50%;background:#f0b13a;}
   #netPill.q i{background:#5cc4be;animation:h3Pulse 1.6s ease-out infinite;}
   .sec-seg{flex-wrap:wrap;margin-top:8px;}
+  .bkc-auto{margin-top:10px;} .bkc-auto small{color:var(--muted);font-size:10.5px;}
+  .bkc-pw{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:10px;padding:8px 10px;border-radius:11px;background:var(--field);font-size:11.5px;color:var(--ink);} .bkc-pw .mini{flex:0 0 auto;}
+  .bkc-l{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .bkc-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--field);}
+  .bkc-t{display:flex;flex-direction:column;min-width:0;} .bkc-t b{font-size:12px;} .bkc-t small{font-size:10.5px;color:var(--muted);}
+  .bkc-r .up-list{grid-column:1 / -1;} .bkc-r .up-list .up-it{background:var(--surface);}
+  .bkc-r > .mini{grid-row:1;grid-column:2;}
   .pf-view{margin-top:12px;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;}
   .pf-vh{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;} .pf-vh b{font-size:12.5px;font-weight:800;color:var(--ink);} .pf-vh small{font-size:10.5px;color:var(--muted);}
   .pf-vr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);font-size:11.5px;}
@@ -55104,6 +55111,7 @@
     const box = document.getElementById('bkRestore'); if(!box) return;
     let data = null;
     try{ data = JSON.parse(await f.text()); }catch(e){}
+    if(window.bkIsEnc && window.bkIsEnc(data)){ const pt = await window.bkOpenEnc(data); if(!pt) return; try{ data = JSON.parse(pt); }catch(e){ data = null; } }
     const known = new Set(bkTables().map(x => x[0]));
     if(!data || data.app !== BK_APP || !data.tables || typeof data.tables !== 'object'){
       box.innerHTML = '<div class="bk-prog bad">این فایل، پشتیبانِ همین سامانه نیست یا خراب است.</div>';
@@ -55170,7 +55178,7 @@
      هر نوع سند) یا خودکار. تنظیم در جدول lists با نوع «تنظیم آپلود»
      ذخیره می‌شود تا برای همهٔ کاربران یکی باشد. */
   const UP_KIND = 'تنظیم آپلود';
-  const UP_KINDS = [['statement','صورت وضعیت'],['contract','قرارداد'],['minute','صورتجلسه'],['letter','نامه'],['design','اسناد طراحی'],['hse','ایمنی (HSE)'],['qc','کنترل کیفیت']];
+  const UP_KINDS = [['statement','صورت وضعیت'],['contract','قرارداد'],['minute','صورتجلسه'],['letter','نامه'],['design','اسناد طراحی'],['hse','ایمنی (HSE)'],['qc','کنترل کیفیت'],['backup','پشتیبان سامانه']];
   const UP_DEF = {mode:'auto', bucket: STORAGE_BUCKET, folder:'{kind}/{year}/{month}', driveUrl:'', driveFolder:'', driveFolders:{}};
   let upCfg = Object.assign({}, UP_DEF);
   function upCfgLoad(lists){
@@ -67922,7 +67930,13 @@
   /* ====== امنیت: خروج خودکار پس از بی‌کاری، هشدار ورود ناموفق، یادآور پشتیبان ====== */
   const SEC_KIND = 'امنیت سامانه', BKR_KIND = 'پشتیبان سامانه';
   const sec = {idle: 0, raw: ''};
-  function secLoad(lists){ const v = ((lists && lists[SEC_KIND]) || []).slice(-1)[0] || ''; sec.raw = v; try{ const o = JSON.parse(v || '{}'); sec.idle = Math.max(0, +o.idle || 0); }catch(e){ sec.idle = 0; } secBox(); }
+  function secLoad(lists){ const v = ((lists && lists[SEC_KIND]) || []).slice(-1)[0] || ''; sec.raw = v; try{ const o = JSON.parse(v || '{}'); sec.idle = Math.max(0, +o.idle || 0); sec.autoBk = !!o.autoBk; }catch(e){ sec.idle = 0; sec.autoBk = false; } secBox(); try{ bkCloudPaint(); }catch(e){} }
+  async function secSave(patch){
+    const o = Object.assign({idle: sec.idle, autoBk: !!sec.autoBk}, patch, {by: activeUserName(), d: todayShamsi()}), raw = JSON.stringify(o);
+    if(sec.raw) await supaFetch('lists?kind=eq.' + encodeURIComponent(SEC_KIND), {method:'DELETE'});
+    await supaFetch('lists', {method:'POST', body:[{kind: SEC_KIND, value: raw}]});
+    sec.raw = raw; sec.idle = o.idle; sec.autoBk = o.autoBk; try{ clearNetCache(); }catch(err){}
+  }
   const SEC_ACT = 'siteLogM.lastAct';
   const secTouch = () => { try{ localStorage.setItem(SEC_ACT, String(Date.now())); }catch(e){} };
   ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev => document.addEventListener(ev, () => { if(!secTouch.t || Date.now() - secTouch.t > 15000){ secTouch.t = Date.now(); secTouch(); } }, {passive: true, capture: true}));
@@ -67941,14 +67955,14 @@
     host.innerHTML = '<div class="bk-h"><span class="bk-ic">' + BK_I.shield + '</span><span><b>خروج خودکار پس از بی‌کاری</b><small>اگر کسی مدتی با سامانه کار نکند، روی همهٔ دستگاه‌ها خودکار خارج می‌شود (برای گوشی‌ها و رایانه‌های مشترک).</small></span></div>'
       + '<div class="wh-seg sec-seg">' + [[0,'خاموش'],[15,'۱۵ دقیقه'],[30,'۳۰ دقیقه'],[60,'۱ ساعت'],[240,'۴ ساعت']].map(([v, t]) => '<button type="button" data-secidle="' + v + '" class="' + (sec.idle === v ? 'on' : '') + '">' + t + '</button>').join('') + '</div>';
   }
-  new MutationObserver(() => { const h = document.getElementById('bkStatus'); if(h && !document.getElementById('secIdleBox')){ h.insertAdjacentHTML('afterend', '<div class="bk-card" id="secIdleBox"></div>'); secBox(); } })
+  new MutationObserver(() => { const h = document.getElementById('bkStatus'); if(h && !document.getElementById('secIdleBox')){ h.insertAdjacentHTML('afterend', '<div class="bk-card" id="secIdleBox"></div>'); secBox(); }
+      const dp = document.getElementById('bkDownProg'); if(dp && !document.getElementById('bkCloudBox')){ dp.closest('.bk-card').insertAdjacentHTML('afterend', '<div class="bk-card" id="bkCloudBox"></div>'); bkCloudPaint(true); } })
     .observe(document.body, {childList: true, subtree: true});
   document.addEventListener('click', async e => {
     const b = e.target.closest && e.target.closest('[data-secidle]'); if(!b) return;
     if(!isAdminUser()) return;
-    const v = +b.dataset.secidle, raw = JSON.stringify({idle: v, by: activeUserName(), d: todayShamsi()});
-    try{ if(sec.raw) await supaFetch('lists?kind=eq.' + encodeURIComponent(SEC_KIND), {method:'DELETE'});
-      await supaFetch('lists', {method:'POST', body:[{kind: SEC_KIND, value: raw}]}); sec.raw = raw; sec.idle = v; secBox(); try{ clearNetCache(); }catch(err){} try{ shrToast(v ? 'خروج خودکار پس از ' + toFa(v) + ' دقیقه' : 'خروج خودکار خاموش شد'); }catch(err){} }
+    const v = +b.dataset.secidle;
+    try{ await secSave({idle: v}); secBox(); try{ shrToast(v ? 'خروج خودکار پس از ' + toFa(v) + ' دقیقه' : 'خروج خودکار خاموش شد'); }catch(err){} }
     catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
   });
   /* ثبت هر پشتیبان روی سرور تا یادآور روی همهٔ دستگاه‌های ادمین درست باشد */
@@ -67983,6 +67997,125 @@
     h3Open('settings', 'users', 'امنیت و پشتیبان');
     if(b.dataset.h3sec === 'aud') setTimeout(() => { const x = document.querySelector('[data-audload]'); if(x){ x.click(); x.scrollIntoView({block: 'start', behavior: 'smooth'}); } }, 700);
   }, true);
+
+  /* ====== پشتیبان در فضای ابری ======
+     فایل پشتیبان (همان JSON دانلودی) در فضای ابری خصوصی S3 بارگذاری می‌شود و
+     نشانی‌اش در «پشتیبان سامانه» می‌ماند تا از هر دستگاهی دانلود یا بازگردانی شود.
+     فقط وقتی مقصد آپلود S3 خصوصی است؛ فضای سامانهٔ Supabase عمومی است و پشتیبانِ
+     همهٔ داده‌ها نباید آنجا برود. پشتیبان خودکار روزانه: اولین ادمینی که در روز
+     سایت را باز کند، در پس‌زمینه یک نسخه می‌گیرد. */
+  const bkc = {list: null, busy: false, msg: ''};
+  /* رمزگذاری AES-GCM با کلید ساخته‌شده از «رمز پشتیبان» (PBKDF2، ۲۰۰ هزار دور).
+     رمز هرگز به سرور نمی‌رود؛ فقط روی دستگاه ادمین می‌ماند تا پشتیبان خودکار کار کند. */
+  const BK_PASS_LS = 'siteLogM.bkPass.v1', BK_ENC = BK_APP + '-enc';
+  const bkPassGet = () => { try{ return localStorage.getItem(BK_PASS_LS) || ''; }catch(e){ return ''; } };
+  const b64 = u8 => { let s = ''; for(let i = 0; i < u8.length; i += 32768) s += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(s); };
+  const unb64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+  async function bkKey(pass, salt){
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+  }
+  async function bkEncrypt(text, pass){
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name: 'AES-GCM', iv}, await bkKey(pass, salt), new TextEncoder().encode(text)));
+    return JSON.stringify({app: BK_ENC, v: 1, kdf: 'PBKDF2-SHA256-200000', salt: b64(salt), iv: b64(iv), data: b64(ct)});
+  }
+  async function bkDecrypt(obj, pass){
+    const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(obj.iv)}, await bkKey(pass, unb64(obj.salt)), unb64(obj.data));
+    return new TextDecoder().decode(pt);
+  }
+  window.bkIsEnc = o => !!(o && o.app === BK_ENC);
+  window.bkOpenEnc = async (obj) => {
+    let pass = bkPassGet();
+    for(let i = 0; i < 3; i++){
+      if(!pass) pass = prompt('این پشتیبان رمزگذاری شده است. رمز پشتیبان را وارد کنید:', '') || '';
+      if(!pass) return null;
+      try{ return await bkDecrypt(obj, pass); }catch(e){ pass = ''; showDialog('warn', 'رمز نادرست', 'با این رمز باز نشد. دوباره امتحان کنید.'); }
+    }
+    return null;
+  };
+  async function bkPassSet(){
+    const p1 = prompt('رمز پشتیبان را تعیین کنید (دست‌کم ۸ نویسه).\nبدون این رمز فایل‌های پشتیبان باز نمی‌شوند؛ آن را جایی امن یادداشت کنید:', '');
+    if(p1 == null) return false;
+    if(p1.length < 8){ showDialog('warn', 'رمز کوتاه است', 'رمز پشتیبان باید دست‌کم ۸ نویسه باشد.'); return false; }
+    const p2 = prompt('رمز پشتیبان را دوباره وارد کنید:', ''); if(p2 !== p1){ showDialog('warn', 'یکسان نیست', 'دو رمز یکی نبودند.'); return false; }
+    try{ localStorage.setItem(BK_PASS_LS, p1); }catch(e){ showDialog('err', 'ذخیره نشد', 'حافظهٔ این مرورگر در دسترس نیست.'); return false; }
+    return true;
+  }
+  const bkPrivate = () => { try{ return upCfg.mode === 's3'; }catch(e){ return false; } };
+  async function bkCloudList(){
+    try{ const r = await supaFetch('nudges?select=' + NUDGE_COLS + '&kind=eq.' + encodeURIComponent(BKR_KIND) + '&order=created_at.desc&limit=20') || [];
+      bkc.list = r.map(x => { const o = JSON.parse(pick(fromSupa('nudges', x), N.msg) || '{}'); o.id = String(x.id); return o; }); }catch(e){ bkc.list = bkc.list || []; }
+  }
+  async function bkCloudPaint(load){
+    const box = document.getElementById('bkCloudBox'); if(!box) return;
+    if(load && !bkc.list){ bkc.list = []; bkCloudList().then(() => bkCloudPaint()); }
+    const L = (bkc.list || []).filter(o => o.url);
+    box.innerHTML = '<div class="bk-h"><span class="bk-ic">' + BK_I.db + '</span><span><b>پشتیبان در فضای ابری</b><small>'
+      + (bkPrivate() ? 'نسخه در فضای ابری خصوصی (S3) ذخیره می‌شود و از هر دستگاهی قابل دانلود و بازگردانی است.' : 'فقط وقتی مقصد آپلود «فضای ابری S3» (خصوصی) باشد فعال است؛ فضای سامانه عمومی است و پشتیبان همهٔ داده‌ها نباید آنجا برود.') + '</small></span>'
+      + '<button type="button" class="mini go" data-bkcloud="1"' + (bkPrivate() && !bkc.busy ? '' : ' disabled') + '>' + (bkc.busy ? 'در حال ذخیره…' : 'ذخیره در فضای ابری') + '</button></div>'
+      + (bkPrivate() ? '<div class="bkc-pw"><span>' + (bkPassGet() ? 'رمز پشتیبان روی این دستگاه تعیین شده؛ فایل‌ها رمزگذاری‌شده بارگذاری می‌شوند.' : 'رمز پشتیبان روی این دستگاه تعیین نشده. فایل‌ها پیش از بارگذاری با این رمز قفل می‌شوند.') + '</span><button type="button" class="mini" data-bkpass="1">' + (bkPassGet() ? 'تغییر رمز' : 'تعیین رمز') + '</button></div>'
+          + '<label class="wh-ck bkc-auto"><input type="checkbox" data-bkauto="1"' + (sec.autoBk ? ' checked' : '') + '><span>پشتیبان خودکار روزانه در فضای ابری <small>(روی دستگاه ادمینی که رمز را دارد)</small></span></label>' : '')
+      + (bkc.msg ? '<div class="bk-prog ' + (/✓/.test(bkc.msg) ? 'ok' : /نشد/.test(bkc.msg) ? 'bad' : '') + '">' + esc(bkc.msg) + '</div>' : '')
+      + (L.length ? '<div class="bkc-l">' + L.slice(0, 10).map(o => { let a = null; try{ a = attachList(o.url)[0]; }catch(e){}
+          return '<div class="bkc-r"><span class="bkc-t"><b>' + esc(toFa(o.date || '')) + (o.auto ? ' · خودکار' : '') + '</b><small>' + (o.n ? toFa(o.n) + ' ردیف · ' : '') + (o.size ? esc(fmtMB(o.size)) + ' · ' : '') + esc(o.by || '') + '</small></span>'
+            + (a ? '<span class="up-list">' + attachItemHtml(a, false) + '</span><button type="button" class="mini" data-bkcrestore="' + esc(o.id) + '">بازگردانی</button>' : '') + '</div>'; }).join('') + '</div>' : '');
+  }
+  async function bkCloudRun(auto){
+    if(bkc.busy || !bkPrivate()) return false;
+    if(!bkPassGet()){ if(auto) return false; if(!(await bkPassSet())) return false; }
+    bkc.busy = true; bkc.msg = auto ? 'پشتیبان خودکار روزانه…' : 'در حال خواندن داده‌ها…'; bkCloudPaint();
+    try{
+      const data = await bkExport(t => { bkc.msg = 'در حال خواندن: ' + t; const pg = document.querySelector('#bkCloudBox .bk-prog'); if(pg) pg.textContent = bkc.msg; });
+      const n = Object.values(data.tables).reduce((a, r) => a + r.length, 0);
+      const p = faParts(todayShamsi()) || [], d = new Date();
+      const nm = 'pm-backup-' + toEn(String(p[0] || '')) + '-' + toEn(String(p[1] || '')).padStart(2, '0') + '-' + toEn(String(p[2] || '')).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.pmbk.json';
+      bkc.msg = 'رمزگذاری…'; bkCloudPaint();
+      const file = new File([await bkEncrypt(JSON.stringify(data), bkPassGet())], nm, {type: 'application/json'});
+      bkc.msg = 'در حال بارگذاری ' + fmtMB(file.size) + '…'; bkCloudPaint();
+      const url = await upTry(file, null, 'backup');
+      const o = {date: todayShamsi(), at: Date.now(), url, n, size: file.size, by: activeUserName(), auto: !!auto, err: data.errors.length ? data.errors.join('، ') : ''};
+      await supaFetch('nudges', {method:'POST', body:[ndRow(BKR_KIND, 'BK-' + todayShamsi(), o, 'پشتیبان')]});
+      sec.bk = o; sec.homeT = 0;
+      try{ localStorage.setItem('siteLogM.bkLast', JSON.stringify({at: Date.now(), fa: todayShamsi(), n})); }catch(e){}
+      bkc.msg = '✓ ' + toFa(n) + ' ردیف (' + fmtMB(file.size) + ') در فضای ابری ذخیره شد' + (data.errors.length ? ' — بخشی خوانده نشد: ' + data.errors.join('، ') : '');
+      await bkCloudList(); bkc.busy = false; bkCloudPaint();
+      try{ homeSoon(); }catch(e){}
+      return true;
+    }catch(er){ bkc.busy = false; bkc.msg = 'پشتیبان ذخیره نشد: ' + friendlyErr(er); bkCloudPaint(); return false; }
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest || !t.closest('#bkCloudBox')) return;
+    if(!isAdminUser()) return;
+    if(t.closest('[data-bkcloud]')){ bkCloudRun(false); return; }
+    if(t.closest('[data-bkpass]')){ if(await bkPassSet()){ bkCloudPaint(); try{ shrToast('رمز پشتیبان ذخیره شد'); }catch(err){} } return; }
+    const rs = t.closest('[data-bkcrestore]');
+    if(rs){ const o = (bkc.list || []).find(x => x.id === rs.dataset.bkcrestore); let a = null; try{ a = attachList(o.url)[0]; }catch(err){} if(!a) return;
+      rs.disabled = true; rs.textContent = 'در حال دریافت…';
+      try{ const u = a.src === 's3' ? await s3Url(a.key, a.name, false, a.slot) : a.url;
+        const res = await fetch(u); if(!res.ok) throw new Error('کد ' + res.status);
+        const f = new File([await res.blob()], a.name.replace(/\.pmbk\.json$/, '.json'), {type: 'application/json'});
+        await bkLoadFile(f); const rb = document.getElementById('bkRestore'); if(rb) rb.scrollIntoView({block: 'center', behavior: 'smooth'}); }
+      catch(err){ showDialog('err', 'دریافت نشد', friendlyErr(err)); }
+      rs.disabled = false; rs.textContent = 'بازگردانی'; }
+  });
+  document.addEventListener('change', async e => {
+    const c = e.target.closest && e.target.closest('#bkCloudBox [data-bkauto]'); if(!c) return;
+    try{ await secSave({autoBk: c.checked}); try{ shrToast(c.checked ? 'پشتیبان خودکار روزانه روشن شد' : 'پشتیبان خودکار خاموش شد'); }catch(err){} }
+    catch(err){ c.checked = !c.checked; showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+  });
+  /* خودکار: ادمین، مقصد خصوصی، و امروز هنوز پشتیبانی روی سرور نیست */
+  async function bkAutoCheck(){
+    try{ if(!sec.autoBk || !isAdminUser() || !bkPrivate() || bkc.busy || !bkPassGet()) return; }catch(e){ return; }
+    const k = 'siteLogM.bkAutoTry'; let last = ''; try{ last = localStorage.getItem(k) || ''; }catch(e){}
+    if(last === todayShamsi()) return;
+    try{ localStorage.setItem(k, todayShamsi()); }catch(e){}
+    await bkCloudList();
+    if((bkc.list || []).some(o => o.url && o.date === todayShamsi())) return;
+    await bkCloudRun(true);
+  }
+  setTimeout(bkAutoCheck, 25000);
+  setInterval(() => { if(!document.hidden) bkAutoCheck(); }, 30 * 60000);
   document.addEventListener('click', e => {
     const g = e.target.closest && e.target.closest('[data-pcgrp]');
     if(g){ pcS.grp = g.dataset.pcgrp; const pc = g.closest('.pc'); pc.querySelectorAll('[data-pcgrp]').forEach(b => b.classList.toggle('on', b === g)); pc.querySelectorAll('[data-pcg]').forEach(d => { d.hidden = d.dataset.pcg !== pcS.grp; }); return; }
