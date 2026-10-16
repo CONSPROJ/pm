@@ -22033,7 +22033,34 @@
   .afr .afr-st.nil{visibility:hidden;}
   .afr .afr-date{flex:0 0 auto;font-size:10.5px;color:var(--muted);white-space:nowrap;font-weight:500;}
   .afr .afr-date:empty{display:none;}
-  @media(min-width:621px){ .afr .afr-date{flex:0 0 74px;text-align:center;} .afr .afr-date:empty{display:inline-block;} }
+  .afr .afr-date i{font-style:normal;font-weight:400;opacity:.62;font-size:.92em;margin-inline-start:1px;}
+  /* دورهٔ همکاری و پایان همکاری */
+  .um-span{margin:10px 0 4px;padding:10px 12px;border-radius:12px;background:var(--field);display:flex;flex-direction:column;gap:8px;}
+  .um-span > b{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;} .um-span > b svg{width:15px;height:15px;color:var(--muted);}
+  .um-span-r{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+  .um-span-r .field{flex:1 1 120px;display:flex;flex-direction:column;gap:3px;margin:0;font-size:11px;color:var(--muted);}
+  .um-span-r input{width:100%;box-sizing:border-box;}
+  .um-span small{font-size:11px;color:var(--muted);line-height:1.8;}
+  .um-span.ends{box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--warn) 40%, transparent);}
+  .um-span.gone{box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--alert) 35%, transparent);}
+  .um-acts .mini svg{width:14px;height:14px;}
+  .stf .stf-b{padding:2px 4px 6px;display:flex;flex-direction:column;gap:12px;}
+  .stf .stf-hi{background:color-mix(in srgb, var(--warn) 16%, var(--surface));color:var(--warn);}
+  .stf .stf-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:520px){ .stf .stf-g{grid-template-columns:1fr;} }
+  .stf .stf-g .field{display:flex;flex-direction:column;gap:4px;margin:0;font-size:11.5px;color:var(--muted);}
+  .stf .stf-g input, .stf .stf-g select{width:100%;box-sizing:border-box;}
+  .stf .stf-w{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--surface);}
+  .stf .stf-ld{font-size:12px;color:var(--muted);}
+  .stf .stf-wh{display:flex;flex-direction:column;gap:2px;} .stf .stf-wh b{font-size:13px;} .stf .stf-wh small{font-size:11px;color:var(--muted);}
+  .stf .stf-wh.ok b{color:var(--ok);}
+  .stf .stf-l{list-style:none;margin:8px 0 0;padding:0;max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:4px;}
+  .stf .stf-l li{font-size:12px;display:flex;gap:6px;align-items:baseline;padding:5px 0;border-top:1px dashed var(--line);}
+  .stf .stf-l li em{font-style:normal;font-size:10px;font-weight:700;color:var(--sky);background:var(--sky-soft, var(--field));border-radius:6px;padding:1px 6px;flex:none;}
+  .stf .stf-l li.more{color:var(--muted);}
+  .stf .stf-ck{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.8;color:var(--ink);}
+  .stf .stf-a{display:flex;gap:8px;justify-content:flex-start;}
+  @media(min-width:621px){ .afr .afr-date{flex:0 0 96px;text-align:center;} .afr .afr-date:empty{display:inline-block;} }
   .afr .afr-dls{flex:0 0 84px;max-width:84px;display:inline-flex;justify-content:flex-end;align-items:center;overflow:hidden;}
   .afr .afr-dls .dlc{padding:0 7px !important;}
   @media(min-width:621px){
@@ -23973,7 +24000,7 @@
     // فهرست ورود فقط از کاربران تأییدشدهٔ پایگاه‌داده ساخته می‌شود
     if(peopleRows && peopleRows.length){
       return peopleRows
-        .filter(p => p.name && !p.pending && p.active !== false)
+        .filter(p => p.name && !p.pending && p.active !== false && !(typeof staffGone === 'function' && staffGone(p.name)))
         .map(p => p.name)
         .sort((a,b) => a.localeCompare(b,'fa'));
     }
@@ -24164,6 +24191,7 @@
         if(Array.isArray(got) && got.length){
           peopleRows = got;
           peopleAt = Date.now();
+          try{ await staffLoad(); }catch(e){}
           try{
             localStorage.setItem(PEOPLE_CACHE_KEY, JSON.stringify(got.map(p => ({
               name: p.name, role: p.role || '', level: p.level, avatar_url: p.avatar_url || '',
@@ -24178,6 +24206,173 @@
   // بلافاصله بعد از باز شدن برنامه، فهرست تازه از پایگاه‌داده
   setTimeout(() => { loadPeople().then(() => { try{ if(typeof refreshWhoChip === 'function') refreshWhoChip(); }catch(e){} }); }, 300);
   const personRow = n => peopleRows.find(p => nameKey(p.name) === nameKey(n));
+
+  /* ====== دورهٔ همکاری پرسنل ======
+     هر نفر «از تاریخ / تا تاریخ» دارد (آخرین ثبت معتبر است). کسی که دوره‌اش
+     تمام شده از فهرست‌ها، انتخاب‌گرها و گزارش‌دهنده‌های الزامی بیرون می‌رود؛
+     سوابقش سر جایش می‌ماند. کارهای باز او پیش از پایان به نفر دیگری سپرده می‌شود. */
+  const STAFF_KIND = 'دوره همکاری';
+  let staffSpan = {};
+  const staffDk = d => { try{ return dayKey(d) || ''; }catch(e){ return ''; } };
+  async function staffLoad(){
+    try{
+      const raw = await supaFetch('nudges?select=id,created_at,to_name,message&kind=eq.' + encodeURIComponent(STAFF_KIND) + '&order=created_at.asc&limit=3000') || [];
+      const m = {};
+      raw.forEach(x => { let o = {}; try{ o = JSON.parse(x.message || '{}') || {}; }catch(e){} if(x.to_name) m[nameKey(x.to_name)] = Object.assign({}, o, {at: x.created_at}); });
+      staffSpan = m;
+    }catch(e){}
+    /* ادمین که سامانه را باز کند، حساب کسانی که دوره‌شان گذشته بسته می‌شود */
+    try{
+      if(isAdminUser()) for(const p of (peopleRows || [])){
+        if(p.name && p.active !== false && staffGone(p.name) && !isAdminName(p.name)){ try{ await savePerson(p.name, {active: false}); p.active = false; }catch(e){} }
+      }
+    }catch(e){}
+    return staffSpan;
+  }
+  const staffOf = n => staffSpan[nameKey(n)] || null;
+  /* در این تاریخ (پیش‌فرض امروز) خارج از دورهٔ همکاری است؟ */
+  function staffGone(n, d){
+    const s = staffOf(n); if(!s) return false;
+    const k = staffDk(d || todayShamsi()); if(!k) return false;
+    if(s.to && k > staffDk(s.to)) return true;
+    return false;
+  }
+  function staffOut(n, d){
+    const s = staffOf(n); if(!s) return false;
+    const k = staffDk(d || todayShamsi()); if(!k) return false;
+    return !!((s.to && k > staffDk(s.to)) || (s.from && k < staffDk(s.from)));
+  }
+  window.staffGone = staffGone;
+  async function staffSave(n, from, to, note){
+    await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: activeUserName(), to_name: n, kind: STAFF_KIND,
+      item_id: '', title: 'دوره همکاری', message: JSON.stringify({from: from || '', to: to || '', note: note || '', by: activeUserName()}), seen: true}]});
+    staffSpan[nameKey(n)] = {from: from || '', to: to || '', note: note || '', by: activeUserName()};
+  }
+  /* کارهای باز یک نفر: فعالیت‌ها (مسئول ۱/۲) و اسناد دفتر فنی (مسئول، پیگیری، بررسی داخلی) */
+  async function staffOpenWork(n){
+    const k = nameKey(n), out = {tasks: [], docs: []};
+    let b = null; try{ b = await fetchBundle(normDate(dateInput.value) || todayShamsi()); }catch(e){}
+    ((b && b.tasks) || []).forEach(r => {
+      const id = pick(r,T.id); if(!id) return;
+      let st = ''; try{ st = taskStatus(r).cls; }catch(e){}
+      if(st === 'done') return;
+      const m1 = nameKey(pick(r,T.m1)) === k, m2 = nameKey(pick(r,T.m2)) === k;
+      if(m1 || m2) out.tasks.push({id: String(id), t: String(pick(r,T.title) || 'فعالیت'), m1, m2});
+    });
+    const A = (b && b.admin) || {};
+    [['statements','statement'],['contracts','contract'],['letters','letter'],['designs','design'],['minutes','minute']].forEach(([tbl, kind]) => (A[tbl] || []).forEach(r => {
+      const id = pick(r,AD.id); if(!id) return;
+      let done = false;
+      if(kind === 'minute') done = String(pick(r,AD.mDone)) === 'true' || pick(r,AD.mDone) === true;
+      else{ try{ done = admDoneState(kind, r).cls === 'ok'; }catch(e){} }
+      if(done) return;
+      const own = nameKey(pick(r, AD_OWNER[kind])) === k;
+      const fol = kind === 'minute' && nameKey(pick(r,AD.mFollow)) === k;
+      const rvs = String(pick(r,AD.rvWho) || '');
+      const inRv = (kind === 'statement' || kind === 'contract') && rvs.split(/[|،,]/).some(x => nameKey(x) === k);
+      if(!own && !fol && !inRv) return;
+      let t = ''; try{ t = (KIND_LABEL[kind] || '') + ' ' + (pick(r, AD[ADM_NO_KEYS[kind]] || []) || ''); }catch(e){}
+      if(kind === 'minute') t = 'بند صورتجلسه — ' + String(pick(r,AD.mText) || '').slice(0, 40);
+      out.docs.push({tbl, kind, id: String(id), t: toFa(t.trim()), own, fol, inRv, rvs});
+    }));
+    return out;
+  }
+  async function staffTransfer(from, to, W){
+    const errs = []; let n = 0;
+    for(const x of W.tasks){
+      const body = {}; if(x.m1) body.owner1 = to; if(x.m2) body.owner2 = to;
+      try{ await supaFetch('tasks?id=eq.' + encodeURIComponent(x.id), {method:'PATCH', body}); n++; }catch(e){ errs.push(x.t); }
+    }
+    for(const x of W.docs){
+      const body = {};
+      if(x.own) body.owner = to;
+      if(x.fol) body.follower = to;
+      if(x.inRv) body.reviewers = x.rvs.split(/([|،,])/).map(t => nameKey(t) === nameKey(from) ? t.replace(t.trim(), to) : t).join('');
+      try{ await supaFetch(x.tbl + '?id=eq.' + encodeURIComponent(x.id), {method:'PATCH', body}); n++; }catch(e){ errs.push(x.t); }
+    }
+    try{ clearNetCache(); }catch(e){}
+    return {n, errs};
+  }
+  /* پنجرهٔ «پایان همکاری»: تاریخ پایان، جانشین و فهرست کارهای باز */
+  async function staffLeaveOpen(name){
+    let bg = document.getElementById('stfBg'); if(bg) bg.remove();
+    bg = document.createElement('div');
+    bg.className = 'modal-bg hm-add-bg'; bg.id = 'stfBg';
+    const s = staffOf(name) || {};
+    const ppl = listNames().filter(x => nameKey(x) !== nameKey(name));
+    bg.innerHTML = '<div class="hm-add stf" role="dialog" aria-modal="true" aria-label="پایان همکاری">'
+      + '<div class="hma-grab" aria-hidden="true"></div>'
+      + '<div class="hma-h"><span class="hma-hi stf-hi">' + (HM_I.people || '') + '</span><b>پایان همکاری</b><small>' + esc(name) + '</small>'
+      +   '<button type="button" class="hma-x" aria-label="بستن">✕</button></div>'
+      + '<div class="stf-b">'
+      +   '<div class="stf-g"><label class="field"><span>آخرین روز همکاری</span><input type="text" class="date-in stf-to" inputmode="numeric" value="' + esc(toFa(s.to || todayShamsi())) + '"></label>'
+      +   '<label class="field"><span>کارها سپرده شود به</span><select class="stf-rep"><option value="">— انتخاب کنید —</option>'
+      +     ppl.map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('') + '</select></label></div>'
+      +   '<div class="stf-w"><div class="stf-ld"><i class="hm-dots"></i> در حال یافتن کارهای باز…</div></div>'
+      +   '<label class="stf-ck"><input type="checkbox" class="stf-off" checked><span>بعد از این تاریخ حساب ورودش بسته شود و از همهٔ فهرست‌ها برداشته شود</span></label>'
+      +   '<div class="stf-a"><button type="button" class="mini go stf-go">ثبت پایان همکاری</button><button type="button" class="mini stf-cancel">انصراف</button></div>'
+      + '</div></div>';
+    document.body.appendChild(bg);
+    document.body.style.overflow = 'hidden';
+    const close = () => { bg.classList.add('out'); document.body.style.overflow = ''; setTimeout(() => bg.remove(), 180); };
+    bg.addEventListener('click', e => { if(e.target === bg || e.target.closest('.hma-x, .stf-cancel')) close(); });
+    const W = await staffOpenWork(name);
+    const wbox = bg.querySelector('.stf-w');
+    const all = W.tasks.map(x => ({t: x.t, g: 'فعالیت'})).concat(W.docs.map(x => ({t: x.t, g: x.inRv && !x.own ? 'بررسی داخلی' : 'دفتر فنی'})));
+    if(wbox) wbox.innerHTML = all.length
+      ? '<div class="stf-wh"><b>' + toFa(all.length) + ' کار باز</b><small>همه به جانشین سپرده می‌شود؛ کارهای بسته‌شده به نام خودش می‌ماند.</small></div>'
+        + '<ul class="stf-l">' + all.slice(0, 40).map(x => '<li><em>' + esc(x.g) + '</em>' + esc(x.t) + '</li>').join('') + (all.length > 40 ? '<li class="more">و ' + toFa(all.length - 40) + ' مورد دیگر</li>' : '') + '</ul>'
+      : '<div class="stf-wh ok"><b>کار بازی ندارد</b><small>فقط دورهٔ همکاری بسته می‌شود.</small></div>';
+    bg.querySelector('.stf-go').addEventListener('click', async ev => {
+      const btn = ev.currentTarget;
+      const to = normDate(bg.querySelector('.stf-to').value);
+      const rep = bg.querySelector('.stf-rep').value;
+      if(!to){ showDialog('warn', 'تاریخ لازم است', 'آخرین روز همکاری را وارد کنید.'); return; }
+      if(all.length && !rep){ showDialog('warn', 'جانشین را انتخاب کنید', 'کارهای باز باید به کسی سپرده شود.'); return; }
+      btn.disabled = true; btn.textContent = 'در حال ثبت…';
+      try{
+        let r = {n: 0, errs: []};
+        if(all.length) r = await staffTransfer(name, rep, W);
+        await staffSave(name, s.from || '', to, rep ? 'کارها به ' + rep : '');
+        const off = bg.querySelector('.stf-off').checked;
+        if(off && staffDk(to) < staffDk(todayShamsi())) await savePerson(name, {active: false});
+        if(rep && r.n) try{ await sendAction({action:'nudge', from: activeUserName(), to: rep, kind: MSG_KIND, itemId:'', title:'',
+          message: toFa(r.n) + ' کار باز ' + name + ' (پایان همکاری: ' + toFa(to) + ') به شما سپرده شد. در کارتابل و دفتر فنی می‌بینید.', date: todayShamsi()}); }catch(e){}
+        close();
+        showDialog(r.errs.length ? 'warn' : 'ok', 'ثبت شد',
+          'دورهٔ همکاری ' + name + ' تا ' + toFa(to) + ' ثبت شد.' + (r.n ? '\n' + toFa(r.n) + ' کار به ' + rep + ' سپرده شد.' : '')
+          + (r.errs.length ? '\nاین موارد منتقل نشد: ' + r.errs.join('، ') : ''));
+        try{ await loadPeople(true); }catch(e){}
+        try{ renderAdminPanel(); }catch(e){}
+        try{ homeSoon(); }catch(e){}
+      }catch(e){
+        btn.disabled = false; btn.textContent = 'ثبت پایان همکاری';
+        showDialog('err', 'ثبت نشد', String(e && e.message || e));
+      }
+    });
+  }
+  document.addEventListener('click', async e => {
+    const sp = e.target.closest('[data-u-span]');
+    if(sp){
+      e.stopPropagation();
+      const n = sp.dataset.uSpan, host = sp.closest('[data-user-row]');
+      const f = normDate((host.querySelector('.u-sp-from') || {}).value || '') || '';
+      const t = normDate((host.querySelector('.u-sp-to') || {}).value || '') || '';
+      if(f && t && staffDk(t) < staffDk(f)){ showDialog('warn', 'بازه درست نیست', 'تاریخ پایان پیش از تاریخ شروع است.'); return; }
+      sp.disabled = true;
+      try{
+        await staffSave(n, f, t, '');
+        if(t && staffDk(t) < staffDk(todayShamsi())) await savePerson(n, {active: false});
+        showDialog('ok', 'ثبت شد', 'دورهٔ همکاری ' + n + (f ? ' از ' + toFa(f) : '') + (t ? ' تا ' + toFa(t) : ' (ادامه دارد)') + ' ثبت شد.');
+        try{ await loadPeople(true); }catch(e2){}
+        try{ renderAdminPanel(); }catch(e2){}
+      }catch(e2){ showDialog('err', 'ثبت نشد', String(e2 && e2.message || e2)); }
+      finally{ sp.disabled = false; }
+      return;
+    }
+    const lv = e.target.closest('[data-u-leave]');
+    if(lv){ e.stopPropagation(); staffLeaveOpen(lv.dataset.uLeave); }
+  }, true);
 
   async function savePerson(name, patch){
     await supaFetch('people?on_conflict=name', {
@@ -34496,7 +34691,9 @@
       key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l2.5 2.5M15 8l2 2"/></svg>',
       power:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>',
       trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>',
-      save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+      save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+      cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+      out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>'
     };
     const U = names.map(n => {
       const row = personRow(n) || {};
@@ -34612,6 +34809,7 @@
         +   '<span class="um-tags">'
         +     (u.ct ? '<span class="um-lv lvC">پیمانکار</span>' : '<span class="um-lv lv' + u.L + '">' + esc(LV_NAME[u.L] || '') + '</span>')
         +     (u.active ? '' : '<span class="um-chip bad">غیرفعال</span>')
+        +     (function(){ const sp = staffOf(n); return sp && sp.to && !staffGone(n) ? '<span class="um-chip warn">تا ' + esc(toFa(sp.to)) + '</span>' : sp && sp.to ? '<span class="um-chip mute">پایان همکاری</span>' : ''; })()
         +     (u.pass !== 'own' && !u.ct ? '<span class="um-chip' + (u.pass === 'none' ? ' mute' : ' warn') + '">' + PASS_T[u.pass] + '</span>' : '')
         +   '</span>'
         +   '<span class="um-chev">' + UM_I.chev + '</span>'
@@ -34643,11 +34841,23 @@
               + '<label class="um-chk"><input type="checkbox" class="u-pass-must" checked><span>بار اول خودش عوض کند</span></label>'
               + '<button type="button" class="mini go" data-u-setpass="' + esc(n) + '">تعیین رمز</button></div>'
               + '<small>وضعیت فعلی: ' + PASS_T[u.pass] + ' · «بازنشانی» یک رمز موقت تازه می‌سازد.</small></div>')
+        +   (u.ct || isAdminName(n) ? '' : (function(){
+              const sp = staffOf(n) || {}, gone = staffGone(n);
+              return '<div class="um-span' + (gone ? ' gone' : sp.to ? ' ends' : '') + '"><b>' + UM_I.cal + 'دورهٔ همکاری</b>'
+                + '<div class="um-span-r"><label class="field"><span>از</span><input type="text" class="date-in u-sp-from" inputmode="numeric" placeholder="تاریخ شروع" value="' + esc(sp.from ? toFa(sp.from) : '') + '"></label>'
+                + '<label class="field"><span>تا</span><input type="text" class="date-in u-sp-to" inputmode="numeric" placeholder="ادامه دارد" value="' + esc(sp.to ? toFa(sp.to) : '') + '"></label>'
+                + '<button type="button" class="mini" data-u-span="' + esc(n) + '">ثبت دوره</button></div>'
+                + '<small>' + (gone ? 'همکاری در ' + esc(toFa(sp.to)) + ' تمام شده؛ در فهرست‌ها و انتخاب‌گرها نمی‌آید و سوابقش سر جایش است.'
+                    : sp.to ? 'همکاری تا ' + esc(toFa(sp.to)) + '؛ بعد از آن خودکار از فهرست‌ها برداشته می‌شود.'
+                    : 'بدون تاریخ پایان. برای کسی که می‌رود «پایان همکاری» را بزنید تا کارهای بازش به نفر دیگری سپرده شود.') + '</small>'
+                + '</div>';
+            })())
         +   '<div class="um-acts">'
         +     '<button type="button" class="mini go um-save" data-u-save="' + esc(n) + '" disabled>' + UM_I.save + 'ذخیرهٔ تغییرات</button>'
         +     '<button type="button" class="mini" data-u-reset="' + esc(n) + '">' + UM_I.key + 'بازنشانی رمز</button>'
         +     '<button type="button" class="mini' + (u.active ? ' warnb' : ' go') + '" data-u-toggle="' + esc(n) + '">' + UM_I.power
         +       (u.active ? 'غیرفعال کردن' : 'فعال کردن') + '</button>'
+        +     (isAdminName(n) || u.ct ? '' : '<button type="button" class="mini warnb" data-u-leave="' + esc(n) + '">' + UM_I.out + 'پایان همکاری و سپردن کارها</button>')
         +     (isAdminName(n) ? '' :
               '<button type="button" class="mini danger um-push" data-u-del="' + esc(n) + '">' + UM_I.trash + 'حذف</button>')
         +   '</div>'
@@ -41123,6 +41333,8 @@
     const dk = dayKey(dateFa), nk = nameKey(who);
     /* مرخصی روزانهٔ تأییدشده هم روزِ معاف است */
     try{ if(leaveOnDay(dateFa, who)) return true; }catch(e){}
+    /* خارج از دورهٔ همکاری، گزارشی از او انتظار نمی‌رود */
+    try{ if(staffOut(who, dateFa)) return true; }catch(e){}
     return (rptCfg.ex || []).some(x => { const p = String(x).split('|'); return dayKey(p[0]) === dk && nameKey(p[1]) === nk; });
   }
   const REPORT_DEADLINE_HOUR = 17;
@@ -49846,7 +50058,7 @@
     const m = toEn(String(faDateOf(d || '') || '')).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
     if(!m) return '';
     let y0 = ''; try{ y0 = toEn(todayShamsi()).slice(0, 4); }catch(e){}
-    return toFa(+m[3]) + ' ' + (FA_MONTHS[+m[2] - 1] || '') + (m[1] === y0 ? '' : ' ' + toFa(m[1].slice(2)));
+    return toFa(+m[3]) + ' ' + (FA_MONTHS[+m[2] - 1] || '') + ' ' + toFa(m[1]);
   }
   function admFastRow(kind, r){
     const id = String(pick(r,AD.id) || '');
@@ -49922,7 +50134,7 @@
       + '<span class="afr-ava">'
       +   (rvWho.length ? rvWho.slice(0,3).map(n2 => rvAva(n2, dn.has(nameKey(n2)))).join('') : '')
       + '</span>'
-      + '<span class="afr-date">' + esc(admRowDate(kind, r)) + '</span>'
+      + '<span class="afr-date">' + esc(admRowDate(kind, r)).replace(/ ([۰-۹]{4})$/, ' <i>$1</i>') + '</span>'
       + '<span class="afr-d">' + esc(dTxt) + '</span>'
       + '<span class="afr-dls">' + admDlBtnHtml(kind, r, 'afr-dl') + '</span>'
       + (function(){ try{ return '<span class="afr-sh" role="button" tabindex="0" title="اشتراک‌گذاری" aria-label="اشتراک‌گذاری" data-afrsh="1"'
@@ -73092,7 +73304,7 @@
       const k = nameKey(e), t = pick(r,F.time);
       if(!sub.has(k) || (t && t < sub.get(k))) sub.set(k, t || '');
     });
-    const req = REQUIRED_REPORTERS.map(n => ({n, ok: sub.has(nameKey(n)), t: sub.get(nameKey(n)) || ''}));
+    const req = REQUIRED_REPORTERS.filter(n => { try{ return !staffGone(n); }catch(e){ return true; } }).map(n => ({n, ok: sub.has(nameKey(n)), t: sub.get(nameKey(n)) || ''}));
     return {tot: cur.t, am: cur.am, pe: cur.t - cur.am, prevTot: prv && prv.t ? prv.t : null,
       ctrN: ctr.size, issues: D.issues.length, req, sub, has: !!(D.rows.length || D.issues.length || D.machines.length)};
   }
