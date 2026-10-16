@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261016184000">
+<meta name="pm-build" content="20261016185607">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -22998,6 +22998,17 @@
   .h3-c.alert small{color:var(--alert);font-weight:700;}
   .h3-cg{flex:none;color:var(--muted);opacity:.55;} .h3-cg svg{width:14px;height:14px;}
   .h3-cs:not(.all) > .h3-c.x{display:none;}
+  /* کارتابل من: نوار سه‌قسمتی */
+  .h3-seg{position:relative;display:flex;gap:2px;padding:4px;margin:0 0 10px;border-radius:14px;background:var(--field);border:1px solid color-mix(in srgb, var(--line) 60%, transparent);}
+  .h3-seg button{all:unset;cursor:pointer;position:relative;z-index:1;flex:1;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:5px;height:34px;padding:0 8px;border-radius:10px;
+    font:700 12.5px var(--f);color:var(--muted);white-space:nowrap;transition:color .25s;}
+  .h3-seg button.on{color:var(--ink);}
+  .h3-seg button i{font-style:normal;min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:99px;display:inline-grid;place-items:center;font-size:10px;font-weight:800;color:#fff;background:var(--alert);}
+  .h3-seg-ink{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:var(--surface);box-shadow:0 2px 8px -3px rgba(15,20,35,.25);transition:left .3s cubic-bezier(.3,.9,.3,1), width .3s cubic-bezier(.3,.9,.3,1);}
+  .h3-kb .h3-kp{display:none;}
+  .h3-kb[data-kt="td"] .h3-kp[data-kp="td"], .h3-kb[data-kt="me"] .h3-kp[data-kp="me"], .h3-kb[data-kt="fol"] .h3-kp[data-kp="fol"]{display:block;}
+  .h3-kp.in{animation:wsIn .26s ease-out;}
+  @media (prefers-reduced-motion:reduce){ .h3-kp.in{animation:none;} }
   .h3-cm{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:4px;padding:9px;font-size:11.5px;font-weight:700;color:var(--muted);border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);transition:color .2s;}
   .h3-cm:hover{color:var(--ink);} .h3-cm i{display:grid;transform:rotate(-90deg);transition:transform .25s;} .h3-cm i svg{width:12px;height:12px;}
   .h3-cs.all > .h3-cm i{transform:rotate(90deg);}
@@ -79166,6 +79177,7 @@
     try{ if(leaveOnDay(todayShamsi(), me)) C.push(card('vio', LV_I.sun, 'امروز در مرخصی هستید', 'روز خوبی داشته باشید', '', 'data-h3k="leave"')); }catch(e){}
     try{ const nf = wrkFineApprover() ? (wrkPending || []).filter(isFineAny).length : 0; if(nf) C.push(card('bad', TD_I.warn, toFa(nf) + ' جریمه منتظر تأیید شما', 'بررسی و تأیید', 'دیدن', 'data-h3k="fine"')); }catch(e){}
     try{ (window.secHomeCards ? window.secHomeCards(card) : []).forEach(c => C.push(c)); }catch(e){}
+    h3Today.rows = C;
     return C.length ? '<section class="h3-sec h3-a" style="--i:1"><div class="h3-tds">' + C.join('') + '</div></section>' : '';
   }
   /* دسترسی سریع: کارهایی که هر کس بیشتر انجام می‌دهد، با توضیح کوتاه؛
@@ -79381,13 +79393,39 @@
     const toolsN = G.fol.length - folHome.length + G.adm.length - admHome.length;
     if(toolsN > 0) (admHome.length ? admHome : folHome).push({k:'wsTools', t:'همهٔ ابزارها در میز کار', sub: toFa(toolsN) + ' ابزار دیگر: یادآور، پیام، پیمانکاران، مدیریت سامانه…', ic: WS_I.tasks, c:'hc-ind', attr:'data-hm="wsTools"'});
     G.fol = folHome; G.adm = admHome;
+    const meSorted = G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0)));
     return {
+      meList: capL(meSorted, 6, 'me'), folList: G.fol.length ? capL(G.fol, 6, 'fol') : '',
+      meN: G.me.filter(x => x.alert).length, folN: G.fol.filter(x => x.alert || x.n).filter(x => x.k !== 'wsTools').length,
       me: '<section class="h3-sec"><div class="h3-sh h3-a" style="--i:2"><h3>کارتابل من</h3></div>' + capL(G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0))), 5, 'me') + '</section>',
       fol: grp('h3-g-fol', 'پیگیری', G.fol, 5),
       prj: grp('h3-g-prj', 'پروژه و پیمانکاران', G.prj, 8),
       adm: grp('h3-g-adm', 'مدیریت سامانه', G.adm, 9, 'فقط برای مدیران')
     };
   }
+  /* کارتابل من: یک کارت با نوار سه‌قسمتی — امروز، کارهای من، پیگیری.
+     قسمتی که کار فوری دارد عدد قرمز می‌گیرد؛ بار اول همان قسمت فوری باز است. */
+  let homeKt = '', homeKtUser = false;
+  function h3KartBox(G){
+    h3Today();
+    const td = h3Today.rows || [];
+    const tdHot = td.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length;
+    const P = [];
+    if(td.length) P.push({k:'td', t:'امروز', n: tdHot, body:'<div class="h3-tds">' + td.join('') + '</div>'});
+    P.push({k:'me', t:'کارهای من', n: G.meN, body: G.meList});
+    if(G.folList) P.push({k:'fol', t:'پیگیری', n: G.folN, body: G.folList});
+    /* تا کاربر خودش قسمتی را انتخاب نکرده، قسمتِ فوری باز است */
+    if(!homeKtUser || !P.some(x => x.k === homeKt)) homeKt = (P.find(x => x.k === 'td' && x.n) || P.find(x => x.n) || P[0]).k;
+    return '<section class="h3-sec h3-kb h3-a" style="--i:2" data-kt="' + homeKt + '">'
+      + '<div class="h3-sh"><h3>کارتابل من</h3></div>'
+      + (P.length > 1 ? '<div class="h3-seg" role="tablist">' + P.map(x => '<button type="button" role="tab" data-h3kt="' + x.k + '" class="' + (x.k === homeKt ? 'on' : '') + '" aria-selected="' + (x.k === homeKt) + '">' + x.t + (x.n ? '<i>' + toFa(x.n) + '</i>' : '') + '</button>').join('') + '<span class="h3-seg-ink"></span></div>' : '')
+      + P.map(x => '<div class="h3-kp" data-kp="' + x.k + '">' + x.body + '</div>').join('')
+      + '</section>';
+  }
+  function h3SegInk(){
+    document.querySelectorAll('#homeView .h3-seg').forEach(seg => { const on = seg.querySelector('button.on'), ink = seg.querySelector('.h3-seg-ink'); if(on && ink){ ink.style.width = on.offsetWidth + 'px'; ink.style.left = on.offsetLeft + 'px'; } });
+  }
+  window.addEventListener('resize', () => { try{ h3SegInk(); }catch(e){} });
   /* اولویت‌ها: بالای فهرست دسته‌ها (اول دفتر فنی)؛ زدن هر دسته فقط موارد همان را نشان می‌دهد */
   const H3_WKC = [{k:'adm', t:'دفتر فنی'}, {k:'exec', t:'اجرایی'}, {k:'rep', t:'گزارش'}];
   const h3WkCat = x => x.cat === 'missing' ? 'rep' : x.__p === 'b-adm' ? 'adm' : 'exec';
@@ -79496,13 +79534,14 @@
       if(window.qcVisible && window.qcVisible() && !qc.t) P.push(qcLoad());
       try{ if(window.coVisible && window.coVisible() && coCanA() && !co.t) P.push(coLoad()); }catch(e){}
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
-    const h = '<div class="h3">' + h3Hero(work, tk) + h3Today() + h3Quick() + G.me + h3Work(work) + h3Project(day, dDate, adm, tk, prc) + G.fol + G.prj + h3Links() + G.adm + '</div>';
+    const h = '<div class="h3">' + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + h3Work(work) + G.prj + h3Links() + G.adm + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
     box.__h = h;
     const y = window.scrollY;
     box.innerHTML = h;
+    requestAnimationFrame(() => { try{ h3SegInk(); }catch(e){} });
     /* حرکت ورود فقط بار اول؛ رسیدن داده‌های بعدی (چند موج پشت هم)
        صفحه را بی‌حرکت به‌روز می‌کند — پیش‌تر هر بار همهٔ کاشی‌ها از نو
        بالا می‌آمدند و صفحهٔ اول چند بار پشت هم چشمک می‌زد. */
@@ -79543,6 +79582,11 @@
     if(v){ const [k, r] = v.dataset.hmv.split('|'); homeOpenView(k, r); return; }
     const wc = e.target.closest('[data-h3wc]');
     if(wc){ e.stopPropagation(); homeWkCat = wc.dataset.h3wc; homeWkPick = true; try{ homeRender(); }catch(err){} return; }
+    const ktb = e.target.closest('[data-h3kt]');
+    if(ktb){ e.stopPropagation(); homeKt = ktb.dataset.h3kt; homeKtUser = true; const sec = ktb.closest('.h3-kb'); sec.dataset.kt = homeKt;
+      sec.querySelectorAll('[data-h3kt]').forEach(b => { const on = b === ktb; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+      const pn = sec.querySelector('.h3-kp[data-kp="' + homeKt + '"]'); if(pn){ pn.classList.remove('in'); void pn.offsetWidth; pn.classList.add('in'); }
+      h3SegInk(); const box0 = document.getElementById('homeView'); if(box0) box0.__h = ''; return; }
     const kt = e.target.closest('[data-h3k]');
     if(kt){ e.stopPropagation(); h3Dispatch(kt); return; }
     const qt = e.target.closest('[data-h3qt]');
