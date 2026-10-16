@@ -2551,6 +2551,28 @@
   #taskView .eng.tkp .tkp-disc{flex:0 0 auto !important;width:auto !important;max-width:max-content;}
   .tkp-disc[data-pdset]{cursor:pointer;} .tkp-disc.add{color:var(--muted);background:none;border:1px dashed var(--line);}
   .tkp-meta{display:inline-flex !important;align-items:center;gap:6px;flex-wrap:wrap;}
+  /* سربرگ بار کاری نفر */
+  #panelTasks #taskView .eng.tkp.tkw2 > .eng-head{display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:9px !important;grid-template-columns:none !important;grid-template-areas:none !important;padding:12px 14px !important;}
+  .tkw2 .tkw-top{display:flex;align-items:center;gap:10px;min-width:0;}
+  .tkw2 .tkw-top > .ava{width:36px !important;height:36px !important;flex:none;}
+  .tkw2 .tkw-nm{flex:1;min-width:0;display:flex;align-items:center;}
+  #panelTasks #taskView .eng.tkp.tkw2 .tkw-nm .tkp-id{grid-area:auto;align-self:center;}
+  .tkw2 .tkw-nm .tk-gname{font-size:var(--tk-t-name, 13px) !important;font-weight:600 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tkw2 .tkw-cnt{display:flex;flex-direction:column;align-items:center;line-height:1.1;font-size:10px;color:var(--muted);flex:none;}
+  .tkw2 .tkw-cnt b{font-size:18px !important;font-weight:800 !important;color:var(--ink) !important;}
+  .tkw2 .tkw-top > .eng-ar{flex:none;margin:0 !important;}
+  .tkw2 .tkw-bar{display:flex;gap:2px;height:7px;border-radius:7px;overflow:hidden;background:var(--field);}
+  .tkw2 .tkw-bar i{display:block;height:100%;min-width:4px;}
+  .tkw2 .tkw-bar i.l, .tkw2 .tkw-lg .l i{background:var(--alert);}
+  .tkw2 .tkw-bar i.s, .tkw2 .tkw-lg .s i{background:var(--warn);}
+  .tkw2 .tkw-bar i.r, .tkw2 .tkw-lg .r i{background:var(--sky);}
+  .tkw2 .tkw-bar i.d, .tkw2 .tkw-lg .d i{background:color-mix(in srgb, var(--ok) 45%, var(--field));}
+  .tkw2 .tkw-lg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:10.5px;color:var(--muted);font-weight:500;}
+  .tkw2 .tkw-lg span{display:inline-flex;align-items:center;gap:4px;} .tkw2 .tkw-lg span i{width:7px;height:7px;border-radius:2px;display:inline-block;}
+  .tkw2 .tkw-lg .l{color:var(--alert);font-weight:700;}
+  .tkw2 .tkw-lg em{font-style:normal;margin-inline-start:auto;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:99px;}
+  .tkw2 .tkw-lg em.bad{color:var(--alert);background:color-mix(in srgb, var(--alert) 11%, transparent);}
+  .tkw2 .tkw-lg em.ok{color:var(--ok);background:color-mix(in srgb, var(--ok) 11%, transparent);}
   .tkp-n{display:inline-flex;align-items:baseline;gap:3px;height:22px;padding:0 8px;border-radius:8px;background:var(--field);font-size:10.5px;color:var(--muted);font-weight:500;align-items:center;}
   .tkp-n b{font-size:11px;font-weight:700;color:var(--ink);}
   .tkp-n.bad{background:color-mix(in srgb, var(--alert) 11%, transparent);color:var(--alert);} .tkp-n.bad b{color:var(--alert);}
@@ -63844,15 +63866,38 @@
     function personBlock(p, i, M, md){
       const items = (M || people).get(p);
       const mode = md || mode0;
-      let done = 0, late = 0;
+      let done = 0, late = 0, soon = 0;
       const today0 = faToDate(todayShamsi());
+      const soonT = today0 ? new Date(today0.getTime() + 3 * 86400000) : null;
       items.forEach(r => {
         const c = taskStatus(r).cls;
         if(c === 'done') done++;
-        else{ const d = faToDate(faDateOf(pick(r,T.due) || '')); if(d && today0 && d < today0) late++; }
+        else{ const d = faToDate(faDateOf(pick(r,T.due) || '')); if(d && today0 && d < today0) late++; else if(d && soonT && d <= soonT) soon++; }
       });
       const open = items.length - done;
       const pp = items.length ? Math.round(done / items.length * 100) : 0;
+      /* سربرگ «بار کاری» برای نفرات و پیمانکاران: تعداد باز، نوار دیر/نزدیک موعد/در جریان/انجام و وضعیت */
+      if(mode === 'person' || mode === 'ctr'){
+        const run = Math.max(0, open - late - soon);
+        const st = !open ? ['ok', 'همه انجام شد'] : (late >= 3 || open >= 10) ? ['bad', 'زیر بار'] : (!late && open <= 3) ? ['ok', 'ظرفیت دارد'] : null;
+        const seg = (n, c) => n ? '<i class="' + c + '" style="flex:' + n + '"></i>' : '';
+        return '<div class="eng foldable tkp tkw2" id="taskP'+i+'" style="--k:'+Math.min(i,10)+'">'
+          + '<button type="button" class="eng-head">'
+          +   '<span class="tkw-top">' + avatarHtml(p)
+          +     '<span class="tkw-nm">' + (mode === 'ctr' ? '<b class="tk-gname">' + esc(p) + '</b>' : '<span class="tkp-id">' + personName(p) + (p !== 'بدون مسئول' ? pdChipHtml(p) : '') + '</span>') + '</span>'
+          +     '<span class="tkw-cnt"><b>' + toFa(open) + '</b>باز</span>'
+          +     '<span class="eng-ar">▾</span></span>'
+          +   '<span class="tkw-bar" title="' + toFa(pp) + '٪ انجام شده">' + seg(late, 'l') + seg(soon, 's') + seg(run, 'r') + seg(done, 'd') + (items.length ? '' : '<i class="r" style="flex:1;opacity:.2"></i>') + '</span>'
+          +   '<span class="tkw-lg">'
+          +     (late ? '<span class="l"><i></i>' + toFa(late) + ' دیر</span>' : '')
+          +     (soon ? '<span class="s"><i></i>' + toFa(soon) + ' نزدیک موعد</span>' : '')
+          +     (run ? '<span class="r"><i></i>' + toFa(run) + ' در جریان</span>' : '')
+          +     (done ? '<span class="d"><i></i>' + toFa(done) + ' انجام</span>' : '')
+          +     (st ? '<em class="' + st[0] + '">' + st[1] + '</em>' : '')
+          +   '</span>'
+          + '</button>'
+          + tkLazyBody(() => personOpenDoneHtml(items)) + '</div>';
+      }
       return '<div class="eng foldable tkp" id="taskP'+i+'" style="--k:'+Math.min(i,10)+'">'
         + '<button type="button" class="eng-head">'
         +   (mode === 'floor' ? TK_FLR_IC + (flrKeyOfLabel(p) ? '<b class="tk-gname flr-link" data-flr="' + esc(flrKeyOfLabel(p)) + '" role="link" title="پروندهٔ طبقه">' + esc(p) + '</b>' : '<b class="tk-gname">' + esc(p) + '</b>')
