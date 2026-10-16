@@ -4417,6 +4417,22 @@
     .gt-tg{grid-template-columns:repeat(2,1fr);}
     .gt-lg{margin-inline-start:0;}
   }
+  /* کاشی‌های بالای «کارها»: سه‌تایی کنار هم، ظریف */
+  #tkTiles.tk-tiles{display:grid !important;grid-template-columns:repeat(3, minmax(0,1fr)) !important;gap:8px !important;margin:2px 0 14px !important;}
+  #tkTiles .rk{display:flex !important;align-items:center;gap:9px !important;min-height:0 !important;padding:10px 12px !important;border-radius:16px !important;min-width:0;}
+  #tkTiles .rk .rk-ic{width:34px !important;height:34px !important;flex:none !important;border-radius:11px !important;}
+  #tkTiles .rk .rk-ic svg{width:18px !important;height:18px !important;}
+  #tkTiles .rk .rk-tx{min-width:0;display:flex;flex-direction:column;gap:1px;}
+  #tkTiles .rk .rk-tx b{font-size:13px !important;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #tkTiles .rk .rk-tx small{font-size:10.5px !important;white-space:nowrap !important;overflow:hidden;text-overflow:ellipsis;display:block;}
+  @media(max-width:620px){
+    #tkTiles.tk-tiles{gap:6px !important;}
+    #tkTiles .rk{flex-direction:column !important;align-items:center !important;text-align:center;gap:6px !important;padding:10px 6px 9px !important;}
+    #tkTiles .rk .rk-ic{width:32px !important;height:32px !important;}
+    #tkTiles .rk .rk-tx{align-items:center;width:100%;}
+    #tkTiles .rk .rk-tx b{font-size:12.5px !important;}
+    #tkTiles .rk .rk-tx small{font-size:10px !important;max-width:100%;}
+  }
   /* ====== لیست فعالیت: کاشی پنجره‌ها ====== */
   .tk-tiles{margin:2px 0 14px;}
   #panelTasks .task-div{display:none !important;}
@@ -23176,15 +23192,15 @@
   <div class="panel" id="panelTasks" role="tabpanel" aria-labelledby="tabTasks" data-tkw="tasks" hidden>
     <!-- پنجره‌های لیست فعالیت به شکل کاشی، مثل دفتر فنی و گزارش‌ها -->
     <div class="rk-cards tk-tiles" id="tkTiles" role="tablist" aria-label="بخش‌های لیست فعالیت">
-      <button type="button" class="rk c-daily on" data-tkw="tasks" role="tab" aria-selected="true">
-        <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2.5 2.5L11 5M4 17l2.5 2.5L11 15M14 7h6M14 17h6"/></svg></span>
-        <span class="rk-tx"><b>فعالیت‌ها</b><small id="tkwTasksSub">کارهای باز و تکمیل‌شده</small></span></button>
       <button type="button" class="rk c-admin" data-tkw="cal" role="tab" aria-selected="false">
         <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h3M8 17h6"/></svg></span>
-        <span class="rk-tx"><b>تقویم موعدها و ابلاغ‌ها</b><small id="tkwCalSub">موعدهای این ماه</small></span></button>
+        <span class="rk-tx"><b>تقویم</b><small id="tkwCalSub">موعدها</small></span></button>
+      <button type="button" class="rk c-daily on" data-tkw="tasks" role="tab" aria-selected="true">
+        <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2.5 2.5L11 5M4 17l2.5 2.5L11 15M14 7h6M14 17h6"/></svg></span>
+        <span class="rk-tx"><b>فعالیت‌ها</b><small id="tkwTasksSub">باز و تکمیل‌شده</small></span></button>
       <button type="button" class="rk c-crew" data-tkw="gantt" role="tab" aria-selected="false">
         <span class="rk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 7.5h6M10 11.5h8M7.5 15.5h5"/></svg></span>
-        <span class="rk-tx"><b>برنامهٔ اجرا</b><small id="tkwGtSub">گانت فعالیت‌ها و برنامهٔ زمان‌بندی</small></span></button>
+        <span class="rk-tx"><b>برنامهٔ اجرا</b><small id="tkwGtSub">گانت</small></span></button>
     </div>
     <div class="jump-bar" id="taskJumpBar"></div>
     <div class="block" id="taskToolsBlock">
@@ -64427,8 +64443,10 @@
         /* فقط اگر عوض شده: نوشتنِ همان متن خودش جهشی در پنل است و این
            ناظر را دوباره صدا می‌زد — هر ۶۰ میلی‌ثانیه، بی‌پایان. */
         const ta = a && a.textContent.trim(), tc = c && c.textContent.trim();
-        if(sa && ta && sa.textContent !== ta) sa.textContent = ta;
-        if(sc && tc && sc.textContent !== tc) sc.textContent = tc;
+        /* زیرنویس کوتاه: فعالیت‌ها «۱۵ باز»، تقویم «۸ موعد» */
+        const ta2 = ta ? ta.split('،')[0].trim() : '', tc2 = tc ? tc.split('،').pop().trim() : '';
+        if(sa && ta2 && sa.textContent !== ta2) sa.textContent = ta2;
+        if(sc && tc2 && sc.textContent !== tc2) sc.textContent = tc2;
       }, 60);
     };
     try{ new MutationObserver(sync).observe(pn, {childList:true, subtree:true}); }catch(e){}
