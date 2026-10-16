@@ -22831,6 +22831,29 @@
   .um-q input, .dc-q input, .ulx-q input, .ctm-q input, .pc-q input, .wm2-q input, .gt-q input, .kx-q input, .mx-q input, .cr-q input, .ab-q input, .cm3-q input, .rvw2-q input, .rf-q input, .pk-q input, .dbx-q input, .ns-q input{font-size:12.5px !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
   .hsl-q, .ctcn-q, .ca2-q{height:var(--q-h) !important;border-radius:var(--q-r) !important;border:1px solid transparent !important;background:var(--field) !important;font-size:12.5px !important;}
   .hsl-q:focus, .ctcn-q:focus, .ca2-q:focus{background:var(--surface) !important;border-color:color-mix(in srgb, var(--sky) 45%, var(--line)) !important;box-shadow:0 0 0 3px color-mix(in srgb, var(--sky) 12%, transparent) !important;outline:none;}
+  /* فهرست کشویی یکسان در همهٔ سایت */
+  .ns-btn{height:40px;border-radius:var(--q-r);background:var(--field) !important;border:1px solid transparent;padding:0 12px 0 9px;gap:6px;font:600 12.5px var(--f);color:var(--ink);min-width:0;max-width:100%;-webkit-tap-highlight-color:transparent;}
+  .ns-btn .ns-v{color:var(--ink);}
+  .ns-btn.sm{font-size:12px;padding:0 10px 0 7px;border-radius:10px;}
+  .ns-btn.inl{display:inline-flex;width:auto;vertical-align:middle;}
+  .ns-btn.inl .ns-v{flex:0 1 auto;}
+  .ns-btn .ns-ar{width:16px;height:16px;opacity:.75;}
+  .ns-btn .ns-ar svg{width:13px;height:13px;}
+  .ns-btn:hover{background:color-mix(in srgb, var(--ink) 4%, var(--field)) !important;}
+  .ns-btn.on{background:var(--field) !important;}
+  .ns-btn.on .ns-v{font-weight:700;}
+  .ns-btn.open, .ns-btn:focus-visible{outline:none;background:var(--surface) !important;border-color:color-mix(in srgb, var(--sky) 45%, var(--line)) !important;box-shadow:0 0 0 3px color-mix(in srgb, var(--sky) 12%, transparent);}
+  .ns-btn:disabled{opacity:.5;cursor:default;}
+  .ns-btn.bare{all:unset;display:inline-flex;align-items:center;gap:4px;cursor:pointer;font:inherit;color:inherit;min-width:0;max-width:100%;flex:0 1 auto;}
+  .ns-btn.bare .ns-v{color:inherit;font-weight:inherit;flex:0 1 auto;}
+  .ns-btn.bare .ns-ar{width:14px;height:14px;}
+  .ns-btn.bare.open .ns-ar{transform:rotate(180deg);}
+  :is(.fd-body, .fdrawer) .ns-btn.on{background:color-mix(in srgb, var(--sky) 10%, var(--field)) !important;}
+  :is(.fd-body, .fdrawer) .ns-btn.on .ns-v{font-weight:800;}
+  .nd2-sel:has(.ns-btn)::after{content:none !important;}
+  .ns-o.on{background:color-mix(in srgb, var(--sky) 10%, transparent);}
+  .ns-o.on i{color:var(--sky);}
+  .ns-pop.sheet::before{content:"";display:block;width:38px;height:4px;border-radius:9px;background:color-mix(in srgb, var(--ink) 18%, transparent);margin:9px auto 0;flex:0 0 auto;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -65401,7 +65424,8 @@
      بودن، و فهرستی با تیک گزینهٔ انتخابی؛ اگر گزینه‌ها زیاد باشد کادر جست‌وجو هم
      دارد. روی موبایل از پایین صفحه باز می‌شود. انتخاب، همان change را می‌فرستد. */
   (function(){
-    const NS_SEL = '.fd2 .fd-body select:not([multiple]), .fdrawer .fd-body select:not([multiple])';
+    /* همهٔ فهرست‌های کشویی سایت (به‌جز طبقه که انتخابگر خودش را دارد) */
+    const NS_SEL = 'select:not([multiple]):not([size]):not([data-flp]):not([data-nons])';
     const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     let open = null;   // {sel, btn, pop, q}
@@ -65412,7 +65436,26 @@
       b.querySelector('.ns-v').textContent = labelOf(sel) || '—';
       b.classList.toggle('on', !isEmpty(sel));
       b.disabled = sel.disabled;
-      b.hidden = sel.hidden || sel.style.display === 'none';
+      b.hidden = sel.hidden || sel.style.display === 'none' || (sel.isConnected && getComputedStyle(sel).display === 'none');
+    }
+    /* اندازه از خود select: هم‌قد کادرهای کنارش؛ اگر جا کم بود به اندازهٔ متن باز می‌شود */
+    function fit(sel, b){
+      const cs = getComputedStyle(sel), par = sel.parentElement;
+      /* select بی‌زمینه درون یک قرص (نوار نما و ترتیب): دکمه هم بی‌قاب می‌ماند */
+      if(/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor) && cs.backgroundImage === 'none' && !(parseFloat(cs.borderTopWidth) > 0)){ b.classList.add('bare'); return; }
+      if(!sel.offsetWidth) return;
+      const h = Math.round(sel.offsetHeight);
+      if(h) b.style.height = Math.max(32, Math.min(44, h)) + 'px';
+      if(h && h < 38) b.classList.add('sm');
+      if(sel.closest('.field, .af, form, .te-f, .ctc-f, .dbx-pf') && parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor && !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor)) b.style.borderColor = cs.borderTopColor;
+      if(par){
+        const pcs = getComputedStyle(par);
+        const inner = par.clientWidth - parseFloat(pcs.paddingLeft) - parseFloat(pcs.paddingRight);
+        const flexRow = /flex/.test(pcs.display) && !/column/.test(pcs.flexDirection);
+        if(flexRow && parseFloat(cs.flexGrow) > 0){ b.style.flex = cs.flexGrow + ' 1 0'; b.style.minWidth = '0'; }
+        else if(sel.offsetWidth < inner - 4) b.classList.add('inl');
+        if(/grid/.test(pcs.display)) b.classList.remove('inl');
+      }
     }
     function enhance(sel){
       if(sel.__nsBtn || !sel.options) return;
@@ -65420,9 +65463,12 @@
       b.type = 'button'; b.className = 'ns-btn';
       b.setAttribute('aria-haspopup', 'listbox');
       const lab = sel.id ? document.querySelector('label[for="' + CSS.escape(sel.id) + '"]') : null;
-      if(lab) b.setAttribute('aria-label', lab.textContent.trim());
+      const fl = sel.closest('.field');
+      const lt = sel.getAttribute('aria-label') || (lab ? lab.textContent : '') || (sel.closest('label') ? (sel.closest('label').querySelector('span, u') || {}).textContent : '') || (fl && fl.querySelector('label') ? fl.querySelector('label').textContent : '');
+      if(lt && lt.trim()) b.setAttribute('aria-label', lt.trim().replace(/[:：]\s*$/, ''));
       b.innerHTML = '<span class="ns-v"></span><i class="ns-ar">' + CHEV + '</i>';
-      sel.__nsBtn = b;
+      sel.__nsBtn = b; b.__sel = sel;
+      if(sel.classList.contains('ns-native') === false) fit(sel, b);
       sel.classList.add('ns-native');
       sel.insertAdjacentElement('afterend', b);
       b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open && open.sel === sel ? close() : show(sel); });
@@ -65462,7 +65508,9 @@
         pop.__bg = bg;
       }else{
         const r = btn.getBoundingClientRect();
-        const w = Math.max(r.width, 220);
+        pop.style.minWidth = Math.max(r.width, 200) + 'px';
+        pop.style.maxWidth = Math.min(420, window.innerWidth - 16) + 'px';
+        const w = Math.min(Math.max(pop.offsetWidth, r.width, 200), window.innerWidth - 16);
         pop.style.width = w + 'px';
         const left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
         pop.style.left = left + 'px';
@@ -65475,7 +65523,7 @@
       pop.addEventListener('click', e => {
         const o = e.target.closest('[data-nsv]'); if(!o) return;
         e.stopPropagation();
-        if(sel.value !== o.dataset.nsv){ sel.value = o.dataset.nsv; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+        if(sel.value !== o.dataset.nsv){ sel.value = o.dataset.nsv; sel.dispatchEvent(new Event('input', {bubbles:true})); sel.dispatchEvent(new Event('change', {bubbles:true})); }
         sync(sel); close(); btn.focus({preventScroll:true});
       });
       const qi = pop.querySelector('.ns-q input');
@@ -65504,7 +65552,22 @@
     document.addEventListener('scroll', e => { if(open && !open.pop.contains(e.target) && !open.pop.classList.contains('sheet')) close(); }, true);
     /* مقدارهایی که کد عوض می‌کند (حذف فیلترها، کپسول ✕) بی‌رویداد change: بعد از هر کلیک همگام می‌شوند */
     let raf = 0;
-    const syncAll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => document.querySelectorAll('select.ns-native').forEach(sync)); };
+    const syncAll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
+      document.querySelectorAll('select.ns-native').forEach(sync);
+      /* دکمه‌ای که select اش رفته یا عوض شده، می‌رود */
+      document.querySelectorAll('.ns-btn').forEach(b => { if(!b.__sel || !b.__sel.isConnected || b.__sel.__nsBtn !== b || b.previousElementSibling !== b.__sel) b.remove(); });
+    }); };
+    /* مقداری که کد بی‌رویداد می‌گذارد هم فوراً روی دکمه می‌آید */
+    ['value', 'selectedIndex'].forEach(k => {
+      const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, k);
+      if(d && d.set) Object.defineProperty(HTMLSelectElement.prototype, k, {configurable:true, enumerable:d.enumerable, get(){ return d.get.call(this); }, set(v){ d.set.call(this, v); if(this.__nsBtn) sync(this); }});
+    });
+    /* کلیک روی برچسبِ فهرست هم بازش می‌کند */
+    document.addEventListener('click', e => {
+      const lab = e.target.closest && e.target.closest('label'); if(!lab || e.target.closest('.ns-btn, .ns-pop, input, button, a')) return;
+      const sel = lab.htmlFor ? document.getElementById(lab.htmlFor) : lab.querySelector('select.ns-native');
+      if(sel && sel.__nsBtn && !sel.__nsBtn.hidden && !sel.__nsBtn.disabled){ e.preventDefault(); setTimeout(() => show(sel), 0); }
+    });
     document.addEventListener('click', () => setTimeout(syncAll, 0), true);
     document.addEventListener('change', syncAll, true);
     const scan = () => document.querySelectorAll(NS_SEL).forEach(enhance);
