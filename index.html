@@ -4414,6 +4414,13 @@
   .gt-tbar{height:5px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;} .gt-tbar i{display:block;height:100%;background:var(--ok);border-radius:5px;}
   .gt-tip small{font-size:11px;color:var(--mt);} .gt-tip small.bad{color:var(--late);font-weight:700;}
   .gt-tip .mini{align-self:flex-start;}
+  .gt-ed{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px;border-radius:13px;background:rgba(255,255,255,.05);}
+  .gt-ed label{display:flex;flex-direction:column;gap:3px;flex:1 1 110px;font-size:10px;color:var(--mt);}
+  .gt-ed input{height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.12) !important;background:rgba(0,0,0,.25) !important;color:#e7edf3 !important;padding:0 10px;font:inherit;font-size:12.5px;}
+  .gt-dl{position:relative;} .gt-dl > summary{list-style:none;} .gt-dl > summary::-webkit-details-marker{display:none;}
+  .gt-dlm{position:absolute;top:40px;inset-inline-end:0;z-index:20;min-width:240px;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:14px;border:1px solid var(--line);background:var(--surface);box-shadow:0 14px 30px -12px rgba(15,23,42,.35);}
+  .gt-dlm button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:9px 10px;border-radius:10px;} .gt-dlm button:hover{background:var(--field);}
+  .gt-dlm b{font-size:12.5px;color:var(--ink);} .gt-dlm small{font-size:10.5px;color:var(--muted);}
   @media(max-width:620px){
     .gt-cv2{border-radius:18px;margin:0 -4px;}
     .gt-tg{grid-template-columns:repeat(2,1fr);}
@@ -64178,8 +64185,9 @@
       if(!n || !s) return;
       const l = +val(t, 'OutlineLevel') || 0;
       if(l === 0 && val(t, 'ID') === '0') return;  /* ردیف خلاصهٔ کل پروژه */
+      const pm = String(val(t, 'Notes') || '').match(/PMID:([^\s<]+)/);
       rows.push({n, s: s.slice(0, 10), e: (e || s).slice(0, 10), p: +val(t, 'PercentComplete') || 0, l: Math.max(0, l - 1),
-        sum: val(t, 'Summary') === '1', ms: val(t, 'Milestone') === '1', w: val(t, 'WBS') || val(t, 'OutlineNumber')});
+        sum: val(t, 'Summary') === '1', ms: val(t, 'Milestone') === '1', w: val(t, 'WBS') || val(t, 'OutlineNumber'), id: pm ? pm[1] : ''});
     });
     return {name, rows};
   }
@@ -64225,9 +64233,9 @@
     const cells = ln => { const o = []; let q = false, c = ''; for(const ch of ln){ if(ch === '"'){ q = !q; continue; } if(ch === sep && !q){ o.push(c); c = ''; } else c += ch; } o.push(c); return o.map(x => x.trim()); };
     const H = cells(L[0]).map(h => toEn(h).toLowerCase());
     const col = (...ks) => H.findIndex(h => ks.some(k => h.indexOf(k) !== -1));
-    const iN = col('name', 'نام', 'عنوان', 'شرح', 'task'), iS = col('start', 'شروع'), iE = col('finish', 'end', 'پایان', 'اتمام'), iP = col('%', 'percent', 'درصد', 'پیشرفت'), iL = col('level', 'سطح', 'outline');
+    const iN = col('عنوان', 'name', 'نام', 'شرح', 'task'), iS = col('start', 'شروع'), iE = col('finish', 'end', 'پایان', 'اتمام'), iP = col('%', 'percent', 'درصد', 'پیشرفت'), iL = col('level', 'سطح', 'outline'), iI = col('شناسه', 'pmid');
     if(iN < 0 || iS < 0) return {rows: [], err: 'ستون‌های «نام» و «شروع» در سطر اول پیدا نشد.'};
-    return {rows: L.slice(1).map(ln => { const c = cells(ln); return {n: c[iN], s: c[iS], e: iE >= 0 ? c[iE] : c[iS], p: iP >= 0 ? parseFloat(toEn(c[iP])) || 0 : 0, l: iL >= 0 ? Math.max(0, (+toEn(c[iL]) || 1) - 1) : 0}; }).filter(x => x.n && x.s)};
+    return {rows: L.slice(1).map(ln => { const c = cells(ln); return {n: c[iN], s: c[iS], e: iE >= 0 ? c[iE] : c[iS], p: iP >= 0 ? parseFloat(toEn(c[iP])) || 0 : 0, l: iL >= 0 ? Math.max(0, (+toEn(c[iL]) || 1) - 1) : 0, id: iI >= 0 ? String(c[iI] || '').trim() : ''}; }).filter(x => x.n && x.s)};
   }
   async function gtImport(file){
     const nm = String(file.name || ''), ext = (nm.split('.').pop() || '').toLowerCase();
@@ -64245,19 +64253,117 @@
       else P = gtParseCsv(txt);
     }catch(e){ P = {rows: [], err: String(e && e.message || e)}; }
     if(!P || !P.rows.length){ showDialog('warn', 'فعالیتی پیدا نشد', (P && P.err) || 'فایل را بررسی کنید: MS Project XML، Primavera XER یا CSV با ستون‌های نام، شروع، پایان، درصد.'); return; }
-    const ok = await askConfirm('برنامهٔ زمان‌بندی', toFa(P.rows.length) + ' فعالیت از «' + nm + '» خوانده شد. به‌عنوان برنامهٔ اجرای پروژه ذخیره شود؟\n(برنامهٔ قبلی جایگزین می‌شود و همه آن را می‌بینند.)', 'ذخیره');
+    /* ردیف‌هایی که شناسهٔ فعالیت سایت دارند (فایلی که از همین‌جا دانلود شده): تاریخ‌هایشان روی خود فعالیت‌ها می‌نشیند */
+    const TM = new Map(); (tasksAll || []).forEach(r => { if(r && !r.__adm && pick(r,T.id)) TM.set(String(pick(r,T.id)), r); });
+    const ch = [];
+    P.rows.forEach(x => {
+      const r = x.id && TM.get(String(x.id)); if(!r) return;
+      const s1 = gtParse(x.s), e1 = gtParse(x.e) || s1; if(!s1) return;
+      const ns = gtShamsi(s1), ne = gtShamsi(e1);
+      const os = normDate(pick(r,T.start) || ''), oe = normDate(pick(r,T.due) || '');
+      if(staffDkSafe(ns) !== staffDkSafe(os) || staffDkSafe(ne) !== staffDkSafe(oe)) ch.push({r, id: String(x.id), ns, ne});
+    });
+    const linked = P.rows.filter(x => x.id && TM.has(String(x.id))).length;
+    const canW = canEditTask();
+    const msg = toFa(P.rows.length) + ' ردیف از «' + nm + '» خوانده شد.'
+      + (linked ? '\n' + toFa(linked) + ' ردیف به فعالیت‌های اجرایی سایت وصل است' + (ch.length ? ' و تاریخ ' + toFa(ch.length) + ' فعالیت عوض می‌شود.' : '؛ تاریخی عوض نشده.') : '')
+      + (ch.length && !canW ? '\n(شما اجازهٔ ویرایش فعالیت‌ها را ندارید؛ فقط برنامه ذخیره می‌شود.)' : '')
+      + '\n\nبه‌عنوان برنامهٔ زمان‌بندی پروژه ذخیره شود؟ (برنامهٔ قبلی جایگزین می‌شود.)';
+    const ok = await askConfirm('برنامهٔ زمان‌بندی', msg, 'ذخیره');
     if(!ok) return;
+    let upd = 0;
+    if(ch.length && canW){
+      for(const c of ch){
+        try{ await supaFetch('tasks?id=eq.' + encodeURIComponent(c.id), {method:'PATCH', body:{start_date: c.ns, due_date: c.ne}}); c.r['تاریخ ابلاغ'] = c.ns; c.r['موعد اتمام'] = c.ne; upd++; }catch(e){}
+      }
+      try{ clearNetCache(); }catch(e){}
+    }
     const body = {file: nm, name: P.name || '', rows: P.rows.map(x => ({n: String(x.n).slice(0, 200), s: x.s, e: x.e, p: Math.round(+x.p || 0), l: x.l || 0, sum: x.sum ? 1 : 0, ms: x.ms ? 1 : 0, w: x.w || ''}))};
     try{
       await supaFetch('nudges', {method:'POST', body:[{date_fa: todayShamsi(), from_name: activeUserName(), to_name: activeUserName(), kind: GT_KIND,
         item_id: '', title: nm.slice(0, 120), message: JSON.stringify(body), seen: true}]});
       gt.plan = Object.assign(body, {by: activeUserName(), at: new Date().toISOString()}); gt.planAt = Date.now();
-      gt.src = 'plan'; gt.shut.clear(); gtSave(); gtRender();
+      gt.src = upd ? 'site' : 'plan'; gt.shut.clear(); gtSave(); gtRender();
+      if(upd) showDialog('ok', 'برنامه اعمال شد', 'تاریخ ' + toFa(upd) + ' فعالیت اجرایی از روی فایل به‌روز شد.');
     }catch(e){ showDialog('err', 'ذخیره نشد', String(e && e.message || e)); }
+  }
+  const gtShamsi = d => { const j = gtFaS(d); return j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0'); };
+  const staffDkSafe = v => { try{ return dayKey(v) || ''; }catch(e){ return String(v || ''); } };
+  /* همهٔ فعالیت‌های اجرایی برای فایل برنامه */
+  function gtExecList(){
+    const out = [], today = gtD0(new Date());
+    (tasksAll || []).forEach(r => {
+      if(!r || r.__adm) return;
+      try{ if(typeof isNoteSide === 'function' && isNoteSide(r)) return; }catch(e){}
+      const id = String(pick(r,T.id) || ''); if(!id) return;
+      let st = null, due = null; try{ st = faToDate(pick(r,T.start)); }catch(e){} try{ due = taskDue(r); }catch(e){}
+      if(!st) st = due ? new Date(due.getTime() - 6 * GT_DAY) : today;
+      if(!due) due = new Date(st.getTime() + 6 * GT_DAY);
+      if(due < st) due = st;
+      let p = 0, cls = ''; try{ cls = taskStatus(r).cls; }catch(e){}
+      p = cls === 'done' ? 100 : 0; try{ const c = typeof tpNow === 'function' ? tpNow(id) : null; if(c && c.p != null) p = +c.p; }catch(e){}
+      out.push({id, t: String(pick(r,T.title) || 'فعالیت'), floor: String(pick(r,T.floor) || pick(r,T.pos) || '').trim() || 'بدون طبقه',
+        cat: String(pick(r,T.cat) || '').trim(), who: String(pick(r,T.m1) || ''), s: gtD0(st), e: gtD0(due), p, done: cls === 'done'});
+    });
+    return out.sort((a, b) => String(a.floor).localeCompare(String(b.floor), 'fa', {numeric:true}) || (a.s - b.s));
+  }
+  function gtDownload(name, text, type){
+    const blob = new Blob([text], {type});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  function gtExport(fmt){
+    const L = gtExecList();
+    if(!L.length){ showDialog('warn', 'فعالیتی نیست', 'فعالیت اجرایی‌ای برای برنامه پیدا نشد.'); return; }
+    const proj = ((document.getElementById('brandProject') || {}).textContent || 'پروژه').trim();
+    const stamp = toEn(todayShamsi()).replace(/\//g, '-');
+    if(fmt === 'csv'){
+      const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const lines = [['شناسه','عنوان','طبقه','رشته','مسئول','شروع','پایان','درصد','وضعیت'].map(q).join(',')]
+        .concat(L.map(x => [x.id, x.t, x.floor, x.cat, x.who, toEn(gtShamsi(x.s)), toEn(gtShamsi(x.e)), x.p, x.done ? 'انجام شده' : ''].map(q).join(',')));
+      gtDownload('برنامه-اجرا-' + stamp + '.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+      return;
+    }
+    const xe = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const iso = (d, h) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T' + h + ':00:00';
+    let uid = 1, ord = 0; const T2 = [];
+    const mn = new Date(Math.min(...L.map(x => +x.s)));
+    T2.push('<Task><UID>0</UID><ID>0</ID><Name>' + xe(proj) + '</Name><OutlineNumber>0</OutlineNumber><OutlineLevel>0</OutlineLevel><Summary>1</Summary></Task>');
+    const G = new Map(); L.forEach(x => { if(!G.has(x.floor)) G.set(x.floor, []); G.get(x.floor).push(x); });
+    G.forEach((arr, fl) => {
+      ord++; let k = 0;
+      const s0 = new Date(Math.min(...arr.map(x => +x.s))), e0 = new Date(Math.max(...arr.map(x => +x.e)));
+      T2.push('<Task><UID>' + uid + '</UID><ID>' + uid + '</ID><Name>' + xe(fl) + '</Name><OutlineNumber>' + ord + '</OutlineNumber><OutlineLevel>1</OutlineLevel><Summary>1</Summary>'
+        + '<Start>' + iso(s0, '08') + '</Start><Finish>' + iso(e0, '17') + '</Finish></Task>'); uid++;
+      arr.forEach(x => {
+        k++;
+        const days = Math.round((x.e - x.s) / GT_DAY) + 1;
+        T2.push('<Task><UID>' + uid + '</UID><ID>' + uid + '</ID><Name>' + xe(x.t) + '</Name><Type>1</Type><OutlineNumber>' + ord + '.' + k + '</OutlineNumber><OutlineLevel>2</OutlineLevel>'
+          + '<Manual>1</Manual><Start>' + iso(x.s, '08') + '</Start><Finish>' + iso(x.e, '17') + '</Finish><Duration>PT' + (days * 8) + 'H0M0S</Duration><DurationFormat>7</DurationFormat>'
+          + '<PercentComplete>' + Math.round(x.p) + '</PercentComplete><Notes>' + xe('PMID:' + x.id + (x.who ? ' — مسئول: ' + x.who : '')) + '</Notes></Task>'); uid++;
+      });
+    });
+    const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Project xmlns="http://schemas.microsoft.com/project">'
+      + '<SaveVersion>14</SaveVersion><Name>' + xe(proj) + '.xml</Name><Title>' + xe(proj) + '</Title><ScheduleFromStart>1</ScheduleFromStart>'
+      + '<StartDate>' + iso(mn, '08') + '</StartDate><MinutesPerDay>480</MinutesPerDay><MinutesPerWeek>2880</MinutesPerWeek><DaysPerMonth>26</DaysPerMonth>'
+      + '<Tasks>' + T2.join('') + '</Tasks></Project>';
+    gtDownload('برنامه-اجرا-' + stamp + '.xml', xml, 'application/xml');
+  }
+  /* ذخیرهٔ تاریخ یک فعالیت از روی گانت */
+  async function gtSaveDates(id, sv, ev){
+    const ns = normDate(sv || ''), ne = normDate(ev || '');
+    if(!ns || !ne){ showDialog('warn', 'تاریخ ناقص است', 'تاریخ شروع و پایان را وارد کنید.'); return false; }
+    if(staffDkSafe(ne) < staffDkSafe(ns)){ showDialog('warn', 'بازه درست نیست', 'تاریخ پایان پیش از شروع است.'); return false; }
+    await supaFetch('tasks?id=eq.' + encodeURIComponent(id), {method:'PATCH', body:{start_date: ns, due_date: ne}});
+    const r = (tasksAll || []).find(x => x && !x.__adm && String(pick(x,T.id)) === String(id));
+    if(r){ r['تاریخ ابلاغ'] = ns; r['موعد اتمام'] = ne; }
+    try{ clearNetCache(); }catch(e){}
+    return true;
   }
   const gtCanImport = () => { try{ const L = myLevel(); return L === 1 || L === 2 || can('write.adm'); }catch(e){ return false; } };
   const GT_I = {
     up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 20h14"/></svg>',
+    dn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></svg>',
     tod:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M7 7l5-4 5 4"/></svg>',
     chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     q:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
@@ -64303,18 +64409,21 @@
     const today = gtD0(new Date());
     const mob = window.innerWidth < 620;
     const tb = '<div class="gt-tb">'
-      + '<div class="gt-seg" role="tablist">' + [['site','فعالیت‌های سایت'],['plan','برنامهٔ زمان‌بندی']].map(x => '<button type="button" data-gtsrc="' + x[0] + '" class="' + (gt.src === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>'
+      + '<div class="gt-seg" role="tablist">' + [['site','کارها و موعدها'],['plan','برنامهٔ زمان‌بندی']].map(x => '<button type="button" data-gtsrc="' + x[0] + '" class="' + (gt.src === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>'
       + '<div class="gt-seg sm">' + [['w','هفته'],['m','ماه'],['a','کل']].map(x => '<button type="button" data-gtz="' + x[0] + '" class="' + (gt.zoom === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>'
       + (gt.src === 'site' ? '<label class="gt-sel"><select data-gtgrp aria-label="گروه‌بندی">' + [['kind','بر اساس نوع'],['floor','بر اساس طبقه'],['owner','بر اساس مسئول'],['none','بدون گروه']].map(x => '<option value="' + x[0] + '"' + (gt.grp === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label>'
           + '<button type="button" class="gt-chip' + (gt.adm ? ' on' : '') + '" data-gttg="adm"><i style="background:' + GT_K.statement.c + '"></i>دفتر فنی</button>'
           + '<button type="button" class="gt-chip' + (gt.blk ? ' on' : '') + '" data-gttg="blk"><i style="background:' + GT_K.blk.c + '"></i>موانع</button>' : '')
       + '<label class="gt-q">' + GT_I.q + '<input type="search" placeholder="جست‌وجو…" value="' + esc(gt.q) + '" data-gtq></label>'
-      + (gtCanImport() ? '<label class="gt-btn go">' + GT_I.up + 'فایل برنامه<input type="file" accept=".xml,.xer,.csv,.txt,.mpp" data-gtfile hidden></label>' : '')
+      + '<details class="gt-dl"><summary class="gt-btn">' + GT_I.dn + 'دانلود برنامه</summary><div class="gt-dlm">'
+      +   '<button type="button" data-gtexp="xml"><b>MS Project</b><small>فایل XML — در Project باز و ویرایش کنید</small></button>'
+      +   '<button type="button" data-gtexp="csv"><b>Excel</b><small>فایل CSV — هر سطر یک فعالیت اجرایی</small></button></div></details>'
+      + (gtCanImport() ? '<label class="gt-btn go">' + GT_I.up + 'بارگذاری برنامه<input type="file" accept=".xml,.xer,.csv,.txt,.mpp" data-gtfile hidden></label>' : '')
       + '</div>';
     let info = '';
     if(gt.src === 'plan'){
       info = gt.plan ? '<div class="gt-info"><b>' + esc(gt.plan.name || gt.plan.file || 'برنامهٔ زمان‌بندی') + '</b><small>' + esc(gt.plan.file || '') + ' · ' + toFa((gt.plan.rows || []).length) + ' فعالیت · ' + esc(gt.plan.by || '') + '</small></div>'
-        : '<div class="gt-empty"><b>هنوز برنامهٔ زمان‌بندی وارد نشده</b><small>از MS Project فایل را با «Save As ← XML» ذخیره کنید (یا خروجی XER پریماورا یا CSV) و با دکمهٔ «فایل برنامه» بدهید.</small></div>';
+        : '<div class="gt-empty"><b>هنوز برنامهٔ زمان‌بندی وارد نشده</b><small>از MS Project فایل را با «Save As ← XML» ذخیره کنید (یا خروجی XER پریماورا یا CSV) و با دکمهٔ «بارگذاری برنامه» بدهید.</small></div>';
     }
     if(!all.length){
       box.innerHTML = '<div class="gt">' + tb + info + (gt.src === 'site' || gt.plan ? '<div class="gt-empty"><b>موردی با تاریخ برای نمایش نیست</b><small>فعالیت‌هایی که تاریخ ابلاغ یا موعد دارند اینجا می‌آیند.</small></div>' : '') + '</div>';
@@ -64414,6 +64523,9 @@
       + '<div class="gt-tg"><span>شروع<b>' + esc(gtFa(r.s)) + '</b></span><span>پایان<b>' + esc(gtFa(r.e)) + '</b></span><span>مدت<b>' + toFa(dur) + ' روز</b></span><span>پیشرفت<b>' + toFa(r.p) + '٪</b></span></div>'
       + '<div class="gt-tbar"><i style="width:' + Math.min(100, r.p) + '%"></i></div>'
       + '<small class="' + (r.late ? 'bad' : '') + '">' + (r.cls === 'done' ? 'انجام شده' : left < 0 ? toFa(-left) + ' روز از پایان گذشته' : left === 0 ? 'پایان امروز است' : toFa(left) + ' روز مانده') + (r.who ? ' · ' + esc(r.who) : '') + (r.blk ? ' · گیر: ' + esc(r.blk) : '') + '</small>'
+      + (r.k === 'exec' && canEditTask() ? '<div class="gt-ed"><label><span>شروع</span><input type="text" class="date-in" inputmode="numeric" data-gtes value="' + esc(toFa(gtShamsi(r.s))) + '"></label>'
+          + '<label><span>پایان</span><input type="text" class="date-in" inputmode="numeric" data-gtee value="' + esc(toFa(gtShamsi(r.e))) + '"></label>'
+          + '<button type="button" class="mini go" data-gtsave="' + esc(r.id) + '">ذخیرهٔ تاریخ</button></div>' : '')
       + (r.k !== 'plan' ? '<button type="button" class="mini go" data-gtgo="' + esc(r.adm ? r.k : 'task') + '|' + esc(r.id) + '">باز کردن ' + (r.adm ? 'سند' : 'فعالیت') + '</button>' : '');
     tip.hidden = false;
   }
@@ -64421,6 +64533,11 @@
     const box = e.target.closest && e.target.closest('#taskGantt'); if(!box) return;
     const s = e.target.closest('[data-gtsrc]'); if(s){ gt.src = s.dataset.gtsrc; gt.shut.clear(); gtSave(); if(gt.src === 'plan') gtLoadPlan(true).then(gtRender); else gtRender(); return; }
     const z = e.target.closest('[data-gtz]'); if(z){ gt.zoom = z.dataset.gtz; gtSave(); gtRender(); return; }
+    const ex = e.target.closest('[data-gtexp]'); if(ex){ const dd = ex.closest('details'); if(dd) dd.open = false; gtExport(ex.dataset.gtexp); return; }
+    const sv = e.target.closest('[data-gtsave]'); if(sv){ const tip = sv.closest('.gt-tip'); sv.disabled = true;
+      gtSaveDates(sv.dataset.gtsave, (tip.querySelector('[data-gtes]') || {}).value, (tip.querySelector('[data-gtee]') || {}).value)
+        .then(ok => { sv.disabled = false; if(ok){ box.__keepScroll = true; const sl = (box.querySelector('.gt-sc') || {}).scrollLeft; gtRender(); const sc = box.querySelector('.gt-sc'); if(sc) sc.scrollLeft = sl; } })
+        .catch(err => { sv.disabled = false; showDialog('err', 'ذخیره نشد', String(err && err.message || err)); }); return; }
     const tg = e.target.closest('[data-gttg]'); if(tg){ const k = tg.dataset.gttg; gt[k] = !gt[k]; gtSave(); gtRender(); return; }
     const g = e.target.closest('[data-gtg]'); if(g){ const k = g.dataset.gtg; gt.shut.has(k) ? gt.shut.delete(k) : gt.shut.add(k); box.__keepScroll = true; const sl = (box.querySelector('.gt-sc') || {}).scrollLeft; gtRender(); const sc = box.querySelector('.gt-sc'); if(sc) sc.scrollLeft = sl; return; }
     if(e.target.closest('[data-gttoday]')){ const sc = box.querySelector('.gt-sc'), tl = box.querySelector('.gt-tl'); if(sc && tl) sc.scrollTo({left: Math.max(0, tl.offsetLeft - sc.clientWidth * 0.72), behavior:'smooth'}); return; }
