@@ -4363,6 +4363,12 @@
   .gt-seg button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;}
   .gt-seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   .gt-sel select{height:34px;border-radius:11px;font-size:12px;padding:0 10px;}
+  .gt-vw{display:flex;gap:6px;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;order:-1;}
+  .gt-vw::-webkit-scrollbar{display:none;}
+  .gt-vw button{all:unset;box-sizing:border-box;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:700;color:var(--muted);transition:background .2s, color .2s, border-color .2s;}
+  .gt-vw button i{width:9px;height:9px;border-radius:3px;}
+  .gt-vw button.on{background:#0d141c;border-color:#0d141c;color:#fff;box-shadow:0 8px 18px -12px rgba(13,20,28,.9);}
+  [data-theme="dark"] .gt-vw button.on{background:#e7edf3;border-color:#e7edf3;color:#0d141c;}
   .gt-chip{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:600;color:var(--muted);}
   .gt-chip i{width:8px;height:8px;border-radius:50%;opacity:.45;} .gt-chip.on{color:var(--ink);border-color:color-mix(in srgb, var(--ink) 25%, var(--line));} .gt-chip.on i{opacity:1;}
   .gt-q{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:11px;background:var(--surface);flex:1 1 140px;min-width:120px;color:var(--muted);}
@@ -64123,9 +64129,9 @@
      زمان‌بندی واردشده (MS Project XML، Primavera XER یا CSV). محور زمان
      چپ‌به‌راست است؛ ستون نام‌ها سمت راست ثابت می‌ماند. */
   const GT_KIND = 'برنامه زمانبندی';
-  const gt = {src:'site', zoom:'m', grp:'kind', adm:true, blk:true, q:'', shut:new Set(), plan:null, planAt:0, busy:false};
-  try{ const o = JSON.parse(localStorage.getItem('gtPrefs2') || '{}'); ['src','zoom','grp','adm','blk'].forEach(k => { if(o[k] != null) gt[k] = o[k]; }); }catch(e){}
-  const gtSave = () => { try{ localStorage.setItem('gtPrefs2', JSON.stringify({src:gt.src, zoom:gt.zoom, grp:gt.grp, adm:gt.adm, blk:gt.blk})); }catch(e){} };
+  const gt = {src:'site', zoom:'m', grp:'kind', view:'all', adm:true, blk:true, q:'', shut:new Set(), plan:null, planAt:0, busy:false};
+  try{ const o = JSON.parse(localStorage.getItem('gtPrefs2') || '{}'); ['src','zoom','grp','view'].forEach(k => { if(o[k] != null) gt[k] = o[k]; }); }catch(e){}
+  const gtSave = () => { try{ localStorage.setItem('gtPrefs2', JSON.stringify({src:gt.src, zoom:gt.zoom, grp:gt.grp, view:gt.view})); }catch(e){} };
   const GT_DAY = 86400000;
   const gtD0 = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
   const gtFa = d => { if(!d) return ''; const j = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return toFa(j[2]) + ' ' + FA_MONTHS[j[1] - 1] + ' ' + toFa(j[0]); };
@@ -64151,6 +64157,7 @@
   /* ردیف‌های فعالیت سایت، دفتر فنی و موانع */
   function gtSiteRows(){
     const out = [], today = gtD0(new Date());
+    const V = gt.view || 'all', wantExec = V === 'all' || V === 'exec', wantBlk = V === 'all' || V === 'blk', wantAdm = V === 'all' || V === 'adm';
     const tasks = new Map();
     (tasksAll || []).forEach(r => {
       if(!r || r.__adm) return;
@@ -64166,10 +64173,10 @@
       let p = cls === 'done' ? 100 : 0; try{ const c = typeof tpNow === 'function' ? tpNow(id) : null; if(c && c.p != null) p = +c.p; }catch(e){}
       let blkN = 0; try{ blkN = ((tbCache.items.get(id)) || []).filter(b => b.open).length; }catch(e){}
       const late = cls !== 'done' && gtD0(due) < today;
-      out.push({k:'exec', id, t: String(pick(r,T.title) || 'فعالیت'), s: gtD0(st), e: gtD0(due), p, cls, late, blkN,
+      if(wantExec) out.push({k:'exec', id, t: String(pick(r,T.title) || 'فعالیت'), s: gtD0(st), e: gtD0(due), p, cls, late, blkN,
         who: String(pick(r,T.m1) || ''), floor: String(pick(r,T.floor) || pick(r,T.pos) || '').trim(), cat: String(pick(r,T.cat) || '').trim()});
     });
-    if(gt.blk){ try{ tbCache.items.forEach((L, tid) => L.forEach(b => {
+    if(wantBlk){ try{ tbCache.items.forEach((L, tid) => L.forEach(b => {
       const s0 = gtParse(b.date) || (b.at ? gtD0(new Date(b.at)) : null); if(!s0) return;
       const rv = (b.events || []).filter(ev => ev.type === 'رفع').pop();
       const e0 = b.open ? today : (gtParse(rv && rv.date) || (rv && rv.at ? gtD0(new Date(rv.at)) : today));
@@ -64179,7 +64186,7 @@
         cls: b.open ? 'doing' : 'done', late: false, open: b.open, sub: tr ? String(pick(tr,T.title) || '') : '', who: b.by || '',
         floor: tr ? String(pick(tr,T.floor) || pick(tr,T.pos) || '').trim() : '', cat: 'موانع'});
     })); }catch(e){} }
-    if(gt.adm) (adminAll || []).forEach(a => {
+    if(wantAdm) (adminAll || []).forEach(a => {
       const r = a && a.row; if(!r) return;
       const due = gtParse(pick(r,AD.due)); if(!due) return;
       let done = false; try{ done = admDoneState(a.kind, r).cls === 'ok'; }catch(e){}
@@ -64452,9 +64459,10 @@
     const tb = '<div class="gt-tb">'
       + '<div class="gt-seg" role="tablist">' + [['site','کارها و موعدها'],['plan','برنامهٔ زمان‌بندی']].map(x => '<button type="button" data-gtsrc="' + x[0] + '" class="' + (gt.src === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>'
       + '<div class="gt-seg sm">' + [['w','هفته'],['m','ماه'],['a','کل']].map(x => '<button type="button" data-gtz="' + x[0] + '" class="' + (gt.zoom === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>'
-      + (gt.src === 'site' ? '<label class="gt-sel"><select data-gtgrp aria-label="گروه‌بندی">' + [['kind','بر اساس نوع'],['floor','بر اساس طبقه'],['owner','بر اساس مسئول'],['none','بدون گروه']].map(x => '<option value="' + x[0] + '"' + (gt.grp === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label>'
-          + '<button type="button" class="gt-chip' + (gt.adm ? ' on' : '') + '" data-gttg="adm"><i style="background:' + GT_K.statement.c + '"></i>دفتر فنی</button>'
-          + '<button type="button" class="gt-chip' + (gt.blk ? ' on' : '') + '" data-gttg="blk"><i style="background:' + GT_K.blk.c + '"></i>موانع</button>' : '')
+      + (gt.src === 'site' ? '<div class="gt-vw" role="tablist">' + [['all','همه',''],['exec','اجرایی',GT_K.exec.c],['adm','دفتر فنی',GT_K.statement.c],['blk','موانع و مشکلات',GT_K.blk.c]]
+          .map(x => '<button type="button" data-gtvw="' + x[0] + '" class="' + (gt.view === x[0] ? 'on' : '') + '">' + (x[2] ? '<i style="background:' + x[2] + '"></i>' : '') + x[1] + '</button>').join('') + '</div>'
+          + '<label class="gt-sel"><select data-gtgrp aria-label="گروه‌بندی">' + [['kind','بر اساس نوع'],['floor','بر اساس طبقه'],['owner','بر اساس مسئول'],['none','بدون گروه']].map(x => '<option value="' + x[0] + '"' + (gt.grp === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label>'
+          : '')
       + '<label class="gt-q">' + GT_I.q + '<input type="search" placeholder="جست‌وجو…" value="' + esc(gt.q) + '" data-gtq></label>'
       + '<details class="gt-dl"><summary class="gt-btn">' + GT_I.dn + 'دانلود برنامه</summary><div class="gt-dlm">'
       +   '<button type="button" data-gtexp="xml"><b>MS Project</b><small>فایل XML — در Project باز و ویرایش کنید</small></button>'
@@ -64467,7 +64475,7 @@
         : '<div class="gt-empty"><b>هنوز برنامهٔ زمان‌بندی وارد نشده</b><small>از MS Project فایل را با «Save As ← XML» ذخیره کنید (یا خروجی XER پریماورا یا CSV) و با دکمهٔ «بارگذاری برنامه» بدهید.</small></div>';
     }
     if(!all.length){
-      box.innerHTML = '<div class="gt">' + tb + info + (gt.src === 'site' || gt.plan ? '<div class="gt-empty"><b>موردی با تاریخ برای نمایش نیست</b><small>فعالیت‌هایی که تاریخ ابلاغ یا موعد دارند اینجا می‌آیند.</small></div>' : '') + '</div>';
+      box.innerHTML = '<div class="gt">' + tb + info + (gt.src === 'site' || gt.plan ? (gt.src === 'site' && gt.view === 'blk' ? '<div class="gt-empty"><b>مانع بازی ثبت نشده</b><small>موانع باز و موانعی که در ۴۵ روز اخیر رفع شده‌اند اینجا می‌آیند.</small></div>' : '<div class="gt-empty"><b>موردی با تاریخ برای نمایش نیست</b><small>فعالیت‌هایی که تاریخ ابلاغ یا موعد دارند اینجا می‌آیند.</small></div>') : '') + '</div>';
       return;
     }
     let mn = Math.min(...all.map(r => +r.s), +today), mx = Math.max(...all.map(r => +r.e), +today);
@@ -64579,6 +64587,7 @@
       gtSaveDates(sv.dataset.gtsave, (tip.querySelector('[data-gtes]') || {}).value, (tip.querySelector('[data-gtee]') || {}).value)
         .then(ok => { sv.disabled = false; if(ok){ box.__keepScroll = true; const sl = (box.querySelector('.gt-sc') || {}).scrollLeft; gtRender(); const sc = box.querySelector('.gt-sc'); if(sc) sc.scrollLeft = sl; } })
         .catch(err => { sv.disabled = false; showDialog('err', 'ذخیره نشد', String(err && err.message || err)); }); return; }
+    const vw = e.target.closest('[data-gtvw]'); if(vw){ gt.view = vw.dataset.gtvw; gt.shut.clear(); gtSave(); gtRender(); return; }
     const tg = e.target.closest('[data-gttg]'); if(tg){ const k = tg.dataset.gttg; gt[k] = !gt[k]; gtSave(); gtRender(); return; }
     const g = e.target.closest('[data-gtg]'); if(g){ const k = g.dataset.gtg; gt.shut.has(k) ? gt.shut.delete(k) : gt.shut.add(k); box.__keepScroll = true; const sl = (box.querySelector('.gt-sc') || {}).scrollLeft; gtRender(); const sc = box.querySelector('.gt-sc'); if(sc) sc.scrollLeft = sl; return; }
     if(e.target.closest('[data-gttoday]')){ const sc = box.querySelector('.gt-sc'), tl = box.querySelector('.gt-tl'); if(sc && tl) sc.scrollTo({left: Math.max(0, tl.offsetLeft - sc.clientWidth * 0.72), behavior:'smooth'}); return; }
