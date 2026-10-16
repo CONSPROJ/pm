@@ -22854,6 +22854,25 @@
   .nd2-sel:has(.ns-btn)::after{content:none !important;}
   .ns-o.on{background:color-mix(in srgb, var(--sky) 10%, transparent);}
   .ns-o.on i{color:var(--sky);}
+  .pf-hint{display:block;font-size:11px;color:var(--muted);line-height:1.8;margin:-2px 0 10px;}
+  .pf-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+  .pf-r{display:flex;flex-direction:column;gap:7px;padding:10px;border-radius:14px;background:var(--field);border:1px solid var(--line);}
+  .pf-r input{min-width:0;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:12.5px var(--f);padding:0 10px;box-sizing:border-box;width:100%;}
+  .pf-r .pf-a{font-weight:700;}
+  .pf-crew{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1.3fr) minmax(0,.9fr);gap:5px;align-items:end;}
+  .pf-crew label{display:flex;flex-direction:column;gap:3px;margin:0;min-width:0;} .pf-crew u{text-decoration:none;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;}
+  .pf-crew input{text-align:center;font-family:var(--m);}
+  .pf-crew i{font-style:normal;font-weight:800;color:var(--muted);padding-bottom:9px;}
+  .pf-foot{display:flex;align-items:center;gap:6px;} .pf-foot .pf-nt{flex:1;height:32px;font-size:11.5px;}
+  .pf-per{font-size:11px;color:var(--muted);white-space:nowrap;} .pf-per b{font-family:var(--m);color:var(--sky);font-weight:800;}
+  @media (max-width:520px){ .pf-crew{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);} .pf-crew i:nth-of-type(2){display:none;} .pf-crew label:nth-of-type(3){grid-column:1 / 3;} .pf-foot{flex-wrap:wrap;} .pf-foot .pf-nt{flex-basis:100%;} }
+  .pf-view{margin-top:12px;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;}
+  .pf-vh{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;} .pf-vh b{font-size:12.5px;font-weight:800;color:var(--ink);} .pf-vh small{font-size:10.5px;color:var(--muted);}
+  .pf-vr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);font-size:11.5px;}
+  .pf-vr:first-of-type{border-top:0;}
+  .pf-va{display:flex;flex-direction:column;min-width:0;} .pf-va b{font-weight:700;color:var(--ink);} .pf-va small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pf-vc{color:var(--muted);font-size:11px;white-space:nowrap;}
+  .pf-vq{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap;color:var(--ink);} .pf-vq b{font:800 14px var(--m);} .pf-vq small{font-size:10px;color:var(--muted);}
   /* منابع در کارت گانت */
   .gr-box{margin:8px 0 2px;}
   .gr-sum{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);font-size:11px;color:rgba(255,255,255,.65);}
@@ -31353,6 +31372,7 @@
     { const o0 = ctrContactOf(canon); const ad = o.ad || (o0 && o0.ad); if(ad && Object.keys(o).length) clean.ad = ad; }
     /* نام قراردادی، دیسیپلین و تخصص‌ها */
     if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s; if(o.ct) clean.ct = o.ct;
+    if(Array.isArray(o.pf) && o.pf.length) clean.pf = o.pf.slice(0, 60);
     const old = ctrContactOf(canon);
     if(old && old.name){
       await supaFetch('lists?kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&value=like.' + encodeURIComponent(old.name.replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
@@ -31653,7 +31673,7 @@
     const man = ctrTagsOf(c.ct), D = ctrDocsCalc(name, man);
     return '<div class="ctc-ed" data-ctced="' + esc(name) + '">'
       + '<div class="ctc-edh"><span class="ctc-av">' + esc(initialsOf(ctrCanon(name))) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small class="ctx-sub">' + esc(ctxSubTxt(D)) + '</small></span><button type="button" class="ctc-pf" data-ctcprof="1" title="کارت پیمانکار، گزارش‌ها و یادداشت‌ها">' + CDX_I.prof + '<span>کارت پیمانکار</span></button><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button>'
-      +   '<nav class="ctx-nav"><button type="button" data-ctxjump="names" class="on">نام‌ها</button><button type="button" data-ctxjump="docs">قراردادها</button><button type="button" data-ctxjump="skill">تخصص</button><button type="button" data-ctxjump="contact">تماس</button></nav></div>'
+      +   '<nav class="ctx-nav"><button type="button" data-ctxjump="names" class="on">نام‌ها</button><button type="button" data-ctxjump="docs">قراردادها</button><button type="button" data-ctxjump="skill">تخصص</button><button type="button" data-ctxjump="pf">راندمان</button><button type="button" data-ctxjump="contact">تماس</button></nav></div>'
       + '<section class="ctx-s" data-ctxsec="names">' + cnmHtml(name, c) + ctmHtml(name) + ctcnHtml(name, c, D) + '</section>'
       + ctdkHtml(name, man, D, loading)
       + '<section class="ctx-s" data-ctxsec="skill"><div class="ctx-h">' + CTX_I.tool + '<b>دیسیپلین و تخصص</b></div>'
@@ -31667,6 +31687,7 @@
             + '<input type="text" class="ctg-in" data-ctgnew="s" data-list="ctdSkillList" autocomplete="off" placeholder="+ انتخاب یا نوشتن تخصص"></div></div>';
         })()
       + '</section>'
+      + ctPfEdHtml(name, c)
       + '<section class="ctx-s" data-ctxsec="contact"><div class="ctx-h">' + CTC_I.tel + '<b>تماس و نشانی</b></div>'
       + '<div class="ctc-grp"><b>مدیریت / خود پیمانکار</b><small>فقط کسانی که اجازهٔ «تماس با مدیریت» دارند این شماره را می‌بینند</small></div>'
       + '<label class="ctc-f"><span>نام مدیر یا خود پیمانکار</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
@@ -32233,6 +32254,71 @@
     m.querySelector('.modal-body').scrollTop = 0;
     if(need) ctrEnsureDocs().then(() => { const box = m.querySelector('.ctc-ed'); if(box && !m.hidden) ctxRefresh(box); });
   }
+  /* ====== راندمان اکیپ در پروندهٔ پیمانکار ======
+     برای هر کار: ترکیب اکیپ (استادکار و کارگر)، مقدار کاری که در یک روز ۸ ساعته
+     انجام می‌دهند و واحدش. سهم هر نفر خودکار حساب می‌شود؛ برای برآورد نیرو و
+     مقایسهٔ پیمانکاران به کار می‌آید. در همان ردیف پروندهٔ پیمانکار ذخیره می‌شود. */
+  const PF_UNITS = ['m²', 'm³', 'm', 'متر طول', 'عدد', 'تن', 'kg', 'شاخه', 'دستگاه', 'سرویس'];
+  const pfNum = v => { const n = parseFloat(toEn(String(v == null ? '' : v)).replace(/[^\d.]/g, '')); return isFinite(n) ? n : 0; };
+  const pfFmt = n => { if(!n) return '۰'; const r = n >= 10 ? Math.round(n * 10) / 10 : Math.round(n * 100) / 100; return toFa(String(r)); };
+  function pfPer(x){ const crew = pfNum(x.o) + pfNum(x.k); return crew && pfNum(x.q) ? pfNum(x.q) / crew : 0; }
+  function pfRowHtml(x, skills){
+    x = x || {};
+    const per = pfPer(x);
+    return '<div class="pf-r">'
+      + '<input type="text" class="pf-a" data-pf="a" list="ctdSkillList" autocomplete="off" value="' + esc(x.a || (skills && skills[0]) || '') + '" placeholder="کار: گچ‌کاری، کاشی، آرماتوربندی…">'
+      + '<div class="pf-crew"><label><u>استادکار</u><input type="text" inputmode="numeric" data-pf="o" value="' + esc(x.o != null && x.o !== '' ? toFa(x.o) : '') + '" placeholder="۱"></label>'
+      +   '<i>+</i><label><u>کارگر</u><input type="text" inputmode="numeric" data-pf="k" value="' + esc(x.k != null && x.k !== '' ? toFa(x.k) : '') + '" placeholder="۱"></label>'
+      +   '<i>=</i><label><u>در روز ۸ ساعته</u><input type="text" inputmode="decimal" data-pf="q" value="' + esc(x.q ? toFa(x.q) : '') + '" placeholder="۰"></label>'
+      +   '<label class="pf-u"><u>واحد</u><input type="text" data-pf="u" list="pfUnitList" autocomplete="off" value="' + esc(x.u || 'm²') + '"></label></div>'
+      + '<div class="pf-foot"><input type="text" class="pf-nt" data-pf="nt" value="' + esc(x.nt || '') + '" placeholder="توضیح: شرایط کار، ارتفاع، نوع مصالح… (اختیاری)">'
+      +   '<span class="pf-per" data-pfper>' + (per ? 'هر نفر ≈ <b>' + pfFmt(per) + '</b> ' + esc(x.u || '') : '') + '</span>'
+      +   '<button type="button" class="ctc-repx" data-pfx="1" aria-label="حذف ردیف">✕</button></div>'
+      + (x.d ? '<input type="hidden" data-pf="d" value="' + esc(x.d) + '">' : '')
+      + '</div>';
+  }
+  function ctPfEdHtml(name, c){
+    if(!document.getElementById('pfUnitList')){ const dl = document.createElement('datalist'); dl.id = 'pfUnitList'; dl.innerHTML = PF_UNITS.map(v => '<option value="' + esc(v) + '">').join(''); document.body.appendChild(dl); }
+    const L = Array.isArray(c.pf) ? c.pf : [], sk = ctrTagsOf(c.s);
+    return '<section class="ctx-s" data-ctxsec="pf"><div class="ctx-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>راندمان اکیپ</b></div>'
+      + '<small class="pf-hint">با یک اکیپ مشخص (چند استادکار و چند کارگر) در یک روز کاری ۸ ساعته چه مقدار کار انجام می‌شود. برای ترکیب‌های مختلف اکیپ، ردیف جدا بزنید.</small>'
+      + '<div class="pf-list">' + L.map(x => pfRowHtml(x, sk)).join('') + '</div>'
+      + '<button type="button" class="ctc-add" data-pfadd="1">+ راندمان تازه</button></section>';
+  }
+  function ctPfRead(box){
+    return Array.from(box.querySelectorAll('.pf-r')).map(rw => {
+      const v = k => String((rw.querySelector('[data-pf="' + k + '"]') || {}).value || '').trim();
+      const x = {a: v('a'), o: pfNum(v('o')), k: pfNum(v('k')), q: pfNum(v('q')), u: v('u') || 'm²'};
+      if(v('nt')) x.nt = v('nt').slice(0, 200);
+      x.d = v('d') || todayShamsi();
+      return x;
+    }).filter(x => x.a && x.q > 0 && (x.o + x.k) > 0);
+  }
+  /* نمایش در کارت پیمانکار */
+  function ctPfViewHtml(name){
+    let c = null; try{ c = ctrContactOf(name); }catch(e){}
+    const L = (c && Array.isArray(c.pf)) ? c.pf : [];
+    if(!L.length) return '';
+    return '<div class="pf-view"><div class="pf-vh"><b>راندمان اکیپ</b><small>در روز کاری ۸ ساعته</small></div>'
+      + L.map(x => { const per = pfPer(x);
+          return '<div class="pf-vr"><span class="pf-va"><b>' + esc(x.a) + '</b>' + (x.nt ? '<small>' + esc(x.nt) + '</small>' : '') + '</span>'
+            + '<span class="pf-vc">' + (x.o ? toFa(x.o) + ' استادکار' : '') + (x.o && x.k ? ' + ' : '') + (x.k ? toFa(x.k) + ' کارگر' : '') + '</span>'
+            + '<span class="pf-vq"><b>' + pfFmt(x.q) + '</b> ' + esc(x.u || '') + '<small>' + (per ? 'هر نفر ' + pfFmt(per) : '') + '</small></span></div>'; }).join('')
+      + '</div>';
+  }
+  document.addEventListener('click', e => {
+    const t = e.target; if(!t.closest) return;
+    const box = t.closest('.ctc-ed'); if(!box) return;
+    if(t.closest('[data-pfadd]')){ e.stopPropagation(); const c = ctrContactOf(box.dataset.ctced) || {};
+      const L = box.querySelector('.pf-list'); L.insertAdjacentHTML('beforeend', pfRowHtml({o: 1, k: 1}, ctrTagsOf(c.s))); const f = L.lastElementChild.querySelector('[data-pf="q"]'); if(f) f.focus(); return; }
+    if(t.closest('[data-pfx]')){ e.stopPropagation(); t.closest('.pf-r').remove(); return; }
+  }, true);
+  document.addEventListener('input', e => {
+    const rw = e.target.closest && e.target.closest('.pf-r'); if(!rw) return;
+    const v = k => (rw.querySelector('[data-pf="' + k + '"]') || {}).value || '';
+    const per = pfPer({o: v('o'), k: v('k'), q: v('q')});
+    const el = rw.querySelector('[data-pfper]'); if(el) el.innerHTML = per ? 'هر نفر ≈ <b>' + pfFmt(per) + '</b> ' + esc(v('u')) : '';
+  });
   function ctcRepRowHtml(x){
     x = x || {};
     return '<div class="ctc-rep">'
@@ -32251,6 +32337,7 @@
       if(k === 'p') o.p.push(v); else o[k] = v;
     });
     if(o.d2){ o.d = o.d2; } delete o.d2;
+    o.pf = ctPfRead(box);
     return o;
   }
   document.addEventListener('click', async e => {
@@ -43868,7 +43955,7 @@
             const t = ctrTypeOf(name);
             return (t === 'cons' || t === 'emp') ? ctPartyHtml(name)
               : rangeBar() + '<div class="empty">برای «' + esc(name) + '» در این بازه گزارش کارگاهی ثبت نشده است. بازهٔ بلندتری را انتخاب کنید.</div>' + ctPartyHtml(name);
-          })());
+          })()) + ctPfViewHtml(name);
       if(keepTab){
         const tb = body.querySelector('[data-hrtab="' + keepTab + '"]');
         if(tb) tb.click();
