@@ -22854,6 +22854,23 @@
   .nd2-sel:has(.ns-btn)::after{content:none !important;}
   .ns-o.on{background:color-mix(in srgb, var(--sky) 10%, transparent);}
   .ns-o.on i{color:var(--sky);}
+  .pf2-cover{position:relative;background-size:cover;background-position:center;}
+  .pf2-cover.has-img{height:136px;border-bottom:0;}
+  .pf2-cover.has-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.18), transparent 38%, transparent 62%, color-mix(in srgb, var(--surface) 55%, transparent));pointer-events:none;}
+  .pf2-cover.busy{animation:pfCvPulse 1s ease-in-out infinite;}
+  @keyframes pfCvPulse{50%{opacity:.6;}}
+  .pf2-cv-acts{position:absolute;top:12px;right:14px;z-index:1;display:flex;gap:6px;}
+  .pf2-cv-b{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:99px;font:700 11px var(--f);color:#fff;
+    background:rgba(15,20,30,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.22);transition:background .15s;}
+  .pf2-cv-b:hover{background:rgba(15,20,30,.55);}
+  .pf2-cv-b svg{width:13px;height:13px;}
+  .pf2-cv-b.x{width:28px;padding:0;justify-content:center;font-size:11px;}
+  .pf2-cover:not(.has-img) .pf2-cv-b{color:var(--ink);background:color-mix(in srgb, var(--surface) 70%, transparent);border-color:var(--line);}
+  @media (max-width:640px){ .pf2-cover.has-img{height:116px;} }
+  .dsc2-auto{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:0 0 12px;border-radius:14px;background:color-mix(in srgb, var(--sky) 7%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 22%, var(--line));}
+  .dsc2-auto span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .dsc2-auto b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .dsc2-auto small{font-size:11px;color:var(--muted);line-height:1.7;}
   .ns-pop{animation:nsDrop .12s ease-out;}
   .ns-pop.up{animation-name:nsDropUp;}
   @keyframes nsDrop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
@@ -32394,6 +32411,7 @@
     const U = discUsage();
     const chip = (n, lb) => n ? '<i>' + toFa(n) + ' ' + lb + '</i>' : '';
     return '<div class="dsc2"><div class="cdx-note">یک فهرست برای همهٔ بخش‌ها: رشتهٔ <b>فعالیت‌ها</b>، <b>افراد</b>، دیسیپلین <b>پیمانکاران</b> و رشتهٔ <b>اسناد طراحی</b>. با تغییر نام یا یکی کردن، همه‌جا با هم عوض می‌شود.</div>'
+      + '<div class="dsc2-auto"><span><b>دیسیپلین خودکار</b><small>پیمانکاران از روی تخصص‌ها و افراد از روی سمت؛ دیسیپلینی که دستی گذاشته شده دست نمی‌خورد.</small></span><button type="button" class="dz-b" data-discauto="1">به‌روزرسانی الان</button></div>'
       + '<div class="dsc2-add"><input type="text" class="dsc2-in" placeholder="دیسیپلین تازه، مثلاً تأسیسات برقی" autocomplete="off"><button type="button" class="dz-b pri" data-discadd="1">+ افزودن</button></div>'
       + (discData ? '' : '<div class="ctdk-empty"><i class="ctdk-spin"></i>در حال شمردن کاربردها…</div>')
       + '<div class="dsc2-list">' + U.map(o => {
@@ -32436,6 +32454,7 @@
   }
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest || !t.closest('.dsc2')) return;
+    const au = t.closest('[data-discauto]'); if(au){ au.disabled = true; au.textContent = 'در حال بررسی همه…'; daDone = false; await daRun(true); await discEnsure(true); ctcRepaint(); return; }
     const op = t.closest('[data-discop]'); if(op){ discOpen = discOpen === op.dataset.discop ? '' : op.dataset.discop; ctcRepaint(); return; }
     const ad = t.closest('[data-discadd]');
     if(ad){ const i = t.closest('.dsc2').querySelector('.dsc2-in'), v = String(i.value || '').replace(/\s+/g, ' ').trim(); if(!v) return;
@@ -36023,6 +36042,107 @@
     st.classList.toggle('on', on); st.setAttribute('aria-checked', on);
     if(k === 'sound' && on) upChime();
   });
+  /* ====== کاور پروفایل ======
+     هر کس روی پروفایل خودش (و ادمین برای همه) یک عکس کاور می‌گذارد. عکس در
+     مرورگر به ۱۲۰۰×۴۰۰ بریده و فشرده می‌شود و در ستون cover_url جدول people
+     می‌نشیند؛ فقط وقتی پروفایلی باز است خوانده می‌شود تا بار صفحه سبک بماند. */
+  const PF_COVER_LS = 'siteLogM.covers.v1';
+  let pfCovers = {}; try{ pfCovers = JSON.parse(localStorage.getItem(PF_COVER_LS) || '{}') || {}; }catch(e){ pfCovers = {}; }
+  let pfCoverCol = true;
+  const pfCoverOk = u => /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(String(u || '')) || /^https:\/\/[^\s"'()<>\\]+$/.test(String(u || ''));
+  const pfCoverOf = n => { const u = pfCovers[nameKey(n || '')]; return pfCoverOk(u) ? u : ''; };
+  const pfCoverStyle = u => u ? ' style="background-image:url(&quot;' + esc(u) + '&quot;)"' : '';
+  const pfCanAdmin = () => { try{ return isAdminUser(); }catch(e){ return false; } };
+  function pfCoverKeep(){
+    /* فقط چند کاور آخر در حافظهٔ دستگاه */
+    const ks = Object.keys(pfCovers); while(ks.length > 12){ delete pfCovers[ks.shift()]; }
+    try{ localStorage.setItem(PF_COVER_LS, JSON.stringify(pfCovers)); }catch(e){ try{ localStorage.removeItem(PF_COVER_LS); }catch(e2){} }
+  }
+  function pfCoverPaint(name){
+    const u = pfCoverOf(name);
+    document.querySelectorAll('.pf2-cover[data-cover-for]').forEach(el => {
+      if(nameKey(el.dataset.coverFor) !== nameKey(name)) return;
+      el.classList.toggle('has-img', !!u);
+      el.style.backgroundImage = u ? 'url("' + u + '")' : '';
+      const del = el.querySelector('[data-pf-cover-del]');
+      if(!u && del) del.remove();
+      if(u && !del){ const acts = el.querySelector('.pf2-cv-acts'); if(acts) acts.insertAdjacentHTML('beforeend', '<button type="button" class="pf2-cv-b x" data-pf-cover-del="' + esc(name) + '" title="برداشتن کاور" aria-label="برداشتن کاور">✕</button>'); }
+    });
+  }
+  async function pfCoverLoad(name){
+    if(!pfCoverCol || !name) return;
+    try{
+      const r = await supaFetch('people?select=cover_url&name=eq.' + encodeURIComponent(name), {prefer:'return=representation'});
+      const u = (r && r[0] && r[0].cover_url) || '';
+      const k = nameKey(name);
+      if((pfCovers[k] || '') === u) return;
+      if(u) pfCovers[k] = u; else delete pfCovers[k];
+      pfCoverKeep(); pfCoverPaint(name);
+    }catch(e){ if(/cover_url|42703|column/i.test(String(e && (e.message || e)))) pfCoverCol = false; }
+  }
+  /* برش وسط به نسبت ۳ به ۱ و فشرده‌سازی تا زیر ~۲۵۰ کیلوبایت */
+  function pfCoverShrink(file){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = () => reject(new Error('خواندن فایل ممکن نشد'));
+      fr.onload = () => {
+        const im = new Image();
+        im.onerror = () => reject(new Error('تصویر خوانده نشد'));
+        im.onload = () => {
+          const W = 1200, H = 400, R = W / H;
+          let sw = im.width, sh = im.width / R;
+          if(sh > im.height){ sh = im.height; sw = im.height * R; }
+          const c = document.createElement('canvas'); c.width = W; c.height = H;
+          c.getContext('2d').drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, 0, 0, W, H);
+          let out = '';
+          for(const q of [0.8, 0.68, 0.55]){
+            try{ out = c.toDataURL('image/webp', q); }catch(e){ out = ''; }
+            if(!out || out.indexOf('image/webp') === -1) out = c.toDataURL('image/jpeg', q);
+            if(out.length < 340000) break;
+          }
+          resolve(out);
+        };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  async function pfCoverSave(name, u){
+    const rows = await supaFetch('people?name=eq.' + encodeURIComponent(name), {method:'PATCH', body:{cover_url: u || null}, prefer:'return=representation'});
+    if(!rows || !rows.length) await supaFetch('people?on_conflict=name', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{name, cover_url: u || null, role: roleOf(name) || null}]});
+    const k = nameKey(name);
+    if(u) pfCovers[k] = u; else delete pfCovers[k];
+    pfCoverKeep(); pfCoverPaint(name);
+  }
+  const pfCoverSqlErr = () => showDialog('warn', 'یک قدم در پایگاه‌داده لازم است', 'برای کاور، این دستور را یک بار در Supabase (SQL Editor) اجرا کنید:\nalter table public.people add column if not exists cover_url text;');
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-pf-cover], [data-pf-cover-del]'); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const del = b.hasAttribute('data-pf-cover-del'), name = del ? b.dataset.pfCoverDel : b.dataset.pfCover;
+    if(!(nameKey(name) === nameKey(activeUserName()) || pfCanAdmin())) return;
+    if(!pfCoverCol){ pfCoverSqlErr(); return; }
+    if(del){
+      if(!(await askConfirm('برداشتن کاور', 'کاور پروفایل برداشته شود؟', 'برداشتن'))) return;
+      try{ await pfCoverSave(name, ''); }catch(err){ if(/cover_url|42703|column/i.test(String(err && (err.message || err)))){ pfCoverCol = false; pfCoverSqlErr(); } else showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+      return;
+    }
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if(!f) return;
+      const cv = document.querySelector('.pf2-cover[data-cover-for="' + CSS.escape(name) + '"]');
+      if(cv) cv.classList.add('busy');
+      try{
+        const u = await pfCoverShrink(f);
+        await pfCoverSave(name, u);
+        try{ shrToast('کاور ثبت شد'); }catch(err){}
+      }catch(err){
+        if(/cover_url|42703|column/i.test(String(err && (err.message || err)))){ pfCoverCol = false; pfCoverSqlErr(); }
+        else showDialog('err', 'کاور ثبت نشد', friendlyErr(err));
+      }
+      if(cv) cv.classList.remove('busy');
+    };
+    inp.click();
+  }, true);
   function profileHeader(name, st){
     const me = (nameKey(name) === nameKey(activeUserName()));
     const L = (typeof levelOf === 'function') ? levelOf(name) : 3;
@@ -36038,7 +36158,10 @@
         ['بحرانی', st.warn, st.warn ? 'bad' : '']
       ] : null;
     return '<div class="pf2-hero lv' + L + '">'
-      + '<div class="pf2-cover" aria-hidden="true"></div>'
+      + '<div class="pf2-cover' + (pfCoverOf(name) ? ' has-img' : '') + '" data-cover-for="' + esc(name) + '"' + pfCoverStyle(pfCoverOf(name)) + '>'
+      +   ((me || pfCanAdmin()) ? '<span class="pf2-cv-acts"><button type="button" class="pf2-cv-b" data-pf-cover="' + esc(name) + '" title="تغییر کاور">' + PF_I.cam + '<span>کاور</span></button>'
+      +     (pfCoverOf(name) ? '<button type="button" class="pf2-cv-b x" data-pf-cover-del="' + esc(name) + '" title="برداشتن کاور" aria-label="برداشتن کاور">✕</button>' : '') + '</span>' : '')
+      + '</div>'
       + '<div class="pf2-id">'
       +   '<span class="pf2-ava">' + avatarHtml(name, 'lg', true)
       +     (me ? '<button type="button" class="pf2-cam" data-pf-ava="1" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '')
@@ -38000,6 +38123,7 @@
       else if(old === 'tasks') pf3Sub.kart = 'mine';
     }
     body.innerHTML = profileHeader(name) + '<div class="empty">در حال دریافت…</div>';
+    pfCoverLoad(name);
 
     let b = null;
     try{ [b] = await Promise.all([fetchBundle(profileState.date), loadTaskBlockers().catch(() => null)]); }catch(e){}
@@ -62784,6 +62908,7 @@
     tkCatList = Array.from(new Set(TK_CAT_DEF.concat(extra))).filter(x => !tkCatHidden.has(x));
     pdMap = new Map();
     ((lists && lists[PD_KIND]) || []).forEach(v => { const [n, d] = String(v).split('¦'); if(n && d) pdMap.set(nameKey(n.trim()), d.trim()); });
+    try{ daLoad(lists); }catch(e){}
   }
   /* رشتهٔ هر نفر (ابنیه، مکانیکال، …) که ادمین جلوی نامش در لیست فعالیت ثبت می‌کند */
   const PD_KIND = 'رشتهٔ افراد';
@@ -62832,6 +62957,107 @@
     let h = 0; String(c || '').split('').forEach(ch => { h = (h * 31 + ch.charCodeAt(0)) >>> 0; });
     return TK_CAT_COLORS[(i >= 0 ? i : h) % TK_CAT_COLORS.length];
   }
+  /* ====== دیسیپلین خودکار ======
+     دیسیپلین هر پیمانکار از روی تخصص‌هایش (پرونده + همهٔ گزارش‌های روزانه) و
+     دیسیپلین هر نفر از روی سمتش، خودکار تعیین و به‌روز می‌شود. هر تعیین خودکار
+     در «دیسیپلین خودکار» ثبت می‌شود؛ اگر کسی دستی دیسیپلین دیگری بگذارد،
+     مقدار دستی محترم است و دیگر خودکار عوض نمی‌شود. */
+  const DA_KIND = 'دیسیپلین خودکار', DA_SEP = '¦';
+  let daMap = new Map();          // 'p:key' | 'c:key' → دیسیپلینی که خودکار گذاشته شد
+  let daDone = false, daBusy = false;
+  const daNorm = t => String(t || '').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[\u200c\u200f\u0654\u064b-\u065f]/g, ' ').replace(/أ/g, 'ا').replace(/\s+/g, ' ').trim();
+  /* ترتیب مهم است: «سنگ نما» نما است نه نازک‌کاری، «لوله‌کش گاز» مکانیکال */
+  const DA_RULES = [
+    {k:'الکتریکال', n:/الکتریکال|برق/, w:/برق|الکتر|کابل|سیم ?کش|روشنایی|تابلو|جریان ضعیف|دوربین|اعلام حریق|ارتینگ|ژنراتور|\bups\b|نورپرداز/i},
+    {k:'مکانیکال', n:/مکانیکال|مکانیک|تاسیسات|تآسیسات/, w:/مکانیک|تاسیسات|تآسیسات|لوله|کانال ?کش|کانال|داکت|هواساز|چیلر|موتورخانه|آبرسان|فاضلاب|گازکش|گاز|اسپرینکلر|آتش ?نشان|اطفا|تهویه|فن ?کویل|پمپ|آسانسور|بالابر|سرمایش|گرمایش|شوفاژ|رادیاتور|hvac|عایق ?کار ?لوله/i},
+    {k:'نما', n:/نما/, w:/نما|کرتین|شیشه|کامپوزیت|اسکوپ|آلومینیوم|upvc|یو ?پی ?وی ?سی|لوور|اسپایدر/i},
+    {k:'سازه', n:/سازه/, w:/سازه|اسکلت|بتن|آرماتور|قالب ?بند|قالب|جوشکار|جوش|آهنگر|فلزکار|شمع|نیلینگ|انکراژ|فونداسیون|عمران|دیوار حائل|خاکبردار|گودبردار/i},
+    {k:'نازک‌کاری', n:/نازک/, w:/نازک|گچ|کاشی|سرامیک|نقاش|رنگ|کف ?پوش|سقف کاذب|کناف|کابینت|درب|در و پنجره|پنجره|لمینت|پارکت|موزاییک|سنگ ?کار|سنگ کف|سنگ|اپوکسی|بتونه|کاغذ دیواری|نجار|سفیدکاری|پلاستر|پرداخت/i},
+    {k:'معماری', n:/معماری/, w:/معمار|طراحی داخلی|دکوراسیون/i},
+    {k:'محوطه', n:/محوطه/, w:/محوطه|فضای سبز|باغبان|آسفالت|جدول ?گذار|زهکش|حصار/i},
+    {k:'ابنیه', n:/ابنیه/, w:/ابنیه|بنا|بنایی|آجر|بلوک|سفت ?کار|ایزوگام|عایق|تیغه|دیوار ?چین|اندود/i}
+  ];
+  /* نام دیسیپلین در فهرست خود پروژه (اگر «تأسیسات مکانیکی» دارند، همان) */
+  function daTarget(rule){
+    const all = tkCatsAll().filter(x => !tkCatHidden.has(x));
+    return all.find(x => x === rule.k) || all.find(x => rule.n.test(daNorm(x))) || rule.k;
+  }
+  /* بهترین دیسیپلین برای چند متن (تخصص‌ها یا سمت): بیشترین تطابق، به ترتیب قواعد */
+  function daGuess(texts){
+    const score = new Map();
+    (texts || []).forEach(t => {
+      const x = daNorm(t); if(!x) return;
+      const r = DA_RULES.find(r0 => r0.w.test(x));
+      if(r) score.set(r, (score.get(r) || 0) + 1);
+    });
+    let best = null, bs = 0;
+    DA_RULES.forEach(r => { const v = score.get(r) || 0; if(v > bs){ bs = v; best = r; } });
+    return best ? daTarget(best) : '';
+  }
+  function daLoad(lists){
+    daMap = new Map();
+    ((lists && lists[DA_KIND]) || []).forEach(v => { const a = String(v).split(DA_SEP); if(a.length >= 3 && a[2]) daMap.set(a[0] + ':' + nameKey(a[1]), a[2].trim()); });
+    if(!daDone) setTimeout(() => { try{ daRun(false); }catch(e){} }, 5000);
+  }
+  /* همه را می‌بیند و فقط خالی‌ها و تعیین‌های خودکارِ قبلی را به‌روز می‌کند */
+  async function daRun(report){
+    if(daBusy) return null;
+    try{ if(!isAdminUser()) return null; }catch(e){ return null; }
+    daBusy = true;
+    const out = {p: [], c: [], kept: 0};
+    try{
+      try{ await mtLoadAllNames(); }catch(e){}
+      const rows = [];
+      /* افراد پروژه: از روی سمت */
+      let pdTouched = false;
+      (listNames() || []).forEach(n => {
+        let isCtr = false; try{ isCtr = isContractorPerson(n); }catch(e){}
+        if(isCtr) return;
+        const want = daGuess([roleOf(n) || '']);
+        const key = 'p:' + nameKey(n), cur = pdOf(n), was = daMap.get(key);
+        if(cur && cur !== was){ out.kept++; return; }            // دستی
+        if(want && want !== cur){ pdMap.set(nameKey(n), want); pdTouched = true; out.p.push([n, want]); }
+        if(want) rows.push('p' + DA_SEP + n + DA_SEP + want);
+        else if(cur && cur === was){ rows.push('p' + DA_SEP + n + DA_SEP + cur); }
+      });
+      /* پیمانکاران: از روی تخصص‌های پرونده و گزارش‌ها */
+      const sk = new Map();
+      const addSk = (n, s) => { let c = n; try{ c = ctrCanon(canonicalName(n)); }catch(e){} c = String(c || '').trim(); if(!c) return; try{ if(ctrIsHidden(c)) return; }catch(e){}
+        if(!sk.has(c)) sk.set(c, []); if(s) sk.get(c).push(s); };
+      try{ mtNameSkills().forEach((set, n) => set.forEach(s => addSk(n, s))); }catch(e){}
+      ctrContacts.forEach(c => { if(c.t && c.t !== 'ctr') return; ctrTagsOf(c.s).forEach(s => addSk(c.name, s)); });
+      for(const [n, list] of sk){
+        /* اگر تخصص‌ها چیزی نگفتند، نام خود پیمانکار (مثلاً «تأسیسات فلانی») */
+        const want = daGuess(list) || daGuess([n]);
+        const o = ctrContactOf(n), cur = String((o && o.d) || '').trim(), key = 'c:' + nameKey(n), was = daMap.get(key);
+        if(o && o.t && o.t !== 'ctr') continue;
+        if(cur && cur !== was){ out.kept++; continue; }
+        if(want && want !== cur){
+          const cp = Object.assign({}, o || {}, {d: want}); delete cp.name;
+          try{ await ctrContactSave((o && o.name) || n, cp); out.c.push([n, want]); }catch(e){ continue; }
+        }
+        if(want) rows.push('c' + DA_SEP + ((o && o.name) || n) + DA_SEP + want);
+        else if(cur && cur === was) rows.push('c' + DA_SEP + ((o && o.name) || n) + DA_SEP + cur);
+      }
+      if(pdTouched){
+        const pr = []; pdMap.forEach((d, k) => { const nm = (listNames().find(x => nameKey(x) === k)) || k; pr.push(nm + '¦' + d); });
+        await zmSaveKind(PD_KIND, pr);
+      }
+      const old = Array.from(daMap.entries()).map(([k, v]) => k + v).sort().join('|');
+      daMap = new Map(); rows.forEach(v => { const a = v.split(DA_SEP); daMap.set(a[0] + ':' + nameKey(a[1]), a[2]); });
+      if(Array.from(daMap.entries()).map(([k, v]) => k + v).sort().join('|') !== old) await zmSaveKind(DA_KIND, rows);
+      daDone = true;
+      if(out.p.length || out.c.length){
+        try{ ctrInvalidate(); }catch(e){}
+        try{ applyTaskFilters(); }catch(e){}
+        try{ ctcRepaint(); }catch(e){}
+        try{ shrToast('دیسیپلین ' + [out.p.length ? toFa(out.p.length) + ' نفر' : '', out.c.length ? toFa(out.c.length) + ' پیمانکار' : ''].filter(Boolean).join(' و ') + ' خودکار به‌روز شد'); }catch(e){}
+      }else if(report){ try{ shrToast('همهٔ دیسیپلین‌ها به‌روز است'); }catch(e){} }
+    }catch(e){ if(report) showDialog('err', 'به‌روزرسانی نشد', friendlyErr(e)); }
+    daBusy = false;
+    return out;
+  }
+  window.daRun = daRun; window.daGuess = daGuess;
   const canEditTask = () => { try{ return isAdminUser() || can('task.edit') || can('adm.editAny'); }catch(e){ return false; } };
   const canAddTask = () => { try{ return isAdminUser() || can('task.add'); }catch(e){ return false; } };
   const TK_DEP_T = {FS:'پایان به شروع', SS:'شروع به شروع', FF:'پایان به پایان', SF:'شروع به پایان'};
