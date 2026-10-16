@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261016181524">
+<meta name="pm-build" content="20261016182145">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -18981,7 +18981,8 @@
   .ws-ri{position:relative;}
   .ws-dot{position:absolute;top:-2px;left:-2px;width:9px;height:9px;border-radius:50%;background:var(--alert);box-shadow:0 0 0 2px var(--surface);}
   .ws-rt small.h{color:var(--alert);font-weight:700;} .ws-rt small.ok{color:var(--muted);} .ws-rt small.n{color:color-mix(in srgb, var(--c) 80%, var(--ink));font-weight:600;}
-  .ws-row.hot em{color:#fff;background:var(--alert);}
+  .ws-row.hot em, .ws-row em.hot{color:#fff;background:var(--alert);}
+  .ws-rc{flex:none;width:30px;display:grid;place-items:center;color:color-mix(in srgb, var(--muted) 70%, transparent);} .ws-rc svg{width:15px;height:15px;}
   .ws-add, .ws-pin{all:unset;cursor:pointer;flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;transition:background .2s, color .2s, opacity .2s;}
   .ws-add{color:var(--c);background:color-mix(in srgb, var(--c) 10%, transparent);}
   .ws-add:hover{background:color-mix(in srgb, var(--c) 18%, transparent);}
@@ -41389,6 +41390,7 @@
         + '<div class="ws-lh"><b>' + (hot ? toFa(hot) + ' بخش کار منتظر دارد' : 'بخش‌های شما') + '</b><small>' + toFa(L.length) + ' بخش</small></div>'
         + (P.length ? '<div class="ws-gh">سنجاق‌شده</div><div class="ws-lb">' + P.map(x => wsRowHtml(x, n++, pins)).join('') + '</div>' + (R0.length ? '<div class="ws-gh">همهٔ بخش‌ها</div>' : '') : '')
         + (R0.length ? '<div class="ws-lb">' + R0.map(x => wsRowHtml(x, n++, pins)).join('') + '</div>' : '')
+        + wsToolsHtml(n)
         + '<button type="button" class="ws-all" data-ws-gs="1" hidden></button>';
       if(q) wsFilter(q, true);
     }else{
@@ -41399,6 +41401,21 @@
         + (ad && ws.cur !== 'tasks' ? '<button type="button" class="ws-badd" data-ws-add="' + ws.cur + '" style="--c:' + (x.c || 'var(--sky)') + '">' + WS_PLUS + '<span>' + esc(ad.t) + '</span></button>' : '');
     }
   }
+  /* ابزارهای پیگیری و مدیریت سامانه (همان موارد خانه)، زیر بخش‌ها */
+  function wsToolsHtml(n){
+    const G = window.__h3G; if(!G) return '';
+    const hasCtr = wsOk(wsMod('ctr'));
+    const fol = (G.fol || []).filter(x => x.k !== 'ctr' && x.k !== 'wsTools'), adm = (G.adm || []).filter(x => !(hasCtr && x.k === 'ct') && x.k !== 'wsTools');
+    const row = (x, g, i) => '<div class="ws-row ws-tool" role="button" tabindex="0" data-wst="' + g + ':' + i + '" data-qs="' + esc(x.t + ' ' + String(x.sub || '').replace(/<[^>]+>/g, '')) + '" style="--c:' + wsToolC(x.c) + ';--i:' + (n++) + '">'
+      + '<span class="ws-ri">' + (x.ic || '') + '</span><span class="ws-rt"><b>' + esc(x.t) + '</b><small' + (x.alert ? ' class="h"' : '') + '>' + x.sub + '</small></span>'
+      + (x.n ? '<em' + (x.alert ? ' class="hot"' : '') + '>' + toFa(x.n) + '</em>' : '') + '<span class="ws-rc">' + WS_CHEV + '</span></div>';
+    ws.tools = {fol, adm};
+    return '<div id="wsTools"></div>'
+      + (fol.length ? '<div class="ws-gh">پیگیری و ارتباط</div><div class="ws-lb">' + fol.map((x, i) => row(x, 'fol', i)).join('') + '</div>' : '')
+      + (adm.length ? '<div class="ws-gh">مدیریت سامانه</div><div class="ws-lb">' + adm.map((x, i) => row(x, 'adm', i)).join('') + '</div>' : '');
+  }
+  const WS_TC = {'hc-sky':'#3d7fb0', 'hc-grn':'#3f7a52', 'hc-amb':'#b07512', 'hc-ind':'#5560c0', 'hc-vio':'#6d5bb5', 'hc-teal':'#2a8f86', 'hc-red':'#c4553f'};
+  const wsToolC = c => WS_TC[c] || '#5b6b7d';
   /* جست‌وجو: بخش‌ها همین‌جا فیلتر می‌شوند؛ ردیف آخر همان عبارت را در کل سامانه می‌گردد */
   function wsFilter(q, keep){
     const list = document.getElementById('wsList'); if(!list) return;
@@ -41466,6 +41483,9 @@
     if(ad){ e.stopPropagation(); const a = wsAddOf(ad.dataset.wsAdd); if(a && a.run){ try{ a.run(); }catch(e2){} try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e2){} } return; }
     const gs = e.target.closest('#wsList [data-ws-gs]');
     if(gs){ wsGlobal(ws.q || ''); return; }
+    const tl = e.target.closest('#wsList [data-wst]');
+    if(tl){ const [g, i] = tl.dataset.wst.split(':'); const x = ws.tools && ws.tools[g] && ws.tools[g][+i];
+      if(x){ const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>'; try{ window.h3Dispatch(t.firstChild); }catch(e2){} } return; }
     const b = e.target.closest('#wsList .ws-row[data-ws]'); if(!b) return;
     wsSet(b.dataset.ws);
     try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e2){}
@@ -41473,6 +41493,8 @@
   document.addEventListener('keydown', e => {
     const r = e.target.closest && e.target.closest('#wsList .ws-row[data-ws]');
     if(r && (e.key === 'Enter' || e.key === ' ') && e.target === r){ e.preventDefault(); wsSet(r.dataset.ws); }
+    const tr = e.target.closest && e.target.closest('#wsList [data-wst]');
+    if(tr && (e.key === 'Enter' || e.key === ' ') && e.target === tr){ e.preventDefault(); tr.click(); }
     if(e.target.matches && e.target.matches('[data-ws-q]') && e.key === 'Enter'){ const v = e.target.value.trim(); if(!v) return;
       const vis = document.querySelectorAll('#wsList .ws-row:not([hidden])'); if(vis.length === 1) wsSet(vis[0].dataset.ws); else wsGlobal(v); }
   });
@@ -79223,9 +79245,17 @@
       + '<span class="h3-ci">' + x.ic + '</span><span class="h3-cx"><b>' + esc(x.t) + '</b><small>' + x.sub + '</small></span>'
       + (x.n != null && x.n !== 0 ? '<span class="h3-cn">' + toFa(x.n) + '</span>' : '<span class="h3-cg">' + HM_I.go + '</span>') + '</button>';
     const grp = (cls, title, items, i, sub) => items.length ? '<section class="h3-sec ' + cls + ' h3-a" style="--i:' + i + '"><div class="h3-sh"><h3>' + title + '</h3>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>' + capL(items, cls === 'h3-g-adm' ? 3 : 4, cls) + '</section>' : '';
+    window.__h3G = {fol: G.fol.slice(), adm: G.adm.slice()};
+    /* خانه فقط موارد مهم پیگیری را نگه می‌دارد (ابلاغ، تقویم و هر چه منتظر است)؛
+       بقیهٔ ابزارها و مدیریت سامانه در میز کار است */
+    const folHome = G.fol.filter(x => x.n || x.alert || x.k === 'gen' || x.k === 'cal' || x.k === 'cal2');
+    const admHome = G.adm.filter(x => x.k === 'users');
+    const toolsN = G.fol.length - folHome.length + G.adm.length - admHome.length;
+    if(toolsN > 0) (admHome.length ? admHome : folHome).push({k:'wsTools', t:'همهٔ ابزارها در میز کار', sub: toFa(toolsN) + ' ابزار دیگر: یادآور، پیام، پیمانکاران، مدیریت سامانه…', ic: WS_I.tasks, c:'hc-ind', attr:'data-hm="wsTools"'});
+    G.fol = folHome; G.adm = admHome;
     return {
       me: '<section class="h3-sec"><div class="h3-sh h3-a" style="--i:2"><h3>کارتابل من</h3></div>' + capL(G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0))), 5, 'me') + '</section>',
-      fol: grp('h3-g-fol', 'پیگیری و ارتباط', G.fol, 5),
+      fol: grp('h3-g-fol', 'پیگیری', G.fol, 5),
       prj: grp('h3-g-prj', 'پروژه و پیمانکاران', G.prj, 8),
       adm: grp('h3-g-adm', 'مدیریت سامانه', G.adm, 9, 'فقط برای مدیران')
     };
@@ -79386,7 +79416,7 @@
     const wc = e.target.closest('[data-h3wc]');
     if(wc){ e.stopPropagation(); homeWkCat = wc.dataset.h3wc; homeWkPick = true; try{ homeRender(); }catch(err){} return; }
     const kt = e.target.closest('[data-h3k]');
-    if(kt){ e.stopPropagation(); h3Kart(kt.dataset.h3k); return; }
+    if(kt){ e.stopPropagation(); h3Dispatch(kt); return; }
     const qt = e.target.closest('[data-h3qt]');
     if(qt){ e.stopPropagation(); const sec0 = qt.closest('.h3-q'); const on = !sec0.classList.contains('open'); sec0.classList.toggle('open', on); qt.setAttribute('aria-expanded', on);
       try{ localStorage.setItem('siteLogM.hq.open', on ? '1' : '0'); }catch(err){} const box = document.getElementById('homeView'); if(box) box.__h = ''; return; }
@@ -79401,10 +79431,17 @@
       if(m === 'prc'){ try{ prcState.q = ''; prcState.f = 'open'; }catch(err){} }
       homeWrite(m, sub); return; }
     const ks = e.target.closest('[data-h3s]');
-    if(ks){ e.stopPropagation(); const [k, t] = ks.dataset.h3s.split('|'); h3Open('settings', k, t); return; }
+    if(ks){ e.stopPropagation(); h3Dispatch(ks); return; }
     const a = e.target.closest('[data-hm]');
     if(!a) return;
-    const k = a.dataset.hm;
+    h3Dispatch(a);
+  });
+  /* اجرای یک مورد خانه از روی ویژگی‌هایش؛ میز کار هم همین را برای ابزارها صدا می‌زند */
+  function h3Dispatch(a){
+    if(a.dataset.h3k){ h3Kart(a.dataset.h3k); return; }
+    if(a.dataset.h3s){ const [k0, t0] = a.dataset.h3s.split('|'); h3Open('settings', k0, t0); return; }
+    const k = a.dataset.hm; if(!k) return;
+    if(k === 'wsTools'){ switchTab('tasks'); try{ window.wsSet(''); }catch(err){} setTimeout(() => { const g = document.getElementById('wsTools'); if(g) g.scrollIntoView({behavior:'smooth', block:'start'}); }, 550); return; }
     if(k === 'deck') openDeck();
     else if(k === 'kart'){ switchTab('home'); try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(err){} }
     else if(k === 'tasks') switchTab('tasks');
@@ -79414,7 +79451,8 @@
     else if(k === 'show'){ try{ openReportShow(); }catch(err){} }
     else if(k === 'crew' || k === 'wrk') homeWrite(k);
     else if(k === 'prcList'){ try{ prcState.q = ''; prcState.f = 'open'; }catch(err){} homeWrite('prc', 'list'); }
-  });
+  }
+  window.h3Dispatch = h3Dispatch;
   /* نام پروژه در ستون کناری، و لوگوی آن همان راهنمای سامانه را باز می‌کند */
   (function(){
     const bp = document.getElementById('brandProject'), np = document.getElementById('navProject');
