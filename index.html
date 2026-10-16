@@ -22848,11 +22848,24 @@
   .ns-btn.bare .ns-v{color:inherit;font-weight:inherit;flex:0 1 auto;}
   .ns-btn.bare .ns-ar{width:14px;height:14px;}
   .ns-btn.bare.open .ns-ar{transform:rotate(180deg);}
+  .ns-btn.bare.open, .ns-btn.bare:focus-visible, .ns-btn.bare:hover{background:transparent !important;border:0 !important;box-shadow:none !important;}
   :is(.fd-body, .fdrawer) .ns-btn.on{background:color-mix(in srgb, var(--sky) 10%, var(--field)) !important;}
   :is(.fd-body, .fdrawer) .ns-btn.on .ns-v{font-weight:800;}
   .nd2-sel:has(.ns-btn)::after{content:none !important;}
   .ns-o.on{background:color-mix(in srgb, var(--sky) 10%, transparent);}
   .ns-o.on i{color:var(--sky);}
+  .ns-pop{animation:nsDrop .12s ease-out;}
+  .ns-pop.up{animation-name:nsDropUp;}
+  @keyframes nsDrop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+  @keyframes nsDropUp{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .ns-pop .ns-h{display:none !important;}
+  @media (hover:none){ .ns-o{min-height:42px;font-size:13px;} .ns-q input{font-size:16px !important;} }
+  @media (hover:none) and (pointer:coarse){
+    #chatModal .chat-compose textarea, #chatModal .chat-compose textarea:focus{font-size:16px !important;line-height:1.45;padding:11px 14px !important;min-height:44px;transition:none !important;}
+    #chatModal .chat-compose{padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+    #chatModal.kb .chat-compose{padding-bottom:10px;}
+    #chatModal.kb .modal{height:100% !important;}
+  }
   .ns-pop.sheet::before{content:"";display:block;width:38px;height:4px;border-radius:9px;background:color-mix(in srgb, var(--ink) 18%, transparent);margin:9px auto 0;flex:0 0 auto;}
 </style>
 <script>
@@ -29166,7 +29179,22 @@
       const sb = document.getElementById('msgSend');
       if(sb) sb.classList.toggle('ready', !!ta0.value.trim());
     };
-    if(ta0){ ta0.addEventListener('input', grow); ta0.addEventListener('focus', grow); }
+    if(ta0){ ta0.addEventListener('input', grow); }
+    /* آیفون: با آمدن صفحه‌کلید، پنجرهٔ گفت‌وگو درست به اندازهٔ بخش دیدنی
+       می‌شود تا کادر نوشتن بی‌پرش بالای صفحه‌کلید بنشیند */
+    const cmVV = () => {
+      const vv = window.visualViewport; if(!vv) return;
+      if(bg.hidden || window.innerWidth >= 820){ bg.style.top = ''; bg.style.height = ''; bg.classList.remove('kb'); return; }
+      const kb = (window.innerHeight - vv.height) > 120;
+      const list = document.querySelector('#msgList .chat-wrap') || document.getElementById('msgList');
+      const atEnd = list && (list.scrollHeight - list.scrollTop - list.clientHeight < 60);
+      bg.classList.toggle('kb', kb);
+      if(kb){ bg.style.top = vv.offsetTop + 'px'; bg.style.height = vv.height + 'px'; bg.style.bottom = 'auto'; }
+      else{ bg.style.top = ''; bg.style.height = ''; bg.style.bottom = ''; }
+      if(atEnd && list) list.scrollTop = list.scrollHeight;
+    };
+    try{ if(window.visualViewport){ visualViewport.addEventListener('resize', cmVV); visualViewport.addEventListener('scroll', cmVV); } }catch(e){}
+    if(ta0) ta0.addEventListener('blur', () => setTimeout(cmVV, 60));
     document.getElementById('msgSend').addEventListener('click', () => setTimeout(grow, 0));
     document.addEventListener('keydown', e => { if(e.key === 'Escape' && !bg.hidden){
       if(bg.classList.contains('in-chat') && window.innerWidth < 820){ document.getElementById('msgBack').click(); }
@@ -65431,12 +65459,13 @@
     let open = null;   // {sel, btn, pop, q}
     const labelOf = sel => { const o = sel.options[sel.selectedIndex]; return o ? o.textContent.trim() : ''; };
     const isEmpty = sel => !sel.value;
-    function sync(sel){
+    function sync(sel, full){
       const b = sel.__nsBtn; if(!b) return;
       b.querySelector('.ns-v').textContent = labelOf(sel) || '—';
       b.classList.toggle('on', !isEmpty(sel));
       b.disabled = sel.disabled;
-      b.hidden = sel.hidden || sel.style.display === 'none' || (sel.isConnected && getComputedStyle(sel).display === 'none');
+      if(full) sel.__nsCssHide = sel.isConnected && getComputedStyle(sel).display === 'none';
+      b.hidden = sel.hidden || sel.style.display === 'none' || !!sel.__nsCssHide;
     }
     /* اندازه از خود select: هم‌قد کادرهای کنارش؛ اگر جا کم بود به اندازهٔ متن باز می‌شود */
     function fit(sel, b){
@@ -65473,8 +65502,8 @@
       sel.insertAdjacentElement('afterend', b);
       b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open && open.sel === sel ? close() : show(sel); });
       sel.addEventListener('change', () => sync(sel));
-      new MutationObserver(() => sync(sel)).observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['disabled','hidden','style']});
-      sync(sel);
+      new MutationObserver(() => sync(sel, true)).observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['disabled','hidden','style','class']});
+      sync(sel, true);
     }
     function listHtml(sel, q){
       const n = s => toEn(String(s || '')).toLowerCase().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
@@ -65500,24 +65529,22 @@
         + (many ? '<label class="ns-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" placeholder="جست‌وجو…" autocomplete="off"></label>' : '')
         + '<div class="ns-l">' + listHtml(sel, '') + '</div>';
       document.body.appendChild(pop);
-      const mob = window.matchMedia('(max-width:640px)').matches;
-      if(mob){
-        pop.classList.add('sheet');
-        const bg = document.createElement('div'); bg.className = 'ns-bg'; document.body.appendChild(bg);
-        bg.addEventListener('click', close);
-        pop.__bg = bg;
-      }else{
-        const r = btn.getBoundingClientRect();
-        pop.style.minWidth = Math.max(r.width, 200) + 'px';
-        pop.style.maxWidth = Math.min(420, window.innerWidth - 16) + 'px';
-        const w = Math.min(Math.max(pop.offsetWidth, r.width, 200), window.innerWidth - 16);
-        pop.style.width = w + 'px';
-        const left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
-        pop.style.left = left + 'px';
-        const below = window.innerHeight - r.bottom;
-        if(below < 280 && r.top > below){ pop.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
-        else pop.style.top = (r.bottom + 6) + 'px';
-      }
+      const mob = window.matchMedia('(hover:none)').matches;
+      /* همیشه کشویی واقعی، چسبیده به همان دکمه؛ به اندازهٔ جای خالی بالا یا پایین */
+      const r = (btn.classList.contains('bare') && btn.parentElement ? btn.parentElement : btn).getBoundingClientRect();
+      const vv = window.visualViewport, vh = vv ? vv.height : window.innerHeight, vw = window.innerWidth;
+      const nav = document.querySelector('.bnav, #bottomNav, .bottom-nav');
+      const navH = (mob && nav && nav.offsetParent) ? nav.getBoundingClientRect().height : 0;
+      pop.style.minWidth = Math.min(Math.max(r.width, 180), vw - 16) + 'px';
+      pop.style.maxWidth = Math.min(420, vw - 16) + 'px';
+      const w = Math.min(Math.max(pop.offsetWidth, r.width, 180), vw - 16);
+      pop.style.width = w + 'px';
+      /* راست‌چین: لبهٔ راست فهرست با لبهٔ راست دکمه */
+      pop.style.left = Math.min(Math.max(8, r.right - w), vw - w - 8) + 'px';
+      const below = vh - navH - r.bottom - 10, above = r.top - 10;
+      const need = Math.min(pop.scrollHeight, 340);
+      if(below < need && above > below){ pop.style.bottom = (window.innerHeight - r.top + 4) + 'px'; pop.style.maxHeight = Math.min(340, above) + 'px'; pop.classList.add('up'); }
+      else{ pop.style.top = (r.bottom + 4) + 'px'; pop.style.maxHeight = Math.max(140, Math.min(340, below)) + 'px'; }
       btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
       open = {sel, btn, pop};
       pop.addEventListener('click', e => {
@@ -65528,6 +65555,7 @@
       });
       const qi = pop.querySelector('.ns-q input');
       if(qi){ qi.addEventListener('input', () => { pop.querySelector('.ns-l').innerHTML = listHtml(sel, qi.value); }); if(!mob) setTimeout(() => qi.focus(), 20); }
+      void mob;
       const cur = pop.querySelector('.ns-o.on'); if(cur) cur.scrollIntoView({block:'nearest'});
     }
     function close(){
@@ -65549,7 +65577,7 @@
       }
     });
     window.addEventListener('resize', close);
-    document.addEventListener('scroll', e => { if(open && !open.pop.contains(e.target) && !open.pop.classList.contains('sheet')) close(); }, true);
+    document.addEventListener('scroll', e => { if(open && !open.pop.contains(e.target)) close(); }, true);
     /* مقدارهایی که کد عوض می‌کند (حذف فیلترها، کپسول ✕) بی‌رویداد change: بعد از هر کلیک همگام می‌شوند */
     let raf = 0;
     const syncAll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
