@@ -2554,7 +2554,8 @@
   /* سربرگ بار کاری نفر */
   #panelTasks #taskView .eng.tkp.tkw2 > .eng-head{display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:9px !important;grid-template-columns:none !important;grid-template-areas:none !important;padding:12px 14px !important;}
   .tkw2 .tkw-top{display:flex;align-items:center;gap:10px;min-width:0;}
-  .tkw2 .tkw-top > .ava{width:36px !important;height:36px !important;flex:none;}
+  .tkw2 .tkw-top > .ava, .tkw2 .tkw-top > .ava img{width:38px !important;height:38px !important;flex:none;border-radius:50% !important;object-fit:cover;}
+  .tkw2 .tkw-top > .ava{overflow:hidden;}
   .tkw2 .tkw-nm{flex:1;min-width:0;display:flex;align-items:center;}
   #panelTasks #taskView .eng.tkp.tkw2 .tkw-nm .tkp-id{grid-area:auto;align-self:center;}
   .tkw2 .tkw-nm .tk-gname{font-size:var(--tk-t-name, 13px) !important;font-weight:600 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -63470,8 +63471,14 @@
     const ROLE_ORD = [/مدیر\s*پروژه/, /مدیر/, /سرپرست/, /دفتر\s*فنی/, /کنترل\s*پروژه/, /مهندس|کارشناس/];
     const roleRank = p => { const rl = String(roleOf(p) || ''); const i = ROLE_ORD.findIndex(re => re.test(rl)); return i === -1 ? ROLE_ORD.length : i; };
     const lv = p => { if(p === 'بدون مسئول') return 99; if(isAdm(p)) return 50; try{ return levelOf(p) || 9; }catch(e){ return 9; } };
-    const byRank = (a,b) => lv(a) - lv(b) || roleRank(a) - roleRank(b) || byName(a,b);
-    const inNames  = Array.from(people.keys()).filter(p => !isOut(p)).sort(byRank);
+    /* ترتیب بر اساس سمت (مدیر پروژه، سرپرست، دفتر فنی، مهندسین…)، بعد سطح و نام */
+    const byRank = (a,b) => ((a === 'بدون مسئول') - (b === 'بدون مسئول')) || ((lv(a) === 50) - (lv(b) === 50)) || roleRank(a) - roleRank(b) || lv(a) - lv(b) || byName(a,b);
+    /* دیدن کارهای دیگران: ادمین و مدیریت همه را می‌بینند؛ بقیه همه را جز کارهای مدیر/ادمین */
+    const meK = nameKey(activeUserName());
+    let myL = 3; try{ myL = myLevel(); }catch(e){}
+    const hideMgr = p => { if(myL === 1 || myL === 2 || p === 'بدون مسئول' || nameKey(p) === meK) return false;
+      let rl = ''; try{ rl = String(roleOf(p) || ''); }catch(e){} return /مدیر(?!یت)/.test(rl); };
+    const inNames  = Array.from(people.keys()).filter(p => !isOut(p) && !hideMgr(p)).sort(byRank);
     const outNames = Array.from(people.keys()).filter(isOut)
       .sort((a,b) => (a === 'کارفرما' ? -1 : b === 'کارفرما' ? 1 : byName(a,b)));
     const head = (t, n) => '<div class="tk-grp-h"><b>' + t + '</b><u>' + toFa(n) + '</u></div>';
@@ -64017,12 +64024,12 @@
         return '<div class="eng foldable tkp tkw2" id="taskP'+i+'" style="--k:'+Math.min(i,10)+'">'
           + '<button type="button" class="eng-head">'
           +   '<span class="tkw-top">' + avatarHtml(p)
-          +     '<span class="tkw-nm">' + (mode === 'ctr' ? '<b class="tk-gname">' + esc(p) + '</b>' : '<span class="tkp-id">' + personName(p) + (p !== 'بدون مسئول' ? pdChipHtml(p) : '') + '</span>') + '</span>'
+          +     '<span class="tkw-nm">' + (mode === 'ctr' ? '<b class="tk-gname">' + esc(p) + '</b>' : '<span class="tkp-id">' + personName(p) + '</span>') + '</span>'
           +     '<span class="tkw-cnt"><b>' + toFa(open) + '</b>باز</span>'
           +     '<span class="eng-ar">▾</span></span>'
           +   '<span class="tkw-bar" title="' + toFa(pp) + '٪ انجام شده">' + seg(late, 'l') + seg(soon, 's') + seg(run, 'r') + seg(done, 'd') + (items.length ? '' : '<i class="r" style="flex:1;opacity:.2"></i>') + '</span>'
           +   '<span class="tkw-lg">'
-          +     (late ? '<span class="l"><i></i>' + toFa(late) + ' دیر</span>' : '')
+          +     (late ? '<span class="l"><i></i>' + toFa(late) + ' دیرکرد</span>' : '')
           +     (soon ? '<span class="s"><i></i>' + toFa(soon) + ' نزدیک موعد</span>' : '')
           +     (run ? '<span class="r"><i></i>' + toFa(run) + ' در جریان</span>' : '')
           +     (done ? '<span class="d"><i></i>' + toFa(done) + ' انجام</span>' : '')
@@ -64479,7 +64486,7 @@
       if(r.grp || r.sum){
         const c = r.grp ? ((GT_K[r.k] || {}).c || '#9aa7b6') : '#9aa7b6';
         return '<div class="gt-r g' + (r.grp ? '' : ' s') + '" style="--c:' + c + ';--lv:' + (r.lvl || 0) + '"><div class="gt-tt"><button type="button" class="gt-gh" data-gtg="' + esc(r.gk) + '"><span class="gt-cv' + (gt.shut.has(r.gk) ? '' : ' op') + '">' + GT_I.chev + '</span><i></i><b>' + esc(r.t) + '</b>'
-          + (r.n ? '<u>' + toFa(r.n) + '</u>' : '') + (r.late ? '<em>' + toFa(r.late) + ' دیر</em>' : '') + (r.openBlk ? '<em>' + toFa(r.openBlk) + ' باز</em>' : '') + '</button></div>' + bar(r) + '</div>';
+          + (r.n ? '<u>' + toFa(r.n) + '</u>' : '') + (r.late ? '<em>' + toFa(r.late) + ' دیرکرد</em>' : '') + (r.openBlk ? '<em>' + toFa(r.openBlk) + ' باز</em>' : '') + '</button></div>' + bar(r) + '</div>';
       }
       return '<div class="gt-r' + (r.late ? ' is-late' : '') + '" style="--c:' + col(r) + '"><div class="gt-tt"><button type="button" class="gt-nm" data-gti="' + esc(r.gk || r.id + (r.bid ? '#' + r.bid : '')) + '"><b>' + esc(r.t) + '</b><small>' + esc(meta(r)) + '</small></button></div>' + bar(r) + '</div>';
     }).join('');
