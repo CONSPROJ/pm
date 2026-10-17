@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261016223034">
+<meta name="pm-build" content="20261017030352">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23282,7 +23282,9 @@
   .h3-seg button i{font-style:normal;min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:99px;display:inline-grid;place-items:center;font-size:10px;font-weight:800;color:#fff;background:var(--alert);}
   .h3-seg-ink{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:var(--surface);box-shadow:0 2px 8px -3px rgba(15,20,35,.25);transition:left .3s cubic-bezier(.3,.9,.3,1), width .3s cubic-bezier(.3,.9,.3,1);}
   .h3-kb .h3-kp{display:none;}
-  .h3-kb[data-kt="td"] .h3-kp[data-kp="td"], .h3-kb[data-kt="me"] .h3-kp[data-kp="me"], .h3-kb[data-kt="fol"] .h3-kp[data-kp="fol"], .h3-kb[data-kt="rp"] .h3-kp[data-kp="rp"], .h3-kb[data-kt="ab"] .h3-kp[data-kp="ab"]{display:block;}
+  .h3-kb[data-kt="td"] .h3-kp[data-kp="td"], .h3-kb[data-kt="me"] .h3-kp[data-kp="me"], .h3-kb[data-kt="fol"] .h3-kp[data-kp="fol"], .h3-kb[data-kt="rp"] .h3-kp[data-kp="rp"], .h3-kb[data-kt="ab"] .h3-kp[data-kp="ab"], .h3-kb[data-kt="pr"] .h3-kp[data-kp="pr"]{display:block;}
+  .h3-wmore{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;margin-top:8px;padding:10px;border-radius:14px;font-size:12px;font-weight:700;color:var(--sky-deep, var(--sky));background:color-mix(in srgb, var(--sky) 7%, transparent);}
+  .h3-wmore svg{width:14px;height:14px;}
   .h3-kp[data-kp="td"] .h3-tds{margin-bottom:10px;}
   .h3-qas{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto;scrollbar-width:none;}
   .h3-qas::-webkit-scrollbar{display:none;}
@@ -79869,6 +79871,7 @@
       if(rows.length) P.push({k:'rp', t:'گزارش‌ها', n: 0, body:'<div class="h3-tds">' + rows.join('') + '</div>'});
     } }catch(e){}
     /* تا کاربر خودش قسمتی را انتخاب نکرده، قسمتِ فوری باز است */
+    try{ const wb = h3Work(G.work || []); P.splice(1, 0, {k:'pr', t:'اولویت‌ها', n: h3Work.hot || 0, body: wb}); }catch(e){}
     if(!homeKtUser || !P.some(x => x.k === homeKt)) homeKt = 'td';
     return '<section class="h3-sec h3-kb h3-a" style="--i:2" data-kt="' + homeKt + '">'
       + '<div class="h3-sh"><h3>کارتابل من</h3></div>'
@@ -79909,9 +79912,9 @@
           + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '')
           + '<span class="h3-rg">' + HM_I.go + '</span></button>';
       }).join('') + '</div>';
-    return '<section class="h3-sec h3-wk h3-a" style="--i:6"><div class="h3-sh"><h3>اولویت‌ها</h3>'
-      + (shown.length ? '<button type="button" class="h3-link" data-hm="deck">' + (shown.length > homeWorkList.length ? 'همهٔ ' + toFa(shown.length) + ' مورد' : 'مرور') + HM_I.go + '</button>' : '') + '</div>'
-      + chips + '<div class="h3-box">' + body + '</div></section>';
+    const more = shown.length ? '<button type="button" class="h3-wmore" data-hm="deck">' + (shown.length > homeWorkList.length ? 'همهٔ ' + toFa(shown.length) + ' مورد در کارت‌ها' : 'مرور در کارت‌ها') + HM_I.go + '</button>' : '';
+    h3Work.hot = work.filter(x => x.level === 'hot').length;
+    return '<div class="h3-wk">' + chips + '<div class="h3-box">' + body + '</div>' + more + '</div>';
   }
   function h3Project(day, dDate, adm, tk, prc){
     const K = [];
@@ -79984,7 +79987,7 @@
     h3Today.ctx = {tk, day, dDate};
     /* جریمه‌های منتظر تأیید بی‌آنکه بخش کارگری باز شده باشد، همین اول خوانده می‌شوند (و هر دو دقیقه) */
     try{ if(wrkFineApprover() && Date.now() - (homeRender.__wf || 0) > 120000){ homeRender.__wf = Date.now(); wrkLoadPending().then(() => homeSoon()).catch(() => {}); } }catch(e){}
-    const G = h3Groups(work, tk);
+    const G = h3Groups(work, tk); G.work = work;
     /* شمار انبار و کیفیت فقط برای کسانی که این کاشی‌ها را دارند، یک بار در پس‌زمینه */
     try{ if(!homeRender.__whq){ homeRender.__whq = 1; const P = [];
       if(window.whVisible && window.whVisible() && !wh.t) P.push(whLoad());
@@ -79992,7 +79995,7 @@
       try{ if(window.coVisible && window.coVisible() && coCanA() && !co.t) P.push(coLoad()); }catch(e){}
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
     let pjb = ''; try{ pjb = pjBarHtml(); }catch(e){}
-    const h = '<div class="h3">' + pjb + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + h3Work(work) + G.prj + '</div>';
+    const h = '<div class="h3">' + pjb + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
