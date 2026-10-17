@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261017031347">
+<meta name="pm-build" content="20261017031740">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23131,7 +23131,8 @@
   .h3-td.due{--c:#b07512;} .h3-td.ok{--c:var(--ok);} .h3-td.grn{--c:#3f7a52;} .h3-td.vio{--c:#6d5bb5;} .h3-td.bad{--c:var(--alert);}
   .h3-tdi{flex:0 0 30px;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);}
   .h3-tdi svg{width:16px;height:16px;}
-  .h3-tdx{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;}
+  .h3-tdx{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;overflow:hidden;}
+  .h3-tdx small{max-width:100%;}
   .h3-tdx b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;}
   .h3-tdx small{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;}
   .h3-tdb{flex:none;font-size:11px;font-weight:700;color:var(--c);display:inline-flex;align-items:center;gap:3px;}
@@ -23320,6 +23321,13 @@
   .h3-wmore{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;margin-top:8px;padding:10px;border-radius:14px;font-size:12px;font-weight:700;color:var(--sky-deep, var(--sky));background:color-mix(in srgb, var(--sky) 7%, transparent);}
   .h3-wmore svg{width:14px;height:14px;}
   .h3-kp[data-kp="td"] .h3-tds{margin-bottom:10px;}
+  .h3-mh{display:flex;align-items:center;gap:6px;margin:4px 4px 8px;}
+  .h3-mh b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .h3-mh em{font-style:normal;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:99px;color:var(--muted);background:color-mix(in srgb, var(--line) 60%, transparent);}
+  .h3-mh .h3-link{margin-right:auto;}
+  .h3-mine{border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden;}
+  .h3-mempty{display:flex;align-items:center;gap:8px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);font-size:12px;color:var(--muted);}
+  .h3-mempty svg{width:18px;height:18px;color:var(--ok);}
   .h3-qas{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto;scrollbar-width:none;}
   .h3-qas::-webkit-scrollbar{display:none;}
   .h3-qa{all:unset;cursor:pointer;flex:1 0 auto;min-width:58px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 6px 8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);transition:border-color .2s,background .2s;}
@@ -79909,7 +79917,7 @@
     G.me = G.me.filter(x => x.k !== 'leave' || x.n);
     const meSorted = G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0)));
     return {
-      folItems: G.fol.slice(),
+      folItems: G.fol.slice(), meItems: G.me.slice(),
       meList: capL(meSorted, 6, 'me'), folList: G.fol.length ? capL(G.fol, 6, 'fol') : '',
       meN: G.me.filter(x => x.alert).length, folN: G.fol.filter(x => x.alert || x.n).filter(x => x.k !== 'wsTools').length,
       me: '<section class="h3-sec"><div class="h3-sh h3-a" style="--i:2"><h3>کارتابل من</h3></div>' + capL(G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0))), 5, 'me') + '</section>',
@@ -79920,7 +79928,7 @@
   }
   /* کارتابل من: یک کارت با نوار سه‌قسمتی — امروز، کارهای من، پیگیری.
      قسمتی که کار فوری دارد عدد قرمز می‌گیرد؛ بار اول همان قسمت فوری باز است. */
-  let homeKt = '', homeKtUser = false;
+  let homeKt = '', homeKtUser = false, homeMineList = [];
   const H3_RKP = {daily:'rep.time', admin:'rep.adm', hr:'rep.hr', crew:'rep.crew', prc:'rep.prc', pc:'rep.pc', wh:'rep.wh', qc:'rep.qc', mc:'rep.mc', cf:'rep.cf', intro:'rep.time'};
   function h3KartBox(G){
     h3Today();
@@ -79933,8 +79941,31 @@
     const qa = (ic, t, attr, n, bad) => QA.push('<button type="button" class="h3-qa' + (bad ? ' bad' : '') + '" ' + attr + '>' + ic + '<span>' + t + '</span>' + (n ? '<i>' + toFa(n) + '</i>' : '') + '</button>');
     let lvN = 0; try{ lvN = leaveWaiting().length; }catch(e){}
     qa(LV_I.plane, 'مرخصی', 'data-h3leave="1"', lvN, lvN);
-    (G.folItems || []).filter(x => x.k !== 'msg').forEach(x => qa(x.ic, QL[x.k] || x.t, x.attr, x.n, x.alert));
-    P.push({k:'td', t:'مهم‌ها', n: tdHot + (G.meN || 0) + (G.folN || 0), body:'<div class="h3-qas">' + QA.join('') + '</div>' + (td.length ? '<div class="h3-tds">' + td.join('') + '</div>' : '') + G.meList});
+    const FI = (G.folItems || []).filter(x => x.k !== 'msg'), TL = FI.filter(x => x.k === 'wsTools');
+    FI.filter(x => x.k !== 'wsTools').forEach(x => qa(x.ic, QL[x.k] || x.t, x.attr, x.n, x.alert));
+    /* کاشی‌های بخش‌ها (انبار، کیفیت، تغییرات، خرید) هم کوچک، کنار بقیه */
+    const ML = {wh:'انبار', whAsk:'درخواست کالا', qc:'کیفیت', co:'تغییرات', prc:'خریدها'};
+    (G.meItems || []).filter(x => ML[x.k]).forEach(x => qa(x.ic, ML[x.k], x.attr, x.n, x.alert));
+    TL.forEach(x => qa(x.ic, 'ابزارها', x.attr));
+    /* کارهای من: موارد خودِ شخص، اول از بخشی که بیشتر در آن کار دارد */
+    let mine = [];
+    try{
+      const mk = nameKey(activeUserName());
+      mine = (G.work || []).filter(x => x.forMe || (x.whos || [x.who]).some(n => n && nameKey(n) === mk));
+      const cnt = {}; mine.forEach(x => { const c = h3WkCat(x); cnt[c] = (cnt[c] || 0) + 1; });
+      const rk = x => (x.level === 'hot' ? 0 : x.level === 'warm' ? 1 : 2);
+      mine.sort((a, b) => ((cnt[h3WkCat(b)] || 0) - (cnt[h3WkCat(a)] || 0)) || (rk(a) - rk(b)));
+    }catch(e){}
+    homeMineList = mine.slice(0, 6);
+    const WK_T = {adm:'دفتر فنی', exec:'اجرایی', rep:'گزارش'};
+    const mineH = '<div class="h3-mh"><b>کارهای من</b>' + (mine.length ? '<em>' + toFa(mine.length) + '</em>' : '') + '<button type="button" class="h3-link" data-h3k="mine">همه' + HM_I.go + '</button></div>'
+      + (homeMineList.length ? '<div class="h3-list h3-mine">' + homeMineList.map((x, i) => {
+          const who = x.who && nameKey(x.who) !== nameKey(activeUserName()) ? x.who : '';
+          return '<button type="button" class="h3-r lv-' + esc(x.level || 'calm') + '" data-hmm="' + i + '"><span class="h3-rd"></span>'
+            + '<span class="h3-rx"><b>' + esc(x.title || '') + '</b><small><em>' + (WK_T[h3WkCat(x)] || '') + '</em>' + esc(x.text || x.stage || '') + '</small></span>'
+            + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '') + '<span class="h3-rg">' + HM_I.go + '</span></button>'; }).join('') + '</div>'
+        : '<div class="h3-mempty">' + HM_I.ok + 'کار بازی به نام شما نیست</div>');
+    P.push({k:'td', t:'مهم‌ها', n: tdHot + (G.meN || 0) + (G.folN || 0), body:'<div class="h3-qas">' + QA.join('') + '</div>' + (td.length ? '<div class="h3-tds">' + td.join('') + '</div>' : '') + mineH});
     /* گزارش‌ها: همان نوع‌هایی که این شخص در زبانهٔ گزارش‌ها می‌بیند */
     try{ if(tabOk('view')){
       const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
@@ -80095,10 +80126,10 @@
   document.getElementById('homeView').addEventListener('click', e => {
     const back = () => { try{ pushNavBack('خانه', () => switchTab('home')); }catch(err){} };
     if(e.target.closest('.ava.person, [data-person]') && !e.target.closest('.hm-row, .hd-p')) return;
-    const w = e.target.closest('[data-hmw]');
+    const w = e.target.closest('[data-hmw],[data-hmm]');
     if(w){
       e.preventDefault(); e.stopPropagation();
-      const x = homeWorkList[+w.dataset.hmw];
+      const x = w.dataset.hmm != null ? homeMineList[+w.dataset.hmm] : homeWorkList[+w.dataset.hmw];
       if(!x) return;
       if(x.goto && x.goto.id){ back(); gotoAdminItem(x.goto.kind, x.goto.id, x.goto.who); return; }
       if(x.cat === 'missing' && x.forMe && tabOk('write')){ homeWrite('crew'); return; }
