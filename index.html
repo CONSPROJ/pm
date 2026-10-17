@@ -23664,6 +23664,14 @@
   #whTabs .kcap .wh-n{font-style:normal;display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;margin-inline-start:6px;border-radius:9px;background:var(--alert);color:#fff;font-size:10px;font-weight:800;}
   .wh-in{display:flex;flex-direction:column;gap:10px;}
   /* ---- فضاها و واحدها ---- */
+  .sl-fw label small{font-weight:500;font-size:10px;color:var(--muted);margin-inline-start:4px;}
+  .sl-fb{width:100%;} .sl-fb span u{text-decoration:none;font-size:10.5px;color:var(--muted);margin-inline-start:4px;}
+  .sl-fb span.ph, .sl-fb .ph{color:var(--muted);}
+  .flp-pop.sl-pop{max-height:min(72vh, 480px);} .sl-pop .sl-pf{position:sticky;bottom:-10px;background:var(--surface);padding-bottom:10px;}
+  .flp-pop.sl-sheet{box-shadow:0 -12px 40px -12px rgba(0,0,0,.45);}
+  .sl-pf{display:flex;align-items:center;gap:6px;padding:8px 2px 2px;border-top:1px solid var(--line);margin-top:6px;} .sl-pf small{flex:1;font-size:11px;color:var(--muted);}
+  .sl-pf .send{height:32px;padding:0 14px;}
+  .sp-glob{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;border:1px dashed color-mix(in srgb, #2f7d6b 40%, var(--line));background:color-mix(in srgb, #2f7d6b 4%, var(--surface));}
   .sl-row{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:10px;align-items:end;}
   .sl-row.sl-two{grid-template-columns:minmax(0,1fr) minmax(0,2fr);}
   .sl-row .field{margin:0;min-width:0;}
@@ -44512,7 +44520,9 @@
     { const z0 = String(zone || ''), i0 = z0.indexOf(' · ');
       const head = (i0 > 0 ? z0.slice(0, i0) : z0).trim();
       const hf = head && BUILDING.find(f => f.label === head || (i0 > 0 && f.key === head));
-      if(hf) return [hf.key]; }
+      if(hf) return [hf.key];
+      /* چند طبقه: «طبقهٔ ۵، طبقهٔ ۶ · راهرو» */
+      if(head && head.indexOf('،') !== -1){ const P = head.split(/\s*،\s*/).filter(Boolean); const L = P.map(h => BUILDING.find(f => f.label === h || f.key === h)); if(L.length && L.every(Boolean)) return L.map(f => f.key); } }
     const v = toEn(String(zone || '')).trim();
     if(!v) return [];
 
@@ -69492,7 +69502,9 @@
   const spFloorOf = u => spFloors().find(f => (f.units || []).indexOf(u) !== -1) || null;
   const spUnitLb = u => 'واحد ' + toFa(u);
   const spPartsOf = u => { if(sp.parts.has(u)) return sp.parts.get(u); try{ const o = sp.units.get(u); const T = o && o.tp && spTypes.get(o.tp); if(T && T.parts && T.parts.length) return T.parts; }catch(e){} return sp.parts.get('*') || SP_PART0; };
-  const spZonesOf = fk => sp.zones.get(fk) || [];
+  /* فضاهای یک طبقه: فضاهای خود طبقه + فضاهای عمومیِ همهٔ طبقات («*») */
+  const spZonesOwn = fk => sp.zones.get(fk) || [];
+  const spZonesOf = fk => fk === '*' ? spZonesOwn('*') : Array.from(new Set(spZonesOwn(fk).concat(spZonesOwn('*'))));
   /* همهٔ محل‌های سطح ۱ یک طبقه: واحدها و محل‌های ثبت‌شده */
   function spL1(fk){
     const f = spFloors().find(x => x.key === fk); if(!f) return [];
@@ -69525,7 +69537,7 @@
     spFloors().forEach(f => (f.units || []).forEach(u => { n++; const o = sp.units.get(u) || {}; const st = o.st || 'free'; c[st] = (c[st] || 0) + 1;
       const ar = +o.area || 0; a += ar; if(st === 'sold' || st === 'pre') aS += ar; }));
     const k = (v, l, s, cl) => '<div class="wh-k ' + (cl || '') + '"><b>' + v + '</b><u>' + l + '</u>' + (s ? '<small>' + s + '</small>' : '') + '</div>';
-    return '<div class="wh-kpis">' + k(toFa(spFloors().length), 'طبقه', toFa(spFloors().reduce((s, f) => s + spZonesOf(f.key).length, 0)) + ' محل دیگر')
+    return '<div class="wh-kpis">' + k(toFa(spFloors().length), 'طبقه', toFa(spFloors().reduce((s, f) => s + spZonesOwn(f.key).length, 0) + spZonesOwn('*').length) + ' فضای غیر واحد')
       + k(toFa(n), 'واحد', a ? toFa(Math.round(a).toLocaleString('en-US')) + ' متر مربع' : '')
       + k(toFa(c.sold + c.pre), 'فروخته و پیش‌فروش', aS ? toFa(Math.round(aS).toLocaleString('en-US')) + ' متر مربع' : '', c.sold + c.pre ? 'ok' : '')
       + k(toFa(c.free + c.res), 'آزاد و رزرو', c.res ? toFa(c.res) + ' رزرو' : '', '') + '</div>';
@@ -69536,7 +69548,7 @@
       + '<small>' + esc(o.own ? spSplit(o.own)[0] : st[1]) + '</small>' + (o.area ? '<i>' + toFa(o.area) + ' م.م</i>' : '') + '</button>';
   }
   function spFloorHtml(f){
-    const units = f.units || [], zs = spZonesOf(f.key), op = sp.open === f.key;
+    const units = f.units || [], zs = spZonesOwn(f.key), op = sp.open === f.key;
     const sold = units.filter(u => { const s = (sp.units.get(u) || {}).st; return s === 'sold' || s === 'pre'; }).length;
     const KN = {base:'زیرزمین', gf:'همکف', tech:'فنی', top:'بام'};
     let h = '<div class="sp-fl' + (op ? ' op' : '') + '"><button type="button" class="sp-fh" data-spfl="' + esc(f.key) + '">'
@@ -69615,6 +69627,14 @@
       + '<datalist id="spTyList">' + Array.from(ty).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
       + '<datalist id="spZoneSug">' + ['راهرو', 'لابی', 'راه‌پله', 'آسانسور', 'شفت', 'موتورخانه', 'پارکینگ', 'انباری', 'سالن اجتماعات', 'استخر', 'بام', 'نما', 'حیاط'].map(n => '<option value="' + n + '">').join('') + '</datalist>';
   }
+  /* فضاهای عمومی: یک بار تعریف، در همهٔ طبقات (کنار واحدها) */
+  function spGlobalHtml(){
+    const zs = spZonesOwn('*'), ed = spCanE();
+    return '<div class="sp-glob"><div class="sp-sh">فضاهای عمومی همهٔ طبقات <em>در گزارش روزانه کنار واحدهای هر طبقه می‌آیند؛ یک‌سطحی‌اند</em></div><div class="sp-zs">'
+      + zs.map(z => '<span class="sp-z">' + esc(z) + (ed ? '<button type="button" data-spzrm="*\u00a6' + esc(z) + '" aria-label="حذف">×</button>' : '') + '</span>').join('')
+      + (ed ? '<span class="sp-zadd"><input type="text" data-spzin="*" placeholder="مثلاً لابی، لیفت، راهرو" list="spZoneSug"><button type="button" data-spzadd="*">افزودن</button></span>' : (zs.length ? '' : '<span class="sp-none">هنوز تعریف نشده</span>'))
+      + '</div></div>';
+  }
   function spRender(){
     const body = document.getElementById('spBody'); if(!body) return;
     const side = document.getElementById('spSide');
@@ -69625,7 +69645,7 @@
     if(tabs) tabs.innerHTML = [['fl', 'طبقات و محل‌ها'], ['pg', 'پیشرفت تخصص‌ها'], ['sale', 'واحدها و فروش' + (n ? '<i class="wh-n">' + toFa(s) + '/' + toFa(n) + '</i>' : '')]].concat(spCanE() ? [['set', 'تیپ‌ها و اجزا']] : [])
       .map(([k, t]) => '<button type="button" class="kcap sm' + (sp.tab === k ? ' on' : '') + '" data-sptab="' + k + '">' + t + '</button>').join('');
     body.innerHTML = '<div class="wh-in">' + spDLs() + (sp.tab === 'set' ? spTypesHtml() + spSetHtml() : sp.tab === 'pg' ? pgHtml() : sp.tab === 'sale' ? spKpis() + spSaleHtml()
-      : spKpis() + '<p class="sp-hint">محل اصلی همه‌جا طبقه است؛ در طبقهٔ مسکونی محل سطح ۱ واحد و محل جزء اجزای واحد است. روی هر طبقه بزنید.</p><div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>') + '</div>';
+      : spKpis() + spGlobalHtml() + '<p class="sp-hint">محل اصلی همه‌جا طبقه است؛ در طبقهٔ مسکونی محل سطح ۱ واحد و محل جزء اجزای واحد است. روی هر طبقه بزنید.</p><div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>') + '</div>';
   }
   window.spRender = spRender;
   window.spVisible = () => { try{ return spCanE() || spCanS() || can('sp.prog') || can('sp.view'); }catch(e){ return false; } };
@@ -69653,14 +69673,14 @@
     const st = t.closest('[data-spst]'); if(st){ st.parentElement.querySelectorAll('[data-spst]').forEach(b => b.classList.toggle('on', b === st)); return; }
     const uu = t.closest('[data-spu]'); if(uu){ sp.unit = sp.unit === uu.dataset.spu ? '' : uu.dataset.spu; spRender(); return; }
     const zr = t.closest('[data-spzrm]'); if(zr){
-      const [fk, z] = zr.dataset.spzrm.split('¦'); const L = spZonesOf(fk).filter(x => x !== z);
+      const [fk, z] = zr.dataset.spzrm.split('¦'); const L = spZonesOwn(fk).filter(x => x !== z);
       try{ await spSaveRow(SP_ZONE_KIND, fk, L.length ? L.join('،') : null); if(L.length) sp.zones.set(fk, L); else sp.zones.delete(fk); spLists(); spRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       return;
     }
     const za = t.closest('[data-spzadd]'); if(za){
       const fk = za.dataset.spzadd, inp = host.querySelector('[data-spzin="' + CSS.escape(fk) + '"]');
       const add = spSplit(inp && inp.value); if(!add.length) return;
-      const L = Array.from(new Set(spZonesOf(fk).concat(add)));
+      const L = Array.from(new Set(spZonesOwn(fk).concat(add)));
       try{ await spSaveRow(SP_ZONE_KIND, fk, L.join('،')); sp.zones.set(fk, L); spLists(); spRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       return;
     }
@@ -70178,96 +70198,152 @@
   }
   window.spBuildingHtml = spBuildingHtml;
   /* ====== محل در ردیف‌های گزارش روزانه: طبقه ← محل ← محل جزء ======
-     طبقه از فهرست طبقات پروژه (مثل فرم سند طراحی)، محل از واحدها و محل‌های
-     همان طبقه (لیفت، لابی، نما…) و محل جزء فقط برای واحد، از اجزای همان واحد.
-     مقدار ذخیره‌شده همان ستون‌های قبلی است: «محل کارکرد» در خانهٔ پنهان
-     (واحد: شمارهٔ واحد، محل دیگر: «نام طبقه · محل»، فقط طبقه: نام طبقه) و
-     «محل جزء» در ستون خودش. مقدار گزارش‌های قبلی تا کسی طبقه یا محل را عوض
-     نکند دست نمی‌خورد. */
+     طبقه از فهرست طبقات پروژه؛ یک پیمانکار می‌تواند در چند طبقه باشد.
+     محل: «همهٔ فضاها»، واحدهای طبقه و فضاهای همان طبقه و فضاهای عمومی
+     (لابی، لیفت، نما…). محل جزء فقط برای واحد، از اجزای همان واحد.
+     مقدار در ستون‌های قبلی می‌نشیند (همان که floorKeysOf می‌خواند):
+       یک طبقه:  واحد ← «۵۰۲»، فضا ← «طبقهٔ ۵ · لابی»، کل طبقه ← «طبقهٔ ۵»
+       چند طبقه: «طبقهٔ ۵، طبقهٔ ۶» یا «طبقهٔ ۵، طبقهٔ ۶ · راهرو»
+     مقدار گزارش‌های قبلی تا کسی طبقه یا محل را عوض نکند دست نمی‌خورد. */
+  const SL_ALL_L1 = 'همهٔ فضاها';
+  const slFloorByLabel = h => { h = String(h || '').trim(); return spFloors().find(x => x.label === h || x.key === h || x.key === toEn(h)); };
   function slParse(z){
-    z = String(z || '').trim(); if(!z) return {f: '', l1: ''};
+    z = String(z || '').trim(); if(!z) return {fs: [], l1: ''};
     const F = spFloors(), zf = toEn(z);
+    const heads = h => { const P = h.split(/\s*،\s*/).filter(Boolean); const L = P.map(slFloorByLabel); return L.length && L.every(Boolean) ? L.map(x => x.key) : null; };
     const i = z.indexOf(' · ');
-    if(i > 0){ const h = z.slice(0, i).trim(), f = F.find(x => x.label === h || x.key === h); if(f) return {f: f.key, l1: z.slice(i + 3).trim()}; }
-    const fl = F.find(x => x.label === z || x.key === zf);
-    if(fl) return {f: fl.key, l1: ''};
+    if(i > 0){ const fs = heads(z.slice(0, i)); if(fs) return {fs, l1: z.slice(i + 3).trim()}; }
+    { const fs = heads(z); if(fs) return {fs, l1: ''}; }
     const fu = F.find(x => (x.units || []).indexOf(zf) !== -1);
-    if(fu) return {f: fu.key, l1: zf};
+    if(fu) return {fs: [fu.key], l1: zf};
     let ks = []; try{ ks = floorKeysOf(z) || []; }catch(e){}
-    if(ks.length === 1) return {f: ks[0], l1: z, raw: 1};
-    return {f: ks.length > 1 ? 'ALL' : '', l1: z, raw: 1};
+    if(ks.length === 1) return {fs: [ks[0]], l1: z, raw: 1};
+    return {fs: ks.length > 1 ? ['ALL'] : [], l1: z, raw: 1};
   }
-  function slCompose(f, l1){
-    l1 = String(l1 || '').trim();
-    if(!f || f === 'ALL') return l1;
-    const fl = spFloors().find(x => x.key === f); if(!fl) return l1;
+  function slCompose(fs, l1){
+    l1 = String(l1 || '').trim(); if(l1 === SL_ALL_L1) l1 = '';
+    fs = (fs || []).filter(Boolean);
+    if(!fs.length || fs[0] === 'ALL') return l1;
+    if(fs.length > 1){ const lb = fs.map(k => (slFloorByLabel(k) || {label: k}).label).join('، '); return l1 ? lb + ' · ' + l1 : lb; }
+    const fl = slFloorByLabel(fs[0]); if(!fl) return l1;
     if(!l1) return fl.label;
     if((fl.units || []).indexOf(toEn(l1)) !== -1) return toEn(l1);
-    /* محلی که خودش طبقه را دارد (مثلاً «B4 موتورخانه») تکرار نمی‌شود */
-    try{ const ks = floorKeysOf(l1) || []; if(ks.length === 1 && ks[0] === f) return l1; }catch(e){}
+    try{ const ks = floorKeysOf(l1) || []; if(ks.length === 1 && ks[0] === fl.key) return l1; }catch(e){}
     return fl.label + ' · ' + l1;
-  }
-  function slFloorOpts(cur){
-    return '<option value="">—</option>' + spFloors().map(f => '<option value="' + esc(f.key) + '"' + (f.key === cur ? ' selected' : '') + '>' + esc(f.label) + '</option>').join('')
-      + '<option value="ALL"' + (cur === 'ALL' ? ' selected' : '') + '>کل ساختمان / چند طبقه</option>';
   }
   function slDL(id, vals){
     let dl = document.getElementById(id); if(!dl){ dl = document.createElement('datalist'); dl.id = id; document.body.appendChild(dl); }
     dl.innerHTML = vals.map(v => '<option value="' + esc(v.v) + '"' + (v.t && v.t !== v.v ? ' label="' + esc(v.t) + '"' : '') + '>').join('');
     return id;
   }
-  function slL1List(f){
-    if(!f) return 'zoneList';
-    if(f === 'ALL'){
-      const S = new Set(['نما', 'راه‌پله', 'آسانسور', 'شفت', 'محوطه', 'بام']); spFloors().forEach(x => spZonesOf(x.key).forEach(z => S.add(z)));
-      return slDL('slL1_ALL', Array.from(S).map(v => ({v})));
+  function slL1List(fs){
+    fs = fs || [];
+    if(!fs.length) return 'zoneList';
+    const all = {v: SL_ALL_L1, t: fs.length > 1 || fs[0] === 'ALL' ? 'همهٔ فضاهای طبقه‌های انتخاب‌شده' : 'کل طبقه'};
+    if(fs[0] === 'ALL' || fs.length > 1){
+      /* چند طبقه: فقط فضاهای مشترک (واحد مال یک طبقه است) */
+      const S = new Set(fs[0] === 'ALL' ? ['نما', 'راه‌پله', 'آسانسور', 'شفت', 'محوطه', 'بام'] : []);
+      spZonesOf('*').forEach(z => S.add(z));
+      (fs[0] === 'ALL' ? spFloors().map(x => x.key) : fs).forEach(k => spZonesOf(k).forEach(z => S.add(z)));
+      return slDL('slL1_' + fs.join('_'), [all].concat(Array.from(S).map(v => ({v}))));
     }
-    return slDL('slL1_' + f, spL1(f).map(o => ({v: o.unit ? o.v : o.t, t: o.unit ? spUnitLb(o.v) : ''})));
+    return slDL('slL1_' + fs[0], [all].concat(spL1(fs[0]).map(o => ({v: o.unit ? o.v : o.t, t: o.unit ? spUnitLb(o.v) : ''}))));
   }
-  function slIsUnit(f, l1){ const fl = spFloors().find(x => x.key === f); return !!(fl && (fl.units || []).indexOf(toEn(String(l1 || '').trim())) !== -1); }
-  /* HTML سه خانه + خانهٔ پنهانِ «محل کارکرد» */
+  function slIsUnit(fs, l1){ if(!fs || fs.length !== 1) return false; const fl = slFloorByLabel(fs[0]); return !!(fl && (fl.units || []).indexOf(toEn(String(l1 || '').trim())) !== -1); }
+  const slFsOf = row => String(row.dataset.fls || '').split(',').filter(Boolean);
+  function slFloorBtnText(fs){
+    if(!fs.length) return '<span class="ph">انتخاب طبقه</span>';
+    if(fs[0] === 'ALL') return 'کل ساختمان';
+    const L = fs.map(k => (slFloorByLabel(k) || {label: k}).label);
+    return L.length > 2 ? esc(L.slice(0, 2).join('، ')) + ' <u>+' + toFa(L.length - 2) + '</u>' : esc(L.join('، '));
+  }
+  const SL_FI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14"/></svg>';
+  /* HTML: طبقه (چندانتخابی) + محل + محل جزء + خانهٔ پنهانِ «محل کارکرد» */
   function slHtml(zoneCls, subCls, zone, sub, idz, idp){
-    const P = slParse(zone), unit = !!subCls && slIsUnit(P.f, P.l1);
-    return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '">'
-      + '<div class="field sl-fw"><label>طبقه</label><select class="sl-f" data-flp="1">' + slFloorOpts(P.f) + '</select></div>'
-      + '<div class="field sl-1w"><label for="' + idz + '">محل</label><input type="text" id="' + idz + '" class="sl-1" value="' + esc(P.l1 && unit ? toFa(P.l1) : P.l1) + '" data-list="' + slL1List(P.f) + '" placeholder="' + (P.f ? 'واحد یا محل این طبقه' : 'اول طبقه را انتخاب کنید') + '" autocomplete="off"></div>'
+    const P = slParse(zone), unit = !!subCls && slIsUnit(P.fs, P.l1);
+    const l1v = P.l1 ? (unit ? toFa(P.l1) : P.l1) : (P.fs.length && !P.raw && zone ? SL_ALL_L1 : '');
+    return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '" data-fls="' + esc(P.fs.join(',')) + '">'
+      + '<div class="field sl-fw"><label>طبقه <small>یک یا چند</small></label><button type="button" class="flp-btn sl-fb">' + SL_FI + '<span>' + slFloorBtnText(P.fs) + '</span><i>▾</i></button></div>'
+      + '<div class="field sl-1w"><label for="' + idz + '">محل</label><input type="text" id="' + idz + '" class="sl-1" value="' + esc(l1v) + '" data-list="' + slL1List(P.fs) + '" placeholder="' + (P.fs.length ? 'همهٔ فضاها، واحد یا فضای عمومی' : 'اول طبقه را انتخاب کنید') + '" autocomplete="off"></div>'
       + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء</label><input type="text" id="' + idp + '" class="' + subCls + '" value="' + esc(sub || '') + '" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : 'subList') + '" placeholder="اجزای واحد" autocomplete="off"></div>')
       + '<input type="hidden" class="' + zoneCls + '" value="' + esc(zone || '') + '">'
       + '</div>';
   }
   window.slHtml = slHtml;
   function slSync(row, fromFloor){
-    const fs = row.querySelector('.sl-f'), l1 = row.querySelector('.sl-1'), hz = row.querySelector('.' + row.dataset.slzc);
+    const fs = slFsOf(row), l1 = row.querySelector('.sl-1'), hz = row.querySelector('.' + row.dataset.slzc);
     const w2 = row.querySelector('.sl-2w'), s2 = w2 && w2.querySelector('input');
-    const f = fs.value;
+    const fb = row.querySelector('.sl-fb span'); if(fb) fb.innerHTML = slFloorBtnText(fs);
     if(fromFloor){
-      /* محلی که در طبقهٔ تازه نیست پاک می‌شود */
-      const v = toEn(l1.value.trim());
-      if(v && f && f !== 'ALL' && !spL1(f).some(o => o.v === v || o.t === l1.value.trim())) l1.value = '';
-      l1.setAttribute('data-list', slL1List(f));
-      l1.placeholder = f ? 'واحد یا محل این طبقه' : 'اول طبقه را انتخاب کنید';
+      /* محلی که در طبقه(های) تازه نیست پاک می‌شود */
+      const v = l1.value.trim();
+      if(v && v !== SL_ALL_L1 && fs.length && fs[0] !== 'ALL'){
+        const ok = fs.length === 1 ? spL1(fs[0]).some(o => o.v === toEn(v) || o.t === v) : fs.every(k => spZonesOf(k).indexOf(v) !== -1);
+        if(!ok) l1.value = '';
+      }
+      if(!l1.value.trim() && fs.length) l1.value = SL_ALL_L1;
+      l1.setAttribute('data-list', slL1List(fs));
+      l1.placeholder = fs.length ? 'همهٔ فضاها، واحد یا فضای عمومی' : 'اول طبقه را انتخاب کنید';
     }
-    const unit = slIsUnit(f, l1.value);
+    const unit = slIsUnit(fs, l1.value);
     if(w2){
       w2.hidden = !unit;
       if(unit) s2.setAttribute('data-list', slDL('slL2_' + toEn(l1.value.trim()), spPartsOf(toEn(l1.value.trim())).map(v => ({v}))));
       else if(s2.value){ s2.value = ''; s2.dispatchEvent(new Event('input', {bubbles: true})); }
     }
-    const nz = slCompose(f, l1.value);
+    const nz = slCompose(fs, l1.value);
     if(hz && hz.value !== nz){ hz.value = nz; hz.dispatchEvent(new Event('input', {bubbles: true})); hz.dispatchEvent(new Event('change', {bubbles: true})); }
   }
   document.addEventListener('change', e => {
-    const t = e.target; if(!t || !t.closest) return;
-    const row = t.closest('.sl-row'); if(!row) return;
-    if(t.classList.contains('sl-f')) slSync(row, true);
-    else if(t.classList.contains('sl-1')) slSync(row, false);
+    const t = e.target; if(!t || !t.classList || !t.classList.contains('sl-1')) return;
+    const row = t.closest('.sl-row'); if(row) slSync(row, false);
   });
   document.addEventListener('input', e => {
     const t = e.target; if(!t || !t.classList || !t.classList.contains('sl-1')) return;
     const row = t.closest('.sl-row'); if(row) slSync(row, false);
   });
-  /* فهرست طبقه‌ها با عوض شدن پروژه یا طبقات تازه می‌شود */
-  window.slRefreshAll = () => document.querySelectorAll('.sl-row .sl-f').forEach(s => { const v = s.value; s.innerHTML = slFloorOpts(v); s.value = v; const b = s.nextElementSibling; if(b && b.classList.contains('flp-btn')){ const o = s.options[s.selectedIndex]; const sp = b.querySelector('span'); if(sp && o) sp.textContent = o.textContent; } });
+  /* پنجرهٔ انتخاب چند طبقه */
+  function slPopClose(){ const p = document.getElementById('slPop'); if(p) p.remove(); }
+  function slPopOpen(row, btn){
+    slPopClose(); if(typeof flpClose === 'function') try{ flpClose(); }catch(e){}
+    const sel = new Set(slFsOf(row));
+    const pop = document.createElement('div'); pop.id = 'slPop'; pop.className = 'flp-pop sl-pop';
+    const paint = () => {
+      pop.innerHTML = '<div class="flp-sp"><button type="button" class="flp-wide' + (sel.has('ALL') ? ' on' : '') + '" data-slv="ALL">کل ساختمان / همهٔ طبقات</button></div>'
+        + '<div class="flp-grid">' + spFloors().map(f => '<button type="button" class="flp-it' + (sel.has(f.key) ? ' on' : '') + (/^B\d|^GF$/.test(f.key) ? ' bs' : '') + '" data-slv="' + esc(f.key) + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div>'
+        + '<div class="sl-pf"><small>' + (sel.size && !sel.has('ALL') ? toFa(sel.size) + ' طبقه' : sel.has('ALL') ? 'همهٔ طبقات' : 'یک یا چند طبقه') + '</small><button type="button" class="mini" data-slclr="1">پاک</button><button type="button" class="send rf-go" data-slok="1">تأیید</button></div>';
+    };
+    paint();
+    document.body.appendChild(pop);
+    const r = btn.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, w = Math.min(330, vw - 24);
+    pop.style.width = w + 'px';
+    pop.style.left = Math.min(Math.max(12, r.right - w), vw - w - 12) + 'px';
+    if(vw < 640){ pop.classList.add('sl-sheet'); pop.style.left = '12px'; pop.style.width = (vw - 24) + 'px'; pop.style.top = 'auto'; pop.style.bottom = 'calc(12px + env(safe-area-inset-bottom, 0px))'; }
+    else{
+      const below = vh - r.bottom > 340 || r.top < 340;
+      pop.style.top = (below ? r.bottom + 6 : Math.max(12, r.top - 6 - Math.min(380, pop.offsetHeight))) + 'px';
+    }
+    const apply = () => {
+      const order = spFloors().map(f => f.key);
+      row.dataset.fls = sel.has('ALL') ? 'ALL' : Array.from(sel).sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(',');
+      slSync(row, true);
+    };
+    pop.addEventListener('click', e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-slv]');
+      if(b){ const v = b.dataset.slv; if(v === 'ALL'){ const on = sel.has('ALL'); sel.clear(); if(!on) sel.add('ALL'); } else { sel.delete('ALL'); if(sel.has(v)) sel.delete(v); else sel.add(v); } paint(); apply(); return; }
+      if(e.target.closest('[data-slclr]')){ sel.clear(); paint(); apply(); return; }
+      if(e.target.closest('[data-slok]')){ slPopClose(); }
+    });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.sl-fb');
+    if(b){ e.preventDefault(); e.stopPropagation(); const row = b.closest('.sl-row'); if(document.getElementById('slPop')) slPopClose(); else slPopOpen(row, b); return; }
+    if(!(e.target.closest && e.target.closest('#slPop'))) slPopClose();
+  }, true);
+  window.addEventListener('resize', slPopClose);
+  /* نام طبقه‌ها با عوض شدن پروژه تازه می‌شود */
+  window.slRefreshAll = () => document.querySelectorAll('.sl-row').forEach(row => { const s = row.querySelector('.sl-fb span'); if(s) s.innerHTML = slFloorBtnText(slFsOf(row)); });
   /* ---- انتخاب محل در فرم‌ها: طبقه ← محل ← محل جزء ----
      کنار هر «محل کارکرد» دکمهٔ کوچکی است که این پنجره را باز می‌کند. مقدار
      ذخیره‌شده همان متن قبلی است: واحد با شماره‌اش (۵۰۱)، محل دیگر با
