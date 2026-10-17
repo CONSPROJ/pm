@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261017051052">
+<meta name="pm-build" content="20261017052805">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -2359,6 +2359,10 @@
   .ctyp-b{all:unset;flex:1;text-align:center;cursor:pointer;height:32px;line-height:32px;border-radius:9px;font-size:12.5px;font-weight:800;color:var(--muted);white-space:nowrap;}
   .ctyp-b.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1);}
   .ctyp-b.t-cons.on{color:#6d5bb5;} .ctyp-b.t-emp.on{color:#b0632f;} .ctyp-b.t-own.on{color:#2f7d5b;}
+  .cdx-tyb.t-staff{background:color-mix(in srgb, var(--sky) 14%, transparent);color:var(--sky);}
+  .cdx-st{cursor:pointer;} .cdx-sa{flex:none;} .cdx-sr{display:flex;align-items:center;gap:6px;flex:none;}
+  .cdx-ri{width:150px;height:32px;box-sizing:border-box;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--field);font:inherit;font-size:12px;color:var(--ink);}
+  @media (max-width:640px){ .cdx-st{flex-wrap:wrap;} .cdx-sr{flex:1 0 100%;} .cdx-ri{flex:1;} }
   .cdx-tyb.t-own{background:color-mix(in srgb, #2f7d5b 14%, transparent);color:#2f7d5b;} .ptx.t-own{--c:#2f7d5b;}
   [data-theme="dark"] .ctyp-b.t-own.on, [data-theme="dark"] .cdx-tyb.t-own{color:#6fc59c;} [data-theme="dark"] .ptx.t-own{--c:#6fc59c;}
   [data-theme="dark"] .ctyp-b.t-cons.on{color:#a898e6;} [data-theme="dark"] .ctyp-b.t-emp.on{color:#e0a070;}
@@ -34598,6 +34602,34 @@
     let v = {pairs: [], multi: []}; try{ v = kxSuggest(kxStats()); }catch(e){}
     ctdSugCache = {sig, v}; return v;
   }
+  /* پرسنل پروژه در پروندهٔ نیروی انسانی: نام و سمت؛ سمت را مدیر همین‌جا عوض می‌کند */
+  function ctdStaffHtml(names, q){
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    const qq = String(q || '').trim();
+    const L = names.map(n => ({n, r: (function(){ try{ return roleOf(n) || ''; }catch(e){ return ''; } })()}))
+      .filter(x => !qq || (x.n + ' ' + x.r).indexOf(qq) !== -1 || toEn(x.n + ' ' + x.r).indexOf(toEn(qq)) !== -1)
+      .sort((a, b) => a.n.localeCompare(b.n, 'fa'));
+    const roles = (typeof ROLE_LIST !== 'undefined' ? ROLE_LIST : []).filter(r => r && r !== '—');
+    return '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام یا سمت…" value="' + esc(qq) + '" autocomplete="off"></label></div>'
+      + '<datalist id="ctdRoleList">' + roles.map(r => '<option value="' + esc(r) + '">').join('') + '</datalist>'
+      + '<div class="cdx-list ctd-list">' + (L.length ? L.map(x => '<div class="cdx-r cdx-st" data-cdxst="' + esc(x.n) + '">'
+          + '<span class="cdx-sa">' + avatarHtml(x.n, 'sm', true) + '</span>'
+          + '<span class="cdx-m"><b>' + esc(x.n) + '<i class="cdx-tyb t-staff">پرسنل</i></b><small>' + esc(x.r || 'سمت مشخص نشده') + '</small></span>'
+          + (adm ? '<span class="cdx-sr"><input type="text" class="cdx-ri" list="ctdRoleList" value="' + esc(x.r) + '" placeholder="سمت" aria-label="سمت ' + esc(x.n) + '"><button type="button" class="cdx-rs" data-cdxrole="' + esc(x.n) + '">ثبت</button></span>' : '')
+          + '</div>').join('') : '<div class="mx-empty">کسی پیدا نشد.</div>') + '</div>'
+      + (adm ? '<div class="cdx-note">سمت هر نفر همه‌جا (گزارش‌ها، امضاها، کارتابل) همین است. سطح دسترسی از «مدیریت ← کاربران» تعیین می‌شود.</div>' : '');
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-cdxrole]'); if(b){
+      e.stopPropagation();
+      const n = b.dataset.cdxrole, inp = b.parentElement.querySelector('.cdx-ri'), r = inp ? inp.value.trim() : '';
+      b.disabled = true; b.textContent = '…';
+      try{ await savePerson(n, {role: r || null}); try{ await loadPeople(); }catch(e2){} ctcRepaint(); }
+      catch(err){ b.disabled = false; b.textContent = 'ثبت'; showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+      return;
+    }
+    const st = e.target.closest && e.target.closest('.cdx-st'); if(st && !e.target.closest('.cdx-sr')){ try{ openProfile(st.dataset.cdxst); }catch(err){} }
+  });
   function ctcRepaint(focusId){
     /* دفترچه هم در پنل مدیریت (#ctDir) هست، هم در «گزارش پیمانکار» (.ctd-host) */
     let boxes = Array.from(document.querySelectorAll('#ctDir, .ctd-host'));
@@ -34655,7 +34687,10 @@
           +   (ph ? ctcCallBtn(e.canon, 'cdx-b', CTC_I.tel, I.c) : '')
           +   (e.hid ? '<button type="button" class="cdx-rs" data-cdxrestore="' + esc(e.canon) + '">بازگرداندن</button>' : '<button type="button" class="cdx-b" data-cdxprof="' + esc(e.canon) + '" title="کارت و گزارش‌های پیمانکار">' + CDX_I.prof + '</button>')
           +   (ed ? '<span class="cdx-go">' + CDX_I.chev + '</span>' : '') + '</span></div>'; };
-      body = '<div class="cdx-ty">' + [['', 'همه', ents.filter(e => !e.hid).length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, ents.filter(e => !e.hid && e.ty === k).length])).concat(nHid && ed ? [['hid', 'حذف‌شده', nHid]] : []).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>'
+      let staff = []; try{ staff = listNames(); }catch(e0){}
+      const tyBar = '<div class="cdx-ty">' + [['', 'همه', ents.filter(e => !e.hid).length], ['staff', 'پرسنل', staff.length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, ents.filter(e => !e.hid && e.ty === k).length])).concat(nHid && ed ? [['hid', 'حذف‌شده', nHid]] : []).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>';
+      if(ty === 'staff'){ body = tyBar + ctdStaffHtml(staff, q); boxes.forEach(b => { b.innerHTML = head + body; }); if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e1){} } } return; }
+      body = tyBar
         + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، املای دیگر، قرارداد، تلفن یا تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
         + '<button type="button" class="cdx-sort" data-cdxsort="1" title="ترتیب">' + (ctdState.sort === 'az' ? 'الفبایی' : 'پرکارتر اول') + '</button>'
         + '<span class="cdx-xl"><button type="button" class="cdx-b" data-ctdxl="out" title="دانلود اکسل همهٔ پرونده‌ها">' + CTD_XI.down + '</button>'
