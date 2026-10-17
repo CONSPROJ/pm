@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261017033539">
+<meta name="pm-build" content="20261017040155">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23375,6 +23375,15 @@
   .h3-qa.bad svg{color:var(--alert);}
   .h3-qa.ra{background:color-mix(in srgb, var(--sky) 7%, var(--surface));border-color:color-mix(in srgb, var(--sky) 30%, var(--line));}
   .h3-qsep{flex:none;width:1px;align-self:stretch;margin:6px 2px;background:var(--line);}
+  .h3-rps{display:flex;align-items:center;gap:6px;margin:0 0 8px;overflow-x:auto;scrollbar-width:none;}
+  .h3-rps::-webkit-scrollbar{display:none;}
+  .h3-rps small{flex:none;font-size:10.5px;font-weight:800;color:var(--muted);margin-inline-end:2px;}
+  .h3-rp{all:unset;cursor:pointer;flex:none;position:relative;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px 0 10px;border-radius:99px;font:700 11.5px var(--f);color:var(--ink);white-space:nowrap;
+    background:color-mix(in srgb, var(--sky) 9%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 30%, var(--line));}
+  .h3-rp svg{width:15px;height:15px;color:var(--sky-deep, var(--sky));}
+  .h3-rp:active{transform:scale(.97);}
+  .h3-rp.bad{border-color:color-mix(in srgb, var(--alert) 45%, var(--line));} .h3-rp.bad svg{color:var(--alert);}
+  .h3-rp > i{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:var(--alert);width:15px;height:15px;border-radius:50%;display:grid;place-items:center;}
   .h3-td.ab-r{--c:#3f7a52;} .h3-td.ab-r.c-vio{--c:#6d5bb5;} .h3-td.ab-r.c-amb{--c:#b07512;} .h3-td.ab-r.c-sky{--c:var(--sky);}
   .h3-kp.in{animation:wsIn .26s ease-out;}
   @media (prefers-reduced-motion:reduce){ .h3-kp.in{animation:none;} }
@@ -80056,7 +80065,7 @@
     const tdHot = td.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length;
     const P = [];
     /* «مهم‌ها»: کارهای امروز و کارهای من یک‌جا؛ بالایش میان‌برهای همیشگی */
-    const QA = [];
+    const QA = [], RQ = [];
     const QS = {'doc-statement':'صورت وضعیت تازه', 'doc-contract':'قرارداد تازه', 'doc-letter':'نامهٔ تازه', 'doc-minute':'صورتجلسهٔ تازه', 'doc-design':'سند طراحی تازه', crew:'گزارش روزانه', wrk:'کارگری', hse:'HSE', prc:'خرید', prcList:'خریدها', whIn:'رسید کالا', whOut:'حواله', whAsk:'درخواست کالا', qcNew:'بازرسی', qcIr:'NCR', coNew:'تغییر کار', mcLog:'ماشین‌آلات', task:'فعالیت تازه'};
     const QL = {gen:'ابلاغ', cal:'تقویم', cal2:'تقویم', rem:'یادآور', fine:'جریمه‌ها', wsTools:'ابزارها', leave:'مرخصی', ctr:'پیمانکاران'};
     const qa = (ic, t, attr, n, bad) => QA.push('<button type="button" class="h3-qa' + (bad ? ' bad' : '') + '" ' + attr + '>' + ic + '<span>' + t + '</span>' + (n ? '<i>' + toFa(n) + '</i>' : '') + '</button>');
@@ -80082,9 +80091,8 @@
     RA.forEach(x => {
       const at = RS[x.k]; let flag = 0, row = '';
       if(at){ row = td2.find(c => c.indexOf(at) !== -1) || ''; if(row){ td2 = td2.filter(c => c !== row); flag = /class="h3-td (due|bad)/.test(row) ? 1 : 0; } }
-      QA.push('<button type="button" class="h3-qa ra' + (flag ? ' bad' : '') + '" data-h3act="' + esc(x.k) + '" title="' + esc(x.t) + '">' + (HM_I[x.ic] || HM_I.plus) + '<span>' + esc(QS[x.k] || x.t) + '</span>' + (flag ? '<i>!</i>' : '') + '</button>');
+      RQ.push('<button type="button" class="h3-rp' + (flag ? ' bad' : '') + '" data-h3act="' + esc(x.k) + '" title="' + esc(x.t) + '">' + (HM_I[x.ic] || HM_I.plus) + '<span>' + esc(QS[x.k] || x.t) + '</span>' + (flag ? '<i>!</i>' : '') + '</button>');
     });
-    if(RA.length) QA.push('<span class="h3-qsep"></span>');
     let lvN = 0; try{ lvN = leaveWaiting().length; }catch(e){}
     qa(LV_I.plane, 'مرخصی', 'data-h3leave="1"', lvN, lvN);
     const FI = (G.folItems || []).filter(x => x.k !== 'msg'), TL = FI.filter(x => x.k === 'wsTools');
@@ -80112,7 +80120,7 @@
             + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '') + '<span class="h3-rg">' + HM_I.go + '</span></button>'; }).join('') + '</div>'
         : '<div class="h3-mempty">' + HM_I.ok + 'کار بازی به نام شما نیست</div>');
     void mineH;
-    P.push({k:'td', t:'مهم‌ها', n: td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length + (G.folN || 0), body:'<div class="h3-qas">' + QA.join('') + '</div>' + (td2.length ? '<div class="h3-tds">' + td2.join('') + '</div>' : '<div class="h3-mempty">' + HM_I.ok + 'کار فوری‌ای نیست</div>')});
+    P.push({k:'td', t:'مهم‌ها', n: td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length + (G.folN || 0), body:(RQ.length ? '<div class="h3-rps"><small>اخیر</small>' + RQ.join('') + '</div>' : '') + '<div class="h3-qas">' + QA.join('') + '</div>' + (td2.length ? '<div class="h3-tds">' + td2.join('') + '</div>' : '<div class="h3-mempty">' + HM_I.ok + 'کار فوری‌ای نیست</div>')});
     /* گزارش‌ها: همان نوع‌هایی که این شخص در زبانهٔ گزارش‌ها می‌بیند */
     try{ if(tabOk('view')){
       const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
