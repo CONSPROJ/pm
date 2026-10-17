@@ -23001,6 +23001,7 @@
   .pj-tag b{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pj-tag button{all:unset;cursor:pointer;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:13px;line-height:1;color:var(--muted);background:color-mix(in srgb, var(--line) 60%, transparent);}
   .pj-tag .ava{width:18px !important;height:18px !important;font-size:8px !important;}
+  .pj-tagin.pj-bad{box-shadow:inset 0 -2px 0 var(--alert) !important;}
   .pj-tagin{all:unset;flex:1 1 120px;min-width:100px;font:inherit;font-size:13px;color:var(--ink);padding:4px 2px;}
   .pj-fl .pj-tags input.pj-tagin{border:0 !important;background:none !important;box-shadow:none !important;width:auto !important;padding:5px 4px !important;border-radius:0 !important;}
   .pj-tn{font-style:normal;font-size:10px;font-weight:800;color:#2f6f9a;padding:0 6px;border-radius:99px;background:color-mix(in srgb, #2f6f9a 12%, transparent);}
@@ -23770,6 +23771,7 @@
   .sp-g > .te-f:first-child{grid-column:1 / -1;}
   .sp-card .te-f u em{font-style:normal;font-weight:500;font-size:10px;color:var(--muted);margin-inline-start:4px;}
   .sp-own{display:flex;flex-wrap:wrap;gap:6px;}
+  .sp-tags{background:var(--field);}
   .sp-on{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 4px;border-radius:99px;background:var(--field);font-size:11.5px;font-weight:700;}
   .sp-rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);}
   .sp-row{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;}
@@ -34699,6 +34701,15 @@
     }
     const st = e.target.closest && e.target.closest('.cdx-st'); if(st && !e.target.closest('.cdx-sr')){ try{ openProfile(st.dataset.cdxst); }catch(err){} }
   });
+  /* بعد از ساختن دوبارهٔ فهرست، خانهٔ جست‌وجوی «دیده‌شده» دوباره فوکوس می‌گیرد.
+     یک فهرست گاهی در دو جا هست (میز کار و مدیریت) و getElementById اولی را
+     که پنهان است برمی‌گرداند؛ برای همین در نسخهٔ سیستم بعد از هر حرف خانه بسته می‌شد. */
+  window.refocusQ = function(id){
+    const all = Array.from(document.querySelectorAll('[id="' + id + '"]'));
+    const i = all.find(x => x.offsetParent) || all[0]; if(!i) return;
+    try{ i.focus({preventScroll: true}); }catch(e){ i.focus(); }
+    try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){}
+  };
   function ctcRepaint(focusId){
     /* دفترچه هم در پنل مدیریت (#ctDir) هست، هم در «گزارش پیمانکار» (.ctd-host) */
     let boxes = Array.from(document.querySelectorAll('#ctDir, .ctd-host'));
@@ -34712,7 +34723,7 @@
     ents.forEach(e => { e.inf = ctdInfoOf(e, di); });
     const sug = ed ? ctdSug() : {pairs: [], multi: []}, nFix = sug.pairs.length;
     const tab = (ed && (ctdState.tab === 'fix' || ctdState.tab === 'disc' || ctdState.tab === 'skill' || ctdState.tab === 'ct')) ? ctdState.tab : 'list';
-    ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); });
+    ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); e.own = e.ty === 'own' || !!(window.unitsOfOwner && window.unitsOfOwner(e.canon).length); });
     const nHid = ents.filter(e => e.hid).length;
     if(ctdState.ty === 'hid' && !nHid) ctdState.ty = '';
     if(ctdState.ty !== 'hid'){ for(let i = ents.length - 1; i >= 0; i--) if(ents[i].hid) ents.splice(i, 1); }
@@ -34736,6 +34747,7 @@
       const list = ents.filter(e => {
         const I = e.inf;
         if(ty === 'hid'){ if(!e.hid) return false; }
+        else if(ty === 'own'){ if(!e.own) return false; }
         else if(ty && e.ty !== ty) return false;
         if(f === 'ok' && I.score < 5) return false;
         if(f === 'part' && I.score === 5) return false;
@@ -34748,7 +34760,7 @@
       const row = e => { const I = e.inf, ph = I.c.p && I.c.p[0];
         return '<div class="cdx-r' + (e.hid ? ' cdx-hid' : '') + '" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
           + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + esc(initialsOf(e.canon)) + '</i></span>'
-          + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + '</b>'
+          + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + (e.own && e.ty !== 'own' ? '<i class="cdx-tyb t-own">مالک</i>' : '') + '</b>'
           +   '<small>' + esc([I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
           +   '<span class="cdx-ch">' + (I.nc ? '<i class="c">' + toFa(I.nc) + ' قرارداد</i>' : '') + (I.ns ? '<i class="s">' + toFa(I.ns) + ' صورت وضعیت</i>' : '') + (e.n ? '<i>' + toFa(e.n) + ' ردیف گزارش</i>' : '')
           +     (I.miss.length && ed ? '<i class="m">کم دارد: ' + esc(I.miss.join('، ')) + '</i>' : '') + '</span></span>'
@@ -34757,8 +34769,8 @@
           +   (e.hid ? '<button type="button" class="cdx-rs" data-cdxrestore="' + esc(e.canon) + '">بازگرداندن</button>' : '<button type="button" class="cdx-b" data-cdxprof="' + esc(e.canon) + '" title="کارت و گزارش‌های پیمانکار">' + CDX_I.prof + '</button>')
           +   (ed ? '<span class="cdx-go">' + CDX_I.chev + '</span>' : '') + '</span></div>'; };
       let staff = []; try{ staff = listNames(); }catch(e0){}
-      const tyBar = '<div class="cdx-ty">' + [['', 'همه', ents.filter(e => !e.hid).length], ['staff', 'پرسنل', staff.length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, ents.filter(e => !e.hid && e.ty === k).length])).concat(nHid && ed ? [['hid', 'حذف‌شده', nHid]] : []).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>';
-      if(ty === 'staff'){ body = tyBar + ctdStaffHtml(staff, q); boxes.forEach(b => { b.innerHTML = head + body; }); if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e1){} } } return; }
+      const tyBar = '<div class="cdx-ty">' + [['', 'همه', ents.filter(e => !e.hid).length], ['staff', 'پرسنل', staff.length]].concat(CTR_TYPES.map(([k, lb]) => [k, lb, ents.filter(e => !e.hid && (k === 'own' ? e.own : e.ty === k)).length])).concat(nHid && ed ? [['hid', 'حذف‌شده', nHid]] : []).map(([k, lb, n]) => '<button type="button" class="' + ((ctdState.ty || '') === k ? 'on' : '') + '" data-cdxty="' + k + '">' + lb + '<u>' + toFa(n) + '</u></button>').join('') + '</div>';
+      if(ty === 'staff'){ body = tyBar + ctdStaffHtml(staff, q); boxes.forEach(b => { b.innerHTML = head + body; }); if(focusId) window.refocusQ(focusId); return; }
       body = tyBar
         + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، املای دیگر، قرارداد، تلفن یا تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
         + '<button type="button" class="cdx-sort" data-cdxsort="1" title="ترتیب">' + (ctdState.sort === 'az' ? 'الفبایی' : 'پرکارتر اول') + '</button>'
@@ -34770,7 +34782,7 @@
           : '<div class="mx-empty">پیمانکاری پیدا نشد.' + (ed && q ? ' <button type="button" class="cdx-lk" data-cdxnew="' + esc(q) + '">+ ثبت «' + esc(q) + '» به‌عنوان پیمانکار تازه</button>' : '') + '</div>') + '</div>';
     }
     boxes.forEach(b => { b.innerHTML = head + body; });
-    if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
+    if(focusId) window.refocusQ(focusId);
   }
   document.addEventListener('click', e => {
     const t = e.target;
@@ -36002,7 +36014,7 @@
     if(!el) return;
     el.outerHTML = matchPanelHtml();
     try{ ensureMatchList(); }catch(e){}
-    if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
+    if(focusId) window.refocusQ(focusId);
   }
   document.addEventListener('click', e => {
     const t = e.target;
@@ -36242,7 +36254,7 @@
     if(!el) return;
     const y = window.scrollY;
     el.outerHTML = ctrPanelHtml();
-    if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
+    if(focusId) window.refocusQ(focusId);
     else if(Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
   }
   /* ---- عملیات ---- */
@@ -36696,7 +36708,7 @@
         + (list.length > ulx.show ? '<button type="button" class="ulx-more" data-ulx="more">نمایش ' + toFa(Math.min(80, list.length - ulx.show)) + ' رویداد دیگر</button>' : '');
     }
     box.innerHTML = h;
-    if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
+    if(focusId) window.refocusQ(focusId);
   }
   document.addEventListener('click', e => {
     const t = e.target;
@@ -45987,12 +45999,13 @@
       + '<div class="ptx-rbar">' + ['A','B','C','D'].filter(k => R[k]).map(k => '<span class="r-' + k + '" style="flex:' + R[k] + '" title="' + k + ': ' + toFa(R[k]) + '"></span>').join('') + '</div>'
       + '<div class="ptx-rl">' + [['A','تأیید'],['B','مشروط'],['C','اصلاح'],['D','رد']].map(([k, l]) => '<span class="r-' + k + '"><i></i>' + l + ' <b>' + toFa(R[k]) + '</b></span>').join('') + '</div></div>' : '';
     if(t === 'own') return (window.spOwnerHtml ? window.spOwnerHtml(name) : '') || '<div class="hr-note">هنوز واحدی به نام این مالک ثبت نشده. از «میز کار ← فضاها و واحدها» روی کارت واحد، مالک را انتخاب کنید.</div>';
-    const sumPane = '<div class="cf">' + nowH + res
+    const ownH = window.spOwnerHtml ? window.spOwnerHtml(name) : '';
+    const sumPane = '<div class="cf">' + ownH + nowH + res
       + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '')
       + '</div>';
     const docPane = '<div class="cf"><div class="rc-title">پروندهٔ اسناد</div>' + P.docTiles + '</div>';
     if(!nDocs && !S.length)
-      return stats + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
+      return ownH + stats + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
     return (c.cn && normName(c.cn) !== normName(name) ? '<div class="ct-alias"><u>نام قراردادی</u><span>' + esc(c.cn) + '</span></div>' : '')
       + stats
       + '<div class="hr-split hr2 ct2">'
@@ -46129,7 +46142,7 @@
             const t = ctrTypeOf(name);
             return (t === 'cons' || t === 'emp' || t === 'own') ? ctPartyHtml(name)
               : rangeBar() + '<div class="empty">برای «' + esc(name) + '» در این بازه گزارش کارگاهی ثبت نشده است. بازهٔ بلندتری را انتخاب کنید.</div>' + ctPartyHtml(name);
-          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + ctPfViewHtml(name) + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
+          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + (window.spOwnerHtml ? window.spOwnerHtml(name) : '') + ctPfViewHtml(name) + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
       try{ whCtrFill(); qcCtrFill(); coCtrFill(); }catch(e){}
       if(keepTab){
         const tb = body.querySelector('[data-hrtab="' + keepTab + '"]');
@@ -47572,7 +47585,7 @@
     const box = document.getElementById('crewRep');
     if(!box) return;
     box.innerHTML = crewBodyHtml();
-    if(focusId){ const i = document.getElementById(focusId); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){} } }
+    if(focusId) window.refocusQ(focusId);
   }
   document.addEventListener('click', e => {
     const t = e.target;
@@ -69495,6 +69508,18 @@
     }
     return h + '</div>';
   }
+  /* تگ‌ها (همان شکل اعضای پروژه): هر مقدار یک برچسب، حذف با ×، افزودن با Enter */
+  function spTagsHtml(key, vals, ed, list, ph, person){
+    return '<div class="pj-tags sp-tags" data-pjtags="' + key + '"' + (person ? ' data-person="1"' : '') + '>' + vals.map(n => '<span class="pj-tag" data-v="' + esc(n) + '"><b>' + esc(n) + '</b>' + (ed ? '<button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button>' : '') + '</span>').join('')
+      + (ed ? '<input type="text" class="pj-tagin" list="' + list + '" placeholder="' + esc(vals.length ? 'مورد دیگر…' : ph) + '" autocomplete="off">' : '') + '</div>';
+  }
+  function spTagsRead(box){
+    if(!box) return [];
+    const L = Array.from(box.querySelectorAll('.pj-tag')).map(t => t.dataset.v);
+    const i = box.querySelector('.pj-tagin'), pend = i ? i.value.trim() : '';
+    if(pend) spSplit(pend).forEach(n => { if(L.indexOf(n) === -1) L.push(n); });
+    return L;
+  }
   function spUnitForm(u){
     const o = sp.units.get(u) || {}, f = spFloorOf(u), ed = spCanS(), pe = spCanE();
     const own = spSplit(o.own);
@@ -69502,10 +69527,10 @@
     return '<div class="sp-card"><div class="sp-ch"><span class="sp-ck" dir="ltr">' + esc(toFa(u)) + '</span><span><b>' + esc(spUnitLb(u)) + '</b><small>' + esc(f ? f.label : '') + '</small></span>'
       + '<button type="button" class="sp-x" data-spu="' + esc(u) + '" aria-label="بستن">×</button></div>'
       + '<div class="sp-g"><div class="te-f"><u>وضعیت فروش</u><div class="wh-seg sm">' + SP_ST.map(([k, t]) => '<button type="button" data-spst="' + k + '" class="' + (st === k ? 'on' : '') + '"' + (ed ? '' : ' disabled') + '>' + t + '</button>').join('') + '</div></div>'
-      + '<label class="te-f"><u>مالک <em>چند نفر را با «،» جدا کنید</em></u><input type="text" data-spf="own" list="spOwnList" autocomplete="off" value="' + esc(own.join('، ')) + '"' + (ed ? '' : ' readonly') + ' placeholder="از پروندهٔ نیروی انسانی یا نام تازه"></label>'
+      + '<div class="te-f"><u>مالک <em>یک یا چند نفر؛ نام و نام خانوادگی</em></u>' + spTagsHtml('own', own, ed, 'spOwnList', 'از پروندهٔ نیروی انسانی یا نام و نام خانوادگی تازه', true) + '</div>'
       + '<label class="te-f"><u>متراژ (متر مربع)</u><input type="text" data-spf="area" inputmode="decimal" value="' + esc(o.area ? toFa(o.area) : '') + '"' + (ed || pe ? '' : ' readonly') + '></label>'
       + '<label class="te-f"><u>نوع واحد</u><input type="text" data-spf="ty" list="spTyList" value="' + esc(o.ty || '') + '"' + (ed || pe ? '' : ' readonly') + ' placeholder="مثلاً دو خوابه"></label></div>'
-      + '<label class="te-f"><u>اجزای واحد <em>محل‌های جزء این واحد؛ با «،» جدا کنید</em></u><input type="text" data-spf="parts" value="' + esc(spPartsOf(u).join('، ')) + '"' + (pe ? '' : ' readonly') + '></label>'
+      + '<div class="te-f"><u>اجزای واحد <em>محل‌های جزء این واحد</em></u>' + spTagsHtml('parts', spPartsOf(u), pe, 'spSubList', 'مثلاً سرویس بهداشتی') + '</div>'
       + '<label class="te-f"><u>یادداشت</u><input type="text" data-spf="note" value="' + esc(o.note || '') + '"' + (ed ? '' : ' readonly') + '></label>'
       + (own.length ? '<div class="sp-own">' + own.map(n => '<button type="button" class="sp-on" data-hrprof="' + esc(n) + '">' + avatarHtml(n, 'sm', true) + '<span>' + esc(n) + '</span></button>').join('') + '</div>' : '')
       + (ed || pe ? '<div class="wh-foot"><button type="button" class="mini" data-spu="' + esc(u) + '">بستن</button><button type="button" class="send rf-go" data-spsave="' + esc(u) + '"' + (sp.saving ? ' disabled' : '') + '>' + (sp.saving ? 'در حال ثبت…' : 'ثبت کارت واحد') + '</button></div>' : '')
@@ -69527,7 +69552,7 @@
   function spSetHtml(){
     return '<div class="wh-form"><div class="wh-fh"><b>اجزای پیش‌فرض واحد</b></div>'
       + '<p class="sp-hint">محل‌های جزء هر واحد مسکونی؛ در کارت هر واحد می‌شود جدا تغییرش داد. در گزارش روزانه بعد از انتخاب واحد پیشنهاد می‌شوند.</p>'
-      + '<label class="te-f"><u>اجزا <em>با «،» جدا کنید</em></u><textarea data-sppart0 rows="3">' + esc((sp.parts.get('*') || SP_PART0).join('، ')) + '</textarea></label>'
+      + '<div class="te-f"><u>اجزا</u>' + spTagsHtml('part0', sp.parts.get('*') || SP_PART0, true, 'spSubList', 'مثلاً اتاق خواب') + '</div>'
       + '<div class="wh-foot"><button type="button" class="send rf-go" data-sppartsave="1">ثبت</button></div>'
       + '<p class="sp-hint">طبقات و واحدها (شماره و تعداد) از «پروژه‌ها ← اطلاعات پروژه ← طبقات و واحدها» تنظیم می‌شوند.</p></div>';
   }
@@ -69559,10 +69584,13 @@
     const v = k => { const i = card.querySelector('[data-spf="' + k + '"]'); return i ? i.value.trim() : ''; };
     const o = Object.assign({}, sp.units.get(u) || {});
     const stb = card.querySelector('[data-spst].on'); if(stb) o.st = stb.dataset.spst;
-    o.own = spSplit(v('own')).join('، '); o.ty = v('ty'); o.note = v('note');
+    const ownL = spTagsRead(card.querySelector('[data-pjtags="own"]'));
+    const badO = ownL.filter(n => window.personNameIssue && window.personNameIssue(n));
+    if(badO.length){ showDialog('warn', 'نام و نام خانوادگی', 'نام مالک «' + badO[0] + '» کامل نیست. نام و نام خانوادگی را با هم بنویسید یا از فهرست انتخاب کنید.'); return null; }
+    o.own = ownL.join('، '); o.ty = v('ty'); o.note = v('note');
     const ar = parseFloat(toEn(v('area')).replace(/[,٬\s]/g, '')); o.area = isFinite(ar) && ar > 0 ? ar : '';
     Object.keys(o).forEach(k => { if(o[k] === '' || o[k] == null || (k === 'st' && o[k] === 'free')) delete o[k]; });
-    return {o, parts: spSplit(v('parts'))};
+    return {o, parts: spTagsRead(card.querySelector('[data-pjtags="parts"]'))};
   }
   document.addEventListener('click', async e => {
     const host = document.getElementById('spArea'); if(!host || !host.contains(e.target)) return;
@@ -69587,7 +69615,7 @@
       return;
     }
     const ps = t.closest('[data-sppartsave]'); if(ps){
-      const L = spSplit((host.querySelector('[data-sppart0]') || {}).value);
+      const L = spTagsRead(host.querySelector('[data-pjtags="part0"]'));
       try{ await spSaveRow(SP_PART_KIND, '*', L.length ? L.join('،') : null); if(L.length) sp.parts.set('*', L); else sp.parts.delete('*'); spLists(); spRender(); showDialog('ok', 'ثبت شد', 'اجزای پیش‌فرض واحد ثبت شد.'); }
       catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       return;
@@ -81605,7 +81633,7 @@
     let inp;
     if(f.multi){
       const L = pjArr(v);
-      inp = '<div class="pj-tags" data-pjtags="' + f.k + '">' + L.map(n => '<span class="pj-tag" data-v="' + esc(n) + '">' + (pjIsPerson(n) ? avatarHtml(n, 'xs', true) : '') + '<b>' + esc(n) + '</b><button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button></span>').join('')
+      inp = '<div class="pj-tags" data-pjtags="' + f.k + '" data-person="1">' + L.map(n => '<span class="pj-tag" data-v="' + esc(n) + '">' + (pjIsPerson(n) ? avatarHtml(n, 'xs', true) : '') + '<b>' + esc(n) + '</b><button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button></span>').join('')
         + '<input type="text" class="pj-tagin" list="pjPartyNames" placeholder="' + (L.length ? 'نفر دیگر…' : 'نام را بنویسید یا از فهرست انتخاب کنید') + '" autocomplete="off"></div>';
       return '<label class="pj-fl w2"><span>' + f.t + (L.length > 1 ? ' <em class="pj-tn">' + toFa(L.length) + '</em>' : '') + '</span>' + inp + '</label>';
     }
@@ -81618,6 +81646,18 @@
   function pjArr(v){ if(Array.isArray(v)) return v.filter(Boolean); return String(v || '').split(/\s*[،,]\s*/).map(x => x.trim()).filter(Boolean); }
   window.pjArr = pjArr;
   function pjIsPerson(n){ try{ return listNames().some(x => nameKey(x) === nameKey(n)); }catch(e){ return false; } }
+  /* نام شخص: اگر در سامانه (کاربران، پرونده‌ها، فهرست پیمانکاران) هست پذیرفته است؛
+     نام تازه دست‌کم دو بخش (نام و نام خانوادگی) لازم دارد تا بعداً با هم‌نام‌ها قاطی نشود */
+  function personNameIssue(n){
+    n = String(n || '').trim(); if(!n) return 'خالی';
+    const k = nameKey(n);
+    try{ if(listNames().some(x => nameKey(x) === k)) return ''; }catch(e){}
+    try{ if(ctrContactOf(n)) return ''; }catch(e){}
+    try{ const dl = document.getElementById('contractorList'); if(dl && Array.from(dl.options).some(o => nameKey(o.value) === k)) return ''; }catch(e){}
+    const words = n.replace(/[()«»"']/g, ' ').split(/[\s\u200c]+/).filter(w => w.length > 1);
+    return words.length >= 2 ? '' : 'نام و نام خانوادگی';
+  }
+  window.personNameIssue = personNameIssue;
   function pjPartyDL(){
     const seen = new Set(), out = [];
     const add = (n, lb) => { n = String(n || '').trim(); if(!n || seen.has(nameKey(n))) return; seen.add(nameKey(n)); out.push('<option value="' + esc(n) + '"' + (lb ? ' label="' + esc(lb) + '"' : '') + '>'); };
@@ -81752,11 +81792,17 @@
   function pjTagAdd(inp){
     const box = inp.closest('[data-pjtags]'); if(!box) return;
     const vals = pjArr(inp.value); if(!vals.length) return;
+    /* شخص تازه فقط با نام و نام خانوادگی؛ نام‌های موجود در سامانه همان‌طور پذیرفته می‌شوند */
+    if(box.dataset.person === '1'){
+      const bad = vals.filter(n => personNameIssue(n));
+      if(bad.length){ inp.classList.add('pj-bad'); showDialog('warn', 'نام و نام خانوادگی', '«' + bad[0] + '» کامل نیست. نام و نام خانوادگی را با هم بنویسید (مثلاً «علی رضایی»)، یا از فهرست انتخاب کنید.'); return; }
+      inp.classList.remove('pj-bad');
+    }
     vals.forEach(n => { if(Array.from(box.querySelectorAll('.pj-tag')).some(t => nameKey(t.dataset.v) === nameKey(n))) return;
       const sp = document.createElement('span'); sp.className = 'pj-tag'; sp.dataset.v = n;
       sp.innerHTML = (pjIsPerson(n) ? avatarHtml(n, 'xs', true) : '') + '<b>' + esc(n) + '</b><button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button>';
       box.insertBefore(sp, inp); });
-    inp.value = ''; inp.placeholder = 'نفر دیگر…';
+    inp.value = ''; inp.placeholder = box.dataset.person === '1' ? 'نفر دیگر…' : 'مورد دیگر…';
   }
   document.addEventListener('keydown', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin') && (e.key === 'Enter' || e.key === '،' || e.key === ',')){ e.preventDefault(); pjTagAdd(i); } });
   document.addEventListener('change', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin')) pjTagAdd(i); });
