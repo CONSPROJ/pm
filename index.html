@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261017031740">
+<meta name="pm-build" content="20261017032404">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -18225,8 +18225,8 @@
   #adminView:not(.adm-home) > #admCats{display:none !important;}
   #adminView.adm-home > #admCats{display:flex !important;flex-direction:column !important;gap:0 !important;padding:0 !important;margin:0 0 14px !important;overflow:hidden !important;
     border-radius:18px;background:var(--surface);border:1px solid var(--line);}
-  #adminView.adm-home > #admCats > .acat{display:grid !important;grid-template-columns:36px minmax(0,1fr) auto auto 14px !important;grid-template-rows:auto auto !important;
-    grid-template-areas:"ic tx n add ch" "ic last n add ch" !important;column-gap:10px !important;row-gap:1px !important;align-items:center !important;
+  #adminView.adm-home > #admCats > .acat{display:grid !important;grid-template-columns:36px minmax(0,1fr) auto auto 26px 14px !important;grid-template-rows:auto auto !important;
+    grid-template-areas:"ic tx n add pin ch" "ic last n add pin ch" !important;column-gap:10px !important;row-gap:1px !important;align-items:center !important;
     padding:11px 12px !important;border:0 !important;border-radius:0 !important;background:none !important;box-shadow:none !important;transform:none !important;animation:none;min-height:0 !important;width:auto !important;flex:none !important;cursor:pointer;}
   #adminView.adm-home > #admCats > .acat + .acat{border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent) !important;}
   #adminView.adm-home > #admCats > .acat:hover{background:color-mix(in srgb, var(--c) 5%, transparent) !important;}
@@ -18253,6 +18253,14 @@
   #admCats.wp-in > .acat:nth-child(2){animation-delay:25ms !important;} #admCats.wp-in > .acat:nth-child(3){animation-delay:50ms !important;} #admCats.wp-in > .acat:nth-child(4){animation-delay:75ms !important;}
   #admCats.wp-in > .acat:nth-child(5){animation-delay:100ms !important;} #admCats.wp-in > .acat:nth-child(6){animation-delay:125ms !important;} #admCats.wp-in > .acat:nth-child(7){animation-delay:150ms !important;} #admCats.wp-in > .acat:nth-child(8){animation-delay:175ms !important;}
   #admBar[hidden]{display:none !important;}
+  .acat-pin{display:none;}
+  #adminView.adm-home > #admCats > .acat > .acat-pin{grid-area:pin;all:unset;grid-area:pin;cursor:pointer;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;color:var(--muted);opacity:.35;transition:opacity .2s,color .2s;}
+  #adminView.adm-home > #admCats > .acat > .acat-pin svg{width:15px;height:15px;}
+  #adminView.adm-home > #admCats > .acat:hover > .acat-pin{opacity:.7;}
+  #adminView.adm-home > #admCats > .acat > .acat-pin.on{opacity:1;color:#d49b18;}
+  #adminView.adm-home > #admCats > .acat > .acat-pin.on svg{fill:currentColor;}
+  #adminView.adm-home > #admCats > .acat.pinned{background:color-mix(in srgb, #d49b18 4%, transparent) !important;}
+  #adminView.adm-home > #admCats > .acat.c-all > .acat-pin, #adminView.adm-home > #admCats > .acat.c-archive > .acat-pin{grid-area:pin;}
   .acat{--c:var(--sky);position:relative;display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 10px;
     padding:13px 13px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:start;
     box-shadow:0 10px 24px -24px rgba(15,20,35,.6);transition:transform .2s var(--ease-out, ease), border-color .2s, box-shadow .2s, background .2s;outline:none;}
@@ -42342,7 +42350,8 @@
       segInit(bar, 'button', el => el.classList.contains('on'));
       /* هر بار که کپسول‌ها از نو ساخته می‌شوند، پلکانی وارد شوند */
       try{
-        new MutationObserver(() => jumpStagger(bar)).observe(bar, {childList:true});
+        let jsr = 0;
+        new MutationObserver(() => { if(!jsr) jsr = requestAnimationFrame(() => { jsr = 0; jumpStagger(bar); }); }).observe(bar, {childList:true});
       }catch(e){}
       bar.addEventListener('scroll', () => jumpEdges(bar), {passive:true});
       jumpStagger(bar);
@@ -59242,6 +59251,28 @@
     }, 60);
   }
 
+  /* ====== سنجاق در فهرست اسناد ======
+     هر دسته‌ای که سنجاق شود بالای فهرست می‌آید؛ روی همین دستگاه می‌ماند. */
+  const ADM_PIN_KEY = 'siteLogM.admPins.v1';
+  const admPins = () => { try{ return JSON.parse(localStorage.getItem(ADM_PIN_KEY) || '[]') || []; }catch(e){ return []; } };
+  const ADM_PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>';
+  function ADM_PIN_BTN(k){ return '<button type="button" class="acat-pin" data-admpin="' + k + '" title="سنجاق به بالای فهرست" aria-label="سنجاق">' + ADM_PIN_SVG + '</button>'; }
+  function admPinApply(){
+    const box = document.getElementById('admCats'); if(!box) return;
+    const P = admPins(), rows = Array.from(box.querySelectorAll(':scope > .acat'));
+    rows.forEach((r, i) => { if(r.dataset.ord == null) r.dataset.ord = i; });
+    rows.sort((a, b) => { const pa = P.indexOf(a.dataset.admcat), pb = P.indexOf(b.dataset.admcat);
+      return ((pa < 0 ? 1e3 : pa) - (pb < 0 ? 1e3 : pb)) || (+a.dataset.ord - +b.dataset.ord); });
+    rows.forEach(r => { const on = P.indexOf(r.dataset.admcat) !== -1; r.classList.toggle('pinned', on); const b = r.querySelector('.acat-pin'); if(b){ b.classList.toggle('on', on); b.title = on ? 'برداشتن سنجاق' : 'سنجاق به بالای فهرست'; } box.appendChild(r); });
+  }
+  window.admPinApply = admPinApply;
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('#admCats [data-admpin]'); if(!b) return;
+    e.stopPropagation(); e.preventDefault();
+    const k = b.dataset.admpin; let P = admPins(); P = P.indexOf(k) !== -1 ? P.filter(x => x !== k) : P.concat(k);
+    try{ localStorage.setItem(ADM_PIN_KEY, JSON.stringify(P)); }catch(err){}
+    admPinApply();
+  }, true);
   function renderAdminSkeleton(){
     const box = document.getElementById('adminView');
     { const vb = document.getElementById('admViewBar'); if(vb && box.contains(vb)) box.parentNode.insertBefore(vb, box); }
@@ -59258,16 +59289,16 @@
             + '<span class="acat-last" data-aclast="' + k + '"></span>'
             + '<span class="acat-n" data-acn="' + k + '">…</span>'
             + '<button type="button" class="acat-add" data-admquick="' + k + '" title="ثبت ' + lb + ' تازه" aria-label="ثبت ' + lb + ' تازه">+</button>'
-            + '</div>';
+            + ADM_PIN_BTN(k) + '</div>';
         }).join('')
       + '<div class="acat c-all" data-admcat="all" role="tab" tabindex="0">'
       +   '<span class="acat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M8.5 9.5V20M14.5 9.5V20"/></svg></span>'
       +   '<span class="acat-tx"><b>همهٔ اسناد</b><small>جدول جامع همهٔ انواع</small></span>'
-      +   '<span class="acat-last"></span><span class="acat-n" data-acn="all">…</span></div>'
+      +   '<span class="acat-last"></span><span class="acat-n" data-acn="all">…</span>' + ADM_PIN_BTN('all') + '</div>'
       + '<div class="acat c-archive" data-admcat="archive" role="tab" tabindex="0">'
       +   '<span class="acat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V9M10 13h4"/></svg></span>'
       +   '<span class="acat-tx"><b>آرشیو</b><small data-acsub="archive">همهٔ فایل‌ها و فرم‌ها</small></span>'
-      +   '<span class="acat-last"></span><span class="acat-n" data-acn="archive">…</span></div>'
+      +   '<span class="acat-last"></span><span class="acat-n" data-acn="archive">…</span>' + ADM_PIN_BTN('archive') + '</div>'
       + '</div>'
       + admExportBarHtml()
       + '<section class="adm-sec adm-chore" id="secAdmchore">'
@@ -59500,7 +59531,8 @@
       c.classList.toggle('on', on); c.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     box.querySelectorAll('#admJumpBar [data-jumpadm]').forEach(c => c.classList.toggle('on', c.dataset.jumpadm === 'secAdm' + k));
-    try{ admSubJump(); }catch(e){}
+    /* نوار پرشِ زیربخش‌ها بعد از اولین نقاشی ساخته می‌شود تا خود بخش بی‌درنگ بیاید */
+    requestAnimationFrame(() => setTimeout(() => { try{ admSubJump(); }catch(e){} }, 0));
     if(k === 'archive') try{ arcRender(); }catch(e){}
     if(k === 'all') try{ allRender(); }catch(e){}
     const sec = document.getElementById('secAdm' + k);
@@ -59509,7 +59541,8 @@
       const ar = sec.querySelector('.adm-sec-head .sec-ar'); if(ar) ar.textContent = '▴';
       if(k === 'chore') try{ loadChoreList(); }catch(e){}
     }
-    if(!quiet && sec){ sec.classList.remove('cat-in'); requestAnimationFrame(() => sec.classList.add('cat-in')); }
+    /* ورود نرم بی‌آنکه بخش اول دیده شود و بعد محو و دوباره ظاهر شود */
+    if(!quiet && sec && !uiReduced() && sec.animate){ try{ sec.animate([{opacity:.35, transform:'translate3d(-8px,0,0)'}, {opacity:1, transform:'none'}], {duration:170, easing:'cubic-bezier(.22,.8,.2,1)'}); }catch(e){} }
     admBarPaint();
   }
   window.admSetCat = admSetCat;
@@ -59529,6 +59562,7 @@
     if(admHome.on){ const c = document.getElementById('admCats'); if(c){ c.classList.remove('wp-in'); void c.offsetWidth; c.classList.add('wp-in'); } }
   }
   window.admHomeSet = admHomeSet;
+  try{ new MutationObserver(() => { const c = document.getElementById('admCats'); if(c && !c.__pinDone){ c.__pinDone = 1; admPinApply(); } }).observe(document.getElementById('adminView') || document.body, {childList:true}); }catch(e){}
   function admBarPaint(){
     const box = document.getElementById('adminView'); if(!box) return;
     let bar = document.getElementById('admBar');
@@ -59541,7 +59575,9 @@
     const c = cats && cats.querySelector('[data-admcat="' + k + '"]');
     const ic = c ? (c.querySelector('.acat-ic') || {}).innerHTML || '' : '';
     const t = c ? ((c.querySelector('.acat-tx b') || {}).textContent || '') : '';
-    const col = c ? getComputedStyle(c).getPropertyValue('--c').trim() : '';
+    const AC = window.__admCol || (window.__admCol = {});
+    if(c && AC[k] == null){ try{ AC[k] = getComputedStyle(c).getPropertyValue('--c').trim(); }catch(e){ AC[k] = ''; } }
+    const col = AC[k] || '';
     const add = ADM_ORDER.indexOf(k) !== -1 && c && c.querySelector('[data-admquick]');
     bar.innerHTML = '<button type="button" class="ws-back" data-adm-back="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg><span>اسناد</span></button>'
       + '<span class="ws-bt" style="--c:' + (col || 'var(--sky)') + '"><i>' + ic + '</i><b>' + esc(t) + '</b></span>'
