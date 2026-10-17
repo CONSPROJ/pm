@@ -80057,12 +80057,24 @@
     const P = [];
     /* «مهم‌ها»: کارهای امروز و کارهای من یک‌جا؛ بالایش میان‌برهای همیشگی */
     const QA = [];
-    const QS = {crew:'گزارش روزانه', wrk:'کارگری', hse:'HSE', prc:'خرید', prcList:'خریدها', whIn:'رسید کالا', whOut:'حواله', whAsk:'درخواست کالا', qcNew:'بازرسی', qcIr:'NCR', coNew:'تغییر کار', mcLog:'ماشین‌آلات', task:'فعالیت تازه', 'doc-statement':'صورت وضعیت', 'doc-contract':'قرارداد', 'doc-letter':'نامه', 'doc-minute':'صورتجلسه', 'doc-design':'سند طراحی'};
+    const QS = {'doc-statement':'صورت وضعیت تازه', 'doc-contract':'قرارداد تازه', 'doc-letter':'نامهٔ تازه', 'doc-minute':'صورتجلسهٔ تازه', 'doc-design':'سند طراحی تازه', crew:'گزارش روزانه', wrk:'کارگری', hse:'HSE', prc:'خرید', prcList:'خریدها', whIn:'رسید کالا', whOut:'حواله', whAsk:'درخواست کالا', qcNew:'بازرسی', qcIr:'NCR', coNew:'تغییر کار', mcLog:'ماشین‌آلات', task:'فعالیت تازه'};
     const QL = {gen:'ابلاغ', cal:'تقویم', cal2:'تقویم', rem:'یادآور', fine:'جریمه‌ها', wsTools:'ابزارها', leave:'مرخصی', ctr:'پیمانکاران'};
     const qa = (ic, t, attr, n, bad) => QA.push('<button type="button" class="h3-qa' + (bad ? ' bad' : '') + '" ' + attr + '>' + ic + '<span>' + t + '</span>' + (n ? '<i>' + toFa(n) + '</i>' : '') + '</button>');
     /* کارهای اخیر خودِ شخص، اول نوار */
     let AL = []; try{ AL = homeAddList(); }catch(e){}
-    const RA = ractGet().map(r => AL.find(x => x.k === r.k) || (r.k === 'wh' ? AL.find(x => /^wh/.test(x.k)) : null)).filter(Boolean)
+    /* از داده‌های واقعی: آخرین سندهایی که خودش ثبت کرده و آخرین گزارش روزانه‌اش؛
+       با آنچه روی همین دستگاه باز کرده یکی می‌شود و تازه‌ترین‌ها اول می‌آیند */
+    const RT = new Map(); const bump = (k, t) => { if(k && t && !(RT.get(k) >= t)) RT.set(k, t); };
+    try{ const mk = nameKey(activeUserName());
+      (adminAll || []).forEach(a => { if(!a || !a.row || nameKey(pick(a.row,AD.eng) || '') !== mk) return;
+        const t = Date.parse(pick(a.row,AD.time) || '') || ((faToDate(normDate(pick(a.row,AD.date) || '')) || {}).getTime ? faToDate(normDate(pick(a.row,AD.date))).getTime() : 0);
+        bump('doc-' + a.kind, t); });
+      Object.keys(homeDays || {}).forEach(d => { const D = homeDays[d]; if(!D) return; let st = null; try{ st = homeDayStats(D); }catch(e){}
+        if(st && st.sub && st.sub.has(mk)){ const tt = st.sub.get(mk); bump('crew', Date.parse(tt || '') || ((faToDate(d) || {}).getTime ? faToDate(d).getTime() + 43200000 : 0)); } });
+    }catch(e){}
+    ractGet().forEach(r => bump(RACT_MAP[r.k] || r.k, r.t));
+    const RAk = Array.from(RT.entries()).sort((a, b) => b[1] - a[1]).map(x => ({k: x[0]}));
+    const RA = RAk.map(r => AL.find(x => x.k === r.k) || (r.k === 'wh' ? AL.find(x => /^wh/.test(x.k)) : null)).filter(Boolean)
       .filter((x, i, a) => a.indexOf(x) === i).slice(0, 4);
     /* ردیف وضعیتِ همان کار (مثل «گزارش روزانه: ثبت نشده») در فهرست تکرار نمی‌شود؛ وضعیتش روی همین کاشی می‌آید */
     const RS = {crew:'data-hm="crew"', wrk:'data-hm="wrk"'};
