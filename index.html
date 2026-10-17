@@ -23282,7 +23282,20 @@
   .h3-seg button i{font-style:normal;min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:99px;display:inline-grid;place-items:center;font-size:10px;font-weight:800;color:#fff;background:var(--alert);}
   .h3-seg-ink{position:absolute;top:4px;bottom:4px;left:4px;border-radius:10px;background:var(--surface);box-shadow:0 2px 8px -3px rgba(15,20,35,.25);transition:left .3s cubic-bezier(.3,.9,.3,1), width .3s cubic-bezier(.3,.9,.3,1);}
   .h3-kb .h3-kp{display:none;}
-  .h3-kb[data-kt="td"] .h3-kp[data-kp="td"], .h3-kb[data-kt="me"] .h3-kp[data-kp="me"], .h3-kb[data-kt="fol"] .h3-kp[data-kp="fol"], .h3-kb[data-kt="rp"] .h3-kp[data-kp="rp"]{display:block;}
+  .h3-kb[data-kt="td"] .h3-kp[data-kp="td"], .h3-kb[data-kt="me"] .h3-kp[data-kp="me"], .h3-kb[data-kt="fol"] .h3-kp[data-kp="fol"], .h3-kb[data-kt="rp"] .h3-kp[data-kp="rp"], .h3-kb[data-kt="ab"] .h3-kp[data-kp="ab"]{display:block;}
+  .h3-kp[data-kp="td"] .h3-tds{margin-bottom:10px;}
+  .h3-qas{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto;scrollbar-width:none;}
+  .h3-qas::-webkit-scrollbar{display:none;}
+  .h3-qa{all:unset;cursor:pointer;flex:1 0 auto;min-width:58px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 6px 8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);transition:border-color .2s,background .2s;}
+  .h3-qa:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));}
+  .h3-qa:active{background:color-mix(in srgb, var(--sky) 8%, var(--surface));}
+  .h3-qa svg{width:19px;height:19px;color:var(--sky-deep, var(--sky));}
+  .h3-qa span{font-size:11px;font-weight:700;white-space:nowrap;}
+  .h3-qa{position:relative;}
+  .h3-qa > i{position:absolute;top:4px;left:5px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:99px;font:800 9.5px/16px var(--f);font-style:normal;text-align:center;color:#fff;background:var(--sky);}
+  .h3-qa.bad > i{background:var(--alert);}
+  .h3-qa.bad svg{color:var(--alert);}
+  .h3-td.ab-r{--c:#3f7a52;} .h3-td.ab-r.c-vio{--c:#6d5bb5;} .h3-td.ab-r.c-amb{--c:#b07512;} .h3-td.ab-r.c-sky{--c:var(--sky);}
   .h3-kp.in{animation:wsIn .26s ease-out;}
   @media (prefers-reduced-motion:reduce){ .h3-kp.in{animation:none;} }
   .h3-cm{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:4px;padding:9px;font-size:11.5px;font-weight:700;color:var(--muted);border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);transition:color .2s;}
@@ -69463,8 +69476,8 @@
     secHomeLoad();
     const C = [];
     if(sec.bk){ let ago = null; try{ ago = sec.bk.d ? daysSince(sec.bk.d) : null; }catch(e){}
-      if(ago == null || ago >= 1) C.push(card(ago == null || ago > 6 ? 'bad' : 'due', HM_I.shield, ago == null ? 'هنوز پشتیبانی گرفته نشده' : 'آخرین پشتیبان ' + toFa(ago) + ' روز پیش', 'پشتیبان روزانه از همهٔ داده‌ها', 'پشتیبان', 'data-h3sec="bk"')); }
-    if(sec.fail) C.push(card('bad', HM_I.warn, toFa(sec.fail) + ' ورود ناموفق در ۲۴ ساعت گذشته', (sec.lock ? toFa(sec.lock) + ' حساب قفل شد · ' : '') + esc((sec.failWho || []).join('، ')), 'بررسی', 'data-h3sec="aud"'));
+      if(ago == null || ago >= 1) C.push(card(ago == null || ago > 6 ? 'bad' : 'due', HM_I.shield, ago == null ? 'پشتیبان‌گیری' : 'پشتیبان‌گیری', ago == null ? 'هنوز گرفته نشده' : toFa(ago) + ' روز پیش · ' + 'پشتیبان روزانه از همهٔ داده‌ها', 'پشتیبان', 'data-h3sec="bk"')); }
+    if(sec.fail) C.push(card('bad', HM_I.warn, 'ورود ناموفق', toFa(sec.fail) + ' بار در ۲۴ ساعت · ' + (sec.lock ? toFa(sec.lock) + ' حساب قفل شد · ' : '') + esc((sec.failWho || []).join('، ')), 'بررسی', 'data-h3sec="aud"'));
     return C;
   };
   document.addEventListener('click', e => {
@@ -79573,35 +79586,34 @@
       const dF = normDate(dateInput.value) || yesterdayShamsi(), D = homeDays[dF];
       let draft = false;
       try{ const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); draft = !!(d && (d.contractors || []).some(c => c.name || c.activity || c.ostad || c.shagerd)); }catch(e){}
-      if(!D) C.push(card('ld', HM_I.crew, 'گزارش روزانهٔ شما', '<i class="hm-dots"></i>', '', 'data-hm="crew"'));
+      if(!D) C.push(card('ld', HM_I.crew, 'گزارش روزانه', '<i class="hm-dots"></i>', '', 'data-hm="crew"'));
       else{
         const s = homeDayStats(D), mine = s.sub.has(nameKey(me)), t = s.sub.get(nameKey(me)) || '';
-        C.push(mine ? card('ok', HM_I.ok, 'گزارش ' + esc(faDateLong(dF) || dF) + ' ثبت شده', t && clockOf(t) ? 'ساعت ' + esc(clockOf(t)) : 'ثبت شد', 'ویرایش', 'data-hm="crew"')
-          : card('due', HM_I.crew, 'گزارش ' + esc(faDateLong(dF) || dF), draft ? 'پیش‌نویس ذخیره‌شده دارید' : 'هنوز ثبت نشده', draft ? 'ادامه' : 'ثبت گزارش', 'data-hm="crew"'));
+        C.push(mine ? card('ok', HM_I.ok, 'گزارش روزانه', 'ثبت شد' + (t && clockOf(t) ? ' · ساعت ' + esc(clockOf(t)) : ''), 'ویرایش', 'data-hm="crew"')
+          : card('due', HM_I.crew, 'گزارش روزانه', (draft ? 'پیش‌نویس دارید' : 'ثبت نشده') + ' · ' + esc(faDateLong(dF) || dF), draft ? 'ادامه' : 'ثبت', 'data-hm="crew"'));
       }
     }
-    if(hmCan('write.crew') && tabOk('write')) C.push(card('grn', HM_I.wrk, 'گزارش کارگری امروز', 'حضور، کارکرد و اضافه‌کاری', 'ثبت', 'data-hm="wrk"'));
-    try{ const lw = leaveWaiting().length; if(lw) C.push(card('vio', LV_I.plane, toFa(lw) + ' مرخصی منتظر تأیید شما', 'بررسی و تأیید', 'دیدن', 'data-h3k="leave"')); }catch(e){}
-    try{ if(leaveOnDay(todayShamsi(), me)) C.push(card('vio', LV_I.sun, 'امروز در مرخصی هستید', 'روز خوبی داشته باشید', '', 'data-h3k="leave"')); }catch(e){}
-    try{ const nf = wrkFineApprover() ? (wrkPending || []).filter(isFineAny).length : 0; if(nf) C.push(card('bad', TD_I.warn, toFa(nf) + ' جریمه منتظر تأیید شما', 'بررسی و تأیید', 'دیدن', 'data-h3k="fine"')); }catch(e){}
+    if(hmCan('write.crew') && tabOk('write')) C.push(card('grn', HM_I.wrk, 'گزارش کارگری', 'حضور و کارکرد امروز', 'ثبت', 'data-hm="wrk"'));
+    try{ const lw = leaveWaiting().length; if(lw) C.push(card('vio', LV_I.plane, 'مرخصی‌ها', toFa(lw) + ' منتظر تأیید شما', 'دیدن', 'data-h3k="leave"')); }catch(e){}
+    try{ if(leaveOnDay(todayShamsi(), me)) C.push(card('vio', LV_I.sun, 'مرخصی', 'امروز در مرخصی هستید', '', 'data-h3k="leave"')); }catch(e){}
+    try{ const nf = wrkFineApprover() ? (wrkPending || []).filter(isFineAny).length : 0; if(nf) C.push(card('bad', TD_I.warn, 'جریمه‌ها', toFa(nf) + ' منتظر تأیید شما', 'دیدن', 'data-h3k="fine"')); }catch(e){}
     try{ (window.secHomeCards ? window.secHomeCards(card) : []).forEach(c => C.push(c)); }catch(e){}
     try{ (window.pjTodayCards ? window.pjTodayCards(card) : []).forEach(c => C.unshift(c)); }catch(e){}
     const X = h3Today.ctx || {};
     /* موعد امروز */
     try{ const L = (X.tk && X.tk.mineTodayL) || []; if(L.length){ const t0 = String(pick(L[0],T.title) || pick(L[0],AD.title) || '').trim();
-      C.push(card('due', HM_I.clock, L.length > 1 ? toFa(L.length) + ' کار موعدش امروز است' : 'موعد امروز', esc(t0.length > 38 ? t0.slice(0, 38) + '…' : t0), 'دیدن', 'data-h3k="mine"')); } }catch(e){}
+      C.push(card('due', HM_I.clock, 'موعد امروز', (L.length > 1 ? toFa(L.length) + ' کار · ' : '') + esc(t0.length > 34 ? t0.slice(0, 34) + '…' : t0), 'دیدن', 'data-h3k="mine"')); } }catch(e){}
     /* پیام‌های خوانده‌نشده */
     try{ const mk = chatKey(me), U = (allMessages || []).filter(r => pick(r,N.kind) === MSG_KIND && pick(r,N.to) !== PUBLIC_ROOM && chatKey(pick(r,N.to)) === mk && chatKey(pick(r,N.from)) !== mk && pick(r,N.state) !== 'خوانده‌شده');
       if(U.length){ const W = [...new Set(U.map(r => pick(r,N.from)))];
-        C.push(card('sky', HM_I.msg, toFa(U.length) + ' پیام خوانده‌نشده', 'از ' + esc(W.slice(0, 2).join('، ')) + (W.length > 2 ? ' و ' + toFa(W.length - 2) + ' نفر دیگر' : ''), 'خواندن', 'data-h3msg="' + esc(W.length === 1 ? W[0] : '') + '"')); } }catch(e){}
+        C.push(card('sky', HM_I.msg, 'پیام‌ها', toFa(U.length) + ' خوانده‌نشده از ' + esc(W.slice(0, 2).join('، ')) + (W.length > 2 ? ' و ' + toFa(W.length - 2) + ' نفر دیگر' : ''), 'خواندن', 'data-h3msg="' + esc(W.length === 1 ? W[0] : '') + '"')); } }catch(e){}
     /* نبض کارگاه برای مدیران: نفرات امروز و گزارش‌دهنده‌هایی که هنوز نفرستاده‌اند */
     try{ const L = (typeof levelOf === 'function') ? levelOf(me) : 3;
       if((L <= 2 || isAdminUser()) && X.day && X.day.has){
         const miss = (X.day.req || []).filter(x => !x.ok);
         const dlt = X.day.prevTot ? X.day.tot - X.day.prevTot : 0;
-        C.push(card('grn', HM_I.people, toFa(X.day.tot) + ' نفر در کارگاه' + (X.dDate && X.dDate !== todayShamsi() ? ' (' + esc(faDateLong(X.dDate) || X.dDate) + ')' : ''),
-          toFa(X.day.ctrN) + ' پیمانکار' + (dlt ? ' · ' + (dlt > 0 ? '+' : '−') + toFa(Math.abs(dlt)) + ' نسبت به روز قبل' : '') + (X.day.issues ? ' · ' + toFa(X.day.issues) + ' مانع' : ''), 'گزارش', 'data-h3rep="daily"'));
-        if(miss.length) C.push(card('bad', TD_I.warn, toFa(miss.length) + ' گزارش‌دهنده هنوز نفرستاده', esc(miss.slice(0, 3).map(x => x.n).join('، ')) + (miss.length > 3 ? '…' : ''), 'دیدن', 'data-h3k="reps"'));
+        C.push(card('grn', HM_I.people, 'نفرات کارگاه', toFa(X.day.tot) + ' نفر' + (X.dDate && X.dDate !== todayShamsi() ? ' (دیروز)' : '') + ' · ' + toFa(X.day.ctrN) + ' پیمانکار' + (dlt ? ' · ' + (dlt > 0 ? '+' : '−') + toFa(Math.abs(dlt)) : '') + (X.day.issues ? ' · ' + toFa(X.day.issues) + ' مانع' : ''), 'گزارش', 'data-h3rep="daily"'));
+        if(miss.length) C.push(card('bad', TD_I.warn, 'گزارش‌دهنده‌ها', toFa(miss.length) + ' نفر نفرستاده: ' + esc(miss.slice(0, 3).map(x => x.n).join('، ')) + (miss.length > 3 ? '…' : ''), 'دیدن', 'data-h3k="reps"'));
       } }catch(e){}
     h3Today.rows = C;
     return C.length ? '<section class="h3-sec h3-a" style="--i:1"><div class="h3-tds">' + C.join('') + '</div></section>' : '';
@@ -79814,13 +79826,15 @@
     window.__h3G = {fol: G.fol.slice(), adm: G.adm.slice()};
     /* خانه فقط موارد مهم پیگیری را نگه می‌دارد (ابلاغ، تقویم و هر چه منتظر است)؛
        بقیهٔ ابزارها و مدیریت سامانه در میز کار است */
-    const folHome = G.fol.filter(x => x.n || x.alert || x.k === 'gen' || x.k === 'cal' || x.k === 'cal2');
+    const folHome = G.fol.filter(x => x.n || x.alert || x.k === 'gen' || x.k === 'cal' || x.k === 'cal2' || x.k === 'rem');
     const admHome = G.adm.filter(x => x.k === 'users');
     const toolsN = G.fol.length - folHome.length + G.adm.length - admHome.length;
-    if(toolsN > 0) (admHome.length ? admHome : folHome).push({k:'wsTools', t:'همهٔ ابزارها در میز کار', sub: toFa(toolsN) + ' ابزار دیگر: یادآور، پیام، پیمانکاران، مدیریت سامانه…', ic: WS_I.tasks, c:'hc-ind', attr:'data-hm="wsTools"'});
+    if(toolsN > 0) folHome.push({k:'wsTools', t:'همهٔ ابزارها در میز کار', sub: toFa(toolsN) + ' ابزار دیگر: یادآور، پیام، پیمانکاران، مدیریت سامانه…', ic: WS_I.tasks, c:'hc-ind', attr:'data-hm="wsTools"'});
     G.fol = folHome; G.adm = admHome;
+    G.me = G.me.filter(x => x.k !== 'leave' || x.n);
     const meSorted = G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0)));
     return {
+      folItems: G.fol.slice(),
       meList: capL(meSorted, 6, 'me'), folList: G.fol.length ? capL(G.fol, 6, 'fol') : '',
       meN: G.me.filter(x => x.alert).length, folN: G.fol.filter(x => x.alert || x.n).filter(x => x.k !== 'wsTools').length,
       me: '<section class="h3-sec"><div class="h3-sh h3-a" style="--i:2"><h3>کارتابل من</h3></div>' + capL(G.me.slice().sort((a, b) => (!!b.alert - !!a.alert) || ((b.n ? 1 : 0) - (a.n ? 1 : 0))), 5, 'me') + '</section>',
@@ -79838,9 +79852,14 @@
     const td = h3Today.rows || [];
     const tdHot = td.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length;
     const P = [];
-    if(td.length) P.push({k:'td', t:'امروز', n: tdHot, body:'<div class="h3-tds">' + td.join('') + '</div>'});
-    P.push({k:'me', t:'کارهای من', n: G.meN, body: G.meList});
-    if(G.folList) P.push({k:'fol', t:'پیگیری', n: G.folN, body: G.folList});
+    /* «مهم‌ها»: کارهای امروز و کارهای من یک‌جا؛ بالایش میان‌برهای همیشگی */
+    const QA = [];
+    const QL = {gen:'ابلاغ', cal:'تقویم', cal2:'تقویم', rem:'یادآور', fine:'جریمه‌ها', wsTools:'ابزارها', leave:'مرخصی', ctr:'پیمانکاران'};
+    const qa = (ic, t, attr, n, bad) => QA.push('<button type="button" class="h3-qa' + (bad ? ' bad' : '') + '" ' + attr + '>' + ic + '<span>' + t + '</span>' + (n ? '<i>' + toFa(n) + '</i>' : '') + '</button>');
+    let lvN = 0; try{ lvN = leaveWaiting().length; }catch(e){}
+    qa(LV_I.plane, 'مرخصی', 'data-h3leave="1"', lvN, lvN);
+    (G.folItems || []).filter(x => x.k !== 'msg').forEach(x => qa(x.ic, QL[x.k] || x.t, x.attr, x.n, x.alert));
+    P.push({k:'td', t:'مهم‌ها', n: tdHot + (G.meN || 0) + (G.folN || 0), body:'<div class="h3-qas">' + QA.join('') + '</div>' + (td.length ? '<div class="h3-tds">' + td.join('') + '</div>' : '') + G.meList});
     /* گزارش‌ها: همان نوع‌هایی که این شخص در زبانهٔ گزارش‌ها می‌بیند */
     try{ if(tabOk('view')){
       const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
@@ -79850,7 +79869,7 @@
       if(rows.length) P.push({k:'rp', t:'گزارش‌ها', n: 0, body:'<div class="h3-tds">' + rows.join('') + '</div>'});
     } }catch(e){}
     /* تا کاربر خودش قسمتی را انتخاب نکرده، قسمتِ فوری باز است */
-    if(!homeKtUser || !P.some(x => x.k === homeKt)) homeKt = (P.find(x => x.k === 'td' && x.n) || P.find(x => x.n) || P[0]).k;
+    if(!homeKtUser || !P.some(x => x.k === homeKt)) homeKt = 'td';
     return '<section class="h3-sec h3-kb h3-a" style="--i:2" data-kt="' + homeKt + '">'
       + '<div class="h3-sh"><h3>کارتابل من</h3></div>'
       + (P.length > 1 ? '<div class="h3-seg" role="tablist">' + P.map(x => '<button type="button" role="tab" data-h3kt="' + x.k + '" class="' + (x.k === homeKt ? 'on' : '') + '" aria-selected="' + (x.k === homeKt) + '">' + x.t + (x.n ? '<i>' + toFa(x.n) + '</i>' : '') + '</button>').join('') + '<span class="h3-seg-ink"></span></div>' : '')
@@ -79963,6 +79982,8 @@
     const tk = ((tasksAll || []).length || homeAt) ? homeTaskStats() : null;
     const prc = hmCan('write.prc') ? homePrcStats() : null;
     h3Today.ctx = {tk, day, dDate};
+    /* جریمه‌های منتظر تأیید بی‌آنکه بخش کارگری باز شده باشد، همین اول خوانده می‌شوند (و هر دو دقیقه) */
+    try{ if(wrkFineApprover() && Date.now() - (homeRender.__wf || 0) > 120000){ homeRender.__wf = Date.now(); wrkLoadPending().then(() => homeSoon()).catch(() => {}); } }catch(e){}
     const G = h3Groups(work, tk);
     /* شمار انبار و کیفیت فقط برای کسانی که این کاشی‌ها را دارند، یک بار در پس‌زمینه */
     try{ if(!homeRender.__whq){ homeRender.__whq = 1; const P = [];
@@ -79971,7 +79992,7 @@
       try{ if(window.coVisible && window.coVisible() && coCanA() && !co.t) P.push(coLoad()); }catch(e){}
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
     let pjb = ''; try{ pjb = pjBarHtml(); }catch(e){}
-    const h = '<div class="h3">' + pjb + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + h3Work(work) + G.prj + h3Links() + G.adm + '</div>';
+    const h = '<div class="h3">' + pjb + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + h3Work(work) + G.prj + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
@@ -80024,7 +80045,7 @@
       sec.querySelectorAll('[data-h3kt]').forEach(b => { const on = b === ktb; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
       const pn = sec.querySelector('.h3-kp[data-kp="' + homeKt + '"]'); if(pn){ pn.classList.remove('in'); void pn.offsetWidth; pn.classList.add('in'); }
       h3SegInk(); const box0 = document.getElementById('homeView'); if(box0) box0.__h = ''; return; }
-    const kt = e.target.closest('[data-h3k],[data-h3rep],[data-h3msg]');
+    const kt = e.target.closest('[data-h3k],[data-h3rep],[data-h3msg],[data-h3ab],[data-h3leave]');
     if(kt){ e.stopPropagation(); h3Dispatch(kt); return; }
     const qt = e.target.closest('[data-h3qt]');
     if(qt){ e.stopPropagation(); const sec0 = qt.closest('.h3-q'); const on = !sec0.classList.contains('open'); sec0.classList.toggle('open', on); qt.setAttribute('aria-expanded', on);
@@ -80049,6 +80070,8 @@
   function h3Dispatch(a){
     if(a.dataset.h3k){ h3Kart(a.dataset.h3k); return; }
     if(a.dataset.h3rep){ homeOpenView(a.dataset.h3rep); return; }
+    if(a.dataset.h3ab){ try{ abState.type = a.dataset.h3ab; abState.done = null; }catch(err){} h3Kart('gen'); return; }
+    if(a.dataset.h3leave){ try{ lvState.view = 'mine'; }catch(err){} h3Open('kart', 'leave', 'مرخصی'); return; }
     if(a.dataset.h3msg != null){ try{ openMessages(a.dataset.h3msg || ''); }catch(err){} return; }
     if(a.dataset.h3s){ const [k0, t0] = a.dataset.h3s.split('|'); h3Open('settings', k0, t0); return; }
     const k = a.dataset.hm; if(!k) return;
