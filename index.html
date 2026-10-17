@@ -69511,7 +69511,7 @@
   /* تگ‌ها (همان شکل اعضای پروژه): هر مقدار یک برچسب، حذف با ×، افزودن با Enter */
   function spTagsHtml(key, vals, ed, list, ph, person){
     return '<div class="pj-tags sp-tags" data-pjtags="' + key + '"' + (person ? ' data-person="1"' : '') + '>' + vals.map(n => '<span class="pj-tag" data-v="' + esc(n) + '"><b>' + esc(n) + '</b>' + (ed ? '<button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button>' : '') + '</span>').join('')
-      + (ed ? '<input type="text" class="pj-tagin" list="' + list + '" placeholder="' + esc(vals.length ? 'مورد دیگر…' : ph) + '" autocomplete="off">' : '') + '</div>';
+      + (ed ? '<input type="text" class="pj-tagin" data-list="' + list + '" placeholder="' + esc(vals.length ? 'مورد دیگر…' : ph) + '" autocomplete="off">' : '') + '</div>';
   }
   function spTagsRead(box){
     if(!box) return [];
@@ -69532,7 +69532,6 @@
       + '<label class="te-f"><u>نوع واحد</u><input type="text" data-spf="ty" list="spTyList" value="' + esc(o.ty || '') + '"' + (ed || pe ? '' : ' readonly') + ' placeholder="مثلاً دو خوابه"></label></div>'
       + '<div class="te-f"><u>اجزای واحد <em>محل‌های جزء این واحد</em></u>' + spTagsHtml('parts', spPartsOf(u), pe, 'spSubList', 'مثلاً سرویس بهداشتی') + '</div>'
       + '<label class="te-f"><u>یادداشت</u><input type="text" data-spf="note" value="' + esc(o.note || '') + '"' + (ed ? '' : ' readonly') + '></label>'
-      + (own.length ? '<div class="sp-own">' + own.map(n => '<button type="button" class="sp-on" data-hrprof="' + esc(n) + '">' + avatarHtml(n, 'sm', true) + '<span>' + esc(n) + '</span></button>').join('') + '</div>' : '')
       + (ed || pe ? '<div class="wh-foot"><button type="button" class="mini" data-spu="' + esc(u) + '">بستن</button><button type="button" class="send rf-go" data-spsave="' + esc(u) + '"' + (sp.saving ? ' disabled' : '') + '>' + (sp.saving ? 'در حال ثبت…' : 'ثبت کارت واحد') + '</button></div>' : '')
       + '</div>';
   }
@@ -69557,8 +69556,11 @@
       + '<p class="sp-hint">طبقات و واحدها (شماره و تعداد) از «پروژه‌ها ← اطلاعات پروژه ← طبقات و واحدها» تنظیم می‌شوند.</p></div>';
   }
   function spDLs(){
+    /* فهرست افراد برای مالک: مالکان، کاربران سامانه و همهٔ پرونده‌های نیروی انسانی */
     const own = new Set();
     try{ ctrContacts.forEach(o => { if(o && o.t === 'own' && o.name) own.add(o.name); }); }catch(e){}
+    try{ listNames().forEach(n => own.add(n)); }catch(e){}
+    try{ ctrContacts.forEach(o => { if(o && o.name) own.add(o.name); }); }catch(e){}
     sp.units.forEach(o => spSplit(o && o.own).forEach(n => own.add(n)));
     const ty = new Set(['یک خوابه', 'دو خوابه', 'سه خوابه', 'چهار خوابه', 'پنت‌هاوس', 'دوبلکس', 'تجاری', 'اداری']); sp.units.forEach(o => { if(o && o.ty) ty.add(o.ty); });
     return '<datalist id="spOwnList">' + Array.from(own).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
@@ -81634,7 +81636,7 @@
     if(f.multi){
       const L = pjArr(v);
       inp = '<div class="pj-tags" data-pjtags="' + f.k + '" data-person="1">' + L.map(n => '<span class="pj-tag" data-v="' + esc(n) + '">' + (pjIsPerson(n) ? avatarHtml(n, 'xs', true) : '') + '<b>' + esc(n) + '</b><button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button></span>').join('')
-        + '<input type="text" class="pj-tagin" list="pjPartyNames" placeholder="' + (L.length ? 'نفر دیگر…' : 'نام را بنویسید یا از فهرست انتخاب کنید') + '" autocomplete="off"></div>';
+        + '<input type="text" class="pj-tagin" data-list="pjPartyNames" placeholder="' + (L.length ? 'نفر دیگر…' : 'نام را بنویسید یا از فهرست انتخاب کنید') + '" autocomplete="off"></div>';
       return '<label class="pj-fl w2"><span>' + f.t + (L.length > 1 ? ' <em class="pj-tn">' + toFa(L.length) + '</em>' : '') + '</span>' + inp + '</label>';
     }
     if(f.opt) inp = '<select id="' + id + '" data-pjf="' + f.k + '"><option value="">—</option>' + f.opt.concat(val && f.opt.indexOf(val) === -1 ? [val] : []).map(o => '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
@@ -81806,7 +81808,7 @@
   }
   document.addEventListener('keydown', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin') && (e.key === 'Enter' || e.key === '،' || e.key === ',')){ e.preventDefault(); pjTagAdd(i); } });
   document.addEventListener('change', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin')) pjTagAdd(i); });
-  document.addEventListener('focusout', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin') && i.value.trim()) pjTagAdd(i); });
+  document.addEventListener('focusout', e => { const i = e.target; if(i && i.classList && i.classList.contains('pj-tagin') && i.value.trim()){ const bx = i.closest('[data-pjtags]'); if(bx && bx.dataset.person === '1') return; setTimeout(() => { if(i.isConnected && i.value.trim() && document.activeElement !== i) pjTagAdd(i); }, 250); } });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-pjtagrm]'); if(b){ e.preventDefault(); e.stopPropagation(); b.closest('.pj-tag').remove(); } }, true);
   function pjInput(e){
     const el = e.target;
