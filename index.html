@@ -28483,6 +28483,28 @@
     return ((Date.now() - d.getTime()) / 86400000) > FEED_MAX_AGE_DAYS;
   }
 
+  /* سند الان دست کیست و چند روز است آنجا مانده؛ برای «موعد گذشته» در اعلان‌ها */
+  function admHeldBy(kind, r){
+    if(!r) return null;
+    const st = String(pick(r,AD.review) || '');
+    const ok = (who, d) => (who && d != null && d >= 0) ? {who, days: d} : null;
+    try{
+      if(kind === 'design'){
+        const sn = dsStageNow(r); if(!sn) return null;
+        return ok(sn.st === 'نزد مشاور/کارفرما' ? (String(pick(r,AD.dParty) || '').trim() || 'مشاور/کارفرما') : 'دفتر فنی', sn.days);
+      }
+      if(kind === 'minute' || kind === 'letter') return null;
+      if(st === 'بررسی کارفرما') return ok('کارفرما', rvEmployerDays(r));
+      if(st === 'بررسی داخلی' || st === 'رد داخلی'){
+        let w = []; try{ w = reviewersOf(r) || []; }catch(e){}
+        return ok(w.length ? w.map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).slice(0, 2).join('، ') : 'بررسی داخلی', rvInternalDays(r));
+      }
+      if(/پیمانکار/.test(st)){ let p = ''; try{ p = admParty(kind, r); }catch(e){} return ok(String(p || '').trim() || 'پیمانکار', admStageDays(r)); }
+      if(st === 'تأیید داخلی' || st === 'تایید شده') return ok('دفتر فنی', admStageDays(r));
+    }catch(e){}
+    return null;
+  }
+  const ADM_FEED_K = ['statement','contract','design'];
   /* جریان کامل اعلان‌ها */
   function buildFeed(){
     const me = activeUserName();
@@ -28508,6 +28530,11 @@
          شمرده می‌شدند ولی هیچ‌جا دیده نمی‌شدند. */
       if(!mineItem && !(mgr && x.level === 'hot')) return;
       dueIds.add(key);
+      /* موعد گذشته و سند دست کسی است: «دست کارفرما · N روز» */
+      let held = null;
+      if(ADM_FEED_K.indexOf(x.kind) !== -1 && /موعد/.test(String(x.note || ''))){
+        try{ const aid = String((x.row && x.row.__admId) || x.id); const a0 = (adminAll || []).find(a => a.kind === x.kind && String(pick(a.row,AD.id)) === aid); held = a0 && admHeldBy(x.kind, a0.row); }catch(e){}
+      }
       out.push({
         /* شناسه روزِ جاری را در خودش دارد، پس هر بامداد یک شناسهٔ
            تازه می‌شود و «خوانده شد»ِ دیروز روی آن نمی‌افتد. مورد
@@ -28516,7 +28543,7 @@
         level: x.level === 'hot' ? 'hot' : 'warm',
         side: x.side || '',                    // 'employer' = بحرانی به حساب کارفرما
         who: x.who || '', avatars: x.avatars || null, title: x.title || 'مورد باز',
-        stageDays: (x.stageDays == null ? null : x.stageDays), stage: x.stage || '',
+        stageDays: held ? held.days : (x.stageDays == null ? null : x.stageDays), stage: held ? 'دست ' + held.who : (x.stage || ''),
         text: x.note || '', time:'', tFa:'',
         // باید همان کلیدی باشد که در fid رفته؛ برای هشدارهایی که tag
         // دارند (مثل بررسی داخلی) این دو یکی نبودند و «خواندم» هیچ‌وقت
