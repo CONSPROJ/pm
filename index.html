@@ -20214,6 +20214,10 @@
   .pc2-wk{padding:14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;}
   .pc2-wh{display:flex;align-items:center;justify-content:space-between;gap:10px;} .pc2-wh > span{display:flex;flex-direction:column;gap:2px;} .pc2-wh b{font-size:14px;font-weight:800;} .pc2-wh small{font-size:11px;color:var(--muted);}
   .pc2-wk .kt-stats{margin:0;}
+  .ptb{margin:0 0 12px;} .ptb .hri-r.more{display:none;} .ptb.all .hri-r.more{display:flex;}
+  .ptb .hri-r.go{cursor:pointer;} .ptb .rc-sub b.bad{color:var(--alert);}
+  .ptb .rc-title .n.bad{background:var(--alert);color:#fff;}
+  .hri-more{all:unset;cursor:pointer;display:block;margin:6px auto 0;font-size:11.5px;font-weight:700;color:var(--sky);}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -47993,6 +47997,60 @@
   }
   /* صفحهٔ مشاور و کارفرما با همان طراحی کارت پیمانکار: کپسول‌های بالا، زبانه‌های «خلاصه» و
      «اسناد»، کاشی‌های پروندهٔ اسناد با فهرست بازشو و «آخرین اسناد». */
+  /* ====== موانع مرتبط با کارفرما، مشاور یا مالک ======
+     از دو جا: موانع گزارش روزانه که طرفشان این شخص است یا در متنشان به نام او
+     (یا نقشش: «کارفرما»، «مشاور»…) اشاره شده، و موانع لیست فعالیت که گیر او ثبت شده‌اند.
+     جایش در کارت ساخته می‌شود و داده بعد از باز شدن کارت می‌رسد. */
+  const PTB_KW = {emp:['کارفرما'], cons:['مشاور', 'نظارت', 'ناظر'], own:['مالک', 'سرمایه‌گذار']};
+  function ptbSlot(name){
+    setTimeout(() => { try{ ptbFill(name); }catch(e){} }, 0);
+    return '<div class="ptb" data-ptb="' + esc(name) + '"><div class="rc-title">موانع مرتبط</div><div class="hr-note">در حال خواندن موانع…</div></div>';
+  }
+  async function ptbFill(name){
+    const t = ctrTypeOf(name) || 'ctr';
+    const names = new Set([name]); try{ aliasesOf(name).forEach(a => names.add(a)); }catch(e){}
+    try{ const c = ctrContactOf(name); if(c && c.cn) names.add(c.cn); }catch(e){}
+    const kws = (PTB_KW[t] || []).concat(Array.from(names).map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر|شرکت)\s+/, '')).filter(n => n.length > 2));
+    const from = normDate(faAddDays(toFa(todayShamsi()), -180)) || '';
+    let iss = [];
+    if(BACKEND === 'supabase'){
+      const inl = '(' + Array.from(names).map(n => '"' + String(n).replace(/["\\]/g, '') + '"').join(',') + ')';
+      const ors = kws.slice(0, 6).map(k => 'text.ilike.*' + String(k).replace(/[(),*]/g, '') + '*');
+      const q = 'select=id,date_fa,text,zone,party,engineer&date_fa=gte.' + encodeURIComponent(from) + '&order=date_fa.desc&limit=200&or=' + encodeURIComponent('(party.in.' + inl + (ors.length ? ',' + ors.join(',') : '') + ')');
+      try{ iss = await supaFetch('issues?' + q) || []; }catch(e){ iss = []; }
+    }
+    const act = [];
+    try{ await loadTaskBlockers(); }catch(e){}
+    const kwN = kws.map(k => normName(k)).filter(Boolean);
+    try{ tbCache.items.forEach(list => list.forEach(it => {
+      const byCtr = it.ctr && Array.from(names).some(n => sameEntity(it.ctr, n));
+      const byTxt = kwN.some(k => normName(it.text || '').indexOf(k) !== -1);
+      if(byCtr || byTxt) act.push(it); })); }catch(e){}
+    act.sort((x, y) => (y.open - x.open) || String(dayKey(faDateOf(y.date) || '')).localeCompare(String(dayKey(faDateOf(x.date) || ''))));
+    const box = document.querySelector('[data-ptb="' + CSS.escape(name) + '"]'); if(!box) return;
+    const nOpen = act.filter(x => x.open).length;
+    const row = (cls, tx, sub, attr) => '<div class="hri-r ' + cls + '"' + (attr || '') + '><i></i><span>' + esc(tx || '—') + '</span><small>' + sub + '</small></div>';
+    const actH = act.slice(0, 20).map(it => { const tr = taskById(it.task);
+      return row('act' + (it.open ? ' open' : ' done') + (tr ? ' go' : ''), it.text, esc(toFa(admDate(faDateOf(it.date)) || '')) + (it.kind ? ' · ' + esc(it.kind) : '') + (tr ? ' · ' + esc(pick(tr,T.title) || '') : '') + ' · ' + (it.open ? 'باز' : 'رفع شده'),
+        tr ? ' role="button" tabindex="0" data-ptbtask="' + esc(it.task) + '"' : ''); }).join('');
+    const issH = iss.slice(0, 30).map((x, i) => row(i >= 6 ? 'more' : '', x.text, esc(toFa(admDate(x.date_fa) || x.date_fa || '')) + (x.zone ? ' · ' + esc(x.zone) : '') + (x.engineer ? ' · ' + esc(x.engineer) : ''))).join('');
+    box.innerHTML = '<div class="rc-title">موانع مرتبط<span class="n' + (nOpen ? ' bad' : '') + '">' + toFa(act.length + iss.length) + '</span></div>'
+      + (!act.length && !iss.length ? '<div class="hr-note">در شش ماه اخیر مانعی مربوط به «' + esc(name) + '» ثبت نشده است. ✓</div>'
+        : '<div class="hr-iss">'
+          + (act.length ? '<div class="rc-sub">از لیست فعالیت' + (nOpen ? ' · <b class="bad">' + toFa(nOpen) + ' باز</b>' : '') + '</div>' + actH : '')
+          + (iss.length ? '<div class="rc-sub">از گزارش‌های روزانه · شش ماه اخیر</div>' + issH
+            + (iss.length > 6 ? '<button type="button" class="hri-more" data-ptbmore="1">نمایش همه (' + toFa(Math.min(30, iss.length)) + ')</button>' : '') : '')
+          + '</div>');
+  }
+  document.addEventListener('click', e => {
+    const t = e.target; if(!t.closest) return;
+    const mr = t.closest('[data-ptbmore]'); if(mr){ const b = mr.closest('.ptb'); if(b) b.classList.add('all'); mr.remove(); return; }
+    const tk = t.closest('[data-ptbtask]'); if(!tk) return;
+    const m = document.getElementById('ctProfModal');
+    if(m){ const nm = m.dataset.ctname || ''; try{ if(nm) pushNavBack('پروندهٔ ' + nm, () => openContractorProfile(nm)); }catch(err){} m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open'); }
+    try{ if(window.deckOpenAt && window.deckOpenAt('task', tk.dataset.ptbtask)) return; }catch(err){}
+    try{ gotoAdminItem('task', tk.dataset.ptbtask); }catch(err){}
+  });
   function ctPartyHtml(name){
     const t = ctrTypeOf(name) || 'ctr', D = ctPartyDocs(name), S = ctPartyStints(name);
     const c = (function(){ try{ return ctrContactOf(name) || {}; }catch(e){ return {}; } })();
@@ -48031,12 +48089,12 @@
       + '<div class="ptx-rbar">' + ['A','B','C','D'].filter(k => R[k]).map(k => '<span class="r-' + k + '" style="flex:' + R[k] + '" title="' + k + ': ' + toFa(R[k]) + '"></span>').join('') + '</div>'
       + '<div class="ptx-rl">' + [['A','تأیید'],['B','مشروط'],['C','اصلاح'],['D','رد']].map(([k, l]) => '<span class="r-' + k + '"><i></i>' + l + ' <b>' + toFa(R[k]) + '</b></span>').join('') + '</div></div>' : '';
     const ownH = window.spOwnerHtml ? window.spOwnerHtml(name) : '';
-    const sumPane = '<div class="cf">' + ownH + nowH + res
+    const sumPane = '<div class="cf">' + ownH + ptbSlot(name) + nowH + res
       + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '')
       + '</div>';
     const docPane = '<div class="cf"><div class="rc-title">پروندهٔ اسناد</div>' + P.docTiles + '</div>';
     if(!nDocs && !S.length)
-      return ownH + stats + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
+      return ownH + stats + ptbSlot(name) + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
     return (c.cn && normName(c.cn) !== normName(name) ? '<div class="ct-alias"><u>نام قراردادی</u><span>' + esc(c.cn) + '</span></div>' : '')
       + stats
       + '<div class="hr-split hr2 ct2">'
