@@ -28575,7 +28575,7 @@
       dueIds.add(key);
       /* موعد گذشته و سند دست کسی است: «دست کارفرما · N روز» */
       let held = null;
-      if(ADM_FEED_K.indexOf(x.kind) !== -1 && /موعد/.test(String(x.note || ''))){
+      if(ADM_FEED_K.indexOf(x.kind) !== -1){
         try{ const aid = String((x.row && x.row.__admId) || x.id); const a0 = (adminAll || []).find(a => a.kind === x.kind && String(pick(a.row,AD.id)) === aid); held = a0 && admHeldBy(x.kind, a0.row); }catch(e){}
       }
       out.push({
@@ -28829,7 +28829,7 @@
     else if(mNear){ const n = mNear[1] || mNear[2]; facts += fact('تا موعد', n ? esc(n) : 'امروز', n ? 'روز' : '', 'warn'); txt = ''; }
     else{
       const mAge = T0.match(/^(\S+) روز از (ابلاغ|ارسال) گذشته(?:\s*و\s*(.*))?$/), mIdle = T0.match(/^(\S+) روز بلاتکلیف مانده$/), mSt = T0.match(/^(\S+) روز در مرحلهٔ «(.+)» مانده$/);
-      if(mAge){ facts += fact('از ' + mAge[2], esc(mAge[1]), 'روز', 'warn'); txt = mAge[3] ? mAge[3].trim() : ''; }
+      if(mAge){ facts += fact('از ' + mAge[2], esc(mAge[1]), 'روز', 'warn'); txt = mAge[3] && !/^هنوز باز است$/.test(mAge[3].trim()) ? mAge[3].trim() : ''; }
       else if(mIdle){ facts += fact('بلاتکلیف', esc(mIdle[1]), 'روز', 'warn'); txt = ''; }
       else if(mSt && x.stageDays != null) txt = '';
     }
@@ -28837,7 +28837,9 @@
     if(x.stageDays != null) facts += fact(stLbl, x.stageDays ? toFa(x.stageDays) : 'امروز', x.stageDays ? 'روز' : '', x.stageDays > 7 ? 'bad' : '');
     /* اگر مسئول همان کسی است که سند نزدش است، نام دوباره نمی‌آید */
     const holderNm = /^نزد /.test(x.stage || '') ? x.stage.replace(/^نزد /, '') : '';
-    const avasShow = (avas.length === 1 && holderNm && nameKey(shortNm(avas[0])) === nameKey(holderNm)) ? [] : avas;
+    /* اعلانِ خود شخص: نام و عکس خودش دوباره نمی‌آید */
+    const meK = nameKey(activeUserName());
+    const avasShow = (avas.length === 1 && holderNm && nameKey(shortNm(avas[0])) === nameKey(holderNm)) ? [] : avas.filter(n => nameKey(n) !== meK);
     return '<div class="fz fz2 ' + x.cat + ' c-' + (x.dcat || x.cat) + ' lv-' + (x.level || 'info')
       +   (x.seen ? '' : ' fresh') + '" style="--i:' + Math.min(i || 0, 12) + '" data-fid="' + esc(x.fid) + '"'
       +   (goto ? ' data-goto-kind="' + esc(x.goto.kind) + '"'
@@ -61615,7 +61617,10 @@
         .map(x => String(x || '').trim()).filter(Boolean);
       const owner = owners[0] || '';
       if(lv >= 3 && !owners.some(o => nameKey(o) === nameKey(me))) return;
-      const why = criticalOf(id, pick(r,T.due), false,
+      /* سند دفتر فنی: موعد فقط تا رفتن به گردش (بررسی داخلی) معنا دارد؛ بعد از آن
+         مدت از ابلاغ و ماندن در هر مرحله سنجیده می‌شود */
+      const ar0 = r.__admRow, dueRaw0 = (ar0 && !dueTracked(ar0)) ? '' : pick(r,T.due);
+      const why = criticalOf(id, dueRaw0, false,
         {kind: r.__admKind || 'task', startRaw: pick(r,T.start), review: inReview(r),
          ignoreMuted: !!o.ignoreMuted, noNudge: !!o.noNudge});
       const g = taskGroupOf(r);
