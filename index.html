@@ -122,6 +122,18 @@
 .sl-1.sl-per{background:color-mix(in srgb,var(--accent) 6%,var(--field))}
 #slPop{max-height:min(82vh,640px);overflow:auto;overscroll-behavior:contain}
 #secWX:not(.adm-on){display:none!important}#clearDraft[hidden]{display:none!important}
+.ctd-log{display:grid;gap:6px}
+.cdl-d{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.cdl-d.more{display:none}.ctd-log.all .cdl-d.more{display:block}
+.cdl-d summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;cursor:pointer;list-style:none;font-size:12.5px}
+.cdl-d summary::-webkit-details-marker{display:none}.cdl-d summary span{color:var(--muted);font-size:12px}.cdl-d summary em{font-style:normal;color:var(--alert);font-weight:700}
+.cdl-d[open] summary{border-bottom:1px solid var(--line);background:var(--field)}
+.cdl-r{padding:8px 12px;border-bottom:1px dashed var(--line)}.cdl-r:last-child{border-bottom:0}
+.cdl-h{display:flex;justify-content:space-between;gap:8px;font-size:12.5px}.cdl-h span{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.cdl-z{display:block;margin-top:2px;font-size:11px;color:var(--accent)}.cdl-r p{margin:3px 0 0;font-size:12px;line-height:1.8}
+.cdl-i{display:flex;gap:6px;align-items:baseline;padding:7px 12px;font-size:12px;background:color-mix(in srgb,var(--alert) 6%,transparent)}.cdl-i i{flex:0 0 6px;height:6px;border-radius:9px;background:var(--alert)}.cdl-i small{color:var(--muted)}
+.ct-alias2{padding:0 18px 8px;font-size:11.5px;color:var(--muted);line-height:1.8}
+.ct-range{flex-wrap:wrap}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -46125,7 +46137,7 @@
     const byC = new Map();
     const blank = () => ({men:0, days:new Set(), acts:new Set(), zones:new Set(),
                           last:'', perDay:{}, byZone:new Map(), skills:new Set(),
-                          onlyAdm:true});
+                          onlyAdm:true, rows:[]});
 
     (rows || []).forEach(r => {
       // «نام — تخصص» اگر ادمین این ترکیب را جدا اعلام کرده باشد
@@ -46134,6 +46146,7 @@
       if(!byC.has(c)) byC.set(c, blank());
       const o = byC.get(c);
       o.onlyAdm = false;
+      o.rows.push(r);
       o.men += menOf(r);
       const sk = String(pick(r,F.skill) || '').trim();
       if(sk) o.skills.add(sk);
@@ -46495,7 +46508,24 @@
                             + (zo.acts.size ? '<ul>' + Array.from(zo.acts).slice(0, 6).map(a3 => '<li>' + esc(a3) + '</li>').join('')
                                 + (zo.acts.size > 6 ? '<li class="more">و ' + toFa(zo.acts.size - 6) + ' فعالیت دیگر</li>' : '') + '</ul>' : '')
                             + '</div>';
-                        }).join('') + '</div>' : '');
+                        }).join('') + '</div>' : '')
+                + (function(){
+                    /* گزارش روزانهٔ کامل این پیمانکار در بازه: هر روز، هر ردیف (تخصص، نفرات، محل، شرح) و موانع همان روز */
+                    const byD = new Map(); (o.rows || []).forEach(r => { const dk = dayKey(pick(r,F.date)); if(!dk) return; if(!byD.has(dk)) byD.set(dk, []); byD.get(dk).push(r); });
+                    if(!byD.size) return '';
+                    const issD = new Map(); try{ (hrIssuesCtx || []).forEach(r => { if(!sameEntity(String(pick(r,I.who) || ''), name)) return; const dk = dayKey(pick(r,F.date)); if(!dk) return; if(!issD.has(dk)) issD.set(dk, []); issD.get(dk).push(r); }); }catch(e){}
+                    const D = Array.from(byD.keys()).sort().reverse();
+                    return '<div class="rc-title">گزارش روزانه به تفکیک روز<span class="n">' + toFa(D.length) + ' روز</span></div><div class="ctd-log">'
+                      + D.map((dk, i) => { const L = byD.get(dk), men = L.reduce((t, r) => t + menOf(r), 0), II = issD.get(dk) || [];
+                          return '<details class="cdl-d' + (i >= 7 ? ' more' : '') + '"' + (i < 2 ? ' open' : '') + '><summary><b>' + esc(dayLabel2(dk)) + '</b><span>' + toFa(men) + ' نفر' + (II.length ? ' · <em>' + toFa(II.length) + ' مانع</em>' : '') + '</span></summary>'
+                            + L.map(r => { const os = +toEn(String(pick(r,F.ostad) || 0)) || 0, sh = +toEn(String(pick(r,F.shagerd) || 0)) || 0, sb = String(pick(r,F.sub) || '').trim();
+                                return '<div class="cdl-r"><div class="cdl-h"><b>' + esc(pick(r,F.skill) || 'بدون تخصص') + '</b><span>' + (os ? 'استادکار ' + toFa(os) : '') + (os && sh ? ' · ' : '') + (sh ? 'شاگرد ' + toFa(sh) : '') + '</span></div>'
+                                  + ((pick(r,F.zone) || sb) ? '<small class="cdl-z">' + esc([pick(r,F.zone), sb].filter(Boolean).join(' › ')) + '</small>' : '')
+                                  + (pick(r,F.activity) ? '<p>' + esc(pick(r,F.activity)) + '</p>' : '') + '</div>'; }).join('')
+                            + II.map(r => '<div class="cdl-i"><i></i>' + esc(pick(r,I.text) || '') + (pick(r,I.zone) ? ' <small>' + esc(pick(r,I.zone)) + '</small>' : '') + '</div>').join('')
+                            + '</details>'; }).join('')
+                      + (D.length > 7 ? '<button type="button" class="hri-all" data-cdlall="1">نمایش همهٔ ' + toFa(D.length) + ' روز</button>' : '') + '</div>';
+                  })();
             const finPane = (() => {
               const stAll = docs[1].all, ctAll = docs[0].all;
               const cAmt = ctAll.reduce((t, r) => t + amtNum(pick(r,AD.cAmount)), 0);
@@ -46571,10 +46601,10 @@
               return '<div class="cf">' + h + '</div>';
             })();
             /* بازهٔ هر پیمانکار جدا: کارت با دادهٔ همان بازه از نو ساخته می‌شود */
-            const rMode = days.length <= 1 ? 'day' : (days.length <= 7 ? 'week' : 'month');
+            const rMode = days.length <= 1 ? 'day' : (days.length <= 7 ? 'week' : days.length <= 31 ? 'month' : days.length <= 92 ? 'quarter' : 'year');
             return '<div class="hr-split hr2">'
               + '<div class="ct-range hr-rng" role="group" aria-label="بازهٔ کارکرد"><u>بازه</u>'
-              +   [['day','امروز'],['week','۷ روز'],['month','۳۰ روز']].map(([m, lb]) =>
+              +   [['day','امروز'],['week','۷ روز'],['month','۳۰ روز'],['quarter','فصل'],['year','سال']].map(([m, lb]) =>
                     '<button type="button" class="ctr' + (rMode === m ? ' on' : '') + '" data-ctrange="' + m + '">' + lb + '</button>').join('')
               + ctcMiniHtml(name)
               + '</div>'
@@ -46969,6 +46999,7 @@
     e.preventDefault(); e.stopPropagation();
     const f = b.closest('.cf-feed'); if(f) f.classList.add('all');
   }, true);
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-cdlall]'); if(!b) return; e.preventDefault(); const L = b.closest('.ctd-log'); if(L) L.classList.add('all'); b.remove(); });
   async function openContractorProfile(name){
     /* بدون نام، پنجره‌ای باز نمی‌شود: پیش از این کارتِ بی‌عنوان
        باز می‌شد و کاربر فکر می‌کرد پروندهٔ پیمانکار خالی است. */
@@ -46991,8 +47022,7 @@
       +   (function(){ try{ return can('ctr.contact') ? '<button type="button" class="ico-btn ct-hfile" data-ctcedit="' + esc(name) + '" title="پروندهٔ پیمانکار: نام، قراردادها و تماس" aria-label="پروندهٔ پیمانکار"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9.5" cy="11" r="2.3"/><path d="M6 16.5c.7-1.7 2-2.6 3.5-2.6s2.8.9 3.5 2.6M15 10h3M15 13.5h3"/></svg></button>' : ''; }catch(e){ return ''; } })()
       +   '<button type="button" class="ico-btn" data-ctx>✕</button></div>'
       + (als.length
-          ? '<div class="ct-alias"><u>نام‌های یکی‌شده</u>'
-            + als.map(a => '<span>' + esc(a) + '</span>').join('') + '</div>'
+          ? '<div class="ct-alias2" title="نام‌هایی که در گزارش‌ها برای همین پیمانکار نوشته شده">با نام‌های: ' + als.map(a => esc(a)).join('، ') + '</div>'
           : '')
       + '<div class="ct-body"><div class="empty">در حال دریافت گزارش‌ها…</div></div>'
       + '</div>';
@@ -47051,7 +47081,7 @@
     let ctMode = 'month';
     const rangeBar = () => '<div class="ct-range" role="group" aria-label="بازهٔ کارکرد">'
       + '<u>بازهٔ کارکرد</u>'
-      + [['day','امروز'],['week','۷ روز'],['month','۳۰ روز']].map(([m, lb]) =>
+      + [['day','امروز'],['week','۷ روز'],['month','۳۰ روز'],['quarter','فصل'],['year','سال']].map(([m, lb]) =>
           '<button type="button" class="ctr' + (ctMode === m ? ' on' : '') + '" data-ctrange="' + m + '">' + lb + '</button>').join('')
       + '</div>';
     const paint = (cd, keepTab) => {
