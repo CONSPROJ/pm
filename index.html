@@ -424,6 +424,13 @@
 .pp-tri button{all:unset;cursor:pointer;padding:4px 8px;border-radius:7px;font-size:10.5px;font-weight:700;color:var(--muted)}
 .pp-tri button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .pp-tri button.on[data-v="1"]{color:var(--ok,#2f9a62)}.pp-tri button.on[data-v="0"]{color:var(--bad,#d0463b)}
+.spw-cc{display:flex;flex-direction:column;gap:6px;margin-top:12px}.spw-cc .rc-title small{font-weight:600;color:var(--muted);font-size:11px}
+.spw-cr{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:13px;border:1px solid var(--line);background:var(--surface)}
+.spw-cr:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.spw-cr .uc-ring .bg{stroke:color-mix(in srgb,var(--line) 85%,transparent)}.spw-cr .uc-ring .fg{stroke:var(--sky)}
+.spw-ct{flex:1;min-width:0;display:flex;flex-direction:column}.spw-ct b{font-size:12.5px;font-weight:800}.spw-ct small{font-size:11px;color:var(--muted)}
+.spw-cp{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.spw-cp b{font-size:13px;font-weight:800}
+.spw-cp em{font-style:normal;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--field);color:var(--muted)}.spw-cp em.ok{color:var(--ok)}.spw-cp em.warn{color:var(--warn,#c98a1b)}.spw-cp em.bad{color:var(--bad,#d0463b)}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -47637,7 +47644,7 @@
             const t = ctrTypeOf(name);
             return (t === 'cons' || t === 'emp' || t === 'own') ? ctPartyHtml(name)
               : rangeBar() + '<div class="empty">برای «' + esc(name) + '» در این بازه گزارش کارگاهی ثبت نشده است. بازهٔ بلندتری را انتخاب کنید.</div>' + ctPartyHtml(name);
-          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + (window.spOwnerHtml ? window.spOwnerHtml(name) : '') + ctPfViewHtml(name) + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
+          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + (window.spwCtrHtml ? window.spwCtrHtml(name) : '') + (window.spOwnerHtml ? window.spOwnerHtml(name) : '') + ctPfViewHtml(name) + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
       try{ whCtrFill(); qcCtrFill(); coCtrFill(); }catch(e){}
       if(keepTab){
         const tb = body.querySelector('[data-hrtab="' + keepTab + '"]');
@@ -72611,6 +72618,17 @@
     return '<div class="spf">' + h + '</div>';
   }
   window.spwHtml = spwHtml;
+  /* کارهای یک پیمانکار در همهٔ فضاها (کارت پیمانکار): هر ردیف نمای کلی همان فضا را باز می‌کند */
+  window.spwCtrHtml = c => {
+    const k0 = normName(c), R = [];
+    spw.m.forEach((o, k) => { if(!o.c || normName(o.c) !== k0) return; const p = k.split('¦'); const x = spwPkg(p[0], p[1], p[2]); R.push(x); });
+    if(!R.length) return '';
+    R.sort((a, b) => (a.p >= 100) - (b.p >= 100) || b.p - a.p);
+    return '<div class="spw-cc"><div class="rc-title">کار در فضاهای پروژه <small>' + toFa(R.length) + ' مورد</small></div>' + R.slice(0, 12).map(x => { const sc = spwSched(x), q = spwN(x.o.q);
+      return '<button type="button" class="spw-cr" data-spwgo="' + esc(x.fk + '¦' + x.loc) + '">' + spwRing(x.p, 30) + '<span class="spw-ct"><b>' + esc(x.s) + '</b><small>' + esc([spwLocLb(x.fk, x.loc) + (x.loc ? ' · ' + floorLabel(x.fk) : ''), q ? spwF(q * x.p / 100) + ' از ' + spwF(q) + ' ' + (x.o.u || '') : ''].filter(Boolean).join(' · ')) + '</small></span>'
+        + '<span class="spw-cp"><b>' + toFa(Math.round(x.p)) + '٪</b>' + (sc ? '<em class="' + sc.cls + '">' + esc(sc.st) + '</em>' : '') + '</span></button>'; }).join('') + '</div>';
+  };
+  document.addEventListener('click', e => { const g = e.target.closest && e.target.closest('[data-spwgo]'); if(!g) return; e.preventDefault(); e.stopPropagation(); const [fk, loc] = g.dataset.spwgo.split('¦'); window.spfOpen(fk, loc || ''); }, true);
   /* حضورِ شش ماه اخیر یک‌بار برای هر طبقه خوانده می‌شود */
   async function spwData(fk){
     if(spw.Dk === fk && spw.D) return;
