@@ -20194,6 +20194,22 @@
   .ov-back:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));color:var(--sky);}
   /* مرکز داده و نام‌ها */
   .dc{display:flex;flex-direction:column;gap:12px;}
+  .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
+  @media (min-width:640px){ .sph-ov{place-items:center;} }
+  .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
+  .sph-h{display:flex;align-items:center;gap:10px;} .sph-h > span:nth-child(2){display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;} .sph-h b{font-size:14px;} .sph-h small{font-size:11px;color:var(--muted);}
+  .sph-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;color:#2f7d6b;background:color-mix(in srgb, #2f7d6b 12%, transparent);} .sph-ic svg{width:18px;height:18px;}
+  .sph-x{all:unset;cursor:pointer;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--muted);background:var(--field);}
+  .sph-pnd{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:14px;background:color-mix(in srgb, #d08a1c 9%, var(--surface));border:1px solid color-mix(in srgb, #d08a1c 30%, var(--line));}
+  .sph-pnd.ok{background:color-mix(in srgb, #2f7d6b 8%, var(--surface));border-color:color-mix(in srgb, #2f7d6b 28%, var(--line));}
+  .sph-pnd b{font-size:12px;} .sph-pnd span{font-size:15px;font-weight:800;text-align:right;} .sph-pnd small{font-size:10.5px;color:var(--muted);}
+  .sph-ck{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;font-size:12.5px;cursor:pointer;} .sph-ck small{grid-column:2;font-size:10.5px;color:var(--muted);}
+  .sph-act{display:flex;gap:8px;} .sph-act .mx-btn{flex:1;}
+  em.sph-pd{font-style:normal;color:#b07512;font-weight:700;}
+  .dc-dup{margin:0 0 12px;border:1px solid color-mix(in srgb, var(--warn, #d08a1c) 35%, var(--line));border-radius:16px;background:color-mix(in srgb, var(--warn, #d08a1c) 6%, var(--surface));padding:0 12px;}
+  .dc-dup > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:11px 0;} .dc-dup > summary::-webkit-details-marker{display:none;}
+  .dc-dup > summary svg{width:16px;height:16px;color:#b07512;} .dc-dup > summary b{font-size:12.5px;} .dc-dup > summary small{margin-inline-start:auto;font-size:11px;color:var(--muted);}
+  .dc-dup[open]{padding-bottom:10px;}
   .dc-hero{display:flex;align-items:center;gap:11px;padding:14px;border-radius:18px;border:1px solid var(--line);
     background:linear-gradient(135deg, color-mix(in srgb, var(--sky) 10%, var(--surface)), var(--surface) 65%);}
   .dc-hic{width:42px;height:42px;flex:0 0 42px;border-radius:13px;display:grid;place-items:center;color:var(--sky-deep, var(--sky));
@@ -36103,10 +36119,13 @@
       + '<datalist id="ctdRoleList">' + roles.map(r => '<option value="' + esc(r) + '">').join('') + '</datalist>'
       + '<div class="cdx-list ctd-list">' + (L.length ? L.map(x => '<div class="cdx-r cdx-st" data-cdxst="' + esc(x.n) + '">'
           + '<span class="cdx-sa">' + avatarHtml(x.n, 'sm', true) + '</span>'
-          + '<span class="cdx-m"><b>' + esc(x.n) + '<i class="cdx-tyb t-staff">پرسنل</i></b><small>' + esc(x.r || 'سمت مشخص نشده') + '</small></span>'
+          + '<span class="cdx-m"><b>' + esc(x.n) + '<i class="cdx-tyb t-staff">پرسنل</i></b><small>' + esc(x.r || 'سمت مشخص نشده') + (function(){ const ph = sphShown(x.n), o = sphOf(x.n);
+              return ph ? ' · <span dir="ltr">' + toFa(ph) + '</span>' : o && o.pend && adm ? ' · <em class="sph-pd">شماره منتظر تأیید خودش</em>' : ''; })() + '</small></span>'
+          + (sphShown(x.n) ? '<a class="cdx-b" href="tel:' + esc(telOf(sphShown(x.n))) + '" title="تماس">' + CTC_I.tel + '</a>' : '')
+          + (adm ? '<button type="button" class="cdx-b" data-sphedit="' + esc(x.n) + '" title="ثبت یا پیشنهاد شماره">' + CDX_I.plus + '</button>' : '')
           + (adm ? '<span class="cdx-sr"><input type="text" class="cdx-ri" list="ctdRoleList" value="' + esc(x.r) + '" placeholder="سمت" aria-label="سمت ' + esc(x.n) + '"><button type="button" class="cdx-rs" data-cdxrole="' + esc(x.n) + '">ثبت</button></span>' : '')
           + '</div>').join('') : '<div class="mx-empty">کسی پیدا نشد.</div>') + '</div>'
-      + (adm ? '<div class="cdx-note">سمت هر نفر همه‌جا (گزارش‌ها، امضاها، کارتابل) همین است. سطح دسترسی از «مدیریت ← کاربران» تعیین می‌شود.</div>' : '');
+      + (adm ? '<div class="cdx-note">سمت هر نفر همه‌جا (گزارش‌ها، امضاها، کارتابل) همین است. سطح دسترسی از «مدیریت ← کاربران» تعیین می‌شود. شمارهٔ هر نفر را خودش در «تنظیمات ← شمارهٔ تماس من» ثبت و تأیید می‌کند؛ شماره‌ای که شما پیشنهاد می‌کنید تا تأیید خودش نشان داده نمی‌شود.</div>' : '');
   }
   document.addEventListener('click', async e => {
     const b = e.target.closest && e.target.closest('[data-cdxrole]'); if(b){
@@ -36150,7 +36169,7 @@
       tel: ents.filter(e => !(e.inf.c.p && e.inf.c.p.length)).length, ct: ents.filter(e => !e.inf.nc).length};
     const kpi = (k, t, n, cls) => '<button type="button" class="cdx-kp' + (cls ? ' ' + cls : '') + (tab === 'list' && (ctdState.f || 'all') === k ? ' on' : '') + '" data-ctdf="' + k + '"><b>' + toFa(n) + '</b><u>' + t + '</u></button>';
     const head = '<div class="cdx-hd"><span class="cdx-ic">' + CTC_I.user + '</span><span class="cdx-tt"><b>پروندهٔ نیروی انسانی</b><small>مرجع نام، اطلاعات و قراردادهای پیمانکاران، مشاوران، تیم کارفرما و مالکان؛ هر تغییری این‌جا در گزارش‌ها، دفتر فنی و فهرست‌های انتخاب هم اعمال می‌شود</small></span>'
-      + (ed ? '<button type="button" class="cdx-new" data-cdxnew="1">' + CDX_I.plus + '<span>پیمانکار تازه</span></button>' : '') + '</div>'
+      + (ed ? '<button type="button" class="cdx-new" data-cdxnew="1">' + CDX_I.plus + '<span>پروندهٔ تازه</span></button>' : '') + '</div>'
       + '<div class="cdx-kpi">' + kpi('all', 'پیمانکار', cnt.all) + kpi('ok', 'پروندهٔ کامل', cnt.ok, 'ok') + kpi('part', 'ناقص', cnt.part, cnt.part ? 'warn' : '') + kpi('tel', 'بی‌تلفن', cnt.tel) + kpi('ct', 'بی‌قرارداد', cnt.ct) + '</div>'
       + (ed ? '<div class="cdx-tabs"><button type="button" class="' + (tab === 'list' ? 'on' : '') + '" data-cdxtab="list">فهرست</button><button type="button" class="' + (tab === 'fix' ? 'on' : '') + '" data-cdxtab="fix">اصلاح نام‌ها' + (nFix ? '<i>' + toFa(nFix) + '</i>' : '') + '</button><button type="button" class="' + (tab === 'disc' ? 'on' : '') + '" data-cdxtab="disc">دیسیپلین‌ها</button><button type="button" class="' + (tab === 'skill' ? 'on' : '') + '" data-cdxtab="skill">تخصص‌ها</button><button type="button" class="' + (tab === 'ct' ? 'on' : '') + '" data-cdxtab="ct">قراردادها</button></div>' : '');
     let body = '';
@@ -36197,7 +36216,7 @@
         + (f !== 'all' || q ? '<div class="cdx-fl">' + toFa(list.length) + ' پیمانکار' + (f !== 'all' ? ' · <button type="button" data-ctdf="all">نمایش همه ✕</button>' : '') + '</div>' : '')
         + '<div class="cdx-list ctd-list">' + (list.length ? list.slice(0, lim).map(row).join('')
           + (list.length > lim ? '<button type="button" class="ctd-more" data-ctdmore="1">نمایش ' + toFa(Math.min(60, list.length - lim)) + ' پیمانکار دیگر · از ' + toFa(list.length) + '</button>' : '')
-          : '<div class="mx-empty">پیمانکاری پیدا نشد.' + (ed && q ? ' <button type="button" class="cdx-lk" data-cdxnew="' + esc(q) + '">+ ثبت «' + esc(q) + '» به‌عنوان پیمانکار تازه</button>' : '') + '</div>') + '</div>';
+          : '<div class="mx-empty">پیمانکاری پیدا نشد.' + (ed && q ? ' <button type="button" class="cdx-lk" data-cdxnew="' + esc(q) + '">+ ثبت «' + esc(q) + '» به‌عنوان پروندهٔ تازه</button>' : '') + '</div>') + '</div>';
     }
     boxes.forEach(b => { b.innerHTML = head + body; });
     if(focusId) window.refocusQ(focusId);
@@ -36221,7 +36240,7 @@
      نام با پرونده‌های موجود سنجیده می‌شود تا تکراری ساخته نشود؛ بعد از ثبت،
      در فهرست‌های انتخاب گزارش روزانه و دفتر فنی هم می‌آید و پرونده‌اش باز می‌شود. */
   function ctcNewHtml(q){
-    return '<div class="ctc-ed cnw"><div class="ctc-edh"><span class="ctc-av">' + CDX_I.plus + '</span><span><b>پیمانکار تازه</b><small class="ctx-sub">بعد از ثبت، پرونده‌اش برای تکمیل باز می‌شود</small></span><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button></div>'
+    return '<div class="ctc-ed cnw"><div class="ctc-edh"><span class="ctc-av">' + CDX_I.plus + '</span><span><b>پروندهٔ تازه</b><small class="ctx-sub">پیمانکار، مشاور، کارفرما یا مالک؛ بعد از ثبت، پرونده برای تکمیل باز می‌شود</small></span><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن">✕</button></div>'
       + ctypHtml('')
       + (function(){ const P = ctrNameParts(q || '', {});
           return '<div class="cnm-g"><label class="ctc-f"><span>نام</span><input type="text" class="cnw-fn cnw-k" value="' + esc(P.fn) + '" placeholder="مثلاً حسین" autocomplete="off"></label><label class="ctc-f"><span>نام خانوادگی</span><input type="text" class="cnw-ln cnw-k" value="' + esc(P.ln) + '" placeholder="مثلاً ناظری" autocomplete="off"></label></div>'
@@ -39615,7 +39634,8 @@
     let h = '<div class="st2">';
     h += sec('پروفایل',
         row('pfAva', PF_I.cam, avatarOf(name) ? 'تغییر عکس پروفایل' : 'افزودن عکس پروفایل', 'عکس برای همه دیده می‌شود')
-      + (me ? row('pfName', PF_I.edit, 'نام نمایشی', esc(name) + (roleOf(name) ? ' · ' + esc(roleOf(name)) : '')) : ''));
+      + (me ? row('pfName', PF_I.edit, 'نام نمایشی', esc(name) + (roleOf(name) ? ' · ' + esc(roleOf(name)) : '')) : '')
+      + (me ? (function(){ const o = sphOf(name); return row('pfPhone', CTC_I.tel, 'شمارهٔ تماس من', o && o.ok ? toFa(o.p) + ' · ' + (o.sh ? 'همکاران می‌بینند' : 'فقط مدیر سامانه می‌بیند') : o && o.pend ? '<em class="sph-pd">شمارهٔ پیشنهادی منتظر تأیید شما</em>' : 'ثبت نشده؛ با اجازهٔ شما در پروندهٔ نیروی انسانی می‌آید'); })() : ''));
     if(!me) return h + '</div>';
     h += sec('ظاهر',
         stLine(ST2_I.sun, 'پوسته', '', stSeg('theme', theme, [['auto','خودکار'],['light','روز'],['dark','شب']]), true)
@@ -39644,6 +39664,84 @@
       + row('stReload', ST2_I.ref, 'بارگذاری نسخهٔ تازه', 'اگر چیزی درست نمایش داده نمی‌شود'));
     return h + '</div>';
   }
+
+  /* ====== شمارهٔ تماس نیروهای پروژه ======
+     هر کس خودش شماره‌اش را ثبت و تأیید می‌کند و خودش تصمیم می‌گیرد همکاران ببینند یا نه.
+     مدیر سامانه می‌تواند شماره‌ای پیشنهاد کند، ولی تا خود فرد تأیید نکند جایی نشان داده نمی‌شود.
+     جای ذخیره: lists با نوع «پرسنل — تماس» و مقدار «نام¦{p, ok, sh, pend, by}» */
+  const SPH_KIND = 'پرسنل — تماس';
+  const sph = new Map();
+  try{ (JSON.parse(localStorage.getItem('siteLogM.sph.v1') || '[]') || []).forEach(o => { if(o && o.n) sph.set(nameKey(o.n), o); }); }catch(e){}
+  function sphLoad(lists){
+    sph.clear();
+    (lists[SPH_KIND] || []).forEach(v => { const i = String(v).indexOf('¦'); if(i < 1) return;
+      try{ const o = JSON.parse(String(v).slice(i + 1)) || {}; o.n = String(v).slice(0, i); sph.set(nameKey(o.n), o); }catch(e){} });
+    try{ localStorage.setItem('siteLogM.sph.v1', JSON.stringify(Array.from(sph.values()))); }catch(e){}
+  }
+  function sphOf(n){ return sph.get(nameKey(n || '')) || null; }
+  /* شماره‌ای که دیگران می‌بینند: تأییدشده و با اجازهٔ نمایش (مدیر سامانه همهٔ شماره‌های تأییدشده را می‌بیند) */
+  function sphShown(n){ const o = sphOf(n); if(!o || !o.ok || !o.p) return ''; let a = false; try{ a = isAdminUser(); }catch(e){}
+    return o.sh || a || nameKey(n) === nameKey(activeUserName()) ? o.p : ''; }
+  window.sphShown = sphShown;
+  async function sphSave(n, o){
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(SPH_KIND) + '&value=like.' + encodeURIComponent(String(n).replace(/[*%]/g, '') + '¦*'), {method:'DELETE'}).catch(() => {});
+    if(o){ const c = {}; ['p','ok','sh','pend','by'].forEach(k => { if(o[k]) c[k] = o[k]; });
+      await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:[{kind: SPH_KIND, value: n + '¦' + JSON.stringify(c)}]});
+      c.n = n; sph.set(nameKey(n), c); }
+    else sph.delete(nameKey(n));
+    try{ localStorage.setItem('siteLogM.sph.v1', JSON.stringify(Array.from(sph.values()))); }catch(e){}
+    try{ clearNetCache(); }catch(e){}
+  }
+  const sphValid = p => telOf(p).replace(/^\+/, '').length >= 7;
+  /* برگهٔ کوچک ثبت شماره: برای خود فرد (ثبت و تأیید) یا مدیر سامانه (پیشنهاد) */
+  function sphSheet(n){
+    const o = sphOf(n) || {}, me = nameKey(n) === nameKey(activeUserName());
+    let m = document.getElementById('sphModal'); if(m) m.remove();
+    m = document.createElement('div'); m.id = 'sphModal'; m.className = 'sph-ov';
+    const pv = o.p ? toFa(o.p) : '';
+    m.innerHTML = '<div class="sph-box" role="dialog" aria-modal="true" aria-label="شمارهٔ تماس">'
+      + '<div class="sph-h"><span class="sph-ic">' + CTC_I.tel + '</span><span><b>' + (me ? 'شمارهٔ تماس من' : 'شمارهٔ تماس ' + esc(n)) + '</b><small>'
+      +   (me ? 'فقط با تأیید خودتان ثبت می‌شود' : 'پیشنهاد شما تا تأیید خود ' + esc(n) + ' جایی نشان داده نمی‌شود') + '</small></span>'
+      +   '<button type="button" class="sph-x" data-sphx="1" aria-label="بستن">✕</button></div>'
+      + (me && o.pend && !o.ok ? '<div class="sph-pnd"><b>' + esc(o.by || 'مدیر سامانه') + ' این شماره را برای شما ثبت کرده:</b><span dir="ltr">' + pv + '</span><small>اگر درست است تأیید کنید؛ بدون تأیید شما به کسی نشان داده نمی‌شود.</small></div>' : '')
+      + (!me && o.ok ? '<div class="sph-pnd ok"><b>شمارهٔ تأییدشده</b><span dir="ltr">' + pv + '</span><small>' + (o.sh ? 'همکاران می‌بینند' : 'فقط مدیر سامانه می‌بیند') + '</small></div>' : '')
+      + '<label class="ctc-f"><span>تلفن همراه</span><input type="tel" dir="ltr" inputmode="tel" class="sph-in" value="' + esc(pv) + '" placeholder="۰۹۱۲…" autocomplete="tel"></label>'
+      + (me ? '<label class="sph-ck"><input type="checkbox" class="sph-sh"' + (o.ok ? (o.sh ? ' checked' : '') : ' checked') + '><span>همکاران پروژه این شماره را ببینند</span><small>خاموش: فقط مدیر سامانه می‌بیند</small></label>' : '')
+      + '<div class="sph-act"><button type="button" class="mx-btn pri" data-sphok="' + esc(n) + '">' + (me ? (o.pend && !o.ok ? 'تأیید و ثبت' : 'ثبت') : 'ثبت پیشنهاد') + '</button>'
+      +   (o.p ? '<button type="button" class="mx-btn" data-sphdel="' + esc(n) + '">' + (me ? 'حذف شماره' : 'برداشتن') + '</button>' : '') + '</div></div>';
+    document.body.appendChild(m);
+    const i = m.querySelector('.sph-in'); if(i) setTimeout(() => i.focus(), 40);
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest) return;
+    if(t.closest('#pfPhone')){ e.stopPropagation(); sphSheet(activeUserName()); return; }
+    const sp = t.closest('[data-sphedit]'); if(sp){ e.stopPropagation(); sphSheet(sp.dataset.sphedit); return; }
+    const m = document.getElementById('sphModal'); if(!m) return;
+    if(t === m || t.closest('[data-sphx]')){ m.remove(); return; }
+    const ok = t.closest('[data-sphok]'), dl = t.closest('[data-sphdel]');
+    if(!ok && !dl) return;
+    const n = ok ? ok.dataset.sphok : dl.dataset.sphdel, me = nameKey(n) === nameKey(activeUserName());
+    let adm = false; try{ adm = isAdminUser(); }catch(err){}
+    if(!me && !adm) return;
+    const b = ok || dl; b.disabled = true;
+    try{
+      if(dl){ await sphSave(n, null); }
+      else{
+        const p = toEn(String(m.querySelector('.sph-in').value || '')).replace(/[^\d+]/g, '');
+        if(!sphValid(p)){ b.disabled = false; showDialog('warn', 'شماره درست نیست', 'یک شمارهٔ تلفن معتبر بنویسید.'); return; }
+        const o0 = sphOf(n) || {};
+        if(me) await sphSave(n, {p, ok: 1, sh: m.querySelector('.sph-sh').checked ? 1 : 0});
+        /* پیشنهاد مدیر: اگر همان شمارهٔ تأییدشده است چیزی عوض نمی‌شود */
+        else if(!(o0.ok && telOf(o0.p) === telOf(p))){ await sphSave(n, {p, pend: 1, by: activeUserName()});
+          try{ await sendAction({action:'nudge', from: activeUserName(), to: n, kind: MSG_KIND, itemId:'', title:'',
+            message: 'برای شما یک شمارهٔ تماس پیشنهاد شده؛ از «تنظیمات ← شمارهٔ تماس من» تأیید یا اصلاحش کنید. تا تأیید شما به کسی نشان داده نمی‌شود.', date: todayShamsi()}); }catch(err){} }
+      }
+      m.remove();
+      try{ shrToast(dl ? 'شماره برداشته شد' : me ? 'شمارهٔ شما ثبت شد' : 'پیشنهاد ثبت شد؛ منتظر تأیید ' + n); }catch(err){}
+      try{ ctcRepaint(); }catch(err){}
+      try{ if(document.getElementById('pfPhone')) renderProfile(); }catch(err){}
+    }catch(err){ b.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+  }, true);
   /* کنترل‌های تنظیمات */
   document.addEventListener('click', async e => {
     const sp = e.target.closest('[data-stp]');
@@ -40432,32 +40530,13 @@
       : '<div class="dc-sg ok"><b>نام تکراری مشکوکی پیدا نشد ✓</b></div>';
     if(dcState.tab === 'zone') dcState.tab = 'db';
     box.innerHTML = '<div class="dc">'
-      + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>داده و نام‌ها</b>'
-      +   '<small>یکسان‌سازی نام‌ها، نام مستعار، تطبیق پیمانکار و ویرایش مستقیم پایگاه داده</small></span>'
+      + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>پایگاه داده</b>'
+      +   '<small>دیدن و ویرایش مستقیم جدول‌ها، خروجی و پشتیبان هر جدول</small></span>'
       +   '<button type="button" class="mini" data-dcreload="1">بازخوانی</button></div>'
-      + '<div class="dc-kpis">'
-      +   '<div><b>' + toFa(all.length) + '</b><u>نام</u></div>'
-      +   '<div><b>' + toFa(cnt('person')) + '</b><u>فرد</u></div>'
-      +   '<div><b>' + toFa(cnt('ctr')) + '</b><u>پیمانکار</u></div>'
-      +   '<div class="' + (sugg.length ? 'warn' : '') + '"><b>' + toFa(sugg.length) + '</b><u>مشکوک به تکرار</u></div>'
-      +   '<div><b>' + toFa(aliasPairs.length) + '</b><u>نام مستعار</u></div>'
-      + '</div>'
-      + '<div class="dc-tabs">'
-      +   tab('db', DC_I.db, 'پایگاه داده', 0)
-      +   tab('names', DC_I.names, 'نام‌ها', sugg.length, true)
-      +   tab('match', DC_I.link, 'پیمانکار و طرف قرارداد', mtPend, true)
-      + '</div>'
-      + '<div class="dc-pane' + (dcState.tab === 'names' ? ' on' : '') + '">'
-      +   suggHtml
-      +   '<div class="dc-tools"><label class="dc-q">' + DC_I.search + '<input type="search" id="dcQ" placeholder="جست‌وجوی نام…" value="' + esc(dcState.q) + '" autocomplete="off"></label></div>'
-      +   '<div class="dc-fs">' + chip('all', 'همه', all.length) + chip('person', 'افراد', cnt('person')) + chip('ctr', 'پیمانکاران', cnt('ctr'))
-      +     chip('party', 'طرف قرارداد', cnt('party')) + chip('alias', 'مستعارها', aliasPairs.length) + '</div>'
-      +   '<datalist id="dcAllNames">' + all.filter(x => !x.al).map(x => '<option value="' + esc(x.n) + '">').join('') + '</datalist>'
-      +   '<div class="dc-list">' + (shown.length ? shown.map(rowHtml).join('') : '<div class="empty">نامی پیدا نشد.</div>') + '</div>'
-      + '</div>'
-      + '<div class="dc-pane' + (dcState.tab === 'match' ? ' on' : '') + '">' + ctrPanelHtml() + '</div>'
-
-      + '<div class="dc-pane' + (dcState.tab === 'db' ? ' on' : '') + '">' + dbxLaunchHtml() + '</div>'
+      /* نام‌ها و تطبیق پیمانکار در «پروندهٔ نیروی انسانی» است؛ اینجا فقط پایگاه داده،
+         و اگر نام تکراری مشکوکی باشد یک کادر کوچک برای یکی کردنش */
+      + (sugg.length ? '<details class="dc-dup"><summary>' + DC_I.names + '<b>' + toFa(sugg.length) + ' نام مشکوک به تکرار</b><small>یکی کنید یا جدا بگذارید</small></summary>' + suggHtml + '</details>' : '')
+      + '<div class="dc-pane on">' + dbxLaunchHtml() + '</div>'
       + '</div>';
     if(box.dataset.dcw !== '1'){
       box.dataset.dcw = '1';
@@ -41952,7 +42031,7 @@
         ...(admUsers ? [['users', 'کاربران و دسترسی', 0, ST_I.users, 'افراد، سمت‌ها، سطح دسترسی و اعلان‌ها', 'sky']] : []),
         ...(isAdminUser() ? [['sec', 'امنیت و پشتیبان', 0, BK_I.shield, 'وضعیت سرور، پشتیبان‌گیری و ورودها', 'bad'], ['up', 'محل آپلود', 0, UP_I.up, 'فضای ابری، سامانه یا گوگل درایو', ''], ['chain', 'زنجیرهٔ تأیید', 0, RVC_I, 'ترتیب بررسی داخلی اسناد', 'ok']] : []),
         ...(ctTool ? [['ct', 'پروندهٔ نیروی انسانی', 0, ST_I.ct, 'نام‌ها، قراردادها، تماس، دیسیپلین و تخصص', 'ok']] : []),
-        ...(isAdminUser() ? [['data', 'داده و نام‌ها', 0, ST_I.data, 'یکسان‌سازی نام‌ها و ویرایش پایگاه داده', 'warn'], ['rpt', 'گزارش‌دهندگان', 0, ST_I.rpt, 'چه کسانی هر روز باید گزارش بدهند', 'sky']] : []),
+        ...(isAdminUser() ? [['data', 'پایگاه داده', 0, ST_I.data, 'دیدن و ویرایش مستقیم جدول‌ها', 'warn'], ['rpt', 'گزارش‌دهندگان', 0, ST_I.rpt, 'چه کسانی هر روز باید گزارش بدهند', 'sky']] : []),
         ...(admUsers && can('msg.broadcast') ? [['bc', 'پیام گروهی', 0, PF_I.mega, 'یک پیام برای همهٔ کاربران', '']] : []),
         ...(admUsers ? [['log', 'لاگ کاربران', 0, PF_I.log, 'ورودها و کارهای هر کاربر', '']] : [])]);
       if(ctTool){ h += '<div class="pf3-pane" data-pf3p="ct"><div class="ctd" id="ctDir"></div></div>'; setTimeout(() => { try{ ctcRepaint(); }catch(e){} }, 40); }
@@ -43815,7 +43894,7 @@
     {k:'etc', t:'سایر بخش‌ها', d:'', c:'#7c828c', ic: WS_GI('<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>')}];
   /* مدیریت سامانه هم در سه دسته */
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
-    {t:'داده', d:'یکسان‌سازی نام‌ها و پایگاه داده', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
+    {t:'داده', d:'جدول‌های پایگاه داده', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود و زنجیرهٔ تأیید', c:'#c4553f', ks:['sec','up','chain'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
   const WS_GOF = {tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', gl:'prj', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', ctr:'prj'};
   const wsMod = k => WS_MODS.find(x => x.k === k);
@@ -53122,6 +53201,7 @@
       /* نسخهٔ محلی دسترسی‌ها برای شروع بعدی: صفحه بی‌انتظار باز می‌شود */
       try{ localStorage.setItem(PERM_CACHE_KEY, JSON.stringify({p: lists[PERM_KIND] || [], r: lists[PERM_ROLE_KIND] || [], u: lists[PERM_USER_KIND] || []})); }catch(e2){}
       try{ upCfgLoad(lists); }catch(e2){}
+      try{ sphLoad(lists); }catch(e2){}
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
@@ -85205,7 +85285,7 @@
     const so = (k, t) => 'data-h3s="' + k + '|' + t + '"';
     if(admU) add('adm', 'users', 'کاربران و دسترسی', 'افراد، نقش‌ها و دسترسی‌ها', HM_I.people, 'hc-sky', null, false, so('users', 'کاربران و دسترسی'));
     if(ctT) add('adm', 'ct', 'پروندهٔ نیروی انسانی', 'نام، قرارداد، تماس و تخصص', KT_I.ctr, 'hc-grn', null, false, so('ct', 'پروندهٔ نیروی انسانی'));
-    if(isA){ add('adm', 'data', 'داده و نام‌ها', 'یکسان‌سازی و پایگاه داده', HM_I.doc, 'hc-amb', null, false, so('data', 'داده و نام‌ها'));
+    if(isA){ add('adm', 'data', 'پایگاه داده', 'ویرایش مستقیم جدول‌ها', HM_I.doc, 'hc-amb', null, false, so('data', 'پایگاه داده'));
              add('adm', 'rpt', 'گزارش‌دهندگان', 'چه کسانی گزارش می‌دهند', HM_I.clock, 'hc-ind', null, false, so('rpt', 'گزارش‌دهندگان'));
              add('adm', 'sec', 'امنیت و پشتیبان', 'وضعیت سرور، پشتیبان و ورودها', BK_I.shield, 'hc-red', null, false, so('sec', 'امنیت و پشتیبان'));
              add('adm', 'up', 'محل آپلود', 'جای ذخیرهٔ پیوست‌ها', UP_I.up, 'hc-sky', null, false, so('up', 'محل آپلود'));
