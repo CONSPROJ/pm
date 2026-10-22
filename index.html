@@ -37,6 +37,16 @@
 .dt-tg{font-style:normal;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--accent-soft,rgba(80,120,255,.12));color:var(--accent)}
 .dt-strip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 .dt-strip>u{flex-basis:100%}
+.fz-facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.fz-f{display:inline-flex;align-items:baseline;gap:5px;padding:5px 10px;border-radius:10px;background:var(--field);border:1px solid var(--line);line-height:1.2}
+.fz-f i{font-style:normal;font-size:11px;color:var(--muted);font-weight:600}
+.fz-f b{font-family:var(--m);font-size:13px;font-weight:800;color:var(--ink)}
+.fz-f u{text-decoration:none;font-size:10.5px;color:var(--muted)}
+.fz-f.bad{background:color-mix(in srgb,var(--alert) 9%,transparent);border-color:color-mix(in srgb,var(--alert) 26%,transparent)}
+.fz-f.bad b{color:var(--alert)}
+.fz-f.warn{background:color-mix(in srgb,#d08a12 10%,transparent);border-color:color-mix(in srgb,#d08a12 28%,transparent)}
+.fz-f.warn b{color:#b87708}
+.fz-ml{font-size:10.5px;color:var(--muted)}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -28543,7 +28553,7 @@
         level: x.level === 'hot' ? 'hot' : 'warm',
         side: x.side || '',                    // 'employer' = بحرانی به حساب کارفرما
         who: x.who || '', avatars: x.avatars || null, title: x.title || 'مورد باز',
-        stageDays: held ? held.days : (x.stageDays == null ? null : x.stageDays), stage: held ? 'دست ' + held.who : (x.stage || ''),
+        stageDays: held ? held.days : (x.stageDays == null ? null : x.stageDays), stage: held ? 'نزد ' + held.who : (x.stage || ''),
         text: x.note || '', time:'', tFa:'',
         // باید همان کلیدی باشد که در fid رفته؛ برای هشدارهایی که tag
         // دارند (مثل بررسی داخلی) این دو یکی نبودند و «خواندم» هیچ‌وقت
@@ -28776,6 +28786,25 @@
     const shortNm = n => String(n || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '');
     const avas = (x.avatars && x.avatars.length) ? x.avatars : (x.who ? [x.who] : []);
     const tm = x.time ? (feedWhen(x.time) || clockOf(x.time) || stampFa(x.time) || '') : '';
+    /* موعد و مرحله به شکل دو خانهٔ کوچک: «از موعد گذشته N روز» و «نزد کارفرما N روز» */
+    const T0 = String(x.text || '').trim();
+    const mOver = T0.match(/^موعد(?: اقدام)? (\S+) روز گذشته(?: است)?(?:\s*و\s*(.*))?$/);
+    const mNear = mOver ? null : T0.match(/^(?:تا موعد(?: اقدام)? (\S+) روز مانده|(\S+) روز تا موعد مانده|موعد(?:ش| اقدام) امروز است)$/);
+    const fact = (lbl, v, unit, cls) => '<span class="fz-f' + (cls ? ' ' + cls : '') + '"><i>' + esc(lbl) + '</i><b>' + v + '</b>' + (unit ? '<u>' + unit + '</u>' : '') + '</span>';
+    let facts = '', txt = T0;
+    if(mOver){ facts += fact('از موعد گذشته', esc(mOver[1]), 'روز', 'bad'); txt = mOver[2] ? mOver[2].trim() : ''; }
+    else if(mNear){ const n = mNear[1] || mNear[2]; facts += fact('تا موعد', n ? esc(n) : 'امروز', n ? 'روز' : '', 'warn'); txt = ''; }
+    else{
+      const mAge = T0.match(/^(\S+) روز از (ابلاغ|ارسال) گذشته(?:\s*و\s*(.*))?$/), mIdle = T0.match(/^(\S+) روز بلاتکلیف مانده$/), mSt = T0.match(/^(\S+) روز در مرحلهٔ «(.+)» مانده$/);
+      if(mAge){ facts += fact('از ' + mAge[2], esc(mAge[1]), 'روز', 'warn'); txt = mAge[3] ? mAge[3].trim() : ''; }
+      else if(mIdle){ facts += fact('بلاتکلیف', esc(mIdle[1]), 'روز', 'warn'); txt = ''; }
+      else if(mSt && x.stageDays != null) txt = '';
+    }
+    const stLbl = x.stage ? (/^نزد /.test(x.stage) ? x.stage : 'در «' + x.stage + '»') : 'در این مرحله';
+    if(x.stageDays != null) facts += fact(stLbl, x.stageDays ? toFa(x.stageDays) : 'امروز', x.stageDays ? 'روز' : '', x.stageDays > 7 ? 'bad' : '');
+    /* اگر مسئول همان کسی است که سند نزدش است، نام دوباره نمی‌آید */
+    const holderNm = /^نزد /.test(x.stage || '') ? x.stage.replace(/^نزد /, '') : '';
+    const avasShow = (avas.length === 1 && holderNm && nameKey(shortNm(avas[0])) === nameKey(holderNm)) ? [] : avas;
     return '<div class="fz fz2 ' + x.cat + ' c-' + (x.dcat || x.cat) + ' lv-' + (x.level || 'info')
       +   (x.seen ? '' : ' fresh') + '" style="--i:' + Math.min(i || 0, 12) + '" data-fid="' + esc(x.fid) + '"'
       +   (goto ? ' data-goto-kind="' + esc(x.goto.kind) + '"'
@@ -28790,23 +28819,21 @@
       +     '<b>' + esc(x.title) + '</b>'
       +     (tm ? '<span class="fz-time">' + esc(tm) + '</span>' : '')
       +   '</div>'
-      +   (x.text ? '<div class="fz-tx">' + esc(x.text) + '</div>' : '')
-      +   ((avas.length || x.side === 'employer' || x.stageDays != null)
+      +   (facts ? '<div class="fz-facts">' + facts + '</div>' : '')
+      +   (txt ? '<div class="fz-tx">' + esc(txt) + '</div>' : '')
+      +   ((avasShow.length || x.side === 'employer')
             ? '<div class="fz-meta">'
-              + (avas.length
-                  ? '<span class="fz-avas">'
-                    + avas.slice(0,3).map(n => avatarHtml(n, 'xs', true)).join('')
-                    + (avas.length > 3 ? '<span class="fz-more">+' + toFa(avas.length - 3) + '</span>' : '')
+              + (avasShow.length
+                  ? (x.cat === 'due' ? '<span class="fz-ml">مسئول</span>' : '')
+                    + '<span class="fz-avas">'
+                    + avasShow.slice(0,3).map(n => avatarHtml(n, 'xs', true)).join('')
+                    + (avasShow.length > 3 ? '<span class="fz-more">+' + toFa(avasShow.length - 3) + '</span>' : '')
                     + '</span>'
-                    + (avas.length === 1 ? '<span class="fz-nm">' + esc(shortNm(avas[0])) + '</span>'
-                       : avas.length <= 3 ? '<span class="fz-nm">' + esc(avas.map(shortNm).join('، ')) + '</span>' : '')
+                    + (avasShow.length === 1 ? '<span class="fz-nm">' + esc(shortNm(avasShow[0])) + '</span>'
+                       : avasShow.length <= 3 ? '<span class="fz-nm">' + esc(avasShow.map(shortNm).join('، ')) + '</span>' : '')
                   : '')
               + (x.side === 'employer'
                   ? '<span class="emp-tag" title="تأخیر در زمین کارفرماست">بحرانی کارفرما</span>' : '')
-              + (x.stageDays != null
-                  ? '<span class="fz-stage' + (x.stageDays > 7 ? ' late' : '') + '">'
-                    + '<i>' + esc(x.stage || 'در این مرحله') + '</i>'
-                    + '<b>' + toFa(x.stageDays) + '</b><u>روز</u></span>' : '')
               + '</div>' : '')
       +   '<div class="fz-acts">'
       +     (goto ? '<button type="button" class="fz-go" data-fgo="1">'
