@@ -20238,6 +20238,23 @@
   .rx-t em{grid-row:1 / span 2;grid-column:2;align-self:center;font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted);padding:3px 8px;border-radius:99px;background:var(--field);}
   .rx-t em.bad{color:var(--alert);} .rx-t em.warn{color:#b07512;}
   .rx-c .hr-note{margin:10px 12px;}
+  /* ====== فرم گزارش پیمانکاران (نسخهٔ تازه) ====== */
+  #secW2 .block-head .rw-prev, .block .rw-prev{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;}
+  .rw-prev svg{width:14px;height:14px;}
+  .crew.cr2{border-radius:18px !important;overflow:hidden;}
+  .crew.cr2 .rw-head{gap:8px;}
+  .crew.cr2.filled .rw-head .crew-no{background:var(--sky) !important;color:#fff !important;}
+  .crew.cr2 .crew-grid{display:grid !important;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px 10px;align-items:end;}
+  .crew.cr2 .crew-grid > .rw-w2:first-child{grid-column:1 / -1;}
+  .crew.cr2 .crew-grid > .sl-row{grid-column:1 / -1;}
+  @media (min-width:760px){ .crew.cr2 .crew-grid{grid-template-columns:2fr 1.4fr 1fr 1fr;} .crew.cr2 .crew-grid > .rw-w2:first-child{grid-column:auto;} }
+  .crew.cr2 .rw-sub .men{font-weight:800;}
+  .rw-sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;align-items:center;}
+  .rw-sug[hidden]{display:none;}
+  .rw-sug u{text-decoration:none;font-size:10.5px;font-weight:700;color:var(--muted);margin-inline-end:2px;}
+  .rw-sug button{all:unset;cursor:pointer;max-width:100%;box-sizing:border-box;font-size:11.5px;font-weight:600;color:var(--ink);padding:5px 10px;border-radius:99px;background:color-mix(in srgb, var(--sky) 9%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 22%, var(--line));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rw-sug button::before{content:"+ ";color:var(--sky);font-weight:800;}
+  .rw-sug button:hover{background:color-mix(in srgb, var(--sky) 16%, var(--surface));}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -25717,7 +25734,7 @@
       </div>
 
       <div class="block" data-kind="daily" id="secW2">
-        <div class="block-head"><span class="tag c2">02</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0"/><path d="M16 5.2a3.2 3.2 0 010 5.6M18 20a5.4 5.4 0 00-2-4.2"/></svg></span><h2>پیمانکاران و نفرات</h2><span class="sec-n" id="nCrew"></span><span class="side">به هر تعداد لازم اضافه کنید</span></div>
+        <div class="block-head"><span class="tag c2">02</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0111 0"/><path d="M16 5.2a3.2 3.2 0 010 5.6M18 20a5.4 5.4 0 00-2-4.2"/></svg></span><h2>پیمانکاران و نفرات</h2><span class="sec-n" id="nCrew"></span><button type="button" class="mini rw-prev" id="crewFromLast" title="پیمانکاران، تخصص‌ها، نفرات و محل‌های آخرین گزارش شما؛ فقط شرح فعالیت را بنویسید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg><span>از گزارش قبلی</span></button></div>
         <div id="crewRows"></div>
         <button type="button" class="add rw-add" id="addCrew"><span class="ra-ic">+</span><span class="ra-tx"><b>افزودن پیمانکار</b><small>ردیف تازه برای پیمانکار بعدی</small></span></button>
       </div>
@@ -44801,6 +44818,69 @@
       }, 60);
     }
   }
+  /* ====== کمک‌های فرم پیمانکاران ======
+     پیشنهاد شرح فعالیت: آخرین شرح‌هایی که برای همین پیمانکار (و همین تخصص) نوشته شده،
+     تا با یک لمس اضافه شود. و «از گزارش قبلی»: ردیف‌های آخرین گزارش خود شخص،
+     بدون شرح فعالیت، برای روزی که همان پیمانکاران سر کارند. */
+  const rwSugCache = new Map();
+  async function rwSugFor(name){
+    const k = normName(name); if(!k) return [];
+    const hit = rwSugCache.get(k); if(hit && Date.now() - hit.t < 10 * 60 * 1000) return hit.v;
+    let L = [];
+    try{ L = (allRows || []).filter(r => sameEntity(pick(r,F.contractor) || '', name)).map(r => ({a: pick(r,F.activity), s: pick(r,F.skill), d: pick(r,F.date)})); }catch(e){}
+    if(L.length < 4 && BACKEND === 'supabase'){
+      try{ const rw = await supaFetch('activities?select=activity,skill,date_fa&contractor=eq.' + encodeURIComponent(name) + '&activity=not.is.null&order=id.desc&limit=60') || [];
+        L = L.concat(rw.map(x => ({a: x.activity, s: x.skill, d: x.date_fa}))); }catch(e){}
+    }
+    const seen = new Set(), out = [];
+    L.forEach(x => { const t = String(x.a || '').replace(/\s+/g, ' ').trim(); if(t.length < 3 || t.length > 90) return; const kk = normName(t); if(seen.has(kk)) return; seen.add(kk); out.push({t, s: x.s || ''}); });
+    rwSugCache.set(k, {t: Date.now(), v: out.slice(0, 12)});
+    return out.slice(0, 12);
+  }
+  async function rwSugPaint(el){
+    const box = el.querySelector('.rw-sug'); if(!box) return;
+    const nm = ((el.querySelector('.c-name') || {}).value || '').trim(), sk = ((el.querySelector('.c-skill') || {}).value || '').trim();
+    if(!nm){ box.hidden = true; return; }
+    const L = await rwSugFor(nm);
+    const cur = ((el.querySelector('.c-act') || {}).value || '');
+    const pick0 = L.filter(x => !sk || !x.s || x.s === sk).concat(L.filter(x => sk && x.s && x.s !== sk)).filter(x => cur.indexOf(x.t) === -1).slice(0, 5);
+    box.hidden = !pick0.length;
+    box.innerHTML = pick0.length ? '<u>پیشنهاد</u>' + pick0.map(x => '<button type="button" data-rwsug="' + esc(x.t) + '">' + esc(x.t) + '</button>').join('') : '';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-rwsug]'); if(!b) return;
+    const el = b.closest('.crew'), ta = el && el.querySelector('.c-act'); if(!ta) return;
+    ta.value = (ta.value.trim() ? ta.value.trim() + '، ' : '') + b.dataset.rwsug;
+    ta.dispatchEvent(new Event('input', {bubbles: true}));
+    b.remove(); if(!el.querySelector('[data-rwsug]')) el.querySelector('.rw-sug').hidden = true;
+    try{ saveDraft(); }catch(err){}
+  });
+  async function crewFromLast(btn){
+    const me = activeUserName(), d0 = normDate(dateInput.value) || todayShamsi();
+    btn.disabled = true;
+    try{
+      let rows = [];
+      if(BACKEND === 'supabase'){
+        const last = await supaFetch('activities?select=date_fa&engineer=eq.' + encodeURIComponent(me) + '&date_fa=lt.' + encodeURIComponent(d0) + '&order=date_fa.desc&limit=1') || [];
+        const ld = last[0] && last[0].date_fa;
+        if(ld) rows = await supaFetch('activities?select=contractor,skill,ostad,shagerd,zone,subzone&engineer=eq.' + encodeURIComponent(me) + '&date_fa=eq.' + encodeURIComponent(ld) + '&order=id.asc&limit=200') || [];
+        rows.ld = ld;
+      }
+      rows = (rows || []).filter(x => x.contractor && !isAmani(x.contractor));
+      if(!rows.length){ showDialog('warn', 'گزارش قبلی پیدا نشد', 'پیش از این تاریخ گزارشی از شما ثبت نشده است.'); return; }
+      /* ردیف‌های خالی فعلی کنار می‌روند؛ ردیف‌های پرشده می‌مانند */
+      crewRows.querySelectorAll('.crew').forEach(c => { if(!((c.querySelector('.c-name') || {}).value || '').trim()) c.remove(); });
+      const have = new Set(Array.from(crewRows.querySelectorAll('.crew')).map(c => normName((c.querySelector('.c-name') || {}).value || '') + '|' + ((c.querySelector('.c-zone') || {}).value || '')));
+      let n = 0;
+      rows.forEach(x => { const k = normName(x.contractor) + '|' + (x.zone || ''); if(have.has(k)) return; have.add(k); n++;
+        rwFocusNext = false; addCrew({name: x.contractor, skill: x.skill || '', ostad: x.ostad || '', shagerd: x.shagerd || '', zone: x.zone || '', sub: x.subzone || '', activity: ''}); });
+      renumber(); totals(); saveDraft();
+      try{ shrToast(toFa(n) + ' ردیف از گزارش ' + toFa(rows.ld || '') + ' آمد؛ نفرات و شرح امروز را کامل کنید'); }catch(err){}
+      const f = crewRows.querySelector('.crew .c-act'); if(f) try{ f.closest('.crew').scrollIntoView({behavior:'smooth', block:'center'}); }catch(err){}
+    }catch(err){ showDialog('err', 'خوانده نشد', friendlyErr(err)); }
+    finally{ btn.disabled = false; }
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#crewFromLast'); if(b){ e.preventDefault(); crewFromLast(b); } });
   function crewPaint(el){
     const v = c => ((el.querySelector(c) || {}).value || '').trim();
     const nm = v('.c-name'), sk = v('.c-skill');
@@ -44899,7 +44979,8 @@
         window.slHtml('c-zone', 'c-sub', d.zone, d.sub, id.z, id.z2),
       '</div>',
       '<div class="field rw-act"><label for="'+id.a+'">شرح فعالیت</label>',
-        '<textarea id="'+id.a+'" class="c-act" placeholder="فعالیت انجام‌شده در این محل...">'+esc(d.activity)+'</textarea></div>',
+        '<textarea id="'+id.a+'" class="c-act" placeholder="فعالیت انجام‌شده در این محل...">'+esc(d.activity)+'</textarea>',
+        '<div class="rw-sug" hidden></div></div>',
       rwPhotoHtml('c-photos', d.photos),
       '</div>'
     ].join('');
@@ -44919,6 +45000,8 @@
         setTimeout(() => { try{ nu.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} if(ta) ta.focus({preventScroll:true}); }, 60); }
     });
     el.addEventListener('input', () => crewPaint(el));
+    el.addEventListener('change', e => { if(e.target.classList.contains('c-name')) rwSugPaint(el); });
+    el.addEventListener('focusin', e => { if(e.target.classList.contains('c-act')) rwSugPaint(el); });
     crewRows.appendChild(el); crewPaint(el); renumber(); totals();
     rwAfterAdd(el, crewRows);
     return el;
