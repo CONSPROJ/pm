@@ -42753,13 +42753,16 @@
     {k:'co', t:'تغییرات و ادعا', s:'دستور تغییر، ادعا و تمدید زمان', c:'#b5527e', area:'coArea', ic:() => HM_I.co, ok:() => !!(window.coVisible && window.coVisible())},
     {k:'sp', t:'فضاها و واحدها', s:'طبقات، محل‌ها و محل‌های جزء، کارت واحد و فروش', c:'#2f7d6b', area:'spArea', ic:() => HM_I.sp, ok:() => !!(window.spVisible && window.spVisible())},
     {k:'ib', t:'دریافتی‌ها', s:'صورت وضعیت، نامه، قرارداد و فایل‌های ارسالی؛ بررسی و ثبت', c:'#2b6cb0', area:'ibArea', ic:() => HM_I.ib, ok:() => !!(window.ibVisible && window.ibVisible())},
+    {k:'gl', t:'گالری تصاویر', s:'عکس‌های کارگاه با تاریخ، طبقه، محل و شرح', c:'#b5527e', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>',
+      ok:() => { try{ return can('tab.admin') || glCanAdd(); }catch(e){ return false; } },
+      go:() => { try{ switchTab('admin'); }catch(e){} setTimeout(() => { try{ window.admSetCat('archive'); window.arcSetTab && window.arcSetTab('gallery'); const el = document.getElementById('secAdmarchive'); if(el) el.scrollIntoView({block: 'start'}); }catch(e){} }, 120); }},
     {k:'qt', t:'متره و برآورد', s:'ابعاد فضاها، دیوارها و مصالح هر مرحلهٔ ساخت', c:'#8a5a2f', area:'qtArea', ic:() => HM_I.qt, ok:() => !!(window.qtVisible && window.qtVisible())},
     {k:'ctr', t:'نیروی انسانی', s:'پروندهٔ پیمانکاران، مشاوران، کارفرما و مالکان', c:'#4f63b8', ic:() => WS_I.ctr, ok:() => { try{ return isAdminUser() || can('ctr.contact') || can('rep.hr'); }catch(e){ return false; } }}
   ];
   /* cur: '' یعنی فهرست بخش‌ها؛ وگرنه کلید بخشِ باز */
   const ws = {cur:'', home:new Map(), tap:false};
   const WS_GRP = [{k:'site', t:'اجرا و کارگاه', c:'#3d7fb0'}, {k:'res', t:'منابع، تدارکات و انبار', c:'#b07f12'}, {k:'fin', t:'قرارداد، مالی و اسناد', c:'#6d5bb5'}, {k:'prj', t:'پروژه و نیروها', c:'#2f7d6b'}, {k:'etc', t:'سایر بخش‌ها', c:'#7c828c'}];
-  const WS_GOF = {tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', ctr:'prj'};
+  const WS_GOF = {tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', gl:'prj', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', ctr:'prj'};
   const wsMod = k => WS_MODS.find(x => x.k === k);
   const wsOk = x => { try{ return !!x.ok(); }catch(e){ return false; } };
   const wsAll = () => WS_MODS.filter(wsOk);
@@ -60654,6 +60657,7 @@
                 + A.map(a => attachItemHtml(a, false)).join('') + '</div>'; }).join('') + '</div>').join('')
         : '<div class="arc-none"><b>' + (arc.forms.length ? 'فرمی با این عبارت نیست' : 'هنوز فرمی بارگذاری نشده') + '</b><small>' + (arcCanAdd() ? 'با «+ فرم تازه» فرم‌های خام پروژه را این‌جا بگذارید تا همه دانلود کنند.' : '') + '</small></div>');
   }
+  window.arcSetTab = k => { arc.tab = k; arc.q = ''; arc.n = 60; arcRender(); };
   function arcRender(){
     const box = document.getElementById('arcBody'); if(!box) return;
     const nF = arcFiles().length;
@@ -72739,7 +72743,7 @@
   }
   function glPhotos(){
     const out = [], img = a => a && ATT_KIND(a.ext) === 'img';
-    gl.list.forEach(g => { let L = []; try{ L = attachList(g.files); }catch(e){} L.filter(img).forEach(a => out.push({a, d: g.date || '', fl: g.fl || '', t: g.act || g.note || '', src: 'pg', by: g.by})); });
+    gl.list.forEach(g => { let L = []; try{ L = attachList(g.files); }catch(e){} L.filter(img).forEach(a => out.push({a, d: g.date || '', fl: g.fl || '', z: g.zone || '', t: [g.act, g.note].filter(Boolean).join(' — '), src: 'pg', by: g.by})); });
     try{ arcFiles().filter(f => img(f.a)).forEach(f => out.push({a: f.a, d: f.date, fl: '', t: (KIND_LABEL[f.kind] || '') + (f.no ? ' ' + f.no : '') + (f.ttl ? ' — ' + f.ttl : ''), src: 'doc'})); }catch(e){}
     try{ qc.irs.forEach(r => { [r.files, r.insp && r.insp.files].forEach(v => { let L = []; try{ L = attachList(v || ''); }catch(e){} L.filter(img).forEach(a => out.push({a, d: (r.insp && r.insp.d) || r.date, fl: r.fl || '', t: 'بازرسی ' + r.no + (r.act ? ' — ' + r.act : ''), src: 'qc'})); }); });
          qc.ncrs.forEach(n => { let L = []; try{ L = attachList(n.files || ''); }catch(e){} L.filter(img).forEach(a => out.push({a, d: n.date, fl: n.fl || '', t: 'NCR ' + n.no, src: 'qc'})); }); }catch(e){}
@@ -72753,14 +72757,16 @@
     const G = new Map(); L.slice(0, gl.n).forEach(p => { const k = toEn(normDate(p.d) || '').slice(0, 7) || '—'; if(!G.has(k)) G.set(k, []); G.get(k).push(p); });
     const shown = L.slice(0, gl.n);
     return '<div class="arc-bar">' + (glCanAdd() ? '<button type="button" class="arc-addb" data-gladd="1">+ عکس پیشرفت</button>' : '') + '</div>'
-      + (gl.add ? '<div class="arc-new"><div class="arc-ng"><label class="ctc-f"><span>طبقه / محل</span><input type="text" data-glf="fl" data-list="qcFloorList" autocomplete="off"></label><label class="ctc-f"><span>فعالیت</span><input type="text" data-glf="act" placeholder="مثلاً قالب‌بندی سقف"></label></div>'
+      + (gl.add ? '<div class="arc-new"><div class="arc-ng"><label class="ctc-f"><span>تاریخ عکس</span><input type="text" data-glf="date" class="date-in" inputmode="numeric" readonly value="' + esc(toFa(todayShamsi())) + '"></label>'
+          + '<label class="ctc-f"><span>طبقه</span><select data-glf="fl" data-nons="1"><option value="">—</option>' + spFloors().map(f => '<option value="' + esc(f.label) + '">' + esc(f.label) + '</option>').join('') + '<option value="کل ساختمان">کل ساختمان</option><option value="محوطه">محوطه</option></select></label>'
+          + '<label class="ctc-f"><span>فضا / محل</span><input type="text" data-glf="zone" data-list="zoneList" autocomplete="off" placeholder="مثلاً لابی یا واحد ۵۰۲"></label><label class="ctc-f"><span>فعالیت</span><input type="text" data-glf="act" placeholder="مثلاً قالب‌بندی سقف"></label></div>'
           + '<label class="ctc-f"><span>شرح <small>اختیاری</small></span><input type="text" data-glf="note"></label>' + attachFieldHtml('', 'gallery')
           + '<div class="arc-nacts"><button type="button" class="dz-b pri" data-glsave="1">ذخیره در گالری</button><button type="button" class="dz-b" data-gladd="0">انصراف</button></div></div>' : '')
       + '<div class="arc-chips"><button type="button" data-glsrc="" class="' + (!gl.src ? 'on' : '') + '">همه <em>' + toFa(P.length) + '</em></button>'
       + [['pg','عکس پیشرفت'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => '<button type="button" data-glsrc="' + k + '" class="' + (gl.src === k ? 'on' : '') + '">' + t + ' <em>' + toFa(P.filter(p => p.src === k).length) + '</em></button>').join('') + '</div>'
       + (fls.length ? '<div class="arc-chips sm"><button type="button" data-glfl="" class="' + (!gl.fl ? 'on' : '') + '">همهٔ طبقات</button>' + fls.map(f => '<button type="button" data-glfl="' + esc(f) + '" class="' + (gl.fl === f ? 'on' : '') + '">' + esc(f) + '</button>').join('') + '</div>' : '')
       + (shown.length ? '<div class="gl-all" data-fvl="' + esc(shown.map(p => p.a.full).join('\n')) + '" data-fvtitle="گالری پیشرفت">' + Array.from(G.entries()).map(([k, arr]) => '<div class="gl-m"><h5>' + (k === '—' ? 'بدون تاریخ' : esc(faMonName(k.replace(/-/g, '/')))) + ' <em>' + toFa(arr.length) + '</em></h5><div class="gl-grid">'
-          + arr.map(p => '<button type="button" class="gl-it" data-fv="' + shown.indexOf(p) + '" title="' + esc(p.t || '') + '">' + attThumb(p.a) + '<span class="gl-cap"><b>' + esc(p.fl || p.t || '') + '</b><small>' + esc(p.d ? toFa(p.d) : '') + '</small></span></button>').join('') + '</div></div>').join('') + '</div>'
+          + arr.map(p => '<button type="button" class="gl-it" data-fv="' + shown.indexOf(p) + '" title="' + esc(p.t || '') + '">' + attThumb(p.a) + '<span class="gl-cap"><b>' + esc([p.fl, p.z].filter(Boolean).join(' · ') || p.t || '') + '</b><small>' + esc(p.d ? toFa(p.d) : '') + '</small></span></button>').join('') + '</div></div>').join('') + '</div>'
           + (L.length > gl.n ? '<button type="button" class="arc-more" data-glmore="1">نمایش عکس‌های بیشتر · ' + toFa(L.length - gl.n) + ' مانده</button>' : '')
         : '<div class="arc-none"><b>هنوز عکسی نیست</b><small>' + (glCanAdd() ? 'با «+ عکس پیشرفت» عکس‌های کارگاه را با طبقه و فعالیت بارگذاری کنید.' : '') + '</small></div>');
   }
@@ -72777,7 +72783,7 @@
       const files = String((box.querySelector('.a-link') || {}).value || '').trim();
       if(!files){ showDialog('warn', 'عکس', 'اول عکس‌ها را بارگذاری کنید.'); return; }
       sv.disabled = true;
-      try{ const no = 'PG-' + Date.now().toString(36); await ndPost(ndRow(GL_KIND, no, whPack({date: todayShamsi(), fl: v('fl'), act: v('act'), note: v('note'), files, proj: whProj()}, ['date','fl','act','note','files','proj'])));
+      try{ const no = 'PG-' + Date.now().toString(36); await ndPost(ndRow(GL_KIND, no, whPack({date: normDate(v('date')) || todayShamsi(), fl: v('fl'), zone: v('zone'), act: v('act'), note: v('note'), files, proj: whProj()}, ['date','fl','zone','act','note','files','proj'])));
         gl.add = false; await glLoad(true); arcRender(); try{ shrToast('در گالری ذخیره شد'); }catch(err){} }
       catch(err){ sv.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
     }
@@ -83837,20 +83843,31 @@
       {k:'desc', t:'معرفی کوتاه', area:1, w:2}]},
     {g:'عوامل پروژه', f:[
       {k:'employer', t:'کارفرما', multi:1, w:2}, {k:'consultant', t:'مشاور طراح', multi:1, w:2}, {k:'supervisor', t:'دستگاه نظارت', multi:1, w:2},
-      {k:'contractor', t:'پیمانکاران اصلی', multi:1, w:2}, {k:'pm', t:'مدیر پروژه', multi:1, w:2}, {k:'site', t:'سرپرست کارگاه', multi:1, w:2}]},
+      {k:'contractor', t:'پیمانکاران اصلی', multi:1, w:2}, {k:'pm', t:'مدیر پروژه', multi:1, w:2}, {k:'site', t:'سرپرست کارگاه', multi:1, w:2},
+      {k:'investor', t:'مالک / سرمایه‌گذار', multi:1, w:2}, {k:'architect', t:'طراح معماری', multi:1, w:2}, {k:'structEng', t:'طراح سازه', multi:1, w:2},
+      {k:'mepEng', t:'طراح تأسیسات', multi:1, w:2}, {k:'facadeCo', t:'مجری نما', multi:1, w:2}, {k:'elevCo', t:'تأمین‌کنندهٔ آسانسور', multi:1, w:2}]},
     {g:'موقعیت', f:[
       {k:'country', t:'کشور', opt:PJ_COUNTRIES}, {k:'province', t:'استان', opt:PJ_PROVINCES},
       {k:'city', t:'شهر', dl:'pjCities'}, {k:'district', t:'منطقه / محله'}, {k:'address', t:'نشانی', w:2},
       {k:'lat', t:'عرض جغرافیایی', ph:'35.7', num:1}, {k:'lng', t:'طول جغرافیایی', ph:'51.4', num:1}]},
     {g:'مشخصات فنی', f:[
       {k:'land', t:'مساحت زمین (m²)', num:1}, {k:'built', t:'زیربنای کل (m²)', num:1},
-      {k:'floorsUp', t:'طبقات روی زمین', num:1}, {k:'floorsDown', t:'طبقات زیرزمین', num:1},
-      {k:'units', t:'تعداد واحد', num:1}, {k:'height', t:'ارتفاع (متر)', num:1},
+      {k:'floorsUp', t:'طبقات روی زمین', num:1, auto: () => pjAuto().up}, {k:'floorsDown', t:'طبقات زیرزمین', num:1, auto: () => pjAuto().dn},
+      {k:'units', t:'تعداد واحد', num:1, auto: () => pjAuto().units}, {k:'unitTypes', t:'تیپ واحدها', ph:'مثلاً دو خوابه، سه خوابه', auto: () => pjAuto().types}, {k:'height', t:'ارتفاع (m)', num:1},
       {k:'structure', t:'سیستم سازه', opt:['بتنی','فلزی','ترکیبی (بتن و فولاد)','قاب سبک (LSF)','بنایی']},
       {k:'lateral', t:'سیستم باربر جانبی', opt:['دیوار برشی','قاب خمشی','مهاربند','دوگانه','سایر']},
       {k:'foundation', t:'نوع فونداسیون', opt:['گسترده (رادیه)','نواری','منفرد','شمع','سایر']},
       {k:'facade', t:'نوع نما'}, {k:'parking', t:'پارکینگ (تعداد)', num:1}, {k:'elevators', t:'آسانسور (تعداد)', num:1},
-      {k:'permit', t:'شمارهٔ پروانهٔ ساخت'}, {k:'usage', t:'کاربری‌ها', ph:'مسکونی، لابی، استخر…', w:2}]},
+      {k:'permit', t:'شمارهٔ پروانهٔ ساخت'}, {k:'usage', t:'کاربری‌ها', ph:'مسکونی، لابی، استخر…', w:2},
+      {k:'hvac', t:'سیستم گرمایش و سرمایش', opt:['چیلر و فن‌کویل','VRF','پکیج و رادیاتور','موتورخانهٔ مرکزی','داکت اسپلیت','سایر']},
+      {k:'fire', t:'سیستم اعلام و اطفای حریق', opt:['آدرس‌پذیر و اسپرینکلر','متعارف و اسپرینکلر','فقط اعلام حریق','سایر']},
+      {k:'energy', t:'ردهٔ انرژی ساختمان', opt:['A+','A','B','C','D']}, {k:'seismic', t:'گروه اهمیت لرزه‌ای', opt:['۱ (خیلی زیاد)','۲ (زیاد)','۳ (متوسط)','۴ (کم)']},
+      {k:'soil', t:'نوع زمین (خاک)', opt:['I','II','III','IV']}, {k:'green', t:'فضای سبز (m²)', num:1},
+      {k:'amen', t:'امکانات رفاهی', ph:'استخر، سونا، باشگاه، لابی، روف گاردن…', w:2}]},
+    {g:'مجوزها و بیمه', f:[
+      {k:'permitDate', t:'تاریخ صدور پروانه', date:1}, {k:'permitEnd', t:'اعتبار پروانه تا', date:1},
+      {k:'engFile', t:'شمارهٔ پروندهٔ نظام مهندسی'}, {k:'insurer', t:'بیمه‌گر (تمام‌خطر و مسئولیت)'},
+      {k:'insEnd', t:'اعتبار بیمه‌نامه تا', date:1}, {k:'opDate', t:'تاریخ برنامه‌ای بهره‌برداری', date:1}]},
     {g:'قرارداد و مالی', f:[
       {k:'ctype', t:'نوع قرارداد', opt:['مدیریت پیمان','EPC','پیمانکاری عمومی','امانی','مشارکت در ساخت','سایر']},
       {k:'amount', t:'مبلغ قرارداد (تومان)', num:1, money:1}, {k:'budget', t:'بودجهٔ کل (تومان)', num:1, money:1}]}
@@ -84079,8 +84096,18 @@
     return h;
   }
   /* ---- فرم اطلاعات ---- */
+  /* از طبقات و فضاها: تعداد طبقه، زیرزمین، واحد و تیپ‌ها */
+  function pjAuto(){
+    const F = (typeof BUILDING !== 'undefined' ? BUILDING : []);
+    const dn = F.filter(f => /^B\d+$/i.test(f.key)).length, up = F.filter(f => /^\d+$/.test(f.key)).length + (F.some(f => f.key === 'GF') ? 1 : 0);
+    const units = F.reduce((t, f) => t + (f.units || []).length, 0);
+    let types = ''; try{ const T = new Map(); sp.units.forEach(o => { const t = (o && (o.ty || o.tp)) || ''; if(t) T.set(t, (T.get(t) || 0) + 1); }); types = Array.from(T.entries()).sort((a, b) => b[1] - a[1]).map(([t, n]) => t + ' (' + toFa(n) + ')').join('، '); }catch(e){}
+    return {up, dn, units, types};
+  }
   function pjFieldHtml(f, v){
     const val = v == null ? '' : String(v);
+    /* خالی؟ مقدار خواندنی از طبقات و فضاها راهنمای خانه می‌شود */
+    if(f.auto && !val){ let a = ''; try{ a = f.auto(); }catch(e){} if(a) f = Object.assign({}, f, {ph: 'خودکار از فضاها: ' + (typeof a === 'number' ? toFa(a) : a)}); }
     const id = 'pjf_' + f.k;
     let inp;
     if(f.multi){
@@ -84434,7 +84461,7 @@
     h += '<section class="pi-sec"><h3>امروز در سامانه</h3><div class="pi-live">'
       + '<div><b>' + toFa(men) + '</b><span>نفر در کارگاه</span></div><div><b>' + toFa(ctr) + '</b><span>پیمانکار فعال</span></div>'
       + '<div><b>' + toFa(open) + '</b><span>فعالیت باز' + (late ? ' · ' + toFa(late) + ' عقب' : '') + '</span></div><div><b>' + toFa(docs) + '</b><span>سند دفتر فنی</span></div></div></section>';
-    const parties = [['کارفرما', p.employer], ['مشاور طراح', p.consultant], ['دستگاه نظارت', p.supervisor], ['پیمانکاران اصلی', p.contractor], ['مدیر پروژه', p.pm], ['سرپرست کارگاه', p.site]].map(x => [x[0], pjArr(x[1])]).filter(x => x[1].length);
+    const parties = [['کارفرما', p.employer], ['مشاور طراح', p.consultant], ['دستگاه نظارت', p.supervisor], ['پیمانکاران اصلی', p.contractor], ['مدیر پروژه', p.pm], ['سرپرست کارگاه', p.site], ['مالک / سرمایه‌گذار', p.investor], ['طراح معماری', p.architect], ['طراح سازه', p.structEng], ['طراح تأسیسات', p.mepEng], ['مجری نما', p.facadeCo], ['تأمین‌کنندهٔ آسانسور', p.elevCo]].map(x => [x[0], pjArr(x[1])]).filter(x => x[1].length);
     /* عوامل پروژه: هر نفر یک کارت کوچک با عکس؛ زدنش پروندهٔ همان شخص یا شرکت را باز می‌کند */
     const pchip = nm => { let isU = false; try{ isU = listNames().some(x => nameKey(x) === nameKey(nm)); }catch(e){}
       return '<button type="button" class="pi-pc" ' + (isU ? 'data-person="' + esc(nm) + '"' : 'data-piprof="' + esc(nm) + '"') + '>' + avatarHtml(nm, 'sm', true) + '<b>' + esc(nm) + '</b></button>'; };
@@ -84442,7 +84469,9 @@
     if(parties.length) h += '<section class="pi-sec"><h3>عوامل پروژه</h3><div class="pi-parties">' + parties.map(x => '<div class="pi-pg" style="--pc:' + (PC[x[0]] || '#5b6675') + '"><u><i></i>' + x[0] + '<em>' + toFa(x[1].length) + '</em></u><div>' + x[1].map(pchip).join('') + '</div></div>').join('') + '</div></section>';
     const tech = [['زیربنای کل', p.built ? fmt(p.built) + ' m²' : ''], ['مساحت زمین', p.land ? fmt(p.land) + ' m²' : ''], ['ارتفاع', p.height ? toFa(p.height) + ' متر' : ''],
       ['سیستم سازه', esc(p.structure || '')], ['باربر جانبی', esc(p.lateral || '')], ['فونداسیون', esc(p.foundation || '')], ['نما', esc(p.facade || '')],
-      ['پارکینگ', p.parking ? toFa(p.parking) : ''], ['آسانسور', p.elevators ? toFa(p.elevators) : ''], ['کاربری‌ها', esc(p.usage || '')], ['پروانهٔ ساخت', esc(p.permit || '')]].filter(x => x[1]);
+      ['پارکینگ', p.parking ? toFa(p.parking) : ''], ['آسانسور', p.elevators ? toFa(p.elevators) : ''], ['کاربری‌ها', esc(p.usage || '')], ['پروانهٔ ساخت', esc(p.permit || '') + (p.permitEnd ? ' · اعتبار تا ' + esc(toFa(p.permitEnd)) : '')],
+      ['تیپ واحدها', esc(p.unitTypes || (function(){ try{ return pjAuto().types; }catch(e){ return ''; } })())], ['گرمایش و سرمایش', esc(p.hvac || '')], ['اعلام و اطفای حریق', esc(p.fire || '')], ['ردهٔ انرژی', esc(p.energy || '')],
+      ['گروه لرزه‌ای', esc(p.seismic || '')], ['فضای سبز', p.green ? fmt(p.green) + ' m²' : ''], ['امکانات رفاهی', esc(p.amen || '')], ['نظام مهندسی', esc(p.engFile || '')], ['بیمه', esc(p.insurer || '') + (p.insEnd ? ' · تا ' + esc(toFa(p.insEnd)) : '')], ['بهره‌برداری', p.opDate ? esc(toFa(p.opDate)) : '']].filter(x => String(x[1]).replace(/^ · /, '').trim());
     const TI = {'زیربنای کل':'M4 20V8l8-4 8 4v12M9 20v-6h6v6', 'مساحت زمین':'M4 4h16v16H4zM4 12h16M12 4v16', 'ارتفاع':'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4', 'سیستم سازه':'M5 21V5M19 21V5M5 9h14M5 15h14M9 5l6 4M9 15l6-6', 'باربر جانبی':'M4 20L20 4M4 4l16 16M4 4h16v16H4z', 'فونداسیون':'M3 17h18M5 17v4h14v-4M8 17V9h8v8', 'نما':'M5 3h14v18H5zM9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2', 'پارکینگ':'M6 20V4h7a4 4 0 010 8H6', 'آسانسور':'M6 3h12v18H6zM10 8l2-2 2 2M10 16l2 2 2-2', 'کاربری‌ها':'M4 6h16M4 12h16M4 18h10', 'پروانهٔ ساخت':'M6 3h9l4 4v14H6zM9 13l2 2 4-4'};
     if(tech.length) h += '<section class="pi-sec"><h3>مشخصات فنی</h3><div class="pi-tech">' + tech.map(x => '<div class="pi-ti"><span class="pi-tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + (TI[x[0]] || 'M5 12h14') + '"/></svg></span><span><small>' + x[0] + '</small><b>' + x[1] + '</b></span></div>').join('') + '</div></section>';
     const tm = [['تاریخ شروع', p.start ? toFa(p.start) : ''], ['پایان برنامه‌ای', p.end ? toFa(p.end) : ''], ['روز سپری‌شده', el != null ? toFa(el) + ' روز' : ''], ['مدت کل', tot ? toFa(tot) + ' روز' : ''],
