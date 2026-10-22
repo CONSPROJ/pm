@@ -134,6 +134,13 @@
 .cdl-i{display:flex;gap:6px;align-items:baseline;padding:7px 12px;font-size:12px;background:color-mix(in srgb,var(--alert) 6%,transparent)}.cdl-i i{flex:0 0 6px;height:6px;border-radius:9px;background:var(--alert)}.cdl-i small{color:var(--muted)}
 .ct-alias2{padding:0 18px 8px;font-size:11.5px;color:var(--muted);line-height:1.8}
 .ct-range{flex-wrap:wrap}
+.h3-pj{all:unset;box-sizing:border-box;position:relative;z-index:1;display:flex;align-items:center;gap:9px;width:100%;margin:0 0 14px;padding:6px 8px 6px 10px;border-radius:14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);cursor:pointer;color:#fff}
+.h3-pj:hover{background:rgba(255,255,255,.14)}
+.h3-pjc{flex:0 0 28px;width:28px;height:28px;border-radius:9px;overflow:hidden}
+.h3-pjt{flex:1;min-width:0;display:flex;align-items:center;gap:8px}.h3-pjt b{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h3-pjt i{font-style:normal;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.14);white-space:nowrap}
+.h3-pj small{font-size:10.5px;opacity:.75;white-space:nowrap}.h3-pji{font-style:normal;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:#e0a33a;color:#2a1a00}
+.h3-pjch svg{width:16px;height:16px;opacity:.8}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -41585,6 +41592,7 @@
     const lo = document.getElementById('pfLogout');
     if(lo) lo.addEventListener('click', () => {
       if(!confirm('از حساب خود خارج می‌شوید؟')) return;
+      try{ localStorage.removeItem('siteLogM.homeCache.v1'); }catch(e){}
       applyUser('');
       document.getElementById('profileModal').hidden = true;
       openUserModal();
@@ -83541,8 +83549,13 @@
     const st = (n, l, cls, attr) => '<button type="button" class="h3-hs' + (cls && n ? ' ' + cls : '') + '" ' + attr + '>' + (tk ? '<b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b>' : '<b><i class="hm-dots"></i></b>') + '<span>' + l + '</span></button>';
     const t = todayShamsi(), pp = faParts(t);
     let wd = ''; try{ wd = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'][new Date().getDay()]; }catch(e){}
+    /* پروژهٔ فعلی: نوار باریک بالای کارت خوش‌آمد (جای کارت جدای پروژه) */
+    let pjl = ''; try{ const p = pjCur(), inv = pjInvites().length, n = pjMine().length;
+      pjl = '<button type="button" class="h3-pj" data-pjopen="1">' + pjCoverHtml(p, 'h3-pjc') + '<span class="h3-pjt"><b>' + esc(p.name || 'پروژه') + '</b>' + (p.status ? '<i>' + esc(p.status) + '</i>' : '') + '</span>'
+        + (inv ? '<em class="h3-pji">' + toFa(inv) + ' دعوت</em>' : '') + (n > 1 ? '<small>' + toFa(n) + ' پروژه</small>' : '') + '<span class="h3-pjch">' + PJ_I.go.replace('M15 6l-6 6 6 6', 'M6 9l6 6 6-6') + '</span></button>'; }catch(e){}
     return '<section class="h3-hero h3-a" style="--i:0">'
       + '<i class="h3-blob b1"></i><i class="h3-blob b2"></i><i class="h3-blob b3"></i>'
+      + pjl
       + '<div class="h3-ht">'
       +   '<span class="h3-av">' + avatarHtml(me, 'lg', true) + '</span>'
       +   '<span class="h3-hx"><small>' + (day ? HM_I.sun : HM_I.moon) + hmGreeting() + '</small><h2>' + esc(nm) + '</h2>'
@@ -84031,8 +84044,8 @@
       if(window.qcVisible && window.qcVisible() && !qc.t) P.push(qcLoad());
       try{ if(window.coVisible && window.coVisible() && coCanA() && !co.t) P.push(coLoad()); }catch(e){}
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
-    let pjb = ''; try{ pjb = pjBarHtml(); }catch(e){}
-    const h = '<div class="h3">' + pjb + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
+    /* ترتیب: خوش‌آمد (با پروژه) ← کارتابل من ← کارهای سریع ← وضعیت پروژه ← بقیه */
+    const h = '<div class="h3">' + h3Hero(work, tk) + h3KartBox(G) + h3Quick() + h3Project(day, dDate, adm, tk, prc) + G.prj + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
@@ -84045,7 +84058,10 @@
        بالا می‌آمدند و صفحهٔ اول چند بار پشت هم چشمک می‌زد. */
     /* اسکلتِ پیش از رسیدن داده بی‌حرکت؛ حرکت ورود فقط با اولین محتوای واقعی */
     const hasData = !!(homeAt || (tasksAll || []).length || (adminAll || []).length);
-    if(first && !hasData){ homeWho = ''; box.__skel = true; box.classList.add('hm-still'); return; }
+    /* تا دادهٔ تازه برسد، آخرین صفحهٔ خانهٔ همین کاربر بی‌درنگ نشان داده می‌شود */
+    if(first && !hasData){ homeWho = ''; box.__skel = true; box.classList.add('hm-still');
+      try{ const c = JSON.parse(localStorage.getItem('siteLogM.homeCache.v1') || 'null'); if(c && c.u === nameKey(me) && c.h){ box.innerHTML = c.h; box.__h = ''; } }catch(e){} return; }
+    if(hasData){ clearTimeout(homeRender.__cs); homeRender.__cs = setTimeout(() => { try{ if(h.length < 400000) localStorage.setItem('siteLogM.homeCache.v1', JSON.stringify({u: nameKey(me), h, at: Date.now()})); }catch(e){} }, 1500); }
     /* اسکلت از قبل دیده شده: صفحه دوباره محو و ظاهر نمی‌شود؛ فقط عددها بالا می‌روند */
     if(first && box.__skel){ box.__skel = false; box.classList.add('hm-still'); h3Count(box); return; }
     if(first){ box.classList.remove('hm-in', 'hm-still'); void box.offsetWidth; box.classList.add('hm-in'); box.__inAt = Date.now(); h3Count(box);
