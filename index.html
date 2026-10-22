@@ -529,6 +529,12 @@
 .hx4-s.bad{background:linear-gradient(180deg,rgba(255,138,120,.13),rgba(255,138,120,.05))!important;border-color:rgba(255,138,120,.2)!important}
 .hx4-s.warn{background:linear-gradient(180deg,rgba(232,200,130,.12),rgba(232,200,130,.04))!important;border-color:rgba(232,200,130,.18)!important}
 .hx4-av{background:conic-gradient(from 210deg,#7fd6e3,#e8ce96,#7fd6e3)!important}
+/* پیام‌ها: زبانه‌های خطی، ثابت بالای پنجره */
+#chatModal .um-tabs{flex:none!important;min-height:43px;box-sizing:border-box;position:sticky!important;top:0!important;z-index:4;display:flex!important;flex-wrap:nowrap!important;gap:2px!important;margin:0!important;padding:0 12px!important;background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto!important}
+#chatModal .um-tabs button{height:42px!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted)!important;font-size:12.5px!important;font-weight:700!important;border-bottom:2px solid transparent!important;margin-bottom:-1px}
+#chatModal .um-tabs button.on{color:var(--ink)!important;border-bottom-color:var(--ink)!important;background:transparent!important}
+#chatModal .um-tabs .um-new{margin-inline-start:auto!important;color:var(--accent)!important;border-style:solid!important}
+#chatModal .um-tabs .um-new.on{border-bottom-color:var(--accent)!important}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -40002,18 +40008,46 @@
       if(ks.length) ZM_FLOOR.set(zmKey(x.z), ks);
     });
   }
+  /* تطبیق‌ها: آخرین فهرست سرور برای هر نوع، و تغییرهای تازهٔ همین دستگاه که تا رسیدن نسخهٔ تازهٔ
+     سرور روی داده‌ها می‌مانند (پیش‌تر هر ذخیره کل فهرست را پاک و دوباره می‌نوشت؛ با یک خواندن کهنه،
+     تطبیق‌های قبلی برمی‌گشتند و گاهی پاک می‌شدند) */
+  const zmSrv = {}, zmLoc = {};
+  try{ const o = JSON.parse(localStorage.getItem('siteLogM.zmLoc.v1') || '{}'); Object.keys(o).forEach(k => { if(Date.now() - (o[k].t || 0) < 600000) zmLoc[k] = {add: new Set(o[k].add || []), del: new Set(o[k].del || []), t: o[k].t}; }); }catch(e){}
+  const zmLocSave = () => { try{ const o = {}; Object.keys(zmLoc).forEach(k => { o[k] = {add: Array.from(zmLoc[k].add), del: Array.from(zmLoc[k].del), t: zmLoc[k].t}; }); localStorage.setItem('siteLogM.zmLoc.v1', JSON.stringify(o)); }catch(e){} };
+  function zmVals(kind, lists){
+    const srv = ((lists && lists[kind]) || []).map(String);
+    zmSrv[kind] = new Set(srv);
+    const L = zmLoc[kind]; if(!L || Date.now() - L.t > 600000) return srv;
+    /* آنچه سرور هنوز ندارد اضافه، و آنچه همین‌جا پاک شده برداشته می‌شود */
+    const out = new Set(srv); L.add.forEach(v => out.add(v)); L.del.forEach(v => out.delete(v));
+    if(Array.from(L.add).every(v => zmSrv[kind].has(v)) && Array.from(L.del).every(v => !zmSrv[kind].has(v))){ delete zmLoc[kind]; zmLocSave(); }
+    return Array.from(out);
+  }
+  function zmLocAdd(kind, vals){ const L = zmLoc[kind] || (zmLoc[kind] = {add: new Set(), del: new Set(), t: 0}); vals.forEach(v => { L.add.add(String(v)); L.del.delete(String(v)); (zmSrv[kind] || (zmSrv[kind] = new Set())).add(String(v)); }); L.t = Date.now(); zmLocSave(); }
+  window.zmLocAdd = zmLocAdd;
   function zmLoad(lists){
     const sp = v => { const p = String(v).split(ZM_SEP); return [(p[0] || '').trim(), (p[1] || '').trim()]; };
-    zmAliasPairs = ((lists && lists[ZM_ALIAS_KIND]) || []).map(sp).filter(p => p[0] && p[1]).map(p => ({a:p[0], b:p[1]}));
-    zmFloorPairs = ((lists && lists[ZM_FLOOR_KIND]) || []).map(sp).filter(p => p[0] && p[1]).map(p => ({z:p[0], f:p[1]}));
-    ZM_NOFL.clear(); ((lists && lists[ZM_NOFL_KIND]) || []).forEach(v => ZM_NOFL.add(String(v)));
-    ZM_DIST.clear(); ((lists && lists[ZM_DIST_KIND]) || []).forEach(v => { const p = String(v).split(ZM_SEP); if(p.length >= 2) ZM_DIST.add([p[0], p[1]].sort().join('¦')); });
+    zmAliasPairs = zmVals(ZM_ALIAS_KIND, lists).map(sp).filter(p => p[0] && p[1]).map(p => ({a:p[0], b:p[1]}));
+    zmFloorPairs = zmVals(ZM_FLOOR_KIND, lists).map(sp).filter(p => p[0] && p[1]).map(p => ({z:p[0], f:p[1]}));
+    ZM_NOFL.clear(); zmVals(ZM_NOFL_KIND, lists).forEach(v => ZM_NOFL.add(String(v)));
+    ZM_DIST.clear(); zmVals(ZM_DIST_KIND, lists).forEach(v => { const p = String(v).split(ZM_SEP); if(p.length >= 2) ZM_DIST.add([p[0], p[1]].sort().join('¦')); });
     zmRebuild();
   }
+  /* فقط ردیف‌های تازه نوشته و ردیف‌های برداشته‌شده پاک می‌شوند؛ تطبیق‌های دیگران دست نمی‌خورد */
   async function zmSaveKind(kind, rows){
-    await supaFetch('lists?kind=eq.' + encodeURIComponent(kind), {method:'DELETE'}).catch(() => {});
-    if(rows.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
-      body: Array.from(new Set(rows)).map(v => ({kind, value: v}))});
+    if(!zmSrv[kind]){
+      /* نوع‌هایی که فهرست سرورشان اینجا نگه داشته نمی‌شود: مثل قبل کل فهرست بازنویسی می‌شود */
+      await supaFetch('lists?kind=eq.' + encodeURIComponent(kind), {method:'DELETE'}).catch(() => {});
+      if(rows.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: Array.from(new Set(rows)).map(v => ({kind, value: v}))});
+      try{ clearNetCache(); }catch(e){} return;
+    }
+    const want = new Set(rows.map(String)), had = zmSrv[kind];
+    const add = Array.from(want).filter(v => !had.has(v)), del = Array.from(had).filter(v => !want.has(v));
+    const L = zmLoc[kind] || (zmLoc[kind] = {add: new Set(), del: new Set(), t: 0});
+    add.forEach(v => { L.add.add(v); L.del.delete(v); }); del.forEach(v => { L.del.add(v); L.add.delete(v); }); L.t = Date.now(); zmLocSave();
+    for(let i = 0; i < add.length; i += 200) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: add.slice(i, i + 200).map(v => ({kind, value: v}))});
+    for(const v of del) await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=eq.' + encodeURIComponent(v), {method:'DELETE'});
+    add.forEach(v => had.add(v)); del.forEach(v => had.delete(v)); zmSrv[kind] = had;
     try{ clearNetCache(); }catch(e){}
   }
   const zmSaveAlias = () => zmSaveKind(ZM_ALIAS_KIND, zmAliasPairs.map(x => x.a + ZM_SEP + x.b)).then(zmRebuild);
@@ -45667,6 +45701,20 @@
   }
   /* گروه‌بندی هر فهرستی بر اساس محل/طبقه، مرتب‌شده از پایین به بالا.
      خروجی: [[نام محل، ردیف‌ها], ...] */
+  /* برچسب خوانای محل گزارش: «طبقهٔ ۴ · لابی»، «طبقهٔ ۱۰ · واحد ۱۰۱»؛ عدد تنها اگر واحد یا طبقه باشد درست خوانده می‌شود */
+  function hrZoneLbl(z){
+    z = String(z || '').trim(); if(!z) return '';
+    try{
+      const P = slParse(canonicalZone(z));
+      if(P && P.fs && P.fs.length && !P.raw){
+        const fl = k => k === 'ALL' ? 'همهٔ طبقات' : floorLabel(k);
+        const l1 = v => { v = String(v || '').trim(); if(!v) return ''; return /^\d{3,4}$/.test(toEn(v)) ? 'واحد ' + toFa(toEn(v)) : v; };
+        if(P.per) return P.fs.map(k => fl(k) + (P.per[k] ? ' · ' + l1(P.per[k]) : '')).join('؛ ');
+        return P.fs.map(fl).join('، ') + (P.l1 ? ' · ' + l1(P.l1) : '');
+      }
+    }catch(e){}
+    return z;
+  }
   function groupByZone(list, getZone, emptyLabel){
     const m = new Map(), disp = new Map();
     (list || []).forEach(r => {
@@ -47202,8 +47250,9 @@
                 + '</div>'
                 + (o.byZone.size
                     ? '<div class="rc-title">فعالیت‌ها به تفکیک محل</div><div class="hr-zones">'
-                      + groupByZone(Array.from(o.byZone.keys()), z => z, 'بدون محل').map(([z]) => {
-                          const zo = o.byZone.get(z) || {men:0, acts:new Set()};
+                      + groupByZone(Array.from(o.byZone.keys()), z => hrZoneLbl(z), 'بدون محل').map(([z, keys]) => {
+                          /* هر گروه چند املای خام دارد؛ نفر-روز و فعالیت‌ها از همهٔ آن‌ها جمع می‌شود */
+                          const zo = {men: 0, acts: new Set()}; keys.forEach(k => { const x = o.byZone.get(k); if(x){ zo.men += x.men; x.acts.forEach(a => zo.acts.add(a)); } });
                           return '<div class="hrz"><div class="hrz-h"><b>' + esc(z) + '</b><span>' + toFa(zo.men) + ' نفر-روز</span></div>'
                             + (zo.acts.size ? '<ul>' + Array.from(zo.acts).slice(0, 6).map(a3 => '<li>' + esc(a3) + '</li>').join('')
                                 + (zo.acts.size > 6 ? '<li class="more">و ' + toFa(zo.acts.size - 6) + ' فعالیت دیگر</li>' : '') + '</ul>' : '')
@@ -47394,7 +47443,7 @@
     /* و اگر نبود، یک ماه کامل را می‌خوانیم. پیمانکاری که فقط پروندهٔ
        اداری دارد هم در همین ساخت کارت می‌گیرد. */
     try{
-      const rc = await fetchRange(d, 'month');
+      const rc = await fetchRangeFor(name, d, 'month');
       hit = build(rc.rows || [], rc.dates || dates);
       if(hit) return hit;
     }catch(e){}
@@ -47431,6 +47480,28 @@
     hrCardPending.set(mk, pr);
     return pr;
   }
+  /* گزارش‌های یک پیمانکار در یک بازه: فقط ردیف‌های همان پیمانکار (با همهٔ املاهایش) خوانده می‌شود،
+     نه کل گزارش‌های پروژه؛ اگر گزارش همان بازه قبلاً خوانده شده باشد، از همان استفاده می‌شود */
+  const rangeForMemo = new Map();
+  async function fetchRangeFor(name, d, mode){
+    const dates = rangeDates(d, mode), key = mode + '|' + dates[0] + '|' + d;
+    if(rangeCache && rangeCache.key === key) return rangeCache;
+    const mem = rangeMemo.get(key); if(mem && Date.now() - mem.t < NET_TTL) return mem.data;
+    const mk = normName(name) + '|' + key, m2 = rangeForMemo.get(mk); if(m2 && Date.now() - m2.t < NET_TTL) return m2.data;
+    const names = new Set([name]);
+    try{ aliasesOf(name).forEach(a => names.add(a)); }catch(e){}
+    try{ const c = ctrCanon(name); names.add(c); (ctrBuild().members.get(normName(c)) || []).forEach(n => names.add(n)); }catch(e){}
+    if(BACKEND !== 'supabase' || names.size > 40) return fetchRange(d, mode);
+    const inl = '(' + Array.from(names).filter(Boolean).map(n => '"' + String(n).replace(/["\\]/g, '') + '"').join(',') + ')';
+    const q = 'date_fa=gte.' + encodeURIComponent(dates[0]) + '&date_fa=lte.' + encodeURIComponent(dates[dates.length - 1]) + '&select=*&order=id.asc&limit=5000';
+    let rw, is;
+    try{ [rw, is] = await Promise.all([supaFetch('activities?' + q + '&contractor=in.' + encodeURIComponent(inl)), supaFetch('issues?' + q + '&party=in.' + encodeURIComponent(inl)).catch(() => [])]); }
+    catch(e){ return fetchRange(d, mode); }
+    const data = {key, dates, rows: (rw || []).map(x => fromSupa('activities', x)), issues: (is || []).map(x => fromSupa('issues', x)), machines: []};
+    try{ const memo = new Map(); ctrCanonRows(data.rows, memo); ctrCanonRows(data.issues, memo); }catch(e){}
+    rangeForMemo.set(mk, {t: Date.now(), data}); if(rangeForMemo.size > 20) rangeForMemo.delete(rangeForMemo.keys().next().value);
+    return data;
+  }
   async function hrCardBuild(name, mode, ref){
     /* ref: تاریخ پایان بازه. کارت پیمانکار (پنجره) مستقل از روزِ انتخاب‌شده
        در گزارش، همیشه تا امروز حساب می‌شود. */
@@ -47440,7 +47511,7 @@
     let rows = [], dates = rangeDates(d, mode), iss = [];
     try{
       if(mode === 'day'){ const b = await fetchBundle(d); rows = (b.day && b.day.rows) || []; iss = (b.day && b.day.issues) || []; dates = [d]; }
-      else { const rc = await fetchRange(d, mode); rows = rc.rows || []; iss = rc.issues || []; dates = rc.dates || dates; }
+      else { const rc = await fetchRangeFor(name, d, mode); rows = rc.rows || []; iss = rc.issues || []; dates = rc.dates || dates; }
     }catch(e){}
     const mk = name + '|' + mode + '|' + d;
     const tmp = document.createElement('div');
@@ -47683,6 +47754,9 @@
     const m = document.getElementById('ctProfModal');
     if(m){ const nm = m.dataset.ctname || ''; try{ if(nm) pushNavBack('پروندهٔ ' + nm, () => openContractorProfile(nm)); }catch(err){} m.remove(); document.body.style.overflow = ''; document.body.classList.remove('ctp-open'); }
     const fm = document.getElementById('flrModal'); if(fm && !fm.hidden){ fm.hidden = true; document.body.style.overflow = ''; }
+    /* سند در همان کارت شناور باز می‌شود؛ صفحهٔ زیر جابه‌جا نمی‌شود */
+    const y0 = window.scrollY;
+    try{ if(window.deckOpenAt && window.deckOpenAt(k, id)){ requestAnimationFrame(() => window.scrollTo(0, y0)); return; } }catch(err){}
     try{ gotoAdminItem(k, id); }catch(err){}
   });
   document.addEventListener('click', e => {
@@ -73172,7 +73246,7 @@
       const A = mp.dataset.mra, B = mp.dataset.mrb;
       try{
         if(t.closest('[data-mrok]')){
-          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{kind: ZM_DIST_KIND, value: zmKey(A) + ZM_SEP + zmKey(B)}]});
+          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{kind: ZM_DIST_KIND, value: zmKey(A) + ZM_SEP + zmKey(B)}]}); zmLocAdd(ZM_DIST_KIND, [zmKey(A) + ZM_SEP + zmKey(B)]);
           ZM_DIST.add(zmPairKey(A, B)); try{ clearNetCache(); }catch(e){}
         }else{
           let to = '';
@@ -73200,7 +73274,7 @@
         if(mode === 'out' || mode === 'none'){
           const to = mode === 'out' && (!nm || zmKey(nm) === zmKey(raw)) ? nm || 'محوطه' : nm;
           if(to && zmKey(to) !== zmKey(raw)) await mrAlias(raw, to);
-          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: Array.from(new Set([zmKey(raw)].concat(to ? [zmKey(to)] : []))).map(v => ({kind: ZM_NOFL_KIND, value: v}))});
+          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: Array.from(new Set([zmKey(raw)].concat(to ? [zmKey(to)] : []))).map(v => ({kind: ZM_NOFL_KIND, value: v}))}); zmLocAdd(ZM_NOFL_KIND, Array.from(new Set([zmKey(raw)].concat(to ? [zmKey(to)] : []))));
           ZM_NOFL.add(zmKey(raw)); if(to) ZM_NOFL.add(zmKey(to));
           await zmSaveAlias();
         }else if(mode === '*'){
@@ -73329,6 +73403,7 @@
     h.innerHTML = tb('chat', 'گفت‌وگوها') + tb('in', 'دریافتی', nIn) + (R ? tb('q', 'صف بررسی', nQ) : '') + tb('mine', 'ارسالی') + (R ? tb('arc', 'بایگانی') : '')
       + tb('new', '+ ارسال مدرک', 0, 'um-new')
       + (um.pre && um.pre.length ? '<p class="um-hint">🏷 «' + esc(um.pre[0].t || '') + '» پیوست شد — گفت‌وگو را انتخاب کنید.</p>' : '');
+    try{ const on = h.querySelector('button.on'); if(on) requestAnimationFrame(() => { const r = on.getBoundingClientRect(), hr = h.getBoundingClientRect(); if(r.left < hr.left || r.right > hr.right) on.scrollIntoView({inline: 'center', block: 'nearest'}); }); }catch(e){}
   }
   window.umTabsPaint = umTabsPaint;
   /* دریافتی و ارسالی داخل همان پنجرهٔ پیام‌ها: بخش مکاتبات به این پنجره منتقل می‌شود */
