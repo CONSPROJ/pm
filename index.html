@@ -115,6 +115,13 @@
 .mr-same button{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font:700 12.5px/1 var(--f);color:var(--ink);cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mr-same button.ghost{border-style:dashed;color:var(--muted)}
 .dbx-lgh{margin:14px 2px 6px;font-size:12px;font-weight:800;color:var(--muted)}
+.sl-pfl{display:grid;gap:6px;margin:10px 0 4px;padding:10px;border-radius:12px;background:var(--field)}
+.sl-pfl>u{text-decoration:none;font-size:12px;font-weight:800}.sl-pfl>u small{font-weight:500;color:var(--muted)}
+.sl-pfl label{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:8px}.sl-pfl label b{font-size:12.5px}
+.sl-pfl input{height:36px;font-size:13px}
+.sl-1.sl-per{background:color-mix(in srgb,var(--accent) 6%,var(--field))}
+#slPop{max-height:min(82vh,640px);overflow:auto;overscroll-behavior:contain}
+#secWX:not(.adm-on){display:none!important}#clearDraft[hidden]{display:none!important}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -25127,7 +25134,7 @@
             <span class="date-long" id="dateLong"></span>
             <div class="note-err" id="dateNote">تاریخ را به شکل ۱۴۰۳/۰۵/۱۵ وارد کنید.</div>
           </div>
-          <div class="field">
+          <div class="field" hidden>
             <label for="projectName">پروژه</label>
             <input type="text" id="projectName" value="رویال آدرس رزیدنس" placeholder="انتخاب یا تایپ" data-list="projectList" autocomplete="off">
           </div>
@@ -25184,7 +25191,7 @@
       </div>
 
       <div class="msg" id="statusMsg"></div>
-      <button type="button" class="danger-btn" id="clearDraft">
+      <button type="button" class="danger-btn" id="clearDraft" hidden>
         ⚠️ پاک کردن فرم و پیش‌نویس ذخیره‌شده
       </button>
     </form>
@@ -45366,6 +45373,11 @@
                        '11','12','13','14','15','16','17'];
   const flNormEq = x => toEn(String(x || '')).replace(/[\u0654\u200cٔ\s]/g, '').toUpperCase();
   function floorKeysOf(zone){
+    /* چند طبقه هر کدام با محل خودش («… · لابی؛ طبقهٔ ۶ · ۶۰۱»): طبقه‌های همهٔ بخش‌ها */
+    if(String(zone || '').indexOf('؛') !== -1){
+      const out = []; String(zone).split(/\s*؛\s*/).filter(Boolean).forEach(seg => (floorKeysOf(seg) || []).forEach(k => { if(out.indexOf(k) === -1) out.push(k); }));
+      return out;
+    }
     /* طبقهٔ دستی و نام اصلیِ محل (از «داده و نام‌ها ← محل و طبقه») */
     try{
       const ovr = zoneFloorOverride(zone);
@@ -72627,6 +72639,12 @@
   const slFloorByLabel = h => { h = String(h || '').trim(); const n = slFlN(h); return spFloors().find(x => x.label === h || x.key === h || x.key === toEn(h)) || spFloors().find(x => slFlN(x.label) === n || slFlN(x.key) === n); };
   function slParse(z){
     z = String(z || '').trim(); if(!z) return {fs: [], l1: ''};
+    /* چند طبقه، هر کدام با محل خودش: «طبقهٔ ۵ · لابی؛ طبقهٔ ۶ · ۶۰۱» */
+    if(z.indexOf('؛') !== -1){
+      const per = {}, fs = [];
+      z.split(/\s*؛\s*/).filter(Boolean).forEach(seg => { const p = slParse(seg); (p.fs || []).forEach(k => { if(fs.indexOf(k) === -1) fs.push(k); per[k] = p.l1 || ''; }); });
+      if(fs.length) return {fs, l1: '', per};
+    }
     const F = spFloors(), zf = toEn(z);
     const heads = h => { const P = h.split(/\s*،\s*/).filter(Boolean); const L = P.map(slFloorByLabel); return L.length && L.every(Boolean) ? L.map(x => x.key) : null; };
     const i = z.indexOf(' · ');
@@ -72669,6 +72687,13 @@
   }
   function slIsUnit(fs, l1){ if(!fs || fs.length !== 1) return false; const fl = slFloorByLabel(fs[0]); return !!(fl && (fl.units || []).indexOf(toEn(String(l1 || '').trim())) !== -1); }
   const slFsOf = row => String(row.dataset.fls || '').split(',').filter(Boolean);
+  const slPerOf = row => { try{ return JSON.parse(row.dataset.flz || '{}') || {}; }catch(e){ return {}; } };
+  /* مقدار «محل کارکرد» ردیف: اگر برای هر طبقه محل جدا تعیین شده، هر طبقه با محل خودش */
+  function slComposeRow(row, l1){
+    const fs = slFsOf(row), per = slPerOf(row);
+    if(fs.length > 1 && fs[0] !== 'ALL' && fs.some(k => String(per[k] || '').trim())) return fs.map(k => slCompose([k], String(per[k] || '').trim() || l1)).join('؛ ');
+    return slCompose(fs, l1);
+  }
   function slFloorBtnText(fs){
     if(!fs.length) return '<span class="ph">انتخاب طبقه</span>';
     if(fs[0] === 'ALL') return 'کل ساختمان';
@@ -72680,7 +72705,7 @@
   function slHtml(zoneCls, subCls, zone, sub, idz, idp){
     const P = slParse(zone), unit = !!subCls && slIsUnit(P.fs, P.l1);
     const l1v = P.l1 ? (unit ? toFa(P.l1) : P.l1) : '';
-    return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '" data-fls="' + esc(P.fs.join(',')) + '">'
+    return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '" data-fls="' + esc(P.fs.join(',')) + '"' + (P.per ? ' data-flz="' + esc(JSON.stringify(P.per)) + '"' : '') + '>'
       + '<div class="field sl-fw"><label>طبقه <small>یک یا چند</small></label><button type="button" class="flp-btn sl-fb">' + SL_FI + '<span>' + slFloorBtnText(P.fs) + '</span><i>▾</i></button></div>'
       + '<div class="field sl-1w"><label for="' + idz + '">محل</label><input type="text" id="' + idz + '" class="sl-1" value="' + esc(l1v) + '" data-list="' + slL1List(P.fs) + '" placeholder="' + (P.fs.length ? 'همهٔ فضاها، واحد یا فضای عمومی' : 'اول طبقه را انتخاب کنید') + '" autocomplete="off"></div>'
       + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء</label><input type="text" id="' + idp + '" class="' + subCls + '" value="' + esc(sub || '') + '" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : 'subList') + '" placeholder="اجزای واحد" autocomplete="off"></div>')
@@ -72708,7 +72733,9 @@
       if(unit) s2.setAttribute('data-list', slDL('slL2_' + toEn(l1.value.trim()), spPartsOf(toEn(l1.value.trim())).map(v => ({v}))));
       else if(s2.value){ s2.value = ''; s2.dispatchEvent(new Event('input', {bubbles: true})); }
     }
-    const nz = slCompose(fs, l1.value);
+    const perOn = fs.length > 1 && fs[0] !== 'ALL' && Object.keys(slPerOf(row)).some(k => fs.indexOf(k) !== -1 && String(slPerOf(row)[k] || '').trim());
+    l1.readOnly = perOn; l1.classList.toggle('sl-per', perOn); if(perOn){ l1.placeholder = 'محل هر طبقه جدا تعیین شده'; if(l1.value) l1.value = ''; }
+    const nz = slComposeRow(row, l1.value);
     if(hz && hz.value !== nz){ hz.value = nz; hz.dispatchEvent(new Event('input', {bubbles: true})); hz.dispatchEvent(new Event('change', {bubbles: true})); }
   }
   document.addEventListener('change', e => {
@@ -72724,13 +72751,14 @@
   function slPopOpen(row, btn){
     slPopClose(); if(typeof flpClose === 'function') try{ flpClose(); }catch(e){}
     const sel = new Set(slFsOf(row));
-    /* پیش‌فرض یک طبقه است: زدن یک طبقه همان را می‌گذارد و می‌بندد؛ «چند طبقه» را روشن کنید تا چندتایی شود */
-    let multi = sel.size > 1;
+    /* همیشه چندانتخابی؛ با بیش از یک طبقه، برای هر طبقه می‌شود محل جدا گذاشت */
+    const multi = true; const per = slPerOf(row);
     const pop = document.createElement('div'); pop.id = 'slPop'; pop.className = 'flp-pop sl-pop';
     const paint = () => {
       pop.innerHTML = '<div class="flp-sp"><button type="button" class="flp-wide' + (sel.has('ALL') ? ' on' : '') + '" data-slv="ALL">کل ساختمان / همهٔ طبقات</button>'
-        + '<button type="button" class="sl-multi' + (multi ? ' on' : '') + '" data-slmulti="1" title="انتخاب چند طبقه با هم"><i></i>چند طبقه</button></div>'
+        + '</div>'
         + '<div class="flp-grid">' + spFloors().map(f => '<button type="button" class="flp-it' + (sel.has(f.key) ? ' on' : '') + (/^B\d|^GF$/.test(f.key) ? ' bs' : '') + '" data-slv="' + esc(f.key) + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div>'
+        + (sel.size > 1 && !sel.has('ALL') ? '<div class="sl-pfl"><u>محل در هر طبقه <small>اختیاری؛ خالی بماند = همان محلِ ردیف</small></u>' + spFloors().filter(f => sel.has(f.key)).map(f => '<label><b>' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</b><input type="text" data-slfz="' + esc(f.key) + '" value="' + esc(per[f.key] ? (/^\d+$/.test(per[f.key]) ? toFa(per[f.key]) : per[f.key]) : '') + '" data-list="' + slL1List([f.key]) + '" placeholder="کل طبقه" autocomplete="off"></label>').join('') + '</div>' : '')
         + '<div class="sl-pf"><small>' + (sel.size && !sel.has('ALL') ? toFa(sel.size) + ' طبقه' : sel.has('ALL') ? 'همهٔ طبقات' : 'یک یا چند طبقه') + '</small><button type="button" class="mini" data-slclr="1">پاک</button><button type="button" class="send rf-go" data-slok="1">تأیید</button></div>';
     };
     paint();
@@ -72746,15 +72774,16 @@
     const apply = () => {
       const order = spFloors().map(f => f.key);
       row.dataset.fls = sel.has('ALL') ? 'ALL' : Array.from(sel).sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(',');
+      Object.keys(per).forEach(k => { if(!sel.has(k)) delete per[k]; });
+      row.dataset.flz = JSON.stringify(per);
       slSync(row, true);
     };
+    pop.addEventListener('input', e => { const i = e.target.closest && e.target.closest('[data-slfz]'); if(!i) return; const v = i.value.trim(); per[i.dataset.slfz] = /^[\d۰-۹]+$/.test(v) ? toEn(v) : v; apply(); });
     pop.addEventListener('click', e => {
       e.stopPropagation();
       const b = e.target.closest('[data-slv]');
-      if(e.target.closest('[data-slmulti]')){ multi = !multi; if(!multi && sel.size > 1){ const f = Array.from(sel)[0]; sel.clear(); sel.add(f); apply(); } paint(); return; }
       if(b){ const v = b.dataset.slv;
         if(v === 'ALL'){ const on = sel.has('ALL'); sel.clear(); if(!on) sel.add('ALL'); }
-        else if(!multi){ sel.clear(); sel.add(v); paint(); apply(); slPopClose(); return; }
         else { sel.delete('ALL'); if(sel.has(v)) sel.delete(v); else sel.add(v); }
         paint(); apply(); return; }
       if(e.target.closest('[data-slclr]')){ sel.clear(); paint(); apply(); return; }
@@ -78832,8 +78861,11 @@
     const crTabsBlk = document.getElementById('crewTabsBlk'), crTabs = document.getElementById('crewTabs');
     let crTab = 'rep';
     try{ segInit(crTabs, '.kcap', el => el.classList.contains('on')); }catch(e){}
-    const crewOk = () => { try{ return isAdminUser() || can('ctr.contact'); }catch(e){ return false; } };
+    /* اطلاعات پیمانکاران فقط در «پروندهٔ پیمانکاران» است؛ اینجا فقط گزارش روزانه */
+    const crewOk = () => false;
     function crewTabApply(on){
+      /* ورود گروهی با اکسل (گزارش‌های سابق) فقط برای ادمین */
+      try{ const wx = document.getElementById('secWX'); if(wx) wx.classList.toggle('adm-on', isAdminUser()); }catch(e){}
       const ok = crewOk();
       const tab = (on && ok) ? crTab : 'rep';
       if(crTabsBlk){ crTabsBlk.hidden = !(on && ok); crTabsBlk.style.display = ''; }
