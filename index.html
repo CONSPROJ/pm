@@ -28526,6 +28526,18 @@
     return ((Date.now() - d.getTime()) / 86400000) > FEED_MAX_AGE_DAYS;
   }
 
+  /* کسانی که سند الان نزدشان است؛ null یعنی همان مسئول خودِ سند */
+  function admHolders(kind, r){
+    if(!r || kind === 'minute' || kind === 'letter') return null;
+    const st = String(pick(r,AD.review) || '');
+    if(st === 'بررسی کارفرما') return ['کارفرما'];
+    if(st === 'بررسی داخلی' || st === 'رد داخلی'){
+      let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); }catch(e){}
+      return w.length ? w : null;
+    }
+    if(/پیمانکار/.test(st) && !/تأیید پیمانکار/.test(st)){ let p = ''; try{ p = admParty(kind, r); }catch(e){} return p ? [p] : null; }
+    return null;
+  }
   /* سند الان دست کیست و چند روز است آنجا مانده؛ برای «موعد گذشته» در اعلان‌ها */
   function admHeldBy(kind, r){
     if(!r) return null;
@@ -28539,7 +28551,7 @@
       if(kind === 'minute' || kind === 'letter') return null;
       if(st === 'بررسی کارفرما') return ok('کارفرما', rvEmployerDays(r));
       if(st === 'بررسی داخلی' || st === 'رد داخلی'){
-        let w = []; try{ w = reviewersOf(r) || []; }catch(e){}
+        let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); if(!w.length) w = reviewersOf(r) || []; }catch(e){}
         return ok(w.length ? w.map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).slice(0, 2).join('، ') : 'بررسی داخلی', rvInternalDays(r));
       }
       if(/پیمانکار/.test(st)){ let p = ''; try{ p = admParty(kind, r); }catch(e){} return ok(String(p || '').trim() || 'پیمانکار', admStageDays(r)); }
@@ -39241,7 +39253,7 @@
   async function zmSaveKind(kind, rows){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(kind), {method:'DELETE'}).catch(() => {});
     if(rows.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
-      body: rows.map(v => ({kind, value: v}))});
+      body: Array.from(new Set(rows)).map(v => ({kind, value: v}))});
     try{ clearNetCache(); }catch(e){}
   }
   const zmSaveAlias = () => zmSaveKind(ZM_ALIAS_KIND, zmAliasPairs.map(x => x.a + ZM_SEP + x.b)).then(zmRebuild);
@@ -72073,7 +72085,7 @@
         if(mode === 'out' || mode === 'none'){
           const to = mode === 'out' && (!nm || zmKey(nm) === zmKey(raw)) ? nm || 'محوطه' : nm;
           if(to && zmKey(to) !== zmKey(raw)) await mrAlias(raw, to);
-          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{kind: ZM_NOFL_KIND, value: zmKey(raw)}].concat(to ? [{kind: ZM_NOFL_KIND, value: zmKey(to)}] : [])});
+          await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: Array.from(new Set([zmKey(raw)].concat(to ? [zmKey(to)] : []))).map(v => ({kind: ZM_NOFL_KIND, value: v}))});
           ZM_NOFL.add(zmKey(raw)); if(to) ZM_NOFL.add(zmKey(to));
           await zmSaveAlias();
         }else if(mode === '*'){
@@ -80405,6 +80417,9 @@
       }
       return (a.seen ? 1 : 0) - (b.seen ? 1 : 0);
     });
+    /* سند دفتر فنی زیر نام کسی می‌آید که الان سند دستش است، نه سازنده‌اش:
+       نزد کارفرما ← «کارفرما»، بررسی داخلی ← بررسی‌کننده‌هایی که هنوز تأیید نکرده‌اند */
+    openL.forEach(y => { try{ const k = deckKindOf(y); if(!k || k === 'task') return; const r = deckRowOf(y, k); const H = r && admHolders(k, r); if(H && H.length){ y.owner = y.owner || y.who; y.whos = H; y.who = H[0]; } }catch(e){} });
     return openL.concat(doneItems, news);
   }
   /* نوعِ واقعی مورد را پیدا می‌کند، حتی اگر اعلان نوعش را نگفته باشد */
@@ -84029,6 +84044,9 @@
     document.addEventListener('click', e => {
       const ov = e.target.closest && e.target.closest(SEL);
       if(!ov || ov.parentElement !== document.body || ov.matches(NO_BACK) || e.target.closest('.ov-back')) return;
+      /* بستن پنجره (✕، «بستن» یا زدن پس‌زمینه) رفتن از آن پنجره به جای دیگر نیست؛ بازگشتی هم نمی‌سازد */
+      if(e.target === ov || e.target.closest('.x, [data-cmclose], [data-dk-close], [aria-label="بستن"], [aria-label^="بستن"], .pg-x, #profileX')){ lastIn = null; return; }
+      try{ const cx = findClose(ov); if(cx && (cx === e.target || cx.contains(e.target))){ lastIn = null; return; } }catch(err){}
       const h = ov.querySelector('h1, h2, h3, .mc-title, [class*="-title"], b');
       lastIn = {el: ov, t: Date.now(), label: h ? String(h.textContent || '').trim().slice(0, 40) : ''};
     }, true);
