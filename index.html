@@ -20194,6 +20194,9 @@
   .ov-back:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));color:var(--sky);}
   /* مرکز داده و نام‌ها */
   .dc{display:flex;flex-direction:column;gap:12px;}
+  .ct-ava{position:relative;}
+  .ct-cam{all:unset;cursor:pointer;position:absolute;bottom:-3px;left:-3px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--surface);box-shadow:0 0 0 2px var(--surface);z-index:2;}
+  .ct-cam svg{width:12px;height:12px;}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -39962,7 +39965,7 @@
       + '</div>'
       + '<div class="pf2-id">'
       +   '<span class="pf2-ava">' + avatarHtml(name, 'lg', true)
-      +     (me ? '<button type="button" class="pf2-cam" data-pf-ava="1" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '')
+      +     ((me || pfCanAdmin()) ? '<button type="button" class="pf2-cam" data-pf-ava="1" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '')
       +   '</span>'
       +   '<span class="pf2-nm"><b>' + esc(name) + '</b>'
       +     '<small>' + (roleOf(name) ? esc(roleOf(name)) : 'بدون سمت')
@@ -45697,8 +45700,34 @@
   function avatarOf(name){
     const k = avaKey(name);
     for(const n in avatars){ if(avaKey(n) === k) return avatars[n]; }
-    return '';
+    return (ptyAva && ptyAva.get(k)) || '';
   }
+  /* عکس پیمانکاران، کارفرما، مشاور و مالکان (کسانی که کاربر نیستند) جدا از جدول افراد،
+     در lists با نوع «عکس — طرف» و مقدار «نام¦تصویر» */
+  const PTY_AVA_KIND = 'عکس — طرف';
+  var ptyAva = new Map();
+  try{ (JSON.parse(localStorage.getItem('siteLogM.ptyAva.v1') || '[]') || []).forEach(([k, v]) => ptyAva.set(k, v)); }catch(e){}
+  function ptyAvaLoad(lists){
+    ptyAva.clear();
+    (lists[PTY_AVA_KIND] || []).forEach(v => { const i = String(v).indexOf('\u00a6'); if(i > 0) ptyAva.set(avaKey(String(v).slice(0, i)), String(v).slice(i + 1)); });
+    try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
+  }
+  async function ptyAvaSave(name, uri){
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(PTY_AVA_KIND) + '&value=like.' + encodeURIComponent(String(name).replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
+    if(uri) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:[{kind: PTY_AVA_KIND, value: name + '\u00a6' + uri}]});
+    if(uri) ptyAva.set(avaKey(name), uri); else ptyAva.delete(avaKey(name));
+    try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
+    try{ clearNetCache(); }catch(e){}
+  }
+  /* عکس کارت پیمانکار و طرف‌ها؛ مدیر سامانه و مسئول پرونده‌ها دکمهٔ تغییر عکس دارند */
+  function ctAvaHtml(name){
+    let ed = false; try{ ed = isAdminUser() || can('ctr.contact'); }catch(e){}
+    return '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + (ed ? '<button type="button" class="ct-cam" data-ctava="' + esc(name) + '" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '') + '</span>';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ctava]'); if(!b) return;
+    e.stopPropagation(); e.preventDefault(); pickAvatarFor(b.dataset.ctava, true);
+  }, true);
   function initialsOf(name){
     const parts = String(name || '').replace(/^(آقای|خانم|مهندس)\s+/, '').trim().split(/\s+/);
     return (parts[0] || '').slice(0,1) + (parts[1] || '').slice(0,1);
@@ -45846,21 +45875,31 @@
   }
 
   let avatarTarget = '';   // نامی که عکسش انتخاب می‌شود
-  function pickAvatarFor(name){
+  let avatarParty = false;
+  function pickAvatarFor(name, party){
     avatarTarget = name || '';
+    /* اگر نام کاربر سامانه نیست، عکس به پروندهٔ طرف (پیمانکار، کارفرما، مالک…) می‌رود */
+    let user = false; try{ user = listNames().some(n => nameKey(n) === nameKey(name)); }catch(e){}
+    avatarParty = !!party && !user;
     document.getElementById('avaFile').click();
   }
 
   document.getElementById('avaFile').addEventListener('change', async e => {
     const file = e.target.files && e.target.files[0];
     const st = null;
-    const name = avatarTarget || activeUserName();
-    avatarTarget = '';
+    const name = avatarTarget || activeUserName(), party = avatarParty;
+    avatarTarget = ''; avatarParty = false;
     if(!file || !name) return;
     if(st) st.textContent = 'در حال آماده‌سازی...';
     try{
       const dataUri = await shrinkImage(file);
       if(st) st.textContent = 'در حال ارسال...';
+      if(party){
+        await ptyAvaSave(name, dataUri);
+        document.querySelectorAll('.ava[data-person]').forEach(a => { if(nameKey(a.dataset.person) === nameKey(name)) a.innerHTML = '<img src="' + esc(dataUri) + '" alt="">'; });
+        showDialog('ok', 'عکس ثبت شد', 'عکس ' + name + ' به‌روزرسانی شد.');
+        return;
+      }
       const r = await post({action:'avatar', name, image: dataUri});
       if(r.state === 'failed'){
         if(st) st.textContent = r.detail || 'ثبت نشد';
@@ -45871,6 +45910,7 @@
       try{ localStorage.setItem(AVA_KEY, JSON.stringify(avatars)); }catch(err){}
       if(st) st.textContent = 'ثبت شد ✓';
       refreshWhoChip();
+      document.querySelectorAll('.ava[data-person]').forEach(a => { if(nameKey(a.dataset.person) === nameKey(name)) a.innerHTML = '<img src="' + esc(dataUri) + '" alt="">'; });
       showDialog('ok','عکس ثبت شد','عکس پروفایل ' + name + ' به‌روزرسانی شد.');
     }catch(err){
       if(st) st.textContent = 'خطا در پردازش تصویر';
@@ -48069,7 +48109,7 @@
       const pt0 = (function(){ try{ return ctrTypeOf(name); }catch(e){ return ''; } })();
       if(pt0 === 'cons' || pt0 === 'emp' || pt0 === 'own'){
         const ttl0 = bg.querySelector('.mc-head'), body0 = bg.querySelector('.ct-body');
-        try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>'); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e2){} }catch(e){}
+        try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', ctAvaHtml(name)); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e2){} }catch(e){}
         if(body0) body0.innerHTML = ctPartyHtml(name);
         return;
       }
@@ -48083,12 +48123,12 @@
 
     const body = bg.querySelector('.ct-body');
     const ttl = bg.querySelector('.mc-head');
-    if(ttl && card) ttl.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>');
+    if(ttl && card) ttl.insertAdjacentHTML('afterbegin', ctAvaHtml(name));
     const tag0 = card && card.querySelector('.hv-tag');
     if(ttl && tag0) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(tag0.textContent) + '</small>');
     else if(ttl){ try{ bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); }catch(e){} }
     if(ttl){ try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e){} }
-    if(ttl && !card) ttl.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>');
+    if(ttl && !card) ttl.insertAdjacentHTML('afterbegin', ctAvaHtml(name));
 
     /* بازهٔ کارکرد: امروز، ۷ روز یا ۳۰ روز. کارت با دادهٔ همان بازه از
        نو ساخته می‌شود و زبانهٔ باز (خلاصه، کارکرد، مالی) سر جایش می‌ماند. */
@@ -53202,6 +53242,7 @@
       try{ localStorage.setItem(PERM_CACHE_KEY, JSON.stringify({p: lists[PERM_KIND] || [], r: lists[PERM_ROLE_KIND] || [], u: lists[PERM_USER_KIND] || []})); }catch(e2){}
       try{ upCfgLoad(lists); }catch(e2){}
       try{ sphLoad(lists); }catch(e2){}
+      try{ ptyAvaLoad(lists); }catch(e2){}
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
