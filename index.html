@@ -28326,7 +28326,7 @@
         out.push({level:'hot', kind:'statement', id: pick(r,AD.id), who: who0,
           stageDays: reviewStageDays(r), stage: String(pick(r,AD.review) || ''),
           title: 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''),
-          note: 'موعد ' + toFa(od) + ' روز گذشته و هنوز تسویه نشده'});
+          note: 'موعد ' + faDur(od) + ' گذشته و هنوز تسویه نشده'});
         return;
       }
       if(dl == null || dl <= 5) return;
@@ -28366,7 +28366,7 @@
         out.push({level:'hot', kind:'contract', id: pick(r,AD.id), who: who0,
           stageDays: reviewStageDays(r), stage: String(pick(r,AD.review) || ''),
           title: 'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
-          note: 'موعد ' + toFa(od) + ' روز گذشته و هنوز ابلاغ نشده'});
+          note: 'موعد ' + faDur(od) + ' گذشته و هنوز ابلاغ نشده'});
         return;
       }
       if(dl == null || dl <= 5) return;
@@ -28389,8 +28389,8 @@
       if(!mine(who)) return;
       out.push({level: dl > 0 ? 'hot' : 'warm', kind:'minute', id: pick(r,AD.id), who,
         title: (pick(r,AD.mSubject) || 'صورتجلسه') + ' — بند ' + toFa(pick(r,AD.mIdx) || ''),
-        note: dl > 0 ? ('موعد اقدام ' + toFa(dl) + ' روز گذشته')
-                     : ('تا موعد اقدام ' + toFa(Math.abs(dl)) + ' روز مانده')});
+        note: dl > 0 ? ('موعد اقدام ' + faDur(dl) + ' گذشته')
+                     : ('تا موعد اقدام ' + faDur(Math.abs(dl)) + ' مانده')});
     });
 
     (A.designs || []).forEach(r => {
@@ -28413,7 +28413,7 @@
       if(!mine(who)) return;
       out.push({level:'hot', kind:'letter', id: pick(r,AD.id), who,
         title: 'نامه ' + (pick(r,AD.lNo) || '') + ' — ' + (pick(r,AD.lSubject) || ''),
-        note: 'موعد ' + toFa(od) + ' روز گذشته است'});
+        note: 'موعد ' + faDur(od) + ' گذشته است'});
     });
 
     /* ---- بررسی داخلیِ سپرده‌شده و هنوز تأییدنشده ----
@@ -28688,7 +28688,7 @@
     if(dueRaw){
       const d = daysSince(dueRaw);
       if(d != null){
-        if(d > 0) return 'موعد ' + toFa(d) + ' روز گذشته است';
+        if(d > 0) return 'موعد ' + faDur(d) + ' گذشته است';
         const left = -d;
         if(left <= NEAR_DUE_DAYS)
           return left === 0 ? 'موعدش امروز است' : (toFa(left) + ' روز تا موعد مانده');
@@ -28699,7 +28699,7 @@
     if(o.kind !== 'letter' && o.startRaw){
       const a2 = daysSince(o.startRaw);
       if(a2 != null && a2 >= STALE_DAYS)
-        return toFa(a2) + ' روز از ابلاغ گذشته و هنوز باز است';
+        return faDur(a2) + ' از ابلاغ گذشته و هنوز باز است';
     }
     return '';
   }
@@ -28841,8 +28841,8 @@
       if(done) return '';
       const dl = daysSince(pick(r,AD.mDate));
       if(dl == null || dl < -NEAR_DUE_DAYS) return '';
-      return dl > 0 ? ('موعد اقدام ' + toFa(dl) + ' روز گذشته است')
-        : (dl === 0 ? 'موعد اقدام امروز است' : ('تا موعد اقدام ' + toFa(-dl) + ' روز مانده'));
+      return dl > 0 ? ('موعد اقدام ' + faDur(dl) + ' گذشته است')
+        : (dl === 0 ? 'موعد اقدام امروز است' : ('تا موعد اقدام ' + faDur(-dl) + ' مانده'));
     }
 
     /* موعد اتمام، پیش از هر شرط دیگری بررسی می‌شود.
@@ -28860,7 +28860,7 @@
     const dOver = dueTracked(r) ? daysSince(pick(r,AD.due)) : null;
     const paidDone = (kind === 'statement') && isPaid(r);
     if(!paidDone && dOver != null){
-      if(dOver > 0) return 'موعد ' + toFa(dOver) + ' روز گذشته است';
+      if(dOver > 0) return 'موعد ' + faDur(dOver) + ' گذشته است';
       if(-dOver <= NEAR_DUE_DAYS)
         return dOver === 0 ? 'موعدش امروز است' : (toFa(-dOver) + ' روز تا موعد مانده');
     }
@@ -41004,7 +41004,7 @@
   function kartItemHtml(r, wIds, dleft){
     const id = String(pick(r,T.id) || r.__admId || '');
     const crit = wIds.has(id), st = taskStatus(r);
-    const due = dleft == null ? 'بی‌موعد' : dleft < 0 ? toFa(-dleft) + ' روز گذشته' : dleft === 0 ? 'موعد امروز' : toFa(dleft) + ' روز مانده';
+    const due = dleft == null ? 'بی‌موعد' : dleft < 0 ? faDur(-dleft) + ' گذشته' : dleft === 0 ? 'موعد امروز' : faDur(dleft) + ' مانده';
     let g = ''; try{ g = taskGroupOf(r) || ''; }catch(e){}
     return '<button type="button" class="kt-it' + (crit ? ' crit' : '') + (dleft != null && dleft < 0 ? ' late' : dleft != null && dleft <= 7 ? ' soon' : '') + '"'
       + ' data-ktkind="' + esc(r.__admKind || 'task') + '" data-ktid="' + esc(id) + '">'
@@ -41546,7 +41546,7 @@
     const ago = lastRep ? daysSince(lastRep) : null;
     let chips = !(myRows.length || ktIsReporter(name)) ? '' : myRows.length
       ? chip('ok', KT_I.rep, 'گزارش امروز: ' + toFa(myRows.length) + ' ردیف، ' + toFa(men) + ' نفر', 'rep')
-      : chip(ago != null && ago > 2 ? 'bad' : 'warn', KT_I.rep, lastRep ? 'آخرین گزارش ' + (ago === 1 ? 'دیروز' : toFa(ago) + ' روز پیش') : 'گزارش امروز ثبت نشده', 'rep').replace('<button ', '<button data-pklast="' + esc(name) + '" ');
+      : chip(ago != null && ago > 2 ? 'bad' : 'warn', KT_I.rep, lastRep ? 'آخرین گزارش ' + (ago === 1 ? 'دیروز' : faDur(ago) + ' پیش') : 'گزارش امروز ثبت نشده', 'rep').replace('<button ', '<button data-pklast="' + esc(name) + '" ');
     /* تاریخ آخرین گزارش از خود پایگاه داده (نه فقط داده‌های بازشده) */
     if(!myRows.length && ktIsReporter(name) && BACKEND === 'supabase') setTimeout(async () => {
       try{
@@ -41557,7 +41557,7 @@
         const sp = el.querySelector('b');
         if(!d){ if(sp) sp.textContent = 'ثبت نشده'; return; }
         const a2 = daysSince(d);
-        if(sp) sp.textContent = (a2 === 1 ? 'دیروز' : a2 > 1 ? toFa(a2) + ' روز پیش' : 'امروز') + ' · ' + (taskDate(d) || toFa(d));
+        if(sp) sp.textContent = (a2 === 1 ? 'دیروز' : a2 > 1 ? faDur(a2) + ' پیش' : 'امروز') + ' · ' + (taskDate(d) || toFa(d));
         el.classList.toggle('bad', a2 > 2);
       }catch(e){}
     }, 0);
@@ -41567,7 +41567,7 @@
     const ph = (function(){ try{ return sphShown(name); }catch(e){ return ''; } })();
     let pjN = ''; try{ pjN = (pjCur() || {}).name || ''; }catch(e){}
     const inf = (l, v, cls, attr) => '<div class="pc2-i' + (cls ? ' ' + cls : '') + '"' + (attr || '') + '><u>' + l + '</u><b>' + v + '</b></div>';
-    const lastTxt = myRows.length ? 'امروز' : lastRep ? (ago === 1 ? 'دیروز' : ago === 0 ? 'امروز' : toFa(ago) + ' روز پیش') : (ktIsReporter(name) ? 'ثبت نشده' : '—');
+    const lastTxt = myRows.length ? 'امروز' : lastRep ? (ago === 1 ? 'دیروز' : ago === 0 ? 'امروز' : faDur(ago) + ' پیش') : (ktIsReporter(name) ? 'ثبت نشده' : '—');
     let h = '<section class="pc2">'
       + '<div class="pc2-info">'
       +   inf('سمت', esc(roleOf(name) || 'مشخص نشده'))
@@ -43149,6 +43149,16 @@
   /* ====== ابزار ====== */
   const faD = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
   const toFa = n => String(n).split('').map(d => /[0-9]/.test(d) ? faD[d] : d).join('');
+  /* مدت با واحد مناسب: تا ۴۵ روز «روز»، تا یک سال «ماه و روز»، بیشتر «سال و ماه» */
+  function faDur(days){
+    const d = Math.round(Math.abs(Number(days)));
+    if(!isFinite(d)) return toFa(days) + ' روز';
+    if(d < 45) return toFa(d) + ' روز';
+    if(d < 365){ const m = Math.floor(d / 30.44), r = Math.round(d - m * 30.44); return toFa(m) + ' ماه' + (r >= 1 ? ' و ' + toFa(r) + ' روز' : ''); }
+    const y = Math.max(1, Math.floor(d / 365.25)), m = Math.max(0, Math.floor((d - y * 365.25) / 30.44));
+    return toFa(y) + ' سال' + (m >= 1 ? ' و ' + toFa(m) + ' ماه' : '');
+  }
+  window.faDur = faDur;
   const toEn = s => String(s == null ? '' : s)
     .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
     .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));
@@ -47383,7 +47393,7 @@
         const ago = daysSince(d0);
         return '<span class="kv"><i>' + esc(lb) + (num ? ' — شمارهٔ ' + esc(toFa(num)) : '') + '</i>'
           + '<b>' + (d0 ? esc(admDate(d0)) : '—')
-          + (ago != null ? ' <u>' + toFa(ago) + ' روز پیش</u>' : '') + '</b></span>';
+          + (ago != null ? ' <u>' + faDur(ago) + ' پیش</u>' : '') + '</b></span>';
       };
 
       // هشدار: مطالبات مانده یا نبود قرارداد با وجود کارکرد
@@ -47991,7 +48001,7 @@
         return '<button type="button" class="cff k-' + kd + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
           + '<span class="cff-ic">' + (CF_I[kd] || '') + '</span>'
           + '<span class="cff-tx"><b>' + esc(arTitleOf(kd, r)) + '</b>'
-          +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + toFa(ago) + ' روز پیش' : '') + '</small></span>'
+          +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + faDur(ago) + ' پیش' : '') + '</small></span>'
           + '<span class="cff-st' + (scl ? ' ' + scl : '') + '">' + esc(stx) + '</span>'
           + admDlBtnHtml(kd, r, 'cff-dl')
           + (al ? '<i class="cff-al" title="نیازمند پیگیری"></i>' : '')
@@ -55253,8 +55263,8 @@
     /* عدد سمت چپ: اگر موعدی در جریان است، فاصله تا موعد؛ وگرنه
        مدت ماندن در مرحلهٔ فعلی. */
     let dTxt = '';
-    if(dd != null && dd > 0) dTxt = toFa(dd) + ' روز گذشته';
-    else if(dd != null) dTxt = toFa(Math.abs(dd)) + ' روز مانده';
+    if(dd != null && dd > 0) dTxt = faDur(dd) + ' گذشته';
+    else if(dd != null) dTxt = faDur(Math.abs(dd)) + ' مانده';
     else{
       let sp = null;
       try{ sp = (kind === 'statement' || kind === 'contract') ? reviewSpan(kind, r) : null; }catch(e){}
@@ -57141,10 +57151,10 @@
       }else if(inHand){
         tone = left < 0 ? 'bad' : (left <= 3 ? 'warn' : '');
         /* روزهای گذشته روی خطِ بعد از موعد نوشته می‌شود؛ زیر نقطه تکرار نمی‌شود */
-        sub = left < 0 ? '' : (left === 0 ? 'امروز' : toFa(left) + ' روز مانده');
+        sub = left < 0 ? '' : (left === 0 ? 'امروز' : faDur(left) + ' مانده');
       }else{
         tone = 'flat';
-        sub = 'نزد ' + (stage === 'c' ? 'کارفرما' : 'دیگران') + (left < 0 ? ' · ' + toFa(-left) + ' روز گذشته' : '');
+        sub = 'نزد ' + (stage === 'c' ? 'کارفرما' : 'دیگران') + (left < 0 ? ' · ' + faDur(-left) + ' گذشته' : '');
       }
       pts.splice(at, 0, {k:'due', t:'موعد', d:dueRaw, due:true, tone:tone, sub:sub});
     }else if(ok(dueRaw)){
@@ -57969,7 +57979,7 @@
       const left = -1 * (daysSince(dueRaw) || 0);
       bits.push(chip('موعد',
         esc(admDate(dueRaw))
-          + (left < 0 ? ' · ' + toFa(Math.abs(left)) + ' روز گذشته' : ''),
+          + (left < 0 ? ' · ' + faDur(Math.abs(left)) + ' گذشته' : ''),
         left < 0 ? 'hot' : (left <= 3 ? 'warm' : '')));
     }
     if(!hasTl && kind === 'statement' && pick(r,AD.sPayStatus)){
@@ -58056,7 +58066,7 @@
       });
       if(o.dueRaw && kind !== 'letter'){
         const dl = daysSince(o.dueRaw), left = dl == null ? null : -dl;
-        rows.push(row('موعد اتمام', esc(admDate(o.dueRaw)) + (left != null ? ' <small>' + (left >= 0 ? toFa(left) + ' روز مانده' : toFa(-left) + ' روز گذشته') + '</small>' : ''), left != null && left < 0 ? 'warn' : ''));
+        rows.push(row('موعد اتمام', esc(admDate(o.dueRaw)) + (left != null ? ' <small>' + (left >= 0 ? faDur(left) + ' مانده' : faDur(-left) + ' گذشته') + '</small>' : ''), left != null && left < 0 ? 'warn' : ''));
       }
     }
     if(o.owner) rows.push(row('مسئول پرونده', esc(o.owner)));
@@ -58124,7 +58134,7 @@
           rows: kv('تاریخ صورتجلسه', admDate(pick(r,AD.mMeet)))
               + kv('تاریخ اقدام', admDate(pick(r,AD.mDate)))
               + (left == null ? '' : kv('مانده تا اقدام',
-                  left >= 0 ? (toFa(left) + ' روز') : (toFa(Math.abs(left)) + ' روز گذشته'),
+                  left >= 0 ? (toFa(left) + ' روز') : (faDur(Math.abs(left)) + ' گذشته'),
                   left >= 0 ? '' : 'warn'))
               + kv('ردیف بند', pick(r,AD.mIdx) ? toFa(pick(r,AD.mIdx)) : ''),
           note: pick(r,AD.mText) ? '' : ''
@@ -58179,7 +58189,7 @@
       const left = dl == null ? null : -dl;
       dueRow = kv('موعد اتمام', admDate(dueRaw), left != null && left < 0 ? 'warn' : '')
         + (left == null ? '' : kv('مانده تا موعد',
-            left >= 0 ? (toFa(left) + ' روز') : (toFa(Math.abs(left)) + ' روز گذشته'),
+            left >= 0 ? (toFa(left) + ' روز') : (faDur(Math.abs(left)) + ' گذشته'),
             left >= 0 ? '' : 'warn'));
     }
 
@@ -58329,11 +58339,11 @@
           }
           const d2 = daysSince(dueRaw);
           if(d2 != null && d2 > 0)
-            bits.push('<span class="cl-due">موعد ' + toFa(d2) + ' روز گذشته</span>');
+            bits.push('<span class="cl-due">موعد ' + faDur(d2) + ' گذشته</span>');
           else if(kind === 'minute'){
             const dm = daysSince(pick(r,AD.mDate));
             if(dm != null && dm > 0)
-              bits.push('<span class="cl-due">اقدام ' + toFa(dm) + ' روز گذشته</span>');
+              bits.push('<span class="cl-due">اقدام ' + faDur(dm) + ' گذشته</span>');
           }
           return '<div class="adm-line">' + bits.join('') + '</div>';
         })()
@@ -58429,8 +58439,8 @@
               : (left < 0 ? 'bad' : (left <= 3 ? 'warn' : 'ok'));
             t.push(cap('موعد', esc(admDate(dueRaw))
               + (left != null && left < 0
-                  ? ' · ' + toFa(Math.abs(left)) + ' روز گذشته'
-                  : (left != null && left <= 3 ? ' · ' + toFa(left) + ' روز مانده' : '')),
+                  ? ' · ' + faDur(Math.abs(left)) + ' گذشته'
+                  : (left != null && left <= 3 ? ' · ' + faDur(left) + ' مانده' : '')),
               tone));
           }
           if(kind !== 'minute' && age != null){
@@ -61767,7 +61777,7 @@
       +   (due
             ? '<span class="' + (over != null && over > 0 ? 'cl-due' : 'cl-p') + '">موعد '
               + esc(taskDate(due))
-              + (over != null && over > 0 ? ' · ' + toFa(over) + ' روز گذشته' : '') + '</span>'
+              + (over != null && over > 0 ? ' · ' + faDur(over) + ' گذشته' : '') + '</span>'
             : '')
       +   (age != null && age >= 0 && (over == null || over <= 0)
             ? '<span class="cl-p">از شروع ' + toFa(age) + ' روز</span>' : '')
@@ -64395,7 +64405,7 @@
     let done = false; try{ done = admDoneState(k, r).cls === 'ok'; }catch(e){}
     const ds = daysSince(d);
     const cls = done ? 'ok' : ds != null && ds > 0 ? 'bad' : ds != null && ds >= -3 ? 'warn' : '';
-    return '<span class="atb-due ' + cls + '">' + esc(toFa(d)) + (!done && ds != null && ds > 0 ? '<i>' + toFa(ds) + ' روز گذشته</i>' : '') + '</span>';
+    return '<span class="atb-due ' + cls + '">' + esc(toFa(d)) + (!done && ds != null && ds > 0 ? '<i>' + faDur(ds) + ' گذشته</i>' : '') + '</span>';
   }
   function atbAge(r){ const d = daysSince(exact(r, 'تاریخ ارسال')); return d == null ? '<span class="atb-mute">—</span>' : '<span class="atb-age' + (d > 30 ? ' hot' : '') + '">' + toFa(d) + '<small>روز</small></span>'; }
   function atbFiles(r){ let n = 0; try{ n = attachList(pick(r, AD.link)).length; }catch(e){} return n ? '<span class="atb-f">' + ATB_I.clip + toFa(n) + '</span>' : '<span class="atb-mute">—</span>'; }
@@ -65200,8 +65210,8 @@
       if(pick(r,AD.dFloor)){ const fl = pick(r,AD.dFloor); add('طبقه', '<button type="button" class="dz-lk" data-flr="' + esc(fl) + '">' + esc(fl === 'ALL' ? 'کل ساختمان' : (floorLabel(fl) || fl)) + '</button>'); }
       add('محل جزء', esc(pick(r,AD.dZone) || ''));
       const dueRaw = pick(r,AD.due);
-      if(dueRaw){ const dl = daysSince(dueRaw), late = dl != null && dl > 0 && !dsDone(st); add('موعد', '<span class="' + (late ? 'dz-late' : '') + '">' + esc(toFa(admDate(dueRaw))) + '</span>' + (late ? '<small class="dz-late">' + toFa(dl) + ' روز گذشته</small>' : '')); }
-      if(tot != null && tot >= 0) add('از دریافت اول', toFa(tot) + ' روز');
+      if(dueRaw){ const dl = daysSince(dueRaw), late = dl != null && dl > 0 && !dsDone(st); add('موعد', '<span class="' + (late ? 'dz-late' : '') + '">' + esc(toFa(admDate(dueRaw))) + '</span>' + (late ? '<small class="dz-late">' + faDur(dl) + ' گذشته</small>' : '')); }
+      if(tot != null && tot >= 0) add('از دریافت اول', faDur(tot));
       if(owner) add('مسئول پرونده', esc(owner));
       return '<div class="dz-moreb">'
         + (kv.length ? '<dl class="dz-grid">' + kv.join('') + '</dl>' : '')
@@ -65287,8 +65297,8 @@
     if(pick(r,AD.dFloor)){ const fl = pick(r,AD.dFloor); add('طبقه', '<button type="button" class="dz-lk" data-flr="' + esc(fl) + '">' + esc(fl === 'ALL' ? 'کل ساختمان' : (floorLabel(fl) || fl)) + '</button>'); }
     add('محل جزء', esc(pick(r,AD.dZone) || ''));
     const dueRaw = pick(r,AD.due);
-    if(dueRaw){ const dl = daysSince(dueRaw), late = dl != null && dl > 0 && !dsDone(st); add('موعد', '<span class="' + (late ? 'dz-late' : '') + '">' + esc(toFa(admDate(dueRaw))) + '</span>' + (late ? '<small class="dz-late">' + toFa(dl) + ' روز گذشته</small>' : '')); }
-    if(tot != null) add('از دریافت اول', toFa(tot) + ' روز');
+    if(dueRaw){ const dl = daysSince(dueRaw), late = dl != null && dl > 0 && !dsDone(st); add('موعد', '<span class="' + (late ? 'dz-late' : '') + '">' + esc(toFa(admDate(dueRaw))) + '</span>' + (late ? '<small class="dz-late">' + faDur(dl) + ' گذشته</small>' : '')); }
+    if(tot != null) add('از دریافت اول', faDur(tot));
     if(revs.length > 1) add('ویرایش‌ها', toFa(revs.length) + ' ویرایش');
     if(pick(r,AD.link)){ try{ add('پیوست', attachChipsHtml(pick(r,AD.link), 3)); }catch(e){} }
     const act = (editable && id) ? (function(){
@@ -67167,7 +67177,7 @@
     const dueRow = it => '<button type="button" class="due-it" data-arjump="' + esc(it.id) + '">'
       + '<span class="di-t">' + esc(arTitleOf(it.k, it.r)) + '</span>'
       + '<span class="di-d ' + (it.dd > 0 ? 'late' : 'soon') + '">'
-      + (it.dd > 0 ? toFa(it.dd) + ' روز گذشته' : (it.dd === 0 ? 'امروز' : toFa(-it.dd) + ' روز مانده')) + '</span></button>';
+      + (it.dd > 0 ? faDur(it.dd) + ' گذشته' : (it.dd === 0 ? 'امروز' : faDur(-it.dd) + ' مانده')) + '</span></button>';
     h += '<div class="arc arc-due"><div class="arc-h"><b>موعدهای اسناد باز</b><span>' + toFa(dueTot) + ' سند باز</span></div>'
       + (dueTot
           ? '<div class="due-bar">' + seg(dueB.late.length, 'late') + seg(dueB.week.length, 'week') + seg(dueB.later.length, 'later') + seg(dueB.none, 'none') + '</div>'
@@ -67468,7 +67478,7 @@
       + '<div class="tbi-g">'
       +   '<span title="' + esc(toFa(admDate(sp.start) || '')) + '"><u>بروز</u>' + (toFa(admDate(sp.start)).slice(5) || '—') + '<small>' + esc(it.by || '') + '</small></span>'
       +   '<span title="' + esc(sp.end ? toFa(admDate(sp.end)) : '') + '"><u>رفع</u>' + (sp.end ? toFa(admDate(sp.end)).slice(5) : 'هنوز باز') + '<small>' + esc(res && !it.open ? (res.by || '') : '') + '</small></span>'
-      +   '<span><u>مدت</u>' + (days != null ? toFa(days) + ' روز' : '—') + (it.open ? '<small>تا امروز</small>' : '') + '</span>'
+      +   '<span><u>مدت</u>' + (days != null ? faDur(days) : '—') + (it.open ? '<small>تا امروز</small>' : '') + '</span>'
       + '</div>'
       + (res && !it.open && res.note ? '<div class="tbi-n">چطور رفع شد: ' + esc(res.note) + '</div>' : '')
       + '</div>';
@@ -67997,7 +68007,7 @@
       +   cell('موعد اتمام', pick(r,T.due) ? taskDate(pick(r,T.due)) : '', 'due')
       +   (left == null || st.cls === 'done' ? '' :
             cell('مانده تا موعد',
-              left >= 0 ? (toFa(left) + ' روز') : (toFa(Math.abs(left)) + ' روز گذشته'),
+              left >= 0 ? (toFa(left) + ' روز') : (faDur(Math.abs(left)) + ' گذشته'),
               left >= 0 ? '' : 'warn'))
       + '</div>'
       + (pick(r,T.blockers)
@@ -68035,13 +68045,13 @@
     const bits = [];
     bits.push('<span class="rs-b"><u>طول بازه</u><b>' + toFa(info.days) + ' روز</b></span>');
     if(passed != null && passed >= 0)
-      bits.push('<span class="rs-b"><u>از ابلاغ</u><b>' + toFa(passed) + ' روز گذشته</b></span>');
+      bits.push('<span class="rs-b"><u>از ابلاغ</u><b>' + faDur(passed) + ' گذشته</b></span>');
     if(dueIn != null){
       bits.push(dueIn > 0
-        ? '<span class="rs-b late"><u>موعد</u><b>' + toFa(dueIn) + ' روز گذشته</b></span>'
+        ? '<span class="rs-b late"><u>موعد</u><b>' + faDur(dueIn) + ' گذشته</b></span>'
         : (dueIn === 0
             ? '<span class="rs-b now"><u>موعد</u><b>امروز است</b></span>'
-            : '<span class="rs-b ok"><u>تا موعد</u><b>' + toFa(Math.abs(dueIn)) + ' روز مانده</b></span>'));
+            : '<span class="rs-b ok"><u>تا موعد</u><b>' + faDur(Math.abs(dueIn)) + ' مانده</b></span>'));
     }else{
       bits.push('<span class="rs-b open"><u>موعد</u><b>ثبت نشده — تا امروز</b></span>');
     }
@@ -68433,11 +68443,11 @@
     const dl = due ? daysSince(due) : null;
     if(dl == null){
       const ag = pick(r,T.start) ? daysSince(pick(r,T.start)) : null;
-      return (ag != null && ag >= 0) ? {t: toFa(ag) + ' روز از ابلاغ', c: ag > 30 ? 'warn' : 'mute'} : {t:'', c:''};
+      return (ag != null && ag >= 0) ? {t: faDur(ag) + ' از ابلاغ', c: ag > 30 ? 'warn' : 'mute'} : {t:'', c:''};
     }
-    if(dl > 0) return {t: toFa(dl) + ' روز گذشته', c:'bad'};
+    if(dl > 0) return {t: faDur(dl) + ' گذشته', c:'bad'};
     if(dl === 0) return {t:'امروز', c:'warn'};
-    return {t: toFa(-dl) + ' روز مانده', c: (-dl <= 3 ? 'warn' : 'ok')};
+    return {t: faDur(-dl) + ' مانده', c: (-dl <= 3 ? 'warn' : 'ok')};
   }
   function tfrStatusHtml(st){
     return '<span class="tfr-chip ' + st.cls + '"><i></i>' + esc(st.label) + '</span>';
@@ -70507,7 +70517,7 @@
     tip.innerHTML = '<button type="button" class="gt-tx" aria-label="بستن">✕</button><b>' + esc(r.t) + '</b>'
       + '<div class="gt-tg"><span>شروع<b>' + esc(gtFa(r.s)) + '</b></span><span>پایان<b>' + esc(gtFa(r.e)) + '</b></span><span>مدت<b>' + toFa(dur) + ' روز</b></span><span>پیشرفت<b>' + toFa(r.p) + '٪</b></span></div>'
       + '<div class="gt-tbar"><i style="width:' + Math.min(100, r.p) + '%"></i></div>'
-      + '<small class="' + (r.late ? 'bad' : '') + '">' + (r.cls === 'done' ? 'انجام شده' : left < 0 ? toFa(-left) + ' روز از پایان گذشته' : left === 0 ? 'پایان امروز است' : toFa(left) + ' روز مانده') + (r.who ? ' · ' + esc(r.who) : '') + (r.blk ? ' · گیر: ' + esc(r.blk) : '') + '</small>'
+      + '<small class="' + (r.late ? 'bad' : '') + '">' + (r.cls === 'done' ? 'انجام شده' : left < 0 ? faDur(-left) + ' از پایان گذشته' : left === 0 ? 'پایان امروز است' : faDur(left) + ' مانده') + (r.who ? ' · ' + esc(r.who) : '') + (r.blk ? ' · گیر: ' + esc(r.blk) : '') + '</small>'
       + (r.k === 'exec' && canEditTask() ? '<div class="gt-ed"><label><span>شروع</span><input type="text" class="date-in" inputmode="numeric" data-gtes value="' + esc(toFa(gtShamsi(r.s))) + '"></label>'
           + '<label><span>پایان</span><input type="text" class="date-in" inputmode="numeric" data-gtee value="' + esc(toFa(gtShamsi(r.e))) + '"></label>'
           + '<button type="button" class="mini go" data-gtsave="' + esc(r.id) + '">ذخیرهٔ تاریخ</button></div>' : '')
@@ -71068,7 +71078,7 @@
       + '<div class="wh-mvl">' + lines.map(x => '<span>' + esc(x) + '</span>').join('') + '</div>'
       + '<div class="wh-mvf">' + (m.use && (m.use.fl || m.use.act) ? '<small>' + esc([m.use.fl, m.use.act].filter(Boolean).join(' · ')) + '</small>' : '')
       + (m.t === 'out' || m.t === 'loan' ? (m.recv ? '<em class="ok">تحویل گرفت · ' + esc(m.recv.by || '') + (m.recv.d ? ' · ' + esc(toFa(m.recv.d)) : '') + '</em>' : '<em class="warn">منتظر تأیید دریافت</em>') : '')
-      + (loan ? '<em class="' + (late ? 'bad' : 'warn') + '">امانت باز' + (m.due ? ' · موعد ' + esc(toFa(m.due)) + (late ? ' (' + toFa(daysSince(m.due)) + ' روز گذشته)' : '') : '') + '</em>' : (m.t === 'loan' ? '<em class="ok">برگشت کامل</em>' : ''))
+      + (loan ? '<em class="' + (late ? 'bad' : 'warn') + '">امانت باز' + (m.due ? ' · موعد ' + esc(toFa(m.due)) + (late ? ' (' + faDur(daysSince(m.due)) + ' گذشته)' : '') : '') + '</em>' : (m.t === 'loan' ? '<em class="ok">برگشت کامل</em>' : ''))
       + '<span class="wh-mvb">' + esc(m.by || '') + '</span>'
       + (meRecv ? '<button type="button" class="dz-b pri" data-whrecv="' + esc(m.id) + '">تأیید دریافت</button>' : '')
       + (loan && whMgr() ? '<button type="button" class="dz-b" data-whret="' + esc(m.id) + '">ثبت برگشت</button>' : '') + '</div></div>';
@@ -71517,7 +71527,7 @@
       + '<div class="qc-t">' + esc(n.desc || '') + '</div>'
       + '<div class="wh-mvl">' + [n.disc, n.fl, n.loc, n.ir ? 'از ' + n.ir : ''].filter(Boolean).map(x => '<span>' + esc(x) + '</span>').join('') + '</div>' + qcFilesView(n.files)
       + (n.log.length ? '<div class="qc-log">' + n.log.map(l => '<div><b>' + esc(l.st) + '</b> · ' + esc(l.by || '') + ' · ' + esc(toFa(l.d || '')) + (l.n ? '<span>' + esc(l.n) + '</span>' : '') + '</div>').join('') + '</div>' : '')
-      + '<div class="wh-mvf">' + (n.due ? '<em class="' + (late ? 'bad' : n.st === 'بسته' ? 'ok' : 'warn') + '">مهلت ' + esc(toFa(n.due)) + (late ? ' (' + toFa(daysSince(n.due)) + ' روز گذشته)' : '') + '</em>' : '')
+      + '<div class="wh-mvf">' + (n.due ? '<em class="' + (late ? 'bad' : n.st === 'بسته' ? 'ok' : 'warn') + '">مهلت ' + esc(toFa(n.due)) + (late ? ' (' + faDur(daysSince(n.due)) + ' گذشته)' : '') + '</em>' : '')
       + '<span class="wh-mvb">ثبت: ' + esc(n.by || '') + '</span>'
       + (n.st === 'باز' && (insp || mine || party || qcCanReq()) ? '<button type="button" class="dz-b pri" data-qcfix="' + esc(n.id) + '">ثبت اقدام اصلاحی</button>' : '')
       + (n.st !== 'بسته' && insp ? '<button type="button" class="dz-b" data-qcclose="' + esc(n.id) + '">تأیید و بستن</button>' : '')
@@ -74968,7 +74978,7 @@
     secHomeLoad();
     const C = [];
     if(sec.bk){ let ago = null; try{ ago = sec.bk.d ? daysSince(sec.bk.d) : null; }catch(e){}
-      if(ago == null || ago >= 1) C.push(card(ago == null || ago > 6 ? 'bad' : 'due', HM_I.shield, ago == null ? 'پشتیبان‌گیری' : 'پشتیبان‌گیری', ago == null ? 'هنوز گرفته نشده' : toFa(ago) + ' روز پیش · ' + 'پشتیبان روزانه از همهٔ داده‌ها', 'پشتیبان', 'data-h3sec="bk"')); }
+      if(ago == null || ago >= 1) C.push(card(ago == null || ago > 6 ? 'bad' : 'due', HM_I.shield, ago == null ? 'پشتیبان‌گیری' : 'پشتیبان‌گیری', ago == null ? 'هنوز گرفته نشده' : faDur(ago) + ' پیش · ' + 'پشتیبان روزانه از همهٔ داده‌ها', 'پشتیبان', 'data-h3sec="bk"')); }
     if(sec.fail) C.push(card('bad', HM_I.warn, 'ورود ناموفق', toFa(sec.fail) + ' بار در ۲۴ ساعت · ' + (sec.lock ? toFa(sec.lock) + ' حساب قفل شد · ' : '') + esc((sec.failWho || []).join('، ')), 'بررسی', 'data-h3sec="aud"'));
     return C;
   };
@@ -82238,7 +82248,7 @@
       if(pos) chips.push(chip('موقعیت', pos, ''));
       if(due){
         const d = daysSince(due);
-        chips.push(chip('موعد', admDate(due) + (d != null && d > 0 ? ' · ' + toFa(d) + ' روز گذشته' : ''),
+        chips.push(chip('موعد', admDate(due) + (d != null && d > 0 ? ' · ' + faDur(d) + ' گذشته' : ''),
           d != null && d > 0 ? 'bad' : 'ok'));
       }
       const blk = pick(row,T.blockers);
@@ -82266,7 +82276,7 @@
       if(due){
         const d = daysSince(due);
         chips.push(chip(kind === 'minute' ? 'اقدام' : 'موعد',
-          admDate(due) + (d != null && d > 0 ? ' · ' + toFa(d) + ' روز گذشته' : ''),
+          admDate(due) + (d != null && d > 0 ? ' · ' + faDur(d) + ' گذشته' : ''),
           d != null && d > 0 ? 'bad' : 'ok'));
       }
       const party = admParty(kind, row);
@@ -82715,7 +82725,7 @@
       +   '<span class="mgc-what">' + (x.raw ? x.what : esc(x.what)) + '</span>'
       + '</span>'
       + '<span class="mgc-meta">'
-      +   '<u>' + (x.live ? 'اکنون' : (x.ago === 0 ? 'امروز' : (x.ago === 1 ? 'دیروز' : toFa(x.ago) + ' روز پیش'))) + '</u>'
+      +   '<u>' + (x.live ? 'اکنون' : (x.ago === 0 ? 'امروز' : (x.ago === 1 ? 'دیروز' : faDur(x.ago) + ' پیش'))) + '</u>'
       +   (x.by ? '<i>' + esc(x.by) + '</i>' : '')
       +   (x.id ? '<button type="button" class="mini mgc-go" data-mgc-kind="' + esc(x.kind)
               + '" data-mgc-id="' + esc(x.id) + '">رفتن به مورد</button>' : '')
@@ -83123,7 +83133,7 @@
     if(d == null) return '';
     if(d > 0) return toFa(d) + ' روز دیرکرد';
     if(d === 0) return 'موعد امروز';
-    if(d >= -NEAR_DUE_DAYS) return toFa(-d) + ' روز مانده';
+    if(d >= -NEAR_DUE_DAYS) return faDur(-d) + ' مانده';
     return '';
   }
   let deckHubB = '';
@@ -86617,11 +86627,11 @@
       + '<div class="pi-ht"><small>' + esc([p.code, p.type].filter(Boolean).join(' · ') || 'پروژهٔ ساختمانی') + '</small><h2>' + esc(p.name || '') + '</h2>'
       + '<span class="pi-tags">' + [p.status, p.city, p.start ? 'شروع ' + toFa(p.start) : ''].filter(Boolean).map(x => '<i>' + esc(x) + '</i>').join('') + '</span></div>'
       + '<div class="pi-hs"><div class="pi-hring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle r="15.9155" cx="18" cy="18" class="bg"></circle><circle r="15.9155" cx="18" cy="18" class="fg" stroke-dasharray="' + pr.toFixed(1) + ' ' + (100 - pr).toFixed(1) + '" stroke-dashoffset="25"></circle></svg><span><b>' + toFa(Math.round(pr)) + '٪</b><small>پیشرفت</small></span></div>'
-      + (tot && el != null ? '<div class="pi-hd"><b>' + toFa(Math.max(0, tot - el)) + '</b><small>روز تا پایان</small></div>' : '') + '</div>'
+      + (tot && el != null ? '<div class="pi-hd"><b>' + faDur(Math.max(0, tot - el)) + '</b><small>تا پایان</small></div>' : '') + '</div>'
       + '<svg class="pi-sky" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 120V86h40V58h26v28h30V40h34v46h22V20h40v66h24V52h30v34h36V30h28v56h30V64h40v22h34V44h30v42h36V70h40v50z" fill="currentColor"/></svg></section>';
     h += '<section class="pi-kpi">'
       + '<div><b>' + toFa(Math.round(pr)) + '٪</b><span>پیشرفت فیزیکی</span><em class="pi-bar" style="--p:' + pr + '"><i></i></em></div>'
-      + '<div><b>' + (tp != null ? toFa(tp) + '٪' : el != null ? toFa(el) : '—') + '</b><span>' + (tp != null ? 'زمان سپری‌شده' : 'روز از شروع') + '</span>' + (tp != null ? '<em class="pi-bar t" style="--p:' + tp + '"><i></i></em>' : '') + '</div>'
+      + '<div><b>' + (tp != null ? toFa(tp) + '٪' : el != null ? faDur(el) : '—') + '</b><span>' + (tp != null ? 'زمان سپری‌شده' : 'از شروع') + '</span>' + (tp != null ? '<em class="pi-bar t" style="--p:' + tp + '"><i></i></em>' : '') + '</div>'
       + '<div><b>' + toFa(up) + (dn ? '<small>+' + toFa(dn) + '</small>' : '') + '</b><span>طبقه' + (dn ? ' (زیرزمین)' : '') + '</span></div>'
       + '<div><b>' + (units ? toFa(units) : '—') + '</b><span>واحد</span></div></section>';
     if(p.desc) h += '<section class="pi-sec"><h3>معرفی</h3><p class="pi-desc">' + esc(p.desc) + '</p></section>';
@@ -86641,7 +86651,7 @@
       ['گروه لرزه‌ای', esc(p.seismic || '')], ['فضای سبز', p.green ? fmt(p.green) + ' m²' : ''], ['امکانات رفاهی', esc(p.amen || '')], ['نظام مهندسی', esc(p.engFile || '')], ['بیمه', esc(p.insurer || '') + (p.insEnd ? ' · تا ' + esc(toFa(p.insEnd)) : '')], ['بهره‌برداری', p.opDate ? esc(toFa(p.opDate)) : '']].filter(x => String(x[1]).replace(/^ · /, '').trim());
     const TI = {'زیربنای کل':'M4 20V8l8-4 8 4v12M9 20v-6h6v6', 'مساحت زمین':'M4 4h16v16H4zM4 12h16M12 4v16', 'ارتفاع':'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4', 'سیستم سازه':'M5 21V5M19 21V5M5 9h14M5 15h14M9 5l6 4M9 15l6-6', 'باربر جانبی':'M4 20L20 4M4 4l16 16M4 4h16v16H4z', 'فونداسیون':'M3 17h18M5 17v4h14v-4M8 17V9h8v8', 'نما':'M5 3h14v18H5zM9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2', 'پارکینگ':'M6 20V4h7a4 4 0 010 8H6', 'آسانسور':'M6 3h12v18H6zM10 8l2-2 2 2M10 16l2 2 2-2', 'کاربری‌ها':'M4 6h16M4 12h16M4 18h10', 'پروانهٔ ساخت':'M6 3h9l4 4v14H6zM9 13l2 2 4-4'};
     if(tech.length) h += '<section class="pi-sec"><h3>مشخصات فنی</h3><div class="pi-tech">' + tech.map(x => '<div class="pi-ti"><span class="pi-tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + (TI[x[0]] || 'M5 12h14') + '"/></svg></span><span><small>' + x[0] + '</small><b>' + x[1] + '</b></span></div>').join('') + '</div></section>';
-    const tm = [['تاریخ شروع', p.start ? toFa(p.start) : ''], ['پایان برنامه‌ای', p.end ? toFa(p.end) : ''], ['روز سپری‌شده', el != null ? toFa(el) + ' روز' : ''], ['مدت کل', tot ? toFa(tot) + ' روز' : ''],
+    const tm = [['تاریخ شروع', p.start ? toFa(p.start) : ''], ['پایان برنامه‌ای', p.end ? toFa(p.end) : ''], ['زمان سپری‌شده', el != null ? faDur(el) : ''], ['مدت کل', tot ? faDur(tot) : ''],
       ['نوع قرارداد', esc(p.ctype || '')], ['مبلغ قرارداد', p.amount ? fmt(p.amount) + ' تومان' : ''], ['بودجهٔ کل', p.budget ? fmt(p.budget) + ' تومان' : '']].filter(x => x[1]);
     const sch0 = (tp != null) ? '<div class="pi-sch"><span class="pi-sch-b"><i style="width:' + tp + '%"></i><em style="inset-inline-start:' + pr + '%" title="پیشرفت فیزیکی ' + toFa(Math.round(pr)) + '٪"></em></span><span class="pi-sch-l"><small>' + toFa(p.start) + '</small><b>' + (pr >= tp ? 'جلوتر از برنامه' : 'عقب‌تر از برنامه') + ' · ' + toFa(Math.abs(Math.round(pr - tp))) + '٪</b><small>' + toFa(p.end) + '</small></span></div>' : '';
     const left = (tot && el != null) ? tot - el : null;
@@ -86650,7 +86660,7 @@
         + '<span class="mk n" style="inset-inline-start:' + tp + '%"><em></em><b>امروز</b><small>' + toFa(tp) + '٪ زمان</small></span>'
         + '<span class="mk e" style="inset-inline-start:100%"><em></em><b>پایان</b><small>' + toFa(p.end) + '</small></span></div>'
         + '<div class="pi-tl-s"><span class="' + (pr >= tp ? 'ok' : 'bad') + '">' + (pr >= tp ? 'جلوتر از برنامه' : 'عقب‌تر از برنامه') + ' · ' + toFa(Math.abs(Math.round(pr - tp))) + '٪</span>'
-        + (left != null ? '<span>' + (left >= 0 ? toFa(left) + ' روز مانده' : toFa(-left) + ' روز گذشته از پایان') + '</span>' : '') + '<span>پیشرفت فیزیکی ' + toFa(Math.round(pr)) + '٪</span></div></div>' : '';
+        + (left != null ? '<span>' + (left >= 0 ? faDur(left) + ' مانده' : faDur(-left) + ' گذشته از پایان') + '</span>' : '') + '<span>پیشرفت فیزیکی ' + toFa(Math.round(pr)) + '٪</span></div></div>' : '';
     void sch0;
     if(tm.length) h += '<section class="pi-sec"><h3>زمان و قرارداد</h3>' + sch + '<div class="pi-grid">' + tm.map(x => kv(x[0], x[1])).join('') + '</div></section>';
     /* طبقات: نوار باریک از بالا به پایین */
