@@ -24152,8 +24152,14 @@
   .pi-addr svg{flex:none;width:16px;height:16px;color:#2f6f9a;margin-top:3px;}
   .pi-map{border-radius:14px;overflow:hidden;border:1px solid var(--line);height:220px;}
   .pi-map iframe{width:100%;height:100%;border:0;display:block;}
-  .pi-maps{display:flex;gap:6px;margin-top:8px;}
-  .pi-maps a{font-size:11.5px;font-weight:700;color:#2f6f9a;text-decoration:none;padding:5px 11px;border-radius:99px;background:color-mix(in srgb, #2f6f9a 10%, transparent);}
+  .pi-maps{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .pi-maps > small{font-size:11px;color:var(--muted);font-weight:600;margin-inline-end:2px;}
+  .pi-maps a{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px 0 9px;border-radius:12px;text-decoration:none;background:var(--surface);border:1px solid var(--line);
+    font-size:12px;font-weight:700;color:var(--ink);transition:transform .2s, box-shadow .2s, border-color .2s;}
+  .pi-maps a:hover{transform:translateY(-1px);box-shadow:0 8px 18px -12px rgba(0,0,0,.4);border-color:color-mix(in srgb, var(--ink) 18%, var(--line));}
+  .pi-maps a svg{width:22px;height:22px;flex:none;}
+  .pi-maps a span{white-space:nowrap;} .pi-maps a.pm-ggl span{font-family:system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;font-size:11.5px;}
+  @media (max-width:420px){ .pi-maps a{flex:1;justify-content:center;padding:0 8px;} .pi-maps > small{width:100%;} }
   .pi-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
   .pi-gal button{all:unset;cursor:pointer;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:color-mix(in srgb, var(--line) 50%, transparent);}
   .pi-gal img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -86582,6 +86588,12 @@
   }, true);
 
   /* ====== گزارش «معرفی پروژه» ====== */
+  /* نشانهٔ سرویس‌های نقشه (طرح ساده، با رنگ هر سرویس) */
+  const PI_MAP_I = {
+    ggl:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 00-5.6 11.2L12 22l5.6-8.8A7 7 0 0012 2z" fill="#34A853"/><path d="M12 2a7 7 0 00-5.6 2.8L12 9.2z" fill="#4285F4"/><path d="M6.4 4.8A7 7 0 006.4 13.2L12 9.2z" fill="#EA4335"/><path d="M17.6 4.8L12 9.2l5.6 4A7 7 0 0017.6 4.8z" fill="#FBBC04"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>',
+    nsh:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="#1a5cff"/><path d="M12 5.5a4.8 4.8 0 00-4.8 4.8c0 3.4 4.8 8.2 4.8 8.2s4.8-4.8 4.8-8.2A4.8 4.8 0 0012 5.5z" fill="#fff"/><circle cx="12" cy="10.3" r="1.9" fill="#1a5cff"/></svg>',
+    bld:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="#0f9d6b"/><path d="M7 13.5c0 2.2 2.2 4 5 4s5-1.8 5-4V8.5" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="20" r="0" fill="#fff"/><circle cx="12" cy="7" r="1.6" fill="#fff"/></svg>'
+  };
   function pjIntroHtml(){
     const p = pjCur(), F = BUILDING;
     const n = v => { const x = parseFloat(toEn(String(v == null ? '' : v)).replace(/[,٬]/g, '')); return isFinite(x) ? x : 0; };
@@ -86650,7 +86662,11 @@
       h += '<section class="pi-sec"><h3>موقعیت</h3>' + (p.address || p.city || p.district ? '<p class="pi-addr">' + PJ_I.pin + esc([p.country && p.country !== 'ایران' ? p.country : '', p.province, p.city, p.district, p.address].filter(Boolean).join('، ')) + '</p>' : '');
       if(lat && lng){ const d = 0.006;
         h += '<div class="pi-map"><iframe title="نقشهٔ موقعیت" loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=' + (lng - d) + '%2C' + (lat - d) + '%2C' + (lng + d) + '%2C' + (lat + d) + '&layer=mapnik&marker=' + lat + '%2C' + lng + '"></iframe></div>'
-          + '<div class="pi-maps"><a href="https://neshan.org/maps/@' + lat + ',' + lng + ',16z" target="_blank" rel="noopener">نشان</a><a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" rel="noopener">گوگل‌مپ</a><a href="https://balad.ir/location?latitude=' + lat + '&longitude=' + lng + '&zoom=16" target="_blank" rel="noopener">بلد</a></div>'; }
+          + '<div class="pi-maps"><small>باز کردن در</small>'
+          +   '<a class="pm-nsh" href="https://neshan.org/maps/@' + lat + ',' + lng + ',16z" target="_blank" rel="noopener" title="نشان" aria-label="نشان">' + PI_MAP_I.nsh + '<span>نشان</span></a>'
+          +   '<a class="pm-bld" href="https://balad.ir/location?latitude=' + lat + '&longitude=' + lng + '&zoom=16" target="_blank" rel="noopener" title="بلد" aria-label="بلد">' + PI_MAP_I.bld + '<span>بلد</span></a>'
+          +   '<a class="pm-ggl" href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" rel="noopener" title="Google Maps" aria-label="Google Maps">' + PI_MAP_I.ggl + '<span>Google Maps</span></a>'
+          + '</div>'; }
       h += '</section>';
     }
     if(imgs.length) h += '<section class="pi-sec"><h3>تصاویر و نقشه‌ها<em>' + toFa(imgs.length) + '</em></h3><div class="pi-gal" data-fvl="' + esc(imgs.join('\n')) + '" data-fvtitle="' + esc(p.name || '') + '">' + imgs.map((u, i) => { let a = null; try{ a = attachList(u)[0]; }catch(e){} return '<button type="button" data-fv="' + i + '">' + (a ? (attThumb(a) || '<i>' + esc(a.name) + '</i>') : '') + '</button>'; }).join('') + '</div></section>';
