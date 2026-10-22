@@ -103,6 +103,18 @@
 .um-ref{padding:10px 12px;border-radius:14px;min-width:220px}.um-ri{flex-basis:34px;height:34px}.um-rt b{font-size:13.5px}.um-rt i{font-size:11px}
 .cm-refbox{border-top:1px solid var(--line);margin:0 0 6px;border-radius:14px}.cm3 .cm-ref svg{width:16px;height:16px}.cm3 .cm-ref.on{color:var(--accent)}.cm-bub .um-cards{margin-top:6px}
 #chatModal.ib-mode .ibx{grid-template-columns:minmax(0,1fr)!important}#chatModal.ib-mode .ibx>*{min-width:0}#chatModal.ib-mode .ibx-side{display:none!important}#chatModal.ib-mode #ibBody{width:100%;overflow:hidden}
+.mr-q{margin:10px 0 6px;font-size:12px;font-weight:800;color:var(--muted)}
+.mr-pa2{display:grid;gap:8px}
+.mr-dist,.mr-spl{display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:start;padding:10px 12px;border-radius:14px;cursor:pointer;font:inherit;color:inherit}
+.mr-dist svg,.mr-spl svg{grid-row:1/3;width:30px;height:30px;padding:6px;border-radius:10px}
+.mr-dist b,.mr-spl b{font-size:13.5px;font-weight:800}.mr-dist small,.mr-spl small{font-size:11.5px;color:var(--muted)}
+.mr-dist{border:1.5px solid color-mix(in srgb,#2f7d4f 40%,var(--line));background:color-mix(in srgb,#2f7d4f 7%,var(--surface))}.mr-dist svg{background:color-mix(in srgb,#2f7d4f 15%,transparent);color:#2f7d4f}
+.mr-spl{border:1.5px solid color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.mr-spl svg{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.mr-same{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:14px;border:1px dashed var(--line)}
+.mr-same u{text-decoration:none;font-size:12px;font-weight:700;color:var(--muted);flex-basis:100%}
+.mr-same button{height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font:700 12.5px/1 var(--f);color:var(--ink);cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-same button.ghost{border-style:dashed;color:var(--muted)}
+.dbx-lgh{margin:14px 2px 6px;font-size:12px;font-weight:800;color:var(--muted)}
 </style>
 <script>
 /* صفحه تا رسیدن قلم وزیرمتن (حداکثر ۰٫۹ ثانیه) پنهان می‌ماند و بعد نرم
@@ -39186,7 +39198,7 @@
        • جایگزینی کامل: نام قدیمی در همهٔ جدول‌ها به نام تازه تبدیل می‌شود.
        • جدا هستند: پیشنهاد تکراری دیگر نشان داده نمی‌شود.
      تطبیق پیمانکار با طرف قرارداد و ویرایشگر پایگاه داده هم زبانه‌های همین مرکزند. */
-  const dcState = {tab:'names', q:'', f:'all', open:'', busy:false};
+  const dcState = {tab:'db', q:'', f:'all', open:'', busy:false};
   let dcNames = null;              // Map نام → {types:Set, n}
   async function dcLoad(force){
     if(dcNames && !force) return dcNames;
@@ -39539,6 +39551,7 @@
           +   '<button type="button" class="mini" data-dcno="' + esc(x.a) + '" data-b="' + esc(x.b) + '">جدا هستند</button>'
           + '</span></div>').join('') + '</div>'
       : '<div class="dc-sg ok"><b>نام تکراری مشکوکی پیدا نشد ✓</b></div>';
+    if(dcState.tab === 'zone') dcState.tab = 'db';
     box.innerHTML = '<div class="dc">'
       + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>داده و نام‌ها</b>'
       +   '<small>یکسان‌سازی نام‌ها، نام مستعار، تطبیق پیمانکار و ویرایش مستقیم پایگاه داده</small></span>'
@@ -39551,10 +39564,9 @@
       +   '<div><b>' + toFa(aliasPairs.length) + '</b><u>نام مستعار</u></div>'
       + '</div>'
       + '<div class="dc-tabs">'
+      +   tab('db', DC_I.db, 'پایگاه داده', 0)
       +   tab('names', DC_I.names, 'نام‌ها', sugg.length, true)
       +   tab('match', DC_I.link, 'پیمانکار و طرف قرارداد', mtPend, true)
-      +   tab('zone', DC_I.link, 'محل و طبقه', zmState.rows ? zmSuggest(zmState.rows).length : 0, true)
-      +   tab('db', DC_I.db, 'پایگاه داده', 0)
       + '</div>'
       + '<div class="dc-pane' + (dcState.tab === 'names' ? ' on' : '') + '">'
       +   suggHtml
@@ -39565,7 +39577,7 @@
       +   '<div class="dc-list">' + (shown.length ? shown.map(rowHtml).join('') : '<div class="empty">نامی پیدا نشد.</div>') + '</div>'
       + '</div>'
       + '<div class="dc-pane' + (dcState.tab === 'match' ? ' on' : '') + '">' + ctrPanelHtml() + '</div>'
-      + '<div class="dc-pane' + (dcState.tab === 'zone' ? ' on' : '') + '">' + (dcState.tab === 'zone' ? zmPanelHtml() : '') + '</div>'
+
       + '<div class="dc-pane' + (dcState.tab === 'db' ? ' on' : '') + '">' + dbxLaunchHtml() + '</div>'
       + '</div>';
     if(box.dataset.dcw !== '1'){
@@ -52050,8 +52062,8 @@
       + '<div class="dbx-lh"><span class="dbx-lic">' + DBX_I.db + '</span><span><b>ویرایشگر پایگاه داده</b>'
       +   '<small>مشاهده، جست‌وجو و اصلاح مستقیم جدول‌ها — هر تغییر پیش از ثبت بازبینی می‌شود و قابل بازگردانی است</small></span>'
       +   '<button type="button" class="dbx-btn pri" data-dbx-open="">' + DBX_I.open + '<span>باز کردن ویرایشگر</span></button></div>'
-      + '<div class="dbx-lg">' + DBX_TABLES.map(([g, list]) => list.map(([t, lb]) =>
-          '<button type="button" data-dbx-open="' + t + '"><b>' + esc(lb) + '</b><small>' + t + '</small></button>').join('')).join('') + '</div>'
+      + DBX_TABLES.map(([g, list]) => '<div class="dbx-lgh">' + esc(g) + '</div><div class="dbx-lg">' + list.map(([t, lb]) =>
+          '<button type="button" data-dbx-open="' + t + '"><b>' + esc(lb) + '</b><small>' + t + '</small></button>').join('') + '</div>').join('')
       + '<p class="dbx-lnote">' + DBX_I.lock + 'ستون‌های رمز عبور هیچ‌وقت نمایش داده نمی‌شوند. شناسه و زمان ثبت فقط خواندنی‌اند.</p>'
       + '</div>';
   }
@@ -72006,14 +72018,16 @@
     return {F, fl, l1: Array.from(l1.values()), l2: Array.from(l2.values()), unk: Array.from(unk.values())};
   }
   function mrHtml(){
-    const D = mrData(), lv = mt.lv || 'l1', ff = mt.ff || '';
+    const D = mrData(), lv = (mt.lv === 'fl') ? 'fl' : 'l1', ff = mt.ff || '';
+    /* محل و محل جزء یک مفهوم‌اند و با هم بررسی می‌شوند */
+    D.l1 = D.l1.concat(D.l2);
     /* املاهایی که فقط در «ي/ی» یا فاصله فرق دارند یک نام‌اند (پرتکرارترین املا نمایش داده می‌شود) */
     const scope = A => { const m = new Map(); A.filter(x => !ff || (ff === '_' ? x.f === '' : x.f === ff)).forEach(x => { const k = zmKey(x.v); const o = m.get(k) || {v: x.v, n: 0, top: 0}; o.n += x.n; if(x.n > o.top){ o.top = x.n; o.v = x.v; } m.set(k, o); }); return Array.from(m.values()); };
     const N1 = scope(D.l1), N2 = scope(D.l2), P1 = mrPairs(N1), P2 = mrPairs(N2);
     let h = '<div class="mr"><div class="mr-seg">'
-      + [['fl', 'طبقات', D.fl.size + D.unk.length, D.unk.length], ['l1', 'محل‌ها', N1.length, P1.length], ['l2', 'محل‌های جزء', N2.length, P2.length]].map(([k, t, n, w]) => '<button type="button" class="' + (lv === k ? 'on' : '') + '" data-mrlv="' + k + '"><b>' + t + '</b><small>' + toFa(n) + ' نام</small>' + (w ? '<i>' + toFa(w) + (k === 'fl' ? ' نامشخص' : ' مشکوک') + '</i>' : '') + '</button>').join('') + '</div>';
+      + [['fl', 'طبقات', D.fl.size + D.unk.length, D.unk.length], ['l1', 'محل‌ها', N1.length, P1.length]].map(([k, t, n, w]) => '<button type="button" class="' + (lv === k ? 'on' : '') + '" data-mrlv="' + k + '"><b>' + t + '</b><small>' + toFa(n) + ' نام</small>' + (w ? '<i>' + toFa(w) + (k === 'fl' ? ' نامشخص' : ' مشکوک') + '</i>' : '') + '</button>').join('') + '</div>';
     if(lv !== 'fl'){
-      const used = new Set((lv === 'l1' ? D.l1 : D.l2).map(x => x.f));
+      const used = new Set(D.l1.map(x => x.f));
       h += '<div class="mr-ff"><button type="button" class="' + (!ff ? 'on' : '') + '" data-mrff="">همهٔ طبقات</button>' + D.F.filter(f => used.has(f.key)).map(f => '<button type="button" class="' + (ff === f.key ? 'on' : '') + '" data-mrff="' + esc(f.key) + '">' + esc(f.label) + '</button>').join('') + (used.has('') ? '<button type="button" class="' + (ff === '_' ? 'on' : '') + '" data-mrff="_">بدون طبقه</button>' : '') + '</div>';
     }
     if(lv === 'fl'){
@@ -72027,17 +72041,19 @@
             + '<button type="button" class="dz-b" data-mredit="' + esc(x.v) + '">تعیین طبقه و نام</button></div>'; }).join('') + '</div>';
       return h + '</div>';
     }
-    const N = lv === 'l1' ? N1 : N2, P = lv === 'l1' ? P1 : P2;
+    const N = N1, P = P1; void N2; void P2;
     h += '<div class="mr-sh">نام‌های شبیه <em>' + (P.length ? toFa(P.length) + ' جفت که ممکن است اشتباه نوشته شده باشند' : 'جفت مشکوکی نیست ✓') + '</em></div>';
     const CAT = {typo: 'احتمال اشتباه تایپی', floor: 'نام طبقه داخل نام محل', sub: 'یکی دقیق‌تر از دیگری'};
     if(P.length) h += '<div class="mr-ps">' + P.slice(0, 60).map(x => '<div class="mr-p c-' + x.cat + '" data-mra="' + esc(x.a.v) + '" data-mrb="' + esc(x.b.v) + '">'
         + '<div class="mr-pt"><i>' + CAT[x.cat] + '</i><small>' + esc(x.why) + '</small></div>'
         + '<div class="mr-pv"><button type="button" class="mr-nm" data-mredit="' + esc(x.a.v) + '"><b>' + esc(x.a.v) + '</b><small>' + toFa(x.a.n) + ' ردیف</small></button><i class="mr-vs2">' + (x.cat === 'typo' ? '≈' : '⊂') + '</i><button type="button" class="mr-nm" data-mredit="' + esc(x.b.v) + '"><b>' + esc(x.b.v) + '</b><small>' + toFa(x.b.n) + ' ردیف</small></button></div>'
-        + '<div class="mr-pa">'
-        + (x.cat === 'floor' ? '<button type="button" class="dz-b pri" data-mrsplit="' + esc(x.longer) + '" data-mrbase="' + esc(x.base) + '" data-mrxw="' + esc(x.ex) + '">جدا کن: طبقه + «' + esc(x.base) + '»</button>' : '')
-        + '<button type="button" class="dz-b" data-mrto="a">یکی کن ← «' + esc(x.a.v) + '»</button><button type="button" class="dz-b" data-mrto="b">یکی کن ← «' + esc(x.b.v) + '»</button>'
-        + '<button type="button" class="dz-b" data-mrren="1">هم‌نام کن…</button><button type="button" class="dz-b ok" data-mrok="1">هر دو درست است</button></div></div>').join('') + '</div>';
-    h += '<details class="mr-all"><summary>همهٔ ' + (lv === 'l1' ? 'محل‌ها' : 'محل‌های جزء') + (ff ? ' این طبقه' : '') + ' (' + toFa(N.length) + ')</summary><div class="mr-vs">' + N.sort((a, b) => b.n - a.n).map(x => { const c = canonicalZone(x.v); return '<button type="button" class="mr-chip" data-mredit="' + esc(x.v) + '" title="جدا کردن یا تغییر نام">' + esc(x.v) + (zmKey(c) !== zmKey(x.v) ? ' <em>← ' + esc(c) + '</em>' : '') + '<i>' + toFa(x.n) + '</i></button>'; }).join('') + '</div><small class="mr-tip">روی هر نام بزنید تا طبقه و نامش را جدا یا اصلاح کنید.</small></details>';
+        + '<div class="mr-q">این دو یک محل‌اند؟</div>'
+        + '<div class="mr-pa2">'
+        +   '<button type="button" class="mr-dist" data-mrok="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v12M16 6v12"/></svg><b>دو محل جدا هستند</b><small>هر دو نام می‌مانند و دیگر پیشنهاد نمی‌شوند</small></button>'
+        +   (x.cat === 'floor' ? '<button type="button" class="mr-spl" data-mrsplit="' + esc(x.longer) + '" data-mrbase="' + esc(x.base) + '" data-mrxw="' + esc(x.ex) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M12 4v16"/></svg><b>طبقه را جدا کن</b><small>«' + esc(x.longer) + '» ← طبقه + «' + esc(x.base) + '»</small></button>' : '')
+        +   '<div class="mr-same"><u>یکی‌اند؛ نام درست:</u><button type="button" data-mrto="a">' + esc(x.a.v) + '</button><button type="button" data-mrto="b">' + esc(x.b.v) + '</button><button type="button" class="ghost" data-mrren="1">نام تازه…</button></div>'
+        + '</div></div>').join('') + '</div>';
+    h += '<details class="mr-all"><summary>همهٔ محل‌ها' + (ff ? ' این طبقه' : '') + ' (' + toFa(N.length) + ')</summary><div class="mr-vs">' + N.sort((a, b) => b.n - a.n).map(x => { const c = canonicalZone(x.v); return '<button type="button" class="mr-chip" data-mredit="' + esc(x.v) + '" title="جدا کردن یا تغییر نام">' + esc(x.v) + (zmKey(c) !== zmKey(x.v) ? ' <em>← ' + esc(c) + '</em>' : '') + '<i>' + toFa(x.n) + '</i></button>'; }).join('') + '</div><small class="mr-tip">روی هر نام بزنید تا طبقه و نامش را جدا یا اصلاح کنید.</small></details>';
     return h + '</div>';
   }
   async function mrAlias(from, to){
@@ -72061,7 +72077,7 @@
             + (sg.alt || []).map(a2 => '<button type="button" class="mt-alt" data-mtpick="' + esc(a2.f) + '" data-mtpl="' + esc(a2.l1) + '">' + esc(a2.t) + ' <i>' + toFa(Math.round(a2.sc * 100)) + '٪</i></button>').join('') + '</span>' : '')
         + '</div>'; };
     const show = mt.all ? bad : bad.slice(0, 40);
-    const RV = mrHtml(); if((mt.lv || 'l1') !== 'l1') return RV;
+    const RV = mrHtml(); if(mt.lv === 'fl') return RV;
     let h = RV + '<div class="mr-sh" style="margin-top:18px">تطبیق با فضاهای تعریف‌شده <em>محل‌هایی که به طبقه، واحد یا فضای تعریف‌شده نمی‌خورند</em></div><div class="mt"><div class="mt-hd"><div><b>' + toFa(bad.length) + '</b><small>محل بی‌تطبیق</small></div><div class="ok"><b>' + toFa(L.length - bad.length) + '</b><small>محل شناخته‌شده</small></div><div><b>' + toFa(good.length) + '</b><small>تطبیق دستی</small></div></div>'
       + '<div class="sp-sh">محل‌های گزارش‌ها <em>هر محل را به طبقه و واحد یا فضای درست وصل کنید؛ پیشنهاد سامانه از قبل پر شده</em></div>'
       + (function(){ const H = bad.filter(x => { const g = mtSuggest(x.z); return g && g.sc >= 0.85; }).length; return H ? '<div class="mt-bulk"><span><b>' + toFa(H) + '</b> محل با اطمینان بالا (۸۵٪ به بالا) پیشنهاد دارند</span><button type="button" class="dz-b pri" data-mtbulk="1">تأیید همه</button></div>' : ''; })()
