@@ -20197,6 +20197,23 @@
   .ct-ava{position:relative;}
   .ct-cam{all:unset;cursor:pointer;position:absolute;bottom:-3px;left:-3px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--surface);box-shadow:0 0 0 2px var(--surface);z-index:2;}
   .ct-cam svg{width:12px;height:12px;}
+  .pc2{display:flex;flex-direction:column;gap:12px;margin:0 0 14px;}
+  .pc2-info{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:1px;border-radius:18px;overflow:hidden;background:var(--line);border:1px solid var(--line);}
+  @media (min-width:700px){ .pc2-info{grid-template-columns:repeat(3, minmax(0, 1fr));} }
+  .pc2-i{background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .pc2-i u{text-decoration:none;font-size:10.5px;font-weight:600;color:var(--muted);}
+  .pc2-i b{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pc2-i b .mut{color:var(--muted);font-weight:500;}
+  .pc2-i.bad b{color:var(--alert);} .pc2-i.ok b{color:#2f7d52;} .pc2-i.vio b{color:#6d5bb5;}
+  .pc2-i.lv1 b, .pc2-i.lv2 b{color:var(--sky);} .pc2-i.lv7 b{color:#2f7f9a;}
+  .pc2-acts{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;} .pc2-acts::-webkit-scrollbar{display:none;}
+  .pc2-a{all:unset;cursor:pointer;flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:13px;background:var(--surface);border:1px solid var(--line);font:700 12px var(--f);color:var(--ink);transition:border-color .2s, background .2s;}
+  .pc2-a:hover{border-color:color-mix(in srgb, var(--ink) 25%, var(--line));}
+  .pc2-a svg{width:16px;height:16px;flex:none;}
+  .pc2-a.pri{background:#2f7d52;border-color:#2f7d52;color:#fff;}
+  .pc2-wk{padding:14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;}
+  .pc2-wh{display:flex;align-items:center;justify-content:space-between;gap:10px;} .pc2-wh > span{display:flex;flex-direction:column;gap:2px;} .pc2-wh b{font-size:14px;font-weight:800;} .pc2-wh small{font-size:11px;color:var(--muted);}
+  .pc2-wk .kt-stats{margin:0;}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -41527,32 +41544,42 @@
         const d = r && r[0] && normDate(r[0].date_fa);
         const el = document.querySelector('[data-pklast="' + CSS.escape(name) + '"]');
         if(!el) return;
-        const sp = el.querySelector('span');
-        if(!d){ if(sp) sp.textContent = 'گزارشی از ' + name.replace(/^(آقای|خانم|مهندس)\s+/, '') + ' ثبت نشده'; return; }
+        const sp = el.querySelector('b');
+        if(!d){ if(sp) sp.textContent = 'ثبت نشده'; return; }
         const a2 = daysSince(d);
-        if(sp) sp.textContent = 'آخرین گزارش ' + (a2 === 1 ? 'دیروز' : (a2 > 1 ? toFa(a2) + ' روز پیش' : '')) + ' · ' + (taskDate(d) || toFa(d));
-        el.classList.remove('warn', 'bad'); el.classList.add(a2 > 2 ? 'bad' : 'warn');
+        if(sp) sp.textContent = (a2 === 1 ? 'دیروز' : a2 > 1 ? toFa(a2) + ' روز پیش' : 'امروز') + ' · ' + (taskDate(d) || toFa(d));
+        el.classList.toggle('bad', a2 > 2);
       }catch(e){}
     }, 0);
     if(onLeave) chips += chip('vio', LV_I.sun, 'امروز در مرخصی', '');
-    const first = String(name).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '').split(/\s+/)[0] || name;
-    let h = '<section class="kt-hero pk-hero">'
-      + '<div class="kt-glow" aria-hidden="true"></div>'
-      + '<div class="kt-hh">'
-      +   '<div class="kt-hi"><small>' + esc(roleOf(name) || 'کارتابل') + '</small><b>کارهای ' + esc(first) + '</b>'
-      +     '<span>' + esc(taskDate(today) || toFa(today)) + '</span></div>'
-      +   '<div class="kt-ring" style="--p:' + pct + '"><span><b>' + toFa(pct) + '٪</b><u>انجام‌شده</u></span></div>'
+    /* کارت شخص: شناسنامهٔ کاری (سمت، سطح، تماس، آخرین گزارش)، اقدام‌ها و خلاصهٔ کارها */
+    let lv = 3; try{ lv = levelOf(name); }catch(e){}
+    const ph = (function(){ try{ return sphShown(name); }catch(e){ return ''; } })();
+    let pjN = ''; try{ pjN = (pjCur() || {}).name || ''; }catch(e){}
+    const inf = (l, v, cls, attr) => '<div class="pc2-i' + (cls ? ' ' + cls : '') + '"' + (attr || '') + '><u>' + l + '</u><b>' + v + '</b></div>';
+    const lastTxt = myRows.length ? 'امروز' : lastRep ? (ago === 1 ? 'دیروز' : ago === 0 ? 'امروز' : toFa(ago) + ' روز پیش') : (ktIsReporter(name) ? 'ثبت نشده' : '—');
+    let h = '<section class="pc2">'
+      + '<div class="pc2-info">'
+      +   inf('سمت', esc(roleOf(name) || 'مشخص نشده'))
+      +   inf('سطح دسترسی', esc(LEVEL_SHORT[lv] || '—'), 'lv' + lv)
+      +   inf('تلفن', ph ? '<span dir="ltr">' + toFa(ph) + '</span>' : '<span class="mut">ثبت نشده</span>')
+      +   inf('آخرین گزارش', lastTxt, ago != null && ago > 2 && !myRows.length ? 'bad' : '', ' data-pklast="' + esc(name) + '"')
+      +   (pjN ? inf('پروژه', esc(pjN)) : '')
+      +   inf('وضعیت امروز', onLeave ? 'در مرخصی' : myRows.length ? 'گزارش ' + toFa(myRows.length) + ' ردیف، ' + toFa(men) + ' نفر' : 'حاضر', onLeave ? 'vio' : myRows.length ? 'ok' : '')
       + '</div>'
-      + '<div class="kt-stats">'
-      +   stat(m.open, 'کار باز', '', 'mine') + stat(m.warn, 'بحرانی', m.warn ? 'bad' : '', 'mine')
-      +   stat(m.soon, 'موعد تا ۷ روز', m.soon ? 'warn' : '', 'mine') + stat(m.late, 'گذشته از موعد', m.late ? 'bad' : '', 'mine')
+      + '<div class="pc2-acts">'
+      +   (ph ? '<a class="pc2-a pri" href="tel:' + esc(telOf(ph)) + '">' + CTC_I.tel + '<span>تماس</span></a>' : '')
+      +   '<button type="button" class="pc2-a" data-pkact="nudge">' + RM2_I.bell + '<span>تلنگر</span></button>'
+      +   '<button type="button" class="pc2-a" data-pf-go="tasks" data-who="' + esc(name) + '">' + KT_I.mine + '<span>فعالیت‌ها</span></button>'
+      +   '<button type="button" class="pc2-a" data-pf-go="deck" data-who="' + esc(name) + '">' + KT_I.deck + '<span>کارت‌ها</span></button>'
       + '</div>'
-      + '<div class="kt-chips">' + chips + '</div>'
-      + '<div class="pk-acts">'
-      +   '<button type="button" class="pk-a" data-pkact="nudge">' + RM2_I.bell + '<span>تلنگر</span></button>'
-      +   '<button type="button" class="pk-a" data-pkact="msg">' + PF_I.msg + '<span>پیام</span></button>'
-      +   '<button type="button" class="pk-a" data-pf-go="tasks" data-who="' + esc(name) + '">' + KT_I.mine + '<span>لیست فعالیت</span></button>'
-      +   '<button type="button" class="pk-a" data-pf-go="deck" data-who="' + esc(name) + '">' + KT_I.deck + '<span>کارت‌ها</span></button>'
+      + '<div class="pc2-wk">'
+      +   '<div class="pc2-wh"><span><b>کارهای باز</b><small>' + esc(taskDate(today) || toFa(today)) + '</small></span>'
+      +     '<div class="kt-ring" style="--p:' + pct + '"><span><b>' + toFa(pct) + '٪</b><u>انجام‌شده</u></span></div></div>'
+      +   '<div class="kt-stats">'
+      +     stat(m.open, 'کار باز', '', 'mine') + stat(m.warn, 'بحرانی', m.warn ? 'bad' : '', 'mine')
+      +     stat(m.soon, 'موعد تا ۷ روز', m.soon ? 'warn' : '', 'mine') + stat(m.late, 'گذشته از موعد', m.late ? 'bad' : '', 'mine')
+      +   '</div>'
       + '</div>'
       + (top ? '<div class="kt-top"><div class="kt-th">' + KT_I.bolt + '<b>فوری‌ترین کارها</b><button type="button" class="kt-all" data-ktgo="mine">همه ›</button></div>' + top + '</div>' : '')
       + '</section>';
