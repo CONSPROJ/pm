@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261017063645">
+<meta name="pm-build" content="20261022082300">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23664,6 +23664,11 @@
   #whTabs .kcap .wh-n{font-style:normal;display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;margin-inline-start:6px;border-radius:9px;background:var(--alert);color:#fff;font-size:10px;font-weight:800;}
   .wh-in{display:flex;flex-direction:column;gap:10px;}
   /* ---- فضاها و واحدها ---- */
+  .ctyp-ow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:6px 0 2px;font-size:12px;font-weight:700;cursor:pointer;}
+  .ctyp-ow input{accent-color:#2f7d5b;width:16px;height:16px;margin:0;} .ctyp-ow small{flex:1 1 100%;font-size:10.5px;font-weight:500;color:var(--muted);padding-inline-start:22px;}
+  .ctyp-ow[hidden]{display:none;}
+  .ct-ownb{font-style:normal;display:inline-block;width:max-content;align-self:flex-start;flex:none;margin-inline-start:6px;padding:1px 8px;border-radius:99px;font-size:10.5px;font-weight:800;color:#2f7d5b;background:color-mix(in srgb, #2f7d5b 14%, transparent);vertical-align:1px;}
+  [data-theme="dark"] .ct-ownb{color:#6fc59c;}
   .sl-fw label small{font-weight:500;font-size:10px;color:var(--muted);margin-inline-start:4px;}
   .sl-fb{width:100%;} .sl-fb span u{text-decoration:none;font-size:10.5px;color:var(--muted);margin-inline-start:4px;}
   .sl-fb span.ph, .sl-fb .ph{color:var(--muted);}
@@ -25809,13 +25814,21 @@
      درخواست از طرف کیست. */
   const TOK_KEY = 'siteLogM.tok.v1';
   window.pmTok = function(v){
-    if(v === undefined){ if(window.__pmTok == null){ try{ window.__pmTok = localStorage.getItem(TOK_KEY) || ''; }catch(e){ window.__pmTok = ''; } } return window.__pmTok; }
+    /* همیشه از حافظهٔ مرورگر خوانده می‌شود تا چند زبانه (یا برنامهٔ نصب‌شده کنار کروم)
+       یک نشست مشترک داشته باشند؛ پیش‌تر توکنِ کهنهٔ یک زبانه توکن تازهٔ زبانهٔ دیگر را
+       پاک می‌کرد و هر دو پشت سر هم از حساب بیرون می‌افتادند. */
+    if(v === undefined){ try{ const ls = localStorage.getItem(TOK_KEY); if(ls != null || window.__pmTok == null) window.__pmTok = ls || ''; }catch(e){ if(window.__pmTok == null) window.__pmTok = ''; } return window.__pmTok; }
     window.__pmTok = v || '';
     try{ v ? localStorage.setItem(TOK_KEY, v) : localStorage.removeItem(TOK_KEY); }catch(e){}
     return window.__pmTok;
   };
   let currentUser = '';
   try{ currentUser = localStorage.getItem(USER_KEY) || ''; }catch(e){ currentUser = ''; }
+  /* ورود یا خروج در زبانهٔ دیگر: این زبانه هم همان وضعیت را می‌گیرد */
+  window.addEventListener('storage', e => {
+    if(e.key === TOK_KEY){ window.__pmTok = e.newValue || ''; return; }
+    if(e.key === USER_KEY && (e.newValue || '') !== currentUser){ setTimeout(() => { try{ location.reload(); }catch(err){} }, 200); }
+  });
 
   function listNames(){
     // فهرست ورود فقط از کاربران تأییدشدهٔ پایگاه‌داده ساخته می‌شود
@@ -25866,12 +25879,17 @@
        کاربر نمی‌شناسد (نشست قدیمی بی‌توکن، یا نامی که در مرورگر دستکاری
        شده)، یک بار دوباره ورود خواسته می‌شود. */
     try{
+      const tk0 = window.pmTok();
       const w = await pmWhoami();
       if(w && w.v){
-        if(!w.name || nameKey(w.name) !== nameKey(currentUser)){
+        /* در همین فاصله زبانهٔ دیگری دوباره وارد شده: با توکن تازه بررسی نمی‌شود */
+        if(window.pmTok() !== tk0) return;
+        if(!w.name){
           forceLogout('برای امنیت بیشتر، یک بار دوباره وارد شوید.');
           return;
         }
+        /* نامی که سرور می‌شناسد ملاک است (مثلاً بعد از ویرایش نام در مدیریت) */
+        if(nameKey(w.name) !== nameKey(currentUser)){ applyUser(w.name); return; }
       }
     }catch(e){}
     try{
@@ -26352,7 +26370,7 @@
       try{
         /* درخواست همراه رمز خودِ متقاضی روی سرور ثبت می‌شود (رمز هرگز ذخیرهٔ ساده نمی‌شود) */
         let r0 = null;
-        try{ r0 = await supaRpc('request_account', {p_name: nm2, p_role: rl, p_hash: await sha256(rp1.trim())}); }catch(e0){ r0 = (e0 && e0.status === 404) ? 'old' : {ok:false, reason: 'net'}; }
+        try{ r0 = await supaRpc('request_account', {p_name: nm2, p_role: rl, p_hash: await sha256(toEn(rp1.trim()))}); }catch(e0){ r0 = (e0 && e0.status === 404) ? 'old' : {ok:false, reason: 'net'}; }
         if(r0 === 'old') await savePerson(nm2, {role: rl || null, pending: true, active: false, must_change: true});
         else if(!r0 || r0.ok !== true){
           note.textContent = (r0 && r0.reason === 'exists') ? 'این نام از قبل ثبت شده است.'
@@ -26393,10 +26411,16 @@
       btn.disabled = true;
       await loadPeople();
       const row = personRow(loginName) || {};
-      const hash = await sha256(pass);
+      /* رقم‌های رمز یک‌شکل می‌شوند (صفحه‌کلید فارسی گوشی «۱۲۳» می‌نویسد)؛
+         رمزهای قدیمی که با رقم فارسی ساخته شده‌اند هم هنوز پذیرفته می‌شوند */
+      let hash = await sha256(toEn(pass));
 
       // مقایسه فقط روی سرور
-      const chk = await loginCheck(loginName, hash);
+      let chk = await loginCheck(loginName, hash);
+      if(chk && chk.ok !== true && toEn(pass) !== pass && ['inactive', 'locked', 'nopass', 'notfound'].indexOf(chk.reason) === -1){
+        const h2 = await sha256(pass), c2 = await loginCheck(loginName, h2);
+        if(c2 && c2.ok === true){ chk = c2; hash = h2; }
+      }
       if(!chk){
         btn.disabled = false;
         note.textContent = 'اتصال به سرور برقرار نشد؛ کمی بعد دوباره تلاش کنید.';
@@ -26450,8 +26474,8 @@
         const wk = pwWeakMsg(n1);
         if(wk){ note.textContent = wk; btn.disabled = false; return; }
         if(n1 !== n2){ note.textContent = 'دو رمز یکسان نیستند.'; btn.disabled = false; return; }
-        if(n1 === pass){ note.textContent = 'رمز تازه باید با رمز موقت فرق داشته باشد.'; btn.disabled = false; return; }
-        const newHash = await sha256(n1);
+        if(toEn(n1) === toEn(pass)){ note.textContent = 'رمز تازه باید با رمز موقت فرق داشته باشد.'; btn.disabled = false; return; }
+        const newHash = await sha256(toEn(n1));
         const res = await changePass(loginName, first ? '' : hash, newHash);
         if(!res || res.ok !== true){
           note.textContent = (res && res.reason === 'weak') ? 'این رمز قابل قبول نیست؛ رمز دیگری انتخاب کنید.'
@@ -32986,6 +33010,7 @@
     if(o.r && o.r.length) clean.r = o.r;
     if(o.ro && o.t && o.t !== 'ctr') clean.ro = o.ro;
     if(o.t && o.t !== 'ctr') clean.t = o.t;
+    if(o.ow && o.t !== 'own') clean.ow = 1;
     { const o0 = ctrContactOf(canon); const ad = o.ad || (o0 && o0.ad); if(ad && Object.keys(o).length) clean.ad = ad; }
     /* نام قراردادی، دیسیپلین و تخصص‌ها */
     if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s; if(o.ct) clean.ct = o.ct;
@@ -33596,9 +33621,17 @@
   /* ====== نوع طرف: پیمانکار، مشاور، تیم کارفرما ====== */
   const CTR_TYPES = [['ctr', 'پیمانکار'], ['cons', 'مشاور'], ['emp', 'تیم کارفرما'], ['own', 'مالک']];
   const ctrTypeLabel = t => (CTR_TYPES.find(x => x[0] === t) || CTR_TYPES[0])[1];
-  function ctrTypeOf(n){ const c = ctrContactOf(n); return (c && c.t) || ''; }
+  function ctrTypeOf(n){ const c = ctrContactOf(n); if(c && c.t) return c.t;
+    try{ const k = nameKey(n), o = window.pjPartyPeople && window.pjPartyPeople().find(x => nameKey(x.n) === k); if(o && o.t !== 'ctr') return o.t; }catch(e){}
+    return ''; }
   /* دیسیپلین ثبت‌شده در پرونده و برچسب نقش: «مشاور الکتریکال»، «پیمانکار مکانیکال»، «تیم کارفرما» */
   function ctrDiscOf(n){ try{ const c = ctrContactOf(n); return (c && c.d) || ''; }catch(e){ return ''; } }
+  /* «مالک هم هست» روی کارت کسی که نوع اصلی‌اش مالک نیست */
+  function ctOwnBadge(n){
+    try{ const c = ctrContactOf(n) || {}; if(c.t === 'own') return '';
+      if(c.ow || (window.unitsOfOwner && window.unitsOfOwner(n).length)) return '<em class="ct-ownb">مالک هم هست</em>'; }catch(e){}
+    return '';
+  }
   function ctrRoleLabel(n, t){
     t = t || ctrTypeOf(n);
     const d = ctrDiscOf(n);
@@ -33625,11 +33658,13 @@
     const used = []; try{ ctrContacts.forEach(o => { if(o && o.t === t && o.ro) used.push(o.ro); }); }catch(e){}
     dl.innerHTML = Array.from(new Set((CTR_ROLE_SUG[t] || []).concat(used))).map(v => '<option value="' + esc(v) + '">').join('');
   }
-  function ctypHtml(cur, ro, d){
+  function ctypHtml(cur, ro, d, ow){
     cur = cur || 'ctr';
     try{ ctrRoleListFor(cur); }catch(e){}
     return '<div class="ctyp"><span class="ctyp-l">نوع</span><input type="hidden" data-ctk="t" value="' + esc(cur) + '"><div class="ctyp-s" role="radiogroup">'
       + CTR_TYPES.map(([k, lb]) => '<button type="button" role="radio" class="ctyp-b t-' + k + (k === cur ? ' on' : '') + '" aria-checked="' + (k === cur) + '" data-ctyp="' + k + '">' + lb + '</button>').join('') + '</div></div>'
+      /* نقش دوم: پیمانکار، مشاور یا کارفرمایی که مالک واحد هم هست */
+      + '<label class="ctyp-ow"' + (cur === 'own' ? ' hidden' : '') + '><input type="checkbox" data-ctk="ow"' + (ow ? ' checked' : '') + '><span>مالک هم هست</span><small>در فهرست مالکان هم می‌آید؛ نوع اصلی همان می‌ماند</small></label>'
       + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + (cur === 'emp' ? 'سمت در تیم کارفرما' : cur === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (cur === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : cur === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small></span>'
       + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
       /* دیسیپلین کنار نوع: برای پیمانکار و مشاور (مثلاً مشاور سازه ← سازه) */
@@ -33647,6 +33682,7 @@
     box.querySelectorAll('[data-ctyp]').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
     const ro = box.nextElementSibling && box.nextElementSibling.classList.contains('ctyp-ro') ? box.nextElementSibling : null;
     { const dd = box.parentElement && box.parentElement.querySelector('.ctyp-d'); if(dd) dd.hidden = t === 'emp' || t === 'own'; }
+    { const ow = box.querySelector('.ctyp-ow'); if(ow) ow.hidden = t === 'own'; }
     if(ro){ ro.hidden = t === 'ctr'; try{ ctrRoleListFor(t); }catch(err){}
       ro.querySelector('span').innerHTML = (t === 'emp' ? 'سمت در تیم کارفرما' : t === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (t === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : t === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small>'; }
   }, true);
@@ -33668,7 +33704,7 @@
     const canon = ctrCanon(name), P = ctrNameParts(canon, c), ed = can('ctr.contact');
     const f = (k, lb, v, ph) => '<label class="ctc-f"><span>' + lb + '</span><input type="text" data-ctk="' + k + '" class="cnm-in" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off"' + (ed ? '' : ' disabled') + '></label>';
     return '<div class="cnm" data-cnm="' + esc(canon) + '"><div class="ctx-sh"><b>نام پیمانکار</b><small>با تغییر نام و «ذخیره»، نام روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها عوض می‌شود؛ نام قبلی هم به همین پرونده وصل می‌ماند</small></div>'
-      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '')
+      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '', !!(c && c.ow))
       + '<div class="cnm-g">' + f('fn', 'نام', P.fn, 'مثلاً حسین') + f('ln', 'نام خانوادگی', P.ln, 'مثلاً ناظری') + '</div>'
       + f('co', 'نام شرکت <small>اختیاری؛ اگر پیمانکار شرکت است و نام شخص ندارد، فقط همین را بنویسید</small>', P.co, 'مثلاً آسمان بالابر توان')
       + '<div class="cnm-pv"><u>روی کارت</u><b>' + esc(canon) + '</b><i hidden>تغییر می‌کند</i></div></div>';
@@ -33951,7 +33987,7 @@
     o.r = Array.from(box.querySelectorAll('.ctc-rep')).map(rw => { const v = k => String((rw.querySelector('[data-ctr="' + k + '"]') || {}).value || '').trim();
       const x = {}; if(v('n')) x.n = v('n'); if(v('r')) x.r = v('r'); if(v('p')) x.p = v('p'); return x; }).filter(x => x.n || x.p);
     box.querySelectorAll('[data-ctk]').forEach(i => {
-      const k = i.dataset.ctk, v = String(i.value || '').trim();
+      const k = i.dataset.ctk, v = i.type === 'checkbox' ? (i.checked ? '1' : '') : String(i.value || '').trim();
       if(!v) return;
       if(k === 'p') o.p.push(v); else o[k] = v;
     });
@@ -34545,6 +34581,8 @@
     try{ ctrDocParties().forEach(o => { let c = o.p; try{ c = ctrCanon(canonicalName(c)); const sp = splitParts(c); if(sp) c = sp.n; }catch(e){} const k = normName(c); if(!k || seen.has(k)) return; seen.add(k); ents.push({canon: c, k, n:0, docs: o.nc + o.ns, members:[], skills:new Map()}); }); }catch(e){}
     /* پیمانکارانِ لیست فعالیت (مثل کارهایی که به پیمانکاری سپرده شده که هنوز در گزارش روزانه نیامده) */
     try{ (typeof tasksAll !== 'undefined' ? tasksAll : []).forEach(r => { if(r && r.__adm) return; taskCtrKeys(r).forEach(c => { if(!c || c === TK_NO_CTR) return; let cn = c; try{ cn = ctrCanon(canonicalName(c)); const sp = splitParts(cn); if(sp) cn = sp.n; }catch(e){} const k = normName(cn); if(!k || seen.has(k)) return; seen.add(k); ents.push({canon: cn, k, n:0, docs:0, members:[], skills:new Map()}); }); }); }catch(e){}
+    /* کارفرما، مشاور، نظارت و پیمانکاران اصلیِ «اطلاعات پروژه» */
+    try{ pjPartyPeople().forEach(o => { let c = o.n; try{ c = ctrCanon(canonicalName(c)); }catch(e){} const k = normName(c); if(!k) return; const ex = ents.find(x => x.k === k); if(ex){ ex.pty = ex.pty || o.t; return; } if(seen.has(k)) return; seen.add(k); ents.push({canon: c, k, n:0, docs:0, members:[], skills:new Map(), pty: o.t}); }); }catch(e){}
     /* همهٔ پیمانکارانِ فهرست پروژه، حتی اگر گزارش‌ها هنوز بار نشده باشند */
     ['contractorList', 'contractPartyList'].forEach(id => {
       const dl = document.getElementById(id); if(!dl) return;
@@ -34771,7 +34809,7 @@
     ents.forEach(e => { e.inf = ctdInfoOf(e, di); });
     const sug = ed ? ctdSug() : {pairs: [], multi: []}, nFix = sug.pairs.length;
     const tab = (ed && (ctdState.tab === 'fix' || ctdState.tab === 'disc' || ctdState.tab === 'skill' || ctdState.tab === 'ct')) ? ctdState.tab : 'list';
-    ents.forEach(e => { e.ty = e.inf.c.t || 'ctr'; e.hid = ctrIsHidden(e.canon); e.own = e.ty === 'own' || !!(window.unitsOfOwner && window.unitsOfOwner(e.canon).length); });
+    ents.forEach(e => { e.ty = e.inf.c.t || e.pty || 'ctr'; e.hid = ctrIsHidden(e.canon); e.own = e.ty === 'own' || !!e.inf.c.ow || !!(window.unitsOfOwner && window.unitsOfOwner(e.canon).length); });
     const nHid = ents.filter(e => e.hid).length;
     if(ctdState.ty === 'hid' && !nHid) ctdState.ty = '';
     if(ctdState.ty !== 'hid'){ for(let i = ents.length - 1; i >= 0; i--) if(ents[i].hid) ents.splice(i, 1); }
@@ -36831,7 +36869,7 @@
     if(wk){ showDialog('warn','رمز مناسب نیست', wk); return; }
     b.disabled = true;
     try{
-      const h = await sha256(pass);
+      const h = await sha256(toEn(pass));
       const r = await authRpc('admin_set_pass', {p_name: b.dataset.uSetpass, p_new: h, p_must: must});
       if(r && r.reason === 'denied') throw new Error('نشست ادمین شما روی سرور شناخته نشد. یک بار خارج و دوباره وارد شوید.');
       if(r && r.reason === 'weak') throw new Error('این رمز قابل قبول نیست.');
@@ -40759,7 +40797,7 @@
     if(la) la.addEventListener('click', async () => {
       const pass = prompt('برای خروج از همهٔ دستگاه‌ها، رمز خود را وارد کنید:');
       if(!pass) return;
-      const r = await authRpc('logout_all', {p_name: activeUserName(), p_hash: await sha256(pass)});
+      const r = await authRpc('logout_all', {p_name: activeUserName(), p_hash: await sha256(toEn(pass))});
       if(r && r.ok === true){
         setSessionEpoch(r.epoch);
         if(r.token) window.pmTok(r.token);
@@ -44509,6 +44547,7 @@
      «نما» بین همهٔ طبقات، «۱ تا ۷» بین همان بازه، و حیاط‌ها به تراز خودشان. */
   const FACADE_KEYS = ['1','2','3','4','5','6','7','8','9','10',
                        '11','12','13','14','15','16','17'];
+  const flNormEq = x => toEn(String(x || '')).replace(/[\u0654\u200cٔ\s]/g, '').toUpperCase();
   function floorKeysOf(zone){
     /* طبقهٔ دستی و نام اصلیِ محل (از «داده و نام‌ها ← محل و طبقه») */
     try{
@@ -44519,10 +44558,11 @@
     /* «نام طبقه · محل» از انتخابگر فضاها: طبقه همان سرِ متن است */
     { const z0 = String(zone || ''), i0 = z0.indexOf(' · ');
       const head = (i0 > 0 ? z0.slice(0, i0) : z0).trim();
-      const hf = head && BUILDING.find(f => f.label === head || (i0 > 0 && f.key === head));
+      const hn = flNormEq(head);
+      const hf = head && BUILDING.find(f => f.label === head || (i0 > 0 && f.key === head) || flNormEq(f.label) === hn || (i0 > 0 && flNormEq(f.key) === hn));
       if(hf) return [hf.key];
       /* چند طبقه: «طبقهٔ ۵، طبقهٔ ۶ · راهرو» */
-      if(head && head.indexOf('،') !== -1){ const P = head.split(/\s*،\s*/).filter(Boolean); const L = P.map(h => BUILDING.find(f => f.label === h || f.key === h)); if(L.length && L.every(Boolean)) return L.map(f => f.key); } }
+      if(head && head.indexOf('،') !== -1){ const P = head.split(/\s*،\s*/).filter(Boolean); const L = P.map(h => BUILDING.find(f => f.label === h || f.key === h || flNormEq(f.label) === flNormEq(h))); if(L.length && L.every(Boolean)) return L.map(f => f.key); } }
     const v = toEn(String(zone || '')).trim();
     if(!v) return [];
 
@@ -46054,7 +46094,6 @@
     const res = rTot ? '<div class="rc-title">نتیجهٔ بررسی‌ها<span class="n">' + toFa(rTot) + '</span></div><div class="ptx-res">'
       + '<div class="ptx-rbar">' + ['A','B','C','D'].filter(k => R[k]).map(k => '<span class="r-' + k + '" style="flex:' + R[k] + '" title="' + k + ': ' + toFa(R[k]) + '"></span>').join('') + '</div>'
       + '<div class="ptx-rl">' + [['A','تأیید'],['B','مشروط'],['C','اصلاح'],['D','رد']].map(([k, l]) => '<span class="r-' + k + '"><i></i>' + l + ' <b>' + toFa(R[k]) + '</b></span>').join('') + '</div></div>' : '';
-    if(t === 'own') return (window.spOwnerHtml ? window.spOwnerHtml(name) : '') || '<div class="hr-note">هنوز واحدی به نام این مالک ثبت نشده. از «میز کار ← فضاها و واحدها» روی کارت واحد، مالک را انتخاب کنید.</div>';
     const ownH = window.spOwnerHtml ? window.spOwnerHtml(name) : '';
     const sumPane = '<div class="cf">' + ownH + nowH + res
       + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '')
@@ -46157,7 +46196,7 @@
       const pt0 = (function(){ try{ return ctrTypeOf(name); }catch(e){ return ''; } })();
       if(pt0 === 'cons' || pt0 === 'emp' || pt0 === 'own'){
         const ttl0 = bg.querySelector('.mc-head'), body0 = bg.querySelector('.ct-body');
-        try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>'); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } }catch(e){}
+        try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>'); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e2){} }catch(e){}
         if(body0) body0.innerHTML = ctPartyHtml(name);
         return;
       }
@@ -46175,6 +46214,7 @@
     const tag0 = card && card.querySelector('.hv-tag');
     if(ttl && tag0) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(tag0.textContent) + '</small>');
     else if(ttl){ try{ bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); }catch(e){} }
+    if(ttl){ try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e){} }
     if(ttl && !card) ttl.insertAdjacentHTML('afterbegin', '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + '</span>');
 
     /* بازهٔ کارکرد: امروز، ۷ روز یا ۳۰ روز. کارت با دادهٔ همان بازه از
@@ -50077,6 +50117,20 @@
   }
   setTimeout(() => { try{ probeNewCols(); }catch(e){} }, 3500);
 
+  /* محل و طبقه یک‌شکل: «۱۷» و «17»، «طبقه 17» و «طبقهٔ ۱۷»، «b4» و «B۴» یکی‌اند */
+  const LOC_COLS = ['zone', 'subzone', 'floor', 'position'];
+  function normLocTxt(v){
+    let s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+    if(!s) return s;
+    if(/^[\d۰-۹٠-٩]+$/.test(s)) return toEn(s);
+    let m = s.match(/^[bB]\s*[-_.]?\s*([\d۰-۹٠-٩]{1,2})$/); if(m) return 'B' + (+toEn(m[1]));
+    s = s.replace(/طبقه[\u0654ٔ]?\s*(?=[\d۰-۹٠-٩])/g, 'طبقهٔ ');
+    if(/[\u0600-\u06FF]/.test(s.replace(/[۰-۹٠-٩]/g, ''))) s = s.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]).replace(/[٠-٩]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d.charCodeAt(0) - 1632]);
+    else s = toEn(s);
+    /* کدهای لاتین (B4، UNIT 502) لاتین می‌مانند */
+    return s.replace(/([A-Za-z])([۰-۹]+)/g, (x, a, n) => a + toEn(n));
+  }
+  window.normLocTxt = normLocTxt;
   function toSupa(table, obj){
     const m = SUPA_MAP[table] || {};
     const out = {};
@@ -50099,6 +50153,7 @@
       if(table === 'contracts' && col === 'end_date' && CTR_END_COL !== true) return;
       if(table === 'contracts' && col === 'doc_type' && CTR_TYPE_COL !== true) return;
       let v = obj[k];
+      if(LOC_COLS.indexOf(col) !== -1 && typeof v === 'string') v = normLocTxt(v);
       if(table === 'tasks' && ['done','not_done','doing'].indexOf(col) !== -1) v = (String(v).trim() === '1');
       if(table === 'minutes' && col === 'done') v = (v === true || String(v) === 'true' || String(v).trim() === '1');
       if(table === 'nudges' && col === 'seen') v = (String(v) === 'خوانده‌شده');
@@ -50116,6 +50171,7 @@
       let v = row[m[fa]];
       if(table === 'tasks' && ['done','not_done','doing'].indexOf(m[fa]) !== -1) v = v ? 1 : '';
       if(table === 'nudges' && m[fa] === 'seen') v = v ? 'خوانده‌شده' : 'خوانده‌نشده';
+      if(LOC_COLS.indexOf(m[fa]) !== -1 && typeof v === 'string' && v) v = normLocTxt(v);
       out[fa] = (v == null) ? '' : v;
     });
     return out;
@@ -69486,9 +69542,13 @@
   const spSplit = v => String(v || '').split(/[،,\n]+/).map(x => x.trim()).filter(Boolean);
   function spLoad(lists){
     const kv = v => { const s = String(v), i = s.indexOf('¦'); return i < 1 ? null : [s.slice(0, i).trim(), s.slice(i + 1)]; };
-    sp.zones.clear(); sp.parts.clear(); sp.units.clear();
-    ((lists && lists[SP_ZONE_KIND]) || []).forEach(v => { const p = kv(v); if(p) sp.zones.set(p[0], spSplit(p[1])); });
-    ((lists && lists[SP_PART_KIND]) || []).forEach(v => { const p = kv(v); if(p) sp.parts.set(p[0], spSplit(p[1])); });
+    sp.zones.clear(); sp.parts.clear(); sp.units.clear(); sp.leg = {};
+    /* «همهٔ طبقات» در پایگاه‌داده با کلید ALL ذخیره می‌شود؛ ردیف‌های قدیمیِ «*» هم خوانده و
+       در ذخیرهٔ بعدی پاک می‌شوند (ستاره در جست‌وجوی پایگاه‌داده یعنی «هر چیزی»؛ پیش‌تر برای همین
+       ردیف قبلی پاک نمی‌شد و فضای تازه اضافه نمی‌شد) */
+    const gk = (kind, p, raw) => { if(p[0] === '*'){ (sp.leg[kind] = sp.leg[kind] || []).push(raw); return '*'; } return p[0] === SP_ALL_K ? '*' : p[0]; };
+    ((lists && lists[SP_ZONE_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; const k = gk(SP_ZONE_KIND, p, v); const L = spSplit(p[1]); sp.zones.set(k, k === '*' ? Array.from(new Set((sp.zones.get('*') || []).concat(L))) : L); });
+    ((lists && lists[SP_PART_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; const k = gk(SP_PART_KIND, p, v); if(k === '*' && p[0] === '*' && sp.parts.has('*')) return; sp.parts.set(k, spSplit(p[1])); });
     ((lists && lists[SP_UNIT_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ sp.units.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} });
     try{ spLists(); }catch(e){}
     try{ window.pgLoad && window.pgLoad(lists); }catch(e){}
@@ -69526,7 +69586,14 @@
     return out;
   }
   window.unitsOfOwner = unitsOfOwner;
+  const SP_ALL_K = 'ALL';
   async function spSaveRow(kind, key, val){
+    if(key === '*'){
+      key = SP_ALL_K;
+      const old = (sp.leg && sp.leg[kind]) || [];
+      for(const raw of old) await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=eq.' + encodeURIComponent(raw), {method:'DELETE'}).catch(() => {});
+      if(sp.leg) sp.leg[kind] = [];
+    }
     await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=like.' + encodeURIComponent(String(key).replace(/[*%]/g, '') + '¦*'), {method:'DELETE'}).catch(() => {});
     if(val != null) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body:[{kind, value: key + '¦' + val}]});
     try{ clearNetCache(); }catch(e){}
@@ -69621,6 +69688,7 @@
     try{ ctrContacts.forEach(o => { if(o && o.t === 'own' && o.name) own.add(o.name); }); }catch(e){}
     try{ listNames().forEach(n => own.add(n)); }catch(e){}
     try{ ctrContacts.forEach(o => { if(o && o.name) own.add(o.name); }); }catch(e){}
+    try{ pjPartyPeople().forEach(o => own.add(o.n)); }catch(e){}
     sp.units.forEach(o => spSplit(o && o.own).forEach(n => own.add(n)));
     const ty = new Set(['یک خوابه', 'دو خوابه', 'سه خوابه', 'چهار خوابه', 'پنت‌هاوس', 'دوبلکس', 'تجاری', 'اداری']); sp.units.forEach(o => { if(o && o.ty) ty.add(o.ty); });
     return '<datalist id="spOwnList">' + Array.from(own).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
@@ -69829,7 +69897,7 @@
     if(t.closest('[data-pgskadd]')){
       const i = host.querySelector('[data-pgskin]'), v = i ? i.value.trim() : ''; if(!v) return;
       /* تخصص تازه با یک ردیف خالیِ «کل طبقهٔ اول» ثبت نمی‌شود؛ همین که انتخاب شود در فهرست می‌ماند تا اولین عدد */
-      if(pgSkills().indexOf(v) === -1){ try{ await pgSave(v, '*', '', 0); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return; } }
+      if(pgSkills().indexOf(v) === -1){ try{ await pgSave(v, '_', '', 0); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return; } }
       pg.sk = v; spRender(); return;
     }
     const rm = t.closest('[data-pgarm]'); if(rm){ try{ await pgSaveA(rm.dataset.pgarm, pg.sk, null); spRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
@@ -70206,7 +70274,8 @@
        چند طبقه: «طبقهٔ ۵، طبقهٔ ۶» یا «طبقهٔ ۵، طبقهٔ ۶ · راهرو»
      مقدار گزارش‌های قبلی تا کسی طبقه یا محل را عوض نکند دست نمی‌خورد. */
   const SL_ALL_L1 = 'همهٔ فضاها';
-  const slFloorByLabel = h => { h = String(h || '').trim(); return spFloors().find(x => x.label === h || x.key === h || x.key === toEn(h)); };
+  const slFlN = x => toEn(String(x || '')).replace(/[\u0654\u200cٔ\s]/g, '').toUpperCase();
+  const slFloorByLabel = h => { h = String(h || '').trim(); const n = slFlN(h); return spFloors().find(x => x.label === h || x.key === h || x.key === toEn(h)) || spFloors().find(x => slFlN(x.label) === n || slFlN(x.key) === n); };
   function slParse(z){
     z = String(z || '').trim(); if(!z) return {fs: [], l1: ''};
     const F = spFloors(), zf = toEn(z);
@@ -80784,12 +80853,13 @@
     if(tabOk('admin') && adm){
       let n = 0, hot = 0, emp = 0;
       Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; emp += adm[k].emp; });
+      if(!hmAllAlerts()) hot = 0;
       K.push(kpi('hc-vio' + (hot ? ' alert' : ''), 'doc', (adminAll || []).length ? hmNum(n) : '<i class="hm-dots"></i>', 'سند در جریان',
         (adminAll || []).length ? (hot ? '<i class="dn">' + toFa(hot) + ' بحرانی</i>' + (emp ? ' · ' + toFa(emp) + ' نزد کارفرما' : '') : (emp ? toFa(emp) + ' نزد کارفرما' : 'بدون مورد بحرانی')) : '', 'data-hm="admin"'));
     }
     if(hmCan('write.prc')){
-      K.push(kpi('hc-teal' + (prc && prc.hot ? ' alert' : ''), 'prc', prc ? hmNum(prc.open) : '<i class="hm-dots"></i>', 'قلم خرید باز',
-        prc ? (prc.hot ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : (prc.reqs ? toFa(prc.reqs) + ' درخواست' : 'خرید بازی نیست')) : '', 'data-hm="prcList"'));
+      K.push(kpi('hc-teal' + (prc && prc.hot && hmAllAlerts() ? ' alert' : ''), 'prc', prc ? hmNum(prc.open) : '<i class="hm-dots"></i>', 'قلم خرید باز',
+        prc ? (prc.hot && hmAllAlerts() ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : (prc.reqs ? toFa(prc.reqs) + ' درخواست' : 'خرید بازی نیست')) : '', 'data-hm="prcList"'));
     }
     return K.length ? '<div class="hm-kpis n' + K.length + '">' + K.join('') + '</div>' : '';
   }
@@ -81370,6 +81440,8 @@
     h3Work.hot = work.filter(x => x.level === 'hot').length;
     return '<div class="h3-wk">' + chips + '<div class="h3-box">' + body + '</div>' + more + '</div>';
   }
+  /* شمار «بحرانی» کل پروژه فقط برای کسی که اجازهٔ دیدن هشدارهای همه را دارد */
+  function hmAllAlerts(){ try{ return isAdminUser() || can('alert.all'); }catch(e){ return false; } }
   function h3Project(day, dDate, adm, tk, prc){
     const K = [];
     const kpi = (c, ic, v, l, sub, attr, alert) => K.push('<button type="button" class="h3-k ' + c + (alert ? ' alert' : '') + '" ' + attr + '>'
@@ -81387,10 +81459,11 @@
     if(tabOk('tasks')) kpi('hc-ind', 'task', tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب</i>' : 'در موعد') : '', 'data-hm="tasks"', tk && tk.late);
     if(tabOk('admin') && adm){
       let n = 0, hot = 0; Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; });
+      if(!hmAllAlerts()) hot = 0;
       const ld = (adminAll || []).length;
-      kpi('hc-vio', 'doc', ld ? n : dots, 'سند در جریان', ld ? (hot ? '<i class="dn">' + toFa(hot) + ' بحرانی</i>' : 'بدون بحرانی') : '', 'data-hm="admin"', hot);
+      kpi('hc-vio', 'doc', ld ? n : dots, 'سند در جریان', ld ? (hot ? '<i class="dn">' + toFa(hot) + ' بحرانی</i>' : hmAllAlerts() ? 'بدون بحرانی' : '') : '', 'data-hm="admin"', hot);
     }
-    if(hmCan('write.prc')) kpi('hc-teal', 'prc', prc ? prc.open : dots, 'قلم خرید باز', prc ? (prc.hot ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : '') : '', 'data-hm="prcList"', prc && prc.hot);
+    if(hmCan('write.prc')){ const ph = hmAllAlerts() && prc && prc.hot; kpi('hc-teal', 'prc', prc ? prc.open : dots, 'قلم خرید باز', ph ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : '', 'data-hm="prcList"', ph); }
     if(!K.length) return '';
     /* گزارش‌دهندگان روز، زیر شاخص‌ها */
     let ppl = '';
@@ -81573,7 +81646,7 @@
     if(!t || e.isComposing) return;
     const isTxt = t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && /^(text|search)$/i.test(t.type || 'text'));
     if(!isTxt || t.readOnly) return;
-    if(t.matches('[dir="ltr"], [data-latin], [inputmode="tel"], [inputmode="email"], [inputmode="url"], [autocomplete="username"], .no-fa')) return;
+    if(t.matches('[dir="ltr"], [data-latin], [inputmode="tel"], [inputmode="email"], [inputmode="url"], [autocomplete="username"], [autocomplete$="password"], [id*="Pass"], [id*="pass"], .u-pass, .no-fa')) return;
     const v = t.value;
     if(!/[0-9]/.test(v)) return;
     const a = t.selectionStart, b = t.selectionEnd;
@@ -82039,10 +82112,18 @@
     return words.length >= 2 ? '' : 'نام و نام خانوادگی';
   }
   window.personNameIssue = personNameIssue;
+  /* افراد «اطلاعات پروژه» با نقش‌شان در نیروی انسانی */
+  function pjPartyPeople(){
+    const p = (typeof PJ !== 'undefined' && PJ.all.get(PJ.cur)) || {}, out = [], seen = new Set();
+    [['employer', 'emp'], ['consultant', 'cons'], ['supervisor', 'cons'], ['contractor', 'ctr']].forEach(([k, t]) => pjArr(p[k]).forEach(n => { n = String(n).trim(); const nk = nameKey(n); if(!n || seen.has(nk)) return; seen.add(nk); out.push({n, t}); }));
+    return out;
+  }
+  window.pjPartyPeople = pjPartyPeople;
   function pjPartyDL(){
     const seen = new Set(), out = [];
     const add = (n, lb) => { n = String(n || '').trim(); if(!n || seen.has(nameKey(n))) return; seen.add(nameKey(n)); out.push('<option value="' + esc(n) + '"' + (lb ? ' label="' + esc(lb) + '"' : '') + '>'); };
     try{ listNames().forEach(n => add(n, roleOf(n) || 'کاربر سامانه')); }catch(e){}
+    try{ ctrContacts.forEach(o => { if(o && o.name) add(o.name, ({emp:'کارفرما', cons:'مشاور', own:'مالک'})[o.t] || 'پیمانکار'); }); }catch(e){}
     ['contractorList', 'contractPartyList'].forEach(id => { const dl = document.getElementById(id); if(dl) Array.from(dl.options).forEach(o => add(o.value, id === 'contractorList' ? 'پیمانکار' : 'طرف قرارداد')); });
     return '<datalist id="pjPartyNames">' + out.join('') + '</datalist><datalist id="pjCities">' + PJ_CITIES.map(c => '<option value="' + c + '">').join('') + '</datalist>';
   }
@@ -82052,7 +82133,7 @@
   }
   function pjFloorsParse(t){
     return String(t || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => { const a = l.split('|').map(x => x.trim());
-      const o = {key: toEn(a[0] || ''), label: a[1] || a[0], units: String(a[2] || '').split(/[،,\s]+/).map(x => toEn(x.trim())).filter(Boolean)};
+      const o = {key: toEn(a[0] || '').toUpperCase().replace(/\s+/g, ''), label: normLocTxt(a[1] || a[0]), units: String(a[2] || '').split(/[،,\s]+/).map(x => toEn(x.trim())).filter(Boolean)};
       const k = (a[3] || '').trim(); if(/^(top|tech|gf|base)$/.test(k)) o.kind = k; else if(/^B\d+$/i.test(o.key)) o.kind = 'base'; else if(/^GF$/i.test(o.key)) o.kind = 'gf';
       return o; }).filter(f => f.key);
   }
