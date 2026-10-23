@@ -20181,6 +20181,7 @@
   .hri-all{height:34px;border-radius:10px;border:1px dashed var(--line);background:none;font:700 11.5px var(--f);color:var(--sky-deep, var(--sky));cursor:pointer;}
   .hri-z b{font-family:var(--m);}
   .hri-r{display:grid;grid-template-columns:8px 1fr;column-gap:8px;padding:7px 10px;border-radius:10px;background:var(--field);font-size:11px;line-height:1.8;}
+  .hri-rep{font-weight:800;color:var(--warn, #b07512);padding:0 6px;border-radius:8px;background:color-mix(in srgb, var(--warn, #b07512) 12%, transparent);}
   .hri-r i{width:7px;height:7px;border-radius:50%;background:var(--alert);margin-top:8px;}
   .hri-r small{grid-column:2;font-size:10px;color:var(--muted);}
   /* مدیریت کاربران: نام جدا و رمز */
@@ -35380,8 +35381,10 @@
   /* ====== نوع طرف: پیمانکار، مشاور، تیم کارفرما ====== */
   const CTR_TYPES = [['ctr', 'پیمانکار'], ['cons', 'مشاور'], ['emp', 'کارفرما'], ['own', 'مالک / سرمایه‌گذار']];
   const ctrTypeLabel = t => (CTR_TYPES.find(x => x[0] === t) || CTR_TYPES[0])[1];
-  function ctrTypeOf(n){ const c = ctrContactOf(n); if(c && c.t) return c.t;
-    try{ const k = nameKey(n), o = window.pjPartyPeople && window.pjPartyPeople().find(x => nameKey(x.n) === k); if(o && o.t !== 'ctr') return o.t; }catch(e){}
+  function ctrTypeOf(n){ const c = ctrContactOf(n);
+    /* کارفرما/مشاوری که در اطلاعات پروژه تعیین شده، حتی اگر پرونده‌اش با نوع پیش‌فرض «پیمانکار» ساخته شده باشد */
+    try{ const k = nameKey(n), o = window.pjPartyPeople && window.pjPartyPeople().find(x => nameKey(x.n) === k || (c && c.name && nameKey(x.n) === nameKey(c.name))); if(o && o.t !== 'ctr' && (!c || !c.t || c.t === 'ctr')) return o.t; }catch(e){}
+    if(c && c.t) return c.t;
     /* نامی که خودش «کارفرما» یا «مشاور» است، بی‌آنکه نوعش ثبت شده باشد */
     try{ const nn = normName(n); if(['کارفرما', 'کارفرمای پروژه'].some(x => normName(x) === nn)) return 'emp'; if(['مشاور', 'دستگاه نظارت', 'نظارت'].some(x => normName(x) === nn)) return 'cons'; }catch(e){}
     return ''; }
@@ -48112,17 +48115,19 @@
                   else if(!rel.length) blkBody = '<div class="hr-iss">' + actHtml + '</div>';
                   else{
                     const byZ = new Map();
-                    rel.forEach(r => { const z = String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
+
                     /* همهٔ موانع، تازه‌ترین بالا؛ چهار تای اول باز و بقیه با «نمایش همه».
                        با زدن روی هر طبقه/محل فقط موانع همان‌جا دیده می‌شود. */
-                    const all = rel.slice().sort((x, y) => String(pick(y,F.date) || '').localeCompare(String(pick(x,F.date) || '')));
+                    const all = issGroup(rel.slice().sort((x, y) => String(pick(y,F.date) || '').localeCompare(String(pick(x,F.date) || ''))),
+                      r => pick(r,I.text), r => pick(r,F.date), r => pick(r,I.zone));
+                    all.forEach(g => { const z = String(pick(g.r,I.zone) || 'بدون محل').trim() || 'بدون محل'; byZ.set(z, (byZ.get(z) || 0) + 1); });
                     blkBody = '<div class="hr-iss" data-hri="1"><div class="hri-z">'
-                      + '<button type="button" class="on" data-hriz="">همه<b>' + toFa(rel.length) + '</b></button>'
+                      + '<button type="button" class="on" data-hriz="">همه<b>' + toFa(all.length) + '</b></button>'
                       + Array.from(byZ).sort((a2, b2) => b2[1] - a2[1]).map(([z, c]) =>
                           '<button type="button" data-hriz="' + esc(z) + '">' + esc(z) + '<b>' + toFa(c) + '</b></button>').join('') + '</div>'
-                      + all.map((r, i) => '<div class="hri-r' + (i >= 4 ? ' more' : '') + '" data-z="' + esc(String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل') + '"><i></i><span>' + esc(String(pick(r,I.text) || '—')) + '</span>'
+                      + all.map((g, i) => { const r = g.r; return '<div class="hri-r' + (i >= 4 ? ' more' : '') + (g.n > 1 ? ' rep' : '') + '" data-z="' + esc(String(pick(r,I.zone) || 'بدون محل').trim() || 'بدون محل') + '"><i></i><span>' + esc(String(pick(r,I.text) || '—')) + '</span>'
                           + '<small>' + esc(toFa(stampFa(pick(r,F.date)) || pick(r,F.date) || '')) + (pick(r,I.zone) ? ' · ' + esc(pick(r,I.zone)) : '')
-                          + (pick(r,I.who) ? ' · ' + esc(pick(r,I.who)) : '') + '</small></div>').join('')
+                          + (pick(r,I.who) ? ' · ' + esc(pick(r,I.who)) : '') + issRepHtml(g) + '</small></div>'; }).join('')
                       + (all.length > 4 ? '<button type="button" class="hri-all" data-hriall="1">نمایش همهٔ ' + toFa(all.length) + ' مانع</button>' : '')
                       + actHtml
                       + '</div>';
@@ -48605,6 +48610,22 @@
      از دو جا: موانع گزارش روزانه که طرفشان این شخص است یا در متنشان به نام او
      (یا نقشش: «کارفرما»، «مشاور»…) اشاره شده، و موانع لیست فعالیت که گیر او ثبت شده‌اند.
      جایش در کارت ساخته می‌شود و داده بعد از باز شدن کارت می‌رسد. */
+  /* موانع تکراری (همان متن، همان محل، روزهای پشت سر هم) یک ردیف می‌شوند: تعداد تکرار و اولین تاریخ */
+  function issGroup(list, txt, dt, zn){
+    const M = new Map(), out = [];
+    (list || []).forEach(r => {
+      const k = normName(String(txt(r) || '')).replace(/[\s.،,]+/g, '') + '|' + (zn ? normName(String(zn(r) || '')) : '');
+      const d = String(dt(r) || '');
+      let g = M.get(k);
+      if(!g){ g = {r, n: 0, first: d, last: d}; M.set(k, g); out.push(g); }
+      g.n++;
+      if(d && (!g.first || dayKey(d) < dayKey(g.first))) g.first = d;
+      if(d && (!g.last || dayKey(d) > dayKey(g.last))){ g.last = d; g.r = r; }
+    });
+    return out;
+  }
+  window.issGroup = issGroup;
+  const issRepHtml = g => g.n > 1 ? ' · <b class="hri-rep">' + toFa(g.n) + ' بار · از ' + esc(toFa(admDate(g.first) || g.first)) + '</b>' : '';
   const PTB_KW = {emp:['کارفرما'], cons:['مشاور', 'نظارت', 'ناظر'], own:['مالک', 'سرمایه‌گذار']};
   function ptbSlot(name){
     setTimeout(() => { try{ ptbFill(name); }catch(e){} }, 0);
@@ -48614,21 +48635,29 @@
     const t = ctrTypeOf(name) || 'ctr';
     const names = new Set([name]); try{ aliasesOf(name).forEach(a => names.add(a)); }catch(e){}
     try{ const c = ctrContactOf(name); if(c && c.cn) names.add(c.cn); }catch(e){}
-    const kws = (PTB_KW[t] || []).concat(Array.from(names).map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر|شرکت)\s+/, '')).filter(n => n.length > 2));
+    /* کلیدواژهٔ نقش («مشاور»، «نظارت»…) فقط وقتی همین یک طرفِ آن نوع هست؛ با چند مشاور در رشته‌های
+       مختلف، موانع هر کدام فقط با رشتهٔ خودش («مشاور … الکتریکال») جدا می‌شود — پیش‌تر هر مشاوری موانع بقیه را هم می‌دید. */
+    let roleKw = PTB_KW[t] || [];
+    try{
+      let same = 0; ctrContacts.forEach(c => { if(c && c.t === t) same++; });
+      if(same > 1){ const dsc = String(ctrDiscOf(name) || '').trim();
+        roleKw = dsc ? roleKw.map(k => k + '*' + dsc) : []; }
+    }catch(e){}
+    const kws = roleKw.concat(Array.from(names).map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر|شرکت)\s+/, '')).filter(n => n.length > 2));
     const from = normDate(faAddDays(toFa(todayShamsi()), -180)) || '';
     let iss = [];
     if(BACKEND === 'supabase'){
       const inl = '(' + Array.from(names).map(n => '"' + String(n).replace(/["\\]/g, '') + '"').join(',') + ')';
-      const ors = kws.slice(0, 6).map(k => 'text.ilike.*' + String(k).replace(/[(),*]/g, '') + '*');
+      const ors = kws.slice(0, 6).map(k => 'text.ilike.*' + String(k).replace(/[(),]/g, '') + '*');
       const q = 'select=id,date_fa,text,zone,party,engineer&date_fa=gte.' + encodeURIComponent(from) + '&order=date_fa.desc&limit=200&or=' + encodeURIComponent('(party.in.' + inl + (ors.length ? ',' + ors.join(',') : '') + ')');
       try{ iss = await supaFetch('issues?' + q) || []; }catch(e){ iss = []; }
     }
     const act = [];
     try{ await loadTaskBlockers(); }catch(e){}
-    const kwN = kws.map(k => normName(k)).filter(Boolean);
+    const kwN = kws.map(k => String(k).split('*').map(x => normName(x)).filter(Boolean)).filter(x => x.length);
     try{ tbCache.items.forEach(list => list.forEach(it => {
       const byCtr = it.ctr && Array.from(names).some(n => sameEntity(it.ctr, n));
-      const byTxt = kwN.some(k => normName(it.text || '').indexOf(k) !== -1);
+      const tx = normName(it.text || ''), byTxt = kwN.some(ps => ps.every(k => tx.indexOf(k) !== -1));
       if(byCtr || byTxt) act.push(it); })); }catch(e){}
     act.sort((x, y) => (y.open - x.open) || String(dayKey(faDateOf(y.date) || '')).localeCompare(String(dayKey(faDateOf(x.date) || ''))));
     const box = document.querySelector('[data-ptb="' + CSS.escape(name) + '"]'); if(!box) return;
@@ -48637,8 +48666,9 @@
     const actH = act.slice(0, 20).map(it => { const tr = taskById(it.task);
       return row('act' + (it.open ? ' open' : ' done') + (tr ? ' go' : ''), it.text, esc(toFa(admDate(faDateOf(it.date)) || '')) + (it.kind ? ' · ' + esc(it.kind) : '') + (tr ? ' · ' + esc(pick(tr,T.title) || '') : '') + ' · ' + (it.open ? 'باز' : 'رفع شده'),
         tr ? ' role="button" tabindex="0" data-ptbtask="' + esc(it.task) + '"' : ''); }).join('');
-    const issH = iss.slice(0, 30).map((x, i) => row(i >= 6 ? 'more' : '', x.text, esc(toFa(admDate(x.date_fa) || x.date_fa || '')) + (x.zone ? ' · ' + esc(x.zone) : '') + (x.engineer ? ' · ' + esc(x.engineer) : ''))).join('');
-    box.innerHTML = '<div class="rc-title">موانع مرتبط<span class="n' + (nOpen ? ' bad' : '') + '">' + toFa(act.length + iss.length) + '</span></div>'
+    const issG = issGroup(iss, x => x.text, x => x.date_fa, x => x.zone);
+    const issH = issG.slice(0, 30).map((g, i) => { const x = g.r; return row((i >= 6 ? 'more' : '') + (g.n > 1 ? ' rep' : ''), x.text, esc(toFa(admDate(x.date_fa) || x.date_fa || '')) + (x.zone ? ' · ' + esc(x.zone) : '') + (x.engineer ? ' · ' + esc(x.engineer) : '') + issRepHtml(g)); }).join('');
+    box.innerHTML = '<div class="rc-title">موانع مرتبط<span class="n' + (nOpen ? ' bad' : '') + '">' + toFa(act.length + issG.length) + '</span></div>'
       + (!act.length && !iss.length ? '<div class="hr-note">در شش ماه اخیر مانعی مربوط به «' + esc(name) + '» ثبت نشده است. ✓</div>'
         : '<div class="hr-iss">'
           + (act.length ? '<div class="rc-sub">از لیست فعالیت' + (nOpen ? ' · <b class="bad">' + toFa(nOpen) + ' باز</b>' : '') + '</div>' + actH : '')
