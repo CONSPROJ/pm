@@ -24588,6 +24588,8 @@
   .h3-td:active{background:color-mix(in srgb, var(--c) 9%, transparent);}
   #homeView .h3-qas.h3-qgrid{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;overflow:visible !important;flex-wrap:wrap;} @media(min-width:700px){ #homeView .h3-qas.h3-qgrid{grid-template-columns:repeat(6,minmax(0,1fr));} }
   .dh-sh{display:flex;align-items:center;gap:8px;margin:14px 2px 8px;} .dh-sh b{font-size:13px;font-weight:800;color:var(--ink);} .dh-sh i{font-style:normal;font-size:11px;font-weight:800;min-width:22px;height:20px;padding:0 7px;border-radius:99px;display:inline-grid;place-items:center;background:color-mix(in srgb, var(--sky) 14%, var(--surface));color:var(--sky);} .dh-sh.done i{background:color-mix(in srgb, var(--ok) 14%, var(--surface));color:var(--ok);} .dh-sh small{font-size:10.5px;color:var(--muted);margin-inline-start:auto;} .dh-box.done .dh-row{opacity:.92;} .dh-n.ok{background:color-mix(in srgb, var(--ok) 14%, var(--surface)) !important;color:var(--ok) !important;}
+  #homeView .hx4-me h2{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;line-height:1.35 !important;} #homeView .hx4-me{min-width:0;}
+  .hx4-pct{all:unset;cursor:pointer;flex:none;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:58px;gap:0;margin-inline-start:auto;} .hx4-pct svg{width:48px;height:48px;transform:rotate(-90deg);} .hx4-pct circle{fill:none;stroke-width:3.6;} .hx4-pct .bg{stroke:color-mix(in srgb, var(--line) 80%, transparent);} .hx4-pct .fg{stroke:var(--ok);stroke-linecap:round;transition:stroke-dasharray .6s ease;} .hx4-pct b{position:absolute;top:14px;font-size:11.5px;font-weight:800;color:var(--ink);} .hx4-pct small{font-size:9.5px;color:var(--muted);font-weight:700;margin-top:1px;white-space:nowrap;}
   .h3-td.ind{--c:#4f5fc0;} .h3-tdn{font-style:normal;font-size:11px;font-weight:600;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--c,#888) 12%,transparent);color:var(--c,inherit);margin-inline-start:4px}
   .h3-td.due{--c:#b07512;} .h3-td.ok{--c:var(--ok);} .h3-td.grn{--c:#3f7a52;} .h3-td.vio{--c:#6d5bb5;} .h3-td.bad{--c:var(--alert);}
   .h3-tdi{flex:0 0 30px;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);}
@@ -86507,6 +86509,7 @@
     return '<section class="hx4 h3-a" style="--i:0">'
       + '<div class="hx4-top"><span class="hx4-av">' + avatarHtml(me, 'lg', true) + '</span>'
       +   '<div class="hx4-me"><small>' + (day ? HM_I.sun : HM_I.moon) + hmGreeting() + '</small><h2>' + esc(nm) + '</h2>' + (rl ? '<em>' + esc(rl) + '</em>' : '') + '</div>'
+      +   h3PctRing(me)
       +   (pp ? '<span class="hx4-dt"><small>' + wd + '</small><b>' + toFa(pp[2]) + '</b><small>' + FA_MONTHS[pp[1] - 1] + '</small></span>' : '') + '</div>'
       + '<div class="hx4-st">'
       +   st(tk ? tk.mine : 0, 'کار باز', '', 'data-h3k="mine"')
@@ -86518,6 +86521,26 @@
       + '</section>';
   }
   /* کار امروز: گزارش روزانه / کارگری، مرخصی و جریمهٔ منتظر — فقط آنچه واقعاً کار دارد */
+  /* درصد انجام کارها (اسناد + فعالیت‌های اجرایی) برای مدیران: خودِ شخص و زیرمجموعه‌اش در چارت؛ مدیر پروژه و ادمین کل پروژه */
+  function h3PctRing(me){
+    try{
+      const L = levelOf(me); if(!(L <= 2 || L === 7 || isAdminUser())) return '';
+      const all = (tasksAll || []).filter(r => r && (pick(r,T.id) || r.__admId));
+      let team = null;
+      if(!(L <= 2 || isAdminUser())){
+        const P = ogPeople(), sub = new Set([nameKey(me)]); let grow = true, g = 0;
+        while(grow && g++ < 8){ grow = false; P.forEach(n => { const k = nameKey(n); if(sub.has(k)) return; const up = ogParentOf(n, P); if(up && sub.has(nameKey(up))){ sub.add(k); grow = true; } }); }
+        team = sub;
+      }
+      const L2 = team ? all.filter(r => team.has(nameKey(pick(r,T.m1))) || team.has(nameKey(pick(r,T.m2)))) : all;
+      if(L2.length < 3) return '';
+      const done = L2.filter(r => { try{ return taskStatus(r).cls === 'done'; }catch(e){ return false; } }).length;
+      const pct = Math.round(done / L2.length * 100), C = 2 * Math.PI * 17;
+      return '<button type="button" class="hx4-pct" data-h3k="mine" title="' + toFa(done) + ' از ' + toFa(L2.length) + ' کار و سند ' + (team ? 'شما و زیرمجموعه' : 'پروژه') + ' انجام شده">'
+        + '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" class="bg"/><circle cx="20" cy="20" r="17" class="fg" stroke-dasharray="' + (C * pct / 100).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg>'
+        + '<b>' + toFa(pct) + '٪</b><small>' + (team ? 'تیم من' : 'انجام کارها') + '</small></button>';
+    }catch(e){ return ''; }
+  }
   /* گزارشی که این شخص «باید» ثبت می‌کرد و نکرده (فقط گزارش‌دهندگان الزامی، بی مرخصی/معافیت) */
   const h3IsReq = me => { try{ return REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(me)); }catch(e){ return false; } };
   function h3RepDue(me){
