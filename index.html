@@ -20429,6 +20429,24 @@
   .tdt-svg text{font-family:var(--f);font-size:11px;font-weight:800;fill:var(--ink);} .tdt-svg text.dl{font-size:9.5px;font-weight:600;fill:var(--muted);}
   .tdt-svg line.avg{stroke:var(--warn, #c07a24);stroke-width:1.5;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;}
   .tdt-svg g:hover rect.o{fill:var(--sky);}
+  /* انتخاب پروژه روی کارت خانه */
+  #homeView .pj4{position:relative;}
+  .pj4-sw{all:unset;cursor:pointer;position:absolute;top:12px;inset-inline-end:12px;z-index:3;display:inline-flex;align-items:center;gap:4px;padding:5px 9px 5px 11px;border-radius:99px;font:700 11px var(--f);color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);}
+  .pj4-sw svg{width:14px;height:14px;} .pj4-sw:hover{background:rgba(255,255,255,.22);}
+  .pjsw-pop{position:absolute;top:46px;inset-inline-end:12px;z-index:20;width:min(300px, calc(100% - 24px));max-height:60vh;overflow:auto;padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 24px 50px -20px rgba(10,20,40,.45);animation:pjswIn .18s ease both;}
+  @keyframes pjswIn{from{opacity:0;transform:translateY(-6px);}}
+  .pjsw-h{display:flex;align-items:baseline;gap:8px;padding:6px 8px 8px;} .pjsw-h b{font-size:13px;} .pjsw-h small{font-size:11px;color:var(--muted);}
+  .pjsw-pop > button{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;}
+  .pjsw-pop > button:hover{background:var(--field);} .pjsw-pop > button.on{background:color-mix(in srgb, var(--sky) 9%, var(--surface));}
+  .pjsw-pop > button span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;} .pjsw-pop > button b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .pjsw-pop > button small{font-size:10.5px;color:var(--muted);}
+  .pjsw-pop > button i{font-style:normal;color:var(--sky);font-weight:800;}
+  .pjsw-cv{width:34px !important;height:34px !important;flex:none;border-radius:10px !important;}
+  .pjsw-pop .pjsw-all{justify-content:center;margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 10px 10px;font-size:12px;font-weight:700;color:var(--sky);}
+  /* ابزارها: یک ردیف افقی قابل کشیدن */
+  #homeView .h3-qas.h3-qrow{display:flex !important;overflow-x:auto !important;scroll-snap-type:x proximity;scrollbar-width:none;gap:8px !important;padding:2px 0 6px !important;margin:0 -2px !important;}
+  #homeView .h3-qas.h3-qrow::-webkit-scrollbar{display:none;}
+  #homeView .h3-qas.h3-qrow .h3-qa{flex:0 0 84px !important;scroll-snap-align:start;}
+  #homeView .h3-kb > .h3-rps{margin-bottom:12px !important;}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -86266,13 +86284,15 @@
             + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '') + '<span class="h3-rg">' + HM_I.go + '</span></button>'; }).join('') + '</div>'
         : '<div class="h3-mempty">' + HM_I.ok + 'کار بازی به نام شما نیست</div>');
     void mineH;
-    P.push({k:'td', t:'امروز', n: td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length + (G.folN || 0), body:(RQ.length ? '<div class="h3-sub"><b>اخیر</b><small>آخرین ثبت‌های شما</small></div><div class="h3-rps">' + RQ.join('') + '</div>' : '') + '<div class="h3-sub"><b>ابزارها</b></div><div class="h3-qas">' + QA.join('') + '</div>' + (function(){
+    const recH = RQ.length ? '<div class="h3-sub"><b>اخیر</b><small>آخرین ثبت‌های شما</small></div><div class="h3-rps">' + RQ.join('') + '</div>' : '';
+    const toolH = QA.length ? '<div class="h3-sub"><b>ابزارها</b><small>برای دیدن همه بکشید</small></div><div class="h3-qas h3-qrow">' + QA.join('') + '</div>' : '';
+    P.push({k:'td', t:'امروز', n: td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length + (G.folN || 0), body:(function(){
       /* امروز: اول آنچه اقدام می‌خواهد، بعد وضعیت‌های ثبت‌شده */
       const need = td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)), info = td2.filter(c => need.indexOf(c) === -1);
       if(!td2.length) return '<div class="td4-ok">' + HM_I.ok + '<b>همه‌چیز مرتب است</b><small>کار فوری‌ای برای امروز نیست</small></div>';
       return (need.length ? '<div class="td4-h"><b>نیاز به اقدام</b><i class="n">' + toFa(need.length) + '</i></div><div class="h3-tds td4">' + need.join('') + '</div>' : '')
         + (info.length ? '<div class="td4-h"><b>وضعیت امروز</b><i>' + toFa(info.length) + '</i></div><div class="h3-tds td4">' + info.join('') + '</div>' : '');
-    })()});
+    })() + toolH});
     /* گزارش‌ها: همان نوع‌هایی که این شخص در زبانهٔ گزارش‌ها می‌بیند */
     try{ if(tabOk('view')){
       const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
@@ -86286,6 +86306,7 @@
     if(!homeKtUser || !P.some(x => x.k === homeKt)) homeKt = 'td';
     return '<section class="h3-sec h3-kb h3-a" style="--i:2" data-kt="' + homeKt + '">'
       + '<div class="h3-sh"><h3>کارتابل من</h3></div>'
+      + recH
       + (P.length > 1 ? '<div class="h3-seg" role="tablist">' + P.map(x => '<button type="button" role="tab" data-h3kt="' + x.k + '" class="' + (x.k === homeKt ? 'on' : '') + '" aria-selected="' + (x.k === homeKt) + '">' + x.t + (x.n ? '<i>' + toFa(x.n) + '</i>' : '') + '</button>').join('') + '<span class="h3-seg-ink"></span></div>' : '')
       + P.map(x => '<div class="h3-kp" data-kp="' + x.k + '">' + x.body + '</div>').join('')
       + '</section>';
@@ -86377,7 +86398,8 @@
     const R = 15.9155, ring = pgA == null ? '' : '<span class="pj4-pg"><svg viewBox="0 0 36 36" aria-hidden="true"><circle r="' + R + '" cx="18" cy="18" class="bg"></circle><circle r="' + R + '" cx="18" cy="18" class="fg" stroke-dasharray="' + pgA + ' ' + (100 - pgA) + '" stroke-dashoffset="25"></circle></svg><b>' + toFa(pgA) + '٪</b><small>پیشرفت</small></span>';
     return '<section class="pj4 h3-a" style="--i:1">'
       + '<button type="button" class="pj4-hd" data-pjopen="1">' + pjCoverHtml(pj, 'pj4-cv') + '<span class="pj4-t"><small>وضعیت پروژه · ' + esc(dDate ? (dDate === todayShamsi() ? 'امروز' : faDateLong(dDate) || toFa(dDate)) : '') + '</small><b>' + esc(pj.name || 'پروژه') + '</b>'
-      +   '<span class="pj4-ch">' + (pj.status ? '<i>' + esc(pj.status) + '</i>' : '') + (pjN > 1 ? '<i>' + toFa(pjN) + ' پروژه · تعویض</i>' : '') + '</span></span>' + ring + '</button>'
+      +   '<span class="pj4-ch">' + (pj.status ? '<i>' + esc(pj.status) + '</i>' : '') + '</span></span>' + ring + '</button>'
+      + '<button type="button" class="pj4-sw" data-pjsw="1" aria-haspopup="true" title="انتخاب پروژه">' + toFa(pjN > 1 ? pjN + ' پروژه' : 'پروژه‌ها') + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>'
       + '<div class="pj4-k n' + K.length + '">' + K.join('') + '</div>' + ppl + '</section>';
   }
   function h3Links(){
@@ -86975,6 +86997,23 @@
     body.innerHTML = pjSt.v === 'info' ? pjInfoHtml() : pjSt.v === 'mem' ? pjMemHtml() : pjSt.v === 'mods' ? pjModsHtml() : pjSt.v === 'new' ? pjNewHtml() : pjListHtml();
     body.scrollTop = 0;
   }
+  /* انتخاب سریع پروژه از کارت خانه */
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-pjsw]');
+    const old = document.querySelector('.pjsw-pop');
+    if(!b){ if(old && !e.target.closest('.pjsw-pop')) old.remove(); return; }
+    e.preventDefault(); e.stopPropagation();
+    if(old){ old.remove(); return; }
+    const L = pjMine(), cur = PJ.cur;
+    const pop = document.createElement('div'); pop.className = 'pjsw-pop';
+    pop.innerHTML = '<div class="pjsw-h"><b>انتخاب پروژه</b><small>' + toFa(L.length) + ' پروژه</small></div>'
+      + L.map(p => '<button type="button" data-pjgo="' + esc(p.id) + '" class="' + (p.id === cur ? 'on' : '') + '">' + pjCoverHtml(p, 'pjsw-cv') + '<span><b>' + esc(p.name || 'پروژه') + '</b><small>' + esc([p.status, p.city].filter(Boolean).join(' · ')) + '</small></span>' + (p.id === cur ? '<i>✓</i>' : '') + '</button>').join('')
+      + '<button type="button" class="pjsw-all" data-pjopen="1">همهٔ پروژه‌ها و تنظیمات</button>';
+    const sec = b.closest('.pj4') || document.body; sec.appendChild(pop);
+    pop.addEventListener('click', ev => { const g = ev.target.closest('[data-pjgo]');
+      if(g){ ev.stopPropagation(); pop.remove(); if(g.dataset.pjgo !== PJ.cur) pjSwitch(g.dataset.pjgo); return; }
+      if(ev.target.closest('[data-pjopen]')) setTimeout(() => pop.remove(), 0); });
+  }, true);
   function pjListHtml(){
     const cur = pjCur(), mine = pjMine(), inv = pjInvites(), me = activeUserName();
     const facts = [cur.status, cur.city, cur.type].filter(Boolean).map(esc).join(' · ');
