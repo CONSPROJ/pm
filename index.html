@@ -35917,7 +35917,13 @@
   }
   window.ctrEndMsg = ctrEndMsg;
   function cctRows(){
-    return ((typeof adminAll !== 'undefined' && adminAll) || []).filter(x => x.kind === 'contract').map(x => x.row);
+    /* همهٔ قراردادهای بخش اسناد؛ اگر دفتر فنی هنوز باز نشده، از بستهٔ دریافت‌شده (پیش‌تر فهرست خالی می‌ماند) */
+    const L = ((typeof adminAll !== 'undefined' && adminAll) || []).filter(x => x.kind === 'contract').map(x => x.row);
+    if(L.length) return L;
+    try{ const a = (bundleCache && bundleCache.data && bundleCache.data.admin) || (heavyCache && heavyCache.data && heavyCache.data.admin) || null;
+      if(a && Array.isArray(a.contracts) && a.contracts.length) return a.contracts; }catch(e){}
+    if(!cctRows.__ld){ cctRows.__ld = 1; try{ deckPrime().then(() => { try{ if(document.querySelector('.cct')) ctcRepaint(); }catch(e){} }); }catch(e){} }
+    return [];
   }
   function cctEditHtml(r){
     const id = String(pick(r, AD.id) || ''), P = ctrPartySplit(ctrRawParty(r));
