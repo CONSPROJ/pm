@@ -29511,10 +29511,20 @@
   }
 
   /* کسانی که سند الان نزدشان است؛ null یعنی همان مسئول خودِ سند */
+  /* دارندگان سمت کارفرما (نمایندهٔ کارفرما و زیرمجموعه‌اش) در سامانه؛ اسناد «بررسی کارفرما» نزد این‌هاست
+     و اعلان ارسال به کارفرما به خودشان می‌رسد (نه به ثبت‌کننده) */
+  function empHolderNames(){
+    try{ const P = (typeof ogPeople === 'function') ? ogPeople() : [];
+      const L = P.filter(n => { try{ return ogPersonInfo(n).side === 'emp'; }catch(e){ return false; } });
+      /* اول سرِ تیم کارفرما (سمتی که بالادست ندارد) */
+      return L.sort((a, b) => { const pa = ogPos(ogRoleOf(a)), pb = ogPos(ogRoleOf(b)); return ((pa && pa.up) ? 1 : 0) - ((pb && pb.up) ? 1 : 0); });
+    }catch(e){ return []; }
+  }
+  window.empHolderNames = empHolderNames;
   function admHolders(kind, r){
     if(!r || kind === 'minute' || kind === 'letter') return null;
     const st = String(pick(r,AD.review) || '');
-    if(st === 'بررسی کارفرما') return ['کارفرما'];
+    if(st === 'بررسی کارفرما'){ const H = empHolderNames(); return H.length ? H : ['کارفرما']; }
     if(st === 'بررسی داخلی' || st === 'رد داخلی'){
       let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); }catch(e){}
       return w.length ? w : null;
@@ -29533,7 +29543,7 @@
         return ok(sn.st === 'نزد مشاور/کارفرما' ? (String(pick(r,AD.dParty) || '').trim() || 'مشاور/کارفرما') : 'دفتر فنی', sn.days);
       }
       if(kind === 'minute' || kind === 'letter') return null;
-      if(st === 'بررسی کارفرما') return ok('کارفرما', rvEmployerDays(r));
+      if(st === 'بررسی کارفرما'){ const H = empHolderNames(); return ok(H.length ? H.slice(0, 2).map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).join('، ') : 'کارفرما', rvEmployerDays(r)); }
       if(st === 'بررسی داخلی' || st === 'رد داخلی'){
         let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); if(!w.length) w = reviewersOf(r) || []; }catch(e){}
         return ok(w.length ? w.map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).slice(0, 2).join('، ') : 'بررسی داخلی', rvInternalDays(r));
@@ -54536,7 +54546,9 @@
             ? docT + ': ' + arToman(amt) + ' تومان در ' + toFa(payIn.date) + ' واریز شد'
               + (fullAmt ? ' (جمع ' + arToman(totalPaid) + ' از ' + arToman(fullAmt) + ' تومان)' : '') + '؛ ثبت: ' + me + '.'
             : docT + ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان' + (payIn ? ' در ' + toFa(payIn.date) : '') + ')' : '') + ' و تسویه شد؛ ثبت: ' + me + '.');
-      for(const w of milestoneRecipients()){
+      const rcp = milestoneRecipients();
+      if(ev === 'sent') empHolderNames().forEach(n => { if(!rcp.some(x => nameKey(x) === nameKey(n))) rcp.unshift(n); });
+      for(const w of (ev === 'sent' ? rcp.filter(x => nameKey(x) !== nameKey(me)) : rcp)){
         try{ await sendActionRaw({action:'nudge', from: me, to: w, kind: DONE_KIND, itemId: id,
           title: kind + CM_SEP + (ev === 'sent' ? 'ارسال به کارفرما' : payLbl) + CM_SEP + docT, message: msg, date: todayShamsi()}); }catch(e){}
       }
