@@ -50156,6 +50156,7 @@
         + '<span class="arx-rt"><b>' + esc(pick(x.r,AD.sParty) || pick(x.r,AD.sName) || 'صورت وضعیت') + '</b><small>صورت وضعیت ' + esc(toFa(pick(x.r,AD.sNo) || '')) + ' · ' + esc(toFa(admDate(x.d) || x.d)) + '</small></span>'
         + '<span class="arx-rv ok">' + esc(arToman(x.a)) + '<u>تومان</u></span></button>').join('');
       let ptd = ''; try{ const t0 = paidTodayHtml(a.statements, dateLabel); if(t0.indexOf('class="ptd"') !== -1) ptd = t0; }catch(e){}
+      try{ h += adminChartsHtml(Object.assign({}, a, {statements: st}), 'fin'); }catch(e){}
       h += ptd
         + blk('secPays', 'آخرین پرداخت‌ها', payH ? '<div class="arx-rs">' + payH + '</div>' : '')
         + '<div class="ar-sec-h" id="secReceivable"><span class="ic">' + AR_I.money + '</span><h3>مطالبات هر طرف قرارداد</h3></div>'
@@ -50184,12 +50185,13 @@
         + '<span class="arx-rt"><b>' + esc(arTitleOf(x.k, x.r)) + '</b><small>' + esc(KIND_LABEL[x.k] || '') + ' · ' + esc(toFa(admDate(x.d) || x.d)) + '</small></span>'
         + '<span class="arx-rv ok">' + x.t + '</span></button>').join('');
       const lastOf = (k, L) => sortAdmin(k, L || []).slice().sort((x, y) => String(dayKey(admSentDate(k, y) || pick(y,AD.date) || '')).localeCompare(String(dayKey(admSentDate(k, x) || pick(x,AD.date) || '')))).slice(0, 6).map(r => row(k, r)).join('');
+      try{ h += adminChartsHtml(a, 'dcc'); }catch(e){}
       h += blk('secAppr', 'آخرین تأییدها', apH ? '<div class="arx-rs">' + apH + '</div>' : '')
         + blk('secLastL', 'آخرین نامه‌ها', (a.letters || []).length ? '<div class="adm-fast ar-fast">' + lastOf('letter', a.letters) + '</div>' : '')
         + blk('secLastD', 'آخرین اسناد طراحی', (a.designs || []).length ? '<div class="adm-fast ar-fast">' + lastOf('design', a.designs) + '</div>' : '');
       /* مقایسهٔ مدت گردش صورت وضعیت و قرارداد (بی‌مبلغ) */
       [['statement', a.statements], ['contract', a.contracts]].forEach(([k, L]) => { const c = (L || []).length ? admCompareHtml(k, L) : '';
-        if(c) h += '<details class="ar-cmp"><summary>' + AR_I.flow + '<b>مدت گردش ' + KIND_LABEL[k] + '</b><span>' + AR_I.chev + '</span></summary>' + c + '</details>'; });
+        if(c) h += '<details class="ar-cmp" open><summary>' + AR_I.flow + '<b>مدت گردش ' + KIND_LABEL[k] + '</b><span>' + AR_I.chev + '</span></summary>' + c + '</details>'; });
     }
 
     groups.forEach(([k, listRaw]) => {
@@ -50216,7 +50218,7 @@
         +     (openN ? '<i class="op">' + toFa(openN) + ' باز</i>' : '<i class="ok">همه بسته</i>')
         +     (lateN ? '<i class="late">' + toFa(lateN) + ' موعد گذشته</i>' : '')
         +   '</span></div>';
-      const cmp = dcc ? admCompareHtml(k, list) : '';   // مدت گردش جای گزارش DCC است، نه مالی
+      const cmp = admCompareHtml(k, list);
       // مقایسهٔ گردش از اول باز است
       if(cmp) h += '<details class="ar-cmp" open><summary>' + AR_I.flow + '<b>مقایسهٔ مدت گردش اسناد</b><span>' + AR_I.chev + '</span></summary>' + cmp + '</details>';
       Array.from(byStatus.keys())
@@ -68178,7 +68180,7 @@
       + '</div>';
   }
 
-  function adminChartsHtml(A){
+  function adminChartsHtml(A, part){
     const stmts = stLive(A.statements || []), conts = A.contracts || [];
     const mins = A.minutes || [], lets = A.letters || [];
     const C = 2 * Math.PI * 42;
@@ -68240,7 +68242,9 @@
     // ---- کاشی‌های کلیدی ----
     const tile = (cls, ic, lbl, big, sub) => '<div class="ark ' + cls + '"><span class="ark-ic">' + ic + '</span>'
       + '<span class="ark-l">' + lbl + '</span><b>' + big + '</b><small>' + sub + '</small></div>';
-    let h = '<div class="ar-kpis">'
+    /* part: «fin» فقط نمودارهای پولی، «dcc» نمودارهای گردش و موعد اسناد؛ بدون part همه (مثل قبل) */
+    const P = k => !part || part === k;
+    let h = part ? '' : '<div class="ar-kpis">'
       + tile('', AR_I.money, 'مبلغ صورت وضعیت‌ها', arMoneyHtml(tAmount / 10), toFa(stmts.length) + ' صورت وضعیت · تومان')
       + tile('ok', AR_I.paid, 'پرداخت‌شده', toFa(pctPaid) + '٪', arToman(tPaid) + ' تومان')
       + tile(tRest ? 'bad' : 'ok', AR_I.money, 'مطالبات', arMoneyHtml(tRest / 10), toFa(openSt) + ' سند در انتظار پرداخت')
@@ -68248,10 +68252,11 @@
       + tile(inFlow ? 'warm' : '', AR_I.flow, 'در جریان رسیدگی', toFa(inFlow), rejN ? toFa(rejN) + ' رد شده' : 'صورت وضعیت و قرارداد')
       + tile(dueB.late.length ? 'bad' : 'ok', AR_I.due, 'موعد گذشته', toFa(dueB.late.length), toFa(dueB.week.length) + ' مورد تا یک هفته')
       + '</div>';
+    if(part === 'fin'){ try{ h += cfTrendHtml(stmts); }catch(e){} }
 
     h += '<div class="ar-charts" id="secCharts">';
     // ---- ۱) دونات پرداخت ----
-    h += '<div class="arc arc-pay"><div class="arc-h"><b>وضعیت پرداخت</b><span>صورت وضعیت‌ها</span></div>'
+    if(P('fin')) h += '<div class="arc arc-pay"><div class="arc-h"><b>وضعیت پرداخت</b><span>صورت وضعیت‌ها</span></div>'
       + (tAmount
           ? '<div class="pay-wrap"><div class="pay-donut"><svg viewBox="0 0 100 100">'
             + '<circle class="bg" cx="50" cy="50" r="42"/>'
@@ -68269,7 +68274,7 @@
     const parties = Array.from(byParty.values()).filter(x => x.amount > 0)
       .sort((x, y) => (y.rest - x.rest) || (y.amount - x.amount)).slice(0, 8);
     const maxA = Math.max(1, ...parties.map(x => x.amount));
-    h += '<div class="arc arc-party"><div class="arc-h"><b>مطالبات هر پیمانکار</b>'
+    if(P('fin')) h += '<div class="arc arc-party"><div class="arc-h"><b>مطالبات هر پیمانکار</b>'
       + '<span class="leg"><i class="p"></i>پرداخت‌شده<i class="r"></i>مانده</span></div>'
       + (parties.length
           ? parties.map((x, i) =>
@@ -68285,7 +68290,7 @@
       + '</div>';
 
     // ---- ۳) زمان هر مرحله ----
-    h += arStageTimeHtml(stmts.concat(conts));
+    if(P('dcc')) h += arStageTimeHtml(stmts.concat(conts));
 
     // ---- ۴) موعدها ----
     const seg = (n, cls) => n ? '<i class="' + cls + '" style="flex:' + n + '"></i>' : '';
@@ -68293,7 +68298,7 @@
       + '<span class="di-t">' + esc(arTitleOf(it.k, it.r)) + '</span>'
       + '<span class="di-d ' + (it.dd > 0 ? 'late' : 'soon') + '">'
       + (it.dd > 0 ? faDur(it.dd) + ' گذشته' : (it.dd === 0 ? 'امروز' : faDur(-it.dd) + ' مانده')) + '</span></button>';
-    h += '<div class="arc arc-due"><div class="arc-h"><b>موعدهای اسناد باز</b><span>' + toFa(dueTot) + ' سند باز</span></div>'
+    if(P('dcc')) h += '<div class="arc arc-due"><div class="arc-h"><b>موعدهای اسناد باز</b><span>' + toFa(dueTot) + ' سند باز</span></div>'
       + (dueTot
           ? '<div class="due-bar">' + seg(dueB.late.length, 'late') + seg(dueB.week.length, 'week') + seg(dueB.later.length, 'later') + seg(dueB.none, 'none') + '</div>'
             + '<div class="due-leg">'
@@ -68314,9 +68319,11 @@
     const tmp = document.createElement('div');
     tmp.innerHTML = legacy;
     const charts = tmp.querySelector('.charts');
+    const MONEY_CH = /روند ماهانه|عمر مطالبات/;
     h += '<div class="ar-charts ar-more">'
-      + (charts ? Array.from(charts.children).map(c => '<div class="arc arc-old">' + c.innerHTML + '</div>').join('') : '')
-      + arStatusHtml(A)
+      + (charts ? Array.from(charts.children).filter(c => { const t = (c.querySelector('h4') || {}).textContent || ''; return !part || (part === 'fin' ? MONEY_CH.test(t) : !MONEY_CH.test(t)); })
+          .map(c => '<div class="arc arc-old">' + c.innerHTML + '</div>').join('') : '')
+      + (P('dcc') ? arStatusHtml(A) : '')
       + '</div>';
     return h;
   }
