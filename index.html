@@ -74362,8 +74362,19 @@
   }
   function umResRow(r){ return '<button type="button" data-umadd="' + esc(JSON.stringify(r)) + '"><em class="um-kb k-' + esc(r.k) + '">' + esc(UM_KL(r.k)) + '</em><span>' + esc(r.t) + '</span><b class="um-plus">+</b></button>'; }
   function umChip(r){ return '<span class="um-chip" data-umk="' + esc(r.k) + '" data-umid="' + esc(r.id) + '" data-umt="' + esc(r.t || '') + '"><i>' + esc(UM_KL(r.k)) + '</i><b>' + esc(umLive(r.k, r.id) || r.t || '') + '</b><button type="button" class="sp-x" data-umrm="1" aria-label="حذف">×</button></span>'; }
+  /* اسناد هنوز خوانده نشده‌اند (دفتر فنی باز نشده): همین‌جا خوانده می‌شوند و فهرست‌های باز پر می‌شوند */
+  function umPrime(){
+    if((adminAll || []).length || um.ld) return; um.ld = 1;
+    (async () => { try{ await deckPrime(); }catch(e){} um.ld = 0;
+      document.querySelectorAll('.um-box').forEach(box => { const r2 = box.querySelector('.um-res'); if(!r2 || String((box.querySelector('.um-q') || {}).value || '').trim()) return;
+        const have = new Set(Array.from(box.querySelectorAll('.um-chip')).map(c => c.dataset.umk + ':' + c.dataset.umid)), rc = umRecent(have);
+        r2.innerHTML = rc.length ? '<small class="um-rl">تازه‌ترین اسناد</small>' + rc.map(umResRow).join('') : '<small class="um-rl">سندی پیدا نشد؛ نام را جست‌وجو کنید</small>'; }); })();
+  }
   function umBoxHtml(refs){
     const have = new Set((refs || []).map(r => r.k + ':' + r.id)), rc = umRecent(have);
+    if(!(adminAll || []).length){ setTimeout(umPrime, 0); return '<div class="um-box"><div class="um-chips">' + (refs || []).map(umChip).join('') + '</div>'
+      + '<label class="um-ql"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" class="um-q" placeholder="جست‌وجو: نامه، صورت وضعیت، قرارداد، نقشه، فعالیت…" autocomplete="off"></label>'
+      + '<div class="um-res"><small class="um-rl">در حال خواندن اسناد…</small></div></div>'; }
     return '<div class="um-box"><div class="um-chips">' + (refs || []).map(umChip).join('') + '</div>'
       + '<label class="um-ql"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" class="um-q" placeholder="جست‌وجو: نامه، صورت وضعیت، قرارداد، نقشه، فعالیت…" autocomplete="off"></label>'
       + '<div class="um-res">' + (rc.length ? '<small class="um-rl">تازه‌ترین اسناد</small>' + rc.map(umResRow).join('') : '') + '</div></div>';
