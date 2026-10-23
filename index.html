@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023191628">
+<meta name="pm-build" content="20261023192012">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26243,6 +26243,18 @@
   @media(max-width:520px){ .ctyp .ctyp-b{flex:0 0 auto;padding:0 11px;} }
   .ctyp-b.t-sup.on{color:#1f8a8a;} [data-theme="dark"] .ctyp-b.t-sup.on{color:#5cc9c9;}
   .cdx-tyb.t-sup{color:#1f8a8a;background:color-mix(in srgb, #1f8a8a 12%, var(--surface));} [data-theme="dark"] .cdx-tyb.t-sup{color:#5cc9c9;}
+
+  /* چارت: کارفرمایان کنار هم در یک قاب */
+  .ogc-own{direction:rtl;display:inline-flex;flex-direction:column;align-items:center;gap:6px;padding:10px 12px 12px;border-radius:18px;background:color-mix(in srgb, var(--sc) 9%, var(--surface));border:1.5px solid color-mix(in srgb, var(--sc) 45%, transparent);}
+  .ogc-own > u{text-decoration:none;font-size:11px;font-weight:800;color:var(--sc);}
+  .ogc-own > span{display:flex;gap:8px;}
+  .ogc-o{display:flex;flex-direction:column;align-items:center;gap:2px;width:112px;padding:8px 6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:center;}
+  .ogc-o .ava{width:34px !important;height:34px !important;} .ogc-o b{font-size:12px;font-weight:800;color:var(--ink);line-height:1.4;} .ogc-o small{font-size:10.5px;color:var(--muted);}
+  .ogl-own{display:flex;flex-wrap:wrap;gap:8px;padding:6px 0 8px;} .ogl-own .ogc-o{width:auto;flex-direction:row;padding:6px 10px;gap:8px;text-align:right;}
+  .ogl-s.sub{margin-inline-start:18px;border-inline-start:2px solid color-mix(in srgb, var(--sc) 35%, transparent);padding-inline-start:10px;}
+  button.pp-m{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:99px;background:var(--field);}
+  button.pp-m.on{background:color-mix(in srgb, var(--sky) 14%, var(--surface));outline:1.5px solid var(--sky);}
+  .pp-pmf{margin-top:10px;padding:10px;border-radius:14px;background:var(--field);} .pp-pmf > small{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -38328,8 +38340,12 @@
     ['ناظر کارفرما', 'emp', 'کارفرما', 'نمایندهٔ کارفرما', ['qc.inspect', 'rep.qc'].concat(OG_R)],
     ['تدارکات کارفرما', 'emp', 'تدارکات', 'نمایندهٔ کارفرما', ['write.prc', 'rep.prc', 'proc.notify', 'rep.wh']],
     ['طراح کارفرما', 'emp', 'طراحی', 'نمایندهٔ کارفرما', ['tab.admin', 'rep.adm']],
+    ['مالی کارفرما', 'emp', 'مالی', 'نمایندهٔ کارفرما', ['tab.admin', 'rep.adm', 'rep.cf', 'co.view']],
+    ['دفتر فنی کارفرما', 'emp', 'دفتر فنی', 'نمایندهٔ کارفرما', ['tab.admin', 'rep.adm', 'qt.view']],
+    ['کنترل پروژهٔ کارفرما', 'emp', 'کنترل پروژه', 'نمایندهٔ کارفرما', ['rep.pc', 'rep.cf', 'rep.show'].concat(OG_R)],
     ['مالک / سرمایه‌گذار', 'own', 'مالکیت', '', ['rep.show', 'rep.pc', 'rep.cf', 'sp.view', 'sp.sale']],
     ['مشاور / ناظر', 'cons', 'نظارت', '', ['qc.inspect', 'rep.qc', 'tab.admin'].concat(OG_R)],
+    ['مالی مشاور', 'cons', 'مالی', 'مشاور / ناظر', ['tab.admin', 'rep.adm']],
     ['نمایندهٔ پیمانکار', 'ctr', 'پیمانکار', '', ['qc.request']]
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
   const og = {pos: new Map(), per: new Map(), sel: '', ed: ''};
@@ -38349,6 +38365,8 @@
     return out;
   }
   const ogPos = n => ogPositions().find(x => x.n === n) || null;
+  /* ترتیب سمت‌ها (تعیین‌شده در «دسترسی‌ها ← سمت‌ها»)؛ بی‌ترتیب‌ها به همان ترتیب فهرست */
+  const ogOrd = x => { if(!x) return 9999; if(x.o != null && !isNaN(x.o)) return +x.o; const i = OG_DEF.findIndex(d => d.n === x.n); return 500 + (i < 0 ? 400 : i); };
   const ogPeople = () => { try{ return (peopleRows || []).filter(p => p.name && p.active !== false && !p.pending).map(p => p.name); }catch(e){ return []; } };
   const ogRoleOf = n => { try{ return String(roleOf(n) || '').trim(); }catch(e){ return ''; } };
   function ogPersonInfo(n){
@@ -38386,7 +38404,7 @@
     const L = ogPositions(), P = ogPeople(), cnt = n => P.filter(x => ogRoleOf(x) === n).length;
     if(!og.sel || !L.some(x => x.n === og.sel)) og.sel = (L[0] || {}).n || '';
     const cur = L.find(x => x.n === og.sel);
-    const list = OG_SIDES.map(([k, t]) => { const G = L.filter(x => (x.side || 'pm') === k); if(!G.length) return '';
+    const list = OG_SIDES.map(([k, t]) => { const G = L.filter(x => (x.side || 'pm') === k).sort((a, b) => ogOrd(a) - ogOrd(b)); if(!G.length) return '';
       return '<div class="pp-g" style="--sc:' + OG_SC[k] + '"><u><i></i>' + esc(t) + '<em>' + toFa(G.length) + '</em></u>' + G.map(x => '<button type="button" class="pp-it' + (x.n === og.sel ? ' on' : '') + '" data-ogpos="' + esc(x.n) + '" data-ppn="' + esc(x.n + ' ' + (x.dept || '')) + '"><span class="pp-in"><b>' + esc(x.n) + '</b>' + (x.dept ? '<small>' + esc(x.dept) + '</small>' : '') + '</span>' + (cnt(x.n) ? '<em>' + toFa(cnt(x.n)) + '</em>' : '') + '</button>').join('') + '</div>'; }).join('');
     let det = '<div class="pc-none">یک سمت را انتخاب کنید.</div>';
     if(cur){
@@ -38400,7 +38418,8 @@
         + (og.ed === cur.n ? ogPosFormHtml(cur) : '')
         + '<div class="pp-ks"><div><b>' + toFa(ppl.length) + '</b><u>عضو</u></div><div><b>' + toFa(nOn) + '</b><u>اجازهٔ این سمت</u></div><div' + (tplMiss ? ' class="w"' : '') + '><b>' + toFa(tplMiss) + '</b><u>پیشنهادیِ روشن‌نشده</u></div></div>'
         + '<div class="pp-sec"><div class="pp-sh"><b>اعضا</b><small>سمت هر نفر در «کاربران» و برای هر پروژه جدا تعیین می‌شود</small></div>'
-        +   (ppl.length ? '<div class="pp-mem">' + ppl.map(n => '<span class="pp-m">' + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(LEVEL_SHORT[levelOf(n)] || '') + '</small></span>').join('') + '</div>' : '<p class="pp-mu">هنوز کسی این سمت را ندارد.</p>') + '</div>'
+        +   (ppl.length ? '<div class="pp-mem">' + ppl.map(n => '<button type="button" class="pp-m' + (og.pm === n ? ' on' : '') + '" data-ogpm="' + esc(n) + '" title="سرپرست، طرف و طبقات این نفر">' + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(LEVEL_SHORT[levelOf(n)] || '') + '</small></button>').join('') + '</div>'
+              + (og.pm && ppl.some(x => x === og.pm) ? '<div class="pp-pmf"><small>جایگاه «' + esc(og.pm) + '» در چارت سازمانی</small>' + ogPerFormHtml(og.pm, P) + '</div>' : '<p class="pp-mu">برای تعیین سرپرست مستقیم، طرف و طبقات هر نفر رویش بزنید.</p>') : '<p class="pp-mu">هنوز کسی این سمت را ندارد.</p>') + '</div>'
         + '<div class="pp-sec"><div class="pp-sh"><b>اجازه‌ها</b><small>به همهٔ اعضای این سمت داده می‌شود، علاوه بر سطح هر نفر</small></div>'
         +   '<div class="pp-tb"><span class="pp-seg">' + [['all', 'همه', caps.length], ['on', 'روشن', caps.filter(has).length], ['off', 'خاموش', caps.filter(c => !has(c)).length]].map(([k, t, n]) => '<button type="button" data-pcpf="' + k + '" class="' + (f === k ? 'on' : '') + '">' + t + ' <i>' + toFa(n) + '</i></button>').join('') + '</span>'
         +   (tplMiss ? '<button type="button" class="pp-btn pri" data-ogtpl="' + esc(cur.n) + '">روشن کردن قالب پیشنهادی (+' + toFa(tplMiss) + ')</button>' : '') + '</div>'
@@ -38424,6 +38443,7 @@
       + '<label><u>طرف</u><select data-ogf="side" data-nons="1">' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((x.side || 'pm') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<label><u>واحد</u><input type="text" data-ogf="dept" value="' + esc(x.dept || '') + '" placeholder="مثلاً اجرا، دفتر فنی، مالی"></label>'
       + '<label><u>زیر نظرِ بخش <em>برای سمت‌های مشاور و ناظر</em></u><select data-ogf="us" data-nons="1">' + [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([k, t]) => '<option value="' + k + '"' + ((x.us || '') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
+      + '<label><u>ترتیب در چارت <em>عدد کوچک‌تر جلوتر؛ بین سمت‌های هم‌سطح</em></u><input type="text" inputmode="numeric" data-ogf="o" value="' + esc(x.o != null ? toFa(x.o) : '') + '" placeholder="مثلاً ۱"></label>'
       + '<label><u>زیر نظر سمت</u><select data-ogf="up" data-nons="1"><option value="">— (رأس)</option>' + L.map(y => '<option value="' + esc(y.n) + '"' + (x.up === y.n ? ' selected' : '') + '>' + esc(y.n) + '</option>').join('') + '</select></label>'
       + '<div class="ogp-fa"><button type="button" class="mini go" data-ogsave="1">ذخیره</button>' + (!x.def && x.n ? '<button type="button" class="mini" data-ogdel="' + esc(x.n) + '">حذف سمت</button>' : '') + '<button type="button" class="mini" data-ogcancel="1">انصراف</button></div></div>';
   }
@@ -38437,55 +38457,88 @@
     if(!og.view) og.view = (window.innerWidth || 1000) < 640 ? 'list' : 'chart';
     if(og.z == null) og.z = 1;
     const par = new Map(); P.forEach(n => par.set(n, ogParentOf(n, P)));
-    const kids = n => P.filter(x => par.get(x) && nameKey(par.get(x)) === nameKey(n));
+    /* هم‌سطح‌ها به ترتیبِ سمت (از «دسترسی‌ها ← سمت‌ها») و بعد نام */
+    const byOrd = (a, b) => (ogOrd(ogPos(ogRoleOf(a))) - ogOrd(ogPos(ogRoleOf(b)))) || String(a).localeCompare(String(b), 'fa');
+    const kids = n => P.filter(x => par.get(x) && nameKey(par.get(x)) === nameKey(n)).sort(byOrd);
     const flTx = I => I.fl.length ? I.fl.map(k => { const f = spFloors().find(z => z.key === k); return f ? f.label.replace(/^طبقهٔ\s*/, '') : k; }).join('، ') : '';
     const cnt = n => { let c = 0; kids(n).forEach(k => { c += 1 + cnt(k); }); return c; };
     let pj = {}; try{ pj = pjCur() || {}; }catch(e){}
     const noPos = P.filter(n => !ogRoleOf(n)).length;
-    /* طرف‌های بیرونی (کارفرما، مشاور، مالک) که کاربر سامانه نیستند: از پرونده‌ها و اطلاعات پروژه، با افرادشان */
+    const hrOf = n => { try{ return ctrContactOf(n) || null; }catch(e){ return null; } };
+    /* طرف‌های بیرونی (کارفرما، مشاور، مالک) که کاربر سامانه نیستند: از پرونده‌ها و اطلاعات پروژه، با افرادشان و سمت هر نفر */
     const EXT = new Map(); { const seen = new Set(), uk = new Set(P.map(nameKey));
-      const addP = (nm, t) => { nm = String(nm || '').trim(); if(!nm || ['emp', 'cons', 'own'].indexOf(t) === -1) return; let c = null; try{ c = ctrContactOf(nm); }catch(e){}
+      const addP = (nm, t) => { nm = String(nm || '').trim(); if(!nm || ['emp', 'cons', 'own'].indexOf(t) === -1) return; const c = hrOf(nm);
         const k = normName((c && c.name) || nm); if(seen.has(k) || uk.has(nameKey(nm))) return; seen.add(k);
         const ppl = (Array.isArray(c && c.r) ? c.r : []).filter(x => x && x.n && !uk.has(nameKey(x.n))).map(x => ({n: x.n, r: x.r || ''}));
         const t2 = t === 'cons' && c && (c.un === 'emp' || c.un === 'pm') ? c.un : t;
-        if(!EXT.has(t2)) EXT.set(t2, []); EXT.get(t2).push({n: (c && c.name) || nm, d: (t2 !== t ? 'مشاور' + ((c && c.d) ? ' ' + c.d : '') : ((c && c.d) || '')), ppl}); };
+        const ro = (c && c.ro) || '';
+        const d = t === 'cons' ? (ro || ('مشاور' + ((c && c.d) ? ' ' + c.d : ''))) : t === 'emp' ? (ro || (c && c.em ? 'کارفرما' : 'تیم کارفرما')) : (ro || (c && c.d) || '');
+        if(!EXT.has(t2)) EXT.set(t2, []); EXT.get(t2).push({n: (c && c.name) || nm, d, ppl, em: t === 'emp' && !!(c && c.em), t}); };
       try{ (window.pjPartyPeople ? pjPartyPeople() : []).forEach(o => addP(o.n, o.t)); }catch(e){}
       try{ ctrContacts.forEach(c => { if(c && c.name) addP(c.name, c.t); }); }catch(e){} }
-    const dsd = n => { const I = ogPersonInfo(n); return I.side === 'cons' && I.under ? I.under : I.side; };
-    const S = OG_SIDES.map(([k, t]) => ({k, t, all: P.filter(n => dsd(n) === k), roots: P.filter(n => dsd(n) === k && !(par.get(n) && dsd(par.get(n)) === k)), ext: EXT.get(k) || []}))
+    /* مشاور: زیر بخشی که در سمت یا پرونده‌اش آمده (کارفرما یا مدیریت پیمان) */
+    const dsd = n => { const I = ogPersonInfo(n); if(I.side !== 'cons') return I.side; const c = hrOf(n); return I.under || (c && (c.un === 'emp' || c.un === 'pm') ? c.un : '') || 'cons'; };
+    const isOwnerUser = n => { const c = hrOf(n); return dsd(n) === 'emp' && !!(c && c.em); };
+    const S = OG_SIDES.map(([k, t]) => ({k, t, all: P.filter(n => dsd(n) === k), roots: P.filter(n => dsd(n) === k && !(par.get(n) && dsd(par.get(n)) === k)).sort(byOrd), ext: EXT.get(k) || []}))
       .filter(x => x.all.length || x.ext.length);
     const extN = x => x.ext.reduce((t, e) => t + 1 + e.ppl.length, 0);
-    const ed = og.ed && og.ed.indexOf('p:') === 0 ? og.ed.slice(2) : '';
+    const SG = k => S.find(x => x.k === k);
+    /* کارفرمایان (صاحب‌کار) کنار هم در یک قاب؛ تیم کارفرما و تیم مدیریت پیمان زیرشان */
+    const E = SG('emp'), PM = SG('pm');
+    const owners = E ? E.ext.filter(e => e.em).map(e => ({n: e.n, d: e.d, ext: true})).concat(E.roots.filter(isOwnerUser).map(n => ({n, d: ogRoleOf(n) || 'کارفرما'}))) : [];
+    const empTeamExt = E ? E.ext.filter(e => !e.em) : [], empTeamRoots = E ? E.roots.filter(n => !isOwnerUser(n)) : [];
+    const ownerKids = E ? E.roots.filter(isOwnerUser).reduce((a, n) => a.concat(kids(n)), []) : [];
+    const ed = '';
     let body = '';
+    const extLi = (e, sc, cls) => '<li><div class="ogc-n ext" style="--sc:' + sc + '" data-hrprof="' + esc(e.n) + '">' + avatarHtml(e.n, '', true) + '<b>' + esc(e.n) + '</b><small>' + esc(e.d || '') + '</small></div>'
+      + (e.ppl && e.ppl.length ? '<ul>' + e.ppl.slice().reverse().map(q => '<li><div class="ogc-n ext" style="--sc:' + sc + '">' + avatarHtml(q.n, '', true) + '<b>' + esc(q.n) + '</b><small>' + esc(q.r || '—') + '</small></div></li>').join('') + '</ul>' : '') + '</li>';
     if(og.view === 'chart'){
       const card = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
-        return '<li><div class="ogc-n' + (ed === n ? ' on' : '') + '" style="--sc:' + (OG_SC[I.side] || '#777') + '"' + (adm ? ' data-ogper="' + esc(n) + '"' : '') + '>'
+        return '<li><div class="ogc-n" style="--sc:' + (OG_SC[dsd(n)] || OG_SC[I.side] || '#777') + '">'
           + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + '</small>' + (fl ? '<em>طبقه ' + esc(fl) + '</em>' : '')
           + (K.length ? '<button type="button" class="ogc-tg' + (shut ? ' shut' : '') + '" data-ogtg="' + esc(n) + '" aria-label="' + (shut ? 'باز کردن' : 'جمع کردن') + ' زیرمجموعه">' + (shut ? '+' + toFa(cnt(n)) : '−') + '</button>' : '')
           + '</div>' + (K.length && !shut ? '<ul>' + K.slice().reverse().map(k => card(k, d + 1)).join('') + '</ul>' : '') + '</li>'; };
+      const grp = (x, inner) => '<li><div class="ogc-g" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small></div>'
+        + (inner ? '<ul>' + inner + '</ul>' : '') + '</li>';
+      const sideInner = x => x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + x.roots.slice().reverse().map(n => card(n, 0)).join('');
       /* درخت با جهت چپ‌به‌راست کشیده می‌شود؛ ترتیب را برمی‌گردانیم تا اولی سمت راست بیاید */
+      let top = [];
+      if(E || PM){
+        const pmLi = PM ? grp(PM, sideInner(PM)) : '';
+        const teamInner = pmLi + empTeamExt.slice().reverse().map(e => extLi(e, OG_SC.emp)).join('') + empTeamRoots.filter(n => !isOwnerUser(n)).slice().reverse().map(n => card(n, 0)).join('')
+          + ownerKids.slice().reverse().map(n => card(n, 1)).join('');
+        const ownBox = owners.length
+          ? '<div class="ogc-own" style="--sc:' + OG_SC.emp + '"><u>کارفرما</u><span>' + owners.map(o => '<span class="ogc-o"' + (o.ext ? ' data-hrprof="' + esc(o.n) + '"' : '') + '>' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(o.d || 'کارفرما') + '</small></span>').join('') + '</span></div>'
+          : '<div class="ogc-g" style="--sc:' + OG_SC.emp + '"><b>کارفرما</b><small>' + toFa((E ? E.all.length + extN(E) : 0)) + ' نفر</small></div>';
+        top.push('<li>' + ownBox + (teamInner ? '<ul>' + teamInner + '</ul>' : '') + '</li>');
+      }
+      S.filter(x => x.k !== 'emp' && x.k !== 'pm').forEach(x => top.push(grp(x, sideInner(x))));
       body = '<div class="ogc"><div class="ogc-z" style="zoom:' + og.z + '"><ul class="ogc-t"><li><div class="ogc-root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small></div>'
-        + '<ul>' + S.slice().reverse().map(x => '<li><div class="ogc-g" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small></div>'
-          + ((x.roots.length || x.ext.length) ? '<ul>' + x.ext.slice().reverse().map(e => '<li><div class="ogc-n ext" style="--sc:' + OG_SC[x.k] + '" data-hrprof="' + esc(e.n) + '">' + avatarHtml(e.n, '', true) + '<b>' + esc(e.n) + '</b><small>' + esc(e.d || x.t) + '</small></div>'
-              + (e.ppl.length ? '<ul>' + e.ppl.slice().reverse().map(q => '<li><div class="ogc-n ext" style="--sc:' + OG_SC[x.k] + '">' + avatarHtml(q.n, '', true) + '<b>' + esc(q.n) + '</b><small>' + esc(q.r || '—') + '</small></div></li>').join('') + '</ul>' : '') + '</li>').join('')
-            + x.roots.slice().reverse().map(n => card(n, 0)).join('') + '</ul>' : '') + '</li>').join('') + '</ul></li></ul></div></div>';
+        + '<ul>' + top.slice().reverse().join('') + '</ul></li></ul></div></div>';
     }else{
       const node = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
-        return '<li><div class="ogl-n' + (ed === n ? ' on' : '') + '" style="--sc:' + (OG_SC[I.side] || '#777') + '"' + (adm ? ' data-ogper="' + esc(n) + '"' : '') + '>' + avatarHtml(n, '', true) + '<span class="ogl-tx"><b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + (fl ? ' · طبقه ' + esc(fl) : '') + '</small></span>'
+        return '<li><div class="ogl-n" style="--sc:' + (OG_SC[dsd(n)] || '#777') + '">' + avatarHtml(n, '', true) + '<span class="ogl-tx"><b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + (fl ? ' · طبقه ' + esc(fl) : '') + '</small></span>'
           + (K.length ? '<button type="button" class="ogc-tg' + (shut ? ' shut' : '') + '" data-ogtg="' + esc(n) + '">' + (shut ? '+' + toFa(cnt(n)) : '−') + '</button>' : '') + '</div>'
           + (K.length && !shut ? '<ul>' + K.map(k => node(k, d + 1)).join('') + '</ul>' : '') + '</li>'; };
-      body = '<div class="ogl">' + S.map(x => '<section class="ogl-s" style="--sc:' + OG_SC[x.k] + '"><div class="ogl-h"><i></i><b>' + esc(x.t) + '</b><span>' + toFa(x.all.length + extN(x)) + ' نفر</span></div><ul class="ogl-t">' + x.roots.map(n => node(n, 0)).join('')
-        + x.ext.map(e => '<li><div class="ogl-n ext" style="--sc:' + OG_SC[x.k] + '" data-hrprof="' + esc(e.n) + '">' + avatarHtml(e.n, '', true) + '<span class="ogl-tx"><b>' + esc(e.n) + '</b><small>' + esc(e.d || x.t) + '</small></span></div>'
-          + (e.ppl.length ? '<ul>' + e.ppl.map(q => '<li><div class="ogl-n ext" style="--sc:' + OG_SC[x.k] + '">' + avatarHtml(q.n, '', true) + '<span class="ogl-tx"><b>' + esc(q.n) + '</b><small>' + esc(q.r || '—') + '</small></span></div></li>').join('') + '</ul>' : '') + '</li>').join('')
-        + '</ul></section>').join('') + '</div>';
+      const extL = (e, sc) => '<li><div class="ogl-n ext" style="--sc:' + sc + '" data-hrprof="' + esc(e.n) + '">' + avatarHtml(e.n, '', true) + '<span class="ogl-tx"><b>' + esc(e.n) + '</b><small>' + esc(e.d || '') + '</small></span></div>'
+          + (e.ppl && e.ppl.length ? '<ul>' + e.ppl.map(q => '<li><div class="ogl-n ext" style="--sc:' + sc + '">' + avatarHtml(q.n, '', true) + '<span class="ogl-tx"><b>' + esc(q.n) + '</b><small>' + esc(q.r || '—') + '</small></span></div></li>').join('') + '</ul>' : '') + '</li>';
+      const sec = (x, title, inner, cls) => '<section class="ogl-s' + (cls ? ' ' + cls : '') + '" style="--sc:' + OG_SC[x.k] + '"><div class="ogl-h"><i></i><b>' + esc(title) + '</b><span>' + toFa(x.all.length + extN(x)) + ' نفر</span></div><ul class="ogl-t">' + inner + '</ul></section>';
+      let out = '';
+      if(E || PM){
+        const own = owners.length ? '<div class="ogl-own">' + owners.map(o => '<span class="ogc-o"' + (o.ext ? ' data-hrprof="' + esc(o.n) + '"' : '') + '>' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(o.d || 'کارفرما') + '</small></span>').join('') + '</div>' : '';
+        if(E) out += '<section class="ogl-s" style="--sc:' + OG_SC.emp + '"><div class="ogl-h"><i></i><b>کارفرما</b><span>' + toFa(E.all.length + extN(E)) + ' نفر</span></div>' + own
+          + '<ul class="ogl-t">' + empTeamRoots.map(n => node(n, 0)).join('') + ownerKids.map(n => node(n, 1)).join('') + empTeamExt.map(e => extL(e, OG_SC.emp)).join('') + '</ul></section>';
+        if(PM) out += sec(PM, 'تیم مدیریت پیمان · از تیم کارفرما', PM.roots.map(n => node(n, 0)).join('') + PM.ext.map(e => extL(e, OG_SC.pm)).join(''), E ? 'sub' : '');
+      }
+      S.filter(x => x.k !== 'emp' && x.k !== 'pm').forEach(x => { out += sec(x, x.t, x.roots.map(n => node(n, 0)).join('') + x.ext.map(e => extL(e, OG_SC[x.k])).join('')); });
+      body = '<div class="ogl">' + out + '</div>';
     }
-    const edBox = ed ? '<div class="ogc-ed"><div class="ogc-edh">' + avatarHtml(ed, '', true) + '<span><b>' + esc(ed) + '</b><small>' + esc(ogRoleOf(ed) || 'بدون سمت') + '</small></span><button type="button" class="sp-x" data-ogcancel="1" aria-label="بستن">×</button></div>' + ogPerFormHtml(ed, P) + '</div>' : '';
     return '<div class="og og2"><div class="ogc-hd"><div class="ogc-ht"><b>چارت سازمانی</b><small>' + toFa(P.length) + ' نفر در ' + toFa(S.length) + ' طرف' + (noPos ? ' · ' + toFa(noPos) + ' نفر بدون سمت' : '') + '</small></div>'
       + '<div class="ogc-tools"><span class="ogc-seg"><button type="button" data-ogview="chart" class="' + (og.view === 'chart' ? 'on' : '') + '">چارت</button><button type="button" data-ogview="list" class="' + (og.view === 'list' ? 'on' : '') + '">فهرست</button></span>'
       + (og.view === 'chart' ? '<span class="ogc-zm"><button type="button" data-ogz="-1" aria-label="کوچک‌تر">−</button><i>' + toFa(Math.round(og.z * 100)) + '٪</i><button type="button" data-ogz="1" aria-label="بزرگ‌تر">+</button></span>' : '')
       + '<button type="button" class="ogc-pr" data-ogprint="1">چاپ / PDF</button></div></div>'
-      + '<div class="ogc-lg">' + S.map(x => '<span style="--sc:' + OG_SC[x.k] + '"><i></i>' + esc(x.t) + '</span>').join('') + (adm ? '<small>برای تعیین سرپرست، طرف و طبقات هر نفر رویش بزنید</small>' : '') + '</div>'
-      + edBox + body + '</div>';
+      + '<div class="ogc-lg">' + S.map(x => '<span style="--sc:' + OG_SC[x.k] + '"><i></i>' + esc(x.t) + '</span>').join('') + (adm ? '<small>ترتیب سمت‌ها، سرپرست و طبقات هر نفر در «کاربران و دسترسی ← دسترسی‌ها ← سمت‌ها» تعیین می‌شود</small>' : '') + '</div>'
+      + body + '</div>';
   }
   function ogRepaintChart(){ const v = document.getElementById('reportView'); if(v && v.querySelector('.og')){ const c = v.querySelector('.ogc'), sl = c ? c.scrollLeft : 0, st = c ? c.scrollTop : 0; v.innerHTML = ogChartHtml(); const c2 = v.querySelector('.ogc'); if(c2){ c2.scrollLeft = sl; c2.scrollTop = st; } } }
   document.addEventListener('click', e => {
@@ -38512,15 +38565,17 @@
   window.ogPersonInfo = ogPersonInfo;
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest) return;
-    const ps = t.closest('[data-ogpos]'); if(ps){ og.sel = ps.dataset.ogpos; og.ed = ''; try{ permRepaint(); }catch(err){} return; }
+    const ps = t.closest('[data-ogpos]'); if(ps){ og.sel = ps.dataset.ogpos; og.ed = ''; og.pm = ''; try{ permRepaint(); }catch(err){} return; }
+    const pmb = t.closest('[data-ogpm]'); if(pmb){ og.pm = og.pm === pmb.dataset.ogpm ? '' : pmb.dataset.ogpm; try{ permRepaint(); }catch(err){} return; }
     const ed = t.closest('[data-ogedit]'); if(ed){ og.ed = og.ed === ed.dataset.ogedit ? '' : ed.dataset.ogedit; try{ permRepaint(); }catch(err){} return; }
     if(t.closest('[data-ognew]')){ og.sel = ''; og.ed = '__new'; const det = document.querySelector('.pp-d'); if(det) det.innerHTML = '<div class="pp-h" style="--sc:' + OG_SC.pm + '"><span class="pp-ic">+</span><div class="pp-ht"><b>سمت تازه</b><span class="pp-ch"><i>نام، طرف، واحد و سمت بالادست را تعیین کنید</i></span></div></div>' + ogPosFormHtml({n: '', side: 'pm'}); return; }
-    if(t.closest('[data-ogcancel]')){ og.ed = ''; try{ permRepaint(); }catch(err){} ogRepaintChart(); return; }
+    if(t.closest('[data-ogcancel]')){ og.ed = ''; og.pm = ''; try{ permRepaint(); }catch(err){} ogRepaintChart(); return; }
     const tp = t.closest('[data-ogtpl]'); if(tp){ const x = ogPos(tp.dataset.ogtpl); if(!x) return; tp.disabled = true;
       try{ for(const k of (x.tpl || [])){ if(!PERM_CAPS.some(c => c.k === k)) continue; const cur = permRolesOf(k).slice(); if(cur.indexOf(x.n) === -1){ cur.push(x.n); await permRoleSave(k, cur); } } permRepaint(); }catch(err){ tp.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const sv = t.closest('[data-ogsave]'); if(sv){ const f = sv.closest('[data-ogform]'), v = k => String((f.querySelector('[data-ogf="' + k + '"]') || {}).value || '').trim();
       const n = v('n'); if(!n){ showDialog('warn', 'نام سمت', 'نام سمت را بنویسید.'); return; }
       const old = f.dataset.ogform, o = {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
+      { const on = parseInt(toEn(v('o')), 10); if(!isNaN(on)) o.o = on; }
       const base = OG_DEF.find(d => d.n === n); if(!base) o.tpl = (og.pos.get(old) || {}).tpl || [];
       sv.disabled = true;
       try{ if(old && old !== n && !OG_DEF.some(d => d.n === old)){ await ogSaveRow(OG_POS_KIND, old, null); og.pos.delete(old); }
@@ -38529,12 +38584,12 @@
     const dl = t.closest('[data-ogdel]'); if(dl){ if(!(await askConfirm('حذف سمت', '«' + dl.dataset.ogdel + '» از فهرست سمت‌ها برداشته می‌شود. سمت افرادی که این سمت را دارند دست نمی‌خورد.', 'حذف'))) return;
       try{ await ogSaveRow(OG_POS_KIND, dl.dataset.ogdel, null); og.pos.delete(dl.dataset.ogdel); og.sel = ''; og.ed = ''; permRepaint(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     /* چارت: ویرایش سرپرست، طرف و محدودهٔ هر نفر */
-    const pr = t.closest('[data-ogper]'); if(pr && !t.closest('.og-pf')){ const n = pr.dataset.ogper; og.ed = og.ed === 'p:' + n ? '' : 'p:' + n; ogRepaintChart(); const eb = document.querySelector('#reportView .ogc-ed'); if(eb) eb.scrollIntoView({block: 'nearest', behavior: 'smooth'}); return; }
+    const pr = null; if(pr){ const n = pr.dataset.ogper; og.ed = og.ed === 'p:' + n ? '' : 'p:' + n; ogRepaintChart(); const eb = document.querySelector('#reportView .ogc-ed'); if(eb) eb.scrollIntoView({block: 'nearest', behavior: 'smooth'}); return; }
     const fl = t.closest('[data-ogfl]'); if(fl){ fl.classList.toggle('on'); return; }
     const pv = t.closest('[data-ogpsave]'); if(pv){ const f = pv.closest('[data-ogpform]'), n = f.dataset.ogpform;
       const o = {side: f.querySelector('[data-ogpf="side"]').value, up: f.querySelector('[data-ogpf="up"]').value, fl: Array.from(f.querySelectorAll('[data-ogfl].on')).map(b => b.dataset.ogfl)};
       const has = o.side || o.up || o.fl.length; pv.disabled = true;
-      try{ await ogSaveRow(OG_PER_KIND, n, has ? o : null); if(has) og.per.set(nameKey(n), Object.assign({n}, o)); else og.per.delete(nameKey(n)); og.ed = ''; ogRepaintChart(); }
+      try{ await ogSaveRow(OG_PER_KIND, n, has ? o : null); if(has) og.per.set(nameKey(n), Object.assign({n}, o)); else og.per.delete(nameKey(n)); og.ed = ''; og.pm = ''; ogRepaintChart(); try{ permRepaint(); }catch(e2){} try{ shrToast('جایگاه ' + n + ' ذخیره شد'); }catch(e2){} }
       catch(err){ pv.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     if(t.closest('[data-ogprint]')){ try{ window.print(); }catch(err){} return; }
   });
