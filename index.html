@@ -20488,7 +20488,7 @@
   .tdt-svg{width:100% !important;height:150px !important;max-width:100%;display:block;overflow:visible;}
   .tdt-svg rect.o{fill:color-mix(in srgb, var(--sky) 70%, var(--surface));} .tdt-svg rect.s{fill:color-mix(in srgb, var(--sky) 30%, var(--surface));} .tdt-svg rect.e{fill:var(--line);}
   .tdt-svg g.td rect.o{fill:var(--sky);} .tdt-svg g.td rect.s{fill:color-mix(in srgb, var(--sky) 50%, var(--surface));}
-  .tdt-svg text{font-family:var(--f);font-size:11px;font-weight:800;fill:var(--ink);} .tdt-svg text.dl{font-size:9.5px;font-weight:600;fill:var(--muted);}
+  .tdt-svg text{font-family:var(--f);font-size:11px;font-weight:800;fill:var(--ink);} .tdt-svg text.dl{font-size:9.5px;font-weight:600;fill:var(--muted);} .tdt-svg text.dl.rd{fill:var(--sky);font-weight:800;}
   .tdt-svg line.avg{stroke:var(--warn, #c07a24);stroke-width:1.5;stroke-dasharray:5 4;vector-effect:non-scaling-stroke;}
   .tdt-svg g:hover rect.o{fill:var(--sky);}
   /* انتخاب پروژه روی کارت خانه */
@@ -49335,10 +49335,12 @@
       M = new Map(days.map(x => [x, {o: 0, s: 0, n: 0}]));
       let rows = null;
       if(BACKEND === 'supabase'){
-        try{ rows = await supaFetch('activities?select=date_fa,ostad,shagerd&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(d) + '&limit=20000', {prefer:'return=representation'}); }catch(e){ rows = null; }
+        try{ rows = await supaFetch('activities?select=date_fa,contractor,ostad,shagerd&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(d) + '&limit=20000', {prefer:'return=representation'}); }catch(e){ rows = null; }
       }
-      if(Array.isArray(rows)) rows.forEach(x => { const k = normDate(x.date_fa || ''); const o = M.get(k); if(o){ o.o += +x.ostad || 0; o.s += +x.shagerd || 0; o.n++; } });
-      else (allRows || []).forEach(x => { const k = normDate(pick(x,F.date) || ''); const o = M.get(k); if(o){ o.o += num(pick(x,F.ostad)); o.s += num(pick(x,F.shagerd)); o.n++; } });
+      /* هر روز: نیروی پیمانکاری (o) و امانی (s) — نه استادکار و شاگرد */
+      const addM = (k, c, n) => { const o = M.get(k); if(!o || !n) return; if(isAmani(c)) o.s += n; else o.o += n; o.n++; };
+      if(Array.isArray(rows)) rows.forEach(x => addM(normDate(x.date_fa || ''), x.contractor, (+x.ostad || 0) + (+x.shagerd || 0)));
+      else (allRows || []).forEach(x => addM(normDate(pick(x,F.date) || ''), pick(x,F.contractor), num(pick(x,F.ostad)) + num(pick(x,F.shagerd))));
       tdTrendCache.set(d, M);
     }
     const box = document.querySelector('[data-tdtrend="' + CSS.escape(d) + '"] .tdt-b'); if(!box) return;
@@ -49354,18 +49356,18 @@
     let g = '';
     L.forEach((x, i) => { const t = x.o + x.s, x0 = 4 + i * bw + bw * .18, w = bw * .64, today = i === L.length - 1;
       const hs = sc(x.s), ho = sc(x.o), y0 = H - P;
-      g += '<g class="' + (today ? 'td' : '') + (t ? '' : ' z') + '"><title>' + toFa(x.k) + ' — ' + toFa(t) + ' نفر (استادکار ' + toFa(x.o) + '، شاگرد ' + toFa(x.s) + ')</title>'
+      g += '<g class="' + (today ? 'td' : '') + (t ? '' : ' z') + '"><title>' + toFa(x.k) + ' — ' + toFa(t) + ' نفر (پیمانکاری ' + toFa(x.o) + '، امانی ' + toFa(x.s) + ')' + (today ? ' — روز گزارش' : '') + '</title>'
         + (t ? '<rect class="s" x="' + x0.toFixed(1) + '" y="' + (y0 - hs).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(0, hs).toFixed(1) + '" rx="3"/>'
              + '<rect class="o" x="' + x0.toFixed(1) + '" y="' + (y0 - hs - ho).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(0, ho).toFixed(1) + '" rx="3"/>'
              : '<rect class="e" x="' + x0.toFixed(1) + '" y="' + (y0 - 3) + '" width="' + w.toFixed(1) + '" height="3" rx="1.5"/>')
         + ((today || t === mx) && t ? '<text x="' + (x0 + w / 2).toFixed(1) + '" y="' + (y0 - hs - ho - 5).toFixed(1) + '" text-anchor="middle">' + toFa(t) + '</text>' : '')
-        + ((i % 2 === (L.length - 1) % 2) ? '<text class="dl" x="' + (x0 + w / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + toFa(x.k.slice(5)) + '</text>' : '')
+        + ((i % 2 === (L.length - 1) % 2) ? '<text class="dl' + (today ? ' rd' : '') + '" x="' + (x0 + w / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + (today ? 'روز گزارش' : toFa(x.k.slice(5))) + '</text>' : '')
         + '</g>'; });
     const ya = (H - P - sc(avg)).toFixed(1);
     g += '<line class="avg" x1="4" x2="' + (W - 4) + '" y1="' + ya + '" y2="' + ya + '"/>';
     box.innerHTML = '<div class="tdt-k"><span><u>' + curLb + '</u><b>' + toFa(ct) + '</b></span><span><u>میانگین روزهای کاری</u><b>' + toFa(Math.round(avg)) + '</b></span>'
       + '<span><u>نسبت به میانگین</u><b dir="ltr" class="' + (dv >= 0 ? 'up' : 'dn') + '">' + (dv > 0 ? '+' : '') + toFa(dv) + '٪</b></span><span><u>بیشترین</u><b>' + toFa(mx) + '</b></span>'
-      + '<span class="tdt-lg"><i class="o"></i>استادکار<i class="s"></i>شاگرد<i class="a"></i>میانگین</span></div>'
+      + '<span class="tdt-lg"><i class="o"></i>پیمانکاری<i class="s"></i>امانی<i class="a"></i>میانگین</span></div>'
       + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" class="tdt-svg" dir="ltr" preserveAspectRatio="none" style="width:100%;height:' + H + 'px">' + g + '</svg>';
   }
   /* محل‌ها به طبقه: هر محل به طبقهٔ خودش؛ محلی که چند طبقه را می‌گیرد، نفراتش مساوی بین آن‌ها */
