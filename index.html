@@ -20451,6 +20451,7 @@
   .rw-sug button{all:unset;cursor:pointer;max-width:100%;box-sizing:border-box;font-size:11.5px;font-weight:600;color:var(--ink);padding:5px 10px;border-radius:99px;background:color-mix(in srgb, var(--sky) 9%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 22%, var(--line));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .rw-sug button::before{content:"+ ";color:var(--sky);font-weight:800;}
   .rw-sug button:hover{background:color-mix(in srgb, var(--sky) 16%, var(--surface));}
+  .rw-split.auto{padding:6px 10px !important;border-style:solid !important;background:transparent !important;} .rw-split.auto small{font-size:11px;color:var(--muted);}
   .rw-split{margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb, var(--sky) 6%, var(--surface));border:1px dashed color-mix(in srgb, var(--sky) 35%, var(--line));}
   .rws-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;} .rws-h b{font-size:12.5px;font-weight:800;} .rws-h small{font-size:11px;color:var(--muted);}
   .rws-eq{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11.5px;font-weight:700;color:var(--sky);padding:3px 9px;border-radius:99px;background:color-mix(in srgb, var(--sky) 12%, var(--surface));}
@@ -45371,6 +45372,12 @@
   function crSplitPaint(el){
     const fs = crFsOf(el); let box = el.querySelector('.rw-split');
     if(!fs.length){ if(box) box.remove(); delete el.dataset.spl; return; }
+    /* تقسیم خودکار و مساوی (نفرات بین طبقه‌ها جابه‌جا می‌شوند)؛ پنل تقسیم دستی حذف شد و فقط یک یادداشت کوچک می‌ماند */
+    delete el.dataset.spl;
+    if(!box){ box = document.createElement('div'); box.className = 'rw-split auto'; const g = el.querySelector('.crew-grid'); g.parentNode.insertBefore(box, g.nextSibling); }
+    box.className = 'rw-split auto';
+    box.innerHTML = '<small>نفرات این ردیف به‌طور خودکار و مساوی بین ' + toFa(fs.length) + ' طبقه تقسیم می‌شود.</small>';
+    return;
     if(el.dataset.spl){ try{ const sp = JSON.parse(el.dataset.spl); if(!fs.every(k => sp[k])) delete el.dataset.spl; }catch(e){ delete el.dataset.spl; } }
     const ae0 = document.activeElement;
     if(el.dataset.spl && !(ae0 && ae0.closest && ae0.closest('.rw-split'))){ const L0 = crSplitOf(el), v = c => num(((el.querySelector(c) || {}).value || '').trim());
@@ -75558,7 +75565,9 @@
       row.dataset.flz = JSON.stringify(per);
       slSync(row, true);
     };
-    pop.addEventListener('input', e => { const i = e.target.closest && e.target.closest('[data-slfz]'); if(!i) return; const v = i.value.trim(); per[i.dataset.slfz] = /^[\d۰-۹]+$/.test(v) ? toEn(v) : v; apply(); });
+    pop.addEventListener('input', e => { const i = e.target.closest && e.target.closest('[data-slfz]'); if(!i) return; const v = i.value.trim(); per[i.dataset.slfz] = /^[\d۰-۹]+$/.test(v) ? toEn(v) : v;
+      clearTimeout(pop.__t); pop.__t = setTimeout(apply, 250); });
+    pop.addEventListener('change', e => { if(e.target.closest && e.target.closest('[data-slfz]')){ clearTimeout(pop.__t); apply(); } });
     pop.addEventListener('click', e => {
       e.stopPropagation();
       const b = e.target.closest('[data-slv]');
@@ -75573,9 +75582,11 @@
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('.sl-fb');
     if(b){ e.preventDefault(); e.stopPropagation(); const row = b.closest('.sl-row'); if(document.getElementById('slPop')) slPopClose(); else slPopOpen(row, b); return; }
-    if(!(e.target.closest && e.target.closest('#slPop'))) slPopClose();
+    /* کلیک روی فهرست پیشنهادِ همان کادرها (combo-pop) پنجره را نمی‌بندد */
+    if(!(e.target.closest && e.target.closest('#slPop, .combo-pop'))) slPopClose();
   }, true);
-  window.addEventListener('resize', slPopClose);
+  /* باز شدن صفحه‌کلید گوشی هم «resize» است؛ پیش‌تر با اولین تایپ در محل هر طبقه پنجره بسته می‌شد */
+  window.addEventListener('resize', () => { const p = document.getElementById('slPop'), a = document.activeElement; if(p && a && p.contains(a)) return; slPopClose(); });
   /* نام طبقه‌ها با عوض شدن پروژه تازه می‌شود */
   window.slRefreshAll = () => document.querySelectorAll('.sl-row').forEach(row => { const s = row.querySelector('.sl-fb span'); if(s) s.innerHTML = slFloorBtnText(slFsOf(row)); });
   /* ---- انتخاب محل در فرم‌ها: طبقه ← محل ← محل جزء ----
