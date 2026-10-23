@@ -39927,6 +39927,8 @@
     const r = await navigator.serviceWorker.getRegistration('./');
     return r || navigator.serviceWorker.register('sw.js', {scope: './'});
   }
+  /* سرویس‌ورکر برای همه (نه فقط اعلان): صفحه بار بعد بی‌انتظارِ شبکه باز می‌شود */
+  try{ if('serviceWorker' in navigator && /^https:/.test(location.protocol)) window.addEventListener('load', () => setTimeout(() => { navigator.serviceWorker.register('sw.js', {scope: './'}).then(r => { try{ r.update(); }catch(e){} }).catch(() => {}); }, 3000)); }catch(e){}
   async function pushSubNow(){
     if(!pushOk()) return null;
     try{ const r = await navigator.serviceWorker.getRegistration('./'); return r ? await r.pushManager.getSubscription() : null; }catch(e){ return null; }
@@ -44736,6 +44738,7 @@
     }, 0);
   }
   function switchTab(name){
+    if(name === 'admin') try{ window.admSkelEnsure && admSkelEnsure(); }catch(e){}
     if(!TABS[name]) name = 'home';
     if(!panelOk(name)) name = 'home';
     /* جهت حرکت برای انیمیشن: رفتن به تبِ بعدی (چپ‌تر در راست‌به‌چپ)
@@ -44918,7 +44921,7 @@
         .filter(b => b.offsetParent && b.children.length);
       root.setProperty('--jumpH', (bars.length ? bars[0].offsetHeight : 0) + 'px');
     };
-    set();
+    requestAnimationFrame(set);
     window.addEventListener('orientationchange', () => setTimeout(set, 250));
     setTimeout(set, 400);
     setTimeout(set, 1200);
@@ -53941,7 +53944,15 @@
     put(j.rows, got[0]); put(j.prev_rows, got[0]); put(j.issues, got[1]);
   }
   let LTR_DIR_COL = null;
+  /* سرعت: درخواست‌های هم‌زمان بخش سنگین را دوباره نمی‌گیرند؛ صبر می‌کنند تا همان یکی برسد و بعد فقط دادهٔ روز */
   async function supaBundle(dateFa, prevFa){
+    const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
+    if(fresh) return supaBundle0(dateFa, prevFa);
+    if(supaBundle.__hp){ try{ await supaBundle.__hp; }catch(e){} return supaBundle0(dateFa, prevFa); }
+    const P = supaBundle0(dateFa, prevFa); supaBundle.__hp = P;
+    try{ return await P; }finally{ if(supaBundle.__hp === P) supaBundle.__hp = null; }
+  }
+  async function supaBundle0(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
 
     // اگر بخش سنگین تازه است، فقط دادهٔ روز خوانده می‌شود
@@ -55197,9 +55208,11 @@
         dl.appendChild(o);
       });
     };
-    fill('contractNoList', CONTRACT_SEED.map(x => x.n));
-    fill('contractPartyList', CONTRACT_SEED.map(x => x.p));
-    fill('contractSubjectList', CONTRACT_SEED.map(x => x.s));
+    (window.requestIdleCallback || (f => setTimeout(f, 800)))(() => {
+      fill('contractNoList', CONTRACT_SEED.map(x => x.n));
+      fill('contractPartyList', CONTRACT_SEED.map(x => x.p));
+      fill('contractSubjectList', CONTRACT_SEED.map(x => x.s));
+    }, {timeout: 2500});
   })();
   const contractByNo = no => CONTRACT_SEED.find(x => x.n === String(no || '').trim());
 
@@ -62813,6 +62826,7 @@
   function admSetCat(k, quiet){
     const box = document.getElementById('adminView');
     if(!box) return;
+    try{ window.admSkelEnsure && admSkelEnsure(); }catch(e){}
     if(!quiet) admHomeSet(false);
     if(!document.getElementById('secAdm' + k) || k === 'chore') k = 'statement';
     admCat = k;
@@ -64834,7 +64848,10 @@
   buildPersonCombo('comboAdmResp', 'fAdmOwner', () => applyAdminFilters());
   const loadAdminBtn = document.getElementById('loadAdmin');
   if(loadAdminBtn) loadAdminBtn.addEventListener('click', loadAdmin);
-  renderAdminSkeleton();   // فرم‌ها از همان ابتدا آماده‌اند
+  /* اسکلت دفتر فنی (فرم‌ها) در زمان بیکاری ساخته می‌شود تا بارگذاری خانه را نگه ندارد؛
+     هر جا زودتر لازم شود (بارگذاری دفتر فنی) همان‌جا ساخته می‌شود */
+  window.admSkelEnsure = () => { if(!document.getElementById('admList-statement')) renderAdminSkeleton(); };
+  (window.requestIdleCallback || (f => setTimeout(f, 600)))(() => { try{ admSkelEnsure(); }catch(e){} }, {timeout: 1800});
   // کارت‌های فعالیت عمومی: وضعیت، ویرایش، حذف
   document.getElementById('adminView').addEventListener('click', async e => {
     const pk = e.target.closest('[data-chpick]');
@@ -76965,7 +76982,17 @@
     });
     document.addEventListener('click', () => setTimeout(syncAll, 0), true);
     document.addEventListener('change', syncAll, true);
-    const scan = () => document.querySelectorAll(NS_SEL).forEach(enhance);
+    /* سرعت بارگذاری: پیش‌تر همهٔ فهرست‌های کل صفحه (صدها، بیشترشان در بخش‌های پنهان) یکجا
+       در DOMContentLoaded آراسته می‌شدند و نیم ثانیه صفحهٔ خانه را نگه می‌داشتند؛
+       حالا تکه‌تکه در زمان بیکاری، بی‌آنکه صفحه منتظر بماند */
+    const scan = () => {
+      const L = Array.from(document.querySelectorAll(NS_SEL)); let i = 0;
+      const idle = window.requestIdleCallback || (f => setTimeout(f, 16));
+      const step = () => { const t = performance.now();
+        while(i < L.length && performance.now() - t < 8){ const x = L[i++]; if(x.isConnected && !x.__nsBtn) try{ enhance(x); }catch(e){} }
+        if(i < L.length) idle(step, {timeout: 500}); };
+      idle(step, {timeout: 300});
+    };
     /* سرعت: فقط گره‌های تازه بررسی می‌شوند و در هر قاب حداکثر یک بار */
     let nsPend = [], nsT = 0;
     new MutationObserver(muts => {
@@ -84522,12 +84549,14 @@
      loadTasks و loadAdmin کارهای اضافه دارند (ادغام ستون‌های بررسی،
      کشیدن دوبارهٔ برگه‌ها) و همان‌ها «موارد اجرایی» را کند می‌کردند. */
   async function deckPrime(){
-    try{ await loadTaskBlockers(); }catch(e){}
+    /* موانع و بستهٔ اصلی هم‌زمان (پیش‌تر پشت سر هم و خانه منتظر هر دو می‌ماند) */
+    const blP = loadTaskBlockers().catch(() => {});
     const needT = !(tasksAll || []).length;
     const needA = !(adminAll || []).length;
-    if(!needT && !needA) return;
+    if(!needT && !needA){ await blP; return; }
     let b = null;
     try{ b = await fetchBundle(normDate(dateInput.value) || todayShamsi()); }catch(e){ return; }
+    finally{ blP.then(() => { try{ homeSoon(); }catch(e){} }); }
     if(!b) return;
     if(needT){
       let all = Array.isArray(b.tasks) ? b.tasks.slice() : [];
@@ -85758,8 +85787,8 @@
       const day = b.day || {};
       homeDays[d] = {rows: day.rows || [], issues: day.issues || [], machines: day.machines || [], prev: b.prevRows || null};
     };
-    try{ keep(dF, await fetchBundle(dF)); }catch(e){}
-    if(dT !== dF){ try{ keep(dT, await fetchBundle(dT)); }catch(e){} }
+    await Promise.all([fetchBundle(dF).then(b => keep(dF, b)).catch(() => {}),
+      dT !== dF ? fetchBundle(dT).then(b => keep(dT, b)).catch(() => {}) : null]);
   }
   async function homeRefresh(force){
     homeSoon();
@@ -85768,11 +85797,12 @@
     if(!force && homeAt && Date.now() - homeAt < 45000) return;
     homeBusy = (async () => {
       /* پشت سر هم، نه هم‌زمان: بار اول بستهٔ سنگین یک بار گرفته می‌شود و بقیه فقط دادهٔ روزند */
-      try{ await deckPrime(); }catch(e){}
-      homeSoon();
-      if(tabOk('view') || hmCan('write.daily')) await homeLoadDays();
-      homeSoon();
-      if(hmCan('write.prc')){ try{ await prcLoad(); }catch(e){} }
+      /* هم‌زمان؛ بخش سنگین بسته فقط یک بار گرفته می‌شود (supaBundle) و هر تکه که رسید خانه همان لحظه به‌روز می‌شود */
+      await Promise.all([
+        deckPrime().catch(() => {}).then(() => homeSoon()),
+        (tabOk('view') || hmCan('write.daily')) ? homeLoadDays().catch(() => {}).then(() => homeSoon()) : null,
+        hmCan('write.prc') ? prcLoad().catch(() => {}) : null
+      ]);
       homeAt = Date.now();
     })();
     try{ await homeBusy; }finally{ homeBusy = null; }
