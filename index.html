@@ -24587,6 +24587,7 @@
   .h3-td:hover{background:color-mix(in srgb, var(--c) 5%, transparent);}
   .h3-td:active{background:color-mix(in srgb, var(--c) 9%, transparent);}
   #homeView .h3-qas.h3-qgrid{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;overflow:visible !important;flex-wrap:wrap;} @media(min-width:700px){ #homeView .h3-qas.h3-qgrid{grid-template-columns:repeat(6,minmax(0,1fr));} }
+  .dh-sh{display:flex;align-items:center;gap:8px;margin:14px 2px 8px;} .dh-sh b{font-size:13px;font-weight:800;color:var(--ink);} .dh-sh i{font-style:normal;font-size:11px;font-weight:800;min-width:22px;height:20px;padding:0 7px;border-radius:99px;display:inline-grid;place-items:center;background:color-mix(in srgb, var(--sky) 14%, var(--surface));color:var(--sky);} .dh-sh.done i{background:color-mix(in srgb, var(--ok) 14%, var(--surface));color:var(--ok);} .dh-sh small{font-size:10.5px;color:var(--muted);margin-inline-start:auto;} .dh-box.done .dh-row{opacity:.92;} .dh-n.ok{background:color-mix(in srgb, var(--ok) 14%, var(--surface)) !important;color:var(--ok) !important;}
   .h3-td.ind{--c:#4f5fc0;} .h3-tdn{font-style:normal;font-size:11px;font-weight:600;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--c,#888) 12%,transparent);color:var(--c,inherit);margin-inline-start:4px}
   .h3-td.due{--c:#b07512;} .h3-td.ok{--c:var(--ok);} .h3-td.grn{--c:#3f7a52;} .h3-td.vio{--c:#6d5bb5;} .h3-td.bad{--c:var(--alert);}
   .h3-tdi{flex:0 0 30px;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb, var(--c) 12%, transparent);}
@@ -84462,6 +84463,8 @@
       + who + '</div>';
     /* ۳) زیردسته‌های دستهٔ انتخاب‌شده */
     const cur = brs.find(o => o.b.g === deckHubB);
+    /* دو بخش جدا: «جاری» (در دست اقدام) و «انجام‌شده» (تمام‌شده‌های اخیر) */
+    h += '<div class="dh-sh"><b>جاری</b><i>' + toFa(cur ? cur.n : 0) + '</i></div>';
     if(cur && cur.subs.length){
       h += '<div class="dh-box' + (cur.b.mgr ? ' mgr' : '') + '">' + cur.subs.map((z, k) => {
           const arr = deckGrpItems(z.g);
@@ -84478,9 +84481,13 @@
         }).join('') + '</div>';
     }else h += '<div class="dh-empty">در این بخش موردی نیست.</div>';
     const dn = DECK_GROUPS.filter(z => z.doneGrp && z.p === deckHubB && deckGrpItems(z.g).length);
-    if(dn.length)
-      h += dn.map(z => '<button type="button" class="dh-done" data-dk-cat="' + z.g + '">'
-          + '<span>تمام‌شده‌های اخیر</span><i>' + toFa(deckGrpItems(z.g).length) + '</i></button>').join('');
+    const dnN = dn.reduce((t, z) => t + deckGrpItems(z.g).length, 0);
+    h += '<div class="dh-sh done"><b>انجام‌شده</b><i>' + toFa(dnN) + '</i><small>۴۵ روز گذشته</small></div>';
+    h += dn.length ? '<div class="dh-box done">' + dn.map((z, k) => { const arr = deckGrpItems(z.g), top = arr[0];
+        return '<button type="button" class="dh-row" data-dk-cat="' + z.g + '" style="--i:' + k + '"><span class="dh-ic">' + (DECK_CAT_ICON[z.g] || '') + '</span>'
+          + '<span class="dh-tx"><b>' + esc(z.t) + '</b><small>' + esc(String((top && top.title) || '').replace(/\s+/g, ' ').slice(0, 70)) + '</small></span>'
+          + '<span class="dh-n ok">' + toFa(arr.length) + '</span></button>'; }).join('') + '</div>'
+      : '<div class="dh-empty">در ۴۵ روز گذشته موردی در این بخش تمام نشده است.</div>';
     return h + '</div>';
   }
   function deckCatsHtmlV2(){
