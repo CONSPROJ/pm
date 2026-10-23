@@ -48351,6 +48351,14 @@
     const t = ctrTypeOf(name) || 'ctr', D = ctPartyDocs(name), S = ctPartyStints(name);
     const c = (function(){ try{ return ctrContactOf(name) || {}; }catch(e){ return {}; } })();
     const now = S.filter(x => x.open).sort((p, q) => (q.days || 0) - (p.days || 0));
+    /* کارفرما: صورت وضعیت‌ها و قراردادهایی که در مرحلهٔ «بررسی کارفرما» هستند هم «الان نزد او»ند */
+    if(t === 'emp'){ try{ (adminAll || []).forEach(a => { if((a.kind !== 'statement' && a.kind !== 'contract') || !a.row) return;
+      if(String(pick(a.row,AD.review) || '') !== 'بررسی کارفرما') return;
+      let dd = null; try{ dd = rvEmployerDays(a.row); }catch(e){}
+      now.push({kind: a.kind, row: a.row, id: pick(a.row,AD.id), open: true, days: dd, lim: [7, 14],
+        t: a.kind === 'statement' ? 'صورت وضعیت ' + (pick(a.row,AD.sNo) ? toFa(pick(a.row,AD.sNo)) + ' — ' : '') + (pick(a.row,AD.sParty) || pick(a.row,AD.sName) || '') : (pick(a.row,AD.cTitle) || 'قرارداد') + (pick(a.row,AD.cParty) ? ' — ' + pick(a.row,AD.cParty) : ''),
+        no: a.kind === 'contract' ? (pick(a.row,AD.cNo) || '') : '', st: 'بررسی کارفرما'}); }); }catch(e){}
+      now.sort((p, q) => (q.days || 0) - (p.days || 0)); }
     const done = S.filter(x => !x.open && x.days != null);
     const avg = done.length ? Math.round(done.reduce((p, x) => p + x.days, 0) / done.length) : null;
     const R = {A:0, B:0, C:0, D:0}; S.forEach(x => { if(x.res === 'IFC') R.A++; else if(R[x.res] != null) R[x.res]++; });
@@ -48374,11 +48382,11 @@
     /* خلاصه: آنچه الان نزد اوست + نتیجهٔ بررسی‌ها */
     const nowH = now.length
       ? '<div class="rc-title">الان نزد ' + them + '<span class="n">' + toFa(now.length) + '</span></div>'
-        + '<div class="cfd-pane">' + now.slice(0, 12).map(x => '<div class="cfdl-r" role="button" tabindex="0" data-goto-kind="design" data-goto-id="' + esc(x.id) + '" title="باز کردن در دفتر فنی">'
-            + '<span class="cfdl-ic k-design">' + (CF_I.design || '') + '</span>'
-            + '<span class="cfdl-t"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, 'Rev ' + x.rev, x.st].filter(Boolean).join(' · ')) + '</small></span>'
+        + '<div class="cfd-pane">' + now.slice(0, 30).map(x => '<div class="cfdl-r" role="button" tabindex="0" data-goto-kind="' + (x.kind || 'design') + '" data-goto-id="' + esc(x.id) + '" title="باز کردن در دفتر فنی">'
+            + '<span class="cfdl-ic k-' + (x.kind || 'design') + '">' + (CF_I[x.kind || 'design'] || CF_I.design || '') + '</span>'
+            + '<span class="cfdl-t"><b>' + esc(x.t) + '</b><small dir="auto">' + esc([x.no, x.rev != null ? 'Rev ' + x.rev : '', x.st].filter(Boolean).join(' · ')) + '</small></span>'
             + '<span class="ptx-d ' + tone(x) + '">' + (x.days != null ? toFa(x.days) + ' روز' : '—') + '</span>'
-            + '<span class="cfdl-dls">' + (x.row ? admDlBtnHtml('design', x.row, 'cfdl-dl') : '') + '</span>'
+            + '<span class="cfdl-dls">' + (x.row ? admDlBtnHtml(x.kind || 'design', x.row, 'cfdl-dl') : '') + '</span>'
             + '<span class="cfdl-go" aria-hidden="true">‹</span></div>').join('') + '</div>'
       : '<div class="hr-note">الان سندی نزد ' + them + ' نیست. ✓</div>';
     const res = rTot ? '<div class="rc-title">نتیجهٔ بررسی‌ها<span class="n">' + toFa(rTot) + '</span></div><div class="ptx-res">'
@@ -48389,7 +48397,7 @@
       + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '')
       + '</div>';
     const docPane = '<div class="cf"><div class="rc-title">پروندهٔ اسناد</div>' + P.docTiles + '</div>';
-    if(!nDocs && !S.length)
+    if(!nDocs && !S.length && !now.length)
       return ownH + stats + ptbSlot(name) + '<div class="hr-split hr2 ct2"><div class="hr-note">هنوز سند، نامه یا قراردادی به نام «' + esc(name) + '» ثبت نشده است.</div></div>';
     return (c.cn && normName(c.cn) !== normName(name) ? '<div class="ct-alias"><u>نام قراردادی</u><span>' + esc(c.cn) + '</span></div>' : '')
       + stats
