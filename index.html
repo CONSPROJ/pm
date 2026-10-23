@@ -42206,7 +42206,7 @@
     const soon = openT.filter(r => { const d = taskDue(r); return d && d >= now0 && (d - now0) <= 7 * 86400000; }).length;
     const groups = new Map(); openT.forEach(r => { let g = ''; try{ g = taskGroupOf(r); }catch(e){} groups.set(g || 'سایر', (groups.get(g || 'سایر') || 0) + 1); });
     /* مالی */
-    const st = (D.admin.statements || []);
+    const st = stLive(D.admin.statements || []);
     let amt = 0, paid = 0, rest = 0, atCl = 0, maxDl = 0, maxWho = '';
     st.forEach(r => { const a = moneyNum(pick(r,AD.sAmount)), p = paidOf(r), done = isPaid(r); amt += a; paid += p; if(!done){ const rr = Math.max(a - p, 0); rest += rr; const cs = clientStart(r); if(rr && (cs || atClientNow(r))){ atCl++; const dl = cs ? daysSince(cs) : 0; if(dl > maxDl){ maxDl = dl; maxWho = pick(r,AD.sParty) || ''; } } } });
     const inRev = D.tasks.filter(r => r.__adm && taskStatus(r).cls !== 'done' && /بررسی/.test(String(pick(r.__admRow || r, AD.review) || ''))).length;
@@ -47818,7 +47818,7 @@
     const avgOf = o => o.days.size ? (o.men / o.days.size) : 0;
     const dueOf = nm => {
       let a2 = 0, p2 = 0;
-      list('statements').filter(r => sameEntity(admParty('statement', r), nm))
+      stLive(list('statements').filter(r => sameEntity(admParty('statement', r), nm)))
         .forEach(r => {
           a2 += amtNum(pick(r,AD.sAmount));
           p2 += paidOf(r);
@@ -47895,7 +47895,7 @@
 
       // مطالبات از همهٔ صورت‌وضعیت‌های همان پیمانکار
       let amt = 0, paid = 0, payDate = '', lastPaid = 0;
-      list('statements').filter(r => sameEntity(admParty('statement', r), name))
+      stLive(list('statements').filter(r => sameEntity(admParty('statement', r), name)))
         .forEach(r => {
           amt  += amtNum(pick(r,AD.sAmount));
           const pv = paidOf(r);
@@ -47912,7 +47912,7 @@
          چون از آن لحظه سند دست کارفرماست و تأخیر به او منتسب است.
          برای اسنادی که هنوز به کارفرما نرفته‌اند عددی ساخته نمی‌شود. */
       let oldestOpen = '', openCount = 0, openAmt = 0;
-      list('statements').filter(r => sameEntity(admParty('statement', r), name))
+      stLive(list('statements').filter(r => sameEntity(admParty('statement', r), name)))
         .forEach(r => {
           const a2 = amtNum(pick(r,AD.sAmount));
           const p2 = paidOf(r);
@@ -49775,6 +49775,7 @@
      خط آبی: جمع صورت‌وضعیت‌ها؛ خط سبز: جمع پرداخت‌ها؛ نوار قرمز کم‌رنگ میان دو خط:
      مانده (پرداخت‌نشده) در هر زمان. محور عمودی مبلغ دارد و زیر هر رویداد تاریخش. */
   function cfTrendHtml(stAll){
+    stAll = stLive(stAll);
     const ev = [];
     stAll.forEach(r => {
       const sd = admSentDate('statement', r), d0 = faToDate(sd);
@@ -65409,13 +65410,42 @@
   /* مبلغ پرداختی واقعی: اگر ثبت شده همان؛ اگر فقط وضعیت «پرداخت شده»
      خورده و مبلغ خالی مانده، کل مبلغ صورت وضعیت. */
   function paidOf(r){
+    if(r && ST_PX && ST_PX.has(r)) return ST_PX.get(r);
     const raw = amtNum(pick(r,AD.sPaid));
     if(raw > 0) return raw;
     const st = String(pick(r,AD.sPayStatus) || '');
     if(/پرداخت شده/.test(st)) return amtNum(pick(r,AD.sAmount));
     return 0;
   }
+  /* صورت وضعیت‌های «زنده» برای جمع مبالغ: از نسخه‌های اصلاحی (Rev) یک صورت وضعیت
+     فقط آخرین نسخه می‌ماند و ردیف‌های تکراریِ عیناً یکسان یک بار؛ پیش‌تر Rev ۰ و Rev ۱
+     هر دو جمع می‌شدند و مطالبات و پرداختی چند برابر نشان داده می‌شد. پرداختِ
+     ثبت‌شده روی نسخهٔ قبلی به آخرین نسخه می‌رسد. */
+  var ST_PX = new WeakMap();
+  function stLive(rows){
+    rows = rows || [];
+    const rv = row => +(toEn(String(pick(row,AD.sRev) || '')).match(/\d+/) || [0])[0];
+    const keyOf = row => { const no = toEn(String(pick(row,AD.sNo) || '')).replace(/\s+/g, ''); if(!no) return '';
+      let p0 = ''; try{ p0 = normName(ctrCanon(String(pick(row,AD.sParty) || pick(row,AD.sName) || ''))); }catch(e){ p0 = String(pick(row,AD.sParty) || ''); }
+      return p0 + '|' + toEn(String(pick(row,AD.sCno) || pick(row,AD.sName) || '')).replace(/\s+/g, '') + '|' + no; };
+    const G = new Map(), out = [];
+    rows.forEach(row => { const k = keyOf(row); if(!k){ out.push(row); return; } if(!G.has(k)){ G.set(k, []); out.push(k); } G.get(k).push(row); });
+    const res = out.map(x => {
+      if(typeof x !== 'string') return x;
+      const L = G.get(x);
+      if(L.length < 2) return L[0];
+      const revd = L.some(y => rv(y) > 0);
+      const same = L.every(y => moneyNum(pick(y,AD.sAmount)) === moneyNum(pick(L[0],AD.sAmount)));
+      if(!revd && !same) return L;
+      const top = L.slice().sort((a, b) => rv(b) - rv(a) || String(pick(b,AD.time) || '').localeCompare(String(pick(a,AD.time) || '')))[0];
+      const pMax = Math.max.apply(null, L.map(y => { ST_PX.delete(y); return paidOf(y); }));
+      if(pMax > paidOf(top)) ST_PX.set(top, Math.min(pMax, moneyNum(pick(top,AD.sAmount)) || pMax));
+      return top;
+    }).flat();
+    return res;
+  }
   function isPaid(r){
+    if(r && ST_PX && ST_PX.has(r) && !pick(r,AD.sPayStatus)){ const a = moneyNum(pick(r,AD.sAmount)); return a > 0 && ST_PX.get(r) >= a; }
     const st = pick(r,AD.sPayStatus);
     if(st) return /پرداخت شده/.test(st);
     /* بدون وضعیت پرداخت، فقط وقتی «تسویه‌شده» حساب می‌شود که هم مبلغِ
@@ -67336,7 +67366,7 @@
           : '<div class="hr-note">' + (isToday ? 'امروز' : 'در این روز') + ' پرداختی ثبت نشده است.</div>');
   }
   function receivablesHtml(statements){
-    const all = statements || [];
+    const all = stLive(statements || []);
     if(!all.length) return '<div class="empty">صورت وضعیتی ثبت نشده است.</div>';
 
     /* گروه‌بندی بر اساس مرحلهٔ فعلی هر سند (نه تاریخ‌های گذشته):
@@ -67805,7 +67835,7 @@
   }
 
   function adminChartsHtml(A){
-    const stmts = A.statements || [], conts = A.contracts || [];
+    const stmts = stLive(A.statements || []), conts = A.contracts || [];
     const mins = A.minutes || [], lets = A.letters || [];
     const C = 2 * Math.PI * 42;
 
@@ -75654,7 +75684,7 @@
   const FA_MON = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
   const faMonName = ym => { const [y, m] = ym.split('/').map(Number); return (FA_MON[m - 1] || '') + ' ' + toFa(String(y).slice(2)); };
   function cfData(){
-    const st = (adminAll || []).filter(x => x.kind === 'statement').map(x => x.row);
+    const st = stLive((adminAll || []).filter(x => x.kind === 'statement').map(x => x.row));
     const ct = (adminAll || []).filter(x => x.kind === 'contract').map(x => x.row);
     const pays = new Map(); let paid = 0, unpaid = 0;
     st.forEach(r => {
@@ -77958,7 +77988,7 @@
 
     let totalRest = 0, totalAmount = 0, totalPaid = 0;
     const byParty = new Map();
-    (A.statements || []).forEach(r => {
+    stLive(A.statements || []).forEach(r => {
       const party = pick(r,AD.sParty) || pick(r,AD.sName) || 'نامشخص';
       const amount = moneyNum(pick(r,AD.sAmount));
       const paid = paidOf(r);
