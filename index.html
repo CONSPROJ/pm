@@ -41446,7 +41446,8 @@
     const admTasks = (typeof adminAsTasks === 'function' ? adminAsTasks(adm) : [])
       .filter(r => {
         const k = nameKey(name);
-        const isMine = nameKey(pick(r,T.m1)) === k || (r.__admKind === 'minute' && nameKey(pick(r,T.m2)) === k);
+        const isMine = nameKey(pick(r,T.m1)) === k || (r.__admKind === 'minute' && (nameKey(pick(r,T.m2)) === k
+          || (function(){ try{ return mnAttOf(r.__admRow).some(n => nameKey(n) === k); }catch(e){ return false; } })()));
         if(!isMine) return false;
         if(r.__rv || r.__admKind === 'minute') return true;
         const ar = r.__admRow;
@@ -54185,6 +54186,7 @@
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
+      try{ window.mnAttLoad && window.mnAttLoad(lists); }catch(e2){}
       try{ window.dtLoad && window.dtLoad(lists); }catch(e2){}
       try{ window.ogLoad && window.ogLoad(lists); }catch(e2){}
       try{ spLoad(lists); }catch(e2){}
@@ -54759,6 +54761,9 @@
 
         // ذخیرهٔ مستقیم، بدون صف و بدون تأیید دوم
         const vals = admValues(target, host);
+        /* حاضران صورتجلسه در فهرست جدا ذخیره می‌شوند، نه در ستون سطر */
+        if(vals.__att){ try{ const sj = vals['موضوع صورتجلسه'] || pick(rowMap.get(id) || {}, AD.mSubject), mt = vals['تاریخ صورتجلسه'] || pick(rowMap.get(id) || {}, AD.mMeet); mnAttSave(sj, mt, vals.__att); }catch(e){} }
+        delete vals.__att;
         host.classList.add('busy');
         const okA = await sendAction({action:'update', target: target, id: id, values: vals});
         host.classList.remove('busy');
@@ -59372,6 +59377,25 @@
     const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
     dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + ctr.map(n => opt(n, 'پیمانکاران')).join('');
   }
+  /* ====== حاضران صورتجلسه ======
+     در فهرست‌ها (kind «حاضران صورتجلسه») با کلید «موضوع|تاریخ جلسه» نگه داشته می‌شود تا به ستون تازه‌ای
+     در پایگاه‌داده نیاز نباشد؛ حاضران بندهای همان جلسه را در کارتابل خود می‌بینند. */
+  const MN_ATT_KIND = 'حاضران صورتجلسه', MN_ATT = new Map();
+  const mnAttKey = (subj, meet) => normName(String(subj || '')) + '|' + dayKey(normDate(meet) || meet || '');
+  function mnAttLoad(lists){ MN_ATT.clear(); ((lists && lists[MN_ATT_KIND]) || []).forEach(v => { const x = String(v), i = x.indexOf('¦'); if(i < 1) return; try{ MN_ATT.set(x.slice(0, i), JSON.parse(x.slice(i + 1)) || []); }catch(e){} }); }
+  window.mnAttLoad = mnAttLoad;
+  function mnAttOf(row){ if(!row) return []; return MN_ATT.get(mnAttKey(pick(row,AD.mSubject), pick(row,AD.mMeet))) || []; }
+  window.mnAttOf = mnAttOf;
+  async function mnAttSave(subj, meet, names){
+    const k = mnAttKey(subj, meet); if(!k || k === '|') return;
+    const L = Array.from(new Set((names || []).map(x => String(x).trim()).filter(Boolean)));
+    if(L.length) MN_ATT.set(k, L); else MN_ATT.delete(k);
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(MN_ATT_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}); }catch(e){}
+    if(L.length) try{ await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: MN_ATT_KIND, value: k + '¦' + JSON.stringify(L)}]}); }catch(e){}
+    try{ clearNetCache(); }catch(e){}
+  }
+  window.mnAttSave = mnAttSave;
+  const mnAttSplit = v => String(v || '').split(/[،,\n]+/).map(x => x.trim()).filter(Boolean);
   function bandBlock(d){
     d = d || {};
     try{ mnWhoListEnsure(); }catch(e){}
@@ -59568,6 +59592,8 @@
           + fd('a-mMeet','تاریخ صورتجلسه', pick(r,AD.mMeet))
           + chips(catSel('a-mCat', pick(r,AD.mCat)).replace(/اداری — در لیست فعالیت اداری/, 'اداری').replace(/اجرایی — در لیست فعالیت اجرایی/, 'اجرایی'))
           , 'three')
+        + sec('list', 'حاضران جلسه', '<div class="field mn-att"><label>نام حاضران <small>با «،» جدا کنید؛ حاضران این صورتجلسه را در کارتابل خود می‌بینند</small></label>'
+          + '<input type="text" class="a-mAtt" data-list="mnWhoList" autocomplete="off" value="' + esc(mnAttOf(r).join('، ')) + '" placeholder="مثلاً آقای اسلامی، مهندس مرادی"></div>', 'one')
         + (isNew ? '' : sec('cal', 'مسئولین و موعد این بند',
             (function(){ try{ mnWhoListEnsure(); }catch(e){} return ''; })()
           + f('a-mOwner','مسئول انجام (نفرات پروژه یا پیمانکار)', pick(r,AD.mOwner), false, 'mnWhoList')
@@ -61875,6 +61901,7 @@
         actionDate: bval(b,'a-mBandDate')
       })).filter(x => x.text);
       if(blocks.length) o.__bands = blocks;
+      { const at = host.querySelector('.a-mAtt'); if(at) o.__att = mnAttSplit(at.value); }
     }else if(kind === 'design'){
       put(o,'عنوان مدرک','a-dTitle'); put(o,'شماره مدرک','a-dNo'); put(o,'رشته','a-dDisc');
       put(o,'ویرایش','a-dRev'); put(o,'طراح','a-dParty'); put(o,'تاریخ ارسال','a-dDate');
@@ -62082,6 +62109,9 @@
         owner:v['مسئول'], actionDate:v['تاریخ اقدام'],
         items: v.__bands || (v['شرح بند'] ? [{text:v['شرح بند'], owner:v['مسئول'], follower:v['مسئول پیگیری'],
           actionDate:v['تاریخ اقدام']}] : []), link:v['لینک']});
+      /* صورتجلسهٔ بی‌بند هم یک سطر می‌گیرد تا بعد از ثبت در فهرست بماند (پیش‌تر هیچ سطری ساخته نمی‌شد) */
+      if(!item.items.length && String(item.subject || '').trim()) item.items = [{text: '', owner: '', follower: '', actionDate: ''}];
+      if(v.__att) try{ mnAttSave(item.subject, item.meetDate, v.__att); }catch(e){}
     }else if(kind === 'design'){
       Object.assign(item, {title:v['عنوان مدرک'], number:v['شماره مدرک'], discipline:v['رشته'],
         revision:v['ویرایش'], party:v['طراح'], sentDate:v['تاریخ ارسال'], status:v['وضعیت مدرک'],
@@ -62091,7 +62121,7 @@
       Object.assign(item, {direction:v['جهت نامه'] || '', subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک']});
     }
-    delete v.__bands;
+    delete v.__bands; delete v.__att;
     if(!document.getElementById('admOwner').value.trim()){
       showDialog('warn','تهیه‌کننده انتخاب نشده','اول تهیه‌کنندهٔ گزارش را در همین تب انتخاب کنید.');
       return;
