@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023150758">
+<meta name="pm-build" content="20261023151415">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20781,6 +20781,15 @@
   .kt-g .kt-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px;}
   .kt-g .kt-more{margin:0 8px 8px;}
 
+  /* عکس پیمانکار کنار نامش */
+  .ava.ctr-ava.auto{display:inline-grid;place-items:center;width:20px !important;height:20px !important;min-width:20px;border-radius:50%;overflow:hidden;vertical-align:-5px;margin:0 0 0 5px !important;font-size:8.5px !important;font-weight:800;line-height:1;
+    background:color-mix(in srgb, var(--sky) 14%, var(--field));color:var(--sky);box-shadow:0 0 0 1.5px var(--surface);flex:none;}
+  .ava.ctr-ava.auto img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  .cdx-av i img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+  .ms-ava .ctr-ava{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;overflow:hidden;font-size:10px;font-weight:800;background:color-mix(in srgb, var(--sky) 14%, var(--field));color:var(--sky);}
+  .ms-ava .ctr-ava img{width:100%;height:100%;object-fit:cover;}
+
   /* نمایندهٔ پیمانکار */
   .ctc-svr{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:8px;padding:10px;border-radius:12px;background:color-mix(in srgb, var(--sky) 6%, var(--field));}
   .ct-svb{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:11px;font-weight:700;color:var(--sky);background:color-mix(in srgb, var(--sky) 10%, transparent);padding:2px 9px;border-radius:99px;margin-inline-start:6px;}
@@ -37106,7 +37115,7 @@
       const lim = ctdState.lim || 60;
       const row = e => { const I = e.inf, ph = I.c.p && I.c.p[0];
         return '<div class="cdx-r' + (e.hid ? ' cdx-hid' : '') + '" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
-          + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + esc(initialsOf(e.canon)) + '</i></span>'
+          + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + ctrAvaIn(e.canon) + '</i></span>'
           + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + (e.own && e.ty !== 'own' ? '<i class="cdx-tyb t-own">مالک</i>' : '') + '</b>'
           +   '<small>' + esc([I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
           +   '<span class="cdx-ch">' + (I.nc ? '<i class="c">' + toFa(I.nc) + ' قرارداد</i>' : '') + (I.ns ? '<i class="s">' + toFa(I.ns) + ' صورت وضعیت</i>' : '') + (e.n ? '<i>' + toFa(e.n) + ' ردیف گزارش</i>' : '')
@@ -47079,6 +47088,35 @@
       + (n ? '<i class="msg-dot">'+toFa(n)+'</i>' : '')
       + '</span>';
   }
+  /* عکس پیمانکار/طرف (یا حروف اول در دایره)؛ با زدن، کارت پیمانکار باز می‌شود */
+  function ctrAvaIn(name){ const img = avatarOf(name); return img ? '<img src="' + esc(img) + '" alt="" loading="lazy">' : esc(initialsOf(name)); }
+  function ctrAva(name, cls){ if(!name) return ''; return '<span class="ava ctr-ava ' + (cls || '') + '" data-hrprof="' + esc(name) + '" title="' + esc(name) + '">' + ctrAvaIn(name) + '</span>'; }
+  window.ctrAva = ctrAva; window.ctrAvaIn = ctrAvaIn;
+  /* هر جا نام پیمانکار به‌شکل پیوند آمده (پرونده‌ها، گزارش نیروی انسانی، نمودارها، کارت‌ها)
+     و هنوز عکس ندارد، عکس کوچکش کنار نام می‌نشیند */
+  (function(){
+    const SEL = '[data-hrprof],[data-ktctr],[data-cdxprof],[data-flrctr]';
+    const nm = el => String(el.dataset.hrprof || el.dataset.ktctr || el.dataset.cdxprof || el.dataset.flrctr || '').trim();
+    const norm = t => String(t || '').replace(/\s+/g, ' ').trim();
+    function deco(el){
+      if(el.__ca || el.classList.contains('ava') || el.closest('.ava, .ct-ava, svg') || el.querySelector('.ava, img, svg')) { el.__ca = 1; return; }
+      el.__ca = 1; const n = nm(el); if(!n || n.length < 2) return;
+      /* جایی که خودش عکس دارد (سرتیتر کارت، ردیف پرونده، چارت سازمانی) دوباره اضافه نمی‌شود */
+      const box = el.closest('.hr-head, .hv2, li, .cdx-r, .flr-rt, .ogc-n, .ogl-n, .mc-head, .ktc-it, .pp-it, .ms-pt');
+      if(box && box.querySelector('.ava, .cdx-av')) return;
+      const par = el.parentElement; if(par && par.querySelector(':scope > .ava, :scope > span > .ava, :scope > .ct-ava')) return;
+      let tg = null;
+      if(norm(el.textContent) === norm(n)) tg = el;
+      else tg = Array.from(el.querySelectorAll('b, strong, span')).find(x => !x.children.length && norm(x.textContent) === norm(n)) || null;
+      if(!tg) return;
+      tg.insertAdjacentHTML('afterbegin', '<span class="ava ctr-ava auto" aria-hidden="true">' + ctrAvaIn(n) + '</span>');
+      tg.classList.add('has-cava');
+    }
+    let q = new Set(), t = 0;
+    const flush = () => { t = 0; const L = Array.from(q); q = new Set(); L.forEach(root => { if(!root.isConnected) return; if(root.matches && root.matches(SEL)) deco(root); if(root.querySelectorAll) root.querySelectorAll(SEL).forEach(deco); }); };
+    new MutationObserver(ms => { for(const m of ms) for(const n0 of m.addedNodes){ if(n0.nodeType === 1) q.add(n0); } if(q.size && !t) t = requestAnimationFrame(flush); })
+      .observe(document.documentElement, {childList: true, subtree: true});
+  })();
   // نام قابل کلیک
   function personName(name, tag){
     if(!name) return '';
@@ -58343,7 +58381,7 @@
         + (x.back ? ' back' : '') + (x.ava ? ' has-ava' : '')
         + (x.due ? ' due' + (x.tone ? ' t-' + x.tone : '') : '') + '" style="--i:' + i + '"'
         + (x.note ? ' data-note="' + esc(x.note) + '"' : '') + (x.who ? ' data-who="' + esc(x.who) + '"' : '') + '>'
-        + (x.ava ? '<i class="ms-ava" title="مسئول: ' + esc(x.ava) + '">' + avatarHtml(x.ava, '', true) + '</i>' : '<i></i>')
+        + (x.ava ? '<i class="ms-ava" title="' + (x.avaCtr ? 'پیمانکار: ' : 'مسئول: ') + esc(x.ava) + '">' + (x.avaCtr ? ctrAva(x.ava) : avatarHtml(x.ava, '', true)) + '</i>' : '<i></i>')
         + '<u>' + (x.pre ? '<s>' + x.pre + '</s>' : '') + esc(x.t) + '</u>'
         + (dt ? '<b><s>' + esc(dt.slice(0, 5)) + '</s>' + esc(dt.slice(5)) + '</b>'
               : (x.txt ? '<b class="ms-nowtxt">' + esc(x.txt) + '</b>' : ''))
@@ -58621,6 +58659,8 @@
       pts.push({k:stage, t:LBL[stage] || rv, d: ok(cd) ? cd : '', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
     }
     if(!pts.length) return '';
+    /* مرحلهٔ پیمانکار با عکس همان پیمانکار (یا حروف اول نامش) */
+    try{ const pty = admParty(kind, r); if(pty) pts.forEach(x => { if(x.k === 'p' && !x.ava){ x.ava = pty; x.avaCtr = 1; } }); }catch(e){}
     /* نقطهٔ «گردش داخلی» دایرهٔ ساده است؛ چهرهٔ بررسی‌کننده‌ها روی تکه‌های
        همان دور می‌آید، نه روی شروع مرحله (پیش‌تر آخرین نفر آن‌جا می‌نشست). */
 
