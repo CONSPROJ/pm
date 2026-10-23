@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023145435">
+<meta name="pm-build" content="20261023145813">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20382,6 +20382,9 @@
   .qy-rs{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;padding:8px;border-radius:12px;background:var(--field);}
   .qy-rsh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:2px 4px;} .qy-rsh > b{font-size:12px;font-weight:800;} .qy-rsh em{font-style:normal;font-size:11px;color:var(--muted);} .qy-rsh em b{color:var(--ink);font-size:13px;}
   .qy-rr{display:grid;grid-template-columns:22px minmax(0,1.3fr) minmax(0,1.2fr) auto 26px;gap:6px;align-items:center;padding:6px;border-radius:10px;background:var(--surface);border:1px solid var(--line);}
+  .qy-rr .qy-rd{grid-column:2 / -2;grid-row:2;height:32px;min-width:0;border-radius:8px;border:1px solid var(--line);background:var(--field);padding:0 9px;font:600 12px var(--f);color:var(--ink);}
+  .qy-rr .qy-rm{grid-row:3;grid-column:2 / -2;}
+  .qy-rr .qy-rg{grid-column:2 / -2;grid-row:4;}
   .qy-rr.need{border-color:color-mix(in srgb, var(--alert) 45%, var(--line));}
   .qy-rn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:800;color:var(--muted);background:var(--field);}
   .qy-rlc{display:flex;flex-wrap:wrap;gap:4px;min-width:0;} .qy-rlc select{flex:1 1 90px;min-width:0;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--field);padding:0 6px;font:600 11.5px var(--f);color:var(--ink);}
@@ -20392,7 +20395,7 @@
   .qy-rq{font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;} .qy-rq small{font-size:9.5px;color:var(--muted);margin-inline-start:2px;font-weight:600;}
   .qy-rsa{display:flex;flex-wrap:wrap;gap:12px;padding:2px 4px;}
   .qy-rgo{align-self:flex-end;margin-inline-start:auto;}
-  @media (max-width:560px){ .qy-rr{grid-template-columns:22px minmax(0,1fr) auto 26px;} .qy-rr .qy-rm{grid-column:2 / 4;grid-row:2;} }
+  .qy-rr{grid-template-columns:22px minmax(0,1fr) auto 26px !important;}
   .qy-gb{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:-2px 0 8px;font-size:11px;color:var(--muted);} .qy-gb span{flex:1 1 200px;} .qy-gb b{color:var(--ink);} .qy-gb em{font-style:normal;color:var(--alert);}
   .qy-ed > .qt-geo{margin-bottom:8px;}
   @media (max-width:560px){ .qy-sum{grid-template-columns:repeat(3, minmax(0, 1fr));} .qy-sum .c{grid-column:1 / -1;} }
@@ -74106,8 +74109,8 @@
     return qtType(x) === 'fx' || x.st === 'درب و پنجره' ? ['w', 'h', 'pw'] : ['pw'];
   }
   function qtMsQ(x){
-    if(!(x.b === 'count' || x.b === 'manual') || qtCntU(x.u)) return null;
-    if(qtIsSteel(x) && Array.isArray(x.pl) && x.pl.length){ const kg = qtPlKg(x); return qtU(x.u) === 'ton' ? kg / 1000 : kg; }
+    if(qtCntU(x.u)) return null;
+    if((x.b === 'count' || x.b === 'manual') && qtIsSteel(x) && Array.isArray(x.pl) && x.pl.length){ const kg = qtPlKg(x); return qtU(x.u) === 'ton' ? kg / 1000 : kg; }
     const m = x.ms || {}, v = k => qtNum(m[k]), n = v('n') || 1, u = qtU(x.u);
     if(!['l', 'w', 'h', 'uw', 'sg', 'pw'].some(k => v(k))) return null;
     if(u === 'm') return v('l') ? n * v('l') : null;
@@ -74173,6 +74176,8 @@
     /* پیش‌فرض: همهٔ درب و پنجره‌های همین فضا خودکار کسر می‌شوند؛ «none» یعنی بدون کسر */
     const dd = x.dd == null || x.dd === '' ? 'auto' : x.dd;
     if(dd === 'none' || ['wall', 'wc', 'perim'].indexOf(x.b) === -1) return [];
+    /* ردیفی که اندازه‌اش را خودش دارد (مثلاً «دیوار شمالی ۵×۳») فقط بازشوهایی را کم می‌کند که دستی تیک خورده‌اند */
+    if(qtMsQ(x) != null && !Array.isArray(dd)) return [];
     const O = qtOpenings(x.k).filter(y => x.b !== 'perim' || qtIsDoor(y));
     return dd === 'auto' ? O : O.filter(y => (Array.isArray(dd) ? dd : []).indexOf(y.id) !== -1);
   }
@@ -74180,8 +74185,10 @@
     return qtDedList(x).reduce((a, y) => { const d = qtODim(y), n = qtNum(y.q) || 1; return a + n * (x.b === 'perim' ? d.w : d.w * d.h); }, 0);
   }
   function qtBase(x){
+    /* اندازه‌های نوشته‌شده روی خود ردیف (طول، عرض، ارتفاع…) بر اندازه‌های فضا مقدم‌اند */
+    const m0 = qtMsQ(x); if(m0 != null) return m0;
     const g = qtGeo(x.k);
-    if(x.b === 'count' || x.b === 'manual'){ const m = qtMsQ(x); return m != null ? m : qtNum(x.q); }
+    if(x.b === 'count' || x.b === 'manual') return qtNum(x.q);
     return x.b === 'floor' ? g.floor : x.b === 'ceil' ? g.ceil : x.b === 'wall' ? g.wall : x.b === 'wc' ? g.wall + g.ceil : x.b === 'perim' ? g.perim : qtNum(x.q);
   }
   /* دو مقدار جدا: «مقدار کار» (خالص، برای کارکرد و صورت وضعیت) و «مقدار مصالح» (با ضریب مصرف و پرت، برای تأمین) */
@@ -74204,7 +74211,7 @@
     if(x.b === 'count' || x.b === 'manual'){ const mq = qtMsQ(x);
       if(mq != null && qtIsSteel(x) && Array.isArray(x.pl) && x.pl.length) return 'جمع ' + toFa(x.pl.length) + ' ردیف پروفیل: ' + qtFmt(mq) + ' ' + qtU(x.u) + (mat && qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
       return (mq != null ? '\u2066' + qtMsTxt(x) + ' = ' + qtFmt(mq) + ' ' + qtU(x.u) + '\u2069' : toFa(qtNum(x.q) || 0) + ' ' + qtU(x.u)) + (mat && qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : ''); }
-    const B = {floor: 'کف', ceil: 'سقف', wall: 'دیوار', wc: 'دیوار + سقف', perim: 'طول دیوار'}[x.b] || '';
+    const B = qtMsQ(x) != null ? '\u2066' + qtMsTxt(x) + '\u2069 =' : ({floor: 'کف', ceil: 'سقف', wall: 'دیوار', wc: 'دیوار + سقف', perim: 'طول دیوار'}[x.b] || '');
     const d = qtDed(x), f = x.f != null && x.f !== '' ? qtNum(x.f) : 1;
     return B + ' ' + qtFmt(qtBase(x)) + (d ? ' − بازشو ' + qtFmt(d) : '') + (mat && f !== 1 ? ' × ضریب ' + toFa(f) : '') + (mat && qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
   }
@@ -74225,7 +74232,7 @@
   async function qtPostMany(kind, rows){ if(!rows.length) return; for(let i = 0; i < rows.length; i += 200) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: rows.slice(i, i + 200).map(([k, v]) => ({kind, value: k + '¦' + v}))}); try{ clearNetCache(); }catch(e){} }
   const qtNewId = () => 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const qtItemJson = x => { const o = {k: x.k}; ['st', 'n', 'm', 'b', 'u', 'q', 'f', 'w', 'cd', 'sp', 'dm', 'ct', 'ex', 'sr', 'cr', 'ci', 't', 'dd'].forEach(y => { if(x[y] != null && x[y] !== '') o[y] = x[y]; }); if(Array.isArray(x.mt) && x.mt.length) o.mt = x.mt; if(x.ms && Object.keys(x.ms).some(k => x.ms[k] !== '' && x.ms[k] != null)) o.ms = x.ms; if(Array.isArray(x.pl) && x.pl.length) o.pl = x.pl.filter(r0 => r0 && (r0.p || r0.l));
-    if(qtRowsOf(x)) o.rows = x.rows.map(r0 => { const z = {}; ['k', 'q', 'ex'].forEach(k => { if(r0[k] != null && r0[k] !== '') z[k] = r0[k]; }); if(r0.ms && Object.keys(r0.ms).length) z.ms = r0.ms; return z; });
+    if(qtRowsOf(x)) o.rows = x.rows.map(r0 => { const z = {}; ['k', 'd', 'q', 'ex'].forEach(k => { if(r0[k] != null && r0[k] !== '') z[k] = r0[k]; }); if(r0.ms && Object.keys(r0.ms).length) z.ms = r0.ms; return z; });
     return JSON.stringify(o); };
   /* مصالح هر عملیات: مقدار عملیات × ضریب مصرف */
   const qtMats = x => { const wf = 1 + qtNum(x.w) / 100, L = (Array.isArray(x.mt) ? x.mt : []).filter(m => m && m.n).map(m => ({n: m.n, u: m.u || '', r: qtNum(m.r), q: qtQty(x) * qtNum(m.r) * wf, rem: (qtQty(x) - qtExQty(x)) * qtNum(m.r) * wf}));
@@ -74272,7 +74279,7 @@
     const op = qt.op === x.id, ex = qtEx(x), c = qtCost(x);
     return '<div class="qy-it' + (op ? ' op' : '') + '" data-qxid="' + esc(x.id) + '" style="--sc:' + (QT_SC[x.st] || '#7c828c') + '">'
       + '<button type="button" class="qy-ih" data-qxop="' + esc(x.id) + '">'
-      +   '<span class="qy-in"><b>' + (x.cd ? '<i class="qx-cd">' + esc(toFa(x.cd)) + '</i>' : '') + esc(x.n || '') + '</b><i class="qy-lc' + (x.k || qtRowsOf(x) ? '' : ' no') + '">' + esc(qtRowsOf(x) ? toFa(x.rows.length) + ' فضا · ' + qtRowsOf(x).map(r0 => qtLabel(r0.k).split(' › ').pop()).slice(0, 3).join('، ') + (x.rows.length > 3 ? '…' : '') : qtLabel(x.k)) + '</i><small>' + esc([x.m, qtODim(x) && (x.ms || x.dm) ? toFa(Math.round(qtODim(x).w * 100)) + '×' + toFa(Math.round(qtODim(x).h * 100)) : '', x.ct].filter(Boolean).join(' · ') || x.st || '') + '</small></span>'
+      +   '<span class="qy-in"><b>' + (x.cd ? '<i class="qx-cd">' + esc(toFa(x.cd)) + '</i>' : '') + esc(x.n || '') + '</b><i class="qy-lc' + (x.k || qtRowsOf(x) ? '' : ' no') + '">' + esc(qtRowsOf(x) ? toFa(x.rows.length) + ' فضا · ' + qtRowsOf(x).map(r0 => r0.d || qtLabel(r0.k).split(' › ').pop()).slice(0, 3).join('، ') + (x.rows.length > 3 ? '…' : '') : qtLabel(x.k)) + '</i><small>' + esc([x.m, qtODim(x) && (x.ms || x.dm) ? toFa(Math.round(qtODim(x).w * 100)) + '×' + toFa(Math.round(qtODim(x).h * 100)) : '', x.ct].filter(Boolean).join(' · ') || x.st || '') + '</small></span>'
       +   '<span class="qy-iq"><b>' + qtFmt(qtIsMat() ? qtMQ(x) : qtQty(x)) + '</b><small>' + esc(qtU(x.u)) + (qtIsMat() ? ' مصالح' : ' کار') + '</small></span></button>'
       + '<div class="qy-if"><span class="qy-fx">' + esc(qtFormula(x)) + '</span>'
       +   '<span class="qy-ex"><i><s style="width:' + ex + '%"></s></i>' + toFa(Math.round(ex)) + '٪</span>'
@@ -74291,18 +74298,20 @@
   /* جدول ردیف‌های فضا */
   function qtRowsHtml(x, ed){
     const R = x.rows, F = spFloors(), its = qtRowIts(x), dis = ed ? '' : ' disabled', ro = ed ? '' : ' readonly';
-    const cnt = x.b === 'count' || x.b === 'manual', K = !cnt ? [] : qtCntU(x.u) ? ['q'] : qtMsKeys(x).filter(k => k !== 'pw' || qtIsSteel(x));
-    const LB = Object.assign({q: [qtCntU(x.u) ? 'تعداد' : 'مقدار', '']}, QT_MSF);
+    const cnt = x.b === 'count' || x.b === 'manual', K = qtCntU(x.u) ? (cnt ? ['q'] : []) : qtMsKeys(x).filter(k => k !== 'pw' || qtIsSteel(x));
+    const LB = Object.assign({q: [qtCntU(x.u) ? 'تعداد' : 'مقدار', '']}, QT_MSF, (x.b === 'wall' || x.b === 'wc') ? {w: ['ارتفاع', 'm']} : {});
     const opt = (v, t, on) => '<option value="' + esc(v) + '"' + (on ? ' selected' : '') + '>' + esc(t) + '</option>';
     const u = qtU(x.u), tot = qtQty(x);
     let h = '<div class="qy-rs"><div class="qy-rsh"><b>فضاها و مقادیر</b><em>' + toFa(R.length) + ' ردیف · جمع <b>' + qtFmt(tot) + '</b> ' + esc(u) + '</em></div>';
     h += R.map((r0, i) => { const [f, l1, l2] = String(r0.k || '').split('/'), L1 = f ? spL1(f) : [], o1 = L1.find(o => o.v === l1), L2 = o1 && o1.unit ? spPartsOf(o1.v) : [], it = its[i], g = r0.k ? qtGeo(r0.k) : null;
-      return '<div class="qy-rr' + (r0.k ? '' : ' need') + '" data-qxri="' + i + '"><span class="qy-rn">' + toFa(i + 1) + '</span>'
+      return '<div class="qy-rr' + (r0.k || qtQty1(it) ? '' : ' need') + '" data-qxri="' + i + '"><span class="qy-rn">' + toFa(i + 1) + '</span>'
         + '<span class="qy-rlc"><select data-qxrl="f"' + dis + '><option value="">طبقه…</option>' + F.map(o => opt(o.key, o.label, f === o.key)).join('') + '</select>'
         + (f && L1.length ? '<select data-qxrl="l1"' + dis + '><option value="">کل طبقه</option>' + L1.map(o => opt(o.v, o.unit ? spUnitLb(o.v) : o.t, l1 === o.v)).join('') + '</select>' : '')
         + (L2.length ? '<select data-qxrl="l2"' + dis + '><option value="">کل واحد</option>' + L2.map(p => opt(p, p, l2 === p)).join('') + '</select>' : '') + '</span>'
+        + '<input type="text" class="qy-rd" data-qxrm="d" value="' + esc(r0.d || '') + '" placeholder="شرح ردیف — مثلاً دیوار شمالی اتاق ۲"' + ro + '>'
         + '<span class="qy-rm">' + (K.length ? K.map(k => '<label><u>' + LB[k][0] + '</u><input type="text" inputmode="decimal" data-qxrm="' + k + '" value="' + esc(k === 'q' ? (r0.q !== '' && r0.q != null ? toFa(r0.q) : '') : ((r0.ms || {})[k] != null ? toFa(r0.ms[k]) : '')) + '"' + ro + '></label>').join('')
-            : '<small class="qy-rg">' + (g && (g.own || g.n) ? 'از اندازهٔ فضا' : (r0.k ? 'این فضا اندازه ندارد' : '—')) + '</small>')
+            : '')
+        + (!cnt && qtMsQ(it) == null ? '<small class="qy-rg">' + (g && (g.own || g.n) ? 'از اندازهٔ فضا' : (r0.k ? 'فضا اندازه ندارد؛ اندازه بنویسید' : 'اندازه بنویسید یا فضا را انتخاب کنید')) + '</small>' : '')
         + '<label class="ex"><u>اجرا ٪</u><input type="text" inputmode="decimal" data-qxrm="ex" value="' + esc(r0.ex != null && r0.ex !== '' ? toFa(r0.ex) : '') + '" placeholder="' + toFa(qtEx1(x)) + '"' + ro + '></label></span>'
         + '<b class="qy-rq">' + qtFmt(qtQty1(it)) + '<small>' + esc(u) + '</small></b>'
         + (ed ? '<button type="button" class="sp-x" data-qxrrm="' + i + '" aria-label="حذف">×</button>' : '') + '</div>'; }).join('');
@@ -74329,11 +74338,13 @@
   }
   /* اندازه‌های ردیف (بنا به واحد) با نتیجهٔ زنده */
   function qtMsHtml(x, ed){
-    if(!(x.b === 'count' || x.b === 'manual') || qtRowsOf(x)) return '';
+    if(qtRowsOf(x) || (qtCntU(x.u) && !(x.b === 'count' || x.b === 'manual'))) return '';
+    const geoB = !(x.b === 'count' || x.b === 'manual');
     const K = qtMsKeys(x), m = x.ms || {}, ro = ed ? '' : ' readonly', mq = qtMsQ(x), u = qtU(x.u), dr = qtType(x) === 'fx' || x.st === 'درب و پنجره';
-    const lb = k => k === 'w' && dr ? ['عرض', 'm'] : k === 'h' && dr ? ['ارتفاع', 'm'] : QT_MSF[k];
+    const lb = k => k === 'w' && dr ? ['عرض', 'm'] : k === 'h' && dr ? ['ارتفاع', 'm'] : k === 'w' && (x.b === 'wall' || x.b === 'wc') ? ['ارتفاع', 'm'] : QT_MSF[k];
     const hint = u === 'kg' || u === 'ton' ? 'وزن: «تعداد × وزن هر عدد» یا «تعداد × طول × وزن واحد طول» (مثلاً میلگرد ۱۴ = ۱٫۲۱ kg/m) یا «حجم × وزن مخصوص» (فولاد ۷۸۵۰)'
       : dr ? 'عرض و ارتفاع بازشو به متر (یا سانتی‌متر)؛ سطحش خودکار از دیوارهای همین فضا کسر می‌شود'
+      : geoB ? 'اختیاری: اگر بنویسید، مقدار از همین اندازه‌ها حساب می‌شود؛ خالی = از اندازه‌های فضا'
       : u === 'm³' ? 'حجم = تعداد × طول × عرض × ضخامت' : u === 'm²' ? 'سطح = تعداد × طول × عرض' : u === 'm' ? 'طول = تعداد × طول هر قطعه' : '';
     if(qtIsSteel(x)) return qtPlHtml(x, ed);
     return '<div class="qy-mz"><div class="qy-mzh"><b>اندازه‌ها</b>' + (mq != null ? '<em>' + esc(qtMsTxt(x)) + ' = <b>' + qtFmt(mq) + '</b> ' + esc(u) + '</em>' : (hint ? '<small>' + esc(hint) + '</small>' : '')) + '</div>'
@@ -74827,7 +74838,8 @@
       if(e.target.dataset.qxrl){ const [f, l1] = String(r0.k || '').split('/'), lv = e.target.dataset.qxrl, v = e.target.value;
         r0.k = lv === 'f' ? (v ? qtKey(v) : '') : lv === 'l1' ? qtKey(f, v) : qtKey(f, l1, v); if(r0.k) qt.lastK = r0.k; x.k = x.rows[0].k || ''; }
       else { const k = e.target.dataset.qxrm, raw = e.target.value.trim();
-        if(k === 'q' || k === 'ex'){ if(raw === '') delete r0[k]; else r0[k] = qtNum(raw); }
+        if(k === 'd'){ if(raw === '') delete r0.d; else r0.d = raw; }
+        else if(k === 'q' || k === 'ex'){ if(raw === '') delete r0[k]; else r0[k] = qtNum(raw); }
         else { r0.ms = Object.assign({}, r0.ms || {}); if(raw === '') delete r0.ms[k]; else r0.ms[k] = qtNum(raw); } }
       try{ await qtSaveRow(QT_IT_KIND, x.id, qtItemJson(x)); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       qt.__v++; qtRender(); return;
