@@ -24873,6 +24873,7 @@
   .af-autonf label i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);padding:1px 7px;border-radius:99px;margin-inline-start:4px;}
   .af-nf{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:99px;background:var(--field);font-size:12px;font-weight:800;color:var(--ink);}
   .af-autonf small{display:block;margin-top:4px;font-size:10.5px;color:var(--muted);}
+  .af-newst{display:flex;flex-direction:column;align-items:flex-start;gap:4px;} .af-newst .af-nf{display:inline-flex;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:800;color:var(--warn,#b07512);background:color-mix(in srgb, var(--warn,#b07512) 12%, transparent);} .af-newst small{font-size:11px;color:var(--muted);line-height:1.7;}
   /* الحاقیه در فرم */
   .ca2 .ca2-on{display:none;} .ca2.on .ca2-on{display:block;} .ca2.on .ca2-off{display:none;}
   .ca2-row{display:flex;align-items:center;gap:8px;}
@@ -59481,6 +59482,17 @@
       + '<button type="button" class="mini" data-cancel="'+esc(id)+'">انصراف</button>'
       + '<button type="button" class="mini go" data-save="'+esc(id)+'">' + (isNewItem ? 'ثبت ' + (KIND_LABEL[kind] || '') : 'ذخیرهٔ تغییرات') + '</button></div>';
     const wrap = body => '<div class="af">' + body + dtFormHtml(kind, r) + buttons + '</div>';
+    /* سند تازه (صورت وضعیت/قرارداد): موعد خالی، رسیدگی همیشه «در حال تنظیم»؛ کپسول‌های وضعیت و
+       انتخاب مسئولین بررسی فقط هنگام ویرایش (بعد از ثبت) نشان داده می‌شوند */
+    const fdue = (cls, lbl, val) => isNewItem
+      ? f(cls, lbl, '').replace('class="' + cls + '"', 'class="' + cls + ' date-in" placeholder="اختیاری"')
+      : fd(cls, lbl, val);
+    const flowSec = (nCls, nVal, rCls) => isNewItem
+      ? sec('flow', 'ابلاغ و رسیدگی', '<div class="field af-newst"><select class="' + nCls + '" hidden><option value="درون‌سازمانی" selected>درون‌سازمانی</option></select>'
+          + '<select class="' + rCls + '" hidden><option value="در حال تنظیم" selected>در حال تنظیم</option></select>'
+          + '<input type="hidden" class="a-rvWho" value="">'
+          + '<span class="af-nf">در حال تنظیم</span><small>سند با وضعیت «در حال تنظیم» ثبت می‌شود؛ بعد از ثبت، با «ویرایش» گردش بررسی و مسئولین را تعیین کنید.</small></div>', 'one')
+      : sec('flow', 'ابلاغ و رسیدگی', chips(notifySel(nCls, nVal)) + chips(reviewSel(rCls, pick(r,AD.review))) + reviewersField(reviewersOf(r)), 'one');
 
     if(kind === 'statement'){
       return wrap(
@@ -59498,12 +59510,9 @@
           + fm('a-sPaid','مبلغ پرداختی (ریال)', pick(r,AD.sPaid)), 'two')
         + sec('cal', 'زمان‌بندی و مسئول',
             fd('a-sDate','تاریخ ابلاغ', pick(r,AD.sDate))
-          + fd('a-due','موعد اتمام', pick(r,AD.due))
+          + fdue('a-due','موعد اتمام', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.statement)), 'three')
-        + sec('flow', 'ابلاغ و رسیدگی',
-            chips(notifySel('a-sNotify', pick(r,AD.sNotify)))
-          + chips(reviewSel('a-sReview', pick(r,AD.review)))
-          + reviewersField(reviewersOf(r)), 'one')
+        + flowSec('a-sNotify', pick(r,AD.sNotify), 'a-sReview')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'توضیحات', f('a-sNote','توضیحات', pick(r,AD.sNote), true), 'one'));
     }
@@ -59536,12 +59545,9 @@
             fd('a-cStart','تاریخ شروع قرارداد', pick(r,AD.cStart))
           + f('a-cEnd','تاریخ اتمام قرارداد', admDate(cEndRaw(r)) || '').replace('class="a-cEnd"', 'class="a-cEnd date-in" placeholder="بدون تاریخ" data-orig="' + esc(admDate(cEndRaw(r)) || '') + '"')
           + fd('a-cDate','تاریخ ابلاغ', pick(r,AD.cDate))
-          + fd('a-due','موعد پیگیری', pick(r,AD.due))
+          + fdue('a-due','موعد پیگیری', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.contract)))
-        + sec('flow', 'ابلاغ و رسیدگی',
-            chips(notifySel('a-cNotify', pick(r,AD.cNotify)))
-          + chips(reviewSel('a-cReview', pick(r,AD.review)))
-          + reviewersField(reviewersOf(r)), 'one')
+        + flowSec('a-cNotify', pick(r,AD.cNotify), 'a-cReview')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'موضوع قرارداد', f('a-cSubject','موضوع قرارداد', pick(r,AD.cSubject), true), 'one'));
     }
