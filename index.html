@@ -44343,6 +44343,8 @@
     {k:'qc', t:'کنترل کیفیت', s:'درخواست بازرسی، عدم انطباق و چک‌لیست‌ها', c:'#2a8f86', area:'qcArea', ic:() => HM_I.qc, ok:() => !!(window.qcVisible && window.qcVisible())},
     {k:'mc', t:'ماشین‌آلات', s:'ناوگان، کارکرد روزانه و خرابی‌ها', c:'#5b6b7d', area:'mcArea', ic:() => HM_I.mc, ok:() => !!(window.mcVisible && window.mcVisible())},
     {k:'co', t:'تغییرات و ادعا', s:'دستور تغییر، ادعا و تمدید زمان', c:'#b5527e', area:'coArea', ic:() => HM_I.co, ok:() => !!(window.coVisible && window.coVisible())},
+    {k:'leave', t:'درخواست مرخصی', s:'ثبت درخواست، پیگیری و تأیید مرخصی‌ها', c:'#7a5bc4', ic:() => LV_I.plane, ok:() => true,
+      go:() => { try{ lvState.view = leaveApprover() && leaveWaiting().length ? 'wait' : 'mine'; }catch(e){} h3Open('kart', 'leave', 'مرخصی'); }},
     {k:'sp', t:'فضاها و واحدها', s:'طبقات، محل‌ها و محل‌های جزء، کارت واحد و فروش', c:'#2f7d6b', area:'spArea', ic:() => HM_I.sp, ok:() => !!(window.spVisible && window.spVisible())},
     {k:'ib', t:'دریافتی و ارسالی', s:'نامه، صورت وضعیت، قرارداد و مدارک؛ ارسال به افراد و بررسی و ثبت', c:'#2b6cb0', area:'ibArea', go:() => { try{ window.umOpenIb('in', ''); }catch(e){} }, ic:() => HM_I.ib, ok:() => !!(window.ibVisible && window.ibVisible())},
     {k:'gl', t:'گالری تصاویر', s:'عکس‌های کارگاه با تاریخ، طبقه، محل و شرح', c:'#b5527e', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>',
@@ -44357,13 +44359,16 @@
   const WS_GRP = [{k:'site', t:'اجرا و کارگاه', d:'فعالیت‌ها، گزارش روزانه، کیفیت و ایمنی', c:'#3d7fb0', ic: WS_GI('<path d="M4 17h16M6 17v-3a6 6 0 0112 0v3"/><path d="M12 8V5M9.5 8.5l-1-2.5M14.5 8.5l1-2.5"/><path d="M3 20h18"/>')},
     {k:'res', t:'منابع، تدارکات و انبار', d:'خرید، موجودی و ماشین‌آلات', c:'#b07f12', ic: WS_GI('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>')},
     {k:'fin', t:'قرارداد، مالی و اسناد', d:'صورت وضعیت، تغییرات، متره و مکاتبات', c:'#6d5bb5', ic: WS_GI('<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/>')},
-    {k:'prj', t:'پروژه و نیروها', d:'فضاها، تصاویر و پروندهٔ افراد', c:'#2f7d6b', ic: WS_GI('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-4h4v4"/>')},
+    {k:'hr', t:'منابع انسانی', d:'مرخصی و پروندهٔ افراد', c:'#7a5bc4', ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6S13.7 16 14.5 19"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.6c2.3.2 4 1.6 4.7 4.4"/>')},
+    {k:'prj', t:'پروژه', d:'فضاها و تصاویر', c:'#2f7d6b', ic: WS_GI('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-4h4v4"/>')},
     {k:'etc', t:'سایر بخش‌ها', d:'', c:'#7c828c', ic: WS_GI('<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>')}];
+  /* منابع انسانی بالای میز کار، بعد از اجرا */
+  WS_GRP.splice(1, 0, WS_GRP.splice(WS_GRP.findIndex(g => g.k === 'hr'), 1)[0]);
   /* مدیریت سامانه هم در سه دسته */
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
     {t:'داده', d:'جدول‌های پایگاه داده', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود و زنجیرهٔ تأیید', c:'#c4553f', ks:['sec','up','chain'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
-  const WS_GOF = {tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', gl:'prj', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', ctr:'prj'};
+  const WS_GOF = {tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', gl:'prj', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', leave:'hr', ctr:'hr'};
   const wsMod = k => WS_MODS.find(x => x.k === k);
   const wsOk = x => { try{ return !!x.ok(); }catch(e){ return false; } };
   const wsAll = () => WS_MODS.filter(wsOk);
@@ -44524,7 +44529,7 @@
     const HL = L.filter(x => H.get(x.k) && H.get(x.k).hot);
     const st = (n, l, cls) => '<span class="ws-hs' + (cls ? ' ' + cls : '') + '"><b>' + toFa(n) + '</b><small>' + l + '</small></span>';
     return '<div class="ws-hd">'
-      + '<div class="ws-ht"><span class="ws-hic">' + WS_GRP[3].ic + '</span><span class="ws-htx"><b>' + esc(pj || 'پروژه') + '</b><small>خلاصهٔ بخش‌ها · ' + esc(faDateLong(todayShamsi()) || '') + '</small></span></div>'
+      + '<div class="ws-ht"><span class="ws-hic">' + WS_GRP.find(g => g.k === 'prj').ic + '</span><span class="ws-htx"><b>' + esc(pj || 'پروژه') + '</b><small>خلاصهٔ بخش‌ها · ' + esc(faDateLong(todayShamsi()) || '') + '</small></span></div>'
       + '<div class="ws-hss">' + st(hot, 'منتظر اقدام', hot ? 'hot' : 'ok') + st(L.length, 'بخش فعال', '') + st(pinN, 'سنجاق‌شده', '') + '</div>'
       + (HL.length ? '<div class="ws-hot"><small>نیاز به اقدام</small><div class="ws-hotl">' + HL.map(x => { const h = H.get(x.k);
           return '<button type="button" class="ws-hotc" data-ws="' + x.k + '" style="--c:' + x.c + '"><i>' + (x.ic() || '') + '</i><span><b>' + x.t + '</b><small>' + esc(h.t || '') + '</small></span></button>'; }).join('') + '</div></div>'
@@ -44542,7 +44547,7 @@
     ws.tools = {fol, adm};
     return {
       fol: fol.length ? '<div class="ws-gh ws-gt">پیگیری و ارتباط</div><div class="ws-lb">' + fol.map((x, i) => row(x, 'fol', i)).join('') + '</div>' : '',
-      adm: adm.length ? '<div class="ws-gh ws-gt">مدیریت سامانه</div>' + WS_AGRP.concat([{t:'سایر', d:'', c:'#7c828c', ks:null, ic: WS_GRP[4].ic}]).map(g => {
+      adm: adm.length ? '<div class="ws-gh ws-gt">مدیریت سامانه</div>' + WS_AGRP.concat([{t:'سایر', d:'', c:'#7c828c', ks:null, ic: WS_GRP.find(g => g.k === 'etc').ic}]).map(g => {
           const I = adm.map((x, i) => ({x, i})).filter(o => g.ks ? g.ks.indexOf(o.x.k) !== -1 : !WS_AGRP.some(a => a.ks.indexOf(o.x.k) !== -1));
           return I.length ? '<section class="ws-grp" style="--gc:' + g.c + '">' + wsGrpHead(g, I.length, 0) + '<div class="ws-lb">' + I.map(o => row(o.x, 'adm', o.i)).join('') + '</div></section>' : ''; }).join('') : '',
       folN: fol.reduce((a, x) => a + (x.alert && x.n ? x.n : 0), 0)
@@ -85603,7 +85608,8 @@
   function ractGet(){ try{ return JSON.parse(localStorage.getItem(RACT_KEY) || '[]') || []; }catch(e){ return []; } }
   function ractAdd(k){
     if(!k) return; k = RACT_MAP[k] || k;
-    let L = ractGet().filter(x => x.k !== k); L.unshift({k, t: Date.now()}); L = L.slice(0, 8);
+    const all = ractGet(), old = all.find(x => x.k === k);
+    let L = all.filter(x => x.k !== k); L.unshift({k, t: Date.now(), n: ((old && old.n) || 1) + (old ? 1 : 0)}); L = L.slice(0, 16);
     try{ localStorage.setItem(RACT_KEY, JSON.stringify(L)); }catch(e){}
     try{ const b = document.getElementById('homeView'); if(b) b.__h = ''; }catch(e){}
   }
@@ -86391,7 +86397,8 @@
     let AL = []; try{ AL = homeAddList(); }catch(e){}
     /* از داده‌های واقعی: آخرین سندهایی که خودش ثبت کرده و آخرین گزارش روزانه‌اش؛
        با آنچه روی همین دستگاه باز کرده یکی می‌شود و تازه‌ترین‌ها اول می‌آیند */
-    const RT = new Map(); const bump = (k, t) => { if(k && t && !(RT.get(k) >= t)) RT.set(k, t); };
+    /* پرکاربردهای من: آنچه بیشتر از همه استفاده شده، و میان آن‌ها تازه‌ترین اول */
+    const RT = new Map(), RC = new Map(); const bump = (k, t, n) => { if(!k) return; RC.set(k, (RC.get(k) || 0) + (n || 1)); if(t && !(RT.get(k) >= t)) RT.set(k, t); };
     try{ const mk = nameKey(activeUserName());
       (adminAll || []).forEach(a => { if(!a || !a.row || nameKey(pick(a.row,AD.eng) || '') !== mk) return;
         const t = Date.parse(pick(a.row,AD.time) || '') || ((faToDate(normDate(pick(a.row,AD.date) || '')) || {}).getTime ? faToDate(normDate(pick(a.row,AD.date))).getTime() : 0);
@@ -86399,10 +86406,10 @@
       Object.keys(homeDays || {}).forEach(d => { const D = homeDays[d]; if(!D) return; let st = null; try{ st = homeDayStats(D); }catch(e){}
         if(st && st.sub && st.sub.has(mk)){ const tt = st.sub.get(mk); bump('crew', Date.parse(tt || '') || ((faToDate(d) || {}).getTime ? faToDate(d).getTime() + 43200000 : 0)); } });
     }catch(e){}
-    ractGet().forEach(r => bump(RACT_MAP[r.k] || r.k, r.t));
-    const RAk = Array.from(RT.entries()).sort((a, b) => b[1] - a[1]).map(x => ({k: x[0]}));
+    ractGet().forEach(r => bump(RACT_MAP[r.k] || r.k, r.t, 2 * (r.n || 1)));
+    const RAk = Array.from(RC.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6).sort((a, b) => (RT.get(b[0]) || 0) - (RT.get(a[0]) || 0)).map(x => ({k: x[0]}));
     const RA = RAk.map(r => AL.find(x => x.k === r.k) || (r.k === 'wh' ? AL.find(x => /^wh/.test(x.k)) : null)).filter(Boolean)
-      .filter((x, i, a) => a.indexOf(x) === i).slice(0, 4);
+      .filter((x, i, a) => a.indexOf(x) === i).slice(0, 6);
     /* ردیف وضعیتِ همان کار (مثل «گزارش روزانه: ثبت نشده») در فهرست تکرار نمی‌شود؛ وضعیتش روی همین کاشی می‌آید */
     const RS = {crew:'data-hm="crew"', wrk:'data-hm="wrk"'};
     let td2 = td.slice();
@@ -86438,7 +86445,7 @@
             + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '') + '<span class="h3-rg">' + HM_I.go + '</span></button>'; }).join('') + '</div>'
         : '<div class="h3-mempty">' + HM_I.ok + 'کار بازی به نام شما نیست</div>');
     void mineH;
-    const recH = RQ.length ? '<div class="h3-sub"><b>ثبت سریع</b><small>فرم‌هایی که بیشتر پر می‌کنید</small></div><div class="h3-rps">' + RQ.join('') + '</div>' : '';
+    const recH = RQ.length ? '<div class="h3-sub"><b>پرکاربردهای من</b><small>بیشترین استفادهٔ شما، تازه‌ترین اول</small></div><div class="h3-rps">' + RQ.join('') + '</div>' : '';
     const toolH = QA.length ? '<div class="h3-sub"><b>میان‌برها</b><small>برای دیدن همه بکشید</small></div><div class="h3-qas h3-qrow">' + QA.join('') + '</div>' : '';
     P.push({k:'td', t:'کار امروز', n: td2.filter(c => /class="h3-td (due|bad|vio)/.test(c)).length + (G.folN || 0), body:(function(){
       /* امروز: اول آنچه اقدام می‌خواهد، بعد وضعیت‌های ثبت‌شده */
