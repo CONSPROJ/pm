@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023152358">
+<meta name="pm-build" content="20261023152641">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20792,9 +20792,20 @@
   .ct-rep-tel svg{width:13px;height:13px;color:var(--ok);}
   .ct-rep-ed{all:unset;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;color:var(--muted);} .ct-rep-ed:hover{background:var(--surface);color:var(--ink);}
   .ctc-ed:not([data-pty="ctr"]) .ctc-sv, .ctc-ed:not([data-pty="ctr"]) .ctc-svr{display:none !important;}
-  .ctyp-em{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0;} .ctyp-em[hidden], .ctyp-un[hidden]{display:none !important;}
-  .ctyp-rb{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--field);font-size:12px;font-weight:700;cursor:pointer;}
-  .ctyp-rb input{accent-color:var(--sky);}
+  .ctyp-em{--ec:#b0632f;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 6px;} .ctyp-em[hidden], .ctyp-un[hidden]{display:none !important;}
+  [data-theme="dark"] .ctyp-em{--ec:#e0a070;}
+  .ctyp-eh{grid-column:1/-1;font-size:12.5px;font-weight:800;color:var(--muted);}
+  .ctyp-ch{position:relative;display:grid;grid-template-columns:30px 1fr;align-items:center;column-gap:9px;row-gap:1px;padding:10px 11px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface);cursor:pointer;transition:border-color .15s, background-color .15s;-webkit-tap-highlight-color:transparent;}
+  .ctyp-ch input{position:absolute;opacity:0;pointer-events:none;}
+  .ctyp-ch i{grid-row:1/3;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--field);color:var(--muted);transition:inherit;}
+  .ctyp-ch i svg{width:17px;height:17px;}
+  .ctyp-ch b{font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.5;padding-inline-end:16px;}
+  .ctyp-ch small{font-size:10.5px;font-weight:500;color:var(--muted);line-height:1.55;}
+  .ctyp-ck{position:absolute;top:9px;inset-inline-end:9px;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--line);box-sizing:border-box;}
+  .ctyp-ch:has(input:checked){border-color:var(--ec);background:color-mix(in srgb, var(--ec) 7%, var(--surface));}
+  .ctyp-ch:has(input:checked) i{background:color-mix(in srgb, var(--ec) 15%, transparent);color:var(--ec);}
+  .ctyp-ch:has(input:checked) .ctyp-ck{border:4px solid var(--ec);}
+  .ctyp-ch:has(input:focus-visible){outline:2px solid var(--ec);outline-offset:2px;}
 
   /* عکس پیمانکار کنار نامش */
   .ava.ctr-ava.auto{display:inline-grid;place-items:center;width:20px !important;height:20px !important;min-width:20px;border-radius:50%;overflow:hidden;vertical-align:-5px;margin:0 0 0 5px !important;font-size:8.5px !important;font-weight:800;line-height:1;
@@ -35865,18 +35876,30 @@
     let pos = []; try{ pos = ogPositions().filter(x => (x.side || 'pm') === t).map(x => x.n); }catch(e){}
     dl.innerHTML = Array.from(new Set(pos.concat(CTR_ROLE_SUG[t] || [], used))).map(v => '<option value="' + esc(v) + '"' + (pos.indexOf(v) !== -1 ? ' label="سمت در دسترسی‌ها"' : '') + '>').join('');
   }
+  function ctypRoLabel(t, em){
+    return (t === 'emp' ? (em ? 'عنوان صاحب‌کار' : 'سمت در تیم کارفرما') : t === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور')
+      + ' <small>مثلاً ' + (t === 'emp' ? (em ? 'مدیرعامل، سهامدار، شریک' : 'مالی، تدارکات، نمایندهٔ کارفرما') : t === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small>';
+  }
+  document.addEventListener('change', e => {
+    const i = e.target; if(!i || !i.dataset || i.dataset.ctk !== 'em') return;
+    const ed = i.closest('.ctc-ed'), sp = ed && ed.querySelector('.ctyp-ro > span'); if(sp) sp.innerHTML = ctypRoLabel('emp', i.value === '1');
+  });
   function ctypHtml(cur, ro, d, ow, em, un){
     cur = cur || 'ctr';
     try{ ctrRoleListFor(cur); }catch(e){}
     return '<div class="ctyp"><span class="ctyp-l">نوع</span><input type="hidden" data-ctk="t" value="' + esc(cur) + '"><div class="ctyp-s" role="radiogroup">'
       + CTR_TYPES.map(([k, lb]) => '<button type="button" role="radio" class="ctyp-b t-' + k + (k === cur ? ' on' : '') + '" aria-checked="' + (k === cur) + '" data-ctyp="' + k + '">' + lb + '</button>').join('') + '</div></div>'
       /* کارفرما: خودِ کارفرما (صاحب‌کار) یا نیروی تیم کارفرما */
-      + '<div class="ctyp-em"' + (cur === 'emp' ? '' : ' hidden') + '><span class="ctyp-l">جایگاه</span><div class="ctyp-s" role="radiogroup">'
-      +   [['1', 'خودِ کارفرما (صاحب‌کار)'], ['', 'نیروی تیم کارفرما']].map(([v, t]) => '<label class="ctyp-rb"><input type="radio" name="ctEm" data-ctk="em" value="' + v + '"' + ((em ? '1' : '') === v ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div></div>'
+      + '<div class="ctyp-em" role="radiogroup" aria-label="جایگاه در طرف کارفرما"' + (cur === 'emp' ? '' : ' hidden') + '><span class="ctyp-eh">جایگاه در طرف کارفرما</span>'
+      +   [['1', 'صاحب‌کار', 'شخص یا شرکت کارفرما', '<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/>'],
+           ['', 'تیم کارفرما', 'نماینده، ناظر، مالی و…', '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.6c2.6.2 4.3 1.8 4.8 4.4"/>']]
+           .map(([v, t, sub, ic]) => '<label class="ctyp-ch"><input type="radio" name="ctEm" data-ctk="em" value="' + v + '"' + ((em ? '1' : '') === v ? ' checked' : '') + '>'
+             + '<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ic + '</svg></i>'
+             + '<b>' + t + '</b><small>' + sub + '</small><span class="ctyp-ck" aria-hidden="true"></span></label>').join('') + '</div>'
+      + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + ctypRoLabel(cur, em) + '</span>'
+      + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
       /* نقش دوم: پیمانکار، مشاور یا کارفرمایی که مالک واحد هم هست */
       + '<label class="ctyp-ow"' + (cur === 'own' ? ' hidden' : '') + '><input type="checkbox" data-ctk="ow"' + (ow ? ' checked' : '') + '><span>مالک هم هست</span><small>در فهرست مالکان هم می‌آید؛ نوع اصلی همان می‌ماند</small></label>'
-      + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + (cur === 'emp' ? 'سمت در تیم کارفرما' : cur === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (cur === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : cur === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small></span>'
-      + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
       /* مشاور: زیر نظر کارفرما یا تیم مدیریت پیمان */
       + '<label class="ctc-f ctyp-un"' + (cur === 'cons' ? '' : ' hidden') + '><span>زیر نظرِ <small>در چارت سازمانی و دسترسی‌ها زیر همین بخش می‌آید</small></span><select data-ctk="un" data-nons="1">'
       +   [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([v, t]) => '<option value="' + v + '"' + ((un || '') === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
@@ -35900,7 +35923,7 @@
     { const ow = box.parentElement && box.parentElement.querySelector('.ctyp-ow'); if(ow) ow.hidden = t === 'own'; }
     { const ed = box.closest('.ctc-ed'); if(ed){ ed.dataset.pty = t; ctcTypeLabels(ed); } }
     if(ro){ ro.hidden = t === 'ctr'; try{ ctrRoleListFor(t); }catch(err){}
-      ro.querySelector('span').innerHTML = (t === 'emp' ? 'سمت در تیم کارفرما' : t === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (t === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : t === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small>'; }
+      { const ce = box.parentElement.querySelector('[data-ctk="em"]:checked'); ro.querySelector('span').innerHTML = ctypRoLabel(t, !!(ce && ce.value === '1')); } }
   }, true);
   /* ====== نام و نام خانوادگی پیمانکار ======
      نام روی کارت = «نام نام‌خانوادگی (نام شرکت)»؛ اگر فقط شرکت باشد، همان نام شرکت.
