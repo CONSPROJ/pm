@@ -19919,6 +19919,8 @@
   .pf2-nm small{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12.5px;color:var(--muted);}
   .pf2-nm small i{font-style:normal;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:99px;}
   .pf2-lv{color:var(--pc);background:color-mix(in srgb, var(--pc) 13%, var(--surface));}
+  .um-todo{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;} .um-td{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:color-mix(in srgb, var(--warn,#b07512) 7%, var(--surface));border:1px solid color-mix(in srgb, var(--warn,#b07512) 25%, var(--line));} .um-td span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;} .um-td b{font-size:12.5px;color:var(--ink);} .um-td small{display:flex;flex-wrap:wrap;gap:4px;} .um-td small i{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface);color:var(--warn,#b07512);} .um-td em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--sky);}
+  .pf2-pos{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;} .pf2-pos i{font-style:normal;} .pf2-pc{font-size:12.5px;font-weight:800;color:var(--pc,var(--sky));padding:3px 12px;border-radius:99px;background:color-mix(in srgb, var(--pc,var(--sky)) 11%, var(--surface));letter-spacing:-.1px;} .pf2-sd{font-size:11px;font-weight:700;color:var(--muted);padding:3px 10px;border-radius:99px;background:var(--field);}
   .pf2-hero .pf2-lv{color:color-mix(in srgb, var(--pc) 85%, var(--ink));}
   .pf2-me{color:var(--surface);background:var(--ink);}
   .pf2-chat{flex:none;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 15px;margin-bottom:6px;border:0;border-radius:13px;cursor:pointer;
@@ -39017,6 +39019,10 @@
     const none = box.querySelector('#umNone');
     if(none) none.hidden = shown > 0;
   }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-umtodo]'); if(!b) return;
+    const row = document.querySelector('.um-row[data-user-row="' + CSS.escape(b.dataset.umtodo) + '"]'); if(!row) return;
+    if(!row.classList.contains('is-open')){ const h = row.querySelector('.um-h'); if(h) h.click(); }
+    try{ row.scrollIntoView({behavior: 'smooth', block: 'center'}); }catch(err){} });
   async function renderAdminPanel(){
     const box = document.getElementById('adminPanel');
     if(!box) return;
@@ -39234,7 +39240,19 @@
 
     box.innerHTML = '<div class="um2">' + hero + tabs
       + '<div class="um-pane' + (umState.tab === 'users' ? ' on' : '') + '" data-umpane="users">'
-      +   addForm + pendHtml + tools
+      +   addForm + pendHtml + (function(){
+            /* حساب تازه تا وقتی کارهای مانده‌اش (سمت، عکس، تغییر رمز موقت، عضویت پروژه) انجام نشده در این صف می‌ماند */
+            const L = U.filter(u => !u.ct && u.active && !isAdminName(u.n)).map(u => { const miss = [];
+              if(!String(u.role || '').trim()) miss.push('تعیین سمت');
+              if(u.pass && u.pass !== 'own') miss.push('تغییر رمز موقت');
+              try{ if(!avatarOf(u.n)) miss.push('عکس پروفایل'); }catch(e){}
+              try{ if(window.pjMine && typeof pjMemberOf === 'function' && !pjMemberOf(u.n)) miss.push('عضویت پروژه'); }catch(e){}
+              return {u, miss}; }).filter(x => x.miss.length && (x.miss.indexOf('تعیین سمت') !== -1 || x.miss.indexOf('تغییر رمز موقت') !== -1));
+            if(!L.length) return '';
+            return '<div class="um-sec warn"><b>حساب‌های تازه · کارهای مانده</b><u>' + toFa(L.length) + '</u></div><div class="um-todo">'
+              + L.map(x => '<button type="button" class="um-td" data-umtodo="' + esc(x.u.n) + '">' + umAva(x.u.n) + '<span><b>' + esc(x.u.n) + '</b><small>'
+                + x.miss.map(m => '<i>' + m + '</i>').join('') + '</small></span><em>تکمیل</em></button>').join('') + '</div>';
+          })() + tools
       +   '<div class="um-list" id="umList">' + U.map(rowHtml).join('') + '</div>'
       +   '<div class="um-none" id="umNone" hidden>کاربری با این جست‌وجو پیدا نشد.</div>'
       + '</div>'
@@ -40462,8 +40480,9 @@
       +     ((me || pfCanAdmin()) ? '<button type="button" class="pf2-cam" data-pf-ava="1" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '')
       +   '</span>'
       +   '<span class="pf2-nm"><b>' + esc(name) + '</b>'
-      +     '<small>' + (roleOf(name) ? esc(roleOf(name)) : 'بدون سمت')
-      +       '<i class="pf2-lv">' + esc(PF_LV_NAME[L] || '') + '</i>'
+      /* فقط سمت (و طرفِ سمت) نشان داده می‌شود؛ سطح دسترسی جای پروفایل نیست */
+      +     '<small class="pf2-pos">' + (function(){ let sd = ''; try{ const I = ogPersonInfo(name); sd = I && I.side && I.side !== 'pm' ? OG_SIDE_T(I.side) : ''; }catch(e){}
+              return '<i class="pf2-pc">' + esc(roleOf(name) || 'سمت تعیین نشده') + '</i>' + (sd ? '<i class="pf2-sd">' + esc(sd) + '</i>' : ''); })()
       +       (me ? '<i class="pf2-me">شما</i>' : '') + '</small></span>'
       +   (!me ? '<button type="button" class="pf2-chat" id="pfChatBtn">' + PF_I.msg + '<span>ارسال پیام</span></button>' : '')
       + '</div>'
