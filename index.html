@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023143958">
+<meta name="pm-build" content="20261023145009">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -10219,7 +10219,7 @@
   .cmp2 .cmp-lg.open i{background:repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 4px);}
   .cmp2 .cmp-lg.over i{background:transparent;border:2px solid var(--alert);}
   .cmp2 .cmp-rows{gap:9px;}
-  .cmp2 .cmp-row{animation:ms-in .45s both;animation-delay:calc(var(--k) * 40ms);}
+  .cmp2 .cmp-row{animation:none;}
   .cmp2 .cr-lb{flex:0 0 150px;max-width:150px;font-size:10.5px;color:var(--ink);font-weight:600;display:flex;flex-direction:column;line-height:1.5;}
   .cmp2 .cr-lb u{text-decoration:none;font-size:10px;font-weight:700;color:var(--muted);}
   .cmp2 .cr-lb u.st-ok{color:var(--ok);} .cmp2 .cr-lb u.st-bad{color:var(--alert);} .cmp2 .cr-lb u.st-warn{color:var(--warn);}
@@ -20747,6 +20747,28 @@
   #homeView .pj4 .pj4-kk.alert .pj4-ki, #homeView .hx4 .hx4-s.bad .hx4-si{color:var(--alert);background:color-mix(in srgb, var(--alert) 12%, transparent);}
   #homeView .hx4 .hx4-s.warn .hx4-si{color:#c8902e;background:color-mix(in srgb, #d9a440 13%, transparent);}
   #homeView .hx4 .hx4-s{position:relative;}
+
+  /* «کارهای من»: بخش‌بندی بر اساس موعد؛ کارت فعالیت روی همین صفحه باز می‌شود */
+  html.deck-over-pf #deckModal{z-index:100000 !important;}
+  .kt-gs{display:flex;flex-direction:column;gap:8px;}
+  .kt-g{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;}
+  .kt-g > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;}
+  .kt-g > summary::-webkit-details-marker{display:none;}
+  .kt-g > summary i{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none;}
+  .kt-g.g-late > summary i{background:var(--alert);} .kt-g.g-soon > summary i{background:#d9a440;} .kt-g.g-later > summary i{background:var(--sky);}
+  .kt-g > summary b{font-size:13px;font-weight:800;} .kt-g > summary .n{font-size:11px;font-weight:800;padding:1px 8px;border-radius:99px;background:var(--field);}
+  .kt-g.g-late > summary .n{color:var(--alert);background:color-mix(in srgb, var(--alert) 12%, transparent);}
+  .kt-g > summary small{margin-inline-start:auto;font-size:10.5px;color:var(--muted);}
+  .kt-g > summary::after{content:"";width:7px;height:7px;border:solid var(--muted);border-width:0 1.6px 1.6px 0;transform:rotate(45deg);margin-inline-start:6px;transition:transform .2s;}
+  .kt-g[open] > summary::after{transform:rotate(-135deg);}
+  .kt-g .kt-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px;}
+  .kt-g .kt-more{margin:0 8px 8px;}
+
+  /* برچسب تصاویر پروژه و گالری */
+  .pj-imtg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;} .pj-imtg select, .pj-imtg input{flex:1 1 70px;min-width:0;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font:600 10.5px var(--f);color:var(--ink);padding:0 6px;}
+  .pj-im{aspect-ratio:auto !important;display:flex;flex-direction:column;} .pj-im .pj-imb{aspect-ratio:1;height:auto;position:relative;} .pj-im .pj-imt{bottom:auto;top:4px;}
+  .pj-im .pj-imtg{background:var(--surface);}
+  .gx-ty{position:absolute;top:8px;inset-inline-start:8px;font-style:normal;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(122,92,196,.88);color:#fff;z-index:2;}
   .pjsw-pop{position:absolute;top:46px;inset-inline-end:12px;z-index:20;width:min(300px, calc(100% - 24px));max-height:60vh;overflow:auto;padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 24px 50px -20px rgba(10,20,40,.45);animation:pjswIn .18s ease both;}
   @keyframes pjswIn{from{opacity:0;transform:translateY(-6px);}}
   .pjsw-h{display:flex;align-items:baseline;gap:8px;padding:6px 8px 8px;} .pjsw-h b{font-size:13px;} .pjsw-h small{font-size:11px;color:var(--muted);}
@@ -41947,6 +41969,9 @@
     }
     const it = e.target.closest && e.target.closest('[data-ktid]');
     if(it && it.closest('#profileBody')){
+      /* همین‌جا کارت فعالیت باز می‌شود (با گزینهٔ «رفتن به مورد» داخل کارت)؛ بستن کارت = بازگشت به کارهای من */
+      let ok = false; try{ ok = window.deckOpenAt && window.deckOpenAt(it.dataset.ktkind || 'task', it.dataset.ktid); }catch(err){}
+      if(ok){ document.documentElement.classList.add('deck-over-pf'); return; }
       document.getElementById('profileModal').hidden = true;
       gotoAdminItem(it.dataset.ktkind || 'task', it.dataset.ktid);
     }
@@ -43226,9 +43251,17 @@
           const da = dl(a), db = dl(b);
           return (da == null ? 1e6 : da) - (db == null ? 1e6 : db);
         });
+        /* بخش‌بندی: بحرانی و عقب‌افتاده، موعد تا ۷ روز، بعدتر، بی‌موعد — هر بخش با شمار و رنگ خودش */
+        const SEC = [['late', 'عقب از موعد و بحرانی', r => dl(r) != null && dl(r) < 0 || wIds.has(String(pick(r,T.id) || r.__admId || ''))],
+          ['soon', 'موعد تا یک هفته', r => dl(r) != null && dl(r) >= 0 && dl(r) <= 7], ['later', 'موعد بعدتر', r => dl(r) != null && dl(r) > 7], ['none', 'بی‌موعد', () => true]];
+        const used = new Set(), secH = SEC.map(([k, t, f]) => { const L = ord.filter(r => !used.has(r) && f(r)); L.forEach(r => used.add(r)); if(!L.length) return '';
+          const docN = L.filter(r => r.__admKind).length, exN = L.length - docN;
+          return '<details class="kt-g g-' + k + '"' + (k === 'later' || k === 'none' ? (L.length <= 4 ? ' open' : '') : ' open') + '><summary><i></i><b>' + t + '</b><span class="n">' + toFa(L.length) + '</span>'
+            + '<small>' + [docN ? toFa(docN) + ' سند' : '', exN ? toFa(exN) + ' اجرایی' : ''].filter(Boolean).join(' · ') + '</small></summary>'
+            + '<div class="kt-list">' + L.slice(0, 30).map(r => kartItemHtml(r, wIds, dl(r))).join('') + '</div>'
+            + (L.length > 30 ? '<button type="button" class="kt-more" data-pf-go="tasks" data-who="' + esc(name) + '">همهٔ ' + toFa(L.length) + ' مورد در لیست فعالیت‌ها ›</button>' : '') + '</details>'; }).join('');
         kMine = '<div class="kt-sec"><div class="mg3-h">' + (K ? 'کارهای باز من' : 'کارهای باز') + '<span class="n">' + toFa(open.length) + '</span></div>'
-          + (ord.length ? '<div class="kt-list">' + ord.slice(0, 12).map(r => kartItemHtml(r, wIds, dl(r))).join('') + '</div>'
-              + (ord.length > 12 ? '<button type="button" class="kt-more" data-pf-go="tasks" data-who="' + esc(name) + '">همهٔ ' + toFa(ord.length) + ' مورد در لیست فعالیت‌ها ›</button>' : '')
+          + (ord.length ? '<div class="kt-gs">' + secH + '</div>'
             : '<div class="pf2-empty">' + SEC_ICON.chore + '<b>' + (K ? 'کار بازی در کارتابل شما نیست' : 'کار بازی برای این شخص ثبت نشده') + '</b>' + (K ? '<small>هر فعالیتی که به شما ابلاغ شود اینجا می‌آید.</small>' : '') + '</div>')
           + '</div>'
           + '<div class="mg3-h">' + (K ? 'تقویم من' : 'تقویم این شخص') + '</div><div id="pfCal"></div>';
@@ -46783,19 +46816,27 @@
   try{ (JSON.parse(localStorage.getItem('siteLogM.ptyAva.v1') || '[]') || []).forEach(([k, v]) => ptyAva.set(k, v)); }catch(e){}
   function ptyAvaLoad(lists){
     ptyAva.clear();
-    (lists[PTY_AVA_KIND] || []).forEach(v => { const i = String(v).indexOf('\u00a6'); if(i > 0) ptyAva.set(avaKey(String(v).slice(0, i)), String(v).slice(i + 1)); });
+    /* عکس بزرگ در چند تکه ذخیره می‌شود («نام¦#شماره/کل¦تکه») تا از سقف اندازهٔ هر ردیف فهرست رد نشود */
+    const parts = new Map();
+    (lists[PTY_AVA_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('\u00a6'); if(i <= 0) return;
+      const nm = v.slice(0, i), rest = v.slice(i + 1), m = rest.match(/^#(\d+)\/(\d+)\u00a6/);
+      if(!m){ ptyAva.set(avaKey(nm), rest); return; }
+      const o = parts.get(nm) || {n: +m[2], p: []}; o.p[+m[1]] = rest.slice(m[0].length); parts.set(nm, o); });
+    parts.forEach((o, nm) => { let ok = true; for(let j = 0; j < o.n; j++) if(o.p[j] == null) ok = false; if(ok) ptyAva.set(avaKey(nm), o.p.join('')); });
     try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
   }
   async function ptyAvaSave(name, uri){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(PTY_AVA_KIND) + '&value=like.' + encodeURIComponent(String(name).replace(/[*%]/g, '') + '\u00a6*'), {method:'DELETE'}).catch(() => {});
-    if(uri) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:[{kind: PTY_AVA_KIND, value: name + '\u00a6' + uri}]});
+    if(uri){ const C = 1800, n = Math.ceil(uri.length / C), rows = [];
+      for(let j = 0; j < n; j++) rows.push({kind: PTY_AVA_KIND, value: name + '\u00a6#' + j + '/' + n + '\u00a6' + uri.slice(j * C, (j + 1) * C)});
+      await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body: rows}); }
     if(uri) ptyAva.set(avaKey(name), uri); else ptyAva.delete(avaKey(name));
     try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
     try{ clearNetCache(); }catch(e){}
   }
   /* عکس کارت پیمانکار و طرف‌ها؛ مدیر سامانه و مسئول پرونده‌ها دکمهٔ تغییر عکس دارند */
   function ctAvaHtml(name){
-    let ed = false; try{ ed = isAdminUser() || can('ctr.contact'); }catch(e){}
+    let ed = false; try{ ed = isAdminUser() || can('ctr.contact') || can('ctr.edit') || can('write.adm') || rawLevel() <= 2; }catch(e){}
     return '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + (ed ? '<button type="button" class="ct-cam" data-ctava="' + esc(name) + '" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '') + '</span>';
   }
   document.addEventListener('click', e => {
@@ -47023,7 +47064,7 @@
     if(!file || !name) return;
     if(st) st.textContent = 'در حال آماده‌سازی...';
     let dataUri = '';
-    try{ dataUri = await imgCrop(file, 1, 256, 'برش عکس پروفایل', 60000); }
+    try{ dataUri = await imgCrop(file, 1, party ? 200 : 256, 'برش عکس پروفایل', party ? 24000 : 60000); }
     catch(err){ showDialog('err', 'عکس خوانده نشد', imgErrText(err)); e.target.value = ''; return; }
     if(!dataUri){ e.target.value = ''; return; }
     try{
@@ -49157,7 +49198,8 @@
     try{ tbCache.items.forEach(list => list.forEach(it => {
       const byCtr = it.ctr && Array.from(names).some(n => sameEntity(it.ctr, n));
       const tx = normName(it.text || ''), byTxt = kwN.some(ps => ps.every(k => tx.indexOf(k) !== -1));
-      if(byCtr || byTxt) act.push(it); })); }catch(e){}
+      const byDs = it.kind === 'طراحی' && (t === 'emp' || t === 'cons') && window.pjDesignSide && window.pjDesignSide() === t;
+      if(byCtr || byTxt || byDs) act.push(it); })); }catch(e){}
     act.sort((x, y) => (y.open - x.open) || String(dayKey(faDateOf(y.date) || '')).localeCompare(String(dayKey(faDateOf(x.date) || ''))));
     const box = document.querySelector('[data-ptb="' + CSS.escape(name) + '"]'); if(!box) return;
     const nOpen = act.filter(x => x.open).length;
@@ -73488,9 +73530,10 @@
       h += '<div class="sp-fb">';
       if(units.length) h += '<div class="sp-sh">واحدها <em>محل سطح ۱؛ اجزای هر واحد محل جزء</em></div><div class="sp-us">' + units.map(spChip).join('') + '</div>';
       if(sp.unit && units.indexOf(sp.unit) !== -1) h += spUnitForm(sp.unit);
-      h += '<div class="sp-sh">' + (units.length ? 'محل‌های دیگر این طبقه' : 'محل‌های این طبقه') + ' <em>راهرو، لابی، موتورخانه…</em></div>'
+      const rs = spResi(), sg = spSugByType();
+      h += '<div class="sp-sh">' + (units.length ? (rs ? 'محل‌های دیگر این طبقه' : 'فضاهای دیگر این طبقه') : (rs ? 'محل‌های این طبقه' : 'فضاهای این طبقه')) + ' <em>' + esc(rs || !sg.length ? 'راهرو، لابی، موتورخانه…' : sg.slice(0, 4).join('، ') + '…') + '</em></div>'
         + '<div class="sp-zs">' + zs.map(z => '<span class="sp-z">' + esc(z) + (spCanE() ? '<button type="button" data-spzrm="' + esc(f.key) + '¦' + esc(z) + '" aria-label="حذف">×</button>' : '') + '</span>').join('')
-        + (spCanE() ? '<span class="sp-zadd"><input type="text" data-spzin="' + esc(f.key) + '" placeholder="محل تازه" list="spZoneSug"><button type="button" data-spzadd="' + esc(f.key) + '">افزودن</button></span>' : (zs.length ? '' : '<span class="sp-none">محلی ثبت نشده</span>'))
+        + (spCanE() ? '<span class="sp-zadd"><input type="text" data-spzin="' + esc(f.key) + '" placeholder="' + (rs ? 'محل تازه' : 'فضای تازه') + '" list="spZoneSug"><button type="button" data-spzadd="' + esc(f.key) + '">افزودن</button></span>' : (zs.length ? '' : '<span class="sp-none">محلی ثبت نشده</span>'))
         + '</div></div>';
     }
     return h + '</div>';
@@ -73554,8 +73597,21 @@
     const ty = new Set(['یک خوابه', 'دو خوابه', 'سه خوابه', 'چهار خوابه', 'پنت‌هاوس', 'دوبلکس', 'تجاری', 'اداری']); sp.units.forEach(o => { if(o && o.ty) ty.add(o.ty); });
     return '<datalist id="spOwnList">' + Array.from(own).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
       + '<datalist id="spTyList">' + Array.from(ty).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
-      + '<datalist id="spZoneSug">' + ['راهرو', 'لابی', 'راه‌پله', 'آسانسور', 'شفت', 'موتورخانه', 'پارکینگ', 'انباری', 'سالن اجتماعات', 'استخر', 'بام', 'نما', 'حیاط'].map(n => '<option value="' + n + '">').join('') + '</datalist>';
+      + '<datalist id="spZoneSug">' + ['راهرو', 'لابی', 'راه‌پله', 'آسانسور', 'شفت', 'موتورخانه', 'پارکینگ', 'انباری', 'سالن اجتماعات', 'استخر', 'بام', 'نما', 'حیاط'].concat(spSugByType()).map(n => '<option value="' + n + '">').join('') + '</datalist>';
   }
+  /* پروژهٔ غیرمسکونی (اداری، تجاری، درمانی، هتل، صنعتی…): فضاها جای واحدها را می‌گیرند */
+  const spResi = () => { try{ const t = String((pjCur() || {}).type || ''); return !t || /مسکونی/.test(t); }catch(e){ return true; } };
+  function spSugByType(){
+    let t = ''; try{ t = String((pjCur() || {}).type || ''); }catch(e){}
+    if(/اداری/.test(t)) return ['اتاق کار', 'اتاق جلسات', 'اتاق مدیریت', 'فضای باز کاری', 'پذیرش', 'آبدارخانه', 'سرویس بهداشتی', 'اتاق سرور', 'بایگانی', 'نمازخانه'];
+    if(/تجاری/.test(t)) return ['مغازه', 'فودکورت', 'هایپرمارکت', 'سینما', 'راهروی تجاری', 'سرویس بهداشتی', 'انبار', 'نمازخانه', 'اتاق مدیریت ساختمان'];
+    if(/درمان|بیمارستان/.test(t)) return ['اتاق عمل', 'ICU', 'CCU', 'اورژانس', 'بستری', 'درمانگاه', 'رادیولوژی', 'آزمایشگاه', 'داروخانه', 'ایستگاه پرستاری', 'استریلیزاسیون', 'آشپزخانه'];
+    if(/هتل|اقامت/.test(t)) return ['اتاق', 'سوئیت', 'رستوران', 'لابی', 'سالن همایش', 'اسپا', 'استخر', 'خشکشویی', 'آشپزخانه مرکزی'];
+    if(/صنعت|کارخانه|انبار/.test(t)) return ['سالن تولید', 'انبار مواد اولیه', 'انبار محصول', 'آزمایشگاه کنترل کیفیت', 'تأسیسات', 'اتاق برق', 'دفتر کارگاه', 'رختکن'];
+    if(/آموزش|مدرسه|دانشگاه/.test(t)) return ['کلاس', 'آزمایشگاه', 'کتابخانه', 'سالن اجتماعات', 'دفتر اساتید', 'سلف', 'سالن ورزش'];
+    return [];
+  }
+  window.spResi = spResi;
   /* فضاهای عمومی: یک بار تعریف، در همهٔ طبقات (کنار واحدها) */
   function spGlobalHtml(){
     const zs = spZonesOwn('*'), ed = spCanE();
@@ -73571,10 +73627,12 @@
     if(side) side.textContent = toFa(spFloors().length) + ' طبقه · ' + toFa(n) + ' واحد';
     const tabs = document.getElementById('spTabs');
     if((sp.tab === 'set' || sp.tab === 'mt') && !spCanE()) sp.tab = 'fl';
-    if(tabs) tabs.innerHTML = [['fl', 'طبقات و محل‌ها'], ['pg', 'پیشرفت تخصص‌ها'], ['sale', 'واحدها و فروش' + (n ? '<i class="wh-n">' + toFa(s) + '/' + toFa(n) + '</i>' : '')]].concat(spCanE() ? [['set', 'تیپ‌ها و اجزا'], ['mt', 'تطبیق محل‌ها']] : [])
+    const resi = spResi(); if(!resi && !n && sp.tab === 'sale') sp.tab = 'fl';
+    if(tabs) tabs.innerHTML = [['fl', resi ? 'طبقات و محل‌ها' : 'طبقات و فضاها'], ['pg', 'پیشرفت تخصص‌ها']].concat(resi || n ? [['sale', (resi ? 'واحدها و فروش' : 'واحدها') + (n ? '<i class="wh-n">' + toFa(s) + '/' + toFa(n) + '</i>' : '')]] : []).concat(spCanE() ? [['set', 'تیپ‌ها و اجزا'], ['mt', 'تطبیق محل‌ها']] : [])
       .map(([k, t]) => '<button type="button" class="kcap sm' + (sp.tab === k ? ' on' : '') + '" data-sptab="' + k + '">' + t + '</button>').join('');
     body.innerHTML = '<div class="wh-in">' + spDLs() + (sp.tab === 'mt' ? mtHtml() : sp.tab === 'set' ? spTypesHtml() + spSetHtml() : sp.tab === 'pg' ? pgHtml() : sp.tab === 'sale' ? spKpis() + spSaleHtml()
-      : spKpis() + spGlobalHtml() + '<p class="sp-hint">محل اصلی همه‌جا طبقه است؛ در طبقهٔ مسکونی محل سطح ۱ واحد و محل جزء اجزای واحد است. روی هر طبقه بزنید.</p><div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>') + '</div>';
+      : spKpis() + spGlobalHtml() + '<p class="sp-hint">' + (resi ? 'محل اصلی همه‌جا طبقه است؛ در طبقهٔ مسکونی محل سطح ۱ واحد و محل جزء اجزای واحد است. روی هر طبقه بزنید.'
+          : 'پروژهٔ ' + esc((pjCur() || {}).type || 'غیرمسکونی') + ': روی هر طبقه بزنید و فضاهایش (مثلاً ' + esc(spSugByType().slice(0, 3).join('، ') || 'اتاق‌ها و سالن‌ها') + ') را اضافه کنید؛ همین فضاها در گزارش روزانه، متره و پیشرفت می‌آیند.') + '</p><div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>') + '</div>';
   }
   window.spRender = spRender;
   window.spVisible = () => { try{ return spCanE() || spCanS() || can('sp.prog') || can('sp.view'); }catch(e){ return false; } };
@@ -76700,7 +76758,10 @@
   }
   function glPhotos(){
     const out = [], img = a => a && ATT_KIND(a.ext) === 'img';
-    gl.list.forEach(g => { let L = []; try{ L = attachList(g.files); }catch(e){} L.filter(img).forEach(a => out.push({a, d: g.date || '', fl: g.fl || '', z: g.zone || '', t: [g.act, g.note].filter(Boolean).join(' — '), src: 'pg', by: g.by})); });
+    gl.list.forEach(g => { let L = []; try{ L = attachList(g.files); }catch(e){} L.filter(img).forEach(a => out.push({a, d: g.date || '', fl: g.fl || '', z: g.zone || '', t: [g.act, g.note].filter(Boolean).join(' — '), src: 'pg', by: g.by, ty: g.ty || ''})); });
+    /* تصاویر اطلاعات پروژه (نما، رندر، طبقات) هم در گالری */
+    try{ const pj = pjCur() || {}; (pj.images || []).forEach((u, i) => { let a = null; try{ a = attachList(u)[0]; }catch(e){} if(!img(a)) return; const tg = (pj.imgTags || [])[i] || {};
+      if(tg.ty === 'نقشه') return; out.push({a, d: '', fl: tg.fl || '', z: tg.z || '', t: 'تصویر پروژه', src: 'pj', ty: tg.ty || ''}); }); }catch(e){}
     try{ arcFiles().filter(f => img(f.a)).forEach(f => out.push({a: f.a, d: f.date, fl: '', t: (KIND_LABEL[f.kind] || '') + (f.no ? ' ' + f.no : '') + (f.ttl ? ' — ' + f.ttl : ''), src: 'doc'})); }catch(e){}
     try{ qc.irs.forEach(r => { [r.files, r.insp && r.insp.files].forEach(v => { let L = []; try{ L = attachList(v || ''); }catch(e){} L.filter(img).forEach(a => out.push({a, d: (r.insp && r.insp.d) || r.date, fl: r.fl || '', t: 'بازرسی ' + r.no + (r.act ? ' — ' + r.act : ''), src: 'qc'})); }); });
          qc.ncrs.forEach(n => { let L = []; try{ L = attachList(n.files || ''); }catch(e){} L.filter(img).forEach(a => out.push({a, d: n.date, fl: n.fl || '', t: 'NCR ' + n.no, src: 'qc'})); }); }catch(e){}
@@ -76710,12 +76771,12 @@
   function glHtml(){
     const P = glPhotos(), q = normName(gl.q || ''), view = gl.view || 'grid';
     const fls = Array.from(new Set(P.map(p => p.fl).filter(Boolean)));
-    const L = P.filter(p => (!gl.fl || p.fl === gl.fl) && (!gl.src || p.src === gl.src) && (!q || normName([p.fl, p.z, p.t].join(' ')).indexOf(q) !== -1));
+    const L = P.filter(p => (!gl.fl || p.fl === gl.fl) && (!gl.src || p.src === gl.src) && (!gl.ty || (gl.ty === 'رندر' ? p.ty === 'رندر' : p.ty !== 'رندر')) && (!q || normName([p.fl, p.z, p.t].join(' ')).indexOf(q) !== -1));
     const shown = L.slice(0, gl.n), idx = p => shown.indexOf(p);
     const ym = toEn(todayShamsi()).slice(0, 7), thisM = P.filter(p => toEn(normDate(p.d) || '').slice(0, 7) === ym).length;
     const cover = P[0];
     const tile = (p, cls) => '<button type="button" class="gx-t' + (cls ? ' ' + cls : '') + '" data-fv="' + idx(p) + '" title="' + esc(p.t || '') + '">' + attThumb(p.a)
-      + (p.fl ? '<em class="gx-fl">' + esc(p.fl) + '</em>' : '')
+      + (p.fl ? '<em class="gx-fl">' + esc(p.fl) + '</em>' : '') + (p.ty === 'رندر' ? '<em class="gx-ty">رندر</em>' : '')
       + '<span class="gx-cap"><b>' + esc(p.z || p.t || (p.src === 'doc' ? 'پیوست سند' : p.src === 'qc' ? 'بازرسی' : 'عکس پیشرفت')) + '</b><small>' + esc(p.d ? toFa(p.d) : '') + (p.z && p.t ? ' · ' + esc(p.t) : '') + '</small></span></button>';
     let body = '';
     if(!shown.length) body = '<div class="gx-none"><span>' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 8"/></svg>' + '</span><b>' + (q || gl.fl || gl.src ? 'عکسی با این فیلتر نیست' : 'هنوز عکسی نیست') + '</b><small>' + (glCanAdd() ? 'با «افزودن عکس» عکس‌های کارگاه را با تاریخ، طبقه، فضا و شرح بارگذاری کنید.' : '') + '</small></div>';
@@ -76732,14 +76793,16 @@
       +   '<span class="gx-hs"><i>' + toFa(fls.length) + ' طبقه</i><i>' + toFa(thisM) + ' عکس این ماه</i>' + (cover && cover.d ? '<i>آخرین: ' + esc(toFa(cover.d)) + '</i>' : '') + '</span></div>'
       +   (glCanAdd() ? '<button type="button" class="gx-add" data-gladd="' + (gl.add ? '0' : '1') + '">' + (gl.add ? 'بستن' : '<span>+</span> افزودن عکس') + '</button>' : '') + '</div>'
       + (gl.add ? '<div class="arc-new gx-new"><div class="gx-nh"><b>عکس تازه</b><small>هر عکس با تاریخ، طبقه، فضا و شرح ثبت می‌شود و در گزارش‌ها و کارت طبقه هم دیده می‌شود</small></div><div class="arc-ng"><label class="ctc-f"><span>تاریخ عکس</span><input type="text" data-glf="date" class="date-in" inputmode="numeric" readonly value="' + esc(toFa(todayShamsi())) + '"></label>'
-          + '<label class="ctc-f"><span>طبقه</span><select data-glf="fl" data-nons="1"><option value="">—</option>' + spFloors().map(f => '<option value="' + esc(f.label) + '">' + esc(f.label) + '</option>').join('') + '<option value="کل ساختمان">کل ساختمان</option><option value="محوطه">محوطه</option></select></label>'
+          + '<label class="ctc-f"><span>طبقه</span><select data-glf="fl" data-nons="1"><option value="">—</option>' + spFloors().map(f => '<option value="' + esc(f.label) + '">' + esc(f.label) + '</option>').join('') + '<option value="نما">نما</option><option value="کل ساختمان">کل ساختمان</option><option value="محوطه">محوطه</option></select></label>'
+          + '<label class="ctc-f"><span>نوع تصویر</span><select data-glf="ty" data-nons="1"><option value="">عکس واقعی</option><option value="رندر">رندر</option></select></label>'
           + '<label class="ctc-f"><span>فضا / محل</span><input type="text" data-glf="zone" data-list="zoneList" autocomplete="off" placeholder="مثلاً لابی یا واحد ۵۰۲"></label><label class="ctc-f"><span>فعالیت</span><input type="text" data-glf="act" placeholder="مثلاً نصب سنگ نما"></label>'
           + '<label class="ctc-f"><span>شرح <small>اختیاری</small></span><input type="text" data-glf="note"></label>' + attachFieldHtml('', 'gallery')
           + '<div class="arc-nacts"><button type="button" class="dz-b pri" data-glsave="1">ذخیره در گالری</button><button type="button" class="dz-b" data-gladd="0">انصراف</button></div></div></div>' : '')
       + '<div class="gx-bar"><label class="gx-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" data-glq value="' + esc(gl.q || '') + '" placeholder="جست‌وجو: فضا، فعالیت، شرح…" autocomplete="off"></label>'
       +   '<div class="gx-seg">' + [['grid', 'شبکه'], ['floor', 'طبقه‌ها'], ['time', 'زمان']].map(([k, t]) => '<button type="button" data-glview="' + k + '" class="' + (view === k ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div>'
       + '<div class="gx-chips">' + chip('data-glsrc', '', gl.src, 'همه', P.length)
-      +   [['pg','عکس پیشرفت'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => chip('data-glsrc', k, gl.src, t, P.filter(p => p.src === k).length)).join('')
+      +   (P.some(p => p.ty === 'رندر') ? '<span class="gx-sep"></span>' + chip('data-glty', 'واقعی', gl.ty, 'عکس واقعی', P.filter(p => p.ty !== 'رندر').length) + chip('data-glty', 'رندر', gl.ty, 'رندر', P.filter(p => p.ty === 'رندر').length) + '<span class="gx-sep"></span>' : '')
+      +   [['pg','عکس پیشرفت'],['pj','تصاویر پروژه'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => chip('data-glsrc', k, gl.src, t, P.filter(p => p.src === k).length)).join('')
       +   (fls.length ? '<span class="gx-sep"></span>' + chip('data-glfl', '', gl.fl, 'همهٔ طبقات') + fls.map(f => chip('data-glfl', f, gl.fl, esc(f))).join('') : '') + '</div>'
       + '<div class="gx-body" data-fvl="' + esc(shown.map(p => p.a.full).join('\n')) + '" data-fvtitle="گالری پیشرفت">' + body + '</div>'
       + (L.length > gl.n ? '<button type="button" class="arc-more gx-more" data-glmore="1">نمایش عکس‌های بیشتر · ' + toFa(L.length - gl.n) + ' مانده</button>' : '')
@@ -76753,6 +76816,7 @@
     const s = t.closest('[data-glsrc]'); if(s){ gl.src = s.dataset.glsrc; gl.n = 48; arcRender(); return; }
     const gv = t.closest('[data-glview]'); if(gv){ gl.view = gv.dataset.glview; try{ localStorage.setItem('siteLogM.glView', gl.view); }catch(err){} arcRender(); return; }
     const f = t.closest('[data-glfl]'); if(f){ gl.fl = f.dataset.glfl; gl.n = 48; arcRender(); return; }
+    const ty = t.closest('[data-glty]'); if(ty){ gl.ty = gl.ty === ty.dataset.glty ? '' : ty.dataset.glty; gl.n = 48; arcRender(); return; }
     if(t.closest('[data-glmore]')){ gl.n += 48; arcRender(); return; }
     const sv = t.closest('[data-glsave]');
     if(sv){ const box = sv.closest('.arc-new'), v = k => String((box.querySelector('[data-glf="' + k + '"]') || {}).value || '').trim();
@@ -76760,7 +76824,7 @@
       const files = String((box.querySelector('.a-link') || {}).value || '').trim();
       if(!files){ showDialog('warn', 'عکس', 'اول عکس‌ها را بارگذاری کنید.'); return; }
       sv.disabled = true;
-      try{ const no = 'PG-' + Date.now().toString(36); await ndPost(ndRow(GL_KIND, no, whPack({date: normDate(v('date')) || todayShamsi(), fl: v('fl'), zone: v('zone'), act: v('act'), note: v('note'), files, proj: whProj()}, ['date','fl','zone','act','note','files','proj'])));
+      try{ const no = 'PG-' + Date.now().toString(36); await ndPost(ndRow(GL_KIND, no, whPack({date: normDate(v('date')) || todayShamsi(), fl: v('fl'), zone: v('zone'), act: v('act'), note: v('note'), ty: v('ty'), files, proj: whProj()}, ['date','fl','zone','act','note','ty','files','proj'])));
         gl.add = false; await glLoad(true); arcRender(); try{ shrToast('در گالری ذخیره شد'); }catch(err){} }
       catch(err){ sv.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
     }
@@ -85568,6 +85632,7 @@
   function closeDeck(){
     const bg = document.getElementById('deckModal');
     if(!bg) return;
+    document.documentElement.classList.remove('deck-over-pf');
     clearInterval(deckTimer);
     bg.hidden = true;
     document.body.style.overflow = '';
@@ -88003,7 +88068,8 @@
       {k:'employer', t:'کارفرما', multi:1, w:2}, {k:'consultant', t:'مشاور طراح', multi:1, w:2}, {k:'supervisor', t:'دستگاه نظارت', multi:1, w:2},
       {k:'contractor', t:'پیمانکاران اصلی', multi:1, w:2}, {k:'pm', t:'مدیر پروژه', multi:1, w:2}, {k:'site', t:'سرپرست کارگاه', multi:1, w:2},
       {k:'investor', t:'مالک / سرمایه‌گذار', multi:1, w:2}, {k:'architect', t:'طراح معماری', multi:1, w:2}, {k:'structEng', t:'طراح سازه', multi:1, w:2},
-      {k:'mepEng', t:'طراح تأسیسات', multi:1, w:2}, {k:'facadeCo', t:'مجری نما', multi:1, w:2}, {k:'elevCo', t:'تأمین‌کنندهٔ آسانسور', multi:1, w:2}]},
+      {k:'mepEng', t:'طراح تأسیسات', multi:1, w:2}, {k:'facadeCo', t:'مجری نما', multi:1, w:2}, {k:'elevCo', t:'تأمین‌کنندهٔ آسانسور', multi:1, w:2},
+      {k:'designBy', t:'طراحی بر عهدهٔ', opt:['کارفرما', 'مشاور طراح', 'تیم پروژه'], w:2}]},
     {g:'موقعیت', f:[
       {k:'country', t:'کشور', opt:PJ_COUNTRIES}, {k:'province', t:'استان', opt:PJ_PROVINCES},
       {k:'city', t:'شهر', dl:'pjCities'}, {k:'district', t:'منطقه / محله'}, {k:'address', t:'نشانی', w:2},
@@ -88320,6 +88386,8 @@
     return out;
   }
   window.pjPartyPeople = pjPartyPeople;
+  /* طراحی بر عهدهٔ کیست (اطلاعات پروژه): موانع «طراحی» روی کارت همان طرف می‌آید */
+  window.pjDesignSide = () => { try{ const v = String((PJ.all.get(PJ.cur) || {}).designBy || ''); return v === 'کارفرما' ? 'emp' : v === 'مشاور طراح' ? 'cons' : v === 'تیم پروژه' ? 'pm' : ''; }catch(e){ return ''; } };
   function pjPartyDL(){
     const seen = new Set(), out = [];
     const add = (n, lb) => { n = String(n || '').trim(); if(!n || seen.has(nameKey(n))) return; seen.add(nameKey(n)); out.push('<option value="' + esc(n) + '"' + (lb ? ' label="' + esc(lb) + '"' : '') + '>'); };
@@ -88358,7 +88426,12 @@
     const imgs = p.images || [];
     h += '<fieldset class="pj-g"><legend>تصاویر و نقشه‌ها</legend><div class="pj-imgs" data-fvl="' + esc(imgs.join('\n')) + '" data-fvtitle="' + esc(p.name || 'پروژه') + '">' + imgs.map((u, i) => { let a = null; try{ a = attachList(u)[0]; }catch(e){}
         return '<span class="pj-im' + ((p.cover || 0) === i ? ' cv' : '') + '"><button type="button" class="pj-imb" data-fv="' + i + '">' + (a ? (attThumb(a) || '<i>' + esc(a.name) + '</i>') : '') + '</button>'
-          + '<span class="pj-imt"><button type="button" data-pjcov="' + i + '" title="عکس اصلی">' + ((p.cover || 0) === i ? 'اصلی' : 'اصلی شود') + '</button><button type="button" data-pjimrm="' + i + '" aria-label="حذف">' + PJ_I.x + '</button></span></span>'; }).join('')
+          + '<span class="pj-imt"><button type="button" data-pjcov="' + i + '" title="عکس اصلی">' + ((p.cover || 0) === i ? 'اصلی' : 'اصلی شود') + '</button><button type="button" data-pjimrm="' + i + '" aria-label="حذف">' + PJ_I.x + '</button></span>'
+          + (function(){ const tg = (p.imgTags || [])[i] || {}, o = (v, t, c) => '<option value="' + esc(v) + '"' + (c === v ? ' selected' : '') + '>' + esc(t) + '</option>';
+              return '<span class="pj-imtg"><select data-pjimty="' + i + '" aria-label="نوع">' + o('', 'عکس واقعی', tg.ty || '') + o('رندر', 'رندر', tg.ty || '') + o('نقشه', 'نقشه', tg.ty || '') + '</select>'
+                + '<select data-pjimfl="' + i + '" aria-label="محل">' + o('', 'محل…', tg.fl || '') + o('نما', 'نما', tg.fl || '') + o('کل ساختمان', 'کل ساختمان', tg.fl || '') + o('محوطه', 'محوطه', tg.fl || '') + spFloors().map(f => o(f.label, f.label, tg.fl || '')).join('') + '</select>'
+                + '<input type="text" data-pjimz="' + i + '" value="' + esc(tg.z || '') + '" placeholder="فضا / شرح" data-list="zoneList" autocomplete="off"></span>'; })()
+          + '</span>'; }).join('')
       + '<label class="pj-imadd">' + PJ_I.img + '<span>افزودن تصویر</span><small>نما، رندر، کارگاه، نقشهٔ استقرار</small><input type="file" id="pjImgIn" accept="image/*,application/pdf" multiple hidden></label></div></fieldset>';
     /* طبقات: هر طبقه یک ردیف قابل ویرایش */
     if(!p.__fl) p.__fl = (Array.isArray(p.floors) && p.floors.length ? p.floors : (p.id === 'p1' ? PJ_B0 : [])).map(f => ({key: String(f.key), label: f.label || String(f.key), units: (f.units || []).slice(), kind: f.kind || ''}));
@@ -88434,6 +88507,11 @@
     return h;
   }
   function pjReadForm(d){
+    /* برچسب تصاویر: نوع (واقعی، رندر، نقشه)، محل (نما، طبقه…) و فضا */
+    document.querySelectorAll('#pjBody [data-pjimty]').forEach(el => { const i = +el.dataset.pjimty, T = d.imgTags = Array.isArray(d.imgTags) ? d.imgTags : [];
+      const fl = (document.querySelector('#pjBody [data-pjimfl="' + i + '"]') || {}).value || '', z = String((document.querySelector('#pjBody [data-pjimz="' + i + '"]') || {}).value || '').trim();
+      T[i] = {ty: el.value || '', fl, z}; Object.keys(T[i]).forEach(k => { if(!T[i][k]) delete T[i][k]; }); });
+    if(Array.isArray(d.imgTags)){ d.imgTags.length = Math.min(d.imgTags.length, (d.images || []).length); for(let i = 0; i < d.imgTags.length; i++) if(!d.imgTags[i]) d.imgTags[i] = {}; if(!d.imgTags.some(x => x && Object.keys(x).length)) delete d.imgTags; }
     document.querySelectorAll('#pjBody [data-pjtags]').forEach(box => {
       const L = Array.from(box.querySelectorAll('.pj-tag')).map(t => t.dataset.v);
       const pend = String((box.querySelector('.pj-tagin') || {}).value || '').trim(); if(pend) pjArr(pend).forEach(n => { if(L.indexOf(n) === -1) L.push(n); });
@@ -88525,7 +88603,7 @@
       catch(err){ acc.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     /* تصاویر */
     const cv = t.closest('[data-pjcov]'); if(cv){ pjReadForm(pjSt.draft); pjFlRead(pjSt.draft); pjSt.draft.cover = +cv.dataset.pjcov; pjPaint(); return; }
-    const imr = t.closest('[data-pjimrm]'); if(imr){ pjReadForm(pjSt.draft); pjFlRead(pjSt.draft); const i = +imr.dataset.pjimrm; (pjSt.draft.images || []).splice(i, 1); if((pjSt.draft.cover || 0) >= (pjSt.draft.images || []).length) pjSt.draft.cover = 0; pjPaint(); return; }
+    const imr = t.closest('[data-pjimrm]'); if(imr){ pjReadForm(pjSt.draft); pjFlRead(pjSt.draft); const i = +imr.dataset.pjimrm; (pjSt.draft.images || []).splice(i, 1); if(Array.isArray(pjSt.draft.imgTags)) pjSt.draft.imgTags.splice(i, 1); if((pjSt.draft.cover || 0) >= (pjSt.draft.images || []).length) pjSt.draft.cover = 0; pjPaint(); return; }
     if(t.closest('[data-pjgen]')){ const n = id => parseInt(toEn((document.getElementById(id) || {}).value || ''), 10) || 0;
       const up = n('pjGenUp'), dn = n('pjGenDn'), per = n('pjGenPer');
       if(!up){ showDialog('warn', 'تعداد طبقات', 'تعداد طبقات روی زمین را بنویسید.'); return; }
