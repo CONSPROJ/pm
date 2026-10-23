@@ -20463,6 +20463,11 @@
     box-shadow:0 6px 16px -8px rgba(15,20,35,.35), 0 0 0 1px color-mix(in srgb, var(--line) 80%, transparent);transition:left .32s cubic-bezier(.3,.9,.3,1), width .32s cubic-bezier(.3,.9,.3,1);}
   @media (max-width:380px){ #homeView .h3-kb .h3-seg button svg{display:none;} }
   #homeView .h3-kb > .h3-sub{margin-top:16px;}
+  .qy-mode{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;}
+  .qy-ms{flex:1 1 320px;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:16px;background:var(--field);border:1px solid var(--line);}
+  .qy-ms button{all:unset;box-sizing:border-box;cursor:pointer;padding:8px 12px;border-radius:12px;display:flex;flex-direction:column;gap:1px;transition:background .15s;}
+  .qy-ms button b{font-size:13px;font-weight:800;color:var(--muted);} .qy-ms button small{font-size:10.5px;color:var(--muted);}
+  .qy-ms button.on{background:var(--surface);box-shadow:0 4px 12px -6px rgba(15,20,35,.3);} .qy-ms button.on b{color:var(--sky);}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -28088,7 +28093,7 @@
     {g:'فضاها', k:'sp.edit', t:'تعریف فضاها و اجزای واحد', d:'محل‌های هر طبقه، اجزای واحد، متراژ و نوع واحد', def:[1,2]},
     {g:'فضاها', k:'sp.sale', t:'وضعیت فروش و مالک واحد', d:'آزاد، رزرو، پیش‌فروش، فروخته‌شده و مالک', def:[1,2]},
     {g:'فضاها', k:'sp.prog', t:'ثبت درصد پیشرفت تخصص‌ها', d:'درصد هر تخصص در طبقه و محل، و محدودهٔ پیمانکاران', def:[1,2,3]},
-    {g:'متره و برآورد', k:'qt.edit', t:'ثبت متره و برآورد', d:'ابعاد فضاها و اقلام مصالح', def:[1,2,3]},
+    {g:'متره و برآورد', k:'qt.edit', t:'ثبت متره و برآورد', d:'ابعاد فضاها، ردیف‌های کار و مصالح', def:[1,2,3]},
     {g:'متره و برآورد', k:'qt.view', t:'دیدن متره و برآورد', d:'', def:[1,2,3]},
     {g:'دریافتی‌ها', k:'inbox.review', t:'بررسی دریافتی‌ها', d:'دیدن، اصلاح، تأیید و رد موارد ارسالی پیمانکاران', def:[1,2]},
     {g:'فضاها', k:'sp.view', t:'دیدن فضاها و واحدها', d:'', def:[1,2,3]},
@@ -73074,7 +73079,7 @@
   };
   /* ====== متره و برآورد ======
      برای هر فضا (طبقه، محل، محل جزء) ابعاد ثبت می‌شود: مساحت کف و سقف و
-     دیوارها (طول × ارتفاع منهای بازشو). اقلام هر مرحلهٔ ساخت (سفت‌کاری،
+     دیوارها (طول × ارتفاع منهای بازشو). ردیف‌ها هر مرحلهٔ ساخت (سفت‌کاری،
      نازک‌کاری، فینیشینگ، نصبیات) روی همان فضا تعریف می‌شوند؛ مقدار یا از
      ابعاد حساب می‌شود (متر مربع کف، سقف یا دیوار، ضربدر ضریب مصرف و پرت) یا
      تعدادی و دستی است. واحد مساحت همه‌جا «متر مربع».
@@ -73082,7 +73087,7 @@
        «متره قلم»  شناسه¦{"k":کلید فضا,"st","n","m","b","u","q","f","w"} */
   const QT_SP_KIND = 'متره فضا', QT_IT_KIND = 'متره قلم';
   const QT_ST = ['سازه', 'سفت‌کاری', 'نازک‌کاری', 'فینیشینگ', 'نما', 'تأسیسات مکانیکی', 'تأسیسات برقی', 'درب و پنجره', 'نصبیات', 'ایمنی و حریق'];
-  /* نوع هر قلم: عملیات اجرایی (مقدار، اجرا، مجری، صورت وضعیت)، ادوات و تجهیزات (شمار درب، پنجره، لوازم…)
+  /* نوع هر ردیف: عملیات اجرایی (مقدار، اجرا، مجری، صورت وضعیت)، ادوات و تجهیزات (شمار درب، پنجره، لوازم…)
      و مصالحِ هر عملیات (ضریب مصرف در هر واحد عملیات) که فقط برای تأمین جمع زده می‌شود */
   const QT_TY = [['op', 'عملیات اجرایی'], ['fx', 'ادوات و تجهیزات']];
   const qtType = x => x.t || (['درب و پنجره', 'نصبیات', 'ایمنی و حریق'].indexOf(x.st) !== -1 ? 'fx' : 'op');
@@ -73093,7 +73098,7 @@
   const QT_UMAP = {'متر مربع': 'm²', 'مترمربع': 'm²', 'م²': 'm²', 'متر طول': 'm', 'متر': 'm', 'متر مکعب': 'm³', 'مترمکعب': 'm³', 'کیلوگرم': 'kg', 'تن': 'ton', 'لیتر': 'L'};
   const qtU = u => QT_UMAP[String(u || '').trim()] || String(u || '');
   const QT_SC = {'سازه': '#5a6b7d', 'نما': '#9a6b3f', 'تأسیسات مکانیکی': '#2f7d9a', 'تأسیسات برقی': '#b58a1c', 'سفت‌کاری': '#8a5a2f', 'نازک‌کاری': '#2f6f8f', 'فینیشینگ': '#6d5bb5', 'درب و پنجره': '#b0631c', 'نصبیات': '#2f7d6b', 'ایمنی و حریق': '#c0392b'};
-  /* کتابخانهٔ اقلام رایج: با یک لمس روی فضا می‌نشیند؛ ضریب و پرت بعداً قابل اصلاح است */
+  /* کتابخانهٔ ردیف‌ها رایج: با یک لمس روی فضا می‌نشیند؛ ضریب و پرت بعداً قابل اصلاح است */
   const QT_LIB = [
     {st: 'سازه', n: 'بتن‌ریزی', m: 'بتن C30', b: 'manual', u: 'm³', q: 0, mt: [{n: 'سیمان', u: 'kg', r: 350}, {n: 'شن و ماسه', u: 'm³', r: 0.8}]},
     {st: 'سازه', n: 'آرماتوربندی', m: 'میلگرد A3', b: 'manual', u: 'kg', q: 0, mt: [{n: 'میلگرد', u: 'kg', r: 1.05}, {n: 'سیم آرماتوربندی', u: 'kg', r: 0.01}]},
@@ -73140,7 +73145,7 @@
     {st: 'ایمنی و حریق', n: 'جعبه آتش‌نشانی', m: '', b: 'count', u: 'عدد', q: 1},
     {st: 'ایمنی و حریق', n: 'کپسول آتش‌نشانی', m: 'پودر و گاز ۶ کیلو', b: 'count', u: 'عدد', q: 1},
     {st: 'ایمنی و حریق', n: 'چراغ اضطراری و خروج', m: '', b: 'count', u: 'عدد', q: 1}];
-  const qt = {sp: new Map(), it: [], pr: new Map(), tab: 'sp', f: '', l1: '', l2: '', st: '', sf: '', q: '', draft: null, saving: false, lib: false};
+  const qt = {sp: new Map(), it: [], pr: new Map(), tab: 'sp', f: '', l1: '', l2: '', st: '', sf: '', q: '', draft: null, saving: false, lib: false, qm: (function(){ try{ return localStorage.getItem('qt_qm') === 'mat' ? 'mat' : 'work'; }catch(e){ return 'work'; } })()};
   function qtLoad(lists){
     qt.sp.clear(); qt.it = []; qt.pr.clear();
     const kv = v => { const s = String(v), i = s.indexOf('¦'); return i < 1 ? null : [s.slice(0, i), s.slice(i + 1)]; };
@@ -73193,7 +73198,7 @@
     return qt.it.filter(y => (y.k === k || String(y.k).indexOf(k + '/') === 0) && qtType(y) === 'fx' && qtDim(y.dm));
   }
   const qtIsDoor = y => /درب|در\s|درِ/.test(String(y.n || '')) || /درب/.test(String(y.st || '') + String(y.m || '')) && !/پنجره/.test(String(y.n || ''));
-  /* کسورات یک قلم: سطح بازشوها برای دیوار و سقف+دیوار، عرض درب‌ها برای طول دیوار (قرنیز) */
+  /* کسورات یک ردیف: سطح بازشوها برای دیوار و سقف+دیوار، عرض درب‌ها برای طول دیوار (قرنیز) */
   function qtDedList(x){
     if(!x.dd || ['wall', 'wc', 'perim'].indexOf(x.b) === -1) return [];
     const O = qtOpenings(x.k).filter(y => x.b !== 'perim' || qtIsDoor(y));
@@ -73206,23 +73211,26 @@
     const g = qtGeo(x.k);
     return x.b === 'floor' ? g.floor : x.b === 'ceil' ? g.ceil : x.b === 'wall' ? g.wall : x.b === 'wc' ? g.wall + g.ceil : x.b === 'perim' ? g.perim : qtNum(x.q);
   }
-  function qtQty(x){
-    const f = x.f != null && x.f !== '' ? qtNum(x.f) : 1, w = qtNum(x.w);
-    const base = Math.max(0, qtBase(x) - qtDed(x));
-    return (x.b === 'count' || x.b === 'manual') ? base * (1 + w / 100) : base * f * (1 + w / 100);
+  /* دو مقدار جدا: «مقدار کار» (خالص، برای کارکرد و صورت وضعیت) و «مقدار مصالح» (با ضریب مصرف و پرت، برای تأمین) */
+  function qtQty(x){ return Math.max(0, qtBase(x) - qtDed(x)); }
+  function qtMQ(x){
+    const f = x.f != null && x.f !== '' && !(x.b === 'count' || x.b === 'manual') ? qtNum(x.f) : 1, w = qtNum(x.w);
+    return qtQty(x) * f * (1 + w / 100);
   }
+  const qtIsMat = () => qt.qm === 'mat';
   /* فرمول خوانا: «دیوار ۴۲٫۵ − بازشو ۴٫۲ × ۱ + پرت ۵٪ = ۴۰٫۷ m²» */
-  function qtFormula(x){
-    if(x.b === 'count' || x.b === 'manual') return toFa(qtNum(x.q) || 0) + ' ' + qtU(x.u) + (qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
+  function qtFormula(x, mat){
+    if(mat == null) mat = qtIsMat();
+    if(x.b === 'count' || x.b === 'manual') return toFa(qtNum(x.q) || 0) + ' ' + qtU(x.u) + (mat && qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
     const B = {floor: 'کف', ceil: 'سقف', wall: 'دیوار', wc: 'دیوار + سقف', perim: 'طول دیوار'}[x.b] || '';
     const d = qtDed(x), f = x.f != null && x.f !== '' ? qtNum(x.f) : 1;
-    return B + ' ' + qtFmt(qtBase(x)) + (d ? ' − بازشو ' + qtFmt(d) : '') + (f !== 1 ? ' × ' + toFa(f) : '') + (qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
+    return B + ' ' + qtFmt(qtBase(x)) + (d ? ' − بازشو ' + qtFmt(d) : '') + (mat && f !== 1 ? ' × ضریب ' + toFa(f) : '') + (mat && qtNum(x.w) ? ' + پرت ' + toFa(qtNum(x.w)) + '٪' : '');
   }
   const qtCost = x => qtQty(x) * qtPrice(x);
-  /* اجرا: درصد اجرای هر قلم؛ مقدار و ارزش اجراشده و باقی‌مانده */
+  /* اجرا: درصد اجرای هر ردیف؛ مقدار و ارزش اجراشده و باقی‌مانده */
   const qtEx = x => Math.max(0, Math.min(100, +x.ex || 0));
   const qtExQty = x => qtQty(x) * qtEx(x) / 100;
-  /* وزن قلم در پیشرفت: ارزش ریالی، وگرنه هر قلم یک سهم */
+  /* وزن ردیف در پیشرفت: ارزش ریالی، وگرنه هر ردیف یک سهم */
   function qtProg(L){ let w = 0, d = 0; const byCost = L.some(x => qtCost(x) > 0); L.forEach(x => { const ww = byCost ? qtCost(x) : 1; w += ww; d += ww * qtEx(x) / 100; }); return w ? d / w * 100 : 0; }
   const qtLabel = k => { const [f, l1, l2] = String(k).split('/'); const fl = spFloors().find(x => x.key === f);
     return [fl ? fl.label : f, l1 ? ((fl && (fl.units || []).indexOf(l1) !== -1) ? spUnitLb(l1) : l1) : '', l2 || ''].filter(Boolean).join(' › '); };
@@ -73235,7 +73243,10 @@
   const qtNewId = () => 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const qtItemJson = x => { const o = {k: x.k}; ['st', 'n', 'm', 'b', 'u', 'q', 'f', 'w', 'pr', 'cd', 'sp', 'dm', 'ct', 'ex', 'sr', 't', 'dd'].forEach(y => { if(x[y] != null && x[y] !== '') o[y] = x[y]; }); if(Array.isArray(x.mt) && x.mt.length) o.mt = x.mt; return JSON.stringify(o); };
   /* مصالح هر عملیات: مقدار عملیات × ضریب مصرف */
-  const qtMats = x => (Array.isArray(x.mt) ? x.mt : []).filter(m => m && m.n).map(m => ({n: m.n, u: m.u || '', r: qtNum(m.r), q: qtQty(x) * qtNum(m.r), rem: (qtQty(x) - qtExQty(x)) * qtNum(m.r)}));
+  const qtMats = x => { const wf = 1 + qtNum(x.w) / 100, L = (Array.isArray(x.mt) ? x.mt : []).filter(m => m && m.n).map(m => ({n: m.n, u: m.u || '', r: qtNum(m.r), q: qtQty(x) * qtNum(m.r) * wf, rem: (qtQty(x) - qtExQty(x)) * qtNum(m.r) * wf}));
+    /* مصالح اصلی خود ردیف (مثلاً سرامیک برای کاشی کف) با ضریب و پرت */
+    if(!L.length && x.m) L.push({n: x.m, u: x.u || '', r: 1, q: qtMQ(x), rem: qtMQ(x) * (1 - qtEx(x) / 100)});
+    return L; };
   function qtHasAny(prefix){ for(const k of qt.sp.keys()) if(k === prefix || k.indexOf(prefix + '/') === 0) return true; return qt.it.some(x => x.k === prefix || String(x.k).indexOf(prefix + '/') === 0); }
   const qtItemsUnder = prefix => qt.it.filter(x => x.k === prefix || String(x.k).indexOf(prefix + '/') === 0);
   /* ---- درخت فضاها ---- */
@@ -73263,28 +73274,29 @@
   function qtLocBarHtml(){
     const F = spFloors(), L1 = qt.f ? spL1(qt.f) : [], o1 = L1.find(o => o.v === qt.l1), L2 = o1 && o1.unit ? spPartsOf(o1.v) : [];
     const opt = (v, t, on, extra) => '<option value="' + esc(v) + '"' + (on ? ' selected' : '') + '>' + esc(t) + (extra || '') + '</option>';
-    const n = k => { const c = qtItemsUnder(k).length; return c ? ' · ' + toFa(c) + ' قلم' : ''; };
+    const n = k => { const c = qtItemsUnder(k).length; return c ? ' · ' + toFa(c) + ' ردیف' : ''; };
     return '<div class="qy-loc">'
       + '<label><u>طبقه</u><select data-qxsel="f"><option value="">انتخاب طبقه…</option>' + F.map(f => opt(f.key, f.label, qt.f === f.key, n(f.key))).join('') + '</select></label>'
       + '<label' + (qt.f ? '' : ' class="off"') + '><u>واحد / محل</u><select data-qxsel="l1"' + (qt.f ? '' : ' disabled') + '><option value="">کل طبقه</option>' + L1.map(o => opt(o.v, o.unit ? spUnitLb(o.v) : o.t, qt.l1 === o.v, n(qtKey(qt.f, o.v)))).join('') + '</select></label>'
       + (L2.length ? '<label><u>محل جزء</u><select data-qxsel="l2"><option value="">کل واحد</option>' + L2.map(p => opt(p, p, qt.l2 === p, n(qtKey(qt.f, qt.l1, p)))).join('') + '</select></label>' : '')
       + '</div>';
   }
-  /* کارت هر قلم: نام و کد، مقدار درشت، فرمول، اجرا و بها */
+  /* کارت هر ردیف: نام و کد، مقدار درشت، فرمول، اجرا و بها */
   function qtItCardHtml(x, ed){
     const op = qt.op === x.id, ex = qtEx(x), c = qtCost(x);
     return '<div class="qy-it' + (op ? ' op' : '') + '" data-qxid="' + esc(x.id) + '" style="--sc:' + (QT_SC[x.st] || '#7c828c') + '">'
       + '<button type="button" class="qy-ih" data-qxop="' + esc(x.id) + '">'
       +   '<span class="qy-in"><b>' + (x.cd ? '<i class="qx-cd">' + esc(toFa(x.cd)) + '</i>' : '') + esc(x.n || '') + '</b><small>' + esc([x.m, x.dm ? toFa(x.dm) : '', x.ct].filter(Boolean).join(' · ') || x.st || '') + '</small></span>'
-      +   '<span class="qy-iq"><b>' + qtFmt(qtQty(x)) + '</b><small>' + esc(qtU(x.u)) + '</small></span></button>'
+      +   '<span class="qy-iq"><b>' + qtFmt(qtIsMat() ? qtMQ(x) : qtQty(x)) + '</b><small>' + esc(qtU(x.u)) + (qtIsMat() ? ' مصالح' : ' کار') + '</small></span></button>'
       + '<div class="qy-if"><span class="qy-fx">' + esc(qtFormula(x)) + '</span>'
       +   '<span class="qy-ex"><i><s style="width:' + ex + '%"></s></i>' + toFa(Math.round(ex)) + '٪</span>'
       +   (c ? '<span class="qy-c">' + qtMoney(c) + ' <small>ریال</small></span>' : '') + '</div>'
       + (op ? '<div class="qy-ed">'
-          + (ed ? '<div class="qy-q"><label><u>' + (x.b === 'count' || x.b === 'manual' ? 'تعداد / مقدار' : 'ضریب مصرف') + '</u><input type="text" inputmode="decimal" data-qxe="' + (x.b === 'count' || x.b === 'manual' ? 'q' : 'f') + '" value="' + esc(x.b === 'count' || x.b === 'manual' ? (x.q !== '' && x.q != null ? toFa(x.q) : '') : (x.f != null && x.f !== '' ? toFa(x.f) : '')) + '" placeholder="' + (x.b === 'count' || x.b === 'manual' ? 'تعداد' : '۱') + '"></label>'
-            + '<label><u>پرت ٪</u><input type="text" inputmode="decimal" data-qxe="w" value="' + esc(x.w ? toFa(x.w) : '') + '" placeholder="۰"></label>'
+          + (ed ? '<div class="qy-q">' + (x.b === 'count' || x.b === 'manual' ? '<label><u>تعداد / مقدار</u><input type="text" inputmode="decimal" data-qxe="q" value="' + esc(x.q !== '' && x.q != null ? toFa(x.q) : '') + '" placeholder="تعداد"></label>'
+                : (qtIsMat() ? '<label><u>ضریب مصرف</u><input type="text" inputmode="decimal" data-qxe="f" value="' + esc(x.f != null && x.f !== '' ? toFa(x.f) : '') + '" placeholder="۱"></label>' : ''))
+            + (qtIsMat() ? '<label><u>پرت ٪</u><input type="text" inputmode="decimal" data-qxe="w" value="' + esc(x.w ? toFa(x.w) : '') + '" placeholder="۰"></label>' : '')
             + '<label><u>بها واحد (ریال)</u><input type="text" inputmode="numeric" data-qxe="pr" value="' + esc(qtPrice(x) ? qtMoney(qtPrice(x)) : '') + '" placeholder="از فهرست بها"></label>'
-            + '<button type="button" class="sp-x" data-qtirm="' + esc(x.id) + '" title="حذف قلم" aria-label="حذف">×</button></div>' : '')
+            + '<button type="button" class="sp-x" data-qtirm="' + esc(x.id) + '" title="حذف ردیف" aria-label="حذف">×</button></div>' : '')
           + qtItDetHtml(x, ed) + '</div>' : '')
       + '</div>';
   }
@@ -73306,8 +73318,8 @@
     }
     return out;
   }
-  /* جزئیات یک قلم: کد، ابعاد، مشخصات، مجری، درصد اجرا و صورت وضعیت مرتبط */
-  /* اقلام یک فضا به دو گروه: عملیات اجرایی، و ادوات و تجهیزات */
+  /* جزئیات یک ردیف: کد، ابعاد، مشخصات، مجری، درصد اجرا و صورت وضعیت مرتبط */
+  /* ردیف‌ها یک فضا به دو گروه: عملیات اجرایی، و ادوات و تجهیزات */
   function qtGrp(L){
     const out = [];
     [['op', 'عملیات اجرایی', 'مقدار کار، درصد اجرا، مجری و صورت وضعیت'], ['fx', 'ادوات و تجهیزات', 'شمار و مشخصات درب، پنجره، لوازم و تجهیزات این فضا']].forEach(([t, h, s2]) => {
@@ -73326,7 +73338,7 @@
       + '<label><u>کد</u><input type="text" data-qxe="cd" value="' + esc(x.cd ? toFa(x.cd) : '') + '" placeholder="مثلاً D-01"' + ro + '></label>'
       + '<label><u>ابعاد</u><input type="text" data-qxe="dm" value="' + esc(x.dm ? toFa(x.dm) : '') + '" placeholder="مثلاً ۹۰×۲۱۰"' + ro + '></label>'
       + '<label class="w"><u>مشخصات فنی</u><input type="text" data-qxe="sp" value="' + esc(x.sp || '') + '" placeholder="جنس، رنگ، برند، استاندارد…"' + ro + '></label>'
-      + '<label><u>مجری</u><input type="text" data-qxe="ct" value="' + esc(x.ct || '') + '" data-list="contractorList" placeholder="پیمانکار این قلم" autocomplete="off"' + ro + '></label>'
+      + '<label><u>مجری</u><input type="text" data-qxe="ct" value="' + esc(x.ct || '') + '" data-list="contractorList" placeholder="پیمانکار این ردیف" autocomplete="off"' + ro + '></label>'
       + '<label><u>درصد اجرا</u><span class="qx-exr"><input type="range" min="0" max="100" step="5" data-qxe="ex" value="' + qtEx(x) + '"' + (ed ? '' : ' disabled') + '><b>' + toFa(Math.round(qtEx(x))) + '٪</b></span><small>' + qtFmt(qtExQty(x)) + ' از ' + qtFmt(qtQty(x)) + ' ' + esc(qtU(x.u)) + ' · مانده ' + qtFmt(qtQty(x) - qtExQty(x)) + '</small></label>'
       + '<label class="w"><u>صورت وضعیت مرتبط</u><select data-qxe="sr"' + (ed ? '' : ' disabled') + '><option value="">—</option>' + st.map(a => '<option value="' + esc(pick(a.row,AD.id)) + '"' + (cur === a ? ' selected' : '') + '>' + esc(stLb(a)) + '</option>').join('') + '</select>'
       +   (cur ? '<button type="button" class="pg-lk" data-qxgost="' + esc(pick(cur.row,AD.id)) + '">دیدن صورت وضعیت ‹</button>' : '') + '</label>'
@@ -73345,8 +73357,16 @@
         + (ed ? '<button type="button" class="pg-lk" data-qxmadd="1">+ مصالح</button>' : '') + (M.length ? '' : '<small class="qx-mh">مثلاً برای «سیمانکاری»: سیمان ۰٫۲۵ کیسه و ماسه ۰٫۰۳ m³ در هر m²</small>') + '</div>' : '')
       + '</div>';
   }
+  /* حالت محاسبه: کارکرد (برای صورت وضعیت، بدون ضریب و پرت) یا مصالح (برای تأمین، با ضریب مصرف و پرت) */
+  function qtModeHtml(){
+    const m = qtIsMat();
+    return '<div class="qy-mode"><div class="qy-ms" role="tablist">'
+      + '<button type="button" data-qxqm="work" class="' + (m ? '' : 'on') + '"><b>کارکرد</b><small>مقدار خالص کار · برای صورت وضعیت</small></button>'
+      + '<button type="button" data-qxqm="mat" class="' + (m ? 'on' : '') + '"><b>مصالح</b><small>با ضریب مصرف و پرت · برای تأمین</small></button></div>'
+      + (m ? '' : '<button type="button" class="mini" data-qttab="stm">ارسال برای صورت وضعیت ›</button>') + '</div>';
+  }
   function qtMainHtml(){
-    if(!qt.f) return '<div class="qx-empty"><b>اول محل را انتخاب کنید</b><small>طبقه، بعد واحد یا محل و در صورت نیاز محل جزء. ابعاد و اقلام هر محل جدا ثبت می‌شود؛ طبقه و واحد، جمع اجزایشان را نشان می‌دهند.</small></div>';
+    if(!qt.f) return '<div class="qx-empty"><b>اول محل را انتخاب کنید</b><small>طبقه، بعد واحد یا محل و در صورت نیاز محل جزء. ابعاد و ردیف‌ها هر محل جدا ثبت می‌شود؛ طبقه و واحد، جمع اجزایشان را نشان می‌دهند.</small></div>';
     const k = qtKey(qt.f, qt.l1, qt.l2), g = qtGeo(k), ed = qtCanE(), o0 = qt.sp.get(k) || {};
     const dr = qt.draft && qt.draft.k === k && qt.draft.w ? qt.draft : null;
     const o = dr ? {a: dr.a, c: dr.c, w: dr.w, cd: dr.cd, sp: dr.sp} : o0;
@@ -73356,7 +73376,7 @@
     const tCnt = {type: qtTargets('type').length, floor: qtTargets('floor').length, all: qtTargets('all').length};
     const geoOpen = qt.geoOpen === k || (!g.own && !g.n && ed) || !!dr;
     /* سرِ محل: نام، ابعاد خلاصه و برآورد */
-    let h = '<div class="qy-hd"><div class="qy-ht"><b>' + esc(qtLabel(k)) + '</b>' + (o0.cd ? '<i class="qx-cd">' + esc(toFa(o0.cd)) + '</i>' : '') + (o0.sp ? '<small>' + esc(o0.sp) + '</small>' : '') + '</div>'
+    let h = qtModeHtml() + '<div class="qy-hd"><div class="qy-ht"><b>' + esc(qtLabel(k)) + '</b>' + (o0.cd ? '<i class="qx-cd">' + esc(toFa(o0.cd)) + '</i>' : '') + (o0.sp ? '<small>' + esc(o0.sp) + '</small>' : '') + '</div>'
       + '<div class="qy-gs"><span><u>کف</u><b>' + qtFmt(g.floor) + '</b></span><span><u>سقف</u><b>' + qtFmt(g.ceil) + '</b></span><span><u>دیوار</u><b>' + qtFmt(g.wall) + '</b></span><span><u>محیط</u><b>' + qtFmt(g.perim) + '<small>m</small></b></span>'
       + '<span class="c"><u>برآورد</u><b>' + (cost ? qtMoney(cost) : '—') + '</b></span></div>'
       + (!g.own && g.n ? '<p class="qx-agg">ابعاد این محل جمع ' + toFa(g.n) + ' زیرفضای اندازه‌گیری‌شده است.</p>' : '')
@@ -73371,43 +73391,43 @@
       + W.map((w, i) => '<div class="qt-w" data-qtwi="' + i + '"><input type="text" data-qtw="n" value="' + esc(w.n || '') + '" placeholder="نام"' + ro + '><input type="text" inputmode="decimal" placeholder="m" data-qtw="l" value="' + esc(vv(w.l)) + '"' + ro + '>'
           + '<input type="text" inputmode="decimal" placeholder="m" data-qtw="h" value="' + esc(vv(w.h)) + '"' + ro + '><input type="text" inputmode="decimal" placeholder="m²" data-qtw="o" value="' + esc(vv(w.o)) + '"' + ro + '>'
           + '<b>' + qtFmt(Math.max(0, qtNum(w.l) * qtNum(w.h) - qtNum(w.o))) + '</b>' + (ed ? '<button type="button" class="sp-x" data-qtwrm="' + i + '" aria-label="حذف">×</button>' : '<span></span>') + '</div>').join('') + '</div>'
-      + '<small class="qx-mh">درب و پنجره‌ها را لازم نیست اینجا کم کنید؛ آن‌ها را به‌صورت قلم با ابعاد ثبت کنید تا در هر عملیات خودکار کسر شوند.</small>'
+      + '<small class="qx-mh">درب و پنجره‌ها را لازم نیست اینجا کم کنید؛ آن‌ها را به‌صورت ردیف با ابعاد ثبت کنید تا در هر عملیات خودکار کسر شوند.</small>'
       + (ed ? '<div class="qx-acts"><button type="button" class="pg-lk" data-qtwadd="1">+ دیوار</button><span class="qx-sp"></span>'
           + (tCnt.type ? '<button type="button" class="mini" data-qxcpg="type">کپی به ' + toFa(tCnt.type) + ' واحد هم‌تیپ</button>' : '')
           + (!tCnt.type && tCnt.floor ? '<button type="button" class="mini" data-qxcpg="floor">کپی به واحدهای این طبقه</button>' : '')
           + '<button type="button" class="send rf-go" data-qtgsave="1">ثبت ابعاد</button></div>' : '')
       + '</section>';
-    /* افزودن قلم: جست‌وجو و کتابخانه */
+    /* افزودن ردیف: جست‌وجو و کتابخانه */
     if(ed){
       const lq = String(qt.lq || '').trim(), ls = qt.ls || '';
       h += '<div class="qy-add"><label class="qy-as"><input type="search" data-qxls placeholder="چه کاری؟ مثلاً گچ و خاک، سرامیک، درب داخلی…" value="' + esc(lq) + '" autocomplete="off"></label>'
-        + '<button type="button" class="mini go" data-qtinew="1">+ قلم دلخواه</button></div>';
+        + '<button type="button" class="mini go" data-qtinew="1">+ ردیف دلخواه</button></div>';
       if(qt.lib || lq || ls){
         const LIB = QT_LIB.map((x, i) => [x, i]).filter(([x]) => (!ls || x.st === ls) && (!lq || (x.n + ' ' + (x.m || '') + ' ' + x.st).indexOf(lq) !== -1));
         h += '<div class="qy-lib"><div class="qy-lst">' + ['', ...QT_ST].map(st => '<button type="button" data-qxlst="' + esc(st) + '" class="' + (ls === st ? 'on' : '') + '"' + (st ? ' style="--sc:' + QT_SC[st] + '"' : '') + '>' + (st || 'همه') + '</button>').join('') + '</div>'
-          + '<div class="qy-lt">' + (LIB.length ? LIB.map(([x, i]) => '<button type="button" data-qxadd="' + i + '"' + (L.some(y => y.n === x.n) ? ' class="has"' : '') + ' style="--sc:' + (QT_SC[x.st] || '#7c828c') + '"><b>' + esc(x.n) + '</b><small>' + esc([x.m, (QT_B.find(b => b[0] === x.b) || [, ''])[1]].filter(Boolean).join(' · ')) + '</small></button>').join('') : '<span class="qx-mh">در کتابخانه نیست؛ «قلم دلخواه» را بزنید.</span>') + '</div></div>';
-      }else h += '<button type="button" class="qy-libt" data-qxlib="1">کتابخانهٔ اقلام رایج ›</button>';
+          + '<div class="qy-lt">' + (LIB.length ? LIB.map(([x, i]) => '<button type="button" data-qxadd="' + i + '"' + (L.some(y => y.n === x.n) ? ' class="has"' : '') + ' style="--sc:' + (QT_SC[x.st] || '#7c828c') + '"><b>' + esc(x.n) + '</b><small>' + esc([x.m, (QT_B.find(b => b[0] === x.b) || [, ''])[1]].filter(Boolean).join(' · ')) + '</small></button>').join('') : '<span class="qx-mh">در کتابخانه نیست؛ «ردیف دلخواه» را بزنید.</span>') + '</div></div>';
+      }else h += '<button type="button" class="qy-libt" data-qxlib="1">کتابخانهٔ ردیف‌ها رایج ›</button>';
     }
-    /* فرم قلم دلخواه */
+    /* فرم ردیف دلخواه */
     const D = qt.draft && qt.draft.it && qt.draft.k === k ? qt.draft.it : null;
     if(ed && D) h += '<div class="wh-form qt-if"><div class="wh-seg sm">' + QT_ST.map(s => '<button type="button" data-qtist="' + esc(s) + '" class="' + (D.st === s ? 'on' : '') + '">' + s + '</button>').join('') + '</div>'
-      + '<div class="wh-g"><label class="te-f"><u>قلم کار</u><input type="text" data-qti="n" list="qtItList" value="' + esc(D.n || '') + '" placeholder="مثلاً کاشی کف"></label>'
+      + '<div class="wh-g"><label class="te-f"><u>شرح کار</u><input type="text" data-qti="n" list="qtItList" value="' + esc(D.n || '') + '" placeholder="مثلاً کاشی کف"></label>'
       + '<label class="te-f"><u>مصالح</u><input type="text" data-qti="m" list="qtMatList" value="' + esc(D.m || '') + '" placeholder="مثلاً سرامیک ۶۰×۶۰"></label>'
       + '<label class="te-f"><u>مبنای مقدار</u><select data-qti="b">' + QT_B.map(([v, t]) => '<option value="' + v + '"' + (D.b === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<label class="te-f"><u>واحد</u><input type="text" data-qti="u" list="qtUList" value="' + esc(D.u || '') + '"></label>'
-      + '<label class="te-f qt-fq"><u>' + (D.b === 'count' || D.b === 'manual' ? 'مقدار' : 'ضریب مصرف <em>خالی = ۱</em>') + '</u><input type="text" inputmode="decimal" data-qti="' + (D.b === 'count' || D.b === 'manual' ? 'q' : 'f') + '" value="' + esc(D.b === 'count' || D.b === 'manual' ? (D.q != null ? toFa(D.q) : '') : (D.f != null ? toFa(D.f) : '')) + '"></label>'
-      + '<label class="te-f"><u>پرت (٪)</u><input type="text" inputmode="decimal" data-qti="w" value="' + esc(D.w ? toFa(D.w) : '') + '"></label></div>'
-      + '<div class="qt-prev">مقدار: <b>' + qtFmt(qtQty(Object.assign({k, dd: ['wall', 'wc', 'perim'].indexOf(D.b) !== -1 ? 'auto' : ''}, D))) + '</b> ' + esc(D.u || '') + '</div>'
-      + '<div class="wh-foot"><button type="button" class="mini" data-qticancel="1">انصراف</button><button type="button" class="send rf-go" data-qtisave="1"' + (qt.saving ? ' disabled' : '') + '>ثبت قلم</button></div></div>';
-    /* اقلام، به تفکیک رشته */
+      + ((D.b === 'count' || D.b === 'manual' || qtIsMat()) ? '<label class="te-f qt-fq"><u>' + (D.b === 'count' || D.b === 'manual' ? 'مقدار' : 'ضریب مصرف <em>خالی = ۱</em>') + '</u><input type="text" inputmode="decimal" data-qti="' + (D.b === 'count' || D.b === 'manual' ? 'q' : 'f') + '" value="' + esc(D.b === 'count' || D.b === 'manual' ? (D.q != null ? toFa(D.q) : '') : (D.f != null ? toFa(D.f) : '')) + '"></label>' : '')
+      + (qtIsMat() ? '<label class="te-f"><u>پرت (٪)</u><input type="text" inputmode="decimal" data-qti="w" value="' + esc(D.w ? toFa(D.w) : '') + '"></label>' : '') + '</div>'
+      + '<div class="qt-prev">' + (qtIsMat() ? 'مقدار مصالح' : 'مقدار کار') + ': <b>' + qtFmt((qtIsMat() ? qtMQ : qtQty)(Object.assign({k, dd: ['wall', 'wc', 'perim'].indexOf(D.b) !== -1 ? 'auto' : ''}, D))) + '</b> ' + esc(D.u || '') + '</div>'
+      + '<div class="wh-foot"><button type="button" class="mini" data-qticancel="1">انصراف</button><button type="button" class="send rf-go" data-qtisave="1"' + (qt.saving ? ' disabled' : '') + '>ثبت ردیف</button></div></div>';
+    /* ردیف‌ها، به تفکیک رشته */
     if(L.length){
       h += '<div class="qy-ls">' + QT_ST.concat(['']).map(st => { const G = L.filter(x => (x.st || '') === st || (!st && QT_ST.indexOf(x.st) === -1)); if(!G.length) return '';
-        return '<div class="qy-g" style="--sc:' + (QT_SC[st] || '#7c828c') + '"><div class="qy-gh"><b>' + esc(st || 'سایر') + '</b><small>' + toFa(G.length) + ' قلم · ' + toFa(Math.round(qtProg(G))) + '٪ اجرا</small></div>' + G.map(x => qtItCardHtml(x, ed)).join('') + '</div>'; }).join('') + '</div>';
-      if(ed && (tCnt.type || tCnt.floor || tCnt.all)) h += '<div class="qx-acts"><span class="qx-hint">همین اقلام روی:</span>'
+        return '<div class="qy-g" style="--sc:' + (QT_SC[st] || '#7c828c') + '"><div class="qy-gh"><b>' + esc(st || 'سایر') + '</b><small>' + toFa(G.length) + ' ردیف · ' + toFa(Math.round(qtProg(G))) + '٪ اجرا</small></div>' + G.map(x => qtItCardHtml(x, ed)).join('') + '</div>'; }).join('') + '</div>';
+      if(ed && (tCnt.type || tCnt.floor || tCnt.all)) h += '<div class="qx-acts"><span class="qx-hint">همین ردیف‌ها روی:</span>'
         + (tCnt.type ? '<button type="button" class="mini" data-qxcpi="type">' + toFa(tCnt.type) + ' واحد هم‌تیپ</button>' : '')
         + (tCnt.floor ? '<button type="button" class="mini" data-qxcpi="floor">واحدهای همین طبقه (' + toFa(tCnt.floor) + ')</button>' : '')
         + (tCnt.all && tCnt.all !== tCnt.floor ? '<button type="button" class="mini" data-qxcpi="all">همه (' + toFa(tCnt.all) + ')</button>' : '') + '</div>';
-    }else h += '<div class="qx-none">هنوز قلمی برای این محل ثبت نشده. بالا بنویسید چه کاری (مثلاً «گچ و خاک») یا از کتابخانه انتخاب کنید.</div>';
+    }else h += '<div class="qx-none">هنوز ردیفی برای این محل ثبت نشده. بالا بنویسید چه کاری (مثلاً «گچ و خاک») یا از کتابخانه انتخاب کنید.</div>';
     return h;
   }
   /* ---- جمع‌بندی و برآورد ---- */
@@ -73426,12 +73446,12 @@
     let h = '<div class="qx-kp"><div class="big"><u>برآورد کل' + (qt.st ? ' · ' + esc(qt.st) : '') + '</u><b>' + (tot ? qtMoney(tot) : '—') + '</b><small>ریال</small></div>'
       + '<div><u>هر m²</u><b>' + (tot && tf ? qtMoney(tot / tf) : '—') + '</b><small>ریال بر m² کف</small></div>'
       + '<div><u>مساحت کف اندازه‌گیری‌شده</u><b>' + qtFmt(tf) + '</b><small>m²</small></div>'
-      + '<div><u>پیشرفت اجرا</u><b>' + toFa(Math.round(qtProg(LL))) + '٪</b><small>' + (exV ? 'ارزش اجراشده ' + qtMoney(exV) + ' ریال' : 'بر پایهٔ درصد اجرای اقلام') + '</small></div></div>'
-      + '<div class="qx-sts">' + bySt.map(([s, c, n, pp]) => '<button type="button" class="' + (qt.st === s ? 'on' : '') + '" data-qtsst="' + esc(qt.st === s ? '' : s) + '" style="--sc:' + QT_SC[s] + '"><span><b>' + s + '</b><small>' + toFa(n) + ' قلم · ' + toFa(Math.round(pp)) + '٪ اجرا</small></span><i><s style="width:' + (c / mx * 100).toFixed(1) + '%"></s></i><em>' + (c ? qtMoney(c) : '—') + '</em></button>').join('') + '</div>'
+      + '<div><u>پیشرفت اجرا</u><b>' + toFa(Math.round(qtProg(LL))) + '٪</b><small>' + (exV ? 'ارزش اجراشده ' + qtMoney(exV) + ' ریال' : 'بر پایهٔ درصد اجرای ردیف‌ها') + '</small></div></div>'
+      + '<div class="qx-sts">' + bySt.map(([s, c, n, pp]) => '<button type="button" class="' + (qt.st === s ? 'on' : '') + '" data-qtsst="' + esc(qt.st === s ? '' : s) + '" style="--sc:' + QT_SC[s] + '"><span><b>' + s + '</b><small>' + toFa(n) + ' ردیف · ' + toFa(Math.round(pp)) + '٪ اجرا</small></span><i><s style="width:' + (c / mx * 100).toFixed(1) + '%"></s></i><em>' + (c ? qtMoney(c) : '—') + '</em></button>').join('') + '</div>'
       + '<div class="qx-fbar"><label><u>طبقه</u><select data-qxsf><option value="">همهٔ طبقات</option>' + F.map(f => '<option value="' + esc(f.key) + '"' + (qt.sf === f.key ? ' selected' : '') + '>' + esc(f.label) + '</option>').join('') + '</select></label>'
       + '<span class="qx-sp"></span><button type="button" class="mini" data-qxfull="1">نمای جدول کامل</button><button type="button" class="mini go" data-qtcsv="1">خروجی اکسل</button></div>';
-    if(!R.length) return h + '<div class="qx-empty"><b>قلمی نیست</b><small>از «فضاها و اقلام» یک فضا را انتخاب و اقلامش را اضافه کنید.</small></div>';
-    h += '<div class="qx-tb"><div class="qx-tr qx-th"><span>قلم</span><span>مصالح</span><span>مقدار</span><span>واحد</span><span>بها واحد (ریال)</span><span>جمع (ریال)</span><span>فضا</span></div>';
+    if(!R.length) return h + '<div class="qx-empty"><b>ردیفی نیست</b><small>از «برداشت متره» یک فضا را انتخاب و ردیف‌هایش را اضافه کنید.</small></div>';
+    h += '<div class="qx-tb"><div class="qx-tr qx-th"><span>ردیف</span><span>مصالح</span><span>مقدار</span><span>واحد</span><span>بها واحد (ریال)</span><span>جمع (ریال)</span><span>فضا</span></div>';
     QT_ST.forEach(s => { const G = R.filter(r => r.st === s); if(!G.length) return;
       h += '<div class="qx-tr qx-tg" style="--sc:' + QT_SC[s] + '"><span><b>' + s + '</b></span><span></span><span></span><span></span><span></span><span><b>' + qtMoney(G.reduce((a, r) => a + r.cost, 0)) + '</b></span><span></span></div>'
         + G.map(r => '<div class="qx-tr"><span>' + esc(r.n || '') + '</span><span>' + esc(r.m || '—') + '</span><span class="n">' + qtFmt(r.q) + '</span><span>' + esc(qtU(r.u)) + '</span>'
@@ -73440,7 +73460,7 @@
     const CT = new Map(); LL.forEach(x => { const c = String(x.ct || '').trim() || '—'; const o = CT.get(c) || {c, n: 0, est: 0, ex: 0, L: []}; o.n++; o.est += qtCost(x); o.ex += qtCost(x) * qtEx(x) / 100; o.L.push(x); CT.set(c, o); });
     const stOf = c => { let n = 0, cum = 0; try{ (adminAll || []).forEach(a => { if(a.kind !== 'statement' || !a.row || normName(pick(a.row,AD.sParty)) !== normName(c)) return; n++; const k = sfCKey(pick(a.row,AD.sCno), pick(a.row,AD.sName)) + '¦' + sfNo(pick(a.row,AD.sNo)); const f = window.SF_Sget ? window.SF_Sget(k) : null; if(f && +f.cum > cum) cum = +f.cum; }); }catch(e){} return {n, cum}; };
     const ctHtml = CT.size > 1 || !CT.has('—') ? '<div class="mr-sh" style="margin-top:6px">مجریان <em>برآورد، ارزش اجراشده و صورت وضعیت‌ها</em></div><div class="qx-cts">' + Array.from(CT.values()).sort((a, b) => b.est - a.est).map(o => { const S = o.c !== '—' ? stOf(o.c) : {n: 0, cum: 0}; const pp = qtProg(o.L);
-        return '<div class="qx-ct"><div class="qx-ctn"><b>' + esc(o.c === '—' ? 'بدون مجری' : o.c) + '</b><small>' + toFa(o.n) + ' قلم</small></div><div class="qx-ctb"><i><s style="width:' + pp + '%"></s></i><span>' + toFa(Math.round(pp)) + '٪</span></div>'
+        return '<div class="qx-ct"><div class="qx-ctn"><b>' + esc(o.c === '—' ? 'بدون مجری' : o.c) + '</b><small>' + toFa(o.n) + ' ردیف</small></div><div class="qx-ctb"><i><s style="width:' + pp + '%"></s></i><span>' + toFa(Math.round(pp)) + '٪</span></div>'
           + '<div class="qx-ctv"><span><u>برآورد</u><b>' + (o.est ? qtMoney(o.est) : '—') + '</b></span><span><u>اجراشده</u><b>' + (o.ex ? qtMoney(o.ex) : '—') + '</b></span><span><u>صورت وضعیت</u><b>' + (S.n ? toFa(S.n) + ' سند' + (S.cum ? ' · ' + qtMoney(S.cum) : '') : '—') + '</b></span></div></div>'; }).join('') + '</div>' : '';
     return h + '<div class="qx-tr qx-tt"><span><b>جمع کل</b></span><span></span><span></span><span></span><span></span><span class="n"><b>' + qtMoney(tot) + '</b></span><span></span></div></div>' + ctHtml;
   }
@@ -73455,7 +73475,7 @@
     let h = '<div class="qx-fbar"><label><u>طبقه</u><select data-qxsf><option value="">همهٔ طبقات</option>' + F.map(f => '<option value="' + esc(f.key) + '"' + (qt.sf === f.key ? ' selected' : '') + '>' + esc(f.label) + '</option>').join('') + '</select></label><span class="qx-sp"></span>'
       + (R.length ? '<button type="button" class="mini go" data-qtmcsv="1">خروجی اکسل مصالح</button>' : '') + '</div>'
       + '<p class="qx-agg">مقدار مصالح از «عملیات اجرایی» × ضریب مصرف هر مصالح حساب می‌شود. ستون «باقی‌مانده» برای کارهایی است که هنوز اجرا نشده‌اند. این فهرست به سفارش‌گذاری نمی‌رود؛ برای درخواست خرید از «تدارکات» استفاده کنید.</p>';
-    if(!R.length) return h + '<div class="qx-empty"><b>مصالحی تعریف نشده</b><small>در «فضاها و اقلام» روی یک عملیات بزنید و مصالح و ضریب مصرفش را اضافه کنید.' + (noMt ? ' ' + toFa(noMt) + ' عملیات هنوز مصالح ندارند.' : '') + '</small></div>';
+    if(!R.length) return h + '<div class="qx-empty"><b>مصالحی تعریف نشده</b><small>در «برداشت متره» روی یک عملیات بزنید و مصالح و ضریب مصرفش را اضافه کنید.' + (noMt ? ' ' + toFa(noMt) + ' عملیات هنوز مصالح ندارند.' : '') + '</small></div>';
     h += '<div class="qx-tb"><div class="qx-tr qx-th qx-tm"><span>مصالح</span><span>کل</span><span>باقی‌مانده</span><span>واحد</span><span>از عملیات</span></div>'
       + R.map(r => '<div class="qx-tr qx-tm"><span><b>' + esc(r.n) + '</b></span><span class="n">' + qtFmt(r.q) + '</span><span class="n">' + qtFmt(r.rem) + '</span><span>' + esc(r.u) + '</span><span class="m">' + esc(Array.from(r.ops).slice(0, 3).join('، ')) + '</span></div>').join('') + '</div>'
       + (noMt ? '<small class="qx-mh">' + toFa(noMt) + ' عملیات هنوز مصالح ندارند و در این جمع نیستند.</small>' : '');
@@ -73478,12 +73498,12 @@
     let to = ''; try{ to = (peopleRows || []).map(p => p.name).find(n => /قرارداد/.test(String(roleOf(n) || ''))) || ''; }catch(e){}
     h += '<div class="qx-send"><label class="te-f"><u>گیرنده <em>خالی = صف بررسی دفتر فنی</em></u><input type="text" data-qxsto data-list="engineerList" value="' + esc(to) + '" autocomplete="off"></label>'
       + '<label class="te-f"><u>یادداشت</u><input type="text" data-qxsn placeholder="مثلاً دورهٔ کارکرد مهر"></label>'
-      + '<button type="button" class="send rf-go" data-qxssend="1">ارسال برای امور قراردادی</button></div>';
+      + '<button type="button" class="send rf-go" data-qxssend="1">ارسال به دریافتی امور قراردادی</button></div>';
     return h;
   }
   function qtRender(){
     const body = document.getElementById('qtBody'); if(!body) return;
-    const side = document.getElementById('qtSide'); if(side) side.textContent = toFa(qt.sp.size) + ' فضا · ' + toFa(qt.it.length) + ' قلم';
+    const side = document.getElementById('qtSide'); if(side) side.textContent = toFa(qt.sp.size) + ' فضا · ' + toFa(qt.it.length) + ' ردیف';
     const tabs = document.getElementById('qtTabs');
     if(tabs) tabs.innerHTML = [['sp', 'برداشت متره'], ['sum', 'برآورد'], ['mat', 'مصالح'], ['stm', 'صورت وضعیت']].map(([k, t]) => '<button type="button" class="kcap sm' + (qt.tab === k ? ' on' : '') + '" data-qttab="' + k + '">' + t + '</button>').join('');
     const its = new Set(QT_LIB.map(x => x.n)); qt.it.forEach(x => x.n && its.add(x.n));
@@ -73510,13 +73530,13 @@
   const qtGeoObj = g => { const o = {}; if(g.a !== '') o.a = g.a; if(g.c !== '') o.c = g.c; if(g.cd) o.cd = g.cd; if(g.sp) o.sp = g.sp; const W = (g.w || []).filter(w => w.l !== '' || w.n); if(W.length) o.w = W; return o; };
   function qtExport(){
     const R = qtRows(), stamp = toFa(todayShamsi()).replace(/\//g, '-');
-    const A1 = [['مرحله', 'قلم', 'مصالح', 'مقدار', 'واحد', 'بها واحد (ریال)', 'جمع (ریال)', 'تعداد فضا']].concat(R.map(r => [r.st, r.n, r.m, Math.round(r.q * 100) / 100, r.u, qt.pr.get(r.pk) || '', Math.round(r.cost), r.sp.size]));
-    const A2 = [['فضا', 'مرحله', 'قلم', 'مصالح', 'مبنا', 'ضریب', 'پرت ٪', 'مقدار', 'واحد', 'بها', 'جمع']].concat(qt.it.filter(x => (!qt.st || x.st === qt.st) && (!qt.sf || String(x.k).split('/')[0] === qt.sf)).map(x => [qtLabel(x.k), x.st, x.n, x.m, (QT_B.find(b => b[0] === x.b) || [, ''])[1], x.f, x.w, Math.round(qtQty(x) * 100) / 100, x.u, qtPrice(x) || '', Math.round(qtCost(x))]));
+    const A1 = [['مرحله', 'ردیف', 'مصالح', 'مقدار', 'واحد', 'بها واحد (ریال)', 'جمع (ریال)', 'تعداد فضا']].concat(R.map(r => [r.st, r.n, r.m, Math.round(r.q * 100) / 100, r.u, qt.pr.get(r.pk) || '', Math.round(r.cost), r.sp.size]));
+    const A2 = [['فضا', 'مرحله', 'ردیف', 'مصالح', 'مبنا', 'مقدار کار', 'ضریب مصرف', 'پرت ٪', 'مقدار مصالح', 'واحد', 'بها', 'جمع']].concat(qt.it.filter(x => (!qt.st || x.st === qt.st) && (!qt.sf || String(x.k).split('/')[0] === qt.sf)).map(x => [qtLabel(x.k), x.st, x.n, x.m, (QT_B.find(b => b[0] === x.b) || [, ''])[1], Math.round(qtQty(x) * 100) / 100, x.f, x.w, Math.round(qtMQ(x) * 100) / 100, x.u, qtPrice(x) || '', Math.round(qtCost(x))]));
     const A3 = [['فضا', 'کف (m²)', 'سقف (m²)', 'دیوار (m²)', 'محیط (m)']].concat(Array.from(qt.sp.keys()).sort().map(k => { const g = qtOwnGeo(qt.sp.get(k)); return [qtLabel(k), g.floor, g.ceil, Math.round(g.wall * 100) / 100, g.perim]; }));
     const A0 = [['مرحله', 'جمع (ریال)']].concat(QT_ST.map(s => [s, Math.round(R.filter(r => r.st === s).reduce((a, r) => a + r.cost, 0))])).concat([['جمع کل', Math.round(R.reduce((a, r) => a + r.cost, 0))]]);
     if(window.XLSX){
       const wb = XLSX.utils.book_new();
-      [[A0, 'خلاصه'], [A1, 'برآورد'], [A2, 'اقلام هر فضا'], [A3, 'ابعاد']].forEach(([A, n]) => { const sh = XLSX.utils.aoa_to_sheet(A); sh['!cols'] = A[0].map((c, i) => ({wch: i < 3 ? 22 : 14})); sh['!views'] = [{RTL: true}]; XLSX.utils.book_append_sheet(wb, sh, n); });
+      [[A0, 'خلاصه'], [A1, 'برآورد'], [A2, 'ردیف‌های هر فضا'], [A3, 'ابعاد']].forEach(([A, n]) => { const sh = XLSX.utils.aoa_to_sheet(A); sh['!cols'] = A[0].map((c, i) => ({wch: i < 3 ? 22 : 14})); sh['!views'] = [{RTL: true}]; XLSX.utils.book_append_sheet(wb, sh, n); });
       wb.Workbook = {Views: [{RTL: true}]};
       XLSX.writeFile(wb, 'متره و برآورد - ' + stamp + '.xlsx'); return;
     }
@@ -73528,6 +73548,7 @@
     const host = document.getElementById('qtArea'); if(!host || !host.contains(e.target)) return;
     const t = e.target, keepGeo = () => { const g = qtReadGeo(); if(g) qt.draft = Object.assign(qt.draft && qt.draft.k === g.k ? qt.draft : {}, {k: g.k, w: g.w, a: g.a, c: g.c, cd: g.cd, sp: g.sp}); };
     const tb = t.closest('[data-qttab]'); if(tb){ qt.tab = tb.dataset.qttab; qtRender(); return; }
+    const qm = t.closest('[data-qxqm]'); if(qm){ qt.qm = qm.dataset.qxqm; try{ localStorage.setItem('qt_qm', qt.qm); }catch(err){} qtRender(); return; }
     const nk = t.closest('[data-qxk]'); if(nk){ const k = nk.dataset.qxk; if(k === qtKey(qt.f, qt.l1, qt.l2) && k.indexOf('/') === -1){ qt.f = ''; qt.l1 = qt.l2 = ''; } else qtSel(k); qtRender(); return; }
     if(t.closest('[data-qxlib]')){ qt.lib = !qt.lib; qtRender(); return; }
     const lst = t.closest('[data-qxlst]'); if(lst){ qt.ls = lst.dataset.qxlst; qt.lib = true; qtRender(); return; }
@@ -73565,7 +73586,7 @@
     const ci = t.closest('[data-qxcpi]'); if(ci){
       const k = qtKey(qt.f, qt.l1, qt.l2), L = qt.it.filter(x => x.k === k), T = qtTargets(ci.dataset.qxcpi);
       if(!L.length || !T.length) return;
-      if(!(await askConfirm('کپی اقلام', toFa(L.length) + ' قلم روی ' + toFa(T.length) + ' فضای دیگر گذاشته می‌شود. اگر همان قلم آنجا هست، با این یکی جایگزین می‌شود.', 'کپی کن'))) return;
+      if(!(await askConfirm('کپی ردیف‌ها', toFa(L.length) + ' ردیف روی ' + toFa(T.length) + ' فضای دیگر گذاشته می‌شود. اگر همان ردیف آنجا هست، با این یکی جایگزین می‌شود.', 'کپی کن'))) return;
       const del = [], add = [];
       T.forEach(tk => L.forEach(x => { qt.it.filter(y => y.k === tk && y.n === x.n && (y.m || '') === (x.m || '')).forEach(y => del.push(y.id)); add.push(Object.assign({}, x, {id: qtNewId() + add.length.toString(36), k: tk})); }));
       try{ for(const id of del) await qtSaveRow(QT_IT_KIND, id, null);
@@ -73574,7 +73595,7 @@
       catch(err){ showDialog('err', 'انجام نشد', friendlyErr(err)); }
       return;
     }
-    /* نوع قلم و مصالح عملیات */
+    /* نوع ردیف و مصالح عملیات */
     const qty = t.closest('[data-qxty]'), qma = t.closest('[data-qxmadd]'), qmr = t.closest('[data-qxmrm]');
     if(qty || qma || qmr){
       const x = qt.it.find(y => y.id === (t.closest('[data-qxid]') || {}).dataset.qxid); if(!x) return;
@@ -73597,7 +73618,7 @@
     if(t.closest('[data-qticancel]')){ qt.draft = null; qtRender(); return; }
     if(t.closest('[data-qtisave]')){
       qtReadIt(); const D = qt.draft && qt.draft.it; if(!D) return;
-      if(!D.n){ showDialog('warn', 'قلم کار', 'نام قلم را بنویسید.'); return; }
+      if(!D.n){ showDialog('warn', 'ردیف کار', 'نام ردیف را بنویسید.'); return; }
       const it = Object.assign({}, D, {id: qtNewId(), k: qt.draft.k});
       if(['wall', 'wc', 'perim'].indexOf(it.b) !== -1 && !it.dd) it.dd = 'auto';
       qt.saving = true;
@@ -73606,7 +73627,7 @@
       return;
     }
     const ir = t.closest('[data-qtirm]'); if(ir){
-      if(!(await askConfirm('حذف قلم', 'این قلم از متره حذف شود؟', 'حذف'))) return;
+      if(!(await askConfirm('حذف ردیف', 'این ردیف از متره حذف شود؟', 'حذف'))) return;
       try{ await qtSaveRow(QT_IT_KIND, ir.dataset.qtirm, null); qt.it = qt.it.filter(x => x.id !== ir.dataset.qtirm); qtRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       return;
     }
@@ -73820,7 +73841,7 @@
     try{
       const pre = qtKey(fk, u); const M = new Map();
       qt.it.filter(x => x.k === pre || String(x.k).indexOf(pre + '/') === 0).forEach(x => { const k = (x.st || '') + '¦' + (x.n || '') + '¦' + (x.u || ''); const m = M.get(k) || {st: x.st, n: x.n, u: x.u, q: 0}; m.q += qtQty(x); M.set(k, m); });
-      if(M.size) h += '<div class="uc-sec"><div class="uc-sh">متره و برآورد<em>' + toFa(M.size) + ' قلم</em></div><div class="uc-qt">' + Array.from(M.values()).map(m => '<div><span class="wh-chip run">' + esc(m.st || '') + '</span><b>' + esc(m.n || '') + '</b><em>' + qtFmt(m.q) + ' <small>' + esc(m.u || '') + '</small></em></div>').join('') + '</div></div>';
+      if(M.size) h += '<div class="uc-sec"><div class="uc-sh">متره و برآورد<em>' + toFa(M.size) + ' ردیف</em></div><div class="uc-qt">' + Array.from(M.values()).map(m => '<div><span class="wh-chip run">' + esc(m.st || '') + '</span><b>' + esc(m.n || '') + '</b><em>' + qtFmt(m.q) + ' <small>' + esc(m.u || '') + '</small></em></div>').join('') + '</div></div>';
     }catch(e){}
     /* کارهای ثبت‌شده در گزارش روزانه با محل همین واحد */
     try{
