@@ -20390,6 +20390,16 @@
   .rw-sug button{all:unset;cursor:pointer;max-width:100%;box-sizing:border-box;font-size:11.5px;font-weight:600;color:var(--ink);padding:5px 10px;border-radius:99px;background:color-mix(in srgb, var(--sky) 9%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 22%, var(--line));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .rw-sug button::before{content:"+ ";color:var(--sky);font-weight:800;}
   .rw-sug button:hover{background:color-mix(in srgb, var(--sky) 16%, var(--surface));}
+  .rw-split{margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb, var(--sky) 6%, var(--surface));border:1px dashed color-mix(in srgb, var(--sky) 35%, var(--line));}
+  .rws-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;} .rws-h b{font-size:12.5px;font-weight:800;} .rws-h small{font-size:11px;color:var(--muted);}
+  .rws-eq{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11.5px;font-weight:700;color:var(--sky);padding:3px 9px;border-radius:99px;background:color-mix(in srgb, var(--sky) 12%, var(--surface));}
+  .rws-l{display:grid;gap:5px;}
+  .rws-r{display:grid;grid-template-columns:minmax(0,1.4fr) 64px 64px 40px;gap:6px;align-items:center;}
+  .rws-r > span{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rws-r input{height:34px;text-align:center;padding:0 4px !important;font-size:13px;border-radius:10px;}
+  .rws-r em{font-style:normal;font-weight:800;font-size:12.5px;text-align:center;color:var(--sky);}
+  .rws-hd u{text-decoration:none;font-size:10.5px;font-weight:700;color:var(--muted);text-align:center;}
+  .crew.invalid{box-shadow:0 0 0 2px color-mix(in srgb, var(--alert) 55%, transparent) !important;}
   .sph-ov{position:fixed;inset:0;z-index:2000;background:rgba(10,16,28,.45);display:grid;place-items:end center;padding:16px;}
   @media (min-width:640px){ .sph-ov{place-items:center;} }
   .sph-box{width:min(420px, 100%);box-sizing:border-box;background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:wsIn .25s ease-out;}
@@ -45045,7 +45055,62 @@
       if(z) bits.push('<i class="zn">' + esc(toFa(z)) + '</i>');
       sub.innerHTML = bits.join('');
     }
+    crSplitPaint(el);
   }
+  /* ====== تقسیم نفرات بین چند طبقه ======
+     وقتی برای یک ردیف چند طبقه انتخاب شود، نفرات ردیف بین طبقه‌ها تقسیم می‌شود
+     (پیش‌فرض مساوی، قابل تغییر برای هر طبقه) و هنگام ثبت، هر طبقه یک ردیف جدا
+     با محل خودش می‌شود تا گزارش‌های طبقه، محل و نیرو درست جمع بخورند. */
+  const crFsOf = el => { const r0 = el.querySelector('.sl-row'); const fs = String((r0 && r0.dataset.fls) || '').split(',').filter(Boolean); return fs.length > 1 && fs[0] !== 'ALL' ? fs : []; };
+  function crDist(n, k){ const b = Math.floor(n / k), m = n - b * k; return Array.from({length: k}, (_, i) => b + (i < m ? 1 : 0)); }
+  function crSplitOf(el){
+    const fs = crFsOf(el); if(!fs.length) return null;
+    let sp = null; try{ sp = el.dataset.spl ? JSON.parse(el.dataset.spl) : null; }catch(e){ sp = null; }
+    const v = c => num(((el.querySelector(c) || {}).value || '').trim());
+    if(sp && fs.every(k => sp[k])) return fs.map(k => ({k, o: +sp[k][0] || 0, s: +sp[k][1] || 0}));
+    const dO = crDist(v('.c-ostad'), fs.length), dS = crDist(v('.c-shagerd'), fs.length);
+    return fs.map((k, i) => ({k, o: dO[i], s: dS[i], auto: 1}));
+  }
+  function crSplitPaint(el){
+    const fs = crFsOf(el); let box = el.querySelector('.rw-split');
+    if(!fs.length){ if(box) box.remove(); delete el.dataset.spl; return; }
+    if(el.dataset.spl){ try{ const sp = JSON.parse(el.dataset.spl); if(!fs.every(k => sp[k])) delete el.dataset.spl; }catch(e){ delete el.dataset.spl; } }
+    const ae0 = document.activeElement;
+    if(el.dataset.spl && !(ae0 && ae0.closest && ae0.closest('.rw-split'))){ const L0 = crSplitOf(el), v = c => num(((el.querySelector(c) || {}).value || '').trim());
+      if(L0.reduce((t, x) => t + x.o, 0) !== v('.c-ostad') || L0.reduce((t, x) => t + x.s, 0) !== v('.c-shagerd')) delete el.dataset.spl; }
+    const L = crSplitOf(el), man = !!el.dataset.spl;
+    if(!box){ box = document.createElement('div'); box.className = 'rw-split'; const g = el.querySelector('.crew-grid'); g.parentNode.insertBefore(box, g.nextSibling); }
+    const key = fs.join(',');
+    const ae = document.activeElement, inBox = ae && box.contains(ae);
+    if(box.dataset.k !== key || !inBox){
+      box.dataset.k = key;
+      box.innerHTML = '<div class="rws-h"></div>'
+        + '<div class="rws-l"><div class="rws-r rws-hd"><span></span><u>استادکار</u><u>شاگرد</u><u>جمع</u></div>'
+        + L.map(x => '<div class="rws-r" data-k="' + esc(x.k) + '"><span>' + esc(toFa(window.slFloorLb ? window.slFloorLb(x.k) : x.k)) + '</span>'
+          + '<input type="text" inputmode="numeric" class="num-in rws-o" value="' + (x.o ? toFa(x.o) : '') + '" placeholder="۰">'
+          + '<input type="text" inputmode="numeric" class="num-in rws-s" value="' + (x.s ? toFa(x.s) : '') + '" placeholder="۰">'
+          + '<em>' + toFa(x.o + x.s) + '</em></div>').join('') + '</div>';
+    } else {
+      L.forEach(x => { const rw = box.querySelector('.rws-r[data-k="' + CSS.escape(x.k) + '"]'); if(rw){ const em = rw.querySelector('em'); if(em) em.textContent = toFa(x.o + x.s); } });
+    }
+    box.querySelector('.rws-h').innerHTML = '<b>تقسیم نفرات بین ' + toFa(fs.length) + ' طبقه</b><small>' + (man ? 'دستی' : 'مساوی؛ برای تغییر، عدد هر طبقه را بنویسید') + '</small>'
+      + (man ? '<button type="button" class="rws-eq" data-rwseq="1">تقسیم مساوی</button>' : '');
+  }
+  document.addEventListener('input', e => {
+    const t = e.target; if(!t.classList || !(t.classList.contains('rws-o') || t.classList.contains('rws-s'))) return;
+    const el = t.closest('.crew'); if(!el) return;
+    const sp = {}; el.querySelectorAll('.rws-r[data-k]').forEach(rw => { sp[rw.dataset.k] = [num(rw.querySelector('.rws-o').value), num(rw.querySelector('.rws-s').value)]; });
+    el.dataset.spl = JSON.stringify(sp);
+    const O = Object.values(sp).reduce((a, x) => a + x[0], 0), S = Object.values(sp).reduce((a, x) => a + x[1], 0);
+    const io = el.querySelector('.c-ostad'), is = el.querySelector('.c-shagerd');
+    if(io) io.value = O ? toFa(O) : ''; if(is) is.value = S ? toFa(S) : '';
+    try{ totals(); saveDraft(); }catch(err){}
+  }, true);
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-rwseq]'); if(!b) return;
+    const el = b.closest('.crew'); delete el.dataset.spl; const bx = el.querySelector('.rw-split'); if(bx) bx.dataset.k = '';
+    crewPaint(el); try{ saveDraft(); }catch(err){}
+  });
 
   /* ====== عکس هر ردیف گزارش ======
      هر ردیف پیمانکار و هر مشکل می‌تواند چند عکس داشته باشد. عکس پیش از آپلود
@@ -45113,6 +45178,7 @@
     const id = {n:nid('n'), k:nid('k'), o:nid('o'), s:nid('s'), z:nid('z'), z2:nid('z2'), a:nid('a')};
     const el = document.createElement('div');
     el.className = 'crew cr2';
+    if(d.spl) el.dataset.spl = d.spl;
     el.innerHTML = [
       rwHeadHtml('crew-no', 'پیمانکار تازه'),
       '<div class="rw-body">',
@@ -45757,7 +45823,8 @@
       zone: c.querySelector('.c-zone').value.trim(),
       sub: c.querySelector('.c-sub').value.trim(),
       activity: c.querySelector('.c-act').value.trim(),
-      photos: ((c.querySelector('.c-photos') || {}).value || '').trim()
+      photos: ((c.querySelector('.c-photos') || {}).value || '').trim(),
+      spl: c.dataset.spl || '', split: crSplitOf(c)
     }));
     const issues = [];
     issueRows.querySelectorAll('.issue').forEach(el => issues.push({
@@ -50887,8 +50954,28 @@
       msg('warn', 'چند لحظه صبر کنید تا آپلود عکس‌ها تمام شود، بعد ثبت کنید.');
       return;
     }
-    const contractors = raw.contractors.filter(c => c.name || c.activity)
-      .map(c => ({name:c.name, skill:c.skill, ostad:String(num(c.ostad)), shagerd:String(num(c.shagerd)), zone:c.zone, subzone:c.sub, activity:c.activity, photos:c.photos || ''}));
+    /* ردیف بدون محل یا تخصص ثبت نمی‌شود؛ گزارش‌های طبقه و تخصص به آن‌ها وابسته‌اند */
+    const badRows = [];
+    raw.contractors.forEach((c, i) => { if(!(c.name || c.activity)) return; const miss = [];
+      if(!c.name) miss.push('پیمانکار'); if(!c.skill) miss.push('تخصص'); if(!c.zone) miss.push('طبقه و محل');
+      if(miss.length) badRows.push({i, miss}); });
+    document.querySelectorAll('#crewRows .crew').forEach((el, i) => el.classList.toggle('invalid', badRows.some(b => b.i === i)));
+    if(badRows.length){
+      msg('err', 'چند ردیف ناقص است.');
+      showDialog('warn', 'ردیف ناقص', badRows.slice(0, 6).map(b => 'ردیف ' + toFa(b.i + 1) + ': ' + b.miss.join('، ')).join('\n') + '\nبرای هر ردیف پیمانکار، تخصص و طبقه و محل لازم است.');
+      const f = document.querySelectorAll('#crewRows .crew')[badRows[0].i]; if(f) try{ f.scrollIntoView({behavior:'smooth', block:'center'}); }catch(err){}
+      return;
+    }
+    const contractors = [];
+    raw.contractors.filter(c => c.name || c.activity).forEach(c => {
+      const one = (zone, o, s, ph) => ({name:c.name, skill:c.skill, ostad:String(o), shagerd:String(s), zone, subzone:c.sub, activity:c.activity, photos:ph || ''});
+      if(c.split && c.split.length > 1 && window.slParse){
+        const P = window.slParse(c.zone), per = P.per || {};
+        c.split.filter(x => x.o + x.s > 0).forEach((x, j) => contractors.push(one(window.slCompose([x.k], per[x.k] != null ? per[x.k] : P.l1), x.o, x.s, j ? '' : c.photos)));
+        return;
+      }
+      contractors.push(one(c.zone, num(c.ostad), num(c.shagerd), c.photos));
+    });
     const issues = [];
     (raw.issues || []).forEach(it => {
       /* عکس‌های یک ردیف چندخطی روی بند اولش ثبت می‌شود */
@@ -74849,6 +74936,7 @@
       + '</div>';
   }
   window.slHtml = slHtml;
+  window.slParse = slParse; window.slCompose = slCompose; window.slFloorLb = k => (slFloorByLabel(k) || {label: k}).label;
   function slSync(row, fromFloor){
     const fs = slFsOf(row), l1 = row.querySelector('.sl-1'), hz = row.querySelector('.' + row.dataset.slzc);
     const w2 = row.querySelector('.sl-2w'), s2 = w2 && w2.querySelector('input');
