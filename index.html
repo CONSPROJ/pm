@@ -21778,6 +21778,14 @@
   .rs-dnav{display:flex;align-items:center;gap:8px;} .rs-dnav b{flex:1;text-align:center;font-size:15px;font-weight:900;}
   .rs-dnav button{width:40px;height:40px;border-radius:12px;border:0;background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;}
   .rs-dnav button svg{width:16px;height:16px;} .rs-dnav button:disabled{opacity:.3;cursor:default;}
+  .rs-per{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);}
+  .rs-per button{all:unset;cursor:pointer;padding:5px 11px;border-radius:9px;font:700 11.5px var(--f);color:rgba(255,255,255,.7);}
+  .rs-per button.on{background:#fff;color:#0f1720;}
+  .rs-spk2{gap:3px;height:150px;padding-bottom:18px;} .rs-spk2 i{border-radius:5px 5px 2px 2px;} .rs-spk2 i.z{opacity:.25;}
+  .rs-spk2 i s{position:absolute;bottom:-17px;left:-4px;right:-4px;text-align:center;text-decoration:none;font-size:9px;color:rgba(255,255,255,.55);white-space:nowrap;}
+  .rs-spk2:not(.yr) i:nth-child(odd) s{visibility:hidden;}
+  .rs-spk2.yr{gap:8px;} .rs-spk2.yr i s{font-size:10px;}
+  .rs-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;} @media (max-width:700px){ .rs-cols{grid-template-columns:1fr;} }
   .rs-dq{display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;}
   .rs-dq button{height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:transparent;color:#fff;font:700 11.5px var(--f);cursor:pointer;}
   .rs-dq button:hover{background:rgba(255,255,255,.12);}
@@ -41870,7 +41878,7 @@
     nx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
     pv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
   };
-  const rsState = {i:0, n:0, timer:null, play:true, dur:9000, day:''};
+  const rsState = {i:0, n:0, timer:null, play:true, dur:9000, day:'', per:'day'};
   async function rsData(day){
     const today = normDate(day) || todayShamsi();
     const b = await fetchBundle(today);
@@ -42037,6 +42045,65 @@
       el.textContent = toFa(from); requestAnimationFrame(step);
     });
   }
+  /* ====== خلاصهٔ ماهانه و سالانه ======
+     همان اسلایدها برای یک بازه: نفر-روز، میانگین روزانه، روند (روزهای ماه یا ماه‌های سال)،
+     پیمانکاران، تخصص‌ها و محل‌ها، موانع بازه؛ کارها و مالی همان وضعیت امروزند. */
+  const RS_MON = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  async function rsPeriodData(day, per){
+    const D = await rsData(day);
+    let R = {dates: [], rows: [], issues: []}, PR = null;
+    try{ const x = await fetchRange(D.today, per); R = {dates: x.dates, rows: per === 'month' ? await withBalanceRows(x.rows, x.dates) : x.rows, issues: x.issues || []}; }catch(e){}
+    if(per === 'month'){ try{ const x = await fetchRange(normDate(faAddDays(toFa(D.today), -30)), 'month'); PR = {rows: await withBalanceRows(x.rows, x.dates)}; }catch(e){} }
+    return Object.assign(D, {per, R, PR});
+  }
+  function rsPeriodSlides(D){
+    const per = D.per, A = ktAgg(D.R.rows), PA = D.PR ? ktAgg(D.PR.rows) : null;
+    const lbl = per === 'year' ? 'سالانه' : 'ماهانه', span = per === 'year' ? '۱۲ ماه اخیر' : '۳۰ روز اخیر';
+    const proj = (document.getElementById('projectName') || {}).value || 'پروژه';
+    const k = (v, l, extra) => '<div class="rs-k"><b>' + v + '</b><u>' + l + '</u>' + (extra || '') + '</div>';
+    const avg = A.avg(A.men), pavg = PA ? PA.avg(PA.men) : 0;
+    const dd = pavg ? Math.round((avg - pavg) / pavg * 100) : null;
+    const dEm = dd == null ? '' : '<em class="' + (dd >= 0 ? 'up' : 'dn') + '">' + (dd >= 0 ? '▲ ' : '▼ ') + toFa(Math.abs(dd)) + '٪ نسبت به ماه قبل</em>';
+    const ds = D.R.dates || [], d0 = ds[0] ? toFa(ds[0]) : '', d1 = toFa(D.today);
+    /* روند: ماه = هر روز یک ستون؛ سال = هر ماه یک ستون (میانگین روزانهٔ آن ماه) */
+    let bars = [];
+    if(per === 'year'){
+      const mm = new Map();
+      ds.forEach(d => { const p = toEn(String(d)).split('/'); const key = p[0] + '/' + p[1]; const v = A.byDay.get(dayKey(d)) || 0; const o = mm.get(key) || {t: 0, n: 0, m: +p[1]}; o.t += v; if(v) o.n++; mm.set(key, o); });
+      bars = Array.from(mm.values()).map(o => ({v: o.n ? Math.round(o.t / o.n) : 0, l: RS_MON[o.m - 1] || ''}));
+    } else bars = ds.map(d => ({v: A.byDay.get(dayKey(d)) || 0, l: toFa(String(toEn(String(d))).slice(8))}));
+    const mxv = Math.max(1, ...bars.map(b => b.v));
+    const ctr = Array.from(A.ctr.values()).sort((a, b) => b.v - a.v).map(x => [x.n, x.v]);
+    const sk = new Map(), zn = new Map();
+    D.R.rows.forEach(r0 => { const m = ktMen(r0); if(!m) return; const s0 = String(pick(r0,F.skill) || '').trim() || 'بدون تخصص'; sk.set(s0, (sk.get(s0) || 0) + m);
+      let z = String(pick(r0,F.zone) || '').trim(); try{ const ks = floorKeysOf(z) || []; if(ks.length === 1){ const fl = (spFloors() || []).find(f => f.key === ks[0]); if(fl) z = fl.label; } }catch(e){} z = z || 'بدون محل'; zn.set(z, (zn.get(z) || 0) + m); });
+    const iss = (typeof dedupeIssues === 'function' ? dedupeIssues(D.R.issues || []) : (D.R.issues || []));
+    const byW = new Map(); iss.forEach(r0 => { const w = String(pick(r0,I.who) || '').trim() || 'بدون پیمانکار'; byW.set(w, (byW.get(w) || 0) + 1); });
+    const peak = bars.reduce((b, x) => x.v > b.v ? x : b, {v: 0, l: ''});
+    const S = [];
+    S.push({key:'cover', h: '<div class="rs-cover"><span class="rs-tag">خلاصه گزارش ' + lbl + '</span><h1>' + esc(proj) + '</h1><p>' + esc(d0 ? d0 + ' تا ' + d1 : span) + '</p>'
+      + '<div class="rs-ks">' + k(rsCU(A.men), 'نفر-روز کار') + k(rsCU(avg), 'میانگین نفرات روزانه', dEm) + k(rsCU(A.days), 'روز گزارش‌شده') + k(rsCU(A.ctr.size), 'پیمانکار فعال') + '</div></div>'});
+    S.push({key:'men', h: '<div class="rs-h"><span class="rs-tag">روند نیرو (' + span + ')</span><h2>' + rsCU(avg) + ' <small>نفر میانگین روزانه</small></h2></div>'
+      + '<div class="rs-ks v">' + k(toFa(peak.v), 'بیشترین' + (peak.l ? ' · ' + esc(peak.l) : '')) + k(toFa(A.am), 'نفر-روز امانی') + k(toFa(A.pe), 'نفر-روز پیمانی') + '</div>'
+      + (bars.length ? '<div class="rs-spark rs-spk2' + (per === 'year' ? ' yr' : '') + '" dir="ltr">' + bars.map((b, j) => '<i style="--h:' + Math.max(3, Math.round(b.v / mxv * 100)) + '%;--j:' + Math.min(j, 30) + '"' + (b.v ? '' : ' class="z"') + '>' + (per === 'year' || b.v === peak.v ? '<u>' + toFa(b.v) + '</u>' : '') + '<s>' + esc(b.l) + '</s></i>').join('') + '</div>' : '')});
+    if(ctr.length) S.push({key:'ctr', h: '<div class="rs-h"><span class="rs-tag">پیمانکاران</span><h2>' + toFa(A.ctr.size) + ' <small>پیمانکار · نفر-روز</small></h2></div>' + rsBars(ctr, 8)});
+    S.push({key:'skz', h: '<div class="rs-h"><span class="rs-tag">تخصص‌ها و محل‌ها</span><h2>کجا و چه کاری <small>نفر-روز</small></h2></div>'
+      + '<div class="rs-cols"><div>' + rsBars(Array.from(sk.entries()).sort((a, b) => b[1] - a[1]), 6, 'sm') + '</div><div>' + rsBars(Array.from(zn.entries()).sort((a, b) => b[1] - a[1]), 6, 'sm') + '</div></div>'});
+    /* کارها، مالی و قراردادها: همان اسلایدهای وضعیت امروز */
+    try{ rsSlides(D).filter(x => ['tasks', 'fin', 'contract', 'ct'].indexOf(x.key) !== -1 || /^ct/.test(x.key)).forEach(x => S.push(x)); }catch(e){}
+    S.push({key:'iss', h: '<div class="rs-h"><span class="rs-tag">موانع (' + span + ')</span><h2>' + toFa(iss.length) + ' <small>مانع</small></h2></div>'
+      + (iss.length ? rsBars(Array.from(byW.entries()).sort((a, b) => b[1] - a[1]), 6, 'bad') : '<p class="rs-p">در این بازه مانعی ثبت نشده است.</p>')});
+    const tips = [];
+    if(dd != null) tips.push(['نیروی کارگاه', 'میانگین روزانه ' + toFa(avg) + ' نفر؛ ' + (dd >= 0 ? toFa(dd) + '٪ بیشتر' : toFa(-dd) + '٪ کمتر') + ' از ماه قبل.', dd >= 0 ? 'ok' : 'warn']);
+    if(ctr.length) tips.push(['پیمانکار اصلی', esc(ctr[0][0]) + ' با ' + toFa(ctr[0][1]) + ' نفر-روز بیشترین سهم را داشته (' + toFa(A.men ? Math.round(ctr[0][1] / A.men * 100) : 0) + '٪).', 'ok']);
+    if(ds.length && A.days < ds.length * .6) tips.push(['گزارش‌دهی', 'فقط برای ' + toFa(A.days) + ' روز از ' + toFa(ds.length) + ' روز گزارش ثبت شده است.', 'warn']);
+    if(iss.length) tips.push(['موانع', toFa(iss.length) + ' مانع در این بازه' + (byW.size ? '؛ بیشترین مربوط به ' + esc(Array.from(byW.entries()).sort((a, b) => b[1] - a[1])[0][0]) : '') + '.', 'warn']);
+    if(!tips.length) tips.push(['وضعیت', 'نکتهٔ نگران‌کننده‌ای در این بازه دیده نشد.', 'ok']);
+    S.push({key:'tips', h: '<div class="rs-h"><span class="rs-tag">نکته‌های کلیدی</span><h2>جمع‌بندی ' + lbl + '</h2></div>'
+      + '<div class="rs-tips">' + tips.map((t, j) => '<div class="rs-tip ' + t[2] + '" style="--j:' + j + '"><i></i><span><b>' + esc(t[0]) + '</b>' + t[1] + '</span></div>').join('') + '</div>'
+      + '<div class="rs-cta"><button type="button" class="rs-go" data-rsgo="daily|' + (per === 'year' ? 'year' : 'month') + '">گزارش کامل ' + lbl + '</button></div>'});
+    return S;
+  }
   function rsSlides(D){
     const A = ktAgg(D.rowsT), P = ktAgg(D.prevT), WA = ktAgg(D.W.rows), PWA = ktAgg(D.PW.rows);
     const dlt = (a, b) => { const d = a - b; return d ? '<em class="' + (d > 0 ? 'up' : 'dn') + '">' + (d > 0 ? '▲ ' : '▼ ') + toFa(Math.abs(d)) + '</em>' : '<em>بی‌تغییر</em>'; };
@@ -42128,6 +42195,7 @@
     w.className = 'rs';
     w.innerHTML = '<div class="ix-bg"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>'
       + '<div class="rs-top"><div class="rs-prog"></div>'
+      + '<div class="rs-per">' + [['day','روز'],['month','ماه'],['year','سال']].map(x => '<button type="button" data-rsper="' + x[0] + '"' + (rsState.per === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>').join('') + '</div>'
       + '<button type="button" class="rs-date" data-rsdate="1">' + RS_CAL + '<span></span></button>'
       + '<button type="button" class="rs-ic" data-rsplay="1" aria-label="توقف">' + RS_I.pause + '</button><button type="button" class="rs-ic" data-rsx="1" aria-label="بستن">' + RS_I.x + '</button>'
       + '<div class="rs-dpop" hidden><div class="rs-dnav"><button type="button" data-rsday="-1" aria-label="روز قبل">' + RS_I.pv + '</button><b></b><button type="button" data-rsday="1" aria-label="روز بعد">' + RS_I.nx + '</button></div>'
@@ -42148,13 +42216,14 @@
     rsState.day = day;
     const keep = first ? 0 : rsState.i;
     clearTimeout(rsState.timer);
-    w.querySelector('.rs-date span').textContent = rsDateLabel(day);
+    w.querySelector('.rs-date span').textContent = (rsState.per === 'month' ? 'ماهانه تا ' : rsState.per === 'year' ? 'سالانه تا ' : '') + rsDateLabel(day);
+    w.querySelectorAll('[data-rsper]').forEach(b => b.classList.toggle('on', b.dataset.rsper === rsState.per));
     const pb = w.querySelector('.rs-dnav b'); if(pb) pb.textContent = taskDate(day) || toFa(day);
     const nx = w.querySelector('[data-rsday="1"]'); if(nx) nx.disabled = day === t;
     w.querySelector('.rs-stage').innerHTML = '<div class="rs-load"><i></i><i></i><i></i><span>در حال آماده‌سازی گزارش ' + esc(rsDateLabel(day)) + '…</span></div>';
     const tk = (rsState.tk = (rsState.tk || 0) + 1);
     let S = [];
-    try{ S = rsSlides(await rsData(day)); }catch(e){ S = [{key:'err', h:'<div class="rs-h"><h2>گزارش آماده نشد</h2><p class="rs-p">اتصال را بررسی کنید و دوباره امتحان کنید.</p></div>'}]; }
+    try{ S = rsState.per === 'day' ? rsSlides(await rsData(day)) : rsPeriodSlides(await rsPeriodData(day, rsState.per)); }catch(e){ S = [{key:'err', h:'<div class="rs-h"><h2>گزارش آماده نشد</h2><p class="rs-p">اتصال را بررسی کنید و دوباره امتحان کنید.</p></div>'}]; }
     if(!document.body.contains(w) || tk !== rsState.tk) return;
     w.querySelector('.rs-stage').innerHTML = S.map((s, i) => '<section class="rs-s rsk-' + s.key + '" data-rsi="' + i + '">' + s.h + '</section>').join('');
     w.querySelector('.rs-prog').innerHTML = S.map((s, i) => '<button type="button" data-rsj="' + i + '"><b></b></button>').join('');
@@ -42194,6 +42263,8 @@
       if(!dp.hidden){ rsState.play = false; const pl0 = t.closest('.rs').querySelector('[data-rsplay]'); if(pl0) pl0.innerHTML = RS_I.play; rsGo(rsState.i); }
       return;
     }
+    const sp = t.closest('[data-rsper]');
+    if(sp){ if(rsState.per !== sp.dataset.rsper){ rsState.per = sp.dataset.rsper; rsLoad(rsState.day, true); } return; }
     const sd = t.closest('[data-rsday]');
     if(sd){ rsLoad(normDate(faAddDays(toFa(rsState.day), +sd.dataset.rsday))); return; }
     const sq = t.closest('[data-rsq]');
