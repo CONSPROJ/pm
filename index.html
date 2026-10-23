@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023151415">
+<meta name="pm-build" content="20261023151849">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20781,6 +20781,19 @@
   .kt-g .kt-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px;}
   .kt-g .kt-more{margin:0 8px 8px;}
 
+  /* نمایندهٔ پیمانکار روی کارت */
+  .ct-rep{display:flex;align-items:center;gap:10px;margin:8px 14px 4px;padding:9px 12px;border-radius:14px;background:color-mix(in srgb, var(--sky) 8%, var(--field));border:1px solid color-mix(in srgb, var(--sky) 20%, transparent);}
+  .ct-rep.none{background:var(--field);border-style:dashed;border-color:var(--line);color:var(--muted);} .ct-rep > svg{width:18px;height:18px;flex:none;}
+  .ct-rep-t, .ct-rep.none > span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;} .ct-rep small{font-size:10px;color:var(--muted);font-weight:700;}
+  .ct-rep b{font-size:13px;font-weight:800;color:var(--ink);} .ct-rep em{font-style:normal;font-size:10px;color:var(--sky);font-weight:700;}
+  .ct-rep-tel{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:99px;background:var(--surface);color:var(--ink);font-size:11.5px;font-weight:700;text-decoration:none;}
+  .ct-rep-tel svg{width:13px;height:13px;color:var(--ok);}
+  .ct-rep-ed{all:unset;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;color:var(--muted);} .ct-rep-ed:hover{background:var(--surface);color:var(--ink);}
+  .ctc-ed:not([data-pty="ctr"]) .ctc-sv, .ctc-ed:not([data-pty="ctr"]) .ctc-svr{display:none !important;}
+  .ctyp-em{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0;} .ctyp-em[hidden], .ctyp-un[hidden]{display:none !important;}
+  .ctyp-rb{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--field);font-size:12px;font-weight:700;cursor:pointer;}
+  .ctyp-rb input{accent-color:var(--sky);}
+
   /* عکس پیمانکار کنار نامش */
   .ava.ctr-ava.auto{display:inline-grid;place-items:center;width:20px !important;height:20px !important;min-width:20px;border-radius:50%;overflow:hidden;vertical-align:-5px;margin:0 0 0 5px !important;font-size:8.5px !important;font-weight:800;line-height:1;
     background:color-mix(in srgb, var(--sky) 14%, var(--field));color:var(--sky);box-shadow:0 0 0 1.5px var(--surface);flex:none;}
@@ -35499,7 +35512,7 @@
       + '<div class="ctc-svr"><label class="ctc-f"><span>نام نماینده</span><input type="text" data-ctk="svn" value="' + esc((c.sv || {}).n || '') + '" placeholder="مثلاً مهندس کریمی"></label>'
       + '<label class="ctc-f"><span>تلفن نماینده</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="svp" value="' + esc((c.sv || {}).p || '') + '" placeholder="09xxxxxxxxx"></label>'
       + '<label class="ctc-f"><span>حساب کاربری در سامانه <small>اختیاری</small></span><input type="text" data-ctk="svu" data-list="engineerList" value="' + esc((c.sv || {}).u || '') + '" placeholder="نام کاربری که وارد سایت می‌شود" autocomplete="off"></label></div>'
-      + '<div class="ctc-grp"><b>افراد و نمایندگان</b><small>سمت هر نفر (مدیر مالی، نمایندهٔ کارفرما، شریک…) و در صورت نیاز درصد سهم او؛ کارشناس‌ها فقط با این افراد تماس می‌گیرند</small></div>'
+      + '<div class="ctc-grp"><b>' + (pty === 'emp' ? 'نیروهای کارفرما و سمت هر نفر' : 'افراد و نمایندگان') + '</b><small>سمت هر نفر (مدیر مالی، نمایندهٔ کارفرما، شریک…) و در صورت نیاز درصد سهم او؛ کارشناس‌ها فقط با این افراد تماس می‌گیرند</small></div>'
       + '<div class="ctc-reps">' + (Array.isArray(c.r) ? c.r : []).map(ctcRepRowHtml).join('') + '</div>'
       + '<button type="button" class="ctc-add" data-ctcrep="1">+ شخص دیگر</button>'
       + '<label class="ctc-f"><span>واتساپ (اگر با تلفن فرق دارد)</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="w" value="' + esc(c.w || '') + '" placeholder="همان تلفن همراه"></label>'
@@ -35795,10 +35808,20 @@
   /* دیسیپلین ثبت‌شده در پرونده و برچسب نقش: «مشاور الکتریکال»، «پیمانکار مکانیکال»، «تیم کارفرما» */
   function ctrDiscOf(n){ try{ const c = ctrContactOf(n); return (c && c.d) || ''; }catch(e){ return ''; } }
   /* «مالک هم هست» روی کارت کسی که نوع اصلی‌اش مالک نیست */
-  function ctOwnBadge(n){
-    let rb = ''; try{ const c0 = ctrContactOf(n) || {}; if(c0.sv && (c0.sv.n || c0.sv.u)) rb = '<em class="ct-svb">' + CTC_I.user + 'نماینده: ' + esc(c0.sv.n || c0.sv.u) + (c0.sv.p ? ' · <span dir="ltr">' + esc(toFa(c0.sv.p)) + '</span>' : '') + '</em>'; }catch(e){}
-    return rb + ctOwnBadge0(n);
+  function ctOwnBadge(n){ return ctOwnBadge0(n); }
+  /* ردیف «نمایندهٔ پیمانکار · سرپرست کارگاه» زیر سرتیتر کارت پیمانکار */
+  function ctRepRow(n){
+    let c = {}; try{ c = ctrContactOf(n) || {}; }catch(e){}
+    try{ const t = ctrTypeOf(n); if(t && t !== 'ctr') return ''; }catch(e){}
+    const sv = c.sv || {}; let ed = false; try{ ed = isAdminUser() || can('ctr.contact'); }catch(e){}
+    if(!(sv.n || sv.u)) return ed ? '<div class="ct-rep none">' + CTC_I.user + '<span><b>نمایندهٔ پیمانکار تعیین نشده</b><small>سرپرست کارگاه این پیمانکار را در پرونده مشخص کنید</small></span><button type="button" class="mini" data-ctcedit="' + esc(n) + '">تعیین نماینده</button></div>' : '';
+    const who = sv.n || sv.u;
+    return '<div class="ct-rep"><span class="ct-rep-av">' + avatarHtml(sv.u || who, 'sm', true) + '</span><span class="ct-rep-t"><small>نمایندهٔ پیمانکار · سرپرست کارگاه</small><b>' + esc(who) + '</b>'
+      + (sv.u ? '<em>' + (nameKey(sv.u) === nameKey(who) ? 'کاربر سامانه' : 'حساب: ' + esc(sv.u)) + '</em>' : '') + '</span>'
+      + (sv.p ? '<a class="ct-rep-tel" href="tel:' + esc(telOf(sv.p)) + '" dir="ltr">' + CTC_I.tel + esc(toFa(sv.p)) + '</a>' : '')
+      + (ed ? '<button type="button" class="ct-rep-ed" data-ctcedit="' + esc(n) + '" title="تغییر نماینده" aria-label="تغییر نماینده">✎</button>' : '') + '</div>';
   }
+  window.ctRepRow = ctRepRow;
   function ctOwnBadge0(n){
     try{ const c = ctrContactOf(n) || {}; if(c.t === 'own') return '';
       if(c.ow || (window.unitsOfOwner && window.unitsOfOwner(n).length)) return '<em class="ct-ownb">مالک هم هست</em>'; }catch(e){}
@@ -35808,9 +35831,10 @@
     t = t || ctrTypeOf(n);
     const d = ctrDiscOf(n);
     let ro = ''; try{ ro = (ctrContactOf(n) || {}).ro || ''; }catch(e){}
-    if(t === 'emp') return 'تیم کارفرما' + (ro ? ' · ' + ro : '');
+    let em = false, un = ''; try{ const c1 = ctrContactOf(n) || {}; em = !!c1.em; un = c1.un || ''; }catch(e){}
+    if(t === 'emp') return (em ? 'کارفرما' : 'تیم کارفرما') + (ro ? ' · ' + ro : '');
     if(t === 'own') return ro || 'مالک';
-    if(t === 'cons' && ro) return ro;
+    if(t === 'cons') return (ro || ('مشاور' + (d ? ' ' + d : ''))) + (un === 'emp' ? ' · زیر نظر کارفرما' : un === 'pm' ? ' · زیر نظر مدیریت پیمان' : '');
     return (t === 'cons' ? 'مشاور' : 'پیمانکار') + (d ? ' ' + d : '');
   }
   /* هم‌رشته بودن دیسیپلین پرونده با رشتهٔ سند (برق = الکتریکال …) */
@@ -35830,7 +35854,7 @@
     const used = []; try{ ctrContacts.forEach(o => { if(o && o.t === t && o.ro) used.push(o.ro); }); }catch(e){}
     dl.innerHTML = Array.from(new Set((CTR_ROLE_SUG[t] || []).concat(used))).map(v => '<option value="' + esc(v) + '">').join('');
   }
-  function ctypHtml(cur, ro, d, ow){
+  function ctypHtml(cur, ro, d, ow, em, un){
     cur = cur || 'ctr';
     try{ ctrRoleListFor(cur); }catch(e){}
     return '<div class="ctyp"><span class="ctyp-l">نوع</span><input type="hidden" data-ctk="t" value="' + esc(cur) + '"><div class="ctyp-s" role="radiogroup">'
@@ -35839,6 +35863,12 @@
       + '<label class="ctyp-ow"' + (cur === 'own' ? ' hidden' : '') + '><input type="checkbox" data-ctk="ow"' + (ow ? ' checked' : '') + '><span>مالک هم هست</span><small>در فهرست مالکان هم می‌آید؛ نوع اصلی همان می‌ماند</small></label>'
       + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + (cur === 'emp' ? 'سمت در تیم کارفرما' : cur === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (cur === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : cur === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small></span>'
       + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
+      /* کارفرما: خودِ کارفرما (صاحب‌کار) یا نیروی تیم کارفرما */
+      + '<div class="ctyp-em"' + (cur === 'emp' ? '' : ' hidden') + '><span class="ctyp-l">جایگاه</span><div class="ctyp-s" role="radiogroup">'
+      +   [['1', 'خودِ کارفرما (صاحب‌کار)'], ['', 'نیروی تیم کارفرما']].map(([v, t]) => '<label class="ctyp-rb"><input type="radio" name="ctEm" data-ctk="em" value="' + v + '"' + ((em ? '1' : '') === v ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div></div>'
+      /* مشاور: زیر نظر کارفرما یا تیم مدیریت پیمان */
+      + '<label class="ctc-f ctyp-un"' + (cur === 'cons' ? '' : ' hidden') + '><span>زیر نظرِ <small>در چارت سازمانی و دسترسی‌ها زیر همین بخش می‌آید</small></span><select data-ctk="un" data-nons="1">'
+      +   [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([v, t]) => '<option value="' + v + '"' + ((un || '') === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       /* دیسیپلین کنار نوع: برای پیمانکار و مشاور (مثلاً مشاور سازه ← سازه) */
       + '<label class="ctc-f ctyp-d"' + (cur === 'emp' || cur === 'own' ? ' hidden' : '') + '><span>دیسیپلین</span><input type="text" data-ctk="d2" data-list="ctdDiscList" autocomplete="off" value="' + esc(d || '') + '" placeholder="ابنیه، سازه، مکانیکال، الکتریکال…"></label>';
   }
@@ -35852,7 +35882,9 @@
     e.stopPropagation();
     const box = b.closest('.ctyp'), t = b.dataset.ctyp; box.querySelector('[data-ctk="t"]').value = t;
     box.querySelectorAll('[data-ctyp]').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
-    const ro = box.nextElementSibling && box.nextElementSibling.classList.contains('ctyp-ro') ? box.nextElementSibling : null;
+    const ro = box.parentElement && box.parentElement.querySelector('.ctyp-ro');
+    { const em = box.parentElement && box.parentElement.querySelector('.ctyp-em'); if(em) em.hidden = t !== 'emp'; }
+    { const un = box.parentElement && box.parentElement.querySelector('.ctyp-un'); if(un) un.hidden = t !== 'cons'; }
     { const dd = box.parentElement && box.parentElement.querySelector('.ctyp-d'); if(dd) dd.hidden = t === 'emp' || t === 'own'; }
     { const ow = box.parentElement && box.parentElement.querySelector('.ctyp-ow'); if(ow) ow.hidden = t === 'own'; }
     { const ed = box.closest('.ctc-ed'); if(ed){ ed.dataset.pty = t; ctcTypeLabels(ed); } }
@@ -35877,7 +35909,7 @@
     const canon = ctrCanon(name), P = ctrNameParts(canon, c), ed = can('ctr.contact');
     const f = (k, lb, v, ph) => '<label class="ctc-f"><span>' + lb + '</span><input type="text" data-ctk="' + k + '" class="cnm-in" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off"' + (ed ? '' : ' disabled') + '></label>';
     return '<div class="cnm" data-cnm="' + esc(canon) + '"><div class="ctx-sh"><b>نام و نوع پرونده</b><small>با تغییر نام و «ذخیره»، نام روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها عوض می‌شود؛ نام قبلی هم به همین پرونده وصل می‌ماند</small></div>'
-      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '', !!(c && c.ow))
+      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '', !!(c && c.ow), !!(c && c.em), (c && c.un) || '')
       + '<div class="cnm-g">' + f('fn', 'نام', P.fn, 'مثلاً حسین') + f('ln', 'نام خانوادگی', P.ln, 'مثلاً ناظری') + '</div>'
       + f('co', 'نام شرکت <small>اختیاری؛ اگر طرف شرکت است و نام شخص ندارد، فقط همین را بنویسید</small>', P.co, 'مثلاً آسمان بالابر توان')
       + '<div class="cnm-pv"><u>روی کارت</u><b>' + esc(canon) + '</b><i hidden>تغییر می‌کند</i></div></div>';
@@ -36161,11 +36193,13 @@
     o.r = Array.from(box.querySelectorAll('.ctc-rep')).map(rw => { const v = k => String((rw.querySelector('[data-ctr="' + k + '"]') || {}).value || '').trim();
       const x = {}; if(v('n')) x.n = v('n'); if(v('r')) x.r = v('r'); if(v('p')) x.p = v('p'); const sh = parseFloat(toEn(v('sh')).replace(/[٪%\s]/g, '').replace('/', '.')); if(sh > 0 && sh <= 100) x.sh = sh; return x; }).filter(x => x.n || x.p);
     box.querySelectorAll('[data-ctk]').forEach(i => {
+      if(i.type === 'radio' && !i.checked) return;
       const k = i.dataset.ctk, v = i.type === 'checkbox' ? (i.checked ? '1' : '') : String(i.value || '').trim();
       if(!v) return;
       if(k === 'p') o.p.push(v); else o[k] = v;
     });
     if(o.d2){ o.d = o.d2; } delete o.d2;
+    if(o.t !== 'emp') delete o.em; if(o.t !== 'cons') delete o.un; if(o.t !== 'ctr' && o.t){ delete o.svn; delete o.svp; delete o.svu; }
     if(o.svn || o.svp || o.svu) o.sv = {n: o.svn || o.svu || '', p: o.svp || '', u: o.svu || ''}; delete o.svn; delete o.svp; delete o.svu;
     o.pf = ctPfRead(box);
     return o;
@@ -37117,7 +37151,7 @@
         return '<div class="cdx-r' + (e.hid ? ' cdx-hid' : '') + '" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
           + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + ctrAvaIn(e.canon) + '</i></span>'
           + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + (e.own && e.ty !== 'own' ? '<i class="cdx-tyb t-own">مالک</i>' : '') + '</b>'
-          +   '<small>' + esc([I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
+          +   '<small>' + esc([I.c.sv && (I.c.sv.n || I.c.sv.u) ? 'نماینده: ' + (I.c.sv.n || I.c.sv.u) : '', I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
           +   '<span class="cdx-ch">' + (I.nc ? '<i class="c">' + toFa(I.nc) + ' قرارداد</i>' : '') + (I.ns ? '<i class="s">' + toFa(I.ns) + ' صورت وضعیت</i>' : '') + (e.n ? '<i>' + toFa(e.n) + ' ردیف گزارش</i>' : '')
           +     (I.miss.length && ed ? '<i class="m">کم دارد: ' + esc(I.miss.join('، ')) + '</i>' : '') + '</span></span>'
           + '<span class="cdx-a">'
@@ -38188,7 +38222,7 @@
     const per = og.per.get(nameKey(n)) || {}, rl = ogRoleOf(n), pos = ogPos(rl);
     let side = per.side || (pos && pos.side) || '';
     if(!side){ try{ const L = levelOf(n); side = L === 6 ? 'emp' : L === 8 ? 'ctr' : L === 9 ? 'own' : 'pm'; }catch(e){ side = 'pm'; } }
-    return {n, rl, pos, side, up: per.up || '', fl: per.fl || []};
+    return {n, rl, pos, side, up: per.up || '', fl: per.fl || [], under: (pos && pos.us) || ''};
   }
   /* سرپرست هر شخص: تعیین‌شده، وگرنه کسی که سمت بالادستِ سمت او را دارد */
   function ogParentOf(n, P){
@@ -38256,6 +38290,7 @@
       + '<label><u>نام سمت</u><input type="text" data-ogf="n" value="' + esc(x.n || '') + '"' + (x.def ? ' readonly' : '') + '></label>'
       + '<label><u>طرف</u><select data-ogf="side" data-nons="1">' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((x.side || 'pm') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<label><u>واحد</u><input type="text" data-ogf="dept" value="' + esc(x.dept || '') + '" placeholder="مثلاً اجرا، دفتر فنی، مالی"></label>'
+      + '<label><u>زیر نظرِ بخش <em>برای سمت‌های مشاور و ناظر</em></u><select data-ogf="us" data-nons="1">' + [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([k, t]) => '<option value="' + k + '"' + ((x.us || '') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<label><u>زیر نظر سمت</u><select data-ogf="up" data-nons="1"><option value="">— (رأس)</option>' + L.map(y => '<option value="' + esc(y.n) + '"' + (x.up === y.n ? ' selected' : '') + '>' + esc(y.n) + '</option>').join('') + '</select></label>'
       + '<div class="ogp-fa"><button type="button" class="mini go" data-ogsave="1">ذخیره</button>' + (!x.def && x.n ? '<button type="button" class="mini" data-ogdel="' + esc(x.n) + '">حذف سمت</button>' : '') + '<button type="button" class="mini" data-ogcancel="1">انصراف</button></div></div>';
   }
@@ -38279,10 +38314,12 @@
       const addP = (nm, t) => { nm = String(nm || '').trim(); if(!nm || ['emp', 'cons', 'own'].indexOf(t) === -1) return; let c = null; try{ c = ctrContactOf(nm); }catch(e){}
         const k = normName((c && c.name) || nm); if(seen.has(k) || uk.has(nameKey(nm))) return; seen.add(k);
         const ppl = (Array.isArray(c && c.r) ? c.r : []).filter(x => x && x.n && !uk.has(nameKey(x.n))).map(x => ({n: x.n, r: x.r || ''}));
-        if(!EXT.has(t)) EXT.set(t, []); EXT.get(t).push({n: (c && c.name) || nm, d: (c && c.d) || '', ppl}); };
+        const t2 = t === 'cons' && c && (c.un === 'emp' || c.un === 'pm') ? c.un : t;
+        if(!EXT.has(t2)) EXT.set(t2, []); EXT.get(t2).push({n: (c && c.name) || nm, d: (t2 !== t ? 'مشاور' + ((c && c.d) ? ' ' + c.d : '') : ((c && c.d) || '')), ppl}); };
       try{ (window.pjPartyPeople ? pjPartyPeople() : []).forEach(o => addP(o.n, o.t)); }catch(e){}
       try{ ctrContacts.forEach(c => { if(c && c.name) addP(c.name, c.t); }); }catch(e){} }
-    const S = OG_SIDES.map(([k, t]) => ({k, t, all: P.filter(n => ogPersonInfo(n).side === k), roots: P.filter(n => ogPersonInfo(n).side === k && !par.get(n)), ext: EXT.get(k) || []}))
+    const dsd = n => { const I = ogPersonInfo(n); return I.side === 'cons' && I.under ? I.under : I.side; };
+    const S = OG_SIDES.map(([k, t]) => ({k, t, all: P.filter(n => dsd(n) === k), roots: P.filter(n => dsd(n) === k && !(par.get(n) && dsd(par.get(n)) === k)), ext: EXT.get(k) || []}))
       .filter(x => x.all.length || x.ext.length);
     const extN = x => x.ext.reduce((t, e) => t + 1 + e.ppl.length, 0);
     const ed = og.ed && og.ed.indexOf('p:') === 0 ? og.ed.slice(2) : '';
@@ -38350,7 +38387,7 @@
       try{ for(const k of (x.tpl || [])){ if(!PERM_CAPS.some(c => c.k === k)) continue; const cur = permRolesOf(k).slice(); if(cur.indexOf(x.n) === -1){ cur.push(x.n); await permRoleSave(k, cur); } } permRepaint(); }catch(err){ tp.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const sv = t.closest('[data-ogsave]'); if(sv){ const f = sv.closest('[data-ogform]'), v = k => String((f.querySelector('[data-ogf="' + k + '"]') || {}).value || '').trim();
       const n = v('n'); if(!n){ showDialog('warn', 'نام سمت', 'نام سمت را بنویسید.'); return; }
-      const old = f.dataset.ogform, o = {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')};
+      const old = f.dataset.ogform, o = {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
       const base = OG_DEF.find(d => d.n === n); if(!base) o.tpl = (og.pos.get(old) || {}).tpl || [];
       sv.disabled = true;
       try{ if(old && old !== n && !OG_DEF.some(d => d.n === old)){ await ogSaveRow(OG_POS_KIND, old, null); og.pos.delete(old); }
@@ -49627,6 +49664,7 @@
     const body = bg.querySelector('.ct-body');
     const ttl = bg.querySelector('.mc-head');
     if(ttl && card) ttl.insertAdjacentHTML('afterbegin', ctAvaHtml(name));
+    if(ttl){ try{ const rr = ctRepRow(name); if(rr) ttl.insertAdjacentHTML('afterend', rr); }catch(e){} }
     const tag0 = card && card.querySelector('.hv-tag');
     if(ttl && tag0) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(tag0.textContent) + '</small>');
     else if(ttl){ try{ bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); }catch(e){} }
