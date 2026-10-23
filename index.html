@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023191154">
+<meta name="pm-build" content="20261023191628">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26229,6 +26229,20 @@
   .sec-alert{aspect-ratio:1/1;box-sizing:border-box;padding:0;align-self:center;}
   .sec-count{box-sizing:border-box;align-self:center;}
   .hr-head .sec-alert-wrap{align-self:center;} .hr-head .sec-count{height:19px;min-width:19px;font-size:10px;padding:0 4px;}
+
+  /* نمایندگان روی کارت پیمانکار: فهرست فشرده، شماره‌ها در «تماس» */
+  .ct-reps{flex-wrap:nowrap;padding:8px 12px;gap:8px;}
+  .ct-rep-k{flex:none;font-size:10px;font-weight:800;color:var(--muted);}
+  .ct-rep-l{flex:1;min-width:0;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;} .ct-rep-l::-webkit-scrollbar{display:none;}
+  .ct-rp{flex:none;display:inline-flex;align-items:center;gap:6px;} .ct-rp .ct-rep-t{display:flex;flex-direction:column;line-height:1.35;}
+  .ct-rp b{font-size:12px !important;} .ct-rp small{font-size:10px !important;font-weight:600 !important;}
+  .ct-rep-l em{align-self:center;font-style:normal;font-size:11px;font-weight:800;color:var(--muted);}
+
+  /* نوع پرونده: پنج گزینه روی گوشی بی‌برش، با کشیدن */
+  .ctyp-s{overflow-x:auto;scrollbar-width:none;} .ctyp-s::-webkit-scrollbar{display:none;}
+  @media(max-width:520px){ .ctyp .ctyp-b{flex:0 0 auto;padding:0 11px;} }
+  .ctyp-b.t-sup.on{color:#1f8a8a;} [data-theme="dark"] .ctyp-b.t-sup.on{color:#5cc9c9;}
+  .cdx-tyb.t-sup{color:#1f8a8a;background:color-mix(in srgb, #1f8a8a 12%, var(--surface));} [data-theme="dark"] .cdx-tyb.t-sup{color:#5cc9c9;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -34304,7 +34318,7 @@
       x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
     };
     const TYPES = {
-      ctr:  {t:'پیمانکاران',      one:'پیمانکار',   w:9},
+      ctr:  {t:'پرونده‌ها',      one:'پرونده',   w:9},
       person:{t:'افراد',           one:'شخص',       w:8},
       doc:  {t:'اسناد دفتر فنی',  one:'سند',        w:7},
       task: {t:'فعالیت‌ها',        one:'فعالیت',     w:5},
@@ -34496,9 +34510,12 @@
         try{ (allRows || []).forEach(r => addCtr(pick(r,F.contractor))); }catch(e){}
         /* همهٔ پرونده‌های پیمانکاران، مشاوران و کارفرما — حتی بدون گزارش و سند */
         try{ ctdEntities().forEach(e => addCtr(e.canon)); }catch(e){}
-        Array.from(ctr.values()).forEach(c => add({type:'ctr', id:c.name, title:c.name,
-          sub: c.docs ? toFa(c.docs) + ' سند در دفتر فنی' : 'پیمانکار پروژه', ava:c.name,
-          run: () => openContractorProfile(c.name)}));
+        /* هر پرونده با نوع خودش: کارفرما، مشاور، مالک، تأمین‌کننده یا پیمانکار */
+        Array.from(ctr.values()).forEach(c => { let t = 'ctr'; try{ t = ctrTypeOf(c.name) || 'ctr'; }catch(e){}
+          const tl = ctrTypeLabel(t);
+          add({type:'ctr', id:c.name, title:c.name, tyl: tl,
+            sub: (c.docs ? toFa(c.docs) + ' سند در دفتر فنی · ' : '') + tl + ' پروژه', ava:c.name, extra: tl,
+            run: () => openContractorProfile(c.name)}); });
         // فعالیت‌ها
         (b && b.tasks || []).forEach(r => {
           const id = pick(r,T.id); if(!id) return;
@@ -34628,7 +34645,7 @@
       return '<button type="button" class="sp-it t-' + o.type + (i === st.sel ? ' on' : '') + '" role="option" data-spi="' + i + '">'
         + lead
         + '<span class="sp-tx"><b>' + hl(o.title, q) + '</b>' + (o.sub ? '<small>' + hl(o.sub, q) + '</small>' : '') + '</span>'
-        + '<span class="sp-ty">' + TYPES[o.type].one + '</span>'
+        + '<span class="sp-ty">' + (o.tyl || TYPES[o.type].one) + '</span>'
         + '<span class="sp-go">' + SP_I.ret + '</span>'
         + '</button>';
     }
@@ -35201,7 +35218,7 @@
     { const sa = +toEn(String(o.sa || '')).replace(/[^\d]/g, ''); if(sa > 0) clean.sa = sa; }
     if(o.sn) clean.sn = o.sn;
     /* نمایندهٔ پیمانکار، جایگاه کارفرما (صاحب‌کار یا نیروی تیم) و «زیر نظرِ» مشاور */
-    if(o.sv && (o.sv.n || o.sv.p || o.sv.u) && (!o.t || o.t === 'ctr')) clean.sv = {n: o.sv.n || '', p: o.sv.p || '', u: o.sv.u || ''};
+    /* «سرپرست کارگاه» دیگر جدا نیست؛ از ردیف‌های نمایندگان خوانده می‌شود (o.r) */
     if(o.em && o.t === 'emp') clean.em = 1;
     if(o.un && o.t === 'cons') clean.un = o.un;
     { const o0 = ctrContactOf(canon); const ad = o.ad || (o0 && o0.ad); if(ad && Object.keys(o).length) clean.ad = ad; }
@@ -35244,13 +35261,22 @@
   /* افراد قابل تماس هر پیمانکار: مدیریت (شمارهٔ اصلی) و نمایندگان با سمتشان.
      کارشناس‌ها فقط نمایندگان را می‌بینند؛ کسی که «تماس با مدیریت» دارد بین
      همه انتخاب می‌کند. اگر نماینده‌ای ثبت نشده، همان شمارهٔ اصلی می‌آید. */
-  const CTC_ROLES = ['مدیرعامل', 'مدیر مالی', 'نمایندهٔ کارفرما', 'شریک / سهام‌دار', 'عضو هیئت‌مدیره', 'امور قراردادی', 'اجرایی / سرپرست کارگاه', 'فنی', 'مالی', 'ایمنی', 'تدارکات'];
+  const CTC_ROLES = ['سرپرست کارگاه', 'نمایندهٔ پیمانکار', 'مدیرعامل', 'مدیر مالی', 'نمایندهٔ کارفرما', 'شریک / سهام‌دار', 'عضو هیئت‌مدیره', 'امور قراردادی', 'اجرایی', 'فنی', 'مالی', 'ایمنی', 'تدارکات'];
+  /* نمایندگان پرونده: «سرپرست کارگاه» قدیمی (sv) هم یکی از همین ردیف‌هاست */
+  function ctrRepsOf(c){
+    const L = (c && Array.isArray(c.r) ? c.r : []).filter(x => x && (x.n || x.p));
+    const sv = c && c.sv;
+    if(sv && (sv.n || sv.p) && !L.some(x => (sv.p && telOf(x.p || '') === telOf(sv.p)) || (sv.n && nameKey(x.n || '') === nameKey(sv.n))))
+      return [{r: 'سرپرست کارگاه', n: sv.n || sv.u || '', p: sv.p || ''}].concat(L);
+    return L;
+  }
+  window.ctrRepsOf = ctrRepsOf;
   function ctcPeople(c){
     if(!c) return [];
     /* هر شماره با نام صاحبش. نمایندگان با نام و سمت؛ تلفن‌های پرونده: اولی به نام «مدیر»
        فقط وقتی نام مدیر ثبت شده، وگرنه «تلفن پرونده». شماره‌های دیگر هم جدا می‌آیند
        (پیش‌تر فقط اولین شماره خوانده و «مدیریت» نامیده می‌شد). */
-    const reps = (c.sv && c.sv.p ? [{n: c.sv.n || '', role: 'سرپرست کارگاه', p: c.sv.p, rep: true}] : []).concat((Array.isArray(c.r) ? c.r : []).filter(x => x && x.p).map(x => ({n: x.n || '', role: x.r || 'نماینده', p: x.p, rep: true})));
+    const reps = ctrRepsOf(c).filter(x => x.p).map(x => ({n: x.n || '', role: x.r || 'نماینده', p: x.p, rep: true}));
     const P = (c.p || []).filter(Boolean);
     const mg = P.map((ph, i) => ({n: i === 0 ? (c.c || '') : '', role: i === 0 ? (c.c ? 'مدیر' : 'تلفن پرونده') : 'تلفن دیگر', p: ph, w: i === 0 ? (c.w || '') : '', mg: true}));
     const seen = new Set(), out = [];
@@ -35581,12 +35607,8 @@
       + '<label class="ctc-f"><span>نام شخص اصلی یا مدیر</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
       + '<div class="ctc-phs">' + ph.map((v, i) => '<label class="ctc-f"><span>' + (i ? 'تلفن دیگر' : 'تلفن مدیریت') + '</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" value="' + esc(v) + '" placeholder="09xxxxxxxxx"></label>').join('')
       +   '<button type="button" class="ctc-add" data-ctcph="1">+ تلفن دیگر</button></div>'
-      + '<div class="ctc-grp ctc-sv"><b>نمایندهٔ پیمانکار · سرپرست کارگاه</b><small>روی کارت پیمانکار دیده می‌شود؛ اگر کاربر سامانه باشد، به‌عنوان نماینده وارد سایت می‌شود و صورت وضعیت و نامه می‌فرستد و کارکرد همین پیمانکار را می‌بیند</small></div>'
-      + '<div class="ctc-svr"><label class="ctc-f"><span>نام نماینده</span><input type="text" data-ctk="svn" value="' + esc((c.sv || {}).n || '') + '" placeholder="مثلاً مهندس کریمی"></label>'
-      + '<label class="ctc-f"><span>تلفن نماینده</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="svp" value="' + esc((c.sv || {}).p || '') + '" placeholder="09xxxxxxxxx"></label>'
-      + '<label class="ctc-f"><span>حساب کاربری در سامانه <small>اختیاری</small></span><input type="text" data-ctk="svu" data-list="engineerList" value="' + esc((c.sv || {}).u || '') + '" placeholder="نام کاربری که وارد سایت می‌شود" autocomplete="off"></label></div>'
-      + '<div class="ctc-grp"><b>' + (pty === 'emp' ? 'نیروهای کارفرما و سمت هر نفر' : 'افراد و نمایندگان') + '</b><small>سمت هر نفر (مدیر مالی، نمایندهٔ کارفرما، شریک…) و در صورت نیاز درصد سهم او؛ کارشناس‌ها فقط با این افراد تماس می‌گیرند</small></div>'
-      + '<div class="ctc-reps">' + (Array.isArray(c.r) ? c.r : []).map(ctcRepRowHtml).join('') + '</div>'
+      + '<div class="ctc-grp"><b>' + (pty === 'emp' ? 'نیروهای کارفرما و سمت هر نفر' : (!pty || pty === 'ctr' || pty === 'sup') ? 'نمایندگان و سرپرست کارگاه' : 'افراد و نمایندگان') + '</b><small>سمت هر نفر (مدیر مالی، نمایندهٔ کارفرما، شریک…) و در صورت نیاز درصد سهم او؛ کارشناس‌ها فقط با این افراد تماس می‌گیرند</small></div>'
+      + '<div class="ctc-reps">' + ctrRepsOf(c).map(ctcRepRowHtml).join('') + '</div>'
       + '<button type="button" class="ctc-add" data-ctcrep="1">+ شخص دیگر</button>'
       + '<label class="ctc-f"><span>واتساپ (اگر با تلفن فرق دارد)</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="w" value="' + esc(c.w || '') + '" placeholder="همان تلفن همراه"></label>'
       + '<label class="ctc-f"><span>ایمیل</span><input type="email" dir="ltr" inputmode="email" data-ctk="e" value="' + esc(c.e || '') + '" placeholder="name@company.com"></label>'
@@ -35869,7 +35891,7 @@
     }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); ctxRefresh(box); return false; }
   }
   /* ====== نوع طرف: پیمانکار، مشاور، تیم کارفرما ====== */
-  const CTR_TYPES = [['ctr', 'پیمانکار'], ['cons', 'مشاور'], ['emp', 'کارفرما'], ['own', 'مالک / سرمایه‌گذار']];
+  const CTR_TYPES = [['ctr', 'پیمانکار'], ['sup', 'تأمین‌کننده'], ['cons', 'مشاور'], ['emp', 'کارفرما'], ['own', 'مالک / سرمایه‌گذار']];
   const ctrTypeLabel = t => (CTR_TYPES.find(x => x[0] === t) || CTR_TYPES[0])[1];
   function ctrTypeOf(n){ const c = ctrContactOf(n);
     /* کارفرما/مشاوری که در اطلاعات پروژه تعیین شده، حتی اگر پرونده‌اش با نوع پیش‌فرض «پیمانکار» ساخته شده باشد */
@@ -35885,14 +35907,15 @@
   /* ردیف «نمایندهٔ پیمانکار · سرپرست کارگاه» زیر سرتیتر کارت پیمانکار */
   function ctRepRow(n){
     let c = {}; try{ c = ctrContactOf(n) || {}; }catch(e){}
-    try{ const t = ctrTypeOf(n); if(t && t !== 'ctr') return ''; }catch(e){}
-    const sv = c.sv || {}; let ed = false; try{ ed = isAdminUser() || can('ctr.contact'); }catch(e){}
-    if(!(sv.n || sv.u)) return ed ? '<div class="ct-rep none">' + CTC_I.user + '<span><b>نمایندهٔ پیمانکار تعیین نشده</b><small>سرپرست کارگاه این پیمانکار را در پرونده مشخص کنید</small></span><button type="button" class="mini" data-ctcedit="' + esc(n) + '">تعیین نماینده</button></div>' : '';
-    const who = sv.n || sv.u;
-    return '<div class="ct-rep"><span class="ct-rep-av">' + avatarHtml(sv.u || who, 'sm', true) + '</span><span class="ct-rep-t"><small>نمایندهٔ پیمانکار · سرپرست کارگاه</small><b>' + esc(who) + '</b>'
-      + (sv.u ? '<em>' + (nameKey(sv.u) === nameKey(who) ? 'کاربر سامانه' : 'حساب: ' + esc(sv.u)) + '</em>' : '') + '</span>'
-      + (sv.p ? '<a class="ct-rep-tel" href="tel:' + esc(telOf(sv.p)) + '" dir="ltr">' + CTC_I.tel + esc(toFa(sv.p)) + '</a>' : '')
-      + (ed ? '<button type="button" class="ct-rep-ed" data-ctcedit="' + esc(n) + '" title="تغییر نماینده" aria-label="تغییر نماینده">✎</button>' : '') + '</div>';
+    try{ const t = ctrTypeOf(n); if(t && t !== 'ctr' && t !== 'sup') return ''; }catch(e){}
+    let ed = false; try{ ed = isAdminUser() || can('ctr.contact'); }catch(e){}
+    const L = ctrRepsOf(c).filter(x => x.n);
+    if(!L.length) return ed ? '<div class="ct-rep none">' + CTC_I.user + '<span><b>نماینده تعیین نشده</b><small>سرپرست کارگاه و نمایندگان را در «تماس» پرونده اضافه کنید</small></span><button type="button" class="mini" data-ctcedit="' + esc(n) + '">افزودن</button></div>' : '';
+    /* شماره‌ها در دکمهٔ «تماس» بالای کارت‌اند؛ اینجا فقط کیست و چه سمتی دارد */
+    return '<div class="ct-rep ct-reps"><small class="ct-rep-k">نمایندگان</small><span class="ct-rep-l">'
+      + L.slice(0, 4).map(x => '<span class="ct-rp"><span class="ct-rep-av">' + avatarHtml(x.n, 'sm', true) + '</span><span class="ct-rep-t"><b>' + esc(x.n) + '</b><small>' + esc(x.r || 'نماینده') + '</small></span></span>').join('')
+      + (L.length > 4 ? '<em>+' + toFa(L.length - 4) + '</em>' : '') + '</span>'
+      + (ed ? '<button type="button" class="ct-rep-ed" data-ctcedit="' + esc(n) + '" title="ویرایش نمایندگان" aria-label="ویرایش نمایندگان">✎</button>' : '') + '</div>';
   }
   window.ctRepRow = ctRepRow;
   function ctOwnBadge0(n){
@@ -35920,6 +35943,7 @@
   const CTR_ROLE_SUG = {
     cons: ['مشاور سازه', 'مشاور معماری', 'مشاور تأسیسات مکانیکی', 'مشاور تأسیسات برقی', 'مشاور نما', 'مشاور ژئوتکنیک', 'ناظر عالیه', 'ناظر مقیم', 'مشاور مدیریت طرح'],
     own: ['سرمایه‌گذار', 'سهام‌دار', 'شریک', 'مالک زمین', 'مالک واحد', 'پیش‌خریدار'],
+    sup: ['مصالح ساختمانی', 'میلگرد و آهن‌آلات', 'بتن آماده', 'آسانسور', 'تجهیزات تأسیسات', 'تجهیزات برقی', 'درب و پنجره', 'سنگ و کاشی', 'اجارهٔ ماشین‌آلات'],
     emp: ['مدیر پروژهٔ کارفرما', 'نمایندهٔ کارفرما', 'مالی', 'تدارکات', 'دفتر فنی کارفرما', 'امور قراردادها و حقوقی', 'کنترل پروژه', 'نظارت کارفرما']
   };
   function ctrRoleListFor(t){
@@ -35930,8 +35954,8 @@
     dl.innerHTML = Array.from(new Set(pos.concat(CTR_ROLE_SUG[t] || [], used))).map(v => '<option value="' + esc(v) + '"' + (pos.indexOf(v) !== -1 ? ' label="سمت در دسترسی‌ها"' : '') + '>').join('');
   }
   function ctypRoLabel(t, em){
-    return (t === 'emp' ? (em ? 'عنوان صاحب‌کار' : 'سمت در تیم کارفرما') : t === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور')
-      + ' <small>مثلاً ' + (t === 'emp' ? (em ? 'مدیرعامل، سهامدار، شریک' : 'مالی، تدارکات، نمایندهٔ کارفرما') : t === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small>';
+    return (t === 'emp' ? (em ? 'عنوان صاحب‌کار' : 'سمت در تیم کارفرما') : t === 'own' ? 'نسبت با پروژه' : t === 'sup' ? 'کالا یا خدمات' : 'تخصص مشاور')
+      + ' <small>مثلاً ' + (t === 'emp' ? (em ? 'مدیرعامل، سهامدار، شریک' : 'مالی، تدارکات، نمایندهٔ کارفرما') : t === 'own' ? 'مالک واحد، پیش‌خریدار' : t === 'sup' ? 'بتن آماده، میلگرد، آسانسور' : 'مشاور سازه، مشاور تأسیسات') + '</small>';
   }
   document.addEventListener('change', e => {
     const i = e.target; if(!i || !i.dataset || i.dataset.ctk !== 'em') return;
@@ -36307,7 +36331,7 @@
     });
     if(o.d2){ o.d = o.d2; } delete o.d2;
     if(o.t !== 'emp') delete o.em; if(o.t !== 'cons') delete o.un; if(o.t !== 'ctr' && o.t){ delete o.svn; delete o.svp; delete o.svu; }
-    if(o.svn || o.svp || o.svu) o.sv = {n: o.svn || o.svu || '', p: o.svp || '', u: o.svu || ''}; delete o.svn; delete o.svp; delete o.svu;
+    delete o.svn; delete o.svp; delete o.svu;
     o.pf = ctPfRead(box);
     return o;
   }
@@ -36337,10 +36361,11 @@
         if(!nn){ showDialog('warn','نام پیمانکار','نام و نام خانوادگی، یا نام شرکت را بنویسید.'); return; }
         if(ctrExK(nn) !== ctrExK(ctrCanon(box.dataset.ctced))){ sv.disabled = true; const ok = await ctxMakeCardName(box, nn, {rename: true}); sv.disabled = false; if(!ok) return; } } }
     (sv || dl).disabled = true;
+    let svU0 = ''; try{ svU0 = ((ctrContactOf(ctrCanon(box.dataset.ctced)) || {}).sv || {}).u || ''; }catch(e0){}
     try{ await ctrContactSave(box.dataset.ctced, o);
       try{ const k = await ctrSyncRoles(ctrCanon(box.dataset.ctced), o); if(k) try{ shrToast(toFa(k) + ' سمت در دسترسی‌ها هم عوض شد'); }catch(er){} }catch(er2){}
-      /* حساب نماینده به همین پیمانکار وصل می‌شود (حساب بیرونی) */
-      try{ const u = o.sv && o.sv.u; if(u && isAdminUser() && window.extSaveParty && nameKey(window.extPartyOf(u)) !== nameKey(ctrCanon(box.dataset.ctced))) await window.extSaveParty(u, ctrCanon(box.dataset.ctced)); }catch(er2){}
+      /* حساب کاربری نمایندهٔ قدیمی (اگر ثبت شده بود) به «حساب طرف» منتقل می‌شود؛ تعیین حساب فقط با ادمین و در «کاربران» است */
+      try{ const u = svU0; if(u && isAdminUser() && window.extSaveParty && !window.extPartyOf(u)) await window.extSaveParty(u, ctrCanon(box.dataset.ctced)); }catch(er2){}
       const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
       showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
@@ -37259,7 +37284,7 @@
         return '<div class="cdx-r' + (e.hid ? ' cdx-hid' : '') + '" data-ctdo="' + esc(e.k) + '" data-ctdn="' + esc(e.canon) + '" role="button" tabindex="0">'
           + '<span class="cdx-av" style="--p:' + (I.score * 20) + '%" title="' + toFa(I.score) + ' از ۵ قلم پرونده"><i>' + ctrAvaIn(e.canon) + '</i></span>'
           + '<span class="cdx-m"><b>' + esc(e.canon) + (e.ty !== 'ctr' ? '<i class="cdx-tyb t-' + e.ty + '">' + ctrTypeLabel(e.ty) + '</i>' : '') + (e.own && e.ty !== 'own' ? '<i class="cdx-tyb t-own">مالک</i>' : '') + '</b>'
-          +   '<small>' + esc([I.c.sv && (I.c.sv.n || I.c.sv.u) ? 'نماینده: ' + (I.c.sv.n || I.c.sv.u) : '', I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
+          +   '<small>' + esc([(function(){ const L = ctrRepsOf(I.c).filter(x => x.n); return L.length ? 'نماینده: ' + L.slice(0, 2).map(x => x.n).join('، ') + (L.length > 2 ? ' و …' : '') : ''; })(), I.c.cn && ctrExK(I.c.cn) !== ctrExK(e.canon) ? 'قرارداد: ' + I.c.cn : '', I.c.d || '', I.skills.slice(0, 2).join('، ')].filter(Boolean).join(' · ') || 'اطلاعاتی ثبت نشده') + '</small>'
           +   '<span class="cdx-ch">' + (I.nc ? '<i class="c">' + toFa(I.nc) + ' قرارداد</i>' : '') + (I.ns ? '<i class="s">' + toFa(I.ns) + ' صورت وضعیت</i>' : '') + (e.n ? '<i>' + toFa(e.n) + ' ردیف گزارش</i>' : '')
           +     (I.miss.length && ed ? '<i class="m">کم دارد: ' + esc(I.miss.join('، ')) + '</i>' : '') + '</span></span>'
           + '<span class="cdx-a">'
