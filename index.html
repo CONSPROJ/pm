@@ -85846,7 +85846,7 @@
         return '<button type="button" class="hm-row lv-' + esc(x.level || 'calm') + '" data-hmw="' + i + '">'
           + '<span class="hw-dot"></span>'
           + '<span class="hw-tx"><b>' + esc(x.title || '') + '</b>'
-          +   '<small><em>' + tag + '</em>' + esc(x.text || x.stage || '') + '</small></span>'
+          +   '<small><em>' + tag + '</em>' + esc(h3WhoLine(x) || x.text || x.stage || '') + '</small></span>'
           + (who ? '<span class="hw-ava">' + avatarHtml(who, 'sm', true) + '</span>' : '')
           + '<span class="hw-go">' + HM_I.go + '</span></button>';
       }).join('') + '</div>';
@@ -86317,7 +86317,7 @@
       + (homeMineList.length ? '<div class="h3-list h3-mine">' + homeMineList.map((x, i) => {
           const who = x.who && nameKey(x.who) !== nameKey(activeUserName()) ? x.who : '';
           return '<button type="button" class="h3-r lv-' + esc(x.level || 'calm') + '" data-hmm="' + i + '"><span class="h3-rd"></span>'
-            + '<span class="h3-rx"><b>' + esc(x.title || '') + '</b><small><em>' + (WK_T[h3WkCat(x)] || '') + '</em>' + esc(x.text || x.stage || '') + '</small></span>'
+            + '<span class="h3-rx"><b>' + esc(x.title || '') + '</b><small><em>' + (WK_T[h3WkCat(x)] || '') + '</em>' + esc(h3WhoLine(x) || x.text || x.stage || '') + '</small></span>'
             + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '') + '<span class="h3-rg">' + HM_I.go + '</span></button>'; }).join('') + '</div>'
         : '<div class="h3-mempty">' + HM_I.ok + 'کار بازی به نام شما نیست</div>');
     void mineH;
@@ -86353,6 +86353,29 @@
     td: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
     pr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="18" cy="6" r="2"/></svg>',
     rp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'};
+  /* خط وضعیت هر مورد، مثل اعلان‌ها: الان دست کیست و چند وقت، و موعدش */
+  function h3WhoLine(x){
+    try{
+      const k = deckKindOf(x); if(!k) return '';
+      const r = deckRowOf(x, k); if(!r) return '';
+      const bits = [], cut = n => String(n || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '');
+      if(k === 'task'){ const w = x.who || pick(r,T.m1); if(w) bits.push('مسئول ' + cut(w)); }
+      else{
+        const H = admHeldBy(k, r);
+        if(H) bits.push('نزد ' + cut(H.who) + ' (' + (H.days > 0 ? faDur(H.days) : 'از امروز') + ')');
+        else { const st = String(pick(r,AD.review) || '').trim(); if(st) bits.push(st); }
+      }
+      const due = k === 'task' ? pick(r,T.due) : k === 'minute' ? pick(r,AD.mDate) : pick(r,AD.due);
+      const d = due ? daysSince(due) : null;
+      if(d != null){
+        if(d > 0) bits.push('موعد ' + faDur(d) + ' گذشته');
+        else if(d === 0) bits.push('موعد امروز');
+        else if(d >= -7) bits.push(toFa(-d) + ' روز تا موعد');
+        else bits.push('موعد ' + (taskDate(normDate(due)) || toFa(due)));
+      }
+      return bits.join(' · ');
+    }catch(e){ return ''; }
+  }
   function h3SegInk(){
     document.querySelectorAll('#homeView .h3-seg').forEach(seg => { const on = seg.querySelector('button.on'), ink = seg.querySelector('.h3-seg-ink'); if(on && ink){ ink.style.width = on.offsetWidth + 'px'; ink.style.left = on.offsetLeft + 'px'; } });
   }
@@ -86382,7 +86405,7 @@
         const tag = x.cat === 'missing' ? 'گزارش' : x.__p === 'b-adm' ? 'سند' : 'اجرایی';
         return '<button type="button" class="h3-r lv-' + esc(x.level || 'calm') + '" data-hmw="' + i + '">'
           + '<span class="h3-rd"></span>'
-          + '<span class="h3-rx"><b>' + esc(x.title || '') + '</b><small><em>' + tag + '</em>' + esc(x.text || x.stage || '') + '</small></span>'
+          + '<span class="h3-rx"><b>' + esc(x.title || '') + '</b><small><em>' + tag + '</em>' + esc(h3WhoLine(x) || x.text || x.stage || '') + '</small></span>'
           + (who ? '<span class="h3-ra">' + avatarHtml(who, 'sm', true) + '</span>' : '')
           + '<span class="h3-rg">' + HM_I.go + '</span></button>';
       }).join('') + '</div>';
