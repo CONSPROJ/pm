@@ -42207,8 +42207,8 @@
     const mxv = Math.max(1, ...bars.map(b => b.v));
     const ctr = Array.from(A.ctr.values()).sort((a, b) => b.v - a.v).map(x => [x.n, x.v]);
     const sk = new Map(), zn = new Map();
-    D.R.rows.forEach(r0 => { const m = ktMen(r0); if(!m) return; const s0 = String(pick(r0,F.skill) || '').trim() || 'بدون تخصص'; sk.set(s0, (sk.get(s0) || 0) + m);
-      let z = String(pick(r0,F.zone) || '').trim(); try{ const ks = floorKeysOf(z) || []; if(ks.length === 1){ const fl = (spFloors() || []).find(f => f.key === ks[0]); if(fl) z = fl.label; } }catch(e){} z = z || 'بدون محل'; zn.set(z, (zn.get(z) || 0) + m); });
+    D.R.rows.forEach(r0 => { const m = ktMen(r0); if(!m) return; const s0 = rowSkillLbl(r0); sk.set(s0, (sk.get(s0) || 0) + m);
+      let z = String(pick(r0,F.zone) || '').trim(); try{ const ks = floorKeysOf(z) || []; if(ks.length === 1){ const fl = (spFloors() || []).find(f => f.key === ks[0]); if(fl) z = fl.label; } }catch(e){} if(z) zn.set(z, (zn.get(z) || 0) + m); });
     const iss = (typeof dedupeIssues === 'function' ? dedupeIssues(D.R.issues || []) : (D.R.issues || []));
     const byW = new Map(); iss.forEach(r0 => { const w = String(pick(r0,I.who) || '').trim() || 'بدون پیمانکار'; byW.set(w, (byW.get(w) || 0) + 1); });
     const peak = bars.reduce((b, x) => x.v > b.v ? x : b, {v: 0, l: ''});
@@ -47468,7 +47468,7 @@
     /* نمودار خطی همان دادهٔ ستون‌ها را تکرار می‌کرد؛ جایش ترکیب تخصص‌ها
        در بازه می‌آید که پیش‌تر هیچ‌جا نبود. */
     const skM = new Map();
-    src.forEach(r => { const k = String(pick(r,F.skill) || '').trim() || 'بدون تخصص'; skM.set(k, (skM.get(k) || 0) + menOf(r)); });
+    src.forEach(r => { const k = rowSkillLbl(r); skM.set(k, (skM.get(k) || 0) + menOf(r)); });
     const skA = Array.from(skM.entries()).sort((x, y) => y[1] - x[1]).slice(0, 8);
     const skMx = maxOf(skA.map(x => x[1]), 1);
     const rateHtml = skA.length ? '<div class="rc-rows">' + skA.map(([z, n]) =>
@@ -47479,7 +47479,7 @@
     // تخصیص نیرو بین محل‌ها
     const byZone = new Map();
     src.forEach(r => {
-      const z = String(pick(r,F.zone) || '').trim() || 'بدون محل';
+      const z = String(pick(r,F.zone) || '').trim(); if(!z) return;   // سطر بی‌محل در نمودار محل‌ها نمی‌آید
       byZone.set(z, (byZone.get(z) || 0) + menOf(r));
     });
     const zoneArr = Array.from(byZone.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8);
@@ -49370,7 +49370,7 @@
       + (dv > 0 ? '▲ ' : (dv < 0 ? '▼ ' : '')) + (dv ? toFa(Math.abs(dv)) + (tail || '') : 'بدون تغییر') + '</i>';
     const bySkill = new Map(), byCos = new Map();
     rows.forEach(r => {
-      const c = pick(r,F.contractor), k2 = String(pick(r,F.skill) || '').trim() || 'بدون تخصص';
+      const c = pick(r,F.contractor), k2 = rowSkillLbl(r);
       const o = num(pick(r,F.ostad)), s2 = num(pick(r,F.shagerd));
       if(!c && !pick(r,F.activity)) return;
       bySkill.set(k2, (bySkill.get(k2) || 0) + o + s2);
@@ -50497,16 +50497,32 @@
         if(x && String(x.state || 'ok') === 'off') return;
         const zone = String((x && x.zone) || '').trim() || 'محل ثبت نشده';
         const act = String((x && x.activity) || '').trim();
-        const k = zoneKey(zone) + '|' + normName(act);
-        if(!groups.has(k)) groups.set(k, {zone, act, o:0, s:0, roles:new Map()});
+        const wr = wrkRole(w, d), disc = wrkDiscOf(wr);
+        const k = zoneKey(zone) + '|' + normName(act) + '|' + disc;
+        if(!groups.has(k)) groups.set(k, {zone, act, disc, o:0, s:0, roles:new Map()});
         const g = groups.get(k);
-        const wr = wrkRole(w, d);
         if(wrkIsHelperRole(wr)) g.s++; else g.o++;
         const rl = String(wr || 'کارگر').trim();
         g.roles.set(rl, (g.roles.get(rl) || 0) + 1);
       });
       balanceCache.set(d, Array.from(groups.values()));
     });
+  }
+  /* رشتهٔ کار هر کارگر از سمتش: جابجایی (تاور، آسانسور، ریگر، انبار)، خدمات (نگهبان، نظافت، آبدارچی)،
+     تأسیسات؛ بقیه (بنا، کارگر فنی، جوشکار، سرکارگر و شاگردها) ابنیه. پیش‌تر سطرهای کارگری «بدون تخصص» بودند. */
+  function wrkDiscOf(role){
+    const t = String(role || '');
+    if(/جابجایی|جابه‌جایی|تاور|ریگر|اپراتور|آسانسور|اسانسور|انبار|باربر|حمل/.test(t)) return 'جابجایی';
+    if(/نگهبان|نظافت|آبدارچی|آشپز|خدمات|راننده|سرایدار/.test(t)) return 'خدمات';
+    if(/تأسیسات|تاسیسات|برق|لوله|مکانیک/.test(t)) return 'تأسیسات';
+    return 'ابنیه';
+  }
+  window.wrkDiscOf = wrkDiscOf;
+  /* برچسب تخصص در نمودارها: هرگز «بدون تخصص»؛ سطر کارگری رشتهٔ کارگر را دارد، امانیِ بی‌تخصص «امانی» */
+  function rowSkillLbl(r){
+    const k = String(pick(r,F.skill) || '').trim(); if(k) return k;
+    try{ if(isAmani(pick(r,F.contractor))) return 'امانی'; }catch(e){}
+    return 'سایر';
   }
   async function workerHeadcount(dateFa){
     await workerDayBreakdown([dateFa]);
@@ -50595,7 +50611,7 @@
           'شناسه': 'balance:' + d + ':' + i,
           'تاریخ': d, 'پروژه': proj,
           'مهندس': 'مدیریت کارگری',
-          'پیمانکار': BALANCE_NAME, 'تخصص': '',
+          'پیمانکار': BALANCE_NAME, 'تخصص': g.disc || 'ابنیه',
           'استادکار': 0, 'شاگرد': o + s,
           'محل کارکرد': g.zone === 'محل ثبت نشده' ? '' : g.zone, 'موقعیت جزء': '',
           'شرح فعالیت': g.act || '',
