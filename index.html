@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023143716">
+<meta name="pm-build" content="20261023143958">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20727,6 +20727,26 @@
   #homeView .h3 .h3-q .h3-qr{border-radius:12px !important;font-size:12px !important;}
   /* فاصلهٔ یکسان بین بخش‌ها */
   #homeView .h3 > section + section{margin-top:12px !important;}
+
+  /* سربرگ پروژه: درصد پیشرفت به‌صورت حلقه دور عکس؛ دکمهٔ «پروژه‌ها» دیگر روی چیزی نمی‌افتد */
+  #homeView .pj4 .pj4-hd{padding-inline-end:110px;}
+  .pj4-cr{--a:hsl(var(--h) 32% 48%);flex:none;position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--a) calc(var(--p) * 1%), color-mix(in srgb, var(--ink) 10%, transparent) 0);}
+  .pj4-cr::after{content:"";position:absolute;inset:2.5px;border-radius:50%;background:var(--surface);}
+  #homeView .pj4 .pj4-cr .pj4-cv{position:relative;z-index:1;width:44px;height:44px;}
+  #homeView .pj4 .pj4-ch i.pg{color:var(--ink) !important;}
+  #homeView .pj4 .pj4-ch i.pg::before{display:none;}
+  /* عکس پروژه روی حرف اول؛ اگر بار نشد، همان حرف دیده می‌شود */
+  :is(.pj4-cv,.pj4-sa,.pj4-pa,.pjsw-cv,.pj-cv,.pj-av,.pj-bav,.pi-cv,.hx-pjc).has{position:relative;overflow:hidden;}
+  :is(.pj4-cv,.pj4-sa,.pj4-pa,.pjsw-cv,.pj-cv,.pj-av,.pj-bav,.pi-cv,.hx-pjc).has > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  /* آیکن کوچک در گوشهٔ هر کاشی؛ رنگ آیکن وضعیت را نشان می‌دهد (به‌جای نقطه) */
+  #homeView .pj4 .pj4-kk.alert::after, #homeView .hx4 .hx4-s.bad::after, #homeView .hx4 .hx4-s.warn::after{display:none !important;}
+  #homeView .pj4 .pj4-k .pj4-kk{position:relative;}
+  #homeView .pj4 .pj4-ki, #homeView .hx4 .hx4-si{display:grid !important;place-items:center;position:absolute;top:8px;inset-inline-end:8px;width:22px;height:22px;border-radius:7px;font-style:normal;
+    color:var(--muted);background:color-mix(in srgb, var(--ink) 5%, transparent);}
+  #homeView .pj4 .pj4-ki svg, #homeView .hx4 .hx4-si svg{width:13px !important;height:13px !important;}
+  #homeView .pj4 .pj4-kk.alert .pj4-ki, #homeView .hx4 .hx4-s.bad .hx4-si{color:var(--alert);background:color-mix(in srgb, var(--alert) 12%, transparent);}
+  #homeView .hx4 .hx4-s.warn .hx4-si{color:#c8902e;background:color-mix(in srgb, #d9a440 13%, transparent);}
+  #homeView .hx4 .hx4-s{position:relative;}
   .pjsw-pop{position:absolute;top:46px;inset-inline-end:12px;z-index:20;width:min(300px, calc(100% - 24px));max-height:60vh;overflow:auto;padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 24px 50px -20px rgba(10,20,40,.45);animation:pjswIn .18s ease both;}
   @keyframes pjswIn{from{opacity:0;transform:translateY(-6px);}}
   .pjsw-h{display:flex;align-items:baseline;gap:8px;padding:6px 8px 8px;} .pjsw-h b{font-size:13px;} .pjsw-h small{font-size:11px;color:var(--muted);}
@@ -60772,7 +60792,9 @@
     const need = [];
     q.forEach(it => { const c = s3ThumbC.get(it.tk); if(c && c.t > Date.now()) s3ThumbSet(it.img, c); else if(need.indexOf(it.tk) === -1) need.push(it.tk); });
     if(!need.length) return;
-    const put = (tk, r) => { s3ThumbC.set(tk, Object.assign({t: Date.now() + 8 * 60000}, r)); q.filter(x => x.tk === tk).forEach(x => s3ThumbSet(x.img, r)); };
+    /* ناموفق‌ها (مثلاً پیش از آماده شدن نشست) کش نمی‌شوند؛ یک بار دیگر چند ثانیه بعد امتحان می‌شود */
+    const put = (tk, r) => { const ok = r && r.u; if(ok) s3ThumbC.set(tk, Object.assign({t: Date.now() + 8 * 60000}, r));
+      q.filter(x => x.tk === tk).forEach(x => { if(ok || x.retry) s3ThumbSet(x.img, r); else setTimeout(() => { if(x.img.isConnected){ s3TQ.push({img: x.img, tk, retry: 1}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); } }, 3500); }); };
     for(let i = 0; i < need.length; i += 60){
       const part = need.slice(i, i + 60);
       if(s3BatchOk){
@@ -87035,7 +87057,7 @@
     else if(repDue) sum = '<button type="button" class="h3-sum warn" data-hm="crew"><b>گزارش روزانهٔ شما هنوز ثبت نشده</b><span>ثبت گزارش</span>' + go + '</button>';
     else if(tk && tk.mineSoon) sum = '<button type="button" class="h3-sum" data-h3k="mine"><b>' + toFa(tk.mineSoon) + ' موعد تا هفتهٔ آینده</b><span>همه هنوز در زمان‌اند</span>' + go + '</button>';
     else if(tk) sum = '<div class="h3-sum ok"><b>همه‌چیز در موعد است</b><span>روز خوبی داشته باشید</span></div>';
-    const st = (n, l, cls, attr) => '<button type="button" class="hx4-s' + (cls && n ? ' ' + cls : '') + '" ' + attr + '>' + (tk ? '<b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b>' : '<b><i class="hm-dots"></i></b>') + '<span>' + l + '</span></button>';
+    const st = (n, l, cls, attr, ic) => '<button type="button" class="hx4-s' + (cls && n ? ' ' + cls : '') + '" ' + attr + '>' + (ic && HM_I[ic] ? '<i class="hx4-si">' + HM_I[ic] + '</i>' : '') + (tk ? '<b data-cnt="' + (n || 0) + '">' + toFa(n || 0) + '</b>' : '<b><i class="hm-dots"></i></b>') + '<span>' + l + '</span></button>';
     const t = todayShamsi(), pp = faParts(t);
     let wd = ''; try{ wd = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'][new Date().getDay()]; }catch(e){}
     /* پروژهٔ فعلی: کلید انتخاب پروژه در گوشهٔ قاب */
@@ -87050,10 +87072,10 @@
       +   h3PctRing(me)
       +   (pp ? '<span class="hx4-dt"><small>' + wd + '</small><b>' + toFa(pp[2]) + '</b><small>' + FA_MONTHS[pp[1] - 1] + '</small></span>' : '') + '</div>'
       + '<div class="hx4-st">'
-      +   st(tk ? tk.mine : 0, 'کار باز', '', 'data-h3k="mine"')
-      +   st(tk ? tk.mineLate : 0, 'عقب از موعد', 'bad', 'data-h3k="mine"')
-      +   st(tk ? (tk.mineSoon || 0) : 0, 'موعد این هفته', 'warn', 'data-h3k="mine"')
-      +   st(appr, 'منتظر تأیید', 'warn', 'data-h3k="' + (nf ? 'fine' : 'leave') + '" title="مرخصی‌ها و جریمه‌هایی که منتظر تأیید شما هستند"')
+      +   st(tk ? tk.mine : 0, 'کار باز', '', 'data-h3k="mine"', 'task')
+      +   st(tk ? tk.mineLate : 0, 'عقب از موعد', 'bad', 'data-h3k="mine"', 'clock')
+      +   st(tk ? (tk.mineSoon || 0) : 0, 'موعد این هفته', 'warn', 'data-h3k="mine"', 'cal')
+      +   st(appr, 'منتظر تأیید', 'warn', 'data-h3k="' + (nf ? 'fine' : 'leave') + '" title="مرخصی‌ها و جریمه‌هایی که منتظر تأیید شما هستند"', 'ok')
       + '</div>'
       + fx
       + '</section>';
@@ -87588,10 +87610,10 @@
     let pj = {}, pjN = 0; try{ pj = pjCur() || {}; pjN = pjMine().length; }catch(e){}
     /* پیشرفت کلی: میانگین پیشرفت تخصص‌ها (همان عدد «فضاها») */
     let pgA = null; try{ const S0 = pgSkills(); if(S0.length) pgA = Math.round(S0.reduce((t, x) => t + pgSkillPct(x), 0) / S0.length); }catch(e){}
-    const R = 15.9155, ring = pgA == null ? '' : '<span class="pj4-pg"><svg viewBox="0 0 36 36" aria-hidden="true"><circle r="' + R + '" cx="18" cy="18" class="bg"></circle><circle r="' + R + '" cx="18" cy="18" class="fg" stroke-dasharray="' + pgA + ' ' + (100 - pgA) + '" stroke-dashoffset="25"></circle></svg><b>' + toFa(pgA) + '٪</b><small>پیشرفت</small></span>';
+    const R = 15.9155, ring = true ? '' : '<span class="pj4-pg"><svg viewBox="0 0 36 36" aria-hidden="true"><circle r="' + R + '" cx="18" cy="18" class="bg"></circle><circle r="' + R + '" cx="18" cy="18" class="fg" stroke-dasharray="' + pgA + ' ' + (100 - pgA) + '" stroke-dashoffset="25"></circle></svg><b>' + toFa(pgA) + '٪</b><small>پیشرفت</small></span>';
     return '<section class="pj4 h3-a" style="--i:1;--h:' + pjHue(PJ.cur) + '">'
-      + '<button type="button" class="pj4-hd" data-pjopen="1" style="--h:' + pjHue(PJ.cur) + '">' + pjCoverHtml(pj, 'pj4-cv') + '<span class="pj4-t"><small>وضعیت پروژه · ' + esc(dDate ? (dDate === todayShamsi() ? 'امروز' : faDateLong(dDate) || toFa(dDate)) : '') + '</small><b>' + esc(pj.name || 'پروژه') + '</b>'
-      +   '<span class="pj4-ch">' + (pj.status ? '<i>' + esc(pj.status) + '</i>' : '') + '</span></span>' + ring + '</button>'
+      + '<button type="button" class="pj4-hd" data-pjopen="1" style="--h:' + pjHue(PJ.cur) + '"><span class="pj4-cr" style="--p:' + (pgA || 0) + '">' + pjCoverHtml(pj, 'pj4-cv') + '</span><span class="pj4-t"><small>وضعیت پروژه · ' + esc(dDate ? (dDate === todayShamsi() ? 'امروز' : faDateLong(dDate) || toFa(dDate)) : '') + '</small><b>' + esc(pj.name || 'پروژه') + '</b>'
+      +   '<span class="pj4-ch">' + (pj.status ? '<i>' + esc(pj.status) + '</i>' : '') + (pgA != null ? '<i class="pg">' + toFa(pgA) + '٪ پیشرفت</i>' : '') + '</span></span>' + '</button>'
       + '<button type="button" class="pj4-sw" data-pjsw="1" aria-haspopup="true" title="انتخاب پروژه">' + toFa(pjN > 1 ? pjN + ' پروژه' : 'پروژه‌ها') + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>'
       + pjHomeStrip() + '<div class="pj4-k n' + K.length + '">' + K.join('') + '</div>' + ppl + '</section>';
   }
@@ -88192,8 +88214,9 @@
   function pjCoverHtml(p, cls){
     const im = (cls !== 'pi-cv' && p.logo) ? p.logo : ((p.images || [])[p.cover || 0] || p.logo);
     let a = null; try{ a = im ? attachList(im)[0] : null; }catch(e){}
-    if(a && a.src === 's3') return '<span class="' + cls + ' has"><img class="att-th s3t" referrerpolicy="no-referrer" data-tk="' + (a.slot === 2 ? 2 : 1) + ':' + esc(a.key) + '" alt=""></span>';
-    if(a && a.url) return '<span class="' + cls + ' has"><img src="' + esc(a.url) + '" alt="" loading="lazy"></span>';
+    const ini = '<i>' + pjInit(p.name) + '</i>';
+    if(a && a.src === 's3') return '<span class="' + cls + ' has">' + ini + '<img class="att-th s3t" referrerpolicy="no-referrer" data-tk="' + (a.slot === 2 ? 2 : 1) + ':' + esc(a.key) + '" alt=""></span>';
+    if(a && a.url) return '<span class="' + cls + ' has">' + ini + '<img src="' + esc(a.url) + '" alt="" loading="lazy" onerror="this.remove()"></span>';
     return '<span class="' + cls + '"><i>' + pjInit(p.name) + '</i></span>';
   }
   function pjPaint(){
