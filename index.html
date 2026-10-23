@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023150203">
+<meta name="pm-build" content="20261023150758">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20781,6 +20781,16 @@
   .kt-g .kt-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px;}
   .kt-g .kt-more{margin:0 8px 8px;}
 
+  /* نمایندهٔ پیمانکار */
+  .ctc-svr{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:8px;padding:10px;border-radius:12px;background:color-mix(in srgb, var(--sky) 6%, var(--field));}
+  .ct-svb{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:11px;font-weight:700;color:var(--sky);background:color-mix(in srgb, var(--sky) 10%, transparent);padding:2px 9px;border-radius:99px;margin-inline-start:6px;}
+  .ct-svb svg{width:12px;height:12px;}
+  #homeView .rp-pn{border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:12px 14px;}
+  .rp-h{display:flex;align-items:center;gap:10px;margin-bottom:10px;} .rp-t{display:flex;flex-direction:column;} .rp-t small{font-size:10.5px;color:var(--muted);font-weight:600;} .rp-t b{font-size:14px;font-weight:800;}
+  .rp-a{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:7px;}
+  .rp-a button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:13px;background:var(--field);text-align:center;font:700 10.5px var(--f);color:var(--ink);}
+  .rp-a button svg{width:18px;height:18px;color:var(--sky);} .rp-a button:hover{background:color-mix(in srgb, var(--sky) 9%, var(--field));}
+
   /* حساب‌های بیرونی و پیشنهاد اصلاح */
   .sug-bg{position:fixed;inset:0;z-index:100500;background:rgba(10,15,25,.45);display:grid;place-items:center;padding:16px;}
   .sug-box{width:min(420px,100%);display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:18px;background:var(--surface);box-shadow:0 24px 60px -20px rgba(0,0,0,.45);}
@@ -35148,7 +35158,7 @@
     /* هر شماره با نام صاحبش. نمایندگان با نام و سمت؛ تلفن‌های پرونده: اولی به نام «مدیر»
        فقط وقتی نام مدیر ثبت شده، وگرنه «تلفن پرونده». شماره‌های دیگر هم جدا می‌آیند
        (پیش‌تر فقط اولین شماره خوانده و «مدیریت» نامیده می‌شد). */
-    const reps = (Array.isArray(c.r) ? c.r : []).filter(x => x && x.p).map(x => ({n: x.n || '', role: x.r || 'نماینده', p: x.p, rep: true}));
+    const reps = (c.sv && c.sv.p ? [{n: c.sv.n || '', role: 'سرپرست کارگاه', p: c.sv.p, rep: true}] : []).concat((Array.isArray(c.r) ? c.r : []).filter(x => x && x.p).map(x => ({n: x.n || '', role: x.r || 'نماینده', p: x.p, rep: true})));
     const P = (c.p || []).filter(Boolean);
     const mg = P.map((ph, i) => ({n: i === 0 ? (c.c || '') : '', role: i === 0 ? (c.c ? 'مدیر' : 'تلفن پرونده') : 'تلفن دیگر', p: ph, w: i === 0 ? (c.w || '') : '', mg: true}));
     const seen = new Set(), out = [];
@@ -35476,6 +35486,10 @@
       + '<label class="ctc-f"><span>نام شخص اصلی یا مدیر</span><input type="text" data-ctk="c" value="' + esc(c.c || '') + '" placeholder="مثلاً مهندس احمدی"></label>'
       + '<div class="ctc-phs">' + ph.map((v, i) => '<label class="ctc-f"><span>' + (i ? 'تلفن دیگر' : 'تلفن مدیریت') + '</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="p" value="' + esc(v) + '" placeholder="09xxxxxxxxx"></label>').join('')
       +   '<button type="button" class="ctc-add" data-ctcph="1">+ تلفن دیگر</button></div>'
+      + '<div class="ctc-grp ctc-sv"><b>نمایندهٔ پیمانکار · سرپرست کارگاه</b><small>روی کارت پیمانکار دیده می‌شود؛ اگر کاربر سامانه باشد، به‌عنوان نماینده وارد سایت می‌شود و صورت وضعیت و نامه می‌فرستد و کارکرد همین پیمانکار را می‌بیند</small></div>'
+      + '<div class="ctc-svr"><label class="ctc-f"><span>نام نماینده</span><input type="text" data-ctk="svn" value="' + esc((c.sv || {}).n || '') + '" placeholder="مثلاً مهندس کریمی"></label>'
+      + '<label class="ctc-f"><span>تلفن نماینده</span><input type="tel" dir="ltr" inputmode="tel" data-ctk="svp" value="' + esc((c.sv || {}).p || '') + '" placeholder="09xxxxxxxxx"></label>'
+      + '<label class="ctc-f"><span>حساب کاربری در سامانه <small>اختیاری</small></span><input type="text" data-ctk="svu" data-list="engineerList" value="' + esc((c.sv || {}).u || '') + '" placeholder="نام کاربری که وارد سایت می‌شود" autocomplete="off"></label></div>'
       + '<div class="ctc-grp"><b>افراد و نمایندگان</b><small>سمت هر نفر (مدیر مالی، نمایندهٔ کارفرما، شریک…) و در صورت نیاز درصد سهم او؛ کارشناس‌ها فقط با این افراد تماس می‌گیرند</small></div>'
       + '<div class="ctc-reps">' + (Array.isArray(c.r) ? c.r : []).map(ctcRepRowHtml).join('') + '</div>'
       + '<button type="button" class="ctc-add" data-ctcrep="1">+ شخص دیگر</button>'
@@ -35773,6 +35787,10 @@
   function ctrDiscOf(n){ try{ const c = ctrContactOf(n); return (c && c.d) || ''; }catch(e){ return ''; } }
   /* «مالک هم هست» روی کارت کسی که نوع اصلی‌اش مالک نیست */
   function ctOwnBadge(n){
+    let rb = ''; try{ const c0 = ctrContactOf(n) || {}; if(c0.sv && (c0.sv.n || c0.sv.u)) rb = '<em class="ct-svb">' + CTC_I.user + 'نماینده: ' + esc(c0.sv.n || c0.sv.u) + (c0.sv.p ? ' · <span dir="ltr">' + esc(toFa(c0.sv.p)) + '</span>' : '') + '</em>'; }catch(e){}
+    return rb + ctOwnBadge0(n);
+  }
+  function ctOwnBadge0(n){
     try{ const c = ctrContactOf(n) || {}; if(c.t === 'own') return '';
       if(c.ow || (window.unitsOfOwner && window.unitsOfOwner(n).length)) return '<em class="ct-ownb">مالک هم هست</em>'; }catch(e){}
     return '';
@@ -36139,6 +36157,7 @@
       if(k === 'p') o.p.push(v); else o[k] = v;
     });
     if(o.d2){ o.d = o.d2; } delete o.d2;
+    if(o.svn || o.svp || o.svu) o.sv = {n: o.svn || o.svu || '', p: o.svp || '', u: o.svu || ''}; delete o.svn; delete o.svp; delete o.svu;
     o.pf = ctPfRead(box);
     return o;
   }
@@ -36168,7 +36187,10 @@
         if(!nn){ showDialog('warn','نام پیمانکار','نام و نام خانوادگی، یا نام شرکت را بنویسید.'); return; }
         if(ctrExK(nn) !== ctrExK(ctrCanon(box.dataset.ctced))){ sv.disabled = true; const ok = await ctxMakeCardName(box, nn, {rename: true}); sv.disabled = false; if(!ok) return; } } }
     (sv || dl).disabled = true;
-    try{ await ctrContactSave(box.dataset.ctced, o); const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
+    try{ await ctrContactSave(box.dataset.ctced, o);
+      /* حساب نماینده به همین پیمانکار وصل می‌شود (حساب بیرونی) */
+      try{ const u = o.sv && o.sv.u; if(u && isAdminUser() && window.extSaveParty && nameKey(window.extPartyOf(u)) !== nameKey(ctrCanon(box.dataset.ctced))) await window.extSaveParty(u, ctrCanon(box.dataset.ctced)); }catch(er2){}
+      const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
       showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
     try{ ctcRepaint(); }catch(e2){}
@@ -46912,6 +46934,31 @@
     sugList.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   }
   window.extPartyOf = n => extParty.get(nameKey(n || '')) || '';
+  window.extSaveParty = (u, p) => extSave(u, p);
+  /* پیمانکاری که این کاربر نماینده‌اش است: از پروندهٔ پیمانکار («حساب کاربری نماینده») یا اتصال حساب بیرونی */
+  function ctrOfRep(u){
+    const k = nameKey(u || ''); if(!k) return '';
+    let hit = ''; try{ ctrContacts.forEach((c, key) => { if(!hit && c && c.sv && c.sv.u && nameKey(c.sv.u) === k) hit = c.name || key; }); }catch(e){}
+    if(!hit){ const p = extParty.get(k); if(p){ try{ const t = ctrTypeOf(p); if(!t || t === 'ctr') hit = p; }catch(e){ hit = p; } } }
+    return hit ? (function(){ try{ return ctrCanon(hit); }catch(e){ return hit; } })() : '';
+  }
+  window.ctrOfRep = ctrOfRep;
+  /* پنل نماینده روی خانه: ارسال صورت وضعیت، ارسال نامه، دیدن کارکرد و اسناد خودش */
+  window.repPanelHtml = function(){
+    const me = activeUserName(), c = ctrOfRep(me); if(!c) return '';
+    const I = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+    return '<section class="h3-sec rp-pn h3-a" style="--i:2"><div class="rp-h"><span class="rp-av">' + avatarHtml(c, 'sm', true) + '</span><span class="rp-t"><small>نمایندهٔ پیمانکار</small><b>' + esc(c) + '</b></span></div>'
+      + '<div class="rp-a"><button type="button" data-rpgo="statement">' + I('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>') + '<span>ارسال صورت وضعیت</span></button>'
+      + '<button type="button" data-rpgo="letter">' + I('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>') + '<span>ارسال نامه</span></button>'
+      + '<button type="button" data-rpgo="work">' + I('<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>') + '<span>کارکرد ما</span></button>'
+      + '<button type="button" data-rpgo="mine">' + I('<path d="M4 6h16M4 12h16M4 18h10"/>') + '<span>ارسال‌های من</span></button></div></section>';
+  };
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-rpgo]'); if(!b) return;
+    const g = b.dataset.rpgo, c = ctrOfRep(activeUserName());
+    if(g === 'work'){ const x = document.createElement('button'); x.type = 'button'; x.dataset.hrprof = c; x.hidden = true; document.body.appendChild(x); x.click(); setTimeout(() => x.remove(), 0); return; }
+    try{ if(g === 'statement' || g === 'letter'){ ib.kind = g; window.umOpenIb('new', ''); } else window.umOpenIb('mine', ''); }catch(err){}
+  });
   const extIsExt = () => { try{ const L = rawLevel(); return L === 4 || L === 6 || L === 8 || L === 9; }catch(e){ return false; } };
   window.extIsExt = extIsExt;
   async function extSave(user, party){
@@ -76187,7 +76234,7 @@
   const ibDay = o => { const a = String(o.at || '').split(' '); const d = a[0] || o.d || ''; return d === todayShamsi() ? 'امروز ' + toFa(a[1] || '') : toFa(d); };
   function ibNewHtml(){
     const me = activeUserName();
-    let party = ''; try{ const c = ctrContactOf(me); party = (c && c.co) || ''; }catch(e){}
+    let party = ''; try{ party = (window.ctrOfRep && window.ctrOfRep(me)) || ''; if(!party){ const c = ctrContactOf(me); party = (c && c.co) || ''; } }catch(e){}
     const o = {t: ib.kind, party, d: todayShamsi()};
     return '<div class="ib-new ibx-pane"><div class="ibx-rh"><button type="button" class="ibx-back" data-ibback="1" aria-label="بازگشت">›</button><div><b>ارسال تازه</b><small>نوع مورد را انتخاب کنید، مشخصات و پیوست‌ها را بگذارید و بفرستید</small></div></div>'
       + '<div class="ibx-kinds">' + Object.keys(IB_T).map(k => '<button type="button" class="ibx-kc k-' + k + (ib.kind === k ? ' on' : '') + '" data-ibkind="' + k + '"><span>' + IB_TI[k] + '</span><b>' + IB_T[k] + '</b><small>' + IB_TD[k] + '</small></button>').join('') + '</div>'
@@ -87955,7 +88002,7 @@
       try{ if(window.coVisible && window.coVisible() && coCanA() && !co.t) P.push(coLoad()); }catch(e){}
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
     /* ترتیب: خوش‌آمد (با پروژه) ← کارتابل من ← کارهای سریع ← وضعیت پروژه ← بقیه */
-    const h = '<div class="h3">' + h3Hero(work, tk) + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
+    const h = '<div class="h3">' + h3Hero(work, tk) + (window.repPanelHtml ? window.repPanelHtml() : '') + h3Project(day, dDate, adm, tk, prc) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
