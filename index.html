@@ -23343,7 +23343,8 @@
   .fv-b.ic{width:36px;padding:0;justify-content:center;}
   .fv-body{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:var(--field);}
   [data-theme="dark"] .fv-body{background:#111418;}
-  .fv-img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;cursor:zoom-in;}
+  /* اندازهٔ عکس به کادر بسته است، نه به اندازهٔ واقعی فایل: پیش‌تر اول بندانگشتی کوچک و بعد عکس اصلی بزرگ‌تر می‌آمد و عکس «رشد» می‌کرد */
+  .fv-img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;cursor:zoom-in;}
   .fv-body{overflow:hidden;}
   .fv-body.zoomed .fv-img{cursor:grab;} .fv-body.zoomed .fv-nav{opacity:.25;}
   .fv-zm{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:14px;
@@ -24874,6 +24875,13 @@
   .af-autonf label i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);padding:1px 7px;border-radius:99px;margin-inline-start:4px;}
   .af-nf{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:99px;background:var(--field);font-size:12px;font-weight:800;color:var(--ink);}
   .af-autonf small{display:block;margin-top:4px;font-size:10.5px;color:var(--muted);}
+  .icp-bg{position:fixed;inset:0;z-index:10050;background:rgba(10,14,20,.6);display:grid;place-items:center;padding:16px;animation:h3QIn .2s ease both;}
+  .icp{background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);max-width:calc(100vw - 32px);}
+  .icp-h{align-self:stretch;display:flex;flex-direction:column;gap:2px;} .icp-h b{font-size:14px;font-weight:800;color:var(--ink);} .icp-h small{font-size:11px;color:var(--muted);}
+  .icp-st{position:relative;border-radius:14px;overflow:hidden;background:#111;touch-action:none;cursor:grab;} .icp-st:active{cursor:grabbing;}
+  .icp-c{display:block;} .icp-fr{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85);border-radius:14px;}
+  .icp-fr.rd{border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.9);}
+  .icp-z{width:100%;accent-color:var(--sky);} .icp-f{align-self:stretch;display:flex;justify-content:flex-end;gap:8px;}
   .af-newst{display:flex;flex-direction:column;align-items:flex-start;gap:4px;} .af-newst .af-nf{display:inline-flex;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:800;color:var(--warn,#b07512);background:color-mix(in srgb, var(--warn,#b07512) 12%, transparent);} .af-newst small{font-size:11px;color:var(--muted);line-height:1.7;}
   /* الحاقیه در فرم */
   .ca2 .ca2-on{display:none;} .ca2.on .ca2-on{display:block;} .ca2.on .ca2-off{display:none;}
@@ -40386,8 +40394,10 @@
       const cv = document.querySelector('.pf2-cover[data-cover-for="' + CSS.escape(name) + '"]');
       if(cv) cv.classList.add('busy');
       try{
-        const u = await pfCoverShrink(f);
+        let u = '';
+        try{ u = await imgCrop(f, 2.6, 1500, 'برش عکس کاور', 520000); }catch(err){ if(cv) cv.classList.remove('busy'); showDialog('err', 'عکس خوانده نشد', imgErrText(err)); return; }
         if(cv) cv.classList.remove('busy');
+        if(!u) return;
         pfCoverAdjust(name, u, 50);
       }catch(err){
         showDialog('err', 'کاور ثبت نشد', friendlyErr(err));
@@ -46545,6 +46555,63 @@
       ? '<img src="'+esc(img)+'" alt="">' : esc(initialsOf(name));
   }
 
+  /* ====== بارگذاری و برش عکس ======
+     خواندن عکس با createImageBitmap (چرخش درست عکس گوشی) و در صورت نبود، با URL محلی؛ پیش‌تر
+     FileReader با عکس‌های بزرگ یا HEIC آیفون شکست می‌خورد و «فایل تصویر خوانده نشد» می‌آمد.
+     پنجرهٔ برش: کشیدن برای جابه‌جایی و نوار برای بزرگ‌نمایی؛ خروجی با نسبت خواسته‌شده. */
+  async function imgDecode(file){
+    if(window.createImageBitmap){ try{ return await createImageBitmap(file, {imageOrientation: 'from-image'}); }catch(e){} try{ return await createImageBitmap(file); }catch(e){} }
+    return await new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image();
+      im.onload = () => { res(im); setTimeout(() => URL.revokeObjectURL(u), 1000); };
+      im.onerror = () => { URL.revokeObjectURL(u); rej(new Error(/hei[cf]/i.test(file.type + file.name) ? 'heic' : 'decode')); }; im.src = u; });
+  }
+  function imgEncode(c, max){
+    let out = '';
+    for(const q of [0.85, 0.72, 0.6, 0.48]){
+      try{ out = c.toDataURL('image/webp', q); }catch(e){ out = ''; }
+      if(!out || out.indexOf('image/webp') === -1) out = c.toDataURL('image/jpeg', q);
+      if(!max || out.length < max) break;
+    }
+    return out;
+  }
+  /* aspect = پهنا/ارتفاع، outW = پهنای خروجی؛ با انصراف null برمی‌گرداند */
+  async function imgCrop(file, aspect, outW, title, maxLen){
+    const im = await imgDecode(file);
+    const iw = im.width, ih = im.height;
+    return await new Promise(resolve => {
+      const bg = document.createElement('div'); bg.className = 'icp-bg';
+      bg.innerHTML = '<div class="icp" role="dialog" aria-modal="true"><div class="icp-h"><b>' + esc(title || 'برش عکس') + '</b><small>عکس را بکشید و با نوار بزرگ کنید</small></div>'
+        + '<div class="icp-st"><canvas class="icp-c"></canvas><i class="icp-fr' + (aspect === 1 ? ' rd' : '') + '"></i></div>'
+        + '<input type="range" dir="ltr" class="icp-z" min="1" max="4" step="0.01" value="1" aria-label="بزرگ‌نمایی">'
+        + '<div class="icp-f"><button type="button" class="mini" data-icp="no">انصراف</button><button type="button" class="mini go" data-icp="ok">ثبت عکس</button></div></div>';
+      document.body.appendChild(bg);
+      const st = bg.querySelector('.icp-st'), cv = bg.querySelector('.icp-c'), zr = bg.querySelector('.icp-z');
+      const SW = Math.min(360, window.innerWidth - 48), SH = Math.round(SW / aspect);
+      st.style.width = SW + 'px'; st.style.height = SH + 'px'; cv.width = SW * 2; cv.height = SH * 2; cv.style.width = SW + 'px'; cv.style.height = SH + 'px';
+      const base = Math.max(SW / iw, SH / ih); let z = 1, cx = iw / 2, cy = ih / 2;
+      const clamp = () => { const sc = base * z, hw = SW / sc / 2, hh = SH / sc / 2; cx = Math.min(Math.max(cx, hw), iw - hw); cy = Math.min(Math.max(cy, hh), ih - hh); };
+      const draw = () => { clamp(); const sc = base * z, ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+        ctx.drawImage(im, cx - SW / sc / 2, cy - SH / sc / 2, SW / sc, SH / sc, 0, 0, cv.width, cv.height); };
+      draw();
+      let drag = null;
+      st.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx, cy}; st.setPointerCapture(e.pointerId); });
+      st.addEventListener('pointermove', e => { if(!drag) return; const sc = base * z; cx = drag.cx - (e.clientX - drag.x) / sc; cy = drag.cy - (e.clientY - drag.y) / sc; draw(); });
+      st.addEventListener('pointerup', () => { drag = null; }); st.addEventListener('pointercancel', () => { drag = null; });
+      st.addEventListener('wheel', e => { e.preventDefault(); z = Math.min(4, Math.max(1, z * (e.deltaY < 0 ? 1.08 : .92))); zr.value = z; draw(); }, {passive: false});
+      zr.addEventListener('input', () => { z = +zr.value; draw(); });
+      const done = v => { bg.remove(); resolve(v); };
+      bg.addEventListener('click', e => { const b = e.target.closest('[data-icp]'); if(!b) return;
+        if(b.dataset.icp === 'no') return done(null);
+        const sc = base * z, w = SW / sc, h = SH / sc, OW = Math.min(outW, Math.round(w)) || outW, OH = Math.round(OW / aspect);
+        const c = document.createElement('canvas'); c.width = OW; c.height = OH;
+        c.getContext('2d').drawImage(im, cx - w / 2, cy - h / 2, w, h, 0, 0, OW, OH);
+        done(imgEncode(c, maxLen)); });
+    });
+  }
+  window.imgCrop = imgCrop;
+  const imgErrText = err => String(err && err.message) === 'heic'
+    ? 'این عکس با فرمت HEIC است و مرورگر آن را نمی‌خواند. از گالری «اشتراک‌گذاری ← ذخیره به‌صورت JPEG» یا در تنظیمات دوربین آیفون گزینهٔ «Most Compatible» را انتخاب کنید.'
+    : 'این فایل عکس قابل خواندن نیست؛ عکس دیگری (JPG یا PNG) امتحان کنید.';
   // فشرده‌سازی در مرورگر: مربع ۱۲۸ پیکسل و حجم چند کیلوبایت
   function shrinkImage(file){
     return new Promise((resolve, reject) => {
@@ -46589,8 +46656,11 @@
     avatarTarget = ''; avatarParty = false;
     if(!file || !name) return;
     if(st) st.textContent = 'در حال آماده‌سازی...';
+    let dataUri = '';
+    try{ dataUri = await imgCrop(file, 1, 256, 'برش عکس پروفایل', 60000); }
+    catch(err){ showDialog('err', 'عکس خوانده نشد', imgErrText(err)); e.target.value = ''; return; }
+    if(!dataUri){ e.target.value = ''; return; }
     try{
-      const dataUri = await shrinkImage(file);
       if(st) st.textContent = 'در حال ارسال...';
       if(party){
         await ptyAvaSave(name, dataUri);
@@ -46611,8 +46681,8 @@
       document.querySelectorAll('.ava[data-person]').forEach(a => { if(nameKey(a.dataset.person) === nameKey(name)) a.innerHTML = '<img src="' + esc(dataUri) + '" alt="">'; });
       showDialog('ok','عکس ثبت شد','عکس پروفایل ' + name + ' به‌روزرسانی شد.');
     }catch(err){
-      if(st) st.textContent = 'خطا در پردازش تصویر';
-      showDialog('err','خطا در پردازش تصویر','فایل تصویر خوانده نشد؛ عکس دیگری امتحان کنید.');
+      if(st) st.textContent = 'ثبت نشد';
+      showDialog('err','ثبت عکس انجام نشد', (typeof friendlyErr === 'function' ? friendlyErr(err) : '') || 'اتصال را بررسی کنید و دوباره تلاش کنید.');
     }finally{
       e.target.value = '';
     }
