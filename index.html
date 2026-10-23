@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261023151849">
+<meta name="pm-build" content="20261023152358">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20781,6 +20781,8 @@
   .kt-g .kt-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px;}
   .kt-g .kt-more{margin:0 8px 8px;}
 
+  .ctyp-lk{display:flex;align-items:center;gap:6px;margin:4px 0 8px;padding:7px 10px;border-radius:10px;background:color-mix(in srgb, var(--sky) 8%, var(--field));font-size:11px;color:var(--ink);line-height:1.6;} .ctyp-lk svg{width:14px;height:14px;flex:none;color:var(--sky);}
+
   /* نمایندهٔ پیمانکار روی کارت */
   .ct-rep{display:flex;align-items:center;gap:10px;margin:8px 14px 4px;padding:9px 12px;border-radius:14px;background:color-mix(in srgb, var(--sky) 8%, var(--field));border:1px solid color-mix(in srgb, var(--sky) 20%, transparent);}
   .ct-rep.none{background:var(--field);border-style:dashed;border-color:var(--line);color:var(--muted);} .ct-rep > svg{width:18px;height:18px;flex:none;}
@@ -35134,6 +35136,10 @@
     { const sh = parseFloat(toEn(String(o.sh || '')).replace(/[^\d.]/g, '')); if(sh > 0) clean.sh = Math.min(100, Math.round(sh * 100) / 100); }
     { const sa = +toEn(String(o.sa || '')).replace(/[^\d]/g, ''); if(sa > 0) clean.sa = sa; }
     if(o.sn) clean.sn = o.sn;
+    /* نمایندهٔ پیمانکار، جایگاه کارفرما (صاحب‌کار یا نیروی تیم) و «زیر نظرِ» مشاور */
+    if(o.sv && (o.sv.n || o.sv.p || o.sv.u) && (!o.t || o.t === 'ctr')) clean.sv = {n: o.sv.n || '', p: o.sv.p || '', u: o.sv.u || ''};
+    if(o.em && o.t === 'emp') clean.em = 1;
+    if(o.un && o.t === 'cons') clean.un = o.un;
     { const o0 = ctrContactOf(canon); const ad = o.ad || (o0 && o0.ad); if(ad && Object.keys(o).length) clean.ad = ad; }
     /* نام قراردادی، دیسیپلین و تخصص‌ها */
     if(o.cn) clean.cn = o.cn; if(o.d) clean.d = o.d; if(o.s) clean.s = o.s; if(o.ct) clean.ct = o.ct;
@@ -35480,7 +35486,10 @@
   }
   document.addEventListener('change', e => { const i = e.target; if(!i || !i.matches || !i.matches('.ctc-ed [data-ctk="ow"]')) return; i.closest('.ctc-ed').dataset.pow = i.checked ? '1' : ''; });
   function ctcEditorHtml(name, loading){
-    if(!document.getElementById('ctcRoleList')){ const dl = document.createElement('datalist'); dl.id = 'ctcRoleList'; dl.innerHTML = CTC_ROLES.map(v => '<option value="' + esc(v) + '">').join(''); document.body.appendChild(dl); }
+    { let dl = document.getElementById('ctcRoleList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctcRoleList'; document.body.appendChild(dl); }
+      /* سمت‌های «دسترسی‌ها» (کارفرما، مشاور، مالک) هم پیشنهاد می‌شوند تا سمت هر نیرو همان سمت دسترسی‌اش باشد */
+      let pos = []; try{ pos = ogPositions().filter(x => ['emp', 'cons', 'own'].indexOf(x.side) !== -1).map(x => x.n); }catch(e){}
+      dl.innerHTML = Array.from(new Set(pos.concat(CTC_ROLES))).map(v => '<option value="' + esc(v) + '">').join(''); }
     const c = ctrContactOf(name) || {};
     const ph = (c.p || []).concat(['']).slice(0, Math.max(2, (c.p || []).length + 1));
     const man = ctrTagsOf(c.ct), D = ctrDocsCalc(name, man);
@@ -35852,20 +35861,22 @@
   function ctrRoleListFor(t){
     let dl = document.getElementById('ctrRoleList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctrRoleList'; document.body.appendChild(dl); }
     const used = []; try{ ctrContacts.forEach(o => { if(o && o.t === t && o.ro) used.push(o.ro); }); }catch(e){}
-    dl.innerHTML = Array.from(new Set((CTR_ROLE_SUG[t] || []).concat(used))).map(v => '<option value="' + esc(v) + '">').join('');
+    /* سمت‌های تعریف‌شده در «دسترسی‌ها» برای همین طرف، اول فهرست؛ تا سمت پرونده و سمت دسترسی یکی باشد */
+    let pos = []; try{ pos = ogPositions().filter(x => (x.side || 'pm') === t).map(x => x.n); }catch(e){}
+    dl.innerHTML = Array.from(new Set(pos.concat(CTR_ROLE_SUG[t] || [], used))).map(v => '<option value="' + esc(v) + '"' + (pos.indexOf(v) !== -1 ? ' label="سمت در دسترسی‌ها"' : '') + '>').join('');
   }
   function ctypHtml(cur, ro, d, ow, em, un){
     cur = cur || 'ctr';
     try{ ctrRoleListFor(cur); }catch(e){}
     return '<div class="ctyp"><span class="ctyp-l">نوع</span><input type="hidden" data-ctk="t" value="' + esc(cur) + '"><div class="ctyp-s" role="radiogroup">'
       + CTR_TYPES.map(([k, lb]) => '<button type="button" role="radio" class="ctyp-b t-' + k + (k === cur ? ' on' : '') + '" aria-checked="' + (k === cur) + '" data-ctyp="' + k + '">' + lb + '</button>').join('') + '</div></div>'
+      /* کارفرما: خودِ کارفرما (صاحب‌کار) یا نیروی تیم کارفرما */
+      + '<div class="ctyp-em"' + (cur === 'emp' ? '' : ' hidden') + '><span class="ctyp-l">جایگاه</span><div class="ctyp-s" role="radiogroup">'
+      +   [['1', 'خودِ کارفرما (صاحب‌کار)'], ['', 'نیروی تیم کارفرما']].map(([v, t]) => '<label class="ctyp-rb"><input type="radio" name="ctEm" data-ctk="em" value="' + v + '"' + ((em ? '1' : '') === v ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div></div>'
       /* نقش دوم: پیمانکار، مشاور یا کارفرمایی که مالک واحد هم هست */
       + '<label class="ctyp-ow"' + (cur === 'own' ? ' hidden' : '') + '><input type="checkbox" data-ctk="ow"' + (ow ? ' checked' : '') + '><span>مالک هم هست</span><small>در فهرست مالکان هم می‌آید؛ نوع اصلی همان می‌ماند</small></label>'
       + '<label class="ctc-f ctyp-ro"' + (cur === 'ctr' ? ' hidden' : '') + '><span>' + (cur === 'emp' ? 'سمت در تیم کارفرما' : cur === 'own' ? 'نسبت با پروژه' : 'تخصص مشاور') + ' <small>مثلاً ' + (cur === 'emp' ? 'مالی، تدارکات، نمایندهٔ کارفرما' : cur === 'own' ? 'مالک واحد، پیش‌خریدار' : 'مشاور سازه، مشاور تأسیسات') + '</small></span>'
       + '<input type="text" data-ctk="ro" data-list="ctrRoleList" autocomplete="off" value="' + esc(ro || '') + '" placeholder="انتخاب یا نوشتن"></label>'
-      /* کارفرما: خودِ کارفرما (صاحب‌کار) یا نیروی تیم کارفرما */
-      + '<div class="ctyp-em"' + (cur === 'emp' ? '' : ' hidden') + '><span class="ctyp-l">جایگاه</span><div class="ctyp-s" role="radiogroup">'
-      +   [['1', 'خودِ کارفرما (صاحب‌کار)'], ['', 'نیروی تیم کارفرما']].map(([v, t]) => '<label class="ctyp-rb"><input type="radio" name="ctEm" data-ctk="em" value="' + v + '"' + ((em ? '1' : '') === v ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div></div>'
       /* مشاور: زیر نظر کارفرما یا تیم مدیریت پیمان */
       + '<label class="ctc-f ctyp-un"' + (cur === 'cons' ? '' : ' hidden') + '><span>زیر نظرِ <small>در چارت سازمانی و دسترسی‌ها زیر همین بخش می‌آید</small></span><select data-ctk="un" data-nons="1">'
       +   [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([v, t]) => '<option value="' + v + '"' + ((un || '') === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
@@ -35905,11 +35916,31 @@
     const k = (w.length > 2 && /^(سید|سیده|میر|حاج|حاجی)$/.test(w[0])) ? 2 : 1;
     return {fn: w.slice(0, k).join(' '), ln: w.slice(k).join(' '), co};
   }
+  /* پیوند پرونده با دسترسی‌ها: اگر طرف خودش کاربر سامانه است، سمتش همان سمت کاربری اوست */
+  const ctrIsUser = n => { try{ const k = nameKey(n); return listNames().some(x => nameKey(x) === k); }catch(e){ return false; } };
+  function ctrLinkedRole(n, c){ let r = ''; try{ if(ctrIsUser(n)) r = String(roleOf(n) || '').trim(); }catch(e){} return r || (c && c.ro) || ''; }
+  /* سمت‌های پرونده (خود طرف و نیروهایش) روی کاربرِ هم‌نام در دسترسی‌ها نوشته می‌شود */
+  async function ctrSyncRoles(name, o){
+    let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm) return 0;
+    let n = 0; const go = async (nm, ro) => { if(!nm || !ro || !ctrIsUser(nm)) return; let cur = ''; try{ cur = String(roleOf(nm) || '').trim(); }catch(e){} if(cur === ro) return; await savePerson(nm, {role: ro}); n++; };
+    if(o.t && o.t !== 'ctr') await go(name, o.ro);
+    for(const x of (o.r || [])) await go(x.n, x.r);
+    if(n){ try{ await loadPeople(true); }catch(e){} }
+    return n;
+  }
+  window.ctrSyncRoles = ctrSyncRoles;
+  /* و برعکس: سمتی که در «کاربران / دسترسی‌ها» عوض شد، در پرونده هم عوض می‌شود */
+  window.ctrRoleFromUser = async (nm, ro) => {
+    if(!nm || !ro) return;
+    try{ const c = ctrContactOf(nm); if(c && c.t && c.t !== 'ctr' && c.ro !== ro) await ctrContactSave(nm, Object.assign({}, c, {ro})); }catch(e){}
+    try{ for(const c of Array.from(ctrContacts.values())){ if(!c || !Array.isArray(c.r)) continue; const i = c.r.findIndex(x => x && x.n && nameKey(x.n) === nameKey(nm)); if(i !== -1 && c.r[i].r !== ro){ const r2 = c.r.slice(); r2[i] = Object.assign({}, r2[i], {r: ro}); await ctrContactSave(c.name, Object.assign({}, c, {r: r2})); } } }catch(e){}
+  };
   function cnmHtml(name, c){
     const canon = ctrCanon(name), P = ctrNameParts(canon, c), ed = can('ctr.contact');
     const f = (k, lb, v, ph) => '<label class="ctc-f"><span>' + lb + '</span><input type="text" data-ctk="' + k + '" class="cnm-in" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off"' + (ed ? '' : ' disabled') + '></label>';
     return '<div class="cnm" data-cnm="' + esc(canon) + '"><div class="ctx-sh"><b>نام و نوع پرونده</b><small>با تغییر نام و «ذخیره»، نام روی همهٔ کارت‌ها، گزارش‌ها و فهرست‌ها عوض می‌شود؛ نام قبلی هم به همین پرونده وصل می‌ماند</small></div>'
-      + ctypHtml((c && c.t) || '', (c && c.ro) || '', (c && c.d) || '', !!(c && c.ow), !!(c && c.em), (c && c.un) || '')
+      + ctypHtml((c && c.t) || '', ctrLinkedRole(canon, c), (c && c.d) || '', !!(c && c.ow), !!(c && c.em), (c && c.un) || '')
+      + (ctrIsUser(canon) ? '<p class="ctyp-lk">' + CTC_I.user + 'این شخص کاربر سامانه است؛ «سمت» همین‌جا و در «دسترسی‌ها» یکی است و با ذخیره، هر دو جا عوض می‌شود.</p>' : '')
       + '<div class="cnm-g">' + f('fn', 'نام', P.fn, 'مثلاً حسین') + f('ln', 'نام خانوادگی', P.ln, 'مثلاً ناظری') + '</div>'
       + f('co', 'نام شرکت <small>اختیاری؛ اگر طرف شرکت است و نام شخص ندارد، فقط همین را بنویسید</small>', P.co, 'مثلاً آسمان بالابر توان')
       + '<div class="cnm-pv"><u>روی کارت</u><b>' + esc(canon) + '</b><i hidden>تغییر می‌کند</i></div></div>';
@@ -36231,6 +36262,7 @@
         if(ctrExK(nn) !== ctrExK(ctrCanon(box.dataset.ctced))){ sv.disabled = true; const ok = await ctxMakeCardName(box, nn, {rename: true}); sv.disabled = false; if(!ok) return; } } }
     (sv || dl).disabled = true;
     try{ await ctrContactSave(box.dataset.ctced, o);
+      try{ const k = await ctrSyncRoles(ctrCanon(box.dataset.ctced), o); if(k) try{ shrToast(toFa(k) + ' سمت در دسترسی‌ها هم عوض شد'); }catch(er){} }catch(er2){}
       /* حساب نماینده به همین پیمانکار وصل می‌شود (حساب بیرونی) */
       try{ const u = o.sv && o.sv.u; if(u && isAdminUser() && window.extSaveParty && nameKey(window.extPartyOf(u)) !== nameKey(ctrCanon(box.dataset.ctced))) await window.extSaveParty(u, ctrCanon(box.dataset.ctced)); }catch(er2){}
       const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
@@ -40133,6 +40165,9 @@
             // اگر ستون سطح دسترسی هنوز ساخته نشده باشد
             delete patch.level;
             await savePerson(name2, patch);
+          }
+          try{ if(patch.role && window.ctrRoleFromUser) await window.ctrRoleFromUser(name2, patch.role); }catch(e3){}
+          if(lvl && patch.level == null){
             showDialog('warn','سطح ذخیره نشد',
               'سمت ثبت شد ولی ستون «level» در جدول people وجود ندارد. فایل SQL را اجرا کنید.');
             await loadPeople(); renderAdminPanel();
