@@ -535,6 +535,30 @@
 #chatModal .um-tabs button{height:42px!important;padding:0 12px!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--muted)!important;font-size:12.5px!important;font-weight:700!important;border-bottom:2px solid transparent!important;margin-bottom:-1px}
 #chatModal .um-tabs{overflow-x:auto!important;overflow-y:hidden!important;max-width:100%!important;min-width:0!important;scrollbar-width:none}#chatModal .um-tabs::-webkit-scrollbar{display:none}#chatModal .um-tabs button{flex:none!important}#chatModal #msgPeopleWrap,#chatModal #msgChatWrap,#chatModal .cm-side,#chatModal .cm-main{min-width:0!important;max-width:100%}
 #chatModal .um-tabs button.on{color:var(--ink)!important;border-bottom-color:var(--ink)!important;background:transparent!important}
+#chatModal #umTabs{display:block!important;min-height:0!important;padding:8px 12px 0!important;overflow:visible!important}
+#chatModal #umTabs .um-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--field);margin-bottom:6px}
+#chatModal #umTabs .um-seg button{height:38px!important;padding:0 10px!important;border:0!important;border-radius:11px!important;margin:0!important;background:transparent!important;color:var(--muted)!important;display:flex;align-items:center;justify-content:center;gap:7px;font:800 12.5px/1 var(--f)!important;transition:background .18s,color .18s,box-shadow .18s}
+#chatModal #umTabs .um-seg button.on{background:var(--surface)!important;color:var(--ink)!important;box-shadow:0 1px 2px rgba(0,0,0,.08),0 4px 12px -6px rgba(0,0,0,.18)}
+#chatModal #umTabs .um-seg svg{width:17px;height:17px;flex:none}
+#chatModal #umTabs .um-seg button.on svg{color:var(--sky)}
+#chatModal #umTabs .um-seg i{font-style:normal;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--alert);color:#fff;font:800 10.5px/18px var(--f);text-align:center}
+#chatModal #umTabs .um-sub{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -2px}
+#chatModal #umTabs .um-sub::-webkit-scrollbar{display:none}
+#chatModal #umTabs .um-sub button{flex:none!important}
+#chatModal #umTabs .um-sub button.um-new{margin-inline-start:auto!important;color:var(--sky)!important}
+/* حباب پیام: محتوای بلند (نام فایل، نشانی) هرگز از صفحه بیرون نمی‌زند */
+#chatModal #msgList{overflow-x:hidden}
+#chatModal .chat-row{min-width:0;max-width:100%}
+#chatModal .bubble{min-width:0;overflow-wrap:anywhere;word-break:break-word;box-sizing:border-box}
+#chatModal .bubble .b-files,#chatModal .bubble .up-list{min-width:0;max-width:100%}
+#chatModal .bubble .up-it{min-width:0;max-width:100%;box-sizing:border-box;flex-wrap:nowrap!important}
+#chatModal .bubble .up-it>*{min-width:0}
+#chatModal .bubble .up-it b,#chatModal .bubble .up-it .up-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:100%}
+/* نوار نوشتن: دکمه‌های کوچک‌تر، جای نوشتن بزرگ‌تر */
+#chatModal .cm-cmp{gap:0!important}
+#chatModal .cm-tb{width:31px!important;height:34px!important;border-radius:10px!important}
+#chatModal .cm-tb svg{width:18px!important;height:18px!important}
+#chatModal .chat-compose textarea{min-width:0;flex:1 1 auto!important}
 #chatModal .um-tabs .um-new{margin-inline-start:auto!important;color:var(--accent)!important;border-style:solid!important}
 #chatModal .um-tabs .um-new.on{border-bottom-color:var(--accent)!important}
 /* متره: گروه‌ها و مصالح */
@@ -18411,6 +18435,14 @@
   @media(min-width:820px){
     #chatModal.cm2 #msgPeopleWrap[hidden], #chatModal.cm2 #msgChatWrap[hidden]{display:flex !important;}
     #chatModal.cm2:not(.in-chat) .cm-empty{display:flex;}
+    /* مکاتبات روی صفحهٔ پهن: تمام پهنا (نه ستون باریک کنار گفت‌وگو) */
+    #chatModal.cm2.ib-mode #msgChatWrap, #chatModal.cm2.ib-mode #msgChatWrap[hidden]{display:none !important;}
+    #chatModal.cm2.ib-mode #msgPeopleWrap{flex:1 1 auto !important;width:auto !important;max-width:none !important;border-inline-end:0 !important;}
+    #chatModal.cm2.ib-mode #umTabs{padding:12px 20px 0 !important;}
+    #chatModal.cm2.ib-mode #umTabs .um-seg{max-width:420px;}
+    #chatModal.cm2.ib-mode .um-ibpane{padding:6px 20px 24px !important;}
+    #chatModal.cm2.ib-mode .ibx{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) !important;gap:14px !important;align-items:start;}
+    #chatModal.cm2.ib-mode .ibx>*:last-child{position:sticky;top:0;}
   }
   /* گوشی: تمام‌صفحه، دو پرده که با هم جابه‌جا می‌شوند */
   @media(max-width:819px){
@@ -25820,9 +25852,7 @@
       <span class="bell-dot" id="ibCount" hidden>۰</span>
     </button>
     <button type="button" class="bell" id="msgBtn" title="پیام‌ها" aria-label="پیام‌ها">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M4 5h16v12H7l-3 3V5z" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="bell-dot" id="msgCount" hidden>۰</span>
       <span class="um-ibdot" id="msgIbDot" hidden></span>
     </button>
@@ -27100,7 +27130,7 @@
     <input type="hidden" id="msgTo" value="">
     <div class="cm-side" id="msgPeopleWrap">
       <div class="cm-sh">
-        <span class="cm-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5a2 2 0 01-2 2H8.5L4 20V6a2 2 0 012-2h12a2 2 0 012 2z"/><path d="M8.5 9h7M8.5 12.5h4.5"/></svg></span>
+        <span class="cm-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span>
         <div class="cm-st"><b>پیام‌ها</b><small id="cmSub"></small></div>
         <button type="button" class="x cm-x" id="msgX" aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
@@ -74857,10 +74887,18 @@
     const R = ibCanR(), cur = um.mode === 'ib' ? ib.tab : 'chat';
     const nIn = ib.list.filter(o => ibIn(o) && o.st === 'q' && !ibReadSet().has(o.id)).length, nQ = R ? ib.list.filter(o => o.st === 'q' && !o.to && !ibReadSet().has(o.id)).length : 0;
     const tb = (k, t, n, cls) => '<button type="button" class="' + (cur === k ? 'on' : '') + (cls ? ' ' + cls : '') + '" data-umtab="' + k + '">' + t + (n ? ' <i>' + toFa(n) + '</i>' : '') + '</button>';
-    h.innerHTML = tb('chat', 'گفت‌وگوها') + tb('in', 'دریافتی', nIn) + (R ? tb('q', 'صف بررسی', nQ) : '') + tb('mine', 'ارسالی') + (R ? tb('arc', 'بایگانی') : '')
-      + tb('new', '+ ارسال مدرک', 0, 'um-new')
+    /* دو بخش جدا: گفت‌وگوها (پیام شخصی) و مکاتبات (دریافتی/ارسالی مدارک)؛ زیربخش‌ها فقط داخل مکاتبات */
+    let nChat = 0; try{ const me = activeUserName(), mk = chatKey(me); nChat = (allMessages || []).filter(r => pick(r,N.kind) === MSG_KIND && pick(r,N.to) !== PUBLIC_ROOM && chatKey(pick(r,N.to)) === mk && chatKey(pick(r,N.from)) !== mk && pick(r,N.state) !== 'خوانده‌شده').length; }catch(e){}
+    const isIb = um.mode === 'ib';
+    const IC_CH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>';
+    const IC_IB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>';
+    h.innerHTML = '<div class="um-seg" role="tablist">'
+      + '<button type="button" role="tab" class="' + (isIb ? '' : 'on') + '" data-umtab="chat">' + IC_CH + '<span>گفت‌وگوها</span>' + (nChat ? '<i>' + toFa(nChat) + '</i>' : '') + '</button>'
+      + '<button type="button" role="tab" class="' + (isIb ? 'on' : '') + '" data-umtab="ib">' + IC_IB + '<span>مکاتبات</span>' + ((nIn + nQ) ? '<i>' + toFa(nIn + nQ) + '</i>' : '') + '</button></div>'
+      + (isIb ? '<div class="um-sub">' + tb('in', 'دریافتی', nIn) + (R ? tb('q', 'صف بررسی', nQ) : '') + tb('mine', 'ارسالی') + (R ? tb('arc', 'بایگانی') : '')
+      + tb('new', '+ ارسال مدرک', 0, 'um-new') + '</div>' : '')
       + (um.pre && um.pre.length ? '<p class="um-hint">🏷 «' + esc(um.pre[0].t || '') + '» پیوست شد — گفت‌وگو را انتخاب کنید.</p>' : '');
-    try{ const on = h.querySelector('button.on'); if(on) requestAnimationFrame(() => { const r = on.getBoundingClientRect(), hr = h.getBoundingClientRect(); if(r.left < hr.left || r.right > hr.right) on.scrollIntoView({inline: 'center', block: 'nearest'}); }); }catch(e){}
+    try{ const on = h.querySelector('.um-sub button.on'); if(on) requestAnimationFrame(() => { const r = on.getBoundingClientRect(), hr = h.getBoundingClientRect(); if(r.left < hr.left || r.right > hr.right) on.scrollIntoView({inline: 'center', block: 'nearest'}); }); }catch(e){}
   }
   window.umTabsPaint = umTabsPaint;
   /* دریافتی و ارسالی داخل همان پنجرهٔ پیام‌ها: بخش مکاتبات به این پنجره منتقل می‌شود */
@@ -74914,6 +74952,7 @@
     const tb = t.closest('[data-umtab]'); if(tb){
       e.preventDefault(); const k = tb.dataset.umtab;
       if(k === 'chat'){ umIbExit(); return; }
+      if(k === 'ib'){ if(um.mode !== 'ib') umIbEnter((ib && ib.tab && ib.tab !== 'new') ? ib.tab : 'in', ''); return; }
       if(k === 'new' && um.pre){ ib.preRefs = um.pre; um.pre = null; }
       umIbEnter(k, '');
       return;
