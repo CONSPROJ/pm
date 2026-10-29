@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029160739">
+<meta name="pm-build" content="20261029161420">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26700,6 +26700,21 @@
   :is([data-theme="dark"],#z0) :is(body,#z1) :is(.field, .te-f) :is(input:where(:not([type=checkbox],[type=radio])), textarea, select, .flp-btn, .ns-btn),
   :is([data-theme="dark"],#z0) :is(body,#z1) .field .stp{background:color-mix(in srgb, #fff 4%, var(--surface)) !important;border-color:color-mix(in srgb, #fff 14%, transparent) !important;box-shadow:none !important;}
 
+  /* دسکتاپ: فهرست‌های کشیده دوستونی (باز شده‌ها تمام‌عرض)، پیام کوتاه گوشهٔ پایین، برچسب «تغییر» نوع گزارش پنهان */
+  @media (min-width:1180px){
+    html body .tkl-b:has(> .eng){display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));grid-auto-flow:row dense;gap:10px;align-items:start;}
+    html body .tkl-b > .eng{margin:0 !important;min-width:0;}
+    html body .tkl-b > .eng.open, html body .tkl-b > :not(.eng){grid-column:1 / -1;}
+    html body .cdx-list:has(> .cdx-r){display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));grid-auto-flow:row dense;gap:10px;align-items:start;}
+    html body .cdx-list > *{min-width:0;margin:0 !important;}
+    html body .cdx-list > :not(.cdx-r), html body .cdx-list > .cdx-r.open{grid-column:1 / -1;}
+    html body .sp-fls:has(> .sp-fl){display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));grid-auto-flow:row dense;gap:8px;align-items:start;}
+    html body .sp-fls > *{min-width:0;margin:0 !important;}
+    html body .sp-fls > :not(.sp-fl), html body .sp-fls > .sp-fl.op{grid-column:1 / -1;}
+    html body .shr-toast{left:calc(var(--gut, 28px)) !important;bottom:24px !important;transform:translate(0, 20px) !important;}
+    html body .shr-toast.on{transform:translate(0, 0) !important;}
+    html body #panelView #viewKindCaps.rk-pick:not(.open) > .rk.on::after{display:none !important;}
+  }
   /* خانهٔ دسکتاپ: سرآیند و دو تابلوی شاخص */
   @media (min-width:1180px){
     #homeView > .h3.hdx > .hdx-top{grid-column:1 / -1;display:flex !important;flex-direction:column;align-items:stretch !important;gap:14px;width:auto !important;max-width:none !important;margin:0 !important;padding:0 !important;
@@ -89821,6 +89836,11 @@
     document.addEventListener('click', () => soon(250), true);
     try{ mq.addEventListener('change', () => soon(20)); }catch(e){}
     setTimeout(build, 1200); setInterval(() => { if(!document.hidden && mq.matches) build(); }, 60000);
+    /* باز شدن بخش از جای دیگر (خانه، جست‌وجو، پیوند) هم برجستگی ستون کناری را درست می‌کند */
+    ['wsSet', 'admSetCat'].forEach(fn => { const f0 = window[fn]; if(typeof f0 !== 'function' || f0.__sb) return;
+      const f1 = function(){ const r = f0.apply(this, arguments); soon(60); return r; }; f1.__sb = 1; window[fn] = f1; });
+    document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#viewKindCaps [data-kind]')) soon(60); }, true);
+    ['adminView', 'panelTasks', 'wsBar', 'viewKindCaps'].forEach(id => { const el = document.getElementById(id); if(el) new MutationObserver(() => { if(mq.matches) soon(120); }).observe(el, {attributes: true, childList: true}); });
   })();
   /* نام پروژه در ستون کناری، و لوگوی آن همان راهنمای سامانه را باز می‌کند */
   (function(){
