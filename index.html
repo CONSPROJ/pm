@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029090346">
+<meta name="pm-build" content="20261029095937">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26429,6 +26429,11 @@
   #qtArea [data-qxbk="pre"], #qtArea [data-qxe="cd"]{direction:ltr;text-align:right;}
   @media (max-width:560px){ .qz-pr{grid-template-columns:1fr 1fr;} .qz-pr > span:first-child{grid-column:1 / -1;} .qy-rr .qy-rc{flex-basis:72px;width:72px;} }
 
+  .rc-fl .rc-unk .rc-tr i{background:color-mix(in srgb, var(--muted) 55%, transparent) !important;}
+  .rc-fl .rc-unk .rc-lb{color:var(--muted);}
+  .rc-unkn{margin-top:4px;font-size:10.5px;line-height:1.7;}
+  .rc-title small{font-size:10px;font-weight:600;color:var(--muted);margin-inline-start:4px;}
+
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -33272,7 +33277,7 @@
     });
 
     /* اموجی و پیوست */
-    const CM_EMO = ['👍','🙏','👌','✅','❌','⚠️','🔥','👏','😊','😂','😍','🤝','💪','🎉','❤️','😅','🤔','😐','😢','😡','⏰','📌','📎','📷','🏗️','🧱','🔧','🚧','📝','💰','📅','🚀'];
+    const CM_EMO = ['👍','🙏','👌','✅','❌','⚠️','🔥','👏','😊','😂','😍','🤝','💪','🎉','❤️','😅','🤔','😐','😢','😡','⏰','','📎','📷','🏗️','🧱','🔧','🚧','📝','💰','📅','🚀'];
     const emoBox = document.getElementById('cmEmo'), emoBtn = document.getElementById('cmEmoBtn');
     if(emoBox){ emoBox.innerHTML = CM_EMO.map(x => '<button type="button" data-emo="' + x + '">' + x + '</button>').join(''); }
     if(emoBtn) emoBtn.addEventListener('click', () => { emoBox.hidden = !emoBox.hidden; emoBtn.classList.toggle('on', !emoBox.hidden); });
@@ -48420,19 +48425,30 @@
   }
 
   // نام محل کارکرد را به کلید طبقه می‌نگارد
+  /* املاهای رایج هم شناخته می‌شوند: «طبقۀ ۵»، «ط۵»، «طبقه پنجم»، «لابی همکف»، «واحد ۵۰۲»، «۵ لابی»، «منفی ۲» */
+  const FL_ORD = {'اول': 1, 'یکم': 1, 'دوم': 2, 'سوم': 3, 'چهارم': 4, 'پنجم': 5, 'ششم': 6, 'هفتم': 7, 'هشتم': 8, 'نهم': 9, 'دهم': 10,
+    'یازدهم': 11, 'دوازدهم': 12, 'سیزدهم': 13, 'چهاردهم': 14, 'پانزدهم': 15, 'پونزدهم': 15, 'شانزدهم': 16, 'هفدهم': 17, 'هجدهم': 18, 'هیجدهم': 18, 'نوزدهم': 19, 'بیستم': 20};
   function floorKeyOf(zone){
-    const v = toEn(String(zone || '')).replace(/[\u0654\u200c]/g, '').trim().toUpperCase();
+    const v = toEn(String(zone || '')).replace(/[\u0654\u200c\u0640]/g, '').replace(/ۀ|ة/g, 'ه').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').trim().toUpperCase();
     if(!v) return '';
+    const has = k => BUILDING.some(f => f.key === k);
+    const ok = k => (has(k) ? k : '');
     { const bm = v.match(/(منفی|زیرزمین)\s*(\d{1,2})/); if(bm) return 'B' + (+bm[2]); }
+    { const bm = v.match(/(?:منفی|زیرزمین)\s*(اول|یکم|دوم|سوم|چهارم|پنجم|ششم)/); if(bm) return 'B' + FL_ORD[bm[1]]; }
     if(/HELI|هلی/.test(v)) return 'HELIPAD';
     { const bm = v.match(/(?:^|[^A-Z])B\s*[-_.]?\s*(\d{1,2})(?!\d)/) || v.match(/^-\s*(\d{1,2})$/); if(bm) return 'B' + (+bm[1]); }
-    if(/^(GF|همکف)$/.test(v)) return 'GF';
+    if(/^(GF|G)$/.test(v) || /همکف|(?:^|[^A-Z])GF(?:$|[^A-Z])|GROUND/.test(v)) return 'GF';
     if(/پنت|PENT/.test(v)) return '17';
     if(/فنی|MECH/.test(v)) return '18';
     let m;
-    if((m = v.match(/طبقه\s*(\d+)/))) return String(+m[1]);
+    if((m = v.match(/طبقه\s*(\d+)/)) || (m = v.match(/(?:^|[\s(])ط\s*\.?\s*(\d+)/)) || (m = v.match(/FL(?:OOR)?\s*[-_.]?\s*(\d+)/))) return String(+m[1]);
+    if((m = v.match(/طبقه\s*(اول|یکم|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|یازدهم|دوازدهم|سیزدهم|چهاردهم|پانزدهم|پونزدهم|شانزدهم|هفدهم|هجدهم|هیجدهم|نوزدهم|بیستم)/))) return String(FL_ORD[m[1]]);
     if((m = v.match(/^(\d{3,4})$/))) return String(Math.floor(+m[1] / 100));
     if((m = v.match(/^(\d{1,2})$/))) return String(+m[1]);
+    /* شمارهٔ واحد در متن («واحد ۵۰۲»، «لابی ۱۰۱»): طبقهٔ صاحب همان واحد */
+    if((m = v.match(/(?:^|\D)(\d{3,4})(?!\d)/))){ const u = m[1], f = BUILDING.find(x => (x.units || []).indexOf(u) !== -1); if(f) return f.key; if(/واحد/.test(v)) return ok(String(Math.floor(+u / 100))); }
+    /* عدد کوتاه سرِ متن: «۵ لابی»، «۵-راهرو» (عدد تهِ متن مثل «اتاق ۲» طبقه نیست) */
+    if((m = v.match(/^(\d{1,2})(?=\s|[-·،,]|$)/))) return ok(String(+m[1]));
     return '';
   }
 
@@ -48797,19 +48813,31 @@
         + '<span class="rc-tr sk"><i style="width:' + Math.round(n / skMx * 100) + '%"></i></span>'
         + '<b>' + toFa(n) + '</b></div>').join('') + '</div>' : '<div class="empty">داده‌ای نیست.</div>';
 
-    // تخصیص نیرو بین محل‌ها
-    const byZone = new Map();
+    /* تخصیص نیرو بر اساس طبقه: محل هر ردیف به طبقه(ها) نگاشته می‌شود؛ محلی که چند طبقه را می‌گیرد
+       (نما، «۳ تا ۶») نفراتش بین همان طبقه‌ها پخش می‌شود. محل‌هایی که طبقه‌شان شناخته نشد جدا می‌آیند. */
+    const byFl = new Map(), flZ = new Map(), unk = new Map();
+    let unkMen = 0;
     src.forEach(r => {
-      const z = String(pick(r,F.zone) || '').trim(); if(!z) return;   // سطر بی‌محل در نمودار محل‌ها نمی‌آید
-      byZone.set(z, (byZone.get(z) || 0) + menOf(r));
+      const z = String(pick(r,F.zone) || '').trim(), m = menOf(r); if(!z || !m) return;
+      let ks = []; try{ ks = floorKeysOf(z) || []; }catch(e){}
+      if(!ks.length){ unkMen += m; unk.set(z, (unk.get(z) || 0) + m); return; }
+      ks.forEach(k => { byFl.set(k, (byFl.get(k) || 0) + m / ks.length); if(ks.length === 1){ const zm = flZ.get(k) || new Map(); zm.set(z, (zm.get(z) || 0) + m); flZ.set(k, zm); } });
     });
-    const zoneArr = Array.from(byZone.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8);
-    const zMax = maxOf(zoneArr.map(x => x[1]), 1);
-    const zones = zoneArr.length
-      ? '<div class="rc-rows">' + zoneArr.map(([z, n]) =>
-          '<div class="rc-row"><span class="rc-lb">' + esc(z) + '</span>'
-          + '<span class="rc-tr"><i style="width:' + Math.round(n / zMax * 100) + '%"></i></span>'
-          + '<b>' + toFa(n) + '</b></div>').join('') + '</div>'
+    const flOrd = k => { const i = BUILDING.findIndex(f => f.key === k); return i === -1 ? 999 : i; };
+    const flArr = Array.from(byFl.entries()).sort((a, b) => flOrd(a[0]) - flOrd(b[0]));
+    const zMax = maxOf(flArr.map(x => x[1]).concat([unkMen]), 1);
+    const flName = k => { try{ return floorLabel(k) || k; }catch(e){ return k; } };
+    const zones = flArr.length || unkMen
+      ? '<div class="rc-rows rc-fl">' + flArr.map(([k, n]) => {
+          const zm = flZ.get(k), top = zm ? Array.from(zm.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]) : [];
+          return '<div class="rc-row" title="' + esc(top.join('، ')) + '"><span class="rc-lb">' + esc(flName(k)) + '</span>'
+            + '<span class="rc-tr"><i style="width:' + Math.round(n / zMax * 100) + '%"></i></span>'
+            + '<b>' + toFa(Math.round(n)) + '</b></div>'; }).join('')
+        + (unkMen ? '<div class="rc-row rc-unk" title="' + esc(Array.from(unk.keys()).slice(0, 12).join('، ')) + '"><span class="rc-lb">طبقهٔ نامشخص</span>'
+            + '<span class="rc-tr"><i style="width:' + Math.round(unkMen / zMax * 100) + '%"></i></span><b>' + toFa(unkMen) + '</b></div>'
+            + '<div class="hr-note rc-unkn">' + toFa(unk.size) + ' محل بدون طبقه: ' + esc(Array.from(unk.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]).join('، ')) + (unk.size > 5 ? ' …' : '')
+            + ' — طبقهٔ این محل‌ها را در «داده و نام‌ها ← محل و طبقه» تعیین کنید.</div>' : '')
+        + '</div>'
       : '<div class="empty">داده‌ای نیست.</div>';
 
     // بیشترین و کمترین
@@ -48874,7 +48902,7 @@
           })()
       +   '<div class="rc-title">نفر-روز به تفکیک تخصص</div>' + rateHtml
       +   (kickAttendancePrev(dates), '')
-      +   '<div class="rc-title">تخصیص نیرو بر اساس محل</div>' + zones
+      +   '<div class="rc-title">تخصیص نیرو بر اساس طبقه <small>نفر-روز</small></div>' + zones
       +   '<div class="rc-title">حضور و غیبت پیمانکاران</div>'
       +   '<div id="attBox">' + attendanceHtml(rows, dates, true, sel) + '</div>'
       + '</div></div>';
