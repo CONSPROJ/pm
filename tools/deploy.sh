@@ -13,7 +13,7 @@ git add -A
 git commit -q -m "$1
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01RX5aMx1rV6gr4XpL8Yct62"
+Claude-Session: https://claude.ai/code/session_01RLpbZRPBz5jueAm55E9GhL"
 BR=$(git branch --show-current)
 for i in 1 2 3 4; do git push -q -u origin "$BR" && break; sleep $((2**i)); done
 echo "pushed $(git rev-parse --short HEAD) build $B"

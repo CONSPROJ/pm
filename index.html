@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029083147">
+<meta name="pm-build" content="20261029084426">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -47214,26 +47214,102 @@
   function avatarOf(name){
     const k = avaKey(name);
     for(const n in avatars){ if(avaKey(n) === k) return avatars[n]; }
-    const v = ptyAva && ptyAva.get(k); if(v) return v;
+    const v = ptyAva && ptyAva.get(k); if(v) return avaSrc(v);
     /* همان طرف با املای دیگر (نام اصلی پرونده یا نام مستعار): عکسش یکی است */
-    try{ const c = ctrCanon(name); if(c && avaKey(c) !== k){ const v2 = ptyAva.get(avaKey(c)); if(v2) return v2; for(const n in avatars){ if(avaKey(n) === avaKey(c)) return avatars[n]; } } }catch(e){}
+    try{ const c = ctrCanon(name); if(c && avaKey(c) !== k){ const v2 = ptyAva.get(avaKey(c)); if(v2) return avaSrc(v2); for(const n in avatars){ if(avaKey(n) === avaKey(c)) return avatars[n]; } } }catch(e){}
     return '';
   }
   /* عکس پیمانکاران، کارفرما، مشاور و مالکان (کسانی که کاربر نیستند) جدا از جدول افراد،
-     در lists با نوع «عکس — طرف» و مقدار «نام¦تصویر» */
+     در lists با نوع «عکس — طرف» و مقدار «نام¦s3:کلید» (خود عکس در فضای ابری)؛
+     عکس‌های قدیمی «نام¦تصویر» تکه‌تکه، که با باز کردن سایت توسط مدیر به فضای ابری منتقل می‌شوند */
   const PTY_AVA_KIND = 'عکس — طرف';
   var ptyAva = new Map();
   try{ (JSON.parse(localStorage.getItem('siteLogM.ptyAva.v1') || '[]') || []).forEach(([k, v]) => ptyAva.set(k, v)); }catch(e){}
   const ptyAvaHold = new Map();   // عکسی که همین الان ذخیره شد؛ تا سرور کامل برگرداند، همین نشان داده می‌شود
+  const ptyAvaNm = new Map();     // کلید ← نام همان‌طور که در lists نوشته شده (برای انتقال)
+  /* عکس فضای ابری یک بار گرفته و با کلیدش (که هرگز عوض نمی‌شود) روی همین دستگاه می‌ماند؛
+     دفعه‌های بعد بی‌هیچ درخواستی نشان داده می‌شود */
+  const AVA_S3_KEY = 'siteLogM.avaS3.v1';
+  const avaS3 = new Map();        // کلید فایل ← data URI، یا {u: لینک امضاشده, t: انقضا} اگر خواندن از داخل سایت ممکن نبود
+  try{ Object.entries(JSON.parse(localStorage.getItem(AVA_S3_KEY) || '{}') || {}).forEach(([k, v]) => avaS3.set(k, v)); }catch(e){}
+  function avaS3Save(){
+    const o = {}; avaS3.forEach((v, k) => { if(typeof v === 'string') o[k] = v; });
+    try{ localStorage.setItem(AVA_S3_KEY, JSON.stringify(o)); }catch(e){}
+  }
+  const avaRef = v => { const m = /^s3(b?):([a-z]+\/\d{4}\/\d{2}\/[0-9a-f]{24}\.[a-z0-9]{1,8})$/.exec(String(v || '')); return m ? {slot: m[1] ? 2 : 1, key: m[2]} : null; };
+  let avaQ = new Map(), avaT = 0;
+  const avaBusy = new Set(), avaFail = new Map();
+  function avaSrc(v){
+    const r = avaRef(v); if(!r) return v || '';
+    const c = avaS3.get(r.key);
+    if(typeof c === 'string') return c;
+    if(c && c.t > Date.now()) return c.u;
+    if(!avaBusy.has(r.key) && !(avaFail.get(r.key) > Date.now())){ avaQ.set(r.key, r.slot); if(!avaT) avaT = setTimeout(avaFlush, 40); }
+    return '';
+  }
+  const avaB2U = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result || '')); fr.onerror = rej; fr.readAsDataURL(b); });
+  const AVA_MIME = {webp:'image/webp', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png'};
+  /* همهٔ عکس‌های لازمِ این لحظه با یک درخواست لینک می‌گیرند */
+  async function avaFlush(){
+    avaT = 0; const L = Array.from(avaQ.entries()); avaQ = new Map(); if(!L.length) return;
+    L.forEach(([k]) => avaBusy.add(k));
+    let urls = null;
+    try{ urls = (await s3Rpc('pm_file_urls', {p_keys: L.map(x => x[0]), p_slots: L.map(x => x[1])})).urls || []; }
+    catch(er){
+      if(er.status === 404) urls = await Promise.all(L.map(([k, sl]) => s3Rpc('pm_file_url', {p_key: k, p_name: '', p_download: false, p_slot: sl}).then(r => ({u: r.url, a: r.alt})).catch(() => ({}))));
+    }
+    if(!urls){ L.forEach(([k]) => { avaBusy.delete(k); avaFail.set(k, Date.now() + 30000); }); return; }
+    await Promise.all(L.map(async ([k], i) => {
+      const o = urls[i] || {}; let src = '';
+      for(const u of [o.u, o.a]){
+        if(!u || src) continue;
+        try{ const r = await fetch(u, {referrerPolicy:'no-referrer'});
+          if(r.ok){ const b = await r.blob(); if(b.size && b.size < 600000) src = await avaB2U(new Blob([b], {type: AVA_MIME[k.split('.').pop()] || b.type || 'image/jpeg'})); } }catch(e){}
+      }
+      if(src){ avaS3.set(k, src); avaS3Save(); }
+      else if(o.u){ src = o.u; avaS3.set(k, {u: src, t: Date.now() + 8 * 60000}); }   // اجازهٔ خواندن از داخل سایت نبود: خود لینک
+      else avaFail.set(k, Date.now() + 30000);
+      avaBusy.delete(k);
+      if(src) ptyAva.forEach((v, nk) => { const r = avaRef(v); if(r && r.key === k) avaPaint(ptyAvaNm.get(nk) || nk, src); });
+    }));
+  }
+  /* هر جای صفحه که عکس/حروف این طرف آمده، همان لحظه عوض می‌شود (بی تازه‌سازی صفحه) */
+  function avaPaint(name, src){
+    const k = nameKey(name);
+    const set = a => { let im = a.querySelector(':scope > img');
+      if(!im){ Array.from(a.childNodes).forEach(n => { if(n.nodeType === 3) n.remove(); }); im = document.createElement('img'); im.alt = ''; a.prepend(im); }
+      if(im.getAttribute('src') !== src) im.src = src; };
+    const same = n => { if(nameKey(n) === k) return true; try{ return nameKey(ctrCanon(n)) === k; }catch(e){ return false; } };
+    try{
+      document.querySelectorAll('.ava[data-person]').forEach(a => { if(same(a.dataset.person)) set(a); });
+      document.querySelectorAll('[data-hrprof],[data-ktctr],[data-cdxprof],[data-flrctr]').forEach(el => {
+        if(!same(el.dataset.hrprof || el.dataset.ktctr || el.dataset.cdxprof || el.dataset.flrctr || '')) return;
+        if(el.classList.contains('ava')) set(el);
+        el.querySelectorAll('.ava, .cdx-av').forEach(set);
+        const h = el.closest('.adm-pty-h'); if(h){ const ic = h.querySelector('.ap-ic'); if(ic) set(ic); }
+      });
+    }catch(e){}
+  }
+  /* عکس (data URI) به فضای ابری؛ خروجی «s3:کلید» یا «s3b:کلید» */
+  async function avaUpS3(uri){
+    const b = await (await fetch(uri)).blob();
+    const ext = /webp/.test(b.type) ? 'webp' : /png/.test(b.type) ? 'png' : 'jpg';
+    const link = await s3UpMain(new File([b], 'avatar.' + ext, {type: b.type || 'image/jpeg'}), null, 'avatar');
+    const ref = link.slice(0, link.indexOf('#'));
+    const r = avaRef(ref); if(!r) throw new Error('نشانی عکس از فضای ابری درست برنگشت');
+    avaS3.set(r.key, uri); avaS3Save();
+    return ref;
+  }
   function ptyAvaLoad(lists){
     if(!lists || !Object.prototype.hasOwnProperty.call(lists, PTY_AVA_KIND) && !Object.keys(lists).length) return;
-    const old = new Map(ptyAva), next = new Map(), seen = new Set();
+    const old = new Map(ptyAva), next = new Map(), seen = new Set(), refs = new Map();
     /* عکس بزرگ در چند تکه ذخیره می‌شود («نام¦#شماره/کل[/نسخه]¦تکه») تا از سقف اندازهٔ هر ردیف فهرست رد نشود؛
        هر ذخیره نسخهٔ تازه دارد و تازه‌ترین نسخهٔ کامل برنده است */
     const parts = new Map();
     (lists[PTY_AVA_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('\u00a6'); if(i <= 0) return;
       const nm = v.slice(0, i), rest = v.slice(i + 1), m = rest.match(/^#(\d+)\/(\d+)(?:\/(\d+))?\u00a6/);
-      seen.add(avaKey(nm));
+      seen.add(avaKey(nm)); ptyAvaNm.set(avaKey(nm), nm);
+      if(avaRef(rest)){ refs.set(avaKey(nm), rest); return; }
       if(!m){ next.set(avaKey(nm), rest); return; }
       const g = nm + '\u0000' + (m[3] || '0');
       const o = parts.get(g) || {nm, ver: +(m[3] || 0), n: +m[2], p: []}; o.p[+m[1]] = rest.slice(m[0].length); parts.set(g, o); });
@@ -47241,15 +47317,46 @@
     parts.forEach(o => { for(let j = 0; j < o.n; j++) if(o.p[j] == null) return;
       const k = avaKey(o.nm), b = best.get(k); if(!b || o.ver > b.ver) best.set(k, o); });
     best.forEach((o, k) => next.set(k, o.p.join('')));
+    refs.forEach((v, k) => next.set(k, v));   // عکس فضای ابری بر تکه‌های قدیمیِ پاک‌نشده مقدم است
     /* تکه‌ها ناقص رسیدند (بارگذاری نیمه یا وسط ذخیره): عکس قبلی نمی‌پرد */
     seen.forEach(k => { if(!next.has(k) && old.has(k)) next.set(k, old.get(k)); });
     ptyAvaHold.forEach((h, k) => { if(Date.now() - h.at < 120000) next.set(k, h.uri); else ptyAvaHold.delete(k); });
     ptyAva.clear(); next.forEach((v, k) => ptyAva.set(k, v));
     try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
+    if(Array.from(ptyAva.entries()).some(([k, v]) => seen.has(k) && /^data:/.test(v))) setTimeout(ptyAvaMigrate, 6000);
+  }
+  /* انتقال یک‌بارهٔ عکس‌های قدیمی (تکه‌تکه در lists) به فضای ابری؛ فقط مدیر یا مسئول پرونده‌ها،
+     یکی‌یکی و بی‌سروصدا. اگر فضای ابری تنظیم نشده بود، تا یک روز دوباره امتحان نمی‌شود. */
+  let ptyAvaMig = false, ptyAvaMigAt = 0;
+  async function ptyAvaMigrate(){
+    if(ptyAvaMig || Date.now() - ptyAvaMigAt < 600000) return;
+    let ed = false; try{ ed = isAdminUser() || can('ctr.contact') || can('ctr.edit') || rawLevel() <= 2; }catch(e){}
+    if(!ed) return;
+    try{ if(Date.now() - (+localStorage.getItem('siteLogM.avaMigOff.v1') || 0) < 86400000) return; }catch(e){}
+    ptyAvaMig = true; ptyAvaMigAt = Date.now();
+    try{
+      for(const [k, v] of Array.from(ptyAva.entries())){
+        const nm = ptyAvaNm.get(k); if(!nm || !/^data:/.test(v) || ptyAva.get(k) !== v) continue;
+        let ref;
+        try{ ref = await avaUpS3(v); }
+        catch(er){ if(er.reason === 'nocfg' || er.reason === 'denied' || er.status === 404){ try{ localStorage.setItem('siteLogM.avaMigOff.v1', String(Date.now())); }catch(e){} } return; }
+        if(ptyAva.get(k) !== v) continue;   // همین وسط عکس تازه‌ای ثبت شد
+        await ptyAvaSave(nm, ref);
+      }
+    }catch(e){}
+    finally{ ptyAvaMig = false; }
   }
   async function ptyAvaSave(name, uri){
     const base = 'lists?kind=eq.' + encodeURIComponent(PTY_AVA_KIND) + '&value=like.' + encodeURIComponent(String(name).replace(/[*%]/g, '') + '\u00a6*');
-    if(uri){
+    /* عکس تازه اول به فضای ابری می‌رود و در lists فقط نشانی‌اش می‌ماند؛ اگر فضای ابری
+       در دسترس نبود، مثل قبل تکه‌تکه در lists ذخیره می‌شود تا ثبت عکس از کار نیفتد */
+    if(uri && /^data:/.test(uri)){ try{ uri = await avaUpS3(uri); }catch(er){} }
+    if(uri && avaRef(uri)){
+      const val = name + '\u00a6' + uri;
+      await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body: [{kind: PTY_AVA_KIND, value: val}]});
+      await supaFetch(base + '&value=neq.' + encodeURIComponent(val), {method:'DELETE'}).catch(() => {});
+      ptyAvaHold.set(avaKey(name), {uri, at: Date.now()});
+    }else if(uri){
       /* اول نسخهٔ تازه کامل نوشته و بازخوانی می‌شود، بعد نسخه‌های قبلی پاک می‌شوند؛
          اگر وسط کار خطا شود، عکس قبلی سر جایش می‌ماند */
       const ver = String(Date.now()), C = 1800, n = Math.ceil(uri.length / C), rows = [];
@@ -47264,7 +47371,7 @@
       await supaFetch(base, {method:'DELETE'});
       ptyAvaHold.delete(avaKey(name));
     }
-    if(uri) ptyAva.set(avaKey(name), uri); else ptyAva.delete(avaKey(name));
+    if(uri){ ptyAva.set(avaKey(name), uri); ptyAvaNm.set(avaKey(name), name); } else ptyAva.delete(avaKey(name));
     try{ localStorage.setItem('siteLogM.ptyAva.v1', JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
     try{ clearNetCache(); }catch(e){}
   }
@@ -47635,16 +47742,7 @@
       if(st) st.textContent = 'در حال ارسال...';
       if(party){
         await ptyAvaSave(name, dataUri);
-        document.querySelectorAll('.ava[data-person]').forEach(a => { if(nameKey(a.dataset.person) === nameKey(name)) a.innerHTML = '<img src="' + esc(dataUri) + '" alt="">'; });
-        /* هر جای صفحه که عکس/حروف این طرف آمده، همان لحظه عوض می‌شود (بی تازه‌سازی صفحه) */
-        try{ const k = nameKey(name), img = '<img src="' + esc(dataUri) + '" alt="" loading="lazy">';
-          document.querySelectorAll('[data-hrprof],[data-ktctr],[data-cdxprof],[data-flrctr]').forEach(el => {
-            const n = el.dataset.hrprof || el.dataset.ktctr || el.dataset.cdxprof || el.dataset.flrctr || '';
-            if(nameKey(n) !== k && nameKey((function(){ try{ return ctrCanon(n); }catch(e){ return n; } })()) !== k) return;
-            if(el.classList.contains('ava')) el.innerHTML = img;
-            el.querySelectorAll('.ava, .cdx-av').forEach(a => { a.innerHTML = img; });
-            const h = el.closest('.adm-pty-h'); if(h){ const ic = h.querySelector('.ap-ic'); if(ic) ic.innerHTML = img; }
-          }); }catch(e2){}
+        avaPaint(name, dataUri);
         showDialog('ok', 'عکس ثبت شد', 'عکس ' + name + ' به‌روزرسانی شد.');
         return;
       }
