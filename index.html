@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029085032">
+<meta name="pm-build" content="20261029085203">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23585,6 +23585,8 @@
   .pk-mono{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;
     background:hsl(var(--h) 60% 93%);color:hsl(var(--h) 45% 32%);font-size:11px;font-weight:800;letter-spacing:-.2px;}
   .pk-mono.t-cons{border-radius:50% 50% 50% 12px;}
+  .pk-mono.pk-pic{border-radius:50%;overflow:hidden;background:var(--field);padding:0;}
+  .pk-mono.pk-pic img{width:100%;height:100%;object-fit:cover;display:block;}
   .pk-mono.t-emp{background:var(--ink);color:var(--surface);}
   [data-theme="dark"] .pk-mono{background:hsl(var(--h) 28% 24%);color:hsl(var(--h) 70% 82%);}
   .pk-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
@@ -47301,6 +47303,7 @@
     const same = n => { if(nameKey(n) === k) return true; try{ return nameKey(ctrCanon(n)) === k; }catch(e){ return false; } };
     try{
       document.querySelectorAll('.ava[data-person]').forEach(a => { if(same(a.dataset.person)) set(a); });
+      document.querySelectorAll('.pk-it[data-v] > .pk-f').forEach(f => { const it = f.parentElement; if(!same(it.dataset.v) || f.querySelector('.pk-ava')) return; f.innerHTML = window.pkPic ? window.pkPic(src) : ''; });
       document.querySelectorAll('[data-hrprof],[data-ktctr],[data-cdxprof],[data-flrctr]').forEach(el => {
         if(!same(el.dataset.hrprof || el.dataset.ktctr || el.dataset.cdxprof || el.dataset.flrctr || '')) return;
         if(el.classList.contains('ava')) set(el);
@@ -53011,8 +53014,12 @@
         }
       }catch(e){}
     }
-    return {face: pkMono(v, t), sub, kind: t || 'c'};
+    /* پیمانکار/طرفی که عکس دارد، با عکسش (عکس‌ها کوچک‌اند و روی دستگاه می‌مانند) */
+    let img = ''; try{ img = avatarOf(v); }catch(e){}
+    return {face: img ? pkPic(img) : pkMono(v, t), sub, kind: t || 'c'};
   }
+  const pkPic = img => '<span class="pk-mono pk-pic" aria-hidden="true"><img src="' + esc(img) + '" alt="" loading="lazy" decoding="async"></span>';
+  window.pkPic = pkPic;
   function pkRow(o){
     return '<button type="button" class="pk-it combo-item' + (o.cls ? ' ' + o.cls : '') + (o.on ? ' on' : '') + (o.face ? ' has-f' : '')
       + '" data-v="' + esc(o.v) + '"' + (o.attr || '') + '>'
