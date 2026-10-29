@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029161846">
+<meta name="pm-build" content="20261029162016">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -90857,6 +90857,33 @@
       else if(!has && hd) hd.remove(); }); };
     let t = 0; const av = document.getElementById('adminView');
     if(av) new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; put(); }); }).observe(av, {childList: true, subtree: true});
+  })();
+
+  /* میان‌برهای صفحه‌کلید دسکتاپ: Ctrl+Enter ثبت فرمی که در آن هستید؛ Alt+1..4 خانه، میز کار، اسناد، گزارش‌ها */
+  (function(){
+    const vis = el => !!el && el.offsetParent !== null && !el.disabled;
+    function formBtn(){
+      const a = document.activeElement || document.body;
+      const md = a.closest && a.closest('.modal-bg:not([hidden]) .modal');
+      const scopes = [a.closest && a.closest('.modal.rf'), a.closest && a.closest('.af'), a.closest && a.closest('.prf'), a.closest && a.closest('#reportForm'), md].filter(Boolean);
+      for(const sc of scopes){
+        if(sc.id === 'reportForm'){ const b = document.getElementById('submitBtn'); if(vis(b)) return b; continue; }
+        const b = sc.querySelector('.af-foot .go, [data-tesave], .prf-foot .send, .rf-foot .send, .rf-go');
+        if(vis(b)) return b;
+      }
+      return null;
+    }
+    document.addEventListener('keydown', e => {
+      if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){ const b = formBtn(); if(b){ e.preventDefault(); b.click(); } return; }
+      if(e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-4]$/.test(e.code || '')){
+        const id = ['tabHome', 'tabTasks', 'tabAdmin', 'tabView'][+e.code.slice(5) - 1]; const t = document.getElementById(id);
+        if(t && !t.hidden && t.offsetParent !== null){ e.preventDefault(); t.click(); }
+      }
+    });
+    /* راهنمای میان‌بر روی دکمه‌های ثبت */
+    const tip = () => document.querySelectorAll('#submitBtn, .af-foot .go, [data-tesave], .prf-foot .send').forEach(b => { if(!b.title) b.title = 'Ctrl+Enter'; });
+    new MutationObserver(() => tip()).observe(document.body, {childList: true, subtree: true}); tip();
+    [['tabHome', 1], ['tabTasks', 2], ['tabAdmin', 3], ['tabView', 4]].forEach(([id, n]) => { const t = document.getElementById(id); if(t && !t.title) t.title = 'Alt+' + n; });
   })();
 
   /* فیلدِ پرشده نشان «has-val» می‌گیرد (نوار رنگی کنارش)؛ هنگام تایپ، تغییر و ساخته‌شدن فرم */
