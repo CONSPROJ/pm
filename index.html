@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029210350">
+<meta name="pm-build" content="20261029210554">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27100,6 +27100,36 @@
     :is(html,#z0) :is(body,#z1) #deckModal .dk-modal{width:min(1040px, calc(100vw - 64px)) !important;max-width:none !important;height:min(660px, calc(100vh - 48px)) !important;}
     :is(html,#z0) :is(body,#z1) #deckModal .dk-card{overflow:auto;}
     :is(html,#z0) :is(body,#z1) #deckModal .dk-adm > .rv.adm-k{padding:16px 20px !important;}
+  }
+  #tabBar .sb-find, #tabBar .sbf-min, #tabBar .sb-bdg{display:none;}
+  @media (min-width:1180px){
+    html body #tabBar .sb-find{display:flex;align-items:center;gap:8px;order:-1;position:sticky;top:122px;z-index:4;height:38px;margin:0 0 10px;padding:0 10px;border-radius:10px;background:var(--field);border:1px solid transparent;
+      box-shadow:0 -10px 0 0 var(--surface);color:var(--muted);flex-shrink:0;}
+    html body #tabBar .sb-find:focus-within{background:var(--surface);border-color:var(--vz1);box-shadow:0 0 0 4px color-mix(in srgb, var(--vz1) 15%, transparent), 0 -10px 0 0 var(--surface);}
+    html body #tabBar .sb-find svg{width:15px;height:15px;flex:none;}
+    html body #tabBar .sb-find input{all:unset;flex:1;min-width:0;font:600 12.5px var(--f);color:var(--ink);}
+    html body #tabBar .sb-find input::placeholder{color:var(--muted);}
+    html body #tabBar .sb-find kbd{font:700 10px var(--f);padding:1px 6px;border-radius:5px;border:1px solid var(--line);background:var(--surface);color:var(--muted);}
+    html body #tabBar.sb-q .sb-sub.sb-qopen{display:flex !important;}
+    html body #tabBar .sb-it[hidden], html body #tabBar .sb-gh[hidden]{display:none !important;}
+    html body #tabBar.sb-q .sb-sub:not(.sb-qopen){display:none !important;}
+    html body #tabBar.sb-q .sb-it.sb-hit{color:var(--ink) !important;}
+    html body #tabBar .sb-bdg{display:inline-grid;place-items:center;margin-inline-start:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;font:800 10.5px var(--f);font-style:normal;background:var(--alert);color:#fff;}
+    html body #tabBar .sb-foot > .sbf-min{all:unset;box-sizing:border-box;cursor:pointer;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);flex:none;}
+    html body #tabBar .sb-foot > .sbf-min:hover{color:var(--ink);background:var(--field);}
+    html body #tabBar .sb-foot > .sbf-min svg{width:16px;height:16px;}
+    /* نوار آیکون */
+    html.sb-mini{--sbw:76px;}
+    html.sb-mini body #tabBar.nav5{padding-inline:10px !important;}
+    html.sb-mini body #tabBar :is(.sb-find, .sb-sub, .nb-tx, .nb-sw, .sbf-tx, .sbf-keys){display:none !important;}
+    html.sb-mini body #tabBar #navBrand{padding:8px !important;justify-content:center !important;}
+    html.sb-mini body #tabBar.nav5 > .tab .lb, html.sb-mini body #tabBar.nav5 > .tab-add .lb{display:none !important;}
+    html.sb-mini body #tabBar.nav5 > .tab, html.sb-mini body #tabBar.nav5 > .tab-add{justify-content:center !important;padding:0 !important;}
+    html.sb-mini body #tabBar.nav5 > .tab:not(.tab-add)[aria-selected="true"]::before{inset-inline-start:-10px;}
+    html.sb-mini body #tabBar .sb-bdg{position:absolute;top:2px;inset-inline-end:4px;min-width:16px;height:16px;font-size:9px;padding:0 4px;}
+    html.sb-mini body #tabBar .sb-foot{flex-direction:column;}
+    html.sb-mini body #tabBar .sb-foot > .sbf-me{padding:4px !important;justify-content:center !important;}
+    html.sb-mini body #tabBar .tab-add{top:56px !important;}
   }
   #tabBar .sb-foot, #navBrand .nb-sw{display:none;}
   /* ستون کناری دسکتاپ از نو: زمینهٔ ملایم، کارت پروژه، دکمهٔ اصلی، منو با نشانگر، پای ثابت */
@@ -91625,6 +91655,46 @@
           else if(lg.__orig && lg.classList.contains('has-pj')){ lg.innerHTML = lg.__orig; lg.__h = ''; lg.classList.remove('has-pj'); } } }catch(e){}
         let rl = ''; try{ rl = roleOf(me) || ''; }catch(e){} ft.querySelector('.sbf-tx small').textContent = rl || 'پروفایل و تنظیمات'; }catch(e){} };
     sync(); setTimeout(sync, 1500); setInterval(sync, 30000);
+  })();
+
+  /* ستون کناری: «برو به…» (جست‌وجوی بخش‌ها)، جمع کردن به نوار آیکون (Ctrl+B)، شمارهٔ موارد فوری روی بخش اصلی */
+  (function(){
+    const bar = document.getElementById('tabBar'); if(!bar) return;
+    const mq = window.matchMedia ? window.matchMedia('(min-width:1180px)') : {matches: false};
+    const add = document.getElementById('tabWrite');
+    if(add && !bar.querySelector('.sb-find')){
+      const f = document.createElement('label'); f.className = 'sb-find';
+      f.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="برو به بخش…" autocomplete="off" aria-label="برو به بخش">';
+      add.after(f);
+      const inp = f.querySelector('input');
+      const items = () => Array.from(bar.querySelectorAll('.sb-it'));
+      const run = () => { const q = inp.value.trim(); bar.classList.toggle('sb-q', !!q);
+        let first = null;
+        items().forEach(b => { const hit = !q || b.textContent.indexOf(q) !== -1; b.classList.toggle('sb-hit', !!q && hit); b.hidden = !!q && !hit; if(q && hit && !first) first = b; });
+        bar.querySelectorAll('.sb-gh').forEach(g => { g.hidden = !!q; });
+        bar.querySelectorAll('.sb-sub').forEach(d => { d.classList.toggle('sb-qopen', !!q && !!d.querySelector('.sb-it:not([hidden])')); });
+        bar.__first = first; };
+      inp.addEventListener('input', run);
+      inp.addEventListener('keydown', e => {
+        if(e.key === 'Escape'){ inp.value = ''; run(); inp.blur(); }
+        if(e.key === 'Enter' && bar.__first){ e.preventDefault(); const b = bar.__first; inp.value = ''; run(); inp.blur(); b.click(); }
+        if(e.key === 'ArrowDown'){ e.preventDefault(); const L = items().filter(b => !b.hidden); if(L[0]) L[0].focus(); } });
+    }
+    /* جمع کردن */
+    const KEY = 'siteLogM.sbMini';
+    const setMini = on => { document.documentElement.classList.toggle('sb-mini', on); try{ localStorage.setItem(KEY, on ? '1' : '0'); }catch(e){} };
+    try{ if(localStorage.getItem(KEY) === '1') document.documentElement.classList.add('sb-mini'); }catch(e){}
+    const ft = bar.querySelector('.sb-foot');
+    if(ft && !ft.querySelector('.sbf-min')){ const b = document.createElement('button'); b.type = 'button'; b.className = 'sbf-min'; b.title = 'جمع/باز کردن ستون (Ctrl+B)'; b.setAttribute('aria-label', 'جمع یا باز کردن ستون کناری');
+      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M15 4v16"/></svg>';
+      b.addEventListener('click', e => { e.stopPropagation(); setMini(!document.documentElement.classList.contains('sb-mini')); }); ft.insertBefore(b, ft.firstChild); }
+    document.addEventListener('keydown', e => { if((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B' || e.key === 'ذ') && mq.matches){ e.preventDefault(); setMini(!document.documentElement.classList.contains('sb-mini')); } });
+    /* شمارهٔ فوری روی بخش اصلی: جمع شماره‌های قرمز زیرمنو */
+    const badge = () => { ['tabTasks', 'tabAdmin', 'tabView'].forEach(id => { const t = document.getElementById(id), d = bar.querySelector('.sb-sub[data-for="' + id + '"]'); if(!t) return;
+      let n = 0; if(d) d.querySelectorAll('.sb-it > em.hot').forEach(x => { n += +toEn(x.textContent) || 0; });
+      let e = t.querySelector('.sb-bdg'); if(!n){ if(e) e.remove(); return; } if(!e){ e = document.createElement('em'); e.className = 'sb-bdg'; t.appendChild(e); } e.textContent = toFa(n); }); };
+    new MutationObserver(() => { clearTimeout(bar.__bt); bar.__bt = setTimeout(badge, 120); }).observe(bar, {childList: true, subtree: true, characterData: true});
+    setTimeout(badge, 1500);
   })();
 
   /* میان‌برهای صفحه‌کلید دسکتاپ: Ctrl+Enter ثبت فرمی که در آن هستید؛ Alt+1..4 خانه، میز کار، اسناد، گزارش‌ها */
