@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029095937">
+<meta name="pm-build" content="20261029100628">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29629,7 +29629,7 @@
       notifCache.nudges = myNudges(nudgeCache.rows || []);
       refreshBell();
     }catch(e){}
-  }, 40000);
+  }, 60000);
   /* وقتی پنجرهٔ گفت‌وگو یا اعلان‌ها باز است، هر ۲۰ ثانیه تازه می‌شود
      تا پیام و نظر تازه فوری دیده شود. */
   /* حلقهٔ تند: فقط تلنگر و پیام را می‌گیرد (یک درخواست سبک)،
@@ -29672,7 +29672,7 @@
       }
       if(typeof refreshCommentCounts === 'function') refreshCommentCounts();
     }catch(e){}
-  }, 5000);
+  }, 8000);
   let lastBadgeAt = 0;
   document.addEventListener('visibilitychange', () => {
     // فقط اگر بیش از یک دقیقه گذشته باشد، وگرنه از کش استفاده می‌شود
@@ -30071,6 +30071,9 @@
     if(feedSrvOff || typeof BACKEND === 'undefined' || BACKEND !== 'supabase') return;
     const me = activeUserName();
     if(!me) return;
+    /* تا ۴۰۰۰ ردیف است؛ خوانده‌های خودِ کاربر همان لحظه در حافظه می‌نشیند، پس هر ۵ دقیقه کافی است */
+    if(loadFeedReads.who === me && Date.now() - (loadFeedReads.at || 0) < 300000) return;
+    loadFeedReads.who = me; loadFeedReads.at = Date.now();
     try{
       const rows = await supaFetch('feed_reads?select=fid&person=eq.'
         + encodeURIComponent(me) + '&limit=4000', {prefer:'return=representation'});
@@ -30968,41 +30971,64 @@
   const NUDGE_TTL = 8 * 1000;
   const NUDGE_COLS = 'id,created_at,date_fa,from_name,to_name,kind,item_id,title,message,seen';
 
-  function invalidateNudges(){ nudgeCache = {t:0, rows: nudgeCache.rows};
+  function invalidateNudges(){ nudgeCache = {t:0, rows: nudgeCache.rows, full: 0};
     commentCache.t = 0; cmIndex = null; }
 
   const NUDGE_DATA_KINDS = ['برنامه زمانبندی','منابع برنامه','کالای انبار','گردش انبار','درخواست انبار','درخواست بازرسی','عدم انطباق','چک‌لیست کیفیت',
     'کاور پروفایل','تغییر و ادعا','ماشین‌آلات','کارکرد ماشین','بودجه پروژه','عکس پیشرفت','پشتیبان سامانه'];
+  /* مصرف شبکه: پیش‌تر هر ۴۰ ثانیه (و با پنجرهٔ گفت‌وگوی باز هر ۵ ثانیه) کل ۶۰۰ + ۱۵۰۰ ردیف دوباره
+     دانلود می‌شد. حالا فقط ردیف‌های تازه (و اگر nudges_sync.sql اجرا شده، ردیف‌های تغییرکرده) گرفته
+     می‌شود؛ کل فهرست هر چند دقیقه یک بار و بعد از هر ثبت خودِ کاربر از نو خوانده می‌شود. */
+  let NUDGE_UPD = null;            // ستون updated_at هست؟ (null: هنوز معلوم نیست)
+  const nudgeMx = (raw, mx) => { (raw || []).forEach(x => { [x.created_at, x.updated_at].forEach(t => { if(t && (!mx || t > mx)) mx = t; }); }); return mx; };
   async function loadAllNudges(force){
     if(!force && nudgeCache.t && (Date.now() - nudgeCache.t) < NUDGE_TTL) return nudgeCache.rows;
-    let rows = nudgeCache.rows;
+    let rows = nudgeCache.rows, mx = nudgeCache.mx || '', full = nudgeCache.full || 0;
+    const me = activeUserName();
     try{
       if(BACKEND === 'supabase'){
-        /* ردیف‌های داده‌ای (انبار، کیفیت، بودجه، کاور پروفایل…) لودر خودشان را دارند؛
-           کاور پروفایل عکس base64 است و هر ۲۵ ثانیه دانلود و پردازشش گوشی را هنگ می‌کرد */
-        const raw = await supaFetch('nudges?select=' + NUDGE_COLS
-          + '&kind=not.in.(' + encodeURIComponent(NUDGE_DATA_KINDS.map(k => '"' + k + '"').join(',')) + ')'
-          + '&order=created_at.desc&limit=600');
-        rows = (raw || []).map(x => fromSupa('nudges', x));
-        /* پیام‌های خودِ کاربر جدا گرفته می‌شوند: پیش‌تر ردیف‌های سیستمی (آپلود، نقص
-           گزارش، نظر…) جای پیام‌ها را در ۶۰۰ ردیف آخر می‌گرفتند و پیام‌ها گم می‌شدند */
-        try{
-          const me = activeUserName();
-          if(me){
-            const qv = v => '"' + String(v).replace(/"/g, '') + '"';
-            const orq = '(to_name.eq.' + qv(me) + ',from_name.eq.' + qv(me) + ',to_name.eq.' + qv(PUBLIC_ROOM) + ')';
-            const rawM = await supaFetch('nudges?select=' + NUDGE_COLS + '&kind=eq.' + encodeURIComponent(MSG_KIND)
-              + '&or=' + encodeURIComponent(orq) + '&order=created_at.desc&limit=1500');
-            const seen = new Set(rows.map(r => String(pick(r,N.id))));
-            (rawM || []).forEach(x => { const r = fromSupa('nudges', x); if(!seen.has(String(pick(r,N.id)))){ seen.add(String(pick(r,N.id))); rows.push(r); } });
+        const notData = '&kind=not.in.(' + encodeURIComponent(NUDGE_DATA_KINDS.map(k => '"' + k + '"').join(',')) + ')';
+        const cols = NUDGE_COLS + (NUDGE_UPD ? ',updated_at' : '');
+        const fullDue = !mx || !rows || !rows.length || nudgeCache.who !== me || Date.now() - full > (NUDGE_UPD ? 10 : 3) * 60000;
+        if(!fullDue){
+          /* فقط آنچه بعد از آخرین دریافت آمده یا عوض شده */
+          const since = encodeURIComponent(mx);
+          const dq = NUDGE_UPD ? '&or=' + encodeURIComponent('(created_at.gt."' + mx + '",updated_at.gt."' + mx + '")') : '&created_at=gt.' + since;
+          const raw = await supaFetch('nudges?select=' + cols + notData + dq + '&order=created_at.desc&limit=500');
+          if(raw && raw.length){
+            const fresh = raw.map(x => fromSupa('nudges', x)), ids = new Set(fresh.map(r => String(pick(r,N.id))));
+            rows = fresh.concat((rows || []).filter(r => !ids.has(String(pick(r,N.id)))));
+            mx = nudgeMx(raw, mx);
           }
-        }catch(e){}
+        }else{
+          /* ردیف‌های داده‌ای (انبار، کیفیت، بودجه، کاور پروفایل…) لودر خودشان را دارند؛
+             کاور پروفایل عکس base64 است و هر ۲۵ ثانیه دانلود و پردازشش گوشی را هنگ می‌کرد */
+          let raw;
+          try{ raw = await supaFetch('nudges?select=' + NUDGE_COLS + (NUDGE_UPD !== false ? ',updated_at' : '') + notData + '&order=created_at.desc&limit=600'); if(NUDGE_UPD == null) NUDGE_UPD = true; }
+          catch(er){ if(NUDGE_UPD == null && er && (er.status === 400 || /42703|updated_at/.test(String(er.message)))){ NUDGE_UPD = false; raw = await supaFetch('nudges?select=' + NUDGE_COLS + notData + '&order=created_at.desc&limit=600'); } else throw er; }
+          rows = (raw || []).map(x => fromSupa('nudges', x));
+          let mx2 = nudgeMx(raw, '');
+          /* پیام‌های خودِ کاربر جدا گرفته می‌شوند: پیش‌تر ردیف‌های سیستمی (آپلود، نقص
+             گزارش، نظر…) جای پیام‌ها را در ۶۰۰ ردیف آخر می‌گرفتند و پیام‌ها گم می‌شدند */
+          try{
+            if(me){
+              const qv = v => '"' + String(v).replace(/"/g, '') + '"';
+              const orq = '(to_name.eq.' + qv(me) + ',from_name.eq.' + qv(me) + ',to_name.eq.' + qv(PUBLIC_ROOM) + ')';
+              const rawM = await supaFetch('nudges?select=' + NUDGE_COLS + (NUDGE_UPD ? ',updated_at' : '') + '&kind=eq.' + encodeURIComponent(MSG_KIND)
+                + '&or=' + encodeURIComponent(orq) + '&order=created_at.desc&limit=1500');
+              const seen = new Set(rows.map(r => String(pick(r,N.id))));
+              (rawM || []).forEach(x => { const r = fromSupa('nudges', x); if(!seen.has(String(pick(r,N.id)))){ seen.add(String(pick(r,N.id))); rows.push(r); } });
+              mx2 = nudgeMx(rawM, mx2);
+            }
+          }catch(e){}
+          mx = mx2; full = Date.now();
+        }
       }else{
         const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
         rows = b.nudges || [];
       }
     }catch(e){}
-    nudgeCache = {t: Date.now(), rows: rows};
+    nudgeCache = {t: Date.now(), rows: rows, mx, full, who: me};
     return rows;
   }
 
@@ -47327,10 +47353,10 @@
   const avaKey = n => nameKey(n);
   function avatarOf(name){
     const k = avaKey(name);
-    for(const n in avatars){ if(avaKey(n) === k) return avatars[n]; }
+    for(const n in avatars){ if(avaKey(n) === k) return avaSrc(avatars[n]); }
     const v = ptyAva && ptyAva.get(k); if(v) return avaSrc(v);
     /* همان طرف با املای دیگر (نام اصلی پرونده یا نام مستعار): عکسش یکی است */
-    try{ const c = ctrCanon(name); if(c && avaKey(c) !== k){ const v2 = ptyAva.get(avaKey(c)); if(v2) return avaSrc(v2); for(const n in avatars){ if(avaKey(n) === avaKey(c)) return avatars[n]; } } }catch(e){}
+    try{ const c = ctrCanon(name); if(c && avaKey(c) !== k){ const v2 = ptyAva.get(avaKey(c)); if(v2) return avaSrc(v2); for(const n in avatars){ if(avaKey(n) === avaKey(c)) return avaSrc(avatars[n]); } } }catch(e){}
     return '';
   }
   /* عکس پیمانکاران، کارفرما، مشاور و مالکان (کسانی که کاربر نیستند) جدا از جدول افراد،
@@ -47384,7 +47410,8 @@
       else if(o.u){ src = o.u; avaS3.set(k, {u: src, t: Date.now() + 8 * 60000}); }   // اجازهٔ خواندن از داخل سایت نبود: خود لینک
       else avaFail.set(k, Date.now() + 30000);
       avaBusy.delete(k);
-      if(src) ptyAva.forEach((v, nk) => { const r = avaRef(v); if(r && r.key === k) avaPaint(ptyAvaNm.get(nk) || nk, src); });
+      if(src){ ptyAva.forEach((v, nk) => { const r = avaRef(v); if(r && r.key === k) avaPaint(ptyAvaNm.get(nk) || nk, src); });
+        try{ for(const n in avatars){ const r = avaRef(avatars[n]); if(r && r.key === k){ avaPaint(n, src); try{ refreshWhoChip(); }catch(e){} } } }catch(e){} }
     }));
   }
   /* هر جای صفحه که عکس/حروف این طرف آمده، همان لحظه عوض می‌شود (بی تازه‌سازی صفحه) */
@@ -47705,6 +47732,29 @@
   }
   window.migrateAvatars = migrateAvatars;
 
+  /* انتقال یک‌بارهٔ عکس کاربران (base64 در جدول افراد) به فضای ابری؛ فقط مدیر سامانه، یکی‌یکی.
+     پیش‌تر هر بار باز شدن برنامه عکس همهٔ کاربران سه بار دانلود می‌شد. */
+  let pplMig = false;
+  async function peopleAvaMigrate(){
+    if(pplMig) return;
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    if(!adm) return;
+    try{ if(Date.now() - (+localStorage.getItem('siteLogM.pplAvaMigOff.v1') || 0) < 86400000) return; }catch(e){}
+    pplMig = true;
+    try{
+      for(const n of Object.keys(avatars)){
+        const v = String(avatars[n] || ''); if(!/^data:/.test(v)) continue;
+        let ref;
+        try{ ref = await avaUpS3(v); }
+        catch(er){ if(er.reason === 'nocfg' || er.reason === 'denied' || er.status === 404){ try{ localStorage.setItem('siteLogM.pplAvaMigOff.v1', String(Date.now())); }catch(e){} } return; }
+        const r = await post({action:'avatar', name: n, image: ref});
+        if(r && r.state === 'failed') return;
+        avatars[n] = ref;
+      }
+      try{ localStorage.setItem(AVA_KEY, JSON.stringify(avatars)); }catch(e){}
+    }catch(e){}
+    finally{ pplMig = false; }
+  }
   async function loadAvatars(){
     try{
       if(BACKEND === 'supabase'){
@@ -47715,6 +47765,7 @@
           avatars = map;
           try{ localStorage.setItem(AVA_KEY, JSON.stringify(avatars)); }catch(e){}
           refreshWhoChip();
+          if(Object.values(map).some(v => /^data:/.test(String(v)))) setTimeout(peopleAvaMigrate, 9000);
         }
         return;
       }
@@ -47861,13 +47912,15 @@
         showDialog('ok', 'عکس ثبت شد', 'عکس ' + name + ' به‌روزرسانی شد.');
         return;
       }
-      const r = await post({action:'avatar', name, image: dataUri});
+      /* عکس کاربر هم به فضای ابری؛ در جدول افراد فقط نشانی‌اش (اگر فضای ابری در دسترس نبود، مثل قبل خود عکس) */
+      let img = dataUri; try{ img = await avaUpS3(dataUri); }catch(er){ img = dataUri; }
+      const r = await post({action:'avatar', name, image: img});
       if(r.state === 'failed'){
         if(st) st.textContent = r.detail || 'ثبت نشد';
         showDialog('err','ثبت عکس انجام نشد', r.detail || 'دوباره تلاش کنید.');
         return;
       }
-      avatars[name] = dataUri;
+      avatars[name] = img;
       try{ localStorage.setItem(AVA_KEY, JSON.stringify(avatars)); }catch(err){}
       if(st) st.textContent = 'ثبت شد ✓';
       refreshWhoChip();
@@ -55546,6 +55599,41 @@
     put(j.rows, got[0]); put(j.prev_rows, got[0]); put(j.issues, got[1]);
   }
   let LTR_DIR_COL = null;
+  /* ====== bundle3: فقط بخش‌های تغییرکرده (bundle3.sql) ======
+     نسخهٔ قبلیِ هر بخش و اثرانگشتش روی دستگاه (IndexedDB) می‌ماند؛ سرور بخشی را که
+     اثرانگشتش عوض نشده نمی‌فرستد. اگر bundle3 هنوز ساخته نشده، مثل قبل bundle2. */
+  let B3_OFF = false;
+  const B3C = {h: null, j: null, loaded: false};
+  function b3Idb(mode, val){
+    return new Promise((res, rej) => {
+      if(typeof indexedDB === 'undefined') return res(null);
+      let rq; try{ rq = indexedDB.open('pm-cache', 1); }catch(e){ return res(null); }
+      rq.onupgradeneeded = () => { try{ rq.result.createObjectStore('kv'); }catch(e){} };
+      rq.onerror = () => res(null);
+      rq.onsuccess = () => { try{ const db = rq.result, tx = db.transaction('kv', mode === 'put' ? 'readwrite' : 'readonly'), st = tx.objectStore('kv');
+        const r2 = mode === 'put' ? st.put(val, 'b3') : st.get('b3');
+        r2.onsuccess = () => { res(mode === 'put' ? true : r2.result || null); db.close(); };
+        r2.onerror = () => { res(null); db.close(); }; }catch(e){ res(null); } };
+    });
+  }
+  let b3SaveT = 0;
+  async function b3Fetch(dateFa, prevFa, again){
+    if(B3_OFF) return null;
+    if(!B3C.loaded){ B3C.loaded = true; try{ const v = await b3Idb('get'); if(v && v.h && v.j){ B3C.h = v.h; B3C.j = v.j; } }catch(e){} }
+    let r;
+    try{ r = await supaFetch('rpc/bundle3', {method:'POST', prefer:'return=representation', body:{p_date: dateFa || '', p_prev: prevFa || '', p_have: B3C.h || {}}}); }
+    catch(er){ if((er && er.status === 404) || /404|PGRST202|Could not find|bundle3/i.test(String(er && er.message))){ B3_OFF = true; return null; } throw er; }
+    if(Array.isArray(r)) r = r[0];
+    if(r && r.bundle3 && !r.__h) r = r.bundle3;
+    if(!r || !r.__h){ B3_OFF = true; return null; }
+    const H = r.__h, out = {}; let miss = false;
+    Object.keys(H).forEach(k => { if(Object.prototype.hasOwnProperty.call(r, k)) out[k] = r[k]; else if(B3C.j && Object.prototype.hasOwnProperty.call(B3C.j, k)) out[k] = B3C.j[k]; else miss = true; });
+    /* نسخهٔ دستگاه ناقص بود: یک بار کامل گرفته می‌شود */
+    if(miss){ B3C.h = null; B3C.j = null; return again ? null : b3Fetch(dateFa, prevFa, true); }
+    B3C.h = H; B3C.j = out;
+    clearTimeout(b3SaveT); b3SaveT = setTimeout(() => { b3Idb('put', {h: H, j: out, at: Date.now()}).catch(() => {}); }, 1500);
+    return Object.assign({}, out);
+  }
   /* سرعت: درخواست‌های هم‌زمان بخش سنگین را دوباره نمی‌گیرند؛ صبر می‌کنند تا همان یکی برسد و بعد فقط دادهٔ روز */
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
@@ -55574,11 +55662,18 @@
     }
 
     const phP = photosStart([dateFa, prevFa]);
-    const j = await supaFetch('rpc/bundle2', {
+    let j = null;
+    try{ j = await b3Fetch(dateFa, prevFa); }catch(e){ j = null; }
+    if(!j) j = await supaFetch('rpc/bundle2', {
       method:'POST', prefer:'return=representation',
       body:{p_date: dateFa || '', p_prev: prevFa || ''}
     });
     photosApply(j, await phP);
+    /* bundle3 جهت نامه‌ها و طبقهٔ فعالیت‌ها را خودش دارد */
+    if(Array.isArray(j.letters_dir) && Array.isArray(j.letters)){ const m = new Map(j.letters_dir.map(x => [String(x.id), x.direction])); LTR_DIR_COL = true;
+      j.letters.forEach(x => { if(x && !('direction' in x) && m.has(String(x.id))) x.direction = m.get(String(x.id)); }); }
+    if(Array.isArray(j.tasks_floor) && Array.isArray(j.tasks)){ const m = new Map(j.tasks_floor.map(x => [String(x.id), x.floor]));
+      j.tasks.forEach(x => { if(x && !Object.prototype.hasOwnProperty.call(x, 'floor')) x.floor = m.has(String(x.id)) ? m.get(String(x.id)) : null; }); }
     /* جهت نامه (ارسالی/دریافتی): اگر bundle2 این ستون را برنگرداند، جدا خوانده می‌شود */
     if(LTR_DIR_COL !== false && Array.isArray(j.letters) && j.letters.length && !j.letters.some(x => x && 'direction' in x)){
       try{
@@ -55625,8 +55720,8 @@
     }catch(e){}
     /* اسناد طراحی در bundle2 نیستند؛ جدا خوانده می‌شوند. اگر جدول هنوز
        ساخته نشده باشد، فهرست خالی می‌ماند و بقیهٔ برنامه کار می‌کند. */
-    let designsRaw = [];
-    if(!designsOff){
+    let designsRaw = Array.isArray(j.designs) ? j.designs : [];
+    if(!designsOff && !Array.isArray(j.designs)){
       try{ designsRaw = await supaFetch('designs?select=*&order=created_at.desc', {prefer:'return=representation'}) || []; }
       catch(e){ designsOff = true; designsRaw = []; }
     }
@@ -82646,7 +82741,7 @@
     }catch(e){}
     finally{ wrkSyncBusy = false; }
   }
-  setInterval(() => { wrkSyncTick(); }, 25000);
+  setInterval(() => { wrkSyncTick(); }, 60000);   // هر دقیقه (پیش‌تر ۲۵ ثانیه)؛ با برگشتن به برنامه هم همان لحظه
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') setTimeout(wrkSyncTick, 400); });
   async function wrkRender(){
     const box = document.getElementById('wrkBody');
