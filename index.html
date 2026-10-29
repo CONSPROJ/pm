@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029084426">
+<meta name="pm-build" content="20261029084618">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27982,7 +27982,7 @@
         شمارهٔ نشست روی سرور بالا رفته و این دستگاه خارج می‌شود.
      ۲) بعد از چند روز بی‌استفاده بودن، دوباره رمز خواسته می‌شود. */
   function forceLogout(msg){
-    try{ localStorage.removeItem('siteLogM.userEpoch.v1'); }catch(e){}
+    try{ localStorage.removeItem('siteLogM.userEpoch.v1'); localStorage.removeItem('siteLogM.userSeen.v1'); }catch(e){}
     try{ if(window.pushDrop) window.pushDrop(); }catch(e){}
     window.pmTok('');
     applyUser('');
@@ -27993,7 +27993,9 @@
     if(!currentUser || typeof BACKEND === 'undefined' || BACKEND !== 'supabase') return;
     try{
       const last = +(localStorage.getItem('siteLogM.userSeen.v1') || 0);
-      if(last && Date.now() - last > 7 * 86400000){
+      /* دستگاهی که رمز ذخیره کرده هم هر روز باز می‌شود؛ فقط بعد از ۶۰ روز بی‌استفادگی دوباره رمز خواسته می‌شود
+         (نشست سرور هم با هر استفاده تمدید می‌شود: session_sliding.sql) */
+      if(last && Date.now() - last > 60 * 86400000){
         forceLogout('مدتی از سامانه استفاده نشده بود؛ برای امنیت، دوباره وارد شوید.');
         return;
       }
@@ -28055,6 +28057,9 @@
       window.pmTok('');
     }
     try{ currentUser ? localStorage.setItem(USER_KEY, currentUser) : localStorage.removeItem(USER_KEY); }catch(e){}
+    /* زمان آخرین استفاده از همین ورود شروع می‌شود؛ پیش‌تر زمانِ کهنهٔ پیش از خروج می‌ماند
+       و کاربر چند دقیقه بعد از ورود دوباره با «مدتی استفاده نشده بود» بیرون می‌افتاد */
+    try{ if(currentUser) localStorage.setItem('siteLogM.userSeen.v1', String(Date.now())); }catch(e){}
     if(currentUser){ clearTimeout(applyUser.__ps); applyUser.__ps = setTimeout(() => { try{ if(window.pushSync) window.pushSync(); }catch(e){} }, 5000); }
 
     const eng = document.getElementById('engineerName');
@@ -28096,7 +28101,7 @@
   const PW_MIN = 8;
   const USER_EPOCH_KEY = 'siteLogM.userEpoch.v1';
   const USER_SEEN_KEY  = 'siteLogM.userSeen.v1';
-  const IDLE_LOGOUT_DAYS = 7;
+  const IDLE_LOGOUT_DAYS = 60;
   async function supaRpc(fn, args){
     return await supaFetch('rpc/' + fn, {
       method:'POST', prefer:'return=representation', body: args || {}
