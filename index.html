@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029084618">
+<meta name="pm-build" content="20261029085032">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -34458,8 +34458,9 @@
     }
 
     /* ---------- نمایهٔ جست‌وجو ---------- */
-    let idx = [], idxAt = 0, idxBusy = null;
-    const add = (o) => { o.k = norm([o.title, o.sub, o.extra].filter(Boolean).join(' ')); o.kt = norm(o.title); idx.push(o); };
+    /* نمایهٔ تازه جدا ساخته و آخر کار جایگزین می‌شود؛ تا آماده شود، نمایهٔ قبلی جست‌وجو می‌شود */
+    let idx = [], idxAt = 0, idxBusy = null, idxW = null, idxSrc = null;
+    const add = (o) => { o.k = norm([o.title, o.sub, o.extra].filter(Boolean).join(' ')); o.kt = norm(o.title); (idxW || idx).push(o); };
     const short = n => String(n || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '');
     const KIND_IC = {statement:'st', contract:'ct', letter:'lt', minute:'mn', design:'dz'};
     const KIND_FA = {statement:'صورت وضعیت', contract:'قرارداد', letter:'نامه', minute:'صورتجلسه', design:'سند طراحی'};
@@ -34532,9 +34533,13 @@
 
     async function buildIndex(force){
       if(idxBusy) return idxBusy;
-      if(!force && idx.length && Date.now() - idxAt < 90000) return;
+      /* فقط وقتی داده‌ها عوض شده از نو ساخته می‌شود */
+      const cur = (typeof heavyCache !== 'undefined' && heavyCache && heavyCache.data) || null;
+      if(!force && idx.length && ((cur && cur === idxSrc && Date.now() - idxAt < 600000) || Date.now() - idxAt < 90000)) return;
       idxBusy = (async () => {
-        idx = [];
+        /* اول پنجره باز و کشیده می‌شود، بعد نمایه ساخته می‌شود */
+        await new Promise(r => setTimeout(r, 0));
+        idxW = [];
         navItems().forEach(add);
         // افراد
         const ppl = (typeof listNames === 'function') ? listNames() : [];
@@ -34625,9 +34630,9 @@
             sub: [pick(r,T.m1), pick(r,T.pos), stt].filter(Boolean).join(' · '), ic: SP_I.task, badge: stt,
             run: () => gotoAdminItem('task', id)});
         });
-        idxAt = Date.now();
+        idx = idxW; idxSrc = b; idxAt = Date.now();
       })();
-      try{ await idxBusy; }finally{ idxBusy = null; }
+      try{ await idxBusy; }finally{ idxBusy = null; idxW = null; }
     }
 
     /* باز کردن فایل و طبقه از نتیجهٔ جست‌وجو با همان کلیک‌های سراسری سایت */
@@ -34704,7 +34709,9 @@
         + '</div>';
       document.body.appendChild(ov);
       const inp = ov.querySelector('.sp-in');
-      inp.addEventListener('input', () => { st.q = inp.value; st.sel = 0; ov.querySelector('.sp-clr').hidden = !inp.value; paint(); });
+      /* با هر حرف حداکثر یک بار در هر قاب کشیده می‌شود تا تایپ تند گیر نکند */
+      let pr = 0;
+      inp.addEventListener('input', () => { st.q = inp.value; st.sel = 0; ov.querySelector('.sp-clr').hidden = !inp.value; if(!pr) pr = requestAnimationFrame(() => { pr = 0; paint(); }); });
       inp.addEventListener('keydown', key);
       ov.addEventListener('mousedown', e => { if(e.target === ov) close(); });
       ov.addEventListener('click', e => {
@@ -34820,9 +34827,10 @@
       ov.querySelector('.sp-clr').hidden = !inp.value;
       setScope('');
       setTimeout(() => { try{ inp.focus({preventScroll:true}); }catch(e){ inp.focus(); } }, 30);
+      if(!idx.length) navItems().forEach(add);   // میان‌برها از همان لحظهٔ اول
+      paint();
       const p = buildIndex(false);
       if(p && p.then) p.then(() => { if(!ov.hidden) paint(); });
-      paint();
     }
     function close(){
       if(!ov || ov.hidden) return;
@@ -34839,6 +34847,9 @@
       else if(e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') && !(document.activeElement || {}).isContentEditable){ e.preventDefault(); open(''); }
     });
     window.spotlightOpen = open;
+    /* نمایه در زمان بیکاری از پیش آماده می‌شود تا با زدن دکمه، جست‌وجو فوری باز شود */
+    const idle = f => (window.requestIdleCallback ? requestIdleCallback(f, {timeout: 4000}) : setTimeout(f, 300));
+    setTimeout(() => idle(() => { try{ if(typeof currentUser === 'undefined' || currentUser) buildIndex(false); }catch(e){} }), 9000);
   })();
 
   /* ====== پروفایل کاربر ====== */
@@ -46931,7 +46942,8 @@
     document.getElementById('tShagerd').textContent = toFa(s);
     document.getElementById('tAll').textContent = toFa(o+s);
     updateFormCounts();
-    if(typeof renderReview === 'function') renderReview();
+    /* بازبینی پیش از ارسال سنگین است: بعد از مکث کوتاه در تایپ از نو ساخته می‌شود */
+    if(typeof renderReview === 'function'){ clearTimeout(totals.__r); totals.__r = setTimeout(() => { try{ renderReview(); }catch(e){} }, 300); }
   }
 
   document.getElementById('addCrew').addEventListener('click', () => { addCrew(); saveDraft(); });
@@ -46986,8 +46998,10 @@
       }
     }catch(e){}
   }
+  var fcRaf = 0;
   function saveDraft(){
-    try{ updateFormCounts(); }catch(e){}
+    /* شمارنده‌ها حداکثر یک بار در هر قاب، نه با هر حرف */
+    if(!fcRaf) fcRaf = requestAnimationFrame(() => { fcRaf = 0; try{ updateFormCounts(); }catch(e){} });
     clearTimeout(t);
     t = setTimeout(saveNow, 250);
   }
@@ -58839,7 +58853,8 @@
   }
   window.msDeclutterAll = msDeclutterAll;
   try{
-    new MutationObserver(ms => { if(ms.some(m => m.addedNodes && m.addedNodes.length)) msDeclutterAll(); })
+    /* فقط وقتی مسیر گردش تازه‌ای به صفحه آمد (نه با هر تغییر کوچک مثل تایپ در فرم) */
+    new MutationObserver(ms => { if(ms.some(m => Array.prototype.some.call(m.addedNodes, n => n.nodeType === 1 && (n.closest('.adm-ms') || (n.firstElementChild && n.getElementsByClassName('adm-ms').length))))) msDeclutterAll(); })
       .observe(document.body, {childList:true, subtree:true});
   }catch(e){}
   window.addEventListener('resize', () => { document.querySelectorAll('.adm-ms').forEach(m => { m.__dcw = ''; }); msDeclutterAll(); });
@@ -58984,12 +58999,29 @@
       if(Math.abs((+t.dataset.msw || 0) - t.clientWidth) > 2){ t.dataset.msw = t.clientWidth; delete t.dataset.msc; if(t.scrollWidth - t.clientWidth <= 4) t.scrollLeft = 0; }
       mark(t); toNow(t); mark(t);
     })) : null;
-    const scan = () => document.querySelectorAll('.adm-ms .ms-track').forEach(t => { mark(t); toNow(t); mark(t); if(ro && !t.dataset.msc && !t.dataset.msro){ t.dataset.msro = '1'; ro.observe(t); } });
-    let tm = 0;
+    /* سرعت: اول همهٔ اندازه‌ها خوانده و بعد کلاس‌ها نوشته می‌شود (یک بار چیدمان برای کل صفحه)؛
+       پیش‌تر برای هر سند جدا چیدمان از نو حساب می‌شد و با هر تغییر صفحه (حتی تایپ در فرم) تکرار می‌شد */
+    const scanL = L => {
+      const vis = L.filter(t => t.isConnected && t.clientWidth);
+      vis.forEach(toNow);
+      const m = vis.map(t => { const d = t.scrollWidth - t.clientWidth, o = d > 4, sl = Math.abs(t.scrollLeft); return [t, o, o && sl >= d - 4, o && sl > 4]; });
+      m.forEach(([t, o, e, md]) => { t.classList.toggle('ovf', o); t.classList.toggle('at-end', e); t.classList.toggle('mid', md); });
+      if(ro) L.forEach(t => { if(t.isConnected && !t.dataset.msro){ t.dataset.msro = '1'; ro.observe(t); } });
+    };
+    const scan = () => scanL(Array.from(document.querySelectorAll('.adm-ms .ms-track')));
+    let tm = 0, tn = 0, pend = new Set();
     /* محدودکننده، نه تأخیر: اگر جایی از صفحه مدام عوض شود، سنجش باز هم انجام می‌شود */
     const later = ms => { if(tm) return; tm = setTimeout(() => { tm = 0; scan(); }, ms); };
-    new MutationObserver(() => later(150))
-      .observe(document.body, {childList:true, subtree:true});
+    /* فقط مسیرهای تازه‌ساخته سنجیده می‌شوند؛ تغییر پهنای بقیه را ResizeObserver می‌گیرد */
+    new MutationObserver(ms => {
+      for(const m of ms) for(const n of m.addedNodes){
+        if(n.nodeType !== 1) continue;
+        const up = n.closest('.ms-track');
+        if(up) pend.add(up);
+        else if(n.firstElementChild){ const c = n.getElementsByClassName('ms-track'); for(let i = 0; i < c.length; i++) pend.add(c[i]); }
+      }
+      if(pend.size && !tn) tn = setTimeout(() => { tn = 0; const L = Array.from(pend).filter(t => t.closest('.adm-ms')); pend = new Set(); scanL(L); }, 150);
+    }).observe(document.body, {childList:true, subtree:true});
     /* باز شدن کارت یا «جزئیات بیشتر» فقط کلاس عوض می‌کند، نه DOM را */
     document.addEventListener('click', () => later(220), true);
     window.addEventListener('resize', () => later(150));
