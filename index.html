@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029170355">
+<meta name="pm-build" content="20261029170639">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26787,6 +26787,12 @@
     .crs-ni:hover{background:var(--field);}
     .crs-ni:focus-visible{outline:2px solid var(--vz1);outline-offset:-2px;}
   }
+  /* اعلانی که همین الان باز و خوانده شد: سر جایش، کم‌رنگ با نشان */
+  .fz.fz-kept{opacity:.72;position:relative;}
+  .fz.fz-kept::after{content:"✓ خوانده شد";position:absolute;top:10px;inset-inline-end:12px;font:700 10.5px var(--f);padding:2px 8px;border-radius:99px;
+    background:color-mix(in srgb, var(--vz3) 14%, var(--surface));color:var(--vz3);pointer-events:none;}
+  .fz.fz-back{animation:fzBack 1.4s ease;}
+  @keyframes fzBack{0%,40%{box-shadow:0 0 0 3px color-mix(in srgb, var(--vz1) 45%, transparent);}100%{box-shadow:none;}}
   #tabBar .sb-foot, #navBrand .nb-sw{display:none;}
   /* ستون کناری دسکتاپ از نو: زمینهٔ ملایم، کارت پروژه، دکمهٔ اصلی، منو با نشانگر، پای ثابت */
   @media (min-width:1180px){
@@ -30855,6 +30861,8 @@
 
   let feedCache = [];
   let feedShowSeen = false;
+  /* اعلان‌هایی که در همین دور خواندن باز شدند: سر جایشان با نشان «خوانده‌شده» می‌مانند تا رشتهٔ کار گم نشود */
+  const feedKeep = new Set();
   let notifCritical = [];
   /* ===================== موتور یکپارچهٔ اعلان‌ها =====================
      چهار منبع، یک جریان: موعدها، تلنگرها، نظر و تگ، گزارش نفرستاده.
@@ -31356,7 +31364,7 @@
     const meK = nameKey(activeUserName());
     const avasShow = (avas.length === 1 && holderNm && nameKey(shortNm(avas[0])) === nameKey(holderNm)) ? [] : avas.filter(n => nameKey(n) !== meK);
     return '<div class="fz fz2 ' + x.cat + ' c-' + (x.dcat || x.cat) + ' lv-' + (x.level || 'info')
-      +   (x.seen ? '' : ' fresh') + '" style="--i:' + Math.min(i || 0, 12) + '" data-fid="' + esc(x.fid) + '"'
+      +   (x.seen ? '' : ' fresh') + (feedKeep.has(String(x.fid)) ? ' fz-kept' : '') + '" style="--i:' + Math.min(i || 0, 12) + '" data-fid="' + esc(x.fid) + '"'
       +   (goto ? ' data-goto-kind="' + esc(x.goto.kind) + '"'
                 + ' data-goto-id="' + esc(x.goto.id || 'general') + '"'
                 + ' data-goto-who="' + esc(x.goto.who || '') + '"'
@@ -31460,7 +31468,7 @@
     }
 
     const seenN = feed.length - fresh;
-    const visible = x => feedShowSeen || !x.seen;
+    const visible = x => feedShowSeen || !x.seen || feedKeep.has(String(x.fid));
     const shown = feedShown(feed).filter(visible);
     const counts = {};
     shown.forEach(x => { counts[x.dcat] = (counts[x.dcat] || 0) + 1; });
@@ -31538,10 +31546,13 @@
       clearTimeout(bg.__closeT); bg.classList.remove('closing');
       bg.hidden = false;
       feedShowSeen = false;
+      /* برگشت از کارت فعالیتی که از همین فهرست باز شده بود: همان دسته و همان جای فهرست */
+      const ret = window.__notifRetNow; window.__notifRetNow = null;
+      if(!ret){ feedKeep.clear(); window.__notifRet = null; }
       const sub0 = document.getElementById('notifSub'); if(sub0) sub0.textContent = 'در حال بررسی…';
-      { const nb = document.getElementById('notifBody'); nb.innerHTML = feedSkelHtml(); nb.__h = ''; nb.classList.remove('fz-calm'); }
+      { const nb = document.getElementById('notifBody'); if(!ret){ nb.innerHTML = feedSkelHtml(); nb.__h = ''; } nb.classList.remove('fz-calm'); }
 
-      feedCat = '';        // فیلتر دسته بین دو بار باز کردن نچسبد
+      feedCat = ret ? (ret.cat || '') : '';        // فیلتر دسته بین دو بار باز کردن نچسبد (جز برگشت)
 
       /* باز شدن هنوز چیزی را خوانده نمی‌کند تا فهرست جلوی چشمتان
          جابه‌جا نشود و ببینید کدام‌ها تازه‌اند؛ علامت خوردن هنگام
@@ -31549,6 +31560,8 @@
       await loadNotif();
       renderNotif();
       refreshBell();
+      if(ret){ const nb = document.getElementById('notifBody'); if(nb) requestAnimationFrame(() => { nb.scrollTop = ret.y || 0;
+        const c = ret.fid && nb.querySelector('[data-fid="' + ret.fid + '"]'); if(c){ c.classList.add('fz-back'); setTimeout(() => c.classList.remove('fz-back'), 1600); } }); }
     });
 
     /* بستن پنجره دیگر همه را «خوانده» نمی‌کند: هر اعلان فقط وقتی خوانده می‌شود که
@@ -31695,6 +31708,8 @@
           const fid = card.dataset.fid;
           if(fid){
             feedMarkSeen(fid);
+            feedKeep.add(String(fid));
+            try{ const nb0 = document.getElementById('notifBody'); window.__notifRet = {y: nb0 ? nb0.scrollTop : 0, cat: feedCat, fid: String(fid), until: Date.now() + 20 * 60000}; }catch(e){}
             const row = (feedCache || []).find(x => String(x.fid) === String(fid));
             if(row && row.nid){ try{ sendAction({action:'nudgeRead', id: row.nid}); }catch(e){} }
           }
@@ -87747,6 +87762,9 @@
     bg.hidden = true;
     document.body.style.overflow = '';
     deckBadge();
+    /* کارت از فهرست اعلان‌ها باز شده بود: با بستنش، اعلان‌ها همان‌جا که بودید دوباره باز می‌شوند */
+    try{ const r = window.__notifRet; window.__notifRet = null;
+      if(r && r.until > Date.now()){ window.__notifRetNow = r; setTimeout(() => { const bb = document.getElementById('bellBtn'); if(bb) bb.click(); }, 80); } }catch(e){}
   }
   /* بازخورد کوتاه روی خود دکمه */
   function deckDone(btn, txt){
