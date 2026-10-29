@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029154327">
+<meta name="pm-build" content="20261029154824">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26775,6 +26775,17 @@
     html body .modal.rf .rf-foot .send, html body .modal.rf :is(.rf-go, .te-save){background:var(--vz1) !important;border-color:var(--vz1) !important;color:#fff !important;}
     html:not([data-theme="dark"]){--send-bg:var(--vz1);}
     html body .tk-addbtn{background:var(--vz1) !important;color:#fff !important;}
+    /* فرم اسناد دوستونی (ستون‌ها در wrap ساخته می‌شوند) */
+    html body .af.af-2c{display:grid !important;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);column-gap:14px;row-gap:12px;align-items:start;}
+    html body .af.af-2c > .af-main, html body .af.af-2c > .af-side{display:flex;flex-direction:column;gap:12px;min-width:0;}
+    html body .af.af-2c > :is(.af-main, .af-side) > .af-sec{margin:0 !important;}
+    html body .af.af-2c > .af-side{position:sticky;top:calc(var(--hdh) + 12px);}
+    html body .af.af-2c > .af-foot{grid-column:1 / -1;}
+    html body .af.af-2c > .af-side .af-grid{grid-template-columns:minmax(0,1fr) !important;}
+    html body .af.af-2c .af-grid .field :is(input, select, .flp-btn){height:40px !important;min-height:40px !important;}
+    html body .af.af-2c > .af-main > .af-sec:not(.one):not(.dt) > .af-grid:not(:has(.sf)){grid-template-columns:repeat(3, minmax(0,1fr)) !important;}
+    html body .af.af-2c > .af-side .dt .um-res{max-height:260px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+    html body .af .af-foot .go{background:var(--vz1) !important;border-color:var(--vz1) !important;color:#fff !important;}
     html body .dock .send, html body .dock button[type=submit], html body .dock #sendBtn{background:var(--vz1) !important;border-color:var(--vz1) !important;color:#fff !important;}
   }
   /* دسکتاپ: نوار بالای گزارش‌ها جمع‌وجور (نوع و خلاصه در یک ردیف، بازه و تاریخ در ردیف دوم) و نوار بخش‌ها چسبان */
@@ -61453,7 +61464,19 @@
     const buttons = '<div class="af-foot">'
       + '<button type="button" class="mini" data-cancel="'+esc(id)+'">انصراف</button>'
       + '<button type="button" class="mini go" data-save="'+esc(id)+'">' + (isNewItem ? 'ثبت ' + (KIND_LABEL[kind] || '') : 'ذخیرهٔ تغییرات') + '</button></div>';
-    const wrap = body => '<div class="af">' + body + dtFormHtml(kind, r) + buttons + '</div>';
+    /* دسکتاپ: فرم دوستونی؛ مشخصات و مبالغ در ستون اصلی، ابلاغ، پیوست، توضیحات و برچسب‌ها در ستون کناری */
+    const wrap = body => {
+      const all = body + dtFormHtml(kind, r);
+      let desk = false; try{ desk = window.matchMedia('(min-width:1180px)').matches; }catch(e){}
+      if(!desk) return '<div class="af">' + all + buttons + '</div>';
+      const main = [], side = [];
+      all.split(/(?=<section class="af-sec)/).forEach(p => {
+        const isSide = /^<section class="af-sec dt"/.test(p)
+          || (/^<section class="af-sec one"/.test(p) && /<b>(ابلاغ و رسیدگی|ابلاغ|پیوست|توضیحات)<\/b>/.test(p));
+        (isSide ? side : main).push(p);
+      });
+      return '<div class="af af-2c"><div class="af-main">' + main.join('') + '</div><div class="af-side">' + side.join('') + '</div>' + buttons + '</div>';
+    };
     /* سند تازه (صورت وضعیت/قرارداد): موعد خالی، رسیدگی همیشه «در حال تنظیم»؛ کپسول‌های وضعیت و
        انتخاب مسئولین بررسی فقط هنگام ویرایش (بعد از ثبت) نشان داده می‌شوند */
     const fdue = (cls, lbl, val) => isNewItem
