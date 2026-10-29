@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029100628">
+<meta name="pm-build" content="20261029101253">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -55634,6 +55634,24 @@
     clearTimeout(b3SaveT); b3SaveT = setTimeout(() => { b3Idb('put', {h: H, j: out, at: Date.now()}).catch(() => {}); }, 1500);
     return Object.assign({}, out);
   }
+  /* دادهٔ روز (day3): همان روش، با نسخهٔ قبلیِ هر روز در حافظه */
+  let D3_OFF = false;
+  const D3C = new Map();
+  async function d3Fetch(dateFa, prevFa, again){
+    if(D3_OFF) return null;
+    const ck = (dateFa || '') + '|' + (prevFa || ''), c = D3C.get(ck);
+    let r;
+    try{ r = await supaFetch('rpc/day3', {method:'POST', prefer:'return=representation', body:{p_date: dateFa || '', p_prev: prevFa || '', p_have: (c && c.h) || {}}}); }
+    catch(er){ if((er && er.status === 404) || /404|PGRST202|Could not find|day3/i.test(String(er && er.message))){ D3_OFF = true; return null; } throw er; }
+    if(Array.isArray(r)) r = r[0];
+    if(r && r.day3 && !r.__h) r = r.day3;
+    if(!r || !r.__h){ D3_OFF = true; return null; }
+    const out = {}; let miss = false;
+    Object.keys(r.__h).forEach(k => { if(Object.prototype.hasOwnProperty.call(r, k)) out[k] = r[k]; else if(c && c.j && Object.prototype.hasOwnProperty.call(c.j, k)) out[k] = c.j[k]; else miss = true; });
+    if(miss){ D3C.delete(ck); return again ? null : d3Fetch(dateFa, prevFa, true); }
+    D3C.set(ck, {h: r.__h, j: out}); if(D3C.size > 12) D3C.delete(D3C.keys().next().value);
+    return Object.assign({}, out);
+  }
   /* سرعت: درخواست‌های هم‌زمان بخش سنگین را دوباره نمی‌گیرند؛ صبر می‌کنند تا همان یکی برسد و بعد فقط دادهٔ روز */
   async function supaBundle(dateFa, prevFa){
     const fresh = heavyCache.data && (Date.now() - heavyCache.t) < HEAVY_TTL;
@@ -55648,7 +55666,9 @@
     // اگر بخش سنگین تازه است، فقط دادهٔ روز خوانده می‌شود
     if(fresh){
       const phP = photosStart([dateFa, prevFa]);
-      const d = await supaFetch('rpc/day_only', {
+      let d = null;
+      try{ d = await d3Fetch(dateFa, prevFa); }catch(e){ d = null; }
+      if(!d) d = await supaFetch('rpc/day_only', {
         method:'POST', prefer:'return=representation',
         body:{p_date: dateFa || '', p_prev: prevFa || ''}
       });
