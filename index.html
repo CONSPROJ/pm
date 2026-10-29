@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261029111230">
+<meta name="pm-build" content="20261029145819">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26624,6 +26624,25 @@
     #adminView:not(.adm-home) > #admCats > .acat.acat.acat > .acat-n{grid-area:n !important;font-size:17px !important;align-self:center !important;}
     #adminView:not(.adm-home) > #admCats > .acat.acat.acat > .acat-last, #adminView:not(.adm-home) > #admCats > .acat.acat.acat > .acat-add{display:none !important;}
     #adminView:not(.adm-home) > #admCats > .acat.acat.acat.on::after{inset-inline:18% !important;}
+    /* ثبت گزارش: انتخاب نوع یک ردیف فشرده؛ فرم در ستون اصلی، خلاصه و دکمهٔ ثبت در ستون کناری چسبان */
+    #panelWrite #wModeCaps.picked{display:grid !important;grid-template-columns:repeat(4, minmax(0,1fr)) !important;gap:6px !important;margin-bottom:12px !important;}
+    #panelWrite #wModeCaps.picked .wp-card{padding:7px 10px !important;border-radius:12px !important;min-height:0 !important;}
+    #panelWrite #wModeCaps.picked .wp-card .wp-ic{width:28px !important;height:28px !important;border-radius:9px !important;}
+    #panelWrite #wModeCaps.picked .wp-card .wp-ic svg{width:16px !important;height:16px !important;}
+    #panelWrite #wModeCaps.picked .wp-card .wp-tx b{font-size:12.5px !important;}
+    #panelWrite #wModeCaps.picked .wp-card .wp-go, #panelWrite #wModeCaps.picked .wp-card .wp-glow{display:none !important;}
+    #panelWrite #reportForm{display:grid;grid-template-columns:minmax(0,1fr) 320px;column-gap:20px;align-items:start;}
+    #panelWrite #reportForm > *{grid-column:1;min-width:0;}
+    #panelWrite #reportForm > #crSum{grid-column:2;grid-row:1 / span 20;position:sticky;top:calc(var(--hdh) + 16px);margin:0 !important;
+      grid-template-columns:auto minmax(0,1fr) !important;align-items:center;}
+    #panelWrite #reportForm > #crSum > .crs-kpis{grid-column:1 / -1;}
+    body.has-dock:not(.wpick-idle) .dock{inset-inline:auto !important;left:calc(var(--gut) + max(0px, (100vw - var(--sbw) - 2 * var(--gut) - 1440px) / 2)) !important;right:auto !important;
+      width:320px !important;bottom:20px !important;}
+    body.has-dock .dock .dock-in{max-width:none !important;padding:0 !important;}
+    /* گزارش‌ها: تاریخ، پروژه و دکمهٔ نمایش در یک ردیف */
+    #panelView .viewbar .vb-row{display:grid !important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px !important;}
+    #panelView .viewbar .vb-row > .vb-in{min-width:0;flex:none !important;width:auto !important;}
+    #panelView .viewbar .vb-row > #loadBtn{width:auto !important;min-width:180px;padding:0 22px !important;margin:0 !important;flex:none !important;}
     /* صفحه‌های تمام‌صفحه (مرخصی، تنظیمات، مدیریت کاربران…) فقط روی ناحیهٔ محتوا؛ ستون کناری دیده و کار می‌کند */
     #profileModal.pg-mode{inset:0 !important;inset-inline-start:var(--sbw) !important;top:var(--hdh) !important;z-index:45 !important;background:var(--bg, var(--canvas)) !important;}
     #profileModal.pg-mode > .modal{max-width:1160px !important;margin:0 auto !important;background:transparent !important;border:0 !important;box-shadow:none !important;}
@@ -30934,12 +30953,10 @@
       refreshBell();
     });
 
-    /* بستن پنجره یعنی «دیدمشان»: هرچه در فهرست بود خوانده علامت
-       می‌خورد و شمارنده صفر می‌شود. نشانِ محلی همان لحظه و به‌صورت
-       همگام ثبت می‌شود تا شمارنده فوری خالی شود؛ همگام‌سازی با سرور
-       در پس‌زمینه انجام می‌گیرد و اگر شکست بخورد چیزی خراب نمی‌شود.
-       ردیف‌های مشترک (نظرها) nid ندارند، پس روی سرور دست نمی‌خورند
-       و خواندنِ شما برای بقیه خوانده حساب نمی‌شود. */
+    /* بستن پنجره دیگر همه را «خوانده» نمی‌کند: هر اعلان فقط وقتی خوانده می‌شود که
+       رویش زده شود (رفتن به مورد)، «خواندم» یا «خواندن همه» زده شود. فهرست همچنان
+       روزانه است (امروز و دیروز) و پاک‌شده‌ها بامداد هر روز از نو شروع می‌شوند،
+       پس اعلان‌ها روی هم تلنبار نمی‌شوند. */
     function closeNotif(){
       if(bg.hidden || bg.classList.contains('closing')){ /* بسته یا در حال بسته شدن */ }
       const reduce = (typeof uiReduced === 'function') && uiReduced();
@@ -30949,20 +30966,6 @@
         clearTimeout(bg.__closeT);
         bg.__closeT = setTimeout(() => { bg.hidden = true; bg.classList.remove('closing'); }, 230);
       }
-      try{
-        const fresh = feedShown((typeof buildFeed === 'function') ? buildFeed() : [])
-          .filter(x => !x.seen);
-        if(fresh.length){
-          feedMarkSeen(fresh.map(x => x.fid));
-          const ids = fresh.filter(x => x.nid).map(x => x.nid);
-          if(ids.length) (async () => {
-            for(const id of ids){
-              try{ await sendAction({action:'nudgeRead', id}); }catch(e){}
-            }
-            if(typeof invalidateNudges === 'function') invalidateNudges();
-          })();
-        }
-      }catch(e){}
       refreshBell();
     }
     window.__closeNotif = closeNotif;
@@ -89395,7 +89398,7 @@
       put('tabAdmin', a, cur === 'admin');
       /* گزارش‌ها */
       let v = '';
-      try{ v = Array.from(document.querySelectorAll('#viewKindCaps [data-kind]')).filter(b => !b.hidden && getComputedStyle(b).display !== 'none').map(b => {
+      try{ v = Array.from(document.querySelectorAll('#viewKindCaps [data-kind]')).filter(b => !b.hidden).map(b => {
           const t = (b.querySelector('b') || b).textContent.trim(), ic = b.querySelector('svg'); return it('data-sbview="' + b.dataset.kind + '"', ic ? ic.outerHTML : '', t); }).join(''); }catch(e){ v = ''; }
       put('tabView', v, cur === 'view');
       mark();
