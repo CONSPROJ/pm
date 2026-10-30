@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030185155">
+<meta name="pm-build" content="20261030185931">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -399,6 +399,9 @@
 .ogc-frl{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:99px;background:color-mix(in srgb,var(--sc) 12%,var(--surface));border:1.5px solid color-mix(in srgb,var(--sc) 45%,transparent);white-space:nowrap;position:relative}
 .ogc-frl b{font-size:12px;font-weight:800;color:var(--sc)} .ogc-frl small{font-size:10px;color:var(--muted)}
 .ogc .ogc-fr > ul.ogc-fru{padding-top:22px}
+.ogc-fr-e{opacity:.7;min-width:150px}
+.ogc-fr-emp{background:color-mix(in srgb,var(--sc) 6%,var(--surface))}
+.ogc-tree2 .ogc-z{padding:6px 10px 10px}
 .og-edit [data-ogk].og-over{outline:2.5px solid var(--accent, #2f6f9f);outline-offset:3px}
 .ogc-add{all:unset;cursor:pointer;position:absolute;top:-10px;inset-inline-end:-10px;width:22px;height:22px;border-radius:99px;background:var(--sc, var(--accent));color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.18)}.ogc-add:hover{transform:scale(1.12)}
 .og-edit :is(.ogc-g,.ogc-own,.ogc-root,.ogc-o,.ogc-n){position:relative}.og-edit .ogc-o .ogc-add{top:-6px;inset-inline-end:-6px;width:18px;height:18px;font-size:12px}
@@ -23979,6 +23982,7 @@
   .fv-none{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px;text-align:center;max-width:360px;}
   .fv-big{--kc:var(--sky);width:76px;height:76px;display:grid;place-items:center;border-radius:20px;font-size:15px;font-weight:900;color:#fff;background:var(--kc);}
   .fv-none b{font-size:13.5px;word-break:break-word;} .fv-none small{font-size:11px;color:var(--muted);line-height:1.8;}
+  .fv-cadb{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;} .fv-cadb .fv-dlbig{border:0;cursor:pointer;font-family:inherit;} .fv-cadb .fv-dlbig.sec{background:var(--field) !important;color:var(--ink) !important;}
   .fv-dlbig{display:inline-flex;align-items:center;gap:8px;margin-top:6px;height:44px;padding:0 20px;border-radius:13px;background:var(--sky);color:#fff;font-weight:800;text-decoration:none;}
   .fv-dlbig svg{width:18px;height:18px;}
   .fv-nav{all:unset;cursor:pointer;position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;display:grid;place-items:center;border-radius:50%;
@@ -41020,31 +41024,40 @@
       const band = (k, t, inner, n) => inner ? '<section class="ogb" style="--sc:' + (OG_SC[k] || '#777') + '"><div class="ogb-h" data-ogk="g:' + k + '"><i></i><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</div>'
         + '<div class="ogb-b"><ul class="ogc-t">' + inner + '</ul></div></section>' : (og.edit ? '<section class="ogb ogb-e" style="--sc:' + (OG_SC[k] || '#777') + '"><div class="ogb-h" data-ogk="g:' + k + '"><i></i><b>' + esc(t) + '</b>' + addB('g:' + k) + '</div></section>' : '');
       const sub = (k, t, inner) => inner ? '<li><div class="ogc-g sm" style="--sc:' + OG_SC[k] + '"><b>' + esc(t) + '</b></div><ul>' + inner + '</ul></li>' : '';
-      let bands = '';
-      /* کارفرما */
-      if(E || PM || og.edit){
-        const ownLis = owners.map(o => { const k2 = normName(o.n), sc = OG_SC.emp;
-          return '<li><div class="ogc-n own" data-ogk="e:' + esc(k2) + '"' + (o.ext ? (og.edit ? ' data-ogext="' + esc(o.n) + '"' : ' data-hrprof="' + esc(o.n) + '"') : '') + ' style="--sc:' + sc + '">' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(OV(k2).d || o.d || 'کارفرما') + '</small>' + addB('e:' + k2) + '</div>'
-            + ul(o.ext ? '' : rev(kids(o.n)).map(n => card(n, 1)).join(''), 'e:' + k2, sc) + '</li>'; }).join('');
-        const team = rev(empTeamExt).map(e => extLi(e, OG_SC.emp)).join('') + rev(empTeamRoots.filter(n => !isOwnerUser(n) && !kup(n))).map(n => card(n, 0)).join('') + xLis('g:emp', OG_SC.emp);
-        const inner = (owners.length ? sub('emp', 'کارفرمایان', ownLis) : '') + (team ? (owners.length ? sub('emp', 'تیم کارفرما', team) : team) : '');
-        bands += band('emp', 'کارفرما', inner, E ? E.all.length + extN(E) : 0);
-      }
+      /* طرح درختی (به‌جای نوارهای زیر هم): کارفرما بالا — کارفرمایان و تیم کارفرما در یک قاب —
+         و زیرش، کنار هم: تیم مدیریت پیمان (همیشه زیر نظر کارفرما)، طراح و مشاور، مالک، پیمانکاران و بقیهٔ طرف‌ها؛ هر طرف قاب خودش */
+      const frDiv = (k, t, inner, n, cls) => { const u2 = ul(inner, 'g:' + k, OG_SC[k] || '#777');
+        if(!u2 && !og.edit) return '';
+        return '<div class="ogc-fr' + (cls ? ' ' + cls : '') + (u2 ? '' : ' ogc-fr-e') + '" data-ogk="g:' + k + '" style="--sc:' + (OG_SC[k] || '#777') + '"><span class="ogc-frl"><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</span>'
+          + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div>'; };
+      const branches = [];
       /* تیم مدیریت پیمان */
-      if(PM || og.edit) bands += band('pm', 'تیم مدیریت پیمان', PM ? sideInner(PM) + xLis('g:pm', OG_SC.pm) : xLis('g:pm', OG_SC.pm), PM ? PM.all.length + extN(PM) : 0);
+      { const f = frDiv('pm', 'تیم مدیریت پیمان', PM ? sideInner(PM) : '', PM ? PM.all.length + extN(PM) : 0); if(f) branches.push(f); }
       /* طراح و مشاور: دسته‌بندی بر اساس عنوان هر طرف (طراح، ناظر، مشاور…) */
       { const C = SG('cons'); let inner = '';
         if(C){ const byD = new Map(); C.ext.forEach(e => { const d = String(OV(normName(e.n)).d || e.d || 'مشاور').trim(); const key = /طراح/.test(d) ? 'طراح' : /ناظر|نظارت/.test(d) ? 'ناظر و نظارت' : 'مشاور'; if(!byD.has(key)) byD.set(key, []); byD.get(key).push(e); });
           inner = Array.from(byD.entries()).map(([d, arr]) => byD.size > 1 ? sub('cons', d, rev(arr).map(e => extLi(e, OG_SC.cons)).join('')) : rev(arr).map(e => extLi(e, OG_SC.cons)).join('')).join('')
             + rev(C.roots.filter(n => !kup(n))).map(n => card(n, 0)).join(''); }
-        bands += band('cons', 'طراح و مشاور', inner + xLis('g:cons', OG_SC.cons), C ? C.all.length + extN(C) : 0); }
-      /* مالک و پیمانکاران و هر طرف دیگر */
-      S.filter(x => ['emp', 'pm', 'cons'].indexOf(x.k) === -1).forEach(x => { bands += band(x.k, x.t, sideInner(x) + xLis('g:' + x.k, OG_SC[x.k]), x.all.length + extN(x)); });
-      if(og.edit) OG_SIDES.filter(([k]) => ['emp', 'pm', 'cons'].indexOf(k) === -1 && !SG(k)).forEach(([k, t]) => { bands += band(k, t, xLis('g:' + k, OG_SC[k]), 0); });
-      body = '<div class="ogc ogc-bands"><div class="ogc-z" style="zoom:' + og.z + '">'
-        + '<div class="ogb-root ogc-root" data-ogroot="1" data-ogk="g:root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
-        + (xLis('g:root', '#555') ? '<ul class="ogc-t">' + xLis('g:root', '#555') + '</ul>' : '')
-        + bands + '</div></div>';
+        const f = frDiv('cons', 'طراح و مشاور', inner, C ? C.all.length + extN(C) : 0); if(f) branches.push(f); }
+      /* مالک، پیمانکاران و هر طرف دیگر */
+      S.filter(x => ['emp', 'pm', 'cons'].indexOf(x.k) === -1).forEach(x => { const f = frDiv(x.k, x.t, sideInner(x), x.all.length + extN(x)); if(f) branches.push(f); });
+      if(og.edit) OG_SIDES.filter(([k]) => ['emp', 'pm', 'cons'].indexOf(k) === -1 && !SG(k)).forEach(([k, t]) => { const f = frDiv(k, t, '', 0); if(f) branches.push(f); });
+      const brUl = branches.length ? '<ul>' + rev(branches).map(f => '<li>' + f + '</li>').join('') + '</ul>' : '';
+      /* کارفرما */
+      let top = '';
+      if(E || og.edit){
+        const ownLis = owners.map(o => { const k2 = normName(o.n), sc = OG_SC.emp;
+          return '<li><div class="ogc-n own" data-ogk="e:' + esc(k2) + '"' + (o.ext ? (og.edit ? ' data-ogext="' + esc(o.n) + '"' : ' data-hrprof="' + esc(o.n) + '"') : '') + ' style="--sc:' + sc + '">' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(OV(k2).d || o.d || 'کارفرما') + '</small>' + addB('e:' + k2) + '</div>'
+            + ul(o.ext ? '' : rev(kids(o.n)).map(n => card(n, 1)).join(''), 'e:' + k2, sc) + '</li>'; }).join('');
+        const team = rev(empTeamExt).map(e => extLi(e, OG_SC.emp)).join('') + rev(empTeamRoots.filter(n => !isOwnerUser(n) && !kup(n))).map(n => card(n, 0)).join('');
+        const inner = (owners.length ? sub('emp', 'کارفرمایان', ownLis) : '') + (team ? (owners.length ? sub('emp', 'تیم کارفرما', team) : team) : '');
+        const f = frDiv('emp', 'کارفرما', inner, E ? E.all.length + extN(E) : 0, 'ogc-fr-emp');
+        top = f ? '<li>' + f + brUl + '</li>' : brUl.replace(/^<ul>|<\/ul>$/g, '');
+      }else top = brUl.replace(/^<ul>|<\/ul>$/g, '');
+      body = '<div class="ogc ogc-tree2"><div class="ogc-z" style="zoom:' + og.z + '">'
+        + '<ul class="ogc-t"><li><div class="ogc-root" data-ogroot="1" data-ogk="g:root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
+        + '<ul>' + xLis('g:root', '#555') + top + '</ul></li></ul>'
+        + '</div></div>';
     }else{
       const node = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
         return '<li><div class="ogl-n" style="--sc:' + (OG_SC[dsd(n)] || '#777') + '">' + avatarHtml(n, '', true) + '<span class="ogl-tx"><b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + (fl ? ' · طبقه ' + esc(fl) : '') + '</small></span>'
@@ -65269,6 +65282,7 @@
       if(e.target === m || e.target.closest('[data-fvx]')){ fvClose(); return; }
       const nv = e.target.closest('[data-fvgo]'); if(nv){ fvGo(+nv.dataset.fvgo); return; }
       const th = e.target.closest('[data-fvi]'); if(th){ fvS.i = +th.dataset.fvi; fvPaint(); return; }
+      if(e.target.closest('[data-fvcad]') && fvS){ fvS.cadOn = fvS.L[fvS.i]; fvPaint(); return; }
       if(e.target.closest('[data-fvall]')) fvDownloadAll(fvS.L);
     });
     let x0 = null;
@@ -65294,7 +65308,12 @@
     if(k === 'img' && a.src !== 'drive') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
     else if(k === 'img') body = '<img class="fv-img" src="' + esc(pv) + '" alt="' + esc(a.name) + '" referrerpolicy="no-referrer">';
     else if(k === 'pdf' && a.src !== 'drive' && fvPdfTouch()) body = '<div class="fv-pdf" dir="ltr"><div class="fv-pdfw"><div class="fv-pdfl"><i></i><i></i><i></i></div></div></div>';
-    else if(/^(dwg|dxf)$/i.test(a.ext || '')) body = '<iframe class="fv-frame fv-cad" src="cad.html?theme=' + esc(document.documentElement.dataset.theme || '') + '" title="' + esc(a.name) + '"></iframe>';
+    else if(/^(dwg|dxf)$/i.test(a.ext || '') && S.cadOn === a) body = '<iframe class="fv-frame fv-cad" src="cad.html?theme=' + esc(document.documentElement.dataset.theme || '') + '" title="' + esc(a.name) + '"></iframe>';
+    /* نقشه: اول انتخاب — دیدن در نقشه‌خوانِ سایت یا دانلود برای اتوکد (نقشه‌های سنگین با اتوکد راحت‌ترند) */
+    else if(/^(dwg|dxf)$/i.test(a.ext || '')) body = '<div class="fv-none fv-cadq"><span class="fv-big k-' + k + '">' + esc((a.ext || '').toUpperCase()) + '</span>'
+      + '<b>' + esc(a.name) + '</b><small>نقشه را همین‌جا در نقشه‌خوان سایت ببینید (اندازه‌گیری، مساحت، هاشور)، یا دانلود کنید و با اتوکد باز کنید.</small>'
+      + '<span class="fv-cadb"><button type="button" class="fv-dlbig" data-fvcad="1">' + UP_I.open + 'باز کردن در نقشه‌خوان</button>'
+      + '<a class="fv-dlbig sec" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener">' + UP_I.dl + 'دانلود فایل</a></span></div>';
     else if(k === 'pdf' || a.src === 'drive') body = '<iframe class="fv-frame" src="' + esc(pv) + '" title="' + esc(a.name) + '" referrerpolicy="no-referrer"></iframe>';
     else body = '<div class="fv-none"><span class="fv-big k-' + k + '">' + esc((a.ext || 'فایل').toUpperCase()) + '</span>'
       + '<b>' + esc(a.name) + '</b><small>پیش‌نمایش این نوع فایل در مرورگر ممکن نیست؛ دانلود کنید و با برنامهٔ خودش باز کنید.</small>'

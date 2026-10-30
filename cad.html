@@ -48,6 +48,7 @@
   .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:sp 1s linear infinite;margin:0 auto 10px;} @keyframes sp{to{transform:rotate(360deg)}}
   .lab{font:700 11px Vazirmatn,Tahoma,sans-serif;paint-order:stroke;stroke:var(--paper);stroke-width:3px;fill:var(--ink);}
   @media (max-width:760px){ .main{grid-template-columns:1fr;grid-template-rows:1fr auto;} .side{border:0;border-top:1px solid var(--line);max-height:38vh;} .top .nm b{max-width:60vw;} }
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -114,16 +115,9 @@ async function openBuffer(buf, name){
   busy('در حال خواندن نقشه…');
   await new Promise(r => setTimeout(r, 30));
   try{
-    const head = new TextDecoder().decode(new Uint8Array(buf).slice(0, 6));
-    let db;
-    if(/^AC10/.test(head)){
-      const {m, lib: L} = await lib();
-      const data = L.dwg_read_data(buf, m.Dwg_File_Type.DWG);
-      if(!data) throw new Error('read');
-      db = L.convert(data); try{ L.dwg_free(data); }catch(e){}
-    }else db = parseDxf(new TextDecoder('utf-8').decode(buf));
-    drawDb(db);
-    $('#finfo').textContent = toFa(S.nEnt) + ' موجودیت · ' + toFa(S.layers.size) + ' لایه' + (head.slice(0, 2) === 'AC' ? ' · ' + head : ' · DXF');
+    const out = await readInWorker(buf);
+    showDb(out);
+    $('#finfo').textContent = toFa(S.nEnt) + ' موجودیت · ' + toFa(S.layers.size) + ' لایه' + (out.head.slice(0, 2) === 'AC' ? ' · ' + out.head : ' · DXF');
     $('#empty').hidden = true;
     fit(); loadMarks();
   }catch(err){
@@ -131,113 +125,78 @@ async function openBuffer(buf, name){
     $('#empty').hidden = false; $('#empty').innerHTML = '<div class="drop"><b>این فایل خوانده نشد</b>' + (/wasm|fetch|import|module/i.test(String(err)) ? 'کتابخانهٔ خواندن نقشه بار نشد؛ اتصال را بررسی کنید و دوباره باز کنید.' : 'شاید نسخهٔ فایل پشتیبانی نشود؛ آن را در اتوکد با «Save As» به DWG 2018 یا DXF ذخیره کنید.') + '</div>';
   }
 }
-/* خوانندهٔ DXF (متنی): لایه‌ها، بلاک‌ها و موجودیت‌های اصلی */
-function parseDxf(txt){
-  const L = txt.split(/\r?\n/), P = [];
-  for(let i = 0; i + 1 < L.length; i += 2) P.push([+L[i].trim(), L[i + 1].replace(/\s+$/, '')]);
-  const D2R = Math.PI / 180, out = {entities: [], tables: {LAYER: {entries: []}, BLOCK_RECORD: {entries: []}}};
-  let i = 0, sec = '', blk = null;
-  const readEnt = () => { const type = P[i][1], o = {type, layer: '0'}; i++; const v = [];
-    while(i < P.length && P[i][0] !== 0){ const [c, val] = P[i], n = parseFloat(val);
-      if(c === 8) o.layer = val; else if(c === 62) o.colorIndex = n; else if(c === 2) o.name = val;
-      else if(c === 1) o.text = (o.text || '') + val; else if(c === 3) o.text = (o.text || '') + val;
-      else if(c === 10){ if(type === 'LWPOLYLINE' || type === 'SPLINE') v.push({x: n, y: 0, bulge: 0}); else o.x = n; }
-      else if(c === 20){ if(type === 'LWPOLYLINE' || type === 'SPLINE'){ if(v.length) v[v.length - 1].y = n; } else o.y = n; }
-      else if(c === 42 && type === 'LWPOLYLINE'){ if(v.length) v[v.length - 1].bulge = n; }
-      else if(c === 11) o.x2 = n; else if(c === 21) o.y2 = n; else if(c === 40) o.r = n; else if(c === 41) o.s41 = n; else if(c === 42) o.s42 = n;
-      else if(c === 50) o.a50 = n; else if(c === 51) o.a51 = n; else if(c === 70) o.f70 = n;
-      i++; }
-    const e = {type, layer: o.layer, colorIndex: o.colorIndex};
-    if(type === 'LINE'){ e.startPoint = {x: o.x, y: o.y}; e.endPoint = {x: o.x2, y: o.y2}; }
-    else if(type === 'CIRCLE'){ e.center = {x: o.x, y: o.y}; e.radius = o.r; }
-    else if(type === 'ARC'){ e.center = {x: o.x, y: o.y}; e.radius = o.r; e.startAngle = (o.a50 || 0) * D2R; e.endAngle = (o.a51 || 0) * D2R; }
-    else if(type === 'LWPOLYLINE'){ e.vertices = v; e.flag = o.f70 || 0; }
-    else if(type === 'SPLINE'){ e.type = 'LWPOLYLINE'; e.vertices = v; e.flag = 0; }
-    else if(type === 'POLYLINE'){ e.vertices = []; e.flag = o.f70 || 0; while(i < P.length && P[i][1] === 'VERTEX'){ const vv = readEnt(); e.vertices.push({x: vv.__x, y: vv.__y, bulge: vv.__b || 0}); } if(i < P.length && P[i][1] === 'SEQEND') readEnt(); e.type = 'LWPOLYLINE'; }
-    else if(type === 'VERTEX'){ e.__x = o.x; e.__y = o.y; e.__b = o.s42; }
-    else if(type === 'TEXT'){ e.startPoint = {x: o.x, y: o.y}; e.textHeight = o.r || 1; e.text = o.text || ''; e.rotation = (o.a50 || 0) * D2R; }
-    else if(type === 'MTEXT'){ e.insertionPoint = {x: o.x, y: o.y}; e.textHeight = o.r || 1; e.text = o.text || ''; e.rotation = (o.a50 || 0) * D2R; }
-    else if(type === 'INSERT' || type === 'DIMENSION'){ e.type = 'INSERT'; e.name = o.name; e.insertionPoint = {x: type === 'DIMENSION' ? 0 : (o.x || 0), y: type === 'DIMENSION' ? 0 : (o.y || 0)}; e.xScale = type === 'DIMENSION' ? 1 : (o.s41 || 1); e.yScale = type === 'DIMENSION' ? 1 : (o.s42 || 1); e.rotation = type === 'DIMENSION' ? 0 : (o.a50 || 0) * D2R; }
-    else if(type === 'ELLIPSE'){ e.center = {x: o.x, y: o.y}; e.majorAxisEndPoint = {x: o.x2, y: o.y2}; e.axisRatio = o.r || 1; e.startAngle = o.s41 || 0; e.endAngle = o.s42 == null ? Math.PI * 2 : o.s42; }
-    else if(type === 'LAYER'){ e.name = o.name; e.colorIndex = o.colorIndex; }
-    else if(type === 'BLOCK'){ e.name = o.name; e.basePoint = {x: o.x || 0, y: o.y || 0}; }
-    return e; };
-  while(i < P.length){
-    const [c, v] = P[i];
-    if(c === 0 && v === 'SECTION'){ sec = (P[i + 1] || [])[1]; i += 2; continue; }
-    if(c === 0 && v === 'ENDSEC'){ sec = ''; i++; continue; }
-    if(c !== 0){ i++; continue; }
-    if(v === 'EOF') break;
-    const e = readEnt();
-    if(sec === 'TABLES' && e.type === 'LAYER') out.tables.LAYER.entries.push(e);
-    else if(sec === 'BLOCKS'){ if(e.type === 'BLOCK'){ blk = {name: e.name, basePoint: e.basePoint, entities: []}; out.tables.BLOCK_RECORD.entries.push(blk); } else if(e.type === 'ENDBLK') blk = null; else if(blk) blk.entities.push(e); }
-    else if(sec === 'ENTITIES') out.entities.push(e);
-  }
-  return out;
+/* خواندن و ساختن نقشه در Worker (صفحه یخ نمی‌زند)؛ اگر Worker نشد، همین‌جا */
+let WK = null, wkId = 0;
+function readInWorker(buf){
+  return new Promise((res, rej) => {
+    try{ if(!WK) WK = new Worker(new URL('./lib/cad-worker.js', location.href), {type: 'module'}); }catch(e){ WK = null; }
+    if(!WK) return readHere(buf).then(res, rej);
+    const id = ++wkId;
+    const on = e => { const d = e.data || {}; if(d.id !== id) return;
+      if(d.stage){ busy(d.stage === 'dwg' ? 'در حال خواندن DWG…' : 'در حال ساختن نقشه…'); return; }
+      WK.removeEventListener('message', on); WK.removeEventListener('error', er);
+      if(d.ok) res(d); else rej(new Error(d.err)); };
+    const er = ev => { WK.removeEventListener('message', on); WK.removeEventListener('error', er); try{ WK.terminate(); }catch(e){} WK = null; readHere(buf).then(res, rej); ev.preventDefault && ev.preventDefault(); };
+    WK.addEventListener('message', on); WK.addEventListener('error', er);
+    WK.postMessage({buf, id});
+  });
 }
-/* رنگ‌های ACI اصلی؛ ۷ و بی‌رنگ = رنگ خط صفحه (روز/شب) */
-const ACI = {1:'#e0453a', 2:'#d4b106', 3:'#2f9e44', 4:'#1c9fb4', 5:'#3b6fd8', 6:'#b44cc7', 8:'#8a8f98', 9:'#b8bcc4', 30:'#e67e22', 40:'#d68910', 140:'#5dade2', 150:'#2e86c1', 250:'#566573', 251:'#808b96', 252:'#a6acaf', 253:'#ccd1d1'};
-function drawDb(db){
-  const layers = new Map(); ((db.tables && db.tables.LAYER && db.tables.LAYER.entries) || []).forEach(l => layers.set(l.name, l));
-  const blocks = new Map(); ((db.tables && db.tables.BLOCK_RECORD && db.tables.BLOCK_RECORD.entries) || []).forEach(b => { if(b && b.name) blocks.set(b.name, b); });
-  const G = new Map(), snaps = []; let n = 0;
-  const col = (e, inh) => { let c = e.colorIndex; if(c == null || c === 256) c = (layers.get(e.layer) || {}).colorIndex; if(c === 0) c = inh; c = Math.abs(c || 7); return ACI[c] || 'var(--draw)'; };
-  const T = (M, x, y) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]];
-  const mul = (A, B) => [A[0] * B[0] + A[2] * B[1], A[1] * B[0] + A[3] * B[1], A[0] * B[2] + A[2] * B[3], A[1] * B[2] + A[3] * B[3], A[0] * B[4] + A[2] * B[5] + A[4], A[1] * B[4] + A[3] * B[5] + A[5]];
-  const sc = M => Math.sqrt(Math.abs(M[0] * M[3] - M[1] * M[2])) || 1;
-  const f = v => (Math.round(v * 1000) / 1000);
-  const arcPts = (cx, cy, r, a0, a1, M) => { let d = a1 - a0; while(d <= 0) d += Math.PI * 2; const N = Math.max(8, Math.min(96, Math.ceil(d / (Math.PI / 36)))); const o = []; for(let k = 0; k <= N; k++){ const a = a0 + d * k / N; o.push(T(M, cx + r * Math.cos(a), cy + r * Math.sin(a))); } return o; };
-  const bulgePts = (p, q, b, M) => { if(!b) return [T(M, q.x, q.y)]; const th = 4 * Math.atan(b), ch = Math.hypot(q.x - p.x, q.y - p.y); if(!ch) return [T(M, q.x, q.y)];
-    const r = ch / (2 * Math.sin(th / 2)), mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, h = Math.sqrt(Math.max(0, r * r - ch * ch / 4)) * Math.sign(b) * (Math.abs(th) > Math.PI ? -1 : 1);
-    const cx = mx - h * (q.y - p.y) / ch, cy = my + h * (q.x - p.x) / ch; let a0 = Math.atan2(p.y - cy, p.x - cx), a1 = Math.atan2(q.y - cy, q.x - cx);
-    const o = b > 0 ? arcPts(cx, cy, Math.abs(r), a0, a1, M) : arcPts(cx, cy, Math.abs(r), a1, a0, M).reverse(); return o.slice(1); };
-  const put = (ly, h) => { if(!G.has(ly)) G.set(ly, []); G.get(ly).push(h); n++; };
-  const poly = pts => pts.map(p => f(p[0]) + ',' + f(p[1])).join(' ');
-  const txt = s => String(s || '').replace(/\\P/g, ' ').replace(/\\[A-Za-z][^;\\{}]*;/g, '').replace(/[{}]/g, '').replace(/\\U\+([0-9A-Fa-f]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))).replace(/%%[cC]/g, 'Ø').replace(/%%[dD]/g, '°').replace(/%%[pP]/g, '±').replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  function draw(list, M, inhCol, depth){
-    (list || []).forEach(e => { try{
-      if(!e || e.isInPaperSpace || e.isVisible === false) return;
-      const ly = e.layer || '0', c = col(e, inhCol), st = ' stroke="' + c + '"';
-      switch(e.type){
-        case 'LINE': { const a = T(M, e.startPoint.x, e.startPoint.y), b = T(M, e.endPoint.x, e.endPoint.y); put(ly, '<line x1="' + f(a[0]) + '" y1="' + f(a[1]) + '" x2="' + f(b[0]) + '" y2="' + f(b[1]) + '"' + st + '/>'); snaps.push(a, b); break; }
-        case 'CIRCLE': { const a = T(M, e.center.x, e.center.y); put(ly, '<circle cx="' + f(a[0]) + '" cy="' + f(a[1]) + '" r="' + f(e.radius * sc(M)) + '"' + st + ' fill="none"/>'); snaps.push(a); break; }
-        case 'ARC': { const p = arcPts(e.center.x, e.center.y, e.radius, e.startAngle, e.endAngle, M); put(ly, '<polyline points="' + poly(p) + '"' + st + ' fill="none"/>'); snaps.push(p[0], p[p.length - 1], T(M, e.center.x, e.center.y)); break; }
-        case 'ELLIPSE': { const mx = e.majorAxisEndPoint.x, my = e.majorAxisEndPoint.y, R = Math.hypot(mx, my), rot = Math.atan2(my, mx), rr = R * (e.axisRatio || 1);
-          let a0 = e.startAngle || 0, a1 = e.endAngle == null ? Math.PI * 2 : e.endAngle; if(a1 <= a0) a1 += Math.PI * 2; const N = 48, o = [];
-          for(let k = 0; k <= N; k++){ const a = a0 + (a1 - a0) * k / N, x = R * Math.cos(a), y = rr * Math.sin(a); o.push(T(M, e.center.x + x * Math.cos(rot) - y * Math.sin(rot), e.center.y + x * Math.sin(rot) + y * Math.cos(rot))); }
-          put(ly, '<polyline points="' + poly(o) + '"' + st + ' fill="none"/>'); break; }
-        case 'LWPOLYLINE': case 'POLYLINE2D': case 'POLYLINE3D': { const V = e.vertices || []; if(V.length < 2) break; const closed = (e.flag & 1) === 1 || (e.flag & 512) === 512;
-          const o = [T(M, V[0].x, V[0].y)]; for(let k = 1; k < V.length; k++) o.push(...bulgePts(V[k - 1], V[k], V[k - 1].bulge, M)); if(closed) o.push(...bulgePts(V[V.length - 1], V[0], V[V.length - 1].bulge, M));
-          put(ly, '<polyline points="' + poly(o) + '"' + st + ' fill="none"/>'); V.forEach(v => snaps.push(T(M, v.x, v.y))); break; }
-        case 'SPLINE': { const V = (e.fitPoints && e.fitPoints.length ? e.fitPoints : e.controlPoints) || []; if(V.length > 1) put(ly, '<polyline points="' + poly(V.map(v => T(M, v.x, v.y))) + '"' + st + ' fill="none"/>'); break; }
-        case 'SOLID': case 'TRACE': case '3DFACE': { const k = ['corner1', 'corner2', 'corner4', 'corner3'].map(q => e[q]).filter(Boolean); if(k.length >= 3) put(ly, '<polygon points="' + poly(k.map(v => T(M, v.x, v.y))) + '" fill="' + c + '" fill-opacity=".5" stroke="none"/>'); break; }
-        case 'TEXT': case 'ATTRIB': case 'MTEXT': { const p = e.insertionPoint || e.startPoint; if(!p || !e.text) break; const h = (e.textHeight || 1) * sc(M), a = T(M, p.x, p.y);
-          const rot = ((e.rotation || 0) + Math.atan2(M[1], M[0])) * 180 / Math.PI;
-          const lines = String(e.text).split(/\\P/).map(txt);
-          put(ly, '<text transform="translate(' + f(a[0]) + ',' + f(a[1]) + ') rotate(' + f(rot) + ') scale(1,-1)" font-size="' + f(h) + '" fill="' + c + '" font-family="Vazirmatn,Tahoma,sans-serif"' + (e.type === 'MTEXT' ? ' dominant-baseline="hanging"' : '') + '>'
-            + lines.map((t, k) => '<tspan x="0" dy="' + (k ? f(h * 1.35) : 0) + '">' + t + '</tspan>').join('') + '</text>'); break; }
-        case 'INSERT': { const B = blocks.get(e.name); if(!B || depth > 8) break; const r = e.rotation || 0, sx = e.xScale || 1, sy = e.yScale || 1, bp = B.basePoint || {x: 0, y: 0};
-          const ip = e.insertionPoint || {x: 0, y: 0};
-          const L2 = [Math.cos(r) * sx, Math.sin(r) * sx, -Math.sin(r) * sy, Math.cos(r) * sy, ip.x, ip.y];
-          const M2 = mul(M, mul(L2, [1, 0, 0, 1, -bp.x, -bp.y]));
-          draw(B.entities, M2, c, depth + 1); (e.attribs || []).forEach(at => draw([at], M, c, depth + 1)); break; }
-        case 'HATCH': { const paths = (e.boundaryPaths || []).map(bp => { if(bp.vertices){ const V = bp.vertices; if(V.length < 3) return ''; const o = [T(M, V[0].x, V[0].y)]; for(let k = 1; k < V.length; k++) o.push(...bulgePts(V[k - 1], V[k], V[k - 1].bulge, M)); return 'M' + o.map(q => f(q[0]) + ' ' + f(q[1])).join('L') + 'Z'; }
-            const o = []; (bp.edges || []).forEach(ed => { if(ed.start && ed.end){ o.push(T(M, ed.start.x, ed.start.y), T(M, ed.end.x, ed.end.y)); } else if(ed.center && ed.radius){ const a0 = ed.startAngle, a1 = ed.endAngle; o.push(...(ed.isCCW === false ? arcPts(ed.center.x, ed.center.y, ed.radius, -a1, -a0, M).reverse() : arcPts(ed.center.x, ed.center.y, ed.radius, a0, a1, M))); } });
-            return o.length > 2 ? 'M' + o.map(q => f(q[0]) + ' ' + f(q[1])).join('L') + 'Z' : ''; }).join('');
-          if(paths) put(ly, '<path d="' + paths + '" fill="' + c + '" fill-opacity="' + (e.solidFill === 1 ? .55 : .14) + '" fill-rule="evenodd" stroke="none"/>'); break; }
-        case 'POINT': break;
-        default: break;
-      } }catch(er){} });
-  }
-  draw(db.entities, [1, 0, 0, 1, 0, 0], 7, 0);
-  S.nEnt = n; S.layers = new Map(Array.from(G.keys()).map(k => [k, true]));
-  dwgG.innerHTML = Array.from(G.entries()).map(([ly, L]) => '<g data-ly="' + String(ly).replace(/"/g, '&quot;') + '" fill="none">' + L.join('') + '</g>').join('');
-  S.snaps = snaps.filter(p => isFinite(p[0]) && isFinite(p[1])).slice(0, 150000);
-  S.base = null; layerList(); index();
+async function readHere(buf){
+  const core = await import('./lib/cad-core.js');
+  const head = new TextDecoder().decode(new Uint8Array(buf).slice(0, 6));
+  let db;
+  if(/^AC10/.test(head)){ const {m, lib: L} = await lib(); const data = L.dwg_read_data(buf, m.Dwg_File_Type.DWG); if(!data) throw new Error('read'); db = L.convert(data); try{ L.dwg_free(data); }catch(e){} }
+  else db = core.parseDxf(new TextDecoder('utf-8').decode(buf));
+  const out = core.buildDb(db); return Object.assign(out, {head});
 }
+/* نقشهٔ پایه روی Canvas (ده‌ها هزار خط بی کندی)؛ نشانه‌ها همچنان SVG روی آن */
+const cv = document.createElement('canvas'); cv.id = 'cv'; stage.insertBefore(cv, view);
+const cx = cv.getContext('2d'), shot = document.createElement('canvas'), sx = shot.getContext('2d');
+let DB = null, shotVB = null, rT = 0;
+function showDb(out){
+  S.nEnt = out.n; S.layers = new Map(out.layers.map(l => [l.ly, true]));
+  DB = out.layers.map(l => ({ly: l.ly, st: l.st.map(([c, d]) => [c, new Path2D(d)]), fill: l.fill.map(([d, c, op]) => [new Path2D(d), c, op]), tx: l.tx}));
+  dwgG.innerHTML = '';
+  const F = out.snaps, sn = new Array(F.length / 2); for(let k = 0; k < sn.length; k++) sn[k] = [F[k * 2], F[k * 2 + 1]];
+  S.snaps = sn; S.bounds = out.bounds; S.base = out.bounds ? {x: out.bounds.x0, y: -out.bounds.y1, w: out.bounds.x1 - out.bounds.x0 || 1, h: out.bounds.y1 - out.bounds.y0 || 1} : null;
+  layerList(); index();
+}
+const colOf = c => c && c.indexOf('var(') === 0 ? (getComputedStyle(document.documentElement).getPropertyValue(c.slice(4, -1)).trim() || '#333') : c;
+function fullDraw(){
+  rT = 0;
+  const W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = Math.min(2, window.devicePixelRatio || 1);
+  if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = shot.width = Math.round(W * dpr); cv.height = shot.height = Math.round(H * dpr); }
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
+  if(!DB) return;
+  const v = S.vb, k = W / v.w;
+  cx.setTransform(k * dpr, 0, 0, -k * dpr, -v.x * k * dpr, -v.y * k * dpr);
+  cx.lineWidth = 1 / k; cx.lineJoin = 'round'; cx.lineCap = 'round';
+  const tx = [];
+  DB.forEach(L => { if(S.layers.get(L.ly) === false) return;
+    L.fill.forEach(([P, c, op]) => { cx.globalAlpha = op; cx.fillStyle = colOf(c); cx.fill(P, 'evenodd'); });
+    cx.globalAlpha = 1;
+    L.st.forEach(([c, P]) => { cx.strokeStyle = colOf(c); cx.stroke(P); });
+    L.tx.forEach(t => tx.push(t)); });
+  /* متن در فضای صفحه (اندازهٔ واقعی پیکسل)؛ متن‌های ریزتر از ۴ پیکسل کشیده نمی‌شوند */
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.globalAlpha = 1;
+  tx.forEach(([x, y, h, rot, str, c, top]) => { const ph = h * k; if(ph < 4) return; const X = (x - v.x) * k, Y = (-y - v.y) * k;
+    if(X < -2000 || X > W + 2000 || Y < -2000 || Y > H + 2000) return;
+    cx.save(); cx.translate(X, Y); cx.rotate(-rot); cx.fillStyle = colOf(c); cx.font = ph.toFixed(1) + 'px Vazirmatn,Tahoma,sans-serif'; cx.textBaseline = top ? 'top' : 'alphabetic';
+    String(str).split('\n').forEach((ln, i) => cx.fillText(ln, 0, i * ph * 1.35)); cx.restore(); });
+  sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, shot.width, shot.height); sx.drawImage(cv, 0, 0); shotVB = Object.assign({}, v);
+}
+/* حین حرکت: همان تصویر آخر جابه‌جا/بزرگ می‌شود؛ پس از ایستادن، کشیدن کامل */
+function quickDraw(){
+  if(!shotVB){ fullDraw(); return; }
+  const v = S.vb, W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = cv.width / W, s2 = shotVB.w / v.w;
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
+  cx.drawImage(shot, (shotVB.x - v.x) / v.w * W * dpr, (shotVB.y - v.y) / v.h * H * dpr, shot.width * s2, shot.height * s2);
+  clearTimeout(rT); rT = setTimeout(fullDraw, 140);
+}
+
 function layerList(){ const box = $('#layers'); if(!box) return; const L = Array.from(S.layers.keys()).sort();
   box.innerHTML = L.length > 1 ? '<details><summary>لایه‌ها <small>' + toFa(L.length) + '</small></summary><div class="lyl">' + L.map(l => '<label><input type="checkbox" data-ly="' + l.replace(/"/g, '&quot;') + '" checked> ' + l.replace(/</g, '&lt;') + '</label>').join('') + '</div></details>' : ''; }
-document.addEventListener('change', e => { const c = e.target.closest && e.target.closest('#layers [data-ly]'); if(!c) return; const g = dwgG.querySelector('g[data-ly="' + CSS.escape(c.dataset.ly) + '"]'); if(g) g.style.display = c.checked ? '' : 'none'; });
+document.addEventListener('change', e => { const c = e.target.closest && e.target.closest('#layers [data-ly]'); if(!c) return; S.layers.set(c.dataset.ly, c.checked); fullDraw(); });
 $('#openBtn').onclick = () => $('#file').click();
 $('#file').onchange = e => { const f = e.target.files[0]; if(f) f.arrayBuffer().then(b => openBuffer(b, f.name)); e.target.value = ''; };
 stage.addEventListener('dragover', e => { e.preventDefault(); });
@@ -248,15 +207,18 @@ try{ const src = new URLSearchParams(location.search).get('src'); if(src){ busy(
 try{ if(window.parent !== window) window.parent.postMessage({cadReady: true}, location.origin); }catch(e){}
 
 /* ---------- نما: viewBox، بزرگ‌نمایی با چرخ، جابه‌جایی، دو انگشت ---------- */
-function apply(){ const v = S.vb; view.setAttribute('viewBox', v.x + ' ' + v.y + ' ' + v.w + ' ' + v.h); const sc = v.w / (stage.clientWidth || 1); view.style.setProperty('--px', sc); drawLabels(); }
+/* نما: viewBox برای لایهٔ نشانه‌ها (سبک) + Canvas برای نقشه */
+function apply(now){ const v = S.vb; view.setAttribute('viewBox', v.x + ' ' + v.y + ' ' + v.w + ' ' + v.h); view.style.setProperty('--px', v.w / (stage.clientWidth || 1));
+  if(now) fullDraw(); else quickDraw(); drawLabels(); }
+function commit(){ fullDraw(); }
+const flush = () => {};
 function fit(){
   let b = S.base;
-  try{ const bb = dwgG.getBBox(); if(bb.width > 0 && bb.height > 0) b = {x: bb.x, y: -(bb.y + bb.height), w: bb.width, h: bb.height}; }catch(e){}
   if(!b) b = {x: 0, y: 0, w: 1000, h: 1000};
   const W = stage.clientWidth || 800, H = stage.clientHeight || 600, pad = .06;
   let w = b.w * (1 + pad * 2), h = b.h * (1 + pad * 2);
   if(w / h > W / H) h = w * H / W; else w = h * W / H;
-  S.vb = {x: b.x + b.w / 2 - w / 2, y: b.y + b.h / 2 - h / 2, w, h}; apply();
+  S.vb = {x: b.x + b.w / 2 - w / 2, y: b.y + b.h / 2 - h / 2, w, h}; apply(true);
 }
 function toWorld(cx, cy){ const p = view.createSVGPoint(); p.x = cx; p.y = cy; const m = mkG.getScreenCTM(); return m ? p.matrixTransform(m.inverse()) : {x: cx, y: cy}; }
 function zoomAt(cx, cy, f){ const r = stage.getBoundingClientRect(), v = S.vb; const px = v.x + (cx - r.left) / r.width * v.w, py = v.y + (cy - r.top) / r.height * v.h;
@@ -265,10 +227,11 @@ stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.c
 $('#zin').onclick = () => { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, .7); };
 $('#zout').onclick = () => { const r = stage.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.4); };
 $('#zfit').onclick = fit;
-window.addEventListener('resize', () => apply());
+window.addEventListener('resize', () => apply(true));
 const ptrs = new Map(); let pan = null, pinch = null;
 stage.addEventListener('pointerdown', e => {
   if(e.target.closest('.zoom')) return;
+  flush();
   stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if(ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; pan = null; return; }
   if(S.tool === 'pan' || e.button === 1){ pan = {x: e.clientX, y: e.clientY, vb: Object.assign({}, S.vb)}; stage.classList.add('drag'); return; }
@@ -279,17 +242,18 @@ stage.addEventListener('pointermove', e => {
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if(pinch && ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()), d = Math.hypot(a.x - b.x, a.y - b.y); zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, pinch.d / d); pinch.d = d; return; }
   if(pan){ const r = stage.getBoundingClientRect(); S.vb.x = pan.vb.x - (e.clientX - pan.x) / r.width * pan.vb.w; S.vb.y = pan.vb.y - (e.clientY - pan.y) / r.height * pan.vb.h; apply(); return; }
+  if(S.tool !== 'pan') flush();
   const w = toWorld(e.clientX, e.clientY), sp = S.tool !== 'pan' ? snap(w, e) : w;
   const c = $('#coords'); c.hidden = false; c.textContent = 'X ' + (+w.x).toFixed(1) + '   Y ' + (+w.y).toFixed(1);
   preview(sp);
 });
-const up = e => { ptrs.delete(e.pointerId); if(ptrs.size < 2) pinch = null; if(pan){ pan = null; stage.classList.remove('drag'); } };
+const up = e => { ptrs.delete(e.pointerId); if(ptrs.size < 2) pinch = null; if(pan){ pan = null; stage.classList.remove('drag'); commit(); } };
 stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
 stage.addEventListener('dblclick', e => { if(S.cur) finish(); });
 
 /* ---------- گیرش (Snap) به نقاط انتهایی خطوط نقشه و نشانه‌ها ---------- */
 function index(){ const all = S.snaps.concat(...S.marks.map(m => m.pts.map(p => [p.x, p.y])));
-  let bw = 1000; try{ const bb = dwgG.getBBox(); if(bb.width) bw = Math.max(bb.width, bb.height); }catch(e){} S.snapCell = Math.max(bw / 200, 1e-6); S.grid = new Map();
+  let bw = 1000; if(S.base) bw = Math.max(S.base.w, S.base.h); S.snapCell = Math.max(bw / 200, 1e-6); S.grid = new Map();
   all.forEach(p => { const k = Math.floor(p[0] / S.snapCell) + ':' + Math.floor(p[1] / S.snapCell); if(!S.grid.has(k)) S.grid.set(k, []); S.grid.get(k).push(p); }); }
 function snap(w, e){
   if(e && e.altKey) return w;
@@ -387,7 +351,7 @@ function csv(){ const rows = [['نام', 'نوع', 'مساحت m2', 'محیط/ط
   const b = new Blob(['﻿' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (S.file || 'cad') + '-areas.csv'; a.click(); }
 $('#pngBtn').onclick = () => { const s = new XMLSerializer().serializeToString(view), W = stage.clientWidth * 2, H = stage.clientHeight * 2;
   const st = getComputedStyle(document.documentElement), bg = st.getPropertyValue('--paper') || '#fff', dr = st.getPropertyValue('--draw') || '#000';
-  const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
+  const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H); fullDraw(); x.drawImage(cv, 0, 0, W, H); x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s.replace(/var\(--draw\)/g, dr).replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')); };
 setTool('pan');
 </script>
