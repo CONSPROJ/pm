@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030130341">
+<meta name="pm-build" content="20261030130514">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19827,6 +19827,30 @@
   }
   /* ستون کناری: پرکاربرد و اخیر (فقط دسکتاپ) */
   .sbq, .sbr{display:none;}
+  /* مدت گردش اسناد (نمودار تازه) */
+  .cm3{padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px;}
+  .cm3-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;} .cm3-h > b{font-size:13.5px;font-weight:800;color:var(--ink);margin-inline-end:4px;}
+  .cm3-h > span{font-size:11px;color:var(--muted);padding:3px 10px;border-radius:99px;background:var(--field);display:inline-flex;align-items:center;gap:5px;} .cm3-h > span b{color:var(--ink);font-weight:800;}
+  .cm3-h > span.bad{background:color-mix(in srgb, #c0392b 9%, transparent);color:#b03a2e;font-weight:700;}
+  .cm3-lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:10.5px;color:var(--muted);} .cm3-lg span{display:inline-flex;align-items:center;gap:5px;} .cm3-lg i{width:12px;height:8px;border-radius:3px;}
+  .cm3 .g-td{background:#c9d3dd;} .cm3 .g-n{background:#9db6cc;} .cm3 .g-i{background:#6c9cc6;} .cm3 .g-p{background:#3d7fb0;} .cm3 .g-c{background:#24577a;} .cm3 .g-ok{background:#3f8a62;}
+  .cm3-lg .g-o{background:repeating-linear-gradient(135deg, #6c9cc6 0 3px, color-mix(in srgb, #6c9cc6 40%, transparent) 3px 6px);}
+  .cm3-rows{position:relative;display:flex;flex-direction:column;gap:2px;}
+  .cm3-r{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr) 74px;align-items:center;gap:12px;padding:5px 6px;border-radius:9px;}
+  .cm3-r:hover{background:var(--field);}
+  .cm3:not(.all) .cm3-r.more{display:none;}
+  .cm3-l{min-width:0;display:flex;flex-direction:column;gap:1px;} .cm3-l b{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .cm3-l small{font-size:10px;color:var(--muted);}
+  .cm3-t{position:relative;height:12px;border-radius:99px;background:color-mix(in srgb, var(--field) 80%, transparent);direction:ltr;}
+  .cm3-t::after{content:"";position:absolute;top:-4px;bottom:-4px;left:var(--avg);width:0;border-left:1.5px dashed color-mix(in srgb, var(--muted) 55%, transparent);}
+  .cm3-f{display:flex;height:100%;gap:2px;border-radius:99px;overflow:hidden;}
+  .cm3-f > i{display:block;min-width:3px;height:100%;}
+  .cm3-f > i.o{background-image:repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,.22) 4px 7px);}
+  .cm3-n{display:inline-flex;align-items:baseline;justify-content:flex-start;gap:3px;font-size:13px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;} .cm3-n u{text-decoration:none;font-size:10px;font-weight:600;color:var(--muted);}
+  .cm3-n.up{color:#b8651a;}
+  .cm3-x{display:inline-block;width:7px;height:7px;border-radius:50%;background:#c0392b;margin-inline-start:3px;align-self:center;}
+  .cm3-all{all:unset;cursor:pointer;align-self:center;font-size:11.5px;font-weight:700;color:var(--vz1, #2f6f9f);padding:6px 12px;border-radius:99px;}
+  .cm3-all:hover{background:var(--field);}
+  @media (max-width:640px){ .cm3-r{grid-template-columns:minmax(0,1fr) 62px;grid-template-areas:"l n" "t t";row-gap:6px;} .cm3-l{grid-area:l;} .cm3-t{grid-area:t;} .cm3-n{grid-area:n;justify-content:flex-end;} }
   .lnd{display:none;}
   @media (min-width:1180px){
     .panel.lnd-on > :not(.lnd), html.lnd-v :is(#reportView, #viewTb){display:none !important;}
@@ -62718,39 +62742,26 @@
     const avg = Math.round(rows.reduce((n, x) => n + x.total, 0) / rows.length);
     const hot = rows.filter(x => x.segs.some(sg => sg.tone === 'bad')).length;
 
-    return '<div class="cmp-wrap cmp2">'
-      + '<div class="cmp-head">'
-      +   '<b>مقایسهٔ مدت گردش</b>'
-      +   '<span class="cmp-n">' + toFa(rows.length) + ' سند</span>'
-      +   (hot ? '<span class="cmp-hot">' + toFa(hot) + ' سند با مرحلهٔ بحرانی</span>' : '')
-      +   '<span class="cmp-avg">میانگین ' + toFa(avg) + ' روز</span>'
-      + '</div>'
-      + '<div class="cmp-legend">'
-      +   CMP_STAGE.map(x => '<span class="cmp-lg s-' + x.k + '"><i></i>' + esc(x.t) + '</span>').join('')
-      +   '<span class="cmp-lg s-td"><i></i>در حال تنظیم</span>'
-      +   '<span class="cmp-lg open"><i></i>باز تا امروز</span>'
-      +   '<span class="cmp-lg over"><i></i>بیش از سقف مرحله</span>'
-      + '</div>'
-      + '<div class="cmp-rows">'
-      +   rows.map((x, j) =>
-            '<div class="cmp-row" style="--k:' + j + '">'
-            + '<span class="cr-lb" title="' + esc(x.label) + '">' + esc(x.label)
-            +   (x.rv ? '<u class="' + reviewCls(x.rv) + '">' + esc(x.rv) + '</u>' : '') + '</span>'
-            + '<span class="cr-tr">'
-            +   x.segs.map(sg =>
-                  '<i class="s-' + (sg.label === 'در حال تنظیم' ? 'td' : sg.k) + (sg.open ? ' open' : '')
-                  + (sg.tone ? ' t-' + sg.tone : '') + (sg.rej ? ' rej' : '') + '" '
-                  + 'style="width:' + ((sg.days / max) * 100).toFixed(1) + '%" '
-                  + 'title="' + esc(sg.label + ' — ' + toFa(sg.days) + ' روز' + (sg.open ? ' (تا امروز)' : '')) + '">'
-                  + ((sg.days / max) > .09 ? '<b>' + toFa(sg.days) + '</b>' : '') + '</i>').join('')
-            +   '<span class="cr-avg" style="inset-inline-start:' + Math.min(100, (avg / max) * 100).toFixed(1) + '%"></span>'
-            + '</span>'
-            + '<span class="cr-n' + (x.total > avg ? ' up' : '') + '">' + toFa(x.total) + '<u>روز</u></span>'
-            + '</div>').join('')
-      + '</div>'
-      + '<div class="cmp-note">خط نقطه‌چین میانگین همین فهرست است؛ تکه‌های زرد و قرمز از سقف مرحلهٔ خودشان گذشته‌اند.</div>'
+    /* نمودار تازه: هر سند یک ردیف — برچسب، نوار مراحل با رنگ‌های سامانه (طیف آبی تا سبز پرداخت)، مدت کل؛
+       از سقف گذشته فقط یک نشان کوچک کنار عدد. پانزده ردیف اول و بقیه با «نمایش همه». */
+    const ST = [['td', 'در حال تنظیم'], ['n', 'تنظیم و ابلاغ'], ['i', 'گردش داخلی'], ['p', 'گردش پیمانکار'], ['c', 'گردش کارفرما'], ['ok', 'تأیید تا پرداخت']];
+    const used = new Set(); rows.forEach(x => x.segs.forEach(sg => used.add(sg.label === 'در حال تنظیم' ? 'td' : sg.k)));
+    const avgP = Math.min(100, avg / max * 100);
+    const row = (x, j) => { const over = x.segs.some(sg => sg.tone === 'bad');
+      return '<div class="cm3-r' + (j >= 15 ? ' more' : '') + '"><span class="cm3-l" title="' + esc(x.label) + '"><b>' + esc(x.label) + '</b>' + (x.rv ? '<small>' + esc(x.rv) + '</small>' : '') + '</span>'
+        + '<span class="cm3-t"><span class="cm3-f" style="width:' + (x.total / max * 100).toFixed(1) + '%">'
+        + x.segs.map(sg => '<i class="g-' + (sg.label === 'در حال تنظیم' ? 'td' : sg.k) + (sg.open ? ' o' : '') + '" style="flex:' + Math.max(sg.days, .5) + '" title="' + esc(sg.label + ' — ' + toFa(sg.days) + ' روز' + (sg.open ? ' (تا امروز)' : '') + (sg.tone === 'bad' ? ' · بیش از سقف' : '')) + '"></i>').join('')
+        + '</span></span>'
+        + '<span class="cm3-n' + (x.total > avg ? ' up' : '') + '">' + toFa(x.total) + '<u>روز</u>' + (over ? '<i class="cm3-x" title="دست‌کم یک مرحله از سقفش گذشته"></i>' : '') + '</span></div>'; };
+    return '<div class="cm3">'
+      + '<div class="cm3-h"><b>مدت گردش ' + esc(KIND_LABEL[kind] || '') + '</b><span>' + toFa(rows.length) + ' سند</span><span>میانگین <b>' + toFa(avg) + '</b> روز</span>'
+      +   (hot ? '<span class="bad"><i class="cm3-x"></i>' + toFa(hot) + ' سند بیش از سقف</span>' : '') + '</div>'
+      + '<div class="cm3-lg">' + ST.filter(z => used.has(z[0])).map(z => '<span><i class="g-' + z[0] + '"></i>' + z[1] + '</span>').join('') + '<span><i class="g-o"></i>باز تا امروز</span></div>'
+      + '<div class="cm3-rows" style="--avg:' + avgP.toFixed(1) + '%">' + rows.map(row).join('') + '</div>'
+      + (rows.length > 15 ? '<button type="button" class="cm3-all" data-cm3all>نمایش همهٔ ' + toFa(rows.length) + ' سند</button>' : '')
       + '</div>';
   }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-cm3all]'); if(!b) return; e.preventDefault(); const w = b.closest('.cm3'); if(w) w.classList.add('all'); b.remove(); });
 
   function admReportCard(kind, r){
     const id     = pick(r,AD.id);
