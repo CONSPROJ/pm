@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030071543">
+<meta name="pm-build" content="20261030071720">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28061,6 +28061,25 @@
     #homeView .wk-ft span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} #homeView .wk-ft .bad{color:var(--alert, #c0392b);font-weight:700;} #homeView .wk-ft b{color:var(--ink);}
   }
 
+  /* اسناد دسکتاپ: کاشی‌های دسته به نوار زبانهٔ خلوت (نام، شمار، نشان هشدار) */
+  @media (min-width:1180px){
+    :is(html,#z0) :is(body,#z1) #adminView #admCats.adm-cats{display:flex !important;gap:2px !important;grid-template-columns:none !important;padding:0 !important;margin:0 0 14px !important;background:none !important;border:0 !important;border-bottom:1px solid var(--line) !important;border-radius:0 !important;overflow-x:auto;scrollbar-width:none;height:auto !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat{all:unset;box-sizing:border-box;cursor:pointer;flex:none;display:inline-flex !important;align-items:center;gap:8px;height:44px;padding:0 14px !important;border-bottom:2px solid transparent !important;margin-bottom:-1px;position:relative;
+      background:none !important;box-shadow:none !important;border-radius:0 !important;min-height:0 !important;width:auto !important;transform:none !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat::before, :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat::after{display:none !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat .acat-ic{display:none !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat .acat-tx{display:contents !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat .acat-tx b{font-size:13px !important;font-weight:700 !important;color:var(--muted) !important;white-space:nowrap;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat .acat-tx small{display:none !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat .acat-n{order:2;min-width:22px;height:20px;padding:0 7px;box-sizing:border-box;border-radius:99px;display:inline-grid !important;place-items:center;font-size:11px !important;font-weight:800 !important;background:var(--field) !important;color:var(--muted) !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat:hover .acat-tx b{color:var(--ink) !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat.on{border-bottom-color:var(--vz1, var(--sky)) !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat.on .acat-tx b{color:var(--ink) !important;font-weight:800 !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat.on .acat-n{background:color-mix(in srgb, var(--vz1, var(--sky)) 12%, var(--surface)) !important;color:var(--vz1, var(--sky)) !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat.hot .acat-n{background:color-mix(in srgb, var(--alert, #c0392b) 12%, var(--surface)) !important;color:var(--alert, #c0392b) !important;}
+    :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat :is([data-admquick], .acat-add, .acat-pin, button){display:none !important;}
+  }
+
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -33348,8 +33367,8 @@
             + (n ? '<span class="cm-n">' + toFa(n) + '</span>' : '')
             + '</button>'
           : '')
-      + (o.owner
-          ? '<button type="button" class="cm-act" title="تلنگر به ' + esc(o.owner) + '" '
+      + ((o.owner || id)
+          ? '<button type="button" class="cm-act" title="' + (o.owner ? 'تلنگر به ' + esc(o.owner) : 'تلنگر') + '" '
             + 'data-nudge-to="' + esc(o.owner) + '" data-nudge-kind="' + esc(target) + '" '
             + 'data-nudge-id="' + esc(id) + '" data-nudge-title="' + esc(itemTitle || '') + '">'
             + BELL_ICON_SM + '<span>تلنگر</span>'
@@ -35529,10 +35548,11 @@
   function isAnnounceRow(r){ return /^فعالیت (عمومی|اجرایی) از سوی .* به شما ابلاغ شد/.test(String(pick(r,N.msg) || '')); }
   window.isAnnounceRow = isAnnounceRow;
   function openNudge(to, kind, itemId, title){
-    if(!to){ showDialog('warn','مسئول ندارد','برای این مورد مسئولی ثبت نشده است.'); return; }
+    /* مورد بی‌مسئول: تلنگر همچنان هست؛ گیرنده از فهرست انتخاب می‌شود */
+    const pickTo = !to; to = to || '';
     nudgeCtx = {to, kind, itemId, title, urg:'', dl:''};
     nudgeExtra = new Set();
-    document.getElementById('nudgeTitle').textContent = to;
+    document.getElementById('nudgeTitle').textContent = to || 'گیرنده را انتخاب کنید';
     document.getElementById('nudgeTo').textContent = title || '';
     document.getElementById('nudgeMsg').value = '';
     const av = document.getElementById('nudgeAva'); if(av) av.innerHTML = avatarHtml(to, '', true);
@@ -35555,7 +35575,7 @@
         }).join('') : '';
     }
     const pk = document.getElementById('nudgePicks');
-    if(pk){ pk.hidden = true; pk.innerHTML = nudgePicksHtml(to); }
+    if(pk){ pk.hidden = !pickTo; pk.innerHTML = nudgePicksHtml(to); }
     const mb = document.getElementById('nudgeMoreBtn');
     if(mb) mb.classList.remove('on');
     const pm = document.getElementById('profileModal');
@@ -35615,6 +35635,7 @@
       if(!msg){ showDialog('warn','پیام خالی است','یک موضوع انتخاب کنید یا پیام کوتاهی بنویسید.'); return; }
       msg = (nudgeCtx.urg ? '⟦' + nudgeCtx.urg + '⟧ ' : '') + msg + (nudgeCtx.dl ? ' — مهلت پاسخ: ' + nudgeCtx.dl : '');
       btn.disabled = true;
+      if(!nudgeCtx.to){ const f = Array.from(nudgeExtra)[0]; if(!f){ btn.disabled = false; showDialog('warn','گیرنده انتخاب نشده','از فهرست، دست‌کم یک نفر را انتخاب کنید.'); return; } nudgeCtx.to = f; nudgeExtra.delete(f); }
       const targets = [nudgeCtx.to].concat(Array.from(nudgeExtra).filter(n => nameKey(n) !== nameKey(nudgeCtx.to)));
       let done = 0;
       for(const who of targets){
