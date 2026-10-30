@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030081115">
+<meta name="pm-build" content="20261030081443">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -24397,10 +24397,14 @@
   .cf-gy u{position:absolute;right:calc(100% + 6px);top:-7px;white-space:nowrap;text-decoration:none;font-size:9.5px;color:var(--muted);direction:rtl;}
   .cf-dot{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--surface);border:2px solid var(--sky);box-sizing:border-box;}
   .cf-dot.p{border-color:var(--ok);}
-  .cf-tx2{position:relative;height:16px;margin-top:5px;font-size:9.5px;color:var(--muted);}
+  .cf-tx2{position:relative;height:18px;margin-top:7px;font-size:10.5px;font-weight:600;color:var(--muted);direction:rtl;}
   .cf-tx2 span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;}
-  .cf-tx2 span.now{transform:translateX(-100%);font-weight:700;color:var(--ink);}
-  .cf-tx2 span:first-child:not(.now){transform:translateX(-10%);}
+  .cf-tx2 span::before{content:"";position:absolute;left:50%;top:-6px;width:1px;height:4px;background:var(--line);}
+  .cf-tx2 span.now{transform:translateX(-100%);font-weight:800;color:var(--ink);} .cf-tx2 span.now::before{left:auto;right:0;}
+  .cf-tx2 span.st{transform:none;font-weight:700;color:var(--ink);} .cf-tx2 span.st::before{left:0;}
+  .cf-gx{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed color-mix(in srgb, var(--line) 70%, transparent);}
+  .cf-bh .cf-rng{font-size:10.5px;font-weight:600;color:var(--muted);margin-inline-start:8px;}
+  @media (min-width:1180px){ .cf-plot{height:170px;} }
   /* ===== مرکز دسترسی v3: گروه‌های تاشو، ردیف فشرده ===== */
   .pc-guide{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0 12px;}
   .pc-guide > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:40px;font-size:11px;font-weight:800;color:var(--ink);white-space:nowrap;}
@@ -53470,8 +53474,11 @@
     });
     if(ev.length < 2) return '';
     ev.sort((x, y) => x.t - y.t);
-    const now = Date.now();
-    const t0 = ev[0].t, t1 = Math.max(now, ev[ev.length - 1].t);
+    /* پایان: تاریخ گزارش (اگر انتخاب شده)، وگرنه امروز؛ آغاز: کمی پیش از نخستین رویداد */
+    const DAY = 864e5;
+    let tEnd = Date.now(); try{ const rd = (typeof lastDate !== 'undefined' && lastDate) ? faToDate(lastDate) : null; if(rd) tEnd = rd.getTime(); }catch(e){}
+    const tFirst = ev[0].t, tLast = Math.max(tEnd, ev[ev.length - 1].t);
+    const t0 = tFirst, t1 = tLast;
     let A = 0, P = 0;
     const pts = ev.map(e => { A += e.a; P += e.p; return {t: e.t, A, P, s: e.s, k: e.a ? 'a' : 'p'}; });
     const max = Math.max(1, A) * 1.08;
@@ -53489,22 +53496,29 @@
     const gap = dOf(pA.concat(pP.slice().reverse())) + ' Z';
     const paidArea = dOf(pP) + ' L' + X(t1).toFixed(1) + ' ' + H + ' L' + X(t0).toFixed(1) + ' ' + H + ' Z';
     const pct = v => (v / W * 100).toFixed(2) + '%', pctY = v => (v / H * 100).toFixed(2) + '%';
+    const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+    const jOf = t => { const d = new Date(t); return g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); };
+    const yrs = jOf(t0)[0] !== jOf(t1)[0];
+    const lbl = (t, full) => { const j = jOf(t); return toFa(j[2]) + ' ' + MN[j[1] - 1] + (yrs || full ? ' ' + toFa(String(j[0]).slice(full ? 0 : 2)) : ''); };
     /* خطوط راهنمای مبلغ: صفر، نیمه و بیشینه */
     const grid = [0, A / 2, A].map(v => '<span class="cf-gy" style="top:' + pctY(Y(v)) + '"><u>' + (v ? esc(arToman(v)) : '۰') + '</u></span>').join('');
     /* نقطهٔ هر رویداد (روی خط خودش) */
-    const dots = pts.map(q => '<i class="cf-dot ' + q.k + '" style="left:' + pct(X(q.t)) + ';top:' + pctY(Y(q.k === 'a' ? q.A : q.P)) + '" title="' + esc((q.k === 'a' ? 'صورت وضعیت ' : 'پرداخت ') + admDate(q.s)) + '"></i>').join('');
-    /* تاریخ زیر رویدادها؛ برچسب‌های خیلی نزدیک به هم حذف می‌شوند */
-    const ticks = []; let lastX = -1e9;
-    pts.forEach(q => { const x = X(q.t); if(x - lastX >= 150 && W - PAD - x >= 120){ ticks.push('<span style="left:' + pct(x) + '">' + esc(toFa(String(admDate(q.s) || '').replace(/^[\d۰-۹]{2,4}\//, ''))) + '</span>'); lastX = x; } });
-    ticks.push('<span class="now" style="left:' + pct(X(t1)) + '">امروز</span>');
+    const dots = pts.map(q => '<i class="cf-dot ' + q.k + '" style="left:' + pct(X(q.t)) + ';top:' + pctY(Y(q.k === 'a' ? q.A : q.P)) + '" title="' + esc((q.k === 'a' ? 'صورت وضعیت ' : 'پرداخت ') + lbl(q.t, true) + ' — جمع ' + arToman(q.k === 'a' ? q.A : q.P) + ' تومان') + '"></i>').join('');
+    /* محور تاریخ: برچسب‌های هم‌فاصله با روز و نام ماه («۸ خرداد»)، سال وقتی بازه از یک سال بگذرد؛
+       آغاز و پایان بازه همیشه نوشته می‌شود. */
+    const N = Math.max(2, Math.min((window.innerWidth || 1000) < 640 ? 3 : 5, Math.round((t1 - t0) / DAY / 10)));
+    const ticks = [];
+    for(let i = 0; i <= N; i++){ const t = t0 + (t1 - t0) * i / N; ticks.push('<span class="' + (i === 0 ? 'st' : i === N ? 'now' : '') + '" style="left:' + pct(X(t)) + '">' + (i === N ? (Math.abs(t1 - Date.now()) < DAY ? 'امروز · ' : '') + lbl(t) : lbl(t)) + '</span>'); }
+    const gridX = Array.from({length: N - 1}, (_, i) => '<span class="cf-gx" style="left:' + pct(X(t0 + (t1 - t0) * (i + 1) / N)) + '"></span>').join('');
+    const rangeTx = 'از ' + lbl(tFirst, true) + ' تا ' + lbl(t1, true);
     const due = A - P;
-    return '<div class="cf-box"><div class="cf-bh"><b>روند صورت‌وضعیت و پرداخت</b></div>'
+    return '<div class="cf-box"><div class="cf-bh"><b>روند صورت‌وضعیت و پرداخت</b><small class="cf-rng">' + esc(rangeTx) + '</small></div>'
       + '<div class="cf-leg2">'
       +   '<span class="b"><i></i>صورت‌وضعیت‌شده<b>' + esc(arToman(A)) + '</b></span>'
       +   '<span class="p"><i></i>پرداخت‌شده<b>' + esc(arToman(P)) + '</b></span>'
       +   (due > 0 ? '<span class="g"><i></i>مانده<b>' + esc(arToman(due)) + '</b></span>' : '')
       + '</div>'
-      + '<div class="cf-tr2"><div class="cf-plot">' + grid
+      + '<div class="cf-tr2"><div class="cf-plot">' + grid + gridX
       +   '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
       +     '<path class="pa" d="' + paidArea + '"/>'
       +     (due > 0 ? '<path class="ga" d="' + gap + '"/>' : '')
