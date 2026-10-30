@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030035827">
+<meta name="pm-build" content="20261030071233">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28013,6 +28013,19 @@
     :is(html,#z0) :is(body,#z1) #tabBar .sb-grp > .sb-gl{display:none;flex-direction:column;}
     :is(html,#z0) :is(body,#z1) #tabBar .sb-grp.open > .sb-gl, :is(html,#z0) :is(body,#z1) #tabBar.sb-qing .sb-grp > .sb-gl{display:flex;}
   }
+
+  /* متره: الگوی تخصص‌ها و گروه رشته‌ها */
+  .mq-dg{font-size:10.5px;font-weight:800;color:var(--muted);padding:10px 10px 4px;letter-spacing:.2px;}
+  .mq-catb{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:6px;margin-top:8px;padding:9px 10px;border-radius:10px;border:1px dashed color-mix(in srgb, var(--vz1, var(--sky)) 45%, var(--line));font-size:12.5px;font-weight:700;color:var(--vz1, var(--sky));}
+  .mq-catb svg{width:15px;height:15px;} .mq-catb:hover, .mq-catb.on{background:color-mix(in srgb, var(--vz1, var(--sky)) 7%, var(--surface));}
+  .mq-catg{display:flex;flex-direction:column;gap:8px;}
+  .mq-catgh{display:flex;align-items:center;gap:10px;padding-top:6px;} .mq-catgh b{font-size:13px;font-weight:800;}
+  .mq-catl{display:grid;grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));gap:8px;}
+  .mq-catl label{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;}
+  .mq-catl label:has(input:checked){border-color:var(--vz1, var(--sky));background:color-mix(in srgb, var(--vz1, var(--sky)) 6%, var(--surface));}
+  .mq-catl label.has{opacity:.6;cursor:default;}
+  .mq-catl label > span{display:flex;flex-direction:column;gap:3px;min-width:0;} .mq-catl b{font-size:13px;font-weight:800;} .mq-catl small{font-size:11px;color:var(--muted);line-height:1.6;}
+  .mq-catl input{margin-top:2px;}
 
 </style>
 <script>
@@ -76790,11 +76803,53 @@
   const MQ_TW = {wall: 'ضخامت', slab: 'عرض', floor: 'عرض', col: 'عرض', beam: 'عرض', oth: 'عرض'};
   const MQ_TH = {wall: 'ارتفاع', slab: 'ضخامت', floor: 'ضخامت', col: 'ارتفاع', beam: 'ارتفاع', oth: 'ارتفاع'};
   const MQ_MS = [['na', 'سطح خالص'], ['a', 'سطح ناخالص'], ['v', 'حجم'], ['sf', 'سطح جانبی'], ['len', 'طول'], ['n', 'تعداد']];
-  const QT_U = ['m²', 'm', 'm³', 'عدد', 'kg', 'ton', 'کیسه', 'L', 'شاخه', 'دستگاه', 'مجموعه', 'سرویس'];
+  const QT_U = ['m²', 'm', 'm³', 'عدد', 'kg', 'ton', 'کیسه', 'L', 'شاخه', 'پره', 'دستگاه', 'مجموعه', 'سرویس'];
   const QT_UMAP = {'متر مربع': 'm²', 'مترمربع': 'm²', 'م²': 'm²', 'متر طول': 'm', 'متر': 'm', 'متر مکعب': 'm³', 'مترمکعب': 'm³', 'کیلوگرم': 'kg', 'تن': 'ton', 'لیتر': 'L'};
   const qtU = u => QT_UMAP[String(u || '').trim()] || String(u || '').trim();
   const mqDimN = u => { u = qtU(u); return u === 'm' ? 1 : u === 'm²' ? 2 : u === 'm³' ? 3 : 0; };
   const mqIsW = u => ['kg', 'ton'].indexOf(qtU(u)) !== -1;
+  /* الگوی تخصص‌ها به تفکیک رشته، با ردیف‌های رایج هر تخصص (شرح و واحد)؛ بها از قرارداد یا دستی */
+  const MQ_CAT = [
+    ['ابنیه — سفت‌کاری', [
+      ['تخریب و برچیدن', [['تخریب بنایی آجری و بلوکی', 'm³'], ['تخریب بتن غیرمسلح', 'm³'], ['تخریب بتن مسلح', 'm³'], ['برچیدن کاشی و سرامیک', 'm²'], ['برچیدن اندود و گچ', 'm²'], ['بارگیری و حمل نخاله', 'm³']]],
+      ['عملیات خاکی', [['خاک‌برداری با ماشین', 'm³'], ['گودبرداری پی و کانال', 'm³'], ['خاکریزی و کوبیدن لایه‌ای', 'm³'], ['بارگیری و حمل خاک مازاد', 'm³'], ['تسطیح و رگلاژ بستر', 'm²'], ['نیلینگ و انکراژ', 'm']]],
+      ['قالب‌بندی', [['قالب فونداسیون', 'm²'], ['قالب دیوار بتنی و برشی', 'm²'], ['قالب ستون', 'm²'], ['قالب تیر', 'm²'], ['قالب دال و سقف', 'm²'], ['قالب پله', 'm²']]],
+      ['بتن‌ریزی', [['بتن مگر', 'm³'], ['بتن فونداسیون', 'm³'], ['بتن ستون', 'm³'], ['بتن دیوار برشی', 'm³'], ['بتن تیر و دال', 'm³'], ['بتن پله', 'm³'], ['پمپاژ بتن', 'm³']]],
+      ['آرماتوربندی', [['میلگرد ساده', 'kg'], ['میلگرد آجدار تا قطر ۱۸', 'kg'], ['میلگرد آجدار قطر ۲۰ و بیشتر', 'kg'], ['شبکهٔ جوشی (مش)', 'kg'], ['اتصال مکانیکی (کوپلر)', 'عدد'], ['کاشت میلگرد', 'عدد']]],
+      ['اسکلت فلزی', [['ستون و تیر با پروفیل و ورق', 'kg'], ['صفحه ستون و بولت', 'kg'], ['بادبند', 'kg'], ['تیرچه و تیر فرعی', 'kg'], ['سقف کامپوزیت و گل‌میخ', 'kg'], ['رنگ ضدزنگ اسکلت', 'm²']]],
+      ['آهنگری (کارهای فولادی سبک)', [['نعل درگاه', 'kg'], ['نرده و حفاظ', 'kg'], ['چهارچوب فلزی', 'kg'], ['درب فلزی', 'm²'], ['پله فلزی', 'kg'], ['زیرسازی فلزی', 'kg']]],
+      ['سقف تیرچه‌بلوک و کرومیت', [['تیرچه', 'm'], ['بلوک سقفی', 'عدد'], ['میلگرد حرارتی و ممان منفی', 'kg'], ['بتن پوششی سقف', 'm³']]],
+      ['بنایی با آجر', [['آجرچینی ۱۱ سانتی', 'm²'], ['آجرچینی ۲۲ سانتی و بیشتر', 'm³'], ['آجرچینی دیوار حائل', 'm³'], ['آجرنما', 'm²']]],
+      ['بلوک‌چینی', [['بلوک سفالی ۷ سانتی', 'm²'], ['بلوک سفالی ۱۰ سانتی', 'm²'], ['بلوک سفالی ۱۵ سانتی', 'm²'], ['بلوک سفالی ۲۰ سانتی', 'm²'], ['بلوک سیمانی', 'm²'], ['بلوک سبک (AAC)', 'm²'], ['کلاف و وال‌پست', 'm']]],
+      ['عایق‌کاری', [['ایزوگام بام', 'm²'], ['قیرگونی', 'm²'], ['عایق رطوبتی سرویس‌ها', 'm²'], ['عایق حرارتی پشم سنگ', 'm²'], ['عایق پلی‌استایرن', 'm²'], ['واتر استاپ', 'm']]],
+      ['کرسی‌چینی و کف‌سازی', [['پوکه‌ریزی', 'm³'], ['بتن سبک (فوم بتن)', 'm³'], ['ملات زیرکار کف', 'm²'], ['شیب‌بندی بام', 'm²']]]]],
+    ['ابنیه — نازک‌کاری', [
+      ['گچ‌کاری', [['گچ و خاک', 'm²'], ['سفیدکاری', 'm²'], ['گچ‌کاری ماشینی', 'm²'], ['کنج و تور', 'm'], ['ابزار و قرنیز گچی', 'm']]],
+      ['اندود و سیمان‌کاری', [['اندود ماسه سیمان دیوار', 'm²'], ['اندود سقف', 'm²'], ['شمشه‌گیری', 'm²'], ['بندکشی', 'm²']]],
+      ['کاشی و سرامیک', [['کاشی دیوار', 'm²'], ['سرامیک کف', 'm²'], ['قرنیز سرامیکی', 'm'], ['سرامیک پله', 'm'], ['بندکشی اپوکسی', 'm²']]],
+      ['سنگ‌کاری', [['سنگ کف', 'm²'], ['سنگ پله (کف و پیشانی)', 'm'], ['سنگ قرنیز', 'm'], ['سنگ آستانه و پنجره', 'm'], ['سنگ دیوار با اسکوپ', 'm²']]],
+      ['نقاشی', [['بتونه و زیرسازی', 'm²'], ['رنگ پلاستیک', 'm²'], ['رنگ اکریلیک', 'm²'], ['رنگ روغنی سطوح فلزی', 'm²'], ['ضدزنگ', 'm²']]],
+      ['سقف کاذب و دیوار خشک', [['سقف کاذب کناف', 'm²'], ['دیوار کناف', 'm²'], ['سقف کاذب تایل', 'm²'], ['باکس و ابزار کناف', 'm']]],
+      ['کفپوش', [['پارکت لمینت', 'm²'], ['کفپوش وینیل', 'm²'], ['کف اپوکسی', 'm²'], ['موزاییک', 'm²']]],
+      ['درب و پنجره', [['چهارچوب درب', 'عدد'], ['درب داخلی', 'عدد'], ['درب ورودی ضدسرقت', 'عدد'], ['پنجره UPVC', 'm²'], ['پنجره آلومینیومی', 'm²'], ['شیشه دوجداره', 'm²'], ['نرده شیشه‌ای', 'm']]],
+      ['نما', [['نمای سنگ خشک', 'm²'], ['نمای کامپوزیت', 'm²'], ['نمای آجری', 'm²'], ['کرتین‌وال', 'm²'], ['زیرسازی فلزی نما', 'kg']]],
+      ['کابینت و کمد', [['کابینت زمینی', 'm'], ['کابینت دیواری', 'm'], ['صفحه کابینت', 'm'], ['کمد دیواری', 'm²']]]]],
+    ['تأسیسات مکانیکی', [
+      ['لوله‌کشی آب', [['لوله پنج‌لایه', 'm'], ['لوله PPR', 'm'], ['لوله گالوانیزه', 'm'], ['اتصالات', 'عدد'], ['شیر قطع و وصل', 'عدد']]],
+      ['فاضلاب و آب باران', [['لوله پلی‌اتیلن / پوش‌فیت', 'm'], ['کفشور', 'عدد'], ['سیفون', 'عدد'], ['لوله ونت', 'm']]],
+      ['گرمایش و سرمایش', [['رادیاتور', 'پره'], ['فن‌کویل', 'دستگاه'], ['پکیج و دیگ', 'دستگاه'], ['چیلر', 'دستگاه'], ['لوله‌کشی گرمایش', 'm'], ['عایق لوله', 'm']]],
+      ['کانال‌کشی و تهویه', [['کانال گالوانیزه', 'm²'], ['دریچه', 'عدد'], ['هواکش', 'دستگاه'], ['عایق کانال', 'm²']]],
+      ['آتش‌نشانی', [['لوله آتش‌نشانی', 'm'], ['اسپرینکلر', 'عدد'], ['جعبه آتش‌نشانی', 'عدد'], ['پمپ آتش‌نشانی', 'دستگاه']]],
+      ['گازرسانی', [['لوله گاز', 'm'], ['شیر گاز', 'عدد'], ['رگلاتور', 'عدد']]],
+      ['لوازم بهداشتی', [['توالت فرنگی', 'عدد'], ['روشویی', 'عدد'], ['دوش و وان', 'عدد'], ['شیرآلات', 'عدد']]]]],
+    ['تأسیسات برقی', [
+      ['لوله‌گذاری و سینی کابل', [['لوله فلکسی', 'm'], ['لوله فولادی', 'm'], ['سینی کابل', 'm'], ['جعبه تقسیم', 'عدد']]],
+      ['سیم‌کشی و کابل‌کشی', [['سیم ۱٫۵', 'm'], ['سیم ۲٫۵', 'm'], ['سیم ۴ و ۶', 'm'], ['کابل مسی', 'm']]],
+      ['تابلو و روشنایی', [['تابلو برق', 'دستگاه'], ['چراغ', 'عدد'], ['کلید و پریز', 'عدد'], ['سیستم ارت', 'سرویس']]],
+      ['جریان ضعیف', [['آیفون تصویری', 'دستگاه'], ['دوربین مداربسته', 'عدد'], ['اعلام حریق', 'عدد'], ['شبکهٔ داده', 'm']]],
+      ['آسانسور', [['نصب آسانسور', 'دستگاه'], ['ریل و راهنما', 'm']]]]],
+    ['محوطه', [
+      ['محوطه‌سازی', [['جدول‌گذاری', 'm'], ['سنگفرش', 'm²'], ['آسفالت', 'm²'], ['فضای سبز', 'm²'], ['دیوار محوطه', 'm²']]]]]];
   const MQ_SKS = ['بنایی', 'گچ‌کاری', 'کاشی و سرامیک', 'سنگ‌کاری', 'نقاشی', 'آهنگری', 'درب و پنجره', 'سقف کاذب', 'عایق‌کاری', 'بتن و قالب‌بندی', 'آرماتوربندی', 'نما', 'تأسیسات مکانیکی', 'تأسیسات برقی'];
   /* ضریب مصرف پیش‌فرض از روی نام ردیف یا تخصص؛ ضریب ثبت‌شده در فهرست بها جای آن را می‌گیرد */
   const MQ_DEF = [
@@ -76986,14 +77041,33 @@
   /* ورودی عدد جدولی */
   const mqIn = (attr, v, ph, ro, cls) => '<input type="text" inputmode="decimal" class="mq-ni' + (cls ? ' ' + cls : '') + '" ' + attr + ' value="' + esc(mqHas(v) ? toFa(v) : '') + '" placeholder="' + esc(ph || '') + '" autocomplete="off"' + (ro ? ' readonly tabindex="-1"' : '') + '>';
   const mqTx = (attr, v, ph, ro, cls) => '<input type="text" class="' + (cls || '') + '" ' + attr + ' value="' + esc(v || '') + '" placeholder="' + esc(ph || '') + '" autocomplete="off"' + (ro ? ' readonly tabindex="-1"' : '') + '>';
-  const mqDiscSel = (attr, v, lab) => { const D = mqDiscs(); return '<label class="mq-f mq-dsel"><span>' + (lab || 'تخصص') + '</span><select ' + attr + ' data-nons="1"><option value="">' + (D.length ? 'انتخاب تخصص' : 'هنوز تخصصی در فهرست بها نیست') + '</option>' + D.map(d => mqOpt(d.id, d.n || 'بی‌نام', v === d.id)).join('') + '</select></label>'; };
+  /* تخصص‌ها به تفکیک رشته (ابنیه، تأسیسات مکانیکی، برقی، محوطه، …) */
+  const mqDiscGroups = () => { const G = new Map(), order = MQ_CAT.map(c => c[0]); mqDiscs().forEach(d => { const g = d.g || 'سایر تخصص‌ها'; if(!G.has(g)) G.set(g, []); G.get(g).push(d); });
+    return Array.from(G.entries()).sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99)); };
+  const mqDiscSel = (attr, v, lab) => { const D = mqDiscs(); return '<label class="mq-f mq-dsel"><span>' + (lab || 'تخصص') + '</span><select ' + attr + ' data-nons="1"><option value="">' + (D.length ? 'انتخاب تخصص' : 'هنوز تخصصی در فهرست بها نیست') + '</option>'
+    + mqDiscGroups().map(([g, L]) => '<optgroup label="' + esc(g) + '">' + L.map(d => mqOpt(d.id, d.n || 'بی‌نام', v === d.id)).join('') + '</optgroup>').join('') + '</select></label>'; };
+  /* پنل الگوی تخصص‌ها: تیک بزنید، تخصص با ردیف‌های رایجش ساخته می‌شود */
+  function mqCatHtml(){
+    const have = new Set(mqDiscs().map(d => d.n));
+    return '<div class="mq-card mq-cat"><div class="mq-ch"><b>الگوی تخصص‌ها</b><small>تخصص‌های لازم را تیک بزنید؛ هر کدام با ردیف‌های رایج خودش (شرح و واحد) ساخته می‌شود. بها را بعد بنویسید یا از جدول بهای قرارداد بیاورید. ردیف‌ها قابل اصلاح و افزودن‌اند.</small><button type="button" class="mq-lk" data-mqcatx="1">بستن</button></div>'
+      + MQ_CAT.map(([g, L]) => '<div class="mq-catg"><div class="mq-catgh"><b>' + esc(g) + '</b><button type="button" class="mq-lk" data-mqcatall="' + esc(g) + '">همه</button></div><div class="mq-catl">'
+        + L.map(([n, it]) => '<label class="' + (have.has(n) ? 'has' : '') + '"><input type="checkbox" data-mqcat="' + esc(g + '¦' + n) + '"' + (have.has(n) ? ' disabled checked' : '') + '><span><b>' + esc(n) + '</b><small>' + esc(it.slice(0, 3).map(x => x[0]).join('، ')) + (it.length > 3 ? ' و ' + toFa(it.length - 3) + ' ردیف دیگر' : '') + '</small></span></label>').join('') + '</div></div>').join('')
+      + '<div class="mq-ff"><span class="mq-live" data-mqcatn="1"></span><button type="button" class="mx-btn pri" data-mqcatgo="1">افزودن تخصص‌های انتخاب‌شده</button></div></div>';
+  }
+  function mqCatAdd(keys){
+    let k0 = 0, first = ''; const ids = [];
+    MQ_CAT.forEach(([g, L]) => L.forEach(([n, it]) => { k0++; if(keys.indexOf(g + '¦' + n) === -1 || mqDiscs().some(d => d.n === n)) return;
+      const id = mqNid('d'), pre = String(k0).padStart(2, '0'); mq.d.set(id, {n, g, it: it.map(([t, u], i) => ({c: pre + String(i + 1).padStart(2, '0'), n: t, u, p: 0}))}); ids.push(id); if(!first) first = id; }));
+    if(!ids.length) return;
+    mq.cat = false; mq.ds = first; qtRender(); mqSaveMany(MQ_D, ids).then(() => { try{ shrToast(toFa(ids.length) + ' تخصص اضافه شد'); }catch(e){} }).catch(err => showDialog('err', 'ثبت نشد', friendlyErr(err)));
+  }
 
   /* ====== ۱) متره و برآورد ====== */
   function mqEstHtml(){
     const ed = qtCanE(), D = mqDiscs(), L = mq.loc;
     if(mq.dsc && !mq.d.has(mq.dsc)) mq.dsc = '';
     let h = '<div class="mq-top">' + mqDiscSel('data-mqdsc="1"', mq.dsc) + mqLocBar() + '</div>';
-    if(!D.length) return h + mqEmpty('اول تخصص‌ها و ردیف‌های فهرست بها را تعریف کنید', 'هر تخصص (بنایی، گچ‌کاری، آهنگری…) ردیف‌های خودش را با کد، واحد و بهای واحد دارد. <button type="button" class="mq-lk" data-mqtab="list">رفتن به فهرست بها</button>');
+    if(!D.length) return h + mqEmpty('اول تخصص‌ها و ردیف‌های فهرست بها را تعریف کنید', 'تخصص‌ها به تفکیک رشته (ابنیه، تأسیسات مکانیکی، برقی، محوطه) با ردیف‌های رایجشان آماده‌اند. <button type="button" class="mq-lk" data-mqcatopen="1">انتخاب از الگوی تخصص‌ها</button>');
     /* بی‌تخصص: خلاصهٔ همهٔ تخصص‌ها در محل انتخابی */
     if(!mq.dsc){
       let tot = 0; const C = D.map(d => { const R = mqRecs(d.id, L); let a = 0; R.forEach(r => { a += mqRecQ(r) * mqPrice(d.id, r.i, ''); }); tot += a;
@@ -77041,7 +77115,7 @@
       + (ln.length ? '' : '<div class="mq-empty sm"><b>سطری ندارد</b><small>' + (W ? 'پروفیل‌ها را با تعداد و طول وارد کنید.' : 'سطر متره (تعداد × ابعاد) یا دیوارهای داده پایه اضافه کنید.') + '</small></div>') + '</div>'
       + (mq.pk && mq.pk.r === r.id ? mqPickHtml(r) : '')
       + (mq.cp && mq.cp.k === 'e' && mq.cp.id === r.id ? mqCopyHtml() : '')
-      + (ed ? '<div class="mq-add">' + (W ? '<button type="button" data-mqladd="s">' + MQ_I.st + 'پروفیل</button>'
+      + (ed ? '<div class="mq-add">' + (W ? '<button type="button" data-mqladd="s">' + MQ_I.st + 'پروفیل</button><button type="button" data-mqladd="sd">' + MQ_I.plus + 'سطر کسر</button>'
           : '<button type="button" data-mqladd="m">' + MQ_I.plus + 'سطر متره</button><button type="button" data-mqladd="b">' + MQ_I.wall + 'از داده پایه (دیوار، سقف…)</button><button type="button" data-mqladd="d">' + MQ_I.plus + 'سطر کسر</button>') + '</div>' : '')
       + '</section>';
     return h;
@@ -77068,10 +77142,10 @@
       const n0 = mqDimN(u);
       h += '<span class="mq-c-t">' + mqTx('data-mqlf="n"', x.n, x.sg ? 'شرح کسر (مثلاً درب D1)' : 'شرح سطر', ro) + (n0 ? '<small class="mq-bw"><em>برای ' + esc(u) + ' ' + toFa(n0) + ' بُعد لازم است</em></small>' : '') + '</span>'
         + '<span class="mq-c-n" data-l="تعداد">' + mqIn('data-mqlf="q"', mqHas(x.q) ? x.q : 1, '۱', ro) + '</span>'
-        + (n0 ? ['l', 'w', 'h'].map(f => '<span class="mq-c-n" data-l="' + {l: 'طول', w: 'عرض', h: 'ارتفاع'}[f] + '">' + mqIn('data-mqlf="' + f + '"', x[f], '', ro) + '</span>').join('') : '<span class="mq-c-n"><i>·</i></span><span class="mq-c-n"><i>·</i></span><span class="mq-c-n"><i>·</i></span>');
+        + ['l', 'w', 'h'].map(f => '<span class="mq-c-n" data-l="' + {l: 'طول', w: 'عرض', h: 'ارتفاع'}[f] + '">' + mqIn('data-mqlf="' + f + '"', x[f], {l: 'طول', w: 'عرض', h: 'ارتفاع'}[f], ro) + '</span>').join('');
     }
     h += '<span class="mq-c-n b mq-q" data-l="مقدار">' + (q ? qtFmt(q) : '<i>—</i>') + '</span>'
-      + '<span class="mq-c-a">' + (ro ? '' : (x.k === 'm' ? '<button type="button" class="' + (x.sg ? 'on' : '') + '" data-mqlsg="1" title="کسر (منفی)">−</button>' : '') + '<button type="button" class="dng" data-mqlrm="1" title="حذف سطر">' + MQ_I.x + '</button>') + '</span></div>';
+      + '<span class="mq-c-a">' + (ro ? '' : (x.k !== 'b' ? '<button type="button" class="' + (x.sg ? 'on' : '') + '" data-mqlsg="1" title="کسر (منفی)">−</button>' : '') + '<button type="button" class="dng" data-mqlrm="1" title="حذف سطر">' + MQ_I.x + '</button>') + '</span></div>';
     return h;
   }
   /* انتخاب از داده پایهٔ همان محل (و زیرمحل‌هایش) */
@@ -77191,11 +77265,12 @@
     if(mq.ds && !mq.d.has(mq.ds)) mq.ds = '';
     if(!mq.ds && D.length) mq.ds = D[0].id;
     let h = '<div class="mq-lst"><aside class="mq-dl"><div class="mq-dlh"><b>تخصص‌ها</b><span class="mq-sv"></span></div>'
-      + D.map(d => '<button type="button" class="' + (mq.ds === d.id ? 'on' : '') + '" data-mqds="' + esc(d.id) + '"><b>' + esc(d.n || 'بی‌نام') + '</b><small>' + toFa((d.it || []).length) + ' ردیف</small></button>').join('')
-      + (ed ? '<div class="mq-dnew"><input type="text" id="mqDn" list="mqSkL" placeholder="تخصص تازه…" autocomplete="off"><button type="button" class="mx-btn pri sm" data-mqdadd="1">' + MQ_I.plus + '</button></div>'
-        + '<div class="mq-sks">' + MQ_SKS.filter(k => !D.some(d => d.n === k)).slice(0, 8).map(k => '<button type="button" data-mqdq="' + esc(k) + '">+ ' + esc(k) + '</button>').join('') + '</div>' : '')
+      + mqDiscGroups().map(([g, L]) => '<div class="mq-dg">' + esc(g) + '</div>' + L.map(d => '<button type="button" class="' + (mq.ds === d.id && !mq.cat ? 'on' : '') + '" data-mqds="' + esc(d.id) + '"><b>' + esc(d.n || 'بی‌نام') + '</b><small>' + toFa((d.it || []).length) + ' ردیف</small></button>').join('')).join('')
+      + (ed ? '<button type="button" class="mq-catb' + (mq.cat ? ' on' : '') + '" data-mqcatopen="1">' + MQ_I.plus + '<span>از الگوی تخصص‌ها</span></button>'
+        + '<div class="mq-dnew"><input type="text" id="mqDn" placeholder="یا تخصص دلخواه…" autocomplete="off"><button type="button" class="mx-btn pri sm" data-mqdadd="1">' + MQ_I.plus + '</button></div>' : '')
       + '<datalist id="mqSkL">' + MQ_SKS.map(k => '<option value="' + esc(k) + '">').join('') + '</datalist></aside><div class="mq-dm">';
-    if(!mq.ds) return h + mqEmpty('هنوز تخصصی تعریف نشده', ed ? 'از ستون کناری اولین تخصص (مثلاً بنایی) را اضافه کنید.' : '') + '</div></div>';
+    if(mq.cat && ed) return h + mqCatHtml() + '</div></div>';
+    if(!mq.ds) return h + mqEmpty('هنوز تخصصی تعریف نشده', ed ? '<button type="button" class="mx-btn pri" data-mqcatopen="1">انتخاب از الگوی تخصص‌های حرفه‌ای</button>' : '') + '</div></div>';
     const d = mq.d.get(mq.ds), its = d.it || [];
     const used = new Set(Array.from(mq.e.values()).filter(r => r.d === mq.ds).map(r => String(r.i)));
     h += '<div class="mq-dmh">' + mqTx('data-mqdn="1"', d.n, 'نام تخصص', !ed, 'mq-dname')
@@ -77377,7 +77452,7 @@
     /* متره */
     const la = t.closest('[data-mqladd]'); if(la && ed){ const o = mqRecOf(la); if(!o || !o.r) return; const k = la.dataset.mqladd; o.r.ln = o.r.ln || [];
       if(k === 'b'){ mq.pk = mq.pk && mq.pk.r === o.id ? null : {r: o.id, t: '', m: 'na', x: 1, sel: new Set()}; qtRender(); return; }
-      o.r.ln.push(k === 's' ? {k: 's', q: 1} : k === 'd' ? {k: 'm', q: 1, sg: 1} : {k: 'm', q: 1}); mqSoon(MQ_E, o.id); qtRender();
+      o.r.ln.push(k === 's' ? {k: 's', q: 1} : k === 'sd' ? {k: 's', q: 1, sg: 1} : k === 'd' ? {k: 'm', q: 1, sg: 1} : {k: 'm', q: 1}); mqSoon(MQ_E, o.id); qtRender();
       const f = document.querySelector('#qtArea [data-mqrec="' + o.id + '"] [data-mql="' + (o.r.ln.length - 1) + '"] ' + (k === 's' ? '[data-mqlf="p"]' : '[data-mqlf="n"]')); if(f) f.focus({preventScroll: true}); return; }
     const ls = t.closest('[data-mqlsg]'); if(ls){ const o = mqLineOf(ls); if(!o) return; if(o.x.sg) delete o.x.sg; else o.x.sg = 1; mqSoon(MQ_E, o.id); qtRender(); return; }
     const lr = t.closest('[data-mqlrm]'); if(lr){ const o = mqLineOf(lr); if(!o) return; o.r.ln.splice(o.i, 1); mqSoon(MQ_E, o.id); qtRender(); return; }
@@ -77413,7 +77488,12 @@
     const otr = t.closest('[data-mqotrm]'); if(otr){ const c = otr.closest('[data-mqot]').dataset.mqot; let n = 0; mq.b.forEach(x => (x.op || []).forEach(o => { if(o.k === c) n++; }));
       if(n && !(await askConfirm('حذف تیپ ' + toFa(c), toFa(n) + ' بازشو از این تیپ استفاده کرده‌اند و ابعادشان صفر می‌شود. حذف شود؟', 'حذف'))) return; mq.o.delete(c); mqSoon(MQ_O, c); qtRender(); return; }
     /* فهرست بها */
-    const dsb = t.closest('[data-mqds]'); if(dsb){ mq.ds = dsb.dataset.mqds; mq.mte = -1; qtRender(); return; }
+    if(t.closest('[data-mqcatopen]')){ mq.tab = 'list'; mq.cat = true; qtRender(); return; }
+    if(t.closest('[data-mqcatx]')){ mq.cat = false; qtRender(); return; }
+    const ca = t.closest('[data-mqcatall]'); if(ca){ const g = ca.dataset.mqcatall; document.querySelectorAll('#qtArea [data-mqcat]:not(:disabled)').forEach(c => { if(c.dataset.mqcat.indexOf(g + '¦') === 0) c.checked = true; }); mqCatCount(); return; }
+    if(t.matches('[data-mqcat]')){ mqCatCount(); return; }
+    if(t.closest('[data-mqcatgo]')){ const K = Array.from(document.querySelectorAll('#qtArea [data-mqcat]:checked:not(:disabled)')).map(c => c.dataset.mqcat); if(!K.length){ showDialog('warn', 'تخصصی انتخاب نشده', 'تخصص‌های لازم را تیک بزنید.'); return; } mqCatAdd(K); return; }
+    const dsb = t.closest('[data-mqds]'); if(dsb){ mq.ds = dsb.dataset.mqds; mq.mte = -1; mq.cat = false; qtRender(); return; }
     const dq = t.closest('[data-mqdadd], [data-mqdq]'); if(dq && ed){ const i = document.getElementById('mqDn'), n = (dq.dataset.mqdq || (i && i.value) || '').trim(); if(!n){ if(i) i.focus(); return; }
       if(mqDiscs().some(d => d.n === n)){ showDialog('warn', 'تکراری', 'این تخصص هست.'); return; } const id = mqNid('d'); mq.d.set(id, {n, it: []}); mq.ds = id; mqSoon(MQ_D, id); qtRender();
       const f = document.querySelector('#qtArea [data-mqin="n"]'); if(f) f.focus(); return; }
@@ -77442,6 +77522,7 @@
     if(t.closest('[data-mqmatx]')){ mqXls('mat'); return; }
   });
   document.addEventListener('toggle', e => { if(e.target && e.target.matches && e.target.matches('#qtArea details.mq-ot')) mq.ot = e.target.open; }, true);
+  function mqCatCount(){ const n = document.querySelectorAll('#qtArea [data-mqcat]:checked:not(:disabled)').length, el = document.querySelector('#qtArea [data-mqcatn]'); if(el) el.textContent = n ? toFa(n) + ' تخصص انتخاب شده' : ''; }
   function mqReadDraft(){ const row = document.querySelector('#qtArea [data-mqnew]'); const d = Object.assign({}, mq.dr); if(row) row.querySelectorAll('[data-mqnf]').forEach(i => { const k = i.dataset.mqnf, v = String(i.value || '').trim(); d[k] = ['q', 'l', 'w', 'h'].indexOf(k) !== -1 ? mqNumV(v) : v; }); mq.dr = d; return d; }
   function mqReadItNew(){ const row = document.querySelector('#qtArea [data-mqitnew]'), o = {}; if(row) row.querySelectorAll('[data-mqin]').forEach(i => { o[i.dataset.mqin] = String(i.value || '').trim(); }); return o; }
   function mqAddItems(A){
