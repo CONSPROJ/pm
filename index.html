@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030024120">
+<meta name="pm-build" content="20261030024227">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27305,6 +27305,14 @@
     :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 > .fx-side > :not(.prf-foot):not(.wh-foot){background:color-mix(in srgb, var(--field) 55%, var(--surface)) !important;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
     :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 > .fx-main > :is(.prf-g, .wh-g){row-gap:14px !important;}
     :is(html,#z0) :is(body,#z1) .af.af-2c > .af-side{background:color-mix(in srgb, var(--field) 55%, var(--surface)) !important;}
+  }
+  @media (min-width:1180px){
+    :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2.fx-one{grid-template-columns:minmax(0,1fr) !important;max-width:900px;}
+    :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 > .fx-foot{grid-column:1 / -1;display:flex !important;flex-direction:row !important;justify-content:flex-start !important;gap:10px !important;
+      margin:18px 0 0 !important;padding:14px 0 0 !important;border-top:1px solid var(--line) !important;background:none !important;}
+    :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 > .fx-foot > *{flex:0 0 auto !important;width:auto !important;min-width:110px;}
+    :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 > .fx-foot > :is(.send, .go, .rf-go){min-width:200px;order:-1;}
+    :is(html,#z0) :is(body,#z1) :is(.prf:not(.hsf), .wh-form).fx2 .fx-main label.te-f:has(textarea) textarea{min-height:80px !important;}
   }
   #tabBar .sb-foot, #navBrand .nb-sw{display:none;}
   /* ستون کناری دسکتاپ از نو: زمینهٔ ملایم، کارت پروژه، دکمهٔ اصلی، منو با نشانگر، پای ثابت */
@@ -91980,10 +91988,13 @@
     function wrap(f){
       if(f.__fx || f.classList.contains('hsf')) return;
       const kids = Array.from(f.children); if(!kids.some(isSide)) return;
-      f.__fx = 1; f.classList.add('fx2');
+      /* ستون کناری فقط وقتی پیوست دارد؛ فرم کوچک بی پیوست یک ستون می‌ماند. دکمه‌ها همیشه نوار پایینِ تمام‌عرض */
+      const hasUp = !!f.querySelector('.up-field');
+      f.__fx = 1; f.classList.add('fx2'); if(!hasUp) f.classList.add('fx-one');
       const m = document.createElement('div'); m.className = 'fx-main'; const sd = document.createElement('div'); sd.className = 'fx-side';
-      kids.forEach(k => { if(k.matches('.wh-fh, .prf-edh')) return; (isSide(k) ? sd : m).appendChild(k); });
-      f.appendChild(m); f.appendChild(sd);
+      let foot = null;
+      kids.forEach(k => { if(k.matches('.wh-fh, .prf-edh')) return; if(k.matches('.prf-foot, .wh-foot')){ foot = k; return; } (hasUp && isSide(k) ? sd : m).appendChild(k); });
+      f.appendChild(m); if(hasUp) f.appendChild(sd); if(foot){ foot.classList.add('fx-foot'); f.appendChild(foot); }
     }
     const scan = () => { if(!mq.matches) return; document.querySelectorAll('.prf:not(.hsf), .wh-form').forEach(wrap); };
     let t = 0; new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; scan(); }); }).observe(document.documentElement, {childList: true, subtree: true});
