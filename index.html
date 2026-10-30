@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030134344">
+<meta name="pm-build" content="20261030134926">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19909,6 +19909,7 @@
   .cm3-h > span.bad{background:color-mix(in srgb, #c0392b 9%, transparent);color:#b03a2e;font-weight:700;}
   .cm3-lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:10.5px;color:var(--muted);} .cm3-lg span{display:inline-flex;align-items:center;gap:5px;} .cm3-lg i{width:12px;height:8px;border-radius:3px;}
   .cm3 .g-td{background:#c9d3dd;} .cm3 .g-n{background:#9db6cc;} .cm3 .g-i{background:#6c9cc6;} .cm3 .g-p{background:#3d7fb0;} .cm3 .g-c{background:#24577a;} .cm3 .g-ok{background:#3f8a62;}
+  .cm3-f > i.est, .cm3 .cm3-lg i.g-est{opacity:.5;background-image:repeating-linear-gradient(135deg, transparent 0 3px, rgba(255,255,255,.6) 3px 6px) !important;} .cm3 .cm3-lg i.g-est{background-color:#6c9cc6;}
   .cm3-lg .g-o{background:repeating-linear-gradient(135deg, #6c9cc6 0 3px, color-mix(in srgb, #6c9cc6 40%, transparent) 3px 6px);}
   .cm3-rows{position:relative;display:flex;flex-direction:column;gap:2px;}
   .cm3-r{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr) 74px;align-items:center;gap:12px;padding:5px 6px;border-radius:9px;}
@@ -27929,6 +27930,8 @@
     html body #reportView > .ag-h{grid-column:span 3 !important;align-self:stretch;}
     /* گزارش روزانه (دسکتاپ): داشبورد — خلاصه کنار موانع، روند ۱۴روزه کنار نفرات پیمانکاران، تخصص و طبقه زیرش */
     html body #reportView > #secStatus{grid-column:1 / span 4 !important;margin:0 0 14px !important;}
+    /* روز بی‌مانع: کنار خلاصه خالی نماند؛ خلاصه تمام‌عرض */
+    html body #reportView > #secStatus:not(:has(+ #secIssues)){grid-column:1 / -1 !important;}
     html body #reportView > #secStatus + #secIssues{grid-column:5 / span 2 !important;grid-row:auto;align-self:stretch;margin:0 0 14px !important;display:flex !important;flex-direction:column;}
     html body #reportView > #secStatus + #secIssues > .tcal-body{display:block !important;flex:1;overflow:auto;max-height:300px;}
     html body #reportView > #secStatus + #secIssues > .tcal-toggle{pointer-events:none;} html body #reportView > #secStatus + #secIssues .tt-arrow{display:none !important;}
@@ -62025,22 +62028,14 @@
     'بررسی پیمانکار':'p', 'رد پیمانکار':'p', 'تأیید پیمانکار':'p',
     'بررسی کارفرما':'c', 'رد کارفرما':'c', 'تایید شده':'ok', 'پرداخت شده':'pay'
   };
-  function admMilestonesHtml(kind, r){
-    if(kind !== 'statement' && kind !== 'contract') return '';
+  /* نقطه‌های گردش صورت وضعیت/قرارداد (ابلاغ، بازگشت به تنظیم، داخلی، پیمانکار، کارفرما، تأیید، پرداخت)
+     از تاریخچهٔ مراحل؛ هم نمودار گردش کارت و هم نمودار «مدت گردش» گزارش‌ها از همین می‌خوانند */
+  function msPtsOf(kind, r){
     const isSt = kind === 'statement';
     const rv = String(effectiveReview(r) || '');
     const paid = (isSt && isPaid(r)) || rv === RV_PAID;
     const stage = paid ? 'pay' : (MS_STAGE[rv] || '');
-    const bad = /^رد/.test(rv);
     const ok = x => x && faToDate(x);
-    const today = todayShamsi();
-    const notify = admNotify(kind, r);
-
-    /* نقطه‌ها از تاریخچهٔ مراحل ساخته و به ترتیب تاریخ چیده می‌شوند —
-       نه به ترتیب ثابتِ «داخلی ← پیمانکار ← کارفرما». پس اگر گردش
-       پیمانکار زودتر از گردش داخلی بوده، همان‌جا می‌نشیند؛ و اگر مورد
-       بعد از رد یا تأیید به «در حال تنظیم» یا «بررسی داخلی» برگشته،
-       برگشتش یک نقطهٔ تازه روی خط است و مراحل گذشته پاک نمی‌شوند. */
     const ORD = {n:0, td:1, i:2, p:3, c:4, ok:5, pay:6};
     const LOG_K = {'بررسی داخلی':'i', 'بررسی پیمانکار':'p', 'بررسی کارفرما':'c', 'تایید شده':'ok', 'پرداخت شده':'pay'};
     LOG_K[RV_DRAFT] = 'td';
@@ -62115,9 +62110,30 @@
       const lastD = pts.length ? faToDate(pts[pts.length - 1].d) : null;
       if(ok(cd) && lastD && faToDate(cd) < lastD) cd = '';
       /* هیچ تاریخی ثبت نشده: دست‌کم از آخرین نقطهٔ پیش از آن شروع شده */
-      if(!ok(cd) && pts.length && ok(pts[pts.length - 1].d)) cd = pts[pts.length - 1].d;
-      pts.push({k:stage, t:LBL[stage] || rv, d: ok(cd) ? cd : '', pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
+      let est = false;
+      if(!ok(cd) && pts.length && ok(pts[pts.length - 1].d)){ cd = pts[pts.length - 1].d; est = true; }
+      pts.push({k:stage, t:LBL[stage] || rv, d: ok(cd) ? cd : '', est, pre: ['i','p','c'].indexOf(stage) !== -1 ? 'گردش ' : ''});
     }
+    return {pts, finished, stage, rv, curK};
+  }
+  function admMilestonesHtml(kind, r){
+    if(kind !== 'statement' && kind !== 'contract') return '';
+    const isSt = kind === 'statement';
+    const rv = String(effectiveReview(r) || '');
+    const paid = (isSt && isPaid(r)) || rv === RV_PAID;
+    const stage = paid ? 'pay' : (MS_STAGE[rv] || '');
+    const bad = /^رد/.test(rv);
+    const ok = x => x && faToDate(x);
+    const today = todayShamsi();
+    const notify = admNotify(kind, r);
+
+    /* نقطه‌ها از تاریخچهٔ مراحل ساخته و به ترتیب تاریخ چیده می‌شوند —
+       نه به ترتیب ثابتِ «داخلی ← پیمانکار ← کارفرما». پس اگر گردش
+       پیمانکار زودتر از گردش داخلی بوده، همان‌جا می‌نشیند؛ و اگر مورد
+       بعد از رد یا تأیید به «در حال تنظیم» یا «بررسی داخلی» برگشته،
+       برگشتش یک نقطهٔ تازه روی خط است و مراحل گذشته پاک نمی‌شوند. */
+    const REJ_PT = {'رد پیمانکار':'p', 'رد کارفرما':'c'};
+    const _mp = msPtsOf(kind, r), pts = _mp.pts, finished = _mp.finished, curK = _mp.curK;
     if(!pts.length) return '';
     /* مرحلهٔ پیمانکار با عکس همان پیمانکار (یا حروف اول نامش) */
     try{ const pty = admParty(kind, r); if(pty) pts.forEach(x => { if(x.k === 'p' && !x.ava){ x.ava = pty; x.avaCtr = 1; } }); }catch(e){}
@@ -62863,43 +62879,38 @@
      مرحله بین تاریخ ورود به آن و ورود به مرحلهٔ بعد؛ مرحلهٔ فعلی تا
      امروز و «باز». رنگ از مرحله، و زرد/قرمز از سقف همان مرحله. */
   const CMP_STAGE = [
-    {k:'n',   t:'تنظیم و ابلاغ',  lim:'n'},
+    {k:'n',   t:'تنظیم (از ابلاغ تا ارسال)',  lim:'n'},
     {k:'i',   t:'گردش داخلی',     lim:'i'},
     {k:'p',   t:'گردش پیمانکار',  lim:'p'},
     {k:'c',   t:'گردش کارفرما',   lim:'c'},
     {k:'ok',  t:'تأیید تا پرداخت', lim:'ok'}
   ];
+  /* بازه‌های گردش برای نمودار «مدت گردش»: از همان نقطه‌های نمودار کارت (msPtsOf)، با
+     بازگشت‌ها، ردها و دورهای داخلی. ابلاغ تا ارسال به بررسی = «تنظیم»؛ بازگشت به تنظیم یا
+     اصلاح بعد از رد پیمانکار/کارفرما هم «تنظیم» است؛ بعد از آخرین نقطه تا امروز (مگر تمام‌شده). */
   function msSegsOf(kind, r){
-    const ok = x => x && faToDate(x);
-    const rv = String(effectiveReview(r) || '');
-    const paid = (kind === 'statement' && isPaid(r)) || rv === RV_PAID;
-    const d = {n: exact(r, 'تاریخ ارسال'), i: rvStartOf(r, 'rvIS'), p: rvStartOf(r, 'rvPS'),
-               c: rvStartOf(r, 'rvCS'), ok: exact(r, 'rvCOk'), pay: paid ? exact(r, 'تاریخ پرداخت') : ''};
-    const order = ['n','i','p','c','ok','pay'].filter(k => ok(d[k]));
-    const finished = paid || (kind === 'contract' && rv === 'تایید شده');
-    const rej = /^رد/.test(rv);
+    let M; try{ M = msPtsOf(kind, r); }catch(e){ return []; }
+    const P = M.pts.filter(x => x.d && faToDate(x.d));
+    const rv = M.rv, rej = /^رد/.test(rv);
     const segs = [];
-    order.forEach((k, j) => {
-      if(k === 'pay') return;
-      const st = CMP_STAGE.find(x => x.k === k);
-      const next = order[j + 1];
-      const end = next ? d[next] : (finished ? '' : todayShamsi());
-      if(!end) return;
-      const g = faDiff(d[k], end);
-      if(g == null || g < 0) return;
-      // پیش از شروع گردش، مدت «در حال تنظیم» با سقف خودش سنجیده می‌شود
-      /* فقط تاریخ ارسال ثبت شده ولی سند جلوتر رفته: مرحلهٔ فعلی از وضعیت رسیدگی (نه «در حال تنظیم») */
-      let kk = k;
-      if(k === 'n' && !next){
-        if(/پرداخت/.test(rv) || /^تا?یید شده|^تأیید شده/.test(rv)) kk = 'ok';
-        else if(/کارفرما/.test(rv) || (typeof AT_CLIENT !== 'undefined' && AT_CLIENT.indexOf(rv) !== -1)) kk = 'c';
-        else if(/پیمانکار/.test(rv)) kk = 'p';
-        else if(/داخلی/.test(rv)) kk = 'i';
-      }
-      const draft = (k === 'n' && !next && kk === 'n');
-      const st2 = CMP_STAGE.find(x => x.k === kk) || st;
-      segs.push({k: kk, label: draft ? 'در حال تنظیم' : st2.t, days: g, open: !next,
-        rej: !next && rej, tone: msTone(draft ? 'td' : st2.lim, g)});
+    P.forEach((x, j) => {
+      if(x.k === 'pay') return;
+      const nx = P[j + 1];
+      if(!nx && (M.finished || x.k === 'ok' && kind === 'contract')) return;
+      const g = faDiff(x.d, nx ? nx.d : todayShamsi());
+      if(g == null || g <= 0) return;
+      /* مرحلهٔ فعلی بی‌تاریخ ورود: نمی‌دانیم این روزها در کدام مرحله گذشته — «بی‌تاریخ»، نه مرحلهٔ فعلی */
+      if(x.est){ const s0 = CMP_STAGE.find(z => z.k === x.k);
+        segs.push({k: x.k === 'td' ? 'n' : x.k, label: (s0 ? s0.t : 'مرحلهٔ فعلی') + ' — تاریخ ورودش ثبت نشده (از تاریخ قبلی شمرده شد)', days: g, open: !nx, est: true, tone: ''}); return; }
+      /* ابلاغ، بازگشت به تنظیم و ماندن بعد از رد: تنظیم/اصلاح (در دست ما) */
+      const kk = (x.k === 'n' || x.k === 'td' || x.rej) ? 'n' : x.k;
+      const open = !nx, draft = kk === 'n' && open;
+      const st = CMP_STAGE.find(z => z.k === kk) || CMP_STAGE[0];
+      const label = draft ? 'در حال تنظیم' : x.rej ? 'اصلاح پس از ' + (x.rejT || 'رد') : x.k === 'td' ? 'بازگشت به تنظیم' : st.t;
+      const last = segs[segs.length - 1];
+      /* دو بازهٔ پشت‌سرهم از یک نوع یکی می‌شوند */
+      if(last && last.k === kk && last.label === label){ last.days += g; last.open = open; last.tone = msTone(draft ? 'td' : st.lim, last.days); return; }
+      segs.push({k: kk, label, days: g, open, rej: open && rej, tone: msTone(draft ? 'td' : st.lim, g)});
     });
     return segs;
   }
@@ -62924,19 +62935,19 @@
 
     /* نمودار تازه: هر سند یک ردیف — برچسب، نوار مراحل با رنگ‌های سامانه (طیف آبی تا سبز پرداخت)، مدت کل؛
        از سقف گذشته فقط یک نشان کوچک کنار عدد. پانزده ردیف اول و بقیه با «نمایش همه». */
-    const ST = [['td', 'در حال تنظیم'], ['n', 'تنظیم و ابلاغ'], ['i', 'گردش داخلی'], ['p', 'گردش پیمانکار'], ['c', 'گردش کارفرما'], ['ok', 'تأیید تا پرداخت']];
+    const ST = [['td', 'در حال تنظیم'], ['n', 'تنظیم (ابلاغ تا ارسال)'], ['i', 'گردش داخلی'], ['p', 'گردش پیمانکار'], ['c', 'گردش کارفرما'], ['ok', 'تأیید تا پرداخت']];
     const used = new Set(); rows.forEach(x => x.segs.forEach(sg => used.add(sg.label === 'در حال تنظیم' ? 'td' : sg.k)));
     const avgP = Math.min(100, avg / max * 100);
     const row = (x, j) => { const over = x.segs.some(sg => sg.tone === 'bad');
       return '<div class="cm3-r' + (j >= 15 ? ' more' : '') + '"><span class="cm3-l" title="' + esc(x.label) + '"><b>' + esc(x.label) + '</b>' + (x.rv ? '<small>' + esc(x.rv) + '</small>' : '') + '</span>'
         + '<span class="cm3-t"><span class="cm3-f" style="width:' + (x.total / max * 100).toFixed(1) + '%">'
-        + x.segs.map(sg => '<i class="g-' + (sg.label === 'در حال تنظیم' ? 'td' : sg.k) + (sg.open ? ' o' : '') + '" style="flex:' + Math.max(sg.days, .5) + '" title="' + esc(sg.label + ' — ' + toFa(sg.days) + ' روز' + (sg.open ? ' (تا امروز)' : '') + (sg.tone === 'bad' ? ' · بیش از سقف' : '')) + '"></i>').join('')
+        + x.segs.map(sg => '<i class="g-' + (sg.label === 'در حال تنظیم' ? 'td' : sg.k) + (sg.open ? ' o' : '') + (sg.est ? ' est' : '') + '" style="flex:' + Math.max(sg.days, .5) + '" title="' + esc(sg.label + ' — ' + toFa(sg.days) + ' روز' + (sg.open ? ' (تا امروز)' : '') + (sg.tone === 'bad' ? ' · بیش از سقف' : '')) + '"></i>').join('')
         + '</span></span>'
         + '<span class="cm3-n' + (x.total > avg ? ' up' : '') + '">' + toFa(x.total) + '<u>روز</u>' + (over ? '<i class="cm3-x" title="دست‌کم یک مرحله از سقفش گذشته"></i>' : '') + '</span></div>'; };
     return '<div class="cm3">'
       + '<div class="cm3-h"><b>مدت گردش ' + esc(KIND_LABEL[kind] || '') + '</b><span>' + toFa(rows.length) + ' سند</span><span>میانگین <b>' + toFa(avg) + '</b> روز</span>'
       +   (hot ? '<span class="bad"><i class="cm3-x"></i>' + toFa(hot) + ' سند بیش از سقف</span>' : '') + '</div>'
-      + '<div class="cm3-lg">' + ST.filter(z => used.has(z[0])).map(z => '<span><i class="g-' + z[0] + '"></i>' + z[1] + '</span>').join('') + '<span><i class="g-o"></i>باز تا امروز</span></div>'
+      + '<div class="cm3-lg">' + ST.filter(z => used.has(z[0])).map(z => '<span><i class="g-' + z[0] + '"></i>' + z[1] + '</span>').join('') + '<span><i class="g-o"></i>باز تا امروز</span>' + (rows.some(x => x.segs.some(sg => sg.est)) ? '<span><i class="g-est"></i>تاریخ ورود به مرحله ثبت نشده</span>' : '') + '</div>'
       + '<div class="cm3-rows" style="--avg:' + avgP.toFixed(1) + '%">' + rows.map(row).join('') + '</div>'
       + (rows.length > 15 ? '<button type="button" class="cm3-all" data-cm3all>نمایش همهٔ ' + toFa(rows.length) + ' سند</button>' : '')
       + '</div>';
@@ -72361,22 +72372,16 @@
       {k:'c',  t:'گردش کارفرما',        from:'c', to:'ok'}
     ];
     const acc = ST.map(() => ({sum:0, n:0, open:0, nOpen:0, sumOpen:0}));
-    docs.forEach(r => {
-      const d = {n: exact(r, 'تاریخ ارسال'), i: rvStartOf(r, 'rvIS'), p: rvStartOf(r, 'rvPS'),
-                 c: rvStartOf(r, 'rvCS'), ok: exact(r, 'rvCOk')};
-      const order = ['n','i','p','c','ok'].filter(k => d[k] && faToDate(d[k]));
-      ST.forEach((s, j) => {
-        const a = order.indexOf(s.from);
-        if(a === -1) return;
-        const next = order[a + 1];
-        if(next){
-          const g = faDiff(d[s.from], d[next]);
-          if(g != null && g >= 0){ acc[j].sum += g; acc[j].n++; }
-        }else if(!(isPaid(r)) && s.from !== 'ok'){
-          const g = daysSince(d[s.from]);
-          if(g != null){ acc[j].nOpen++; acc[j].sumOpen += g; if(g > acc[j].open) acc[j].open = g; }
-        }
-      });
+    /* از همان بازه‌های نمودار گردش کارت (با بازگشت‌ها و دورها): هر سند در هر مرحله جمع بازه‌های بسته‌اش،
+       و اگر الان در همان مرحله است، مدت بازِ تا امروز */
+    const KS = {n: 0, i: 1, p: 2, c: 3};
+    docs.forEach(([r, kind]) => {
+      let segs = []; try{ segs = msSegsOf(kind, r); }catch(e){}
+      const closed = [0, 0, 0, 0], has = [0, 0, 0, 0];
+      segs.forEach(sg => { const j = KS[sg.k]; if(j == null || sg.est) return;
+        if(sg.open){ acc[j].nOpen++; acc[j].sumOpen += sg.days; if(sg.days > acc[j].open) acc[j].open = sg.days; }
+        else { closed[j] += sg.days; has[j] = 1; } });
+      has.forEach((h, j) => { if(h){ acc[j].sum += closed[j]; acc[j].n++; } });
     });
     /* طرح تازه: هر مرحله یک ردیف — نوار سه‌منطقه‌ای (در سقف / نزدیک / بیش از سقف) با میانگین تمام‌شده‌ها
        و نشانهٔ طولانی‌ترین مورد باز؛ کنار آن تعداد اسنادی که الان در همین مرحله‌اند و وضعیت مرحله. */
@@ -72554,7 +72559,7 @@
       + '</div>';
 
     // ---- ۳) زمان هر مرحله ----
-    if(P('dcc')) h += arStageTimeHtml(stmts.concat(conts));
+    if(P('dcc')) h += arStageTimeHtml(stmts.map(r => [r, 'statement']).concat(conts.map(r => [r, 'contract'])));
 
     // ---- ۴) موعدها ----
     const seg = (n, cls) => n ? '<i class="' + cls + '" style="flex:' + n + '"></i>' : '';
