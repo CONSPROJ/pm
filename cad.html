@@ -48,6 +48,10 @@
   .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:sp 1s linear infinite;margin:0 auto 10px;} @keyframes sp{to{transform:rotate(360deg)}}
   .lab{font:700 11px Vazirmatn,Tahoma,sans-serif;paint-order:stroke;stroke:var(--paper);stroke-width:3px;fill:var(--ink);}
   @media (max-width:760px){ .main{grid-template-columns:1fr;grid-template-rows:1fr auto;} .side{border:0;border-top:1px solid var(--line);max-height:38vh;} .top .nm b{max-width:60vw;} }
+.pick{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 24px);padding:10px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 30px -12px rgba(0,0,0,.35);z-index:3;}
+.pick[hidden]{display:none;} .pick b{font-size:12.5px;display:flex;flex-direction:column;} .pick b small{font-weight:500;color:var(--muted);font-size:10.5px;}
+.pick span{display:flex;flex-direction:column;} .pick u{text-decoration:none;font-size:10.5px;color:var(--muted);} .pick em{font-style:normal;font-weight:800;font-size:15px;}
+.lk{grid-column:1 / -1;display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;} .lk select{height:28px;font-size:11.5px;flex:1 1 120px;min-width:0;} .lk .btn{height:28px;font-size:11px;padding:0 9px;} .lk-ok{color:var(--ok) !important;font-weight:700;} .mk .lk .btn{color:#fff;font-size:11px;padding:0 9px;} .mk .lk .btn:hover{color:#fff;opacity:.9;}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
 </style>
 </head>
@@ -81,6 +85,7 @@
       <div class="zoom"><button type="button" id="zin">+</button><button type="button" id="zout">−</button><button type="button" id="zfit" title="کل نقشه" style="font-size:12px">⤢</button></div>
       <div class="empty" id="empty"><div class="drop"><b>فایل DWG یا DXF را اینجا رها کنید</b>یا «باز کردن» را بزنید.<br><small>فایل روی همین دستگاه خوانده می‌شود و جایی فرستاده نمی‌شود.</small></div></div>
       <div class="hint" id="hint" hidden></div>
+      <div class="pick" id="pick" hidden></div>
     </div>
     <aside class="side">
       <div id="layers"></div>
@@ -127,7 +132,15 @@ async function openBuffer(buf, name){
 }
 /* خواندن و ساختن نقشه در Worker (صفحه یخ نمی‌زند)؛ اگر Worker نشد، همین‌جا */
 let WK = null, wkId = 0;
-function readInWorker(buf){
+/* هر فایل با Worker تازه خوانده می‌شود و پس از آن بسته می‌شود: حافظهٔ WebAssembly کوچک نمی‌شود و
+   روی گوشی بار دوم جا کم می‌آورد؛ اگر خواندن شکست خورد، یک بار دیگر با Worker تازه */
+async function readInWorker(buf){
+  const copy = buf.slice(0);
+  try{ return await readOnce(buf); }
+  catch(err){ if(/noworker/.test(String(err))) throw err; return await readOnce(copy); }
+}
+function readOnce(buf){
+  try{ if(WK) WK.terminate(); }catch(e){} WK = null;
   return new Promise((res, rej) => {
     try{ if(!WK) WK = new Worker(new URL('./lib/cad-worker.js', location.href), {type: 'module'}); }catch(e){ WK = null; }
     /* بی Worker، DWG روی همین صفحه خوانده نمی‌شود (گوشی یخ می‌زد)؛ DXF کوچک اشکالی ندارد */
@@ -138,10 +151,11 @@ function readInWorker(buf){
     const on = e => { const d = e.data || {}; if(d.id !== id) return;
       if(d.stage){ busy(d.stage === 'dwg' ? 'در حال خواندن DWG…<small style="display:block;opacity:.7;margin-top:4px">بار اول خوانندهٔ نقشه (حدود ۱۰ مگابایت) دریافت می‌شود</small>' : 'در حال ساختن نقشه…'); return; }
       WK.removeEventListener('message', on); WK.removeEventListener('error', er);
+      try{ WK.terminate(); }catch(e){} WK = null;
       if(d.ok) res(d); else rej(new Error(d.err)); };
     const er = ev => { WK.removeEventListener('message', on); WK.removeEventListener('error', er); try{ WK.terminate(); }catch(e){} WK = null; here().then(res, rej); ev.preventDefault && ev.preventDefault(); };
     WK.addEventListener('message', on); WK.addEventListener('error', er);
-    WK.postMessage({buf, id});
+    WK.postMessage({buf, id}, [buf]);
   });
 }
 async function readHere(buf){
@@ -161,32 +175,53 @@ function showDb(out){
   DB = out.layers.map(l => ({ly: l.ly, st: l.st.map(([c, d]) => [c, new Path2D(d)]), fill: l.fill.map(([d, c, op]) => [new Path2D(d), c, op]), tx: l.tx}));
   dwgG.innerHTML = '';
   const F = out.snaps, sn = new Array(F.length / 2); for(let k = 0; k < sn.length; k++) sn[k] = [F[k * 2], F[k * 2 + 1]];
+  S.regions = (out.regions || []).map(g => Object.assign(g, {r: g.r.map(F => { const o = []; for(let k = 0; k < F.length; k += 2) o.push([F[k], F[k + 1]]); return o; })})); pickClear();
   S.snaps = sn; S.bounds = out.bounds; S.base = out.bounds ? {x: out.bounds.x0, y: -out.bounds.y1, w: out.bounds.x1 - out.bounds.x0 || 1, h: out.bounds.y1 - out.bounds.y0 || 1} : null;
   layerList(); index();
 }
 const colOf = c => c && c.indexOf('var(') === 0 ? (getComputedStyle(document.documentElement).getPropertyValue(c.slice(4, -1)).trim() || '#333') : c;
+/* کشیدن لایه‌ها روی هر بوم با هر نما (نمای اصلی و تصویر کوچک ریز محل) */
+function paint(ctx, v, W, H, dpr, minTx){
+  const k = W / v.w;
+  ctx.setTransform(k * dpr, 0, 0, -k * dpr, -v.x * k * dpr, -v.y * k * dpr);
+  ctx.lineWidth = 1 / k; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const tx = [];
+  DB.forEach(L => { if(S.layers.get(L.ly) === false) return;
+    L.fill.forEach(([P, c, op]) => { ctx.globalAlpha = op; ctx.fillStyle = colOf(c); ctx.fill(P, 'evenodd'); });
+    ctx.globalAlpha = 1;
+    L.st.forEach(([c, P]) => { ctx.strokeStyle = colOf(c); ctx.stroke(P); });
+    L.tx.forEach(t => tx.push(t)); });
+  /* متن در فضای صفحه (اندازهٔ واقعی پیکسل)؛ متن‌های خیلی ریز کشیده نمی‌شوند */
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
+  tx.forEach(([x, y, h, rot, str, c, top]) => { const ph = h * k; if(ph < (minTx || 4)) return; const X = (x - v.x) * k, Y = (-y - v.y) * k;
+    if(X < -2000 || X > W + 2000 || Y < -2000 || Y > H + 2000) return;
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(-rot); ctx.fillStyle = colOf(c); ctx.font = ph.toFixed(1) + 'px Vazirmatn,Tahoma,sans-serif'; ctx.textBaseline = top ? 'top' : 'alphabetic';
+    String(str).split('\n').forEach((ln, i) => ctx.fillText(ln, 0, i * ph * 1.35)); ctx.restore(); });
+}
 function fullDraw(){
   rT = 0;
   const W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = Math.min(2, window.devicePixelRatio || 1);
   if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = shot.width = Math.round(W * dpr); cv.height = shot.height = Math.round(H * dpr); }
   cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
   if(!DB) return;
-  const v = S.vb, k = W / v.w;
-  cx.setTransform(k * dpr, 0, 0, -k * dpr, -v.x * k * dpr, -v.y * k * dpr);
-  cx.lineWidth = 1 / k; cx.lineJoin = 'round'; cx.lineCap = 'round';
-  const tx = [];
-  DB.forEach(L => { if(S.layers.get(L.ly) === false) return;
-    L.fill.forEach(([P, c, op]) => { cx.globalAlpha = op; cx.fillStyle = colOf(c); cx.fill(P, 'evenodd'); });
-    cx.globalAlpha = 1;
-    L.st.forEach(([c, P]) => { cx.strokeStyle = colOf(c); cx.stroke(P); });
-    L.tx.forEach(t => tx.push(t)); });
-  /* متن در فضای صفحه (اندازهٔ واقعی پیکسل)؛ متن‌های ریزتر از ۴ پیکسل کشیده نمی‌شوند */
-  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.globalAlpha = 1;
-  tx.forEach(([x, y, h, rot, str, c, top]) => { const ph = h * k; if(ph < 4) return; const X = (x - v.x) * k, Y = (-y - v.y) * k;
-    if(X < -2000 || X > W + 2000 || Y < -2000 || Y > H + 2000) return;
-    cx.save(); cx.translate(X, Y); cx.rotate(-rot); cx.fillStyle = colOf(c); cx.font = ph.toFixed(1) + 'px Vazirmatn,Tahoma,sans-serif'; cx.textBaseline = top ? 'top' : 'alphabetic';
-    String(str).split('\n').forEach((ln, i) => cx.fillText(ln, 0, i * ph * 1.35)); cx.restore(); });
-  sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, shot.width, shot.height); sx.drawImage(cv, 0, 0); shotVB = Object.assign({}, v);
+  paint(cx, S.vb, W, H, dpr);
+  sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, shot.width, shot.height); sx.drawImage(cv, 0, 0); shotVB = Object.assign({}, S.vb);
+}
+/* تصویر کوچک یک ریز محل: همان بخش نقشه با محدودهٔ پررنگ (JPEG سبک برای کارت فضا) */
+function thumbOf(pts, color){
+  const W = 480, H = 320; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+  let w = (x1 - x0) || 1, h = (y1 - y0) || 1; const pad = .35; w *= 1 + pad * 2; h *= 1 + pad * 2;
+  if(w / h > W / H) h = w * H / W; else w = h * W / H;
+  const v = {x: (x0 + x1) / 2 - w / 2, y: -((y0 + y1) / 2) - h / 2, w, h};
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  const dk = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light';
+  try{ if(DB) paint(g, v, W, H, 1, 6); }finally{ if(dk) document.documentElement.dataset.theme = dk; else delete document.documentElement.dataset.theme; }
+  const k = W / v.w; g.setTransform(k, 0, 0, -k, -v.x * k, -v.y * k);
+  g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath();
+  g.globalAlpha = .22; g.fillStyle = color || '#2f6f9f'; g.fill(); g.globalAlpha = 1; g.lineWidth = 2.5 / k; g.strokeStyle = color || '#2f6f9f'; g.stroke();
+  return c.toDataURL('image/jpeg', .74);
 }
 /* حین حرکت: همان تصویر آخر جابه‌جا/بزرگ می‌شود؛ پس از ایستادن، کشیدن کامل */
 function quickDraw(){
@@ -233,7 +268,7 @@ $('#zfit').onclick = fit;
 window.addEventListener('resize', () => apply(true));
 const ptrs = new Map(); let pan = null, pinch = null;
 stage.addEventListener('pointerdown', e => {
-  if(e.target.closest('.zoom')) return;
+  if(e.target.closest('.zoom, .pick')) return;
   flush();
   stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if(ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; pan = null; return; }
@@ -250,7 +285,8 @@ stage.addEventListener('pointermove', e => {
   const c = $('#coords'); c.hidden = false; c.textContent = 'X ' + (+w.x).toFixed(1) + '   Y ' + (+w.y).toFixed(1);
   preview(sp);
 });
-const up = e => { ptrs.delete(e.pointerId); if(ptrs.size < 2) pinch = null; if(pan){ pan = null; stage.classList.remove('drag'); commit(); } };
+const up = e => { ptrs.delete(e.pointerId); if(ptrs.size < 2) pinch = null;
+  if(pan){ const tap = Math.hypot(e.clientX - pan.x, e.clientY - pan.y) < 5 && e.type === 'pointerup'; pan = null; stage.classList.remove('drag'); commit(); if(tap && S.tool === 'pan') pickAt(e.clientX, e.clientY); } };
 stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
 stage.addEventListener('dblclick', e => { if(S.cur) finish(); });
 
@@ -268,8 +304,8 @@ function snap(w, e){
 }
 
 /* ---------- ابزارها ---------- */
-const HINT = {pan: '', line: 'نقطهٔ اول و دوم را بزنید · Shift: افقی/عمودی · Alt: بدون گیرش', measure: 'دو نقطه را بزنید تا فاصله نشان داده شود',
-  area: 'گوشه‌ها را یکی‌یکی بزنید · دابل‌کلیک یا Enter برای بستن · Esc لغو', hatch: 'محدودهٔ هاشور را بکشید · دابل‌کلیک یا Enter برای بستن'};
+const HINT = {line: 'نقطهٔ اول و دوم را بزنید · Shift: افقی/عمودی · Alt: بدون گیرش', measure: 'دو نقطه را بزنید تا فاصله نشان داده شود',
+  pan: 'روی هر هاشور یا محدودهٔ بستهٔ نقشه بزنید تا مساحت و محیطش را ببینید', area: 'گوشه‌ها را یکی‌یکی بزنید · دابل‌کلیک یا Enter برای بستن · Esc لغو', hatch: 'محدودهٔ هاشور را بکشید · دابل‌کلیک یا Enter برای بستن'};
 function setTool(t){ S.tool = t; cancel(); document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); stage.className = 'stage t-' + t;
   const h = $('#hint'); h.hidden = !HINT[t]; h.textContent = HINT[t] || ''; }
 document.querySelectorAll('#tools button').forEach(b => b.onclick = () => setTool(b.dataset.t));
@@ -328,7 +364,7 @@ function centroid(pts){ let x = 0, y = 0; pts.forEach(p => { x += p.x; y += p.y;
 function drawLabels(){ render(true); }
 function render(onlyDraw){
   mkG.innerHTML = S.marks.map(shape).join('') + S.marks.map((m, i) => {
-    const t = m.type === 'area' || m.type === 'hatch' ? (m.name ? m.name + ' · ' : '') + fmt(mArea(area(m.pts))) + ' m²' : fmt(mLen(len(m.pts))) + ' m';
+    const t = m.type === 'area' || m.type === 'hatch' ? (m.name ? m.name + ' · ' : '') + fmt(mArea(m.a != null ? m.a : area(m.pts))) + ' m²' : fmt(mLen(len(m.pts))) + ' m';
     return label(m.type === 'area' || m.type === 'hatch' ? centroid(m.pts) : m.pts[1], t); }).join('');
   if(onlyDraw === true) return;
   const L = $('#list');
@@ -336,14 +372,15 @@ function render(onlyDraw){
     return '<div class="mk' + (i === S.sel ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + m.color + '"></i>'
       + (closed ? '<input type="text" value="' + (m.name || '').replace(/"/g, '&quot;') + '" data-nm="' + i + '" placeholder="نام ریز محل">' : '<span>' + (m.type === 'measure' ? 'اندازه' : 'خط') + '</span>')
       + '<button type="button" data-del="' + i + '" title="حذف">×</button>'
-      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(area(m.pts))) + ' m² · محیط ' + fmt(mLen(len(m.pts.concat([m.pts[0]])))) + ' m' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small></div>'; }).join('')
+      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(m.a != null ? m.a : area(m.pts))) + ' m² · محیط ' + fmt(mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])))) + ' m' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small>' + linkHtml(m, i) + '</div>'; }).join('')
     : '<p style="color:var(--muted);padding:6px 8px;font-size:12px;line-height:1.9">با «محدوده» گوشه‌های هر ریز محل را بزنید تا مساحت و محیطش حساب شود؛ با «هاشور» محدودهٔ رنگی و با «خط» و «اندازه» فاصله‌ها را بکشید. همه روی همین دستگاه برای همین فایل ذخیره می‌شود.</p>';
   const A = S.marks.filter(m => m.type === 'area');
   $('#cnt').textContent = S.marks.length ? toFa(S.marks.length) : '';
-  $('#sum').innerHTML = A.length ? '<span>جمع مساحت محدوده‌ها</span><b>' + fmt(A.reduce((t, m) => t + mArea(area(m.pts)), 0)) + ' m²</b><button type="button" class="btn" id="csv">خروجی اکسل (CSV)</button>' : '';
+  $('#sum').innerHTML = A.length ? '<span>جمع مساحت محدوده‌ها</span><b>' + fmt(A.reduce((t, m) => t + mArea(m.a != null ? m.a : area(m.pts)), 0)) + ' m²</b><button type="button" class="btn" id="csv">خروجی اکسل (CSV)</button>' : '';
   const cv = $('#csv'); if(cv) cv.onclick = csv;
 }
 $('#list').addEventListener('click', e => { const d = e.target.closest('[data-del]'); if(d){ S.marks.splice(+d.dataset.del, 1); S.sel = -1; save(); render(); index(); return; }
+  if(e.target.closest('select, .lk')) return;
   const r = e.target.closest('.mk'); if(r){ S.sel = +r.dataset.i; render(); } });
 $('#list').addEventListener('input', e => { const n = e.target.closest('[data-nm]'); if(n){ S.marks[+n.dataset.nm].name = n.value; save(); render(true); } });
 $('#unit').onchange = () => { try{ localStorage.setItem('cad.unit', $('#unit').value); }catch(e){} render(); };
@@ -356,6 +393,49 @@ $('#pngBtn').onclick = () => { const s = new XMLSerializer().serializeToString(v
   const st = getComputedStyle(document.documentElement), bg = st.getPropertyValue('--paper') || '#fff', dr = st.getPropertyValue('--draw') || '#000';
   const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H); fullDraw(); x.drawImage(cv, 0, 0, W, H); x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s.replace(/var\(--draw\)/g, dr).replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')); };
+/* ---------- انتخاب هاشور یا چندخطی بستهٔ خود نقشه: مساحت و محیط ---------- */
+const pipR = (x, y, r) => { let o = false; for(let k = 0, j = r.length - 1; k < r.length; j = k++){ const a = r[k], b2 = r[j]; if((a[1] > y) !== (b2[1] > y) && x < (b2[0] - a[0]) * (y - a[1]) / (b2[1] - a[1]) + a[0]) o = !o; } return o; };
+function pickClear(){ S.pick = null; const c = $('#pick'); if(c) c.hidden = true; tmpG.innerHTML = ''; }
+function pickAt(cX, cY){
+  const w = toWorld(cX, cY); let best = null;
+  (S.regions || []).forEach(g => { if(S.layers.get(g.ly) === false) return; const b = g.b; if(w.x < b[0] || w.x > b[2] || w.y < b[1] || w.y > b[3]) return;
+    let inside = false; g.r.forEach(r => { if(pipR(w.x, w.y, r)) inside = !inside; });
+    if(inside && (!best || g.a < best.a || (g.a === best.a && g.h > best.h))) best = g; });
+  if(!best){ pickClear(); return; }
+  S.pick = best;
+  tmpG.innerHTML = '<path d="' + best.r.map(r => 'M' + r.map(p => p[0] + ' ' + p[1]).join('L') + 'Z').join('') + '" fill="#e67e22" fill-opacity=".22" fill-rule="evenodd" stroke="#e67e22" stroke-width="2.4" vector-effect="non-scaling-stroke"/>';
+  const c = $('#pick'); c.hidden = false;
+  c.innerHTML = '<b>' + (best.h ? 'هاشور نقشه' : 'محدودهٔ بستهٔ نقشه') + ' <small dir="ltr">' + String(best.ly).replace(/</g, '&lt;') + '</small></b>'
+    + '<span><u>مساحت</u><em>' + fmt(mArea(best.a)) + ' m²</em></span><span><u>محیط</u><em>' + fmt(mLen(best.p)) + ' m</em></span>'
+    + '<button type="button" class="btn pri" id="pickAdd">افزودن به محدوده‌ها</button><button type="button" class="btn" id="pickX">×</button>';
+  $('#pickX').onclick = pickClear;
+  $('#pickAdd').onclick = () => { const outer = best.r.slice().sort((a2, b2) => b2.length - a2.length)[0];
+    /* بزرگ‌ترین حلقه شکل محدوده است؛ مساحت و محیط دقیق (با حفره‌ها) جدا نگه داشته می‌شود */
+    const R = best.r.map(r => ({r, a: Math.abs(r.reduce((t, p, i) => { const q = r[(i + 1) % r.length]; return t + p[0] * q[1] - q[0] * p[1]; }, 0) / 2)})).sort((p2, q2) => q2.a - p2.a)[0].r || outer;
+    S.marks.push({type: 'area', pts: R.map(p => ({x: p[0], y: p[1]})), color: $('#col').value, pat: '', name: '', a: best.a, p: best.p});
+    S.sel = S.marks.length - 1; save(); pickClear(); render(); index(); };
+}
+
+/* ---------- ثبت ریز محل برای فضاهای سامانه (وقتی نقشه از داخل سامانه باز شده) ---------- */
+S.locs = [];
+window.addEventListener('message', e => { if(e.origin !== location.origin) return; const d = e.data || {};
+  if(Array.isArray(d.cadLocs)){ S.locs = d.cadLocs; render(); }
+  if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
+  if(d.cadLinkErr){ const b = document.querySelector('[data-lk="' + d.i + '"]'); if(b){ b.disabled = false; b.textContent = 'خطا؛ دوباره'; } } });
+function linkHtml(m, i){
+  if(!S.locs.length || !(m.type === 'area' || m.type === 'hatch')) return '';
+  const opts = '<option value="">محل در سامانه…</option>' + S.locs.map(o => '<option value="' + o.k.replace(/"/g, '&quot;') + '"' + (m.loc === o.k ? ' selected' : '') + '>' + o.t.replace(/</g, '&lt;') + '</option>').join('');
+  return '<div class="lk"><select data-lks="' + i + '">' + opts + '</select><select data-lkk="' + i + '"><option value="f"' + (m.lk === 'c' ? '' : ' selected') + '>کف</option><option value="c"' + (m.lk === 'c' ? ' selected' : '') + '>سقف</option><option value="b"' + (m.lk === 'b' ? ' selected' : '') + '>کف و سقف</option></select>'
+    + '<button type="button" class="btn pri" data-lk="' + i + '">' + (m.loc ? 'ثبت دوباره' : 'ثبت در کارت') + '</button></div>'
+    + (m.loc ? '<small class="lk-ok">✓ ثبت شد برای ' + String(m.locT || m.loc).replace(/</g, '&lt;') + '</small>' : '');
+}
+$('#list').addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
+  const i = +b.dataset.lk, m = S.marks[i], k = (document.querySelector('[data-lks="' + i + '"]') || {}).value, kind = (document.querySelector('[data-lkk="' + i + '"]') || {}).value || 'f';
+  if(!m || !k){ b.textContent = 'محل را انتخاب کنید'; return; }
+  b.disabled = true; b.textContent = 'در حال ثبت…';
+  const A = mArea(m.a != null ? m.a : area(m.pts)), P = mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])));
+  let img = ''; try{ img = thumbOf(m.pts, m.color); }catch(er){}
+  window.parent.postMessage({cadLink: {i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}}, location.origin); }, true);
 setTool('pan');
 </script>
 </body>

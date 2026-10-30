@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030191035">
+<meta name="pm-build" content="20261030192448">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -244,6 +244,8 @@
 .spf-f{display:grid;grid-template-columns:1fr 1fr;gap:9px}.spf-f>label,.spf-fr{display:flex;flex-direction:column;gap:4px;min-width:0}.spf-f .uc-ppa button{min-width:88px;justify-content:center}.spf-f .w{grid-column:1/-1}
 .spf-f>label>u,.spf-fr>u{text-decoration:none;font-size:11px;font-weight:700;color:var(--muted)}.spf-f>label>input{width:100%;box-sizing:border-box}
 .spf-hint{font-size:11px;color:var(--muted);line-height:1.7}
+.spf-ex{padding:0 12px 8px;font-size:11px;font-weight:700;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 8px}.spf-ex small{font-weight:500;opacity:.8}
+.spf-im{padding:0 12px 10px}.spf-im img{display:block;width:100%;max-width:300px;aspect-ratio:3/2;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--field)}
 .spf-ars{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
 .spf-ar{display:flex;align-items:center;gap:8px;padding:0 6px 0 12px}.spf-ar+.spf-ar{border-top:1px solid var(--line)}
 .spf-arn{all:unset;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;padding:10px 0}.spf-arn:disabled{cursor:default}
@@ -65340,7 +65342,15 @@
       const get = a.src === 's3' ? s3Blob(a) : fetch(attachDownloadUrl(a)).then(r => { if(!r.ok) throw new Error('fetch'); return r.blob(); });
       let ready = false, buf = null;
       const go = () => { if(ready && buf && fvS === keep){ try{ fr.contentWindow.postMessage({cadFile: buf, name: a.name}, location.origin); }catch(e){} buf = null; } };
-      window.addEventListener('message', function h(ev){ if(ev.source === fr.contentWindow && ev.data && ev.data.cadReady){ window.removeEventListener('message', h); ready = true; go(); } });
+      window.addEventListener('message', function h(ev){ if(ev.source === fr.contentWindow && ev.data && ev.data.cadReady){ window.removeEventListener('message', h); ready = true;
+        /* فهرست فضاهای پروژه برای «ثبت در کارت» */
+        try{ const L = window.spCadLocs ? window.spCadLocs() : []; if(L.length) fr.contentWindow.postMessage({cadLocs: L}, location.origin); }catch(e){}
+        go(); } });
+      if(!window.__cadLinkOn){ window.__cadLinkOn = 1;
+        window.addEventListener('message', async ev => { const d = ev.data || {}; if(ev.origin !== location.origin || !d.cadLink || !window.spCadLink) return;
+          const src = ev.source;
+          try{ const t = await window.spCadLink(d.cadLink); src && src.postMessage({cadLinked: d.cadLink.k, t, kind: d.cadLink.kind, i: d.cadLink.i}, location.origin); try{ shrToast('مساحت در کارت «' + t + '» ثبت شد'); }catch(e){} }
+          catch(err){ src && src.postMessage({cadLinkErr: 1, i: d.cadLink.i}, location.origin); try{ showDialog('err', 'ثبت نشد', friendlyErr(err)); }catch(e){} } }); }
       get.then(b => b.arrayBuffer()).then(x => { buf = x; go(); }).catch(() => {}); } }
     if(a.src === 's3' && (k === 'img' || k === 'pdf')){
       const el = m.querySelector('.fv-img, .fv-frame'), keep = S;
@@ -77477,11 +77487,43 @@
   async function spPPSave(k, o){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(SP_PP_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
     const v = {}; if(o.a) v.a = o.a; if(o.u) v.u = o.u; if(o.n) v.n = o.n;
+    /* از نقشه: مساحت سقف، محیط، نام فایل نقشه و داشتن تصویر — فرم مساحت آن‌ها را پاک نمی‌کند */
+    const prev = spPP(k); ['c', 'pr', 'f', 'im'].forEach(x => { const val = o[x] != null ? o[x] : prev[x]; if(val) v[x] = val; });
     if(Object.keys(v).length) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: SP_PP_KIND, value: k + '¦' + JSON.stringify(v)}]});
     if(!sp.pp) sp.pp = new Map();
     if(Object.keys(v).length) sp.pp.set(k, v); else sp.pp.delete(k);
     try{ clearNetCache(); }catch(e){}
   }
+  /* ====== پیوند نقشه به فضاها ======
+     در نقشه‌خوان هر محدوده (کشیده‌شده یا هاشور خود نقشه) به یک فضا وصل می‌شود: مساحت کف/سقف و محیط
+     در شناسنامهٔ همان فضا، و تصویر کوچک همان بخش نقشه در «تصویر فضا» (کلید¦data:image/jpeg…). */
+  const SP_IMG_KIND = 'تصویر فضا', spImgC = new Map();
+  async function spImgSave(k, url){
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(SP_IMG_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
+    await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: SP_IMG_KIND, value: k + '¦' + url}]});
+    spImgC.set(k, Promise.resolve(url));
+  }
+  function spImgGet(k){
+    if(!spImgC.has(k)) spImgC.set(k, supaFetch('lists?select=value&kind=eq.' + encodeURIComponent(SP_IMG_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {prefer: 'return=representation'})
+      .then(r => { const v = r && r[0] && String(r[0].value || ''); const i = v ? v.indexOf('¦') : -1; return i > 0 ? v.slice(i + 1) : ''; }).catch(() => ''));
+    return spImgC.get(k);
+  }
+  window.spCadLocs = () => { const out = []; try{ if(!spCanE()) return out;
+    spFloors().forEach(f => { const fk = f.key, fl = f.label || fk; out.push({k: 'F ' + fk, t: fl + ' — کل طبقه'});
+      spL1(fk).forEach(o => { if(o.unit){ out.push({k: 'U ' + o.v, t: fl + ' › ' + o.t}); spPartsOf(o.v).forEach(x => out.push({k: o.v + '/' + x, t: fl + ' › ' + o.t + ' › ' + x})); }
+        else out.push({k: 'F ' + fk + '/' + o.v, t: fl + ' › ' + o.t}); }); }); }catch(e){} return out; };
+  window.spCadLink = async L => {
+    const q = Object.assign({}, spPP(L.k));
+    if(L.kind !== 'c') q.a = L.a; if(L.kind !== 'f') q.c = L.a;
+    q.pr = L.p; q.f = L.file || q.f; if(L.img) q.im = 1;
+    if(L.img) await spImgSave(L.k, L.img);
+    await spPPSave(L.k, q);
+    try{ spwRepaint(); }catch(e){}
+    const o = window.spCadLocs().find(x => x.k === L.k); return o ? o.t : L.k;
+  };
+  /* تصویر کوچک ریز محل در کارت فضا: بعد از رندر، از سرور (یک بار) پر می‌شود */
+  function spImgFill(root){ (root || document).querySelectorAll('img[data-spimg]:not([src])').forEach(im => { spImgGet(im.dataset.spimg).then(u => { if(u){ im.src = u; im.closest('.spf-im') && im.closest('.spf-im').classList.add('has'); } else { const w = im.closest('.spf-im'); if(w) w.remove(); } }); }); }
+  window.spImgFill = spImgFill;
   const SP_PART0 = ['پذیرایی', 'آشپزخانه', 'اتاق خواب', 'سرویس بهداشتی', 'حمام', 'بالکن', 'راهرو'];
   const SP_ST = [['free', 'آزاد', 'mu'], ['res', 'رزرو', 'warn'], ['pre', 'پیش‌فروش', 'run'], ['sold', 'فروخته‌شده', 'ok']];
   const spStOf = k => SP_ST.find(x => x[0] === k) || SP_ST[0];
@@ -79001,6 +79043,13 @@
      وضعیت فروش، مالک، تیپ و متراژ، پیشرفت هر تخصص در همین واحد (نمودار)،
      متره به تفکیک مرحله، و کارهای ثبت‌شده در گزارش‌های روزانه */
   function spUnitInfoHtml(u){
+    /* تصویر و مساحت از نقشه (کل واحد)، بالای کارت */
+    setTimeout(() => { try{ spImgFill(document.querySelector('.ucd')); }catch(e){} }, 0);
+    const qU = spPP('U ' + u), plan = (qU.im || qU.c || qU.pr) ? '<div class="spf-plan">' + (qU.im ? '<div class="spf-im"><img data-spimg="' + esc('U ' + u) + '" alt="نقشهٔ واحد"></div>' : '')
+      + '<div class="spf-ex">' + [qU.a ? 'کف ' + spwF(+qU.a) + ' m²' : '', qU.c ? 'سقف ' + spwF(+qU.c) + ' m²' : '', qU.pr ? 'محیط ' + spwF(+qU.pr) + ' m' : ''].filter(Boolean).join(' · ') + (qU.f ? '<small>از نقشهٔ ' + esc(qU.f) + '</small>' : '') + '</div></div>' : '';
+    return plan + spUnitInfoHtml0(u);
+  }
+  function spUnitInfoHtml0(u){
     const o = sp.units.get(u) || {}, f = spFloorOf(u), st = spStOf(o.st), fk = f ? f.key : '';
     const F = spFloors(), fi = F.findIndex(x => x.key === fk), us = f ? (f.units || []) : [], ui = us.indexOf(u);
     const own = spSplit(o.own), parts = spPartsOf(u);
@@ -79137,7 +79186,7 @@
   const spwFaD = d => { const j = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return toFa(j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0')); };
   /* مساحت هر محل سطح ۱: واحد از کارت واحد (یا جمع اجزا)، بقیه از شناسنامهٔ همان فضا */
   function spwArea(fk, o){
-    if(o.unit){ const u = sp.units.get(o.v) || {}; if(+u.area) return +u.area; return spPartsOf(o.v).reduce((a, x) => a + (+spPP(o.v + '/' + x).a || 0), 0); }
+    if(o.unit){ const u = sp.units.get(o.v) || {}; if(+u.area) return +u.area; if(+spPP('U ' + o.v).a) return +spPP('U ' + o.v).a; return spPartsOf(o.v).reduce((a, x) => a + (+spPP(o.v + '/' + x).a || 0), 0); }
     return +spPP('F ' + fk + '/' + o.v).a || 0;
   }
   /* کارهای اجرایی یک فضا: هر تخصصی که در آن درصد، محدودهٔ پیمانکار یا شناسنامهٔ کار دارد */
@@ -79218,23 +79267,27 @@
     const row = (key, name, a, extra, nameAt, valAt) => '<div class="spf-ar' + (key && spw.ar === key ? ' on' : '') + '"><button type="button" class="spf-arn"' + (nameAt || ' disabled') + '><b>' + esc(name) + '</b>' + (extra ? '<small>' + esc(extra) + '</small>' : '') + '</button>'
       + '<button type="button" class="spf-arv' + (a ? '' : ' mu') + '"' + (valAt || (ed && key ? ' data-spfar="' + esc(key) + '"' : ' disabled')) + '>' + (a ? spwF(a) + '<small> m²</small>' : (valAt ? 'کارت واحد' : ed && key ? 'ثبت مساحت' : '—')) + '</button></div>'
       + (key && spw.ar === key ? spwAreaForm(key, spPP(key), name) : '');
+    /* از نقشه: کف، سقف، محیط و تصویر همان بخش نقشه */
+    const ex = k => { const q = spPP(k), B = []; if(q.c) B.push('سقف ' + spwF(+q.c) + ' m²'); if(q.pr) B.push('محیط ' + spwF(+q.pr) + ' m');
+      return (B.length ? '<div class="spf-ex">' + (q.a ? 'کف ' + spwF(+q.a) + ' m² · ' : '') + B.join(' · ') + (q.f ? '<small>از نقشهٔ ' + esc(q.f) + '</small>' : '') + '</div>' : '')
+        + (q.im ? '<div class="spf-im"><img data-spimg="' + esc(k) + '" alt="نقشهٔ ' + esc(k) + '" loading="lazy"></div>' : ''); };
     if(!loc){
       const L = spL1(fk), A = L.map(o => [o, spwArea(fk, o)]), net = A.reduce((s, q) => s + q[1], 0), g = +spPP('F ' + fk).a || 0;
       return sec('مساحت‌ها', net ? 'جمع خالص ' + spwF(net) + ' m²' + (g ? ' از ' + spwF(g) + ' ناخالص' : '') : '',
-        '<div class="spf-ars">' + row('F ' + fk, 'مساحت ناخالص طبقه', g, spPP('F ' + fk).u || '')
+        '<div class="spf-ars">' + row('F ' + fk, 'مساحت ناخالص طبقه', g, spPP('F ' + fk).u || '') + ex('F ' + fk)
         + A.map(([o, a]) => o.unit
-            ? row('', o.t, a, [(sp.units.get(o.v) || {}).tp || '', spPartsOf(o.v).length + ' جزء'].filter(Boolean).map(toFa).join(' · '), ' data-spfloc="' + esc(o.v) + '"', ' data-ucdu="' + esc(o.v) + '"')
-            : row('F ' + fk + '/' + o.v, o.t, a, spPP('F ' + fk + '/' + o.v).u || '', ' data-spfloc="' + esc(o.v) + '"')).join('')
+            ? row('', o.t, a, [(sp.units.get(o.v) || {}).tp || '', spPartsOf(o.v).length + ' جزء'].filter(Boolean).map(toFa).join(' · '), ' data-spfloc="' + esc(o.v) + '"', ' data-ucdu="' + esc(o.v) + '"') + ex('U ' + o.v)
+            : row('F ' + fk + '/' + o.v, o.t, a, spPP('F ' + fk + '/' + o.v).u || '', ' data-spfloc="' + esc(o.v) + '"') + ex('F ' + fk + '/' + o.v)).join('')
         + '</div>' + (L.length ? '' : '<p class="flr-empty">محلی برای این طبقه در «فضاها و واحدها» ثبت نشده.</p>'));
     }
     const lo = spL1(fk).find(x => x.v === loc) || {v: loc, t: loc};
     if(lo.unit){
       const parts = spPartsOf(loc), u = sp.units.get(loc) || {}, A = parts.map(x => [x, +spPP(loc + '/' + x).a || 0]), t = A.reduce((s, q) => s + q[1], 0);
       return sec('مساحت‌ها', (u.area ? 'متراژ واحد ' + spwF(+u.area) + ' m²' : '') + (t ? (u.area ? ' · ' : '') + 'جمع اجزا ' + spwF(t) : ''),
-        '<div class="spf-ars">' + A.map(([x, a]) => row(loc + '/' + x, x, a, spPP(loc + '/' + x).u || '')).join('') + '</div>');
+        '<div class="spf-ars">' + ex('U ' + loc) + A.map(([x, a]) => row(loc + '/' + x, x, a, spPP(loc + '/' + x).u || '') + ex(loc + '/' + x)).join('') + '</div>');
     }
     const k = 'F ' + fk + '/' + loc, q = spPP(k);
-    return sec('مساحت', '', '<div class="spf-ars">' + row(k, lo.t, +q.a || 0, [q.u, q.n].filter(Boolean).join(' · ')) + '</div>');
+    return sec('مساحت', '', '<div class="spf-ars">' + row(k, lo.t, +q.a || 0, [q.u, q.n].filter(Boolean).join(' · ')) + ex(k) + '</div>');
   }
   function spwPkgHtml(x, P, ed){
     const sc = spwSched(x), key = x.s + '¦' + x.loc, open = spw.ed === key;
@@ -79292,6 +79345,7 @@
         + '<small>' + esc(['از ' + toFa(y.first) + ' تا ' + toFa(y.last), 'میانگین ' + spwF(y.md / Math.max(1, y.days.size)) + ' نفر', y.acts.size ? Array.from(y.acts).slice(0, 3).join('، ') : '', y.locs.size ? Array.from(y.locs).slice(0, 3).join('، ') : ''].filter(Boolean).join(' · ')) + '</small></button>').join('') + '</div>');
   }
   function spwHtml(fk, loc){
+    setTimeout(() => { try{ spImgFill(document.getElementById('flrModal')); }catch(e){} }, 0);
     const ed = spwCanE(), P = spw.Dk === fk && spw.D ? spwPresence(spw.D, fk, loc) : null;
     const L1 = spL1(fk), W = spwList(fk, loc);
     const avg = W.length ? W.reduce((a, x) => a + x.p, 0) / W.length : 0;
