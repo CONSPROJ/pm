@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030074016">
+<meta name="pm-build" content="20261030074254">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -385,6 +385,11 @@
 .ogc-n small{font-size:11px;font-weight:600;color:var(--sc);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ogc-n em{font-style:normal;font-size:10px;color:var(--muted);background:var(--field);padding:1px 7px;border-radius:99px}
 .ogc-tg{all:unset;cursor:pointer;position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-size:11px;font-weight:800;color:var(--muted);display:grid;place-items:center;z-index:1}
+.ogc-add{all:unset;cursor:pointer;position:absolute;top:-10px;inset-inline-end:-10px;width:22px;height:22px;border-radius:99px;background:var(--sc, var(--accent));color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.18)}.ogc-add:hover{transform:scale(1.12)}
+.og-edit :is(.ogc-g,.ogc-own,.ogc-root,.ogc-o,.ogc-n){position:relative}.og-edit .ogc-o .ogc-add{top:-6px;inset-inline-end:-6px;width:18px;height:18px;font-size:12px}
+.ogc-n.x{border-style:dashed !important}.og-edit .ogc-n.x,.og-edit .ogc-n.ext,.og-edit .ogc-o[data-ogext]{cursor:pointer}.og-hid{opacity:.4}
+.ogc-g.sm{padding:6px 12px !important}.ogc-g.sm b{font-size:11.5px}
+.ogc-pop .og-chk{display:flex !important;align-items:center;gap:8px;font-size:12px;flex-direction:row !important}
 .ogc-tg.shut{background:var(--sc,var(--accent));border-color:transparent;color:#fff}
 .ogc-ed{border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:10px}
 .ogc-edh{display:flex;align-items:center;gap:10px}.ogc-edh span{flex:1;display:flex;flex-direction:column}.ogc-edh b{font-size:14px;font-weight:800}.ogc-edh small{font-size:11.5px;color:var(--muted)}
@@ -40260,6 +40265,9 @@
        «سمت سازمانی»  نام سمت¦{"side","dept","up","d"}
        «سازمان فرد»   نام شخص¦{"side","up","fl":[...]} */
   const OG_POS_KIND = 'سمت سازمانی', OG_PER_KIND = 'سازمان فرد';
+  /* گره‌های آزاد چارت: «چارت گره»  شناسه¦{"n","r","up","sd"}؛ up = کلید والد (p:شخص، e:طرف بیرونی، g:گروه، x:گره دیگر).
+     یک نفر می‌تواند چند گره داشته باشد (چند جای چارت). شناسهٔ «o:…» = اصلاح عنوان یا پنهان کردن یک طرف بیرونی */
+  const OG_NODE_KIND = 'چارت گره';
   const OG_SIDES = [['pm', 'تیم مدیریت پیمان'], ['emp', 'کارفرما'], ['own', 'مالک و سرمایه‌گذار'], ['cons', 'مشاور و ناظر'], ['ctr', 'پیمانکاران']];
   const OG_SC = {pm:'#2f6f9f', emp:'#c07a24', own:'#7a5bc4', cons:'#2f8a5f', ctr:'#8a6a4a'};
   const OG_SIDE_T = k => (OG_SIDES.find(x => x[0] === k) || ['', 'سایر'])[1];
@@ -40295,10 +40303,11 @@
     ['مالی مشاور', 'cons', 'مالی', 'مشاور / ناظر', ['tab.admin', 'rep.adm']],
     ['نمایندهٔ پیمانکار', 'ctr', 'پیمانکار', '', ['qc.request']]
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
-  const og = {pos: new Map(), per: new Map(), sel: '', ed: ''};
+  const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   function ogLoad(lists){
     og.pos.clear(); og.per.clear();
     const kv = v => { const x = String(v), i = x.indexOf('¦'); return i < 1 ? null : [x.slice(0, i), x.slice(i + 1)]; };
+    if(lists && lists[OG_NODE_KIND]){ og.nodes.clear(); lists[OG_NODE_KIND].forEach(v => { const p = kv(v); if(!p) return; try{ og.nodes.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} }); }
     ((lists && lists[OG_POS_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ og.pos.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} });
     ((lists && lists[OG_PER_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ og.per.set(nameKey(p[0]), Object.assign({n: p[0]}, JSON.parse(p[1]) || {})); }catch(e){} });
     /* فهرست سمت‌های فرم کاربران هم از همین کاتالوگ */
@@ -40437,16 +40446,26 @@
     const ownerKids = E ? E.roots.filter(isOwnerUser).reduce((a, n) => a.concat(kids(n)), []) : [];
     const ed = '';
     let body = '';
-    const extLi = (e, sc, cls) => '<li><div class="ogc-n ext" style="--sc:' + sc + '" data-hrprof="' + esc(e.n) + '">' + avatarHtml(e.n, '', true) + '<b>' + esc(e.n) + '</b><small>' + esc(e.d || '') + '</small></div>'
-      + (e.ppl && e.ppl.length ? '<ul>' + e.ppl.slice().reverse().map(q => '<li><div class="ogc-n ext" style="--sc:' + sc + '">' + avatarHtml(q.n, '', true) + '<b>' + esc(q.n) + '</b><small>' + esc(q.r || '—') + '</small></div></li>').join('') + '</ul>' : '') + '</li>';
+    /* گره‌های آزاد و اصلاح طرف‌های بیرونی */
+    const OV = k => og.nodes.get('o:' + k) || {};
+    const xKids = key => Array.from(og.nodes.entries()).filter(([id, x]) => id.indexOf('o:') !== 0 && x.up === key).sort((a, b) => (+(a[1].o || 0) - +(b[1].o || 0)) || String(a[0]).localeCompare(String(b[0])));
+    const addB = key => og.edit ? '<button type="button" class="ogc-add" data-ogadd="' + esc(key) + '" title="افزودن زیرمجموعه" aria-label="افزودن زیرمجموعه">+</button>' : '';
+    const xLis = (key, sc, d) => (d || 0) > 10 ? '' : xKids(key).reverse().map(([id, x]) => { const c2 = x.sd ? OG_SC[x.sd] : sc;
+      return '<li><div class="ogc-n x" data-ogx="' + esc(id) + '" style="--sc:' + c2 + '">' + avatarHtml(x.n || '؟', '', true) + '<b>' + esc(x.n || '—') + '</b><small>' + esc(x.r || '') + '</small>' + addB('x:' + id) + '</div>'
+        + (xKids('x:' + id).length ? '<ul>' + xLis('x:' + id, c2, (d || 0) + 1) + '</ul>' : '') + '</li>'; }).join('');
+    const ul = (inner, key, sc) => { const xs = xLis(key, sc); return (inner || xs) ? '<ul>' + xs + (inner || '') + '</ul>' : ''; };
+    const extLi = (e, sc, cls) => { const k = normName(e.n), ov = OV(k); if(ov.hide && !og.edit) return '';
+      return '<li><div class="ogc-n ext' + (ov.hide ? ' og-hid' : '') + '" style="--sc:' + sc + '" ' + (og.edit ? 'data-ogext="' + esc(e.n) + '"' : 'data-hrprof="' + esc(e.n) + '"') + '>' + avatarHtml(e.n, '', true) + '<b>' + esc(e.n) + '</b><small>' + esc(ov.d || e.d || '') + '</small>' + addB('e:' + k) + '</div>'
+      + ul((e.ppl || []).slice().reverse().map(q => { const k2 = normName(q.n), o2 = OV(k2); if(o2.hide && !og.edit) return '';
+          return '<li><div class="ogc-n ext' + (o2.hide ? ' og-hid' : '') + '" style="--sc:' + sc + '"' + (og.edit ? ' data-ogext="' + esc(q.n) + '"' : '') + '>' + avatarHtml(q.n, '', true) + '<b>' + esc(q.n) + '</b><small>' + esc(o2.d || q.r || '—') + '</small>' + addB('e:' + k2) + '</div>' + ul('', 'e:' + k2, sc) + '</li>'; }).join(''), 'e:' + k, sc) + '</li>'; };
     if(og.view === 'chart'){
       const card = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
         return '<li><div class="ogc-n" data-ogn="' + esc(n) + '" style="--sc:' + (OG_SC[dsd(n)] || OG_SC[I.side] || '#777') + '">'
           + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + '</small>' + (fl ? '<em>طبقه ' + esc(fl) + '</em>' : '')
           + (K.length ? '<button type="button" class="ogc-tg' + (shut ? ' shut' : '') + '" data-ogtg="' + esc(n) + '" aria-label="' + (shut ? 'باز کردن' : 'جمع کردن') + ' زیرمجموعه">' + (shut ? '+' + toFa(cnt(n)) : '−') + '</button>' : '')
-          + '</div>' + (K.length && !shut ? '<ul>' + K.slice().reverse().map(k => card(k, d + 1)).join('') + '</ul>' : '') + '</li>'; };
-      const grp = (x, inner) => '<li><div class="ogc-g" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small></div>'
-        + (inner ? '<ul>' + inner + '</ul>' : '') + '</li>';
+          + addB('p:' + nameKey(n)) + '</div>' + ul(K.length && !shut ? K.slice().reverse().map(k => card(k, d + 1)).join('') : '', 'p:' + nameKey(n), OG_SC[dsd(n)] || '#777') + '</li>'; };
+      const grp = (x, inner) => '<li><div class="ogc-g" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + '</div>'
+        + ul(inner, 'g:' + x.k, OG_SC[x.k]) + '</li>';
       const sideInner = x => x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + x.roots.slice().reverse().map(n => card(n, 0)).join('');
       /* درخت با جهت چپ‌به‌راست کشیده می‌شود؛ ترتیب را برمی‌گردانیم تا اولی سمت راست بیاید */
       let top = [];
@@ -40455,13 +40474,17 @@
         const teamInner = pmLi + empTeamExt.slice().reverse().map(e => extLi(e, OG_SC.emp)).join('') + empTeamRoots.filter(n => !isOwnerUser(n)).slice().reverse().map(n => card(n, 0)).join('')
           + ownerKids.slice().reverse().map(n => card(n, 1)).join('');
         const ownBox = owners.length
-          ? '<div class="ogc-own" style="--sc:' + OG_SC.emp + '"><u>کارفرما</u><span>' + owners.map(o => '<span class="ogc-o"' + (o.ext ? ' data-hrprof="' + esc(o.n) + '"' : '') + '>' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(o.d || 'کارفرما') + '</small></span>').join('') + '</span></div>'
-          : '<div class="ogc-g" style="--sc:' + OG_SC.emp + '"><b>کارفرما</b><small>' + toFa((E ? E.all.length + extN(E) : 0)) + ' نفر</small></div>';
-        top.push('<li>' + ownBox + (teamInner ? '<ul>' + teamInner + '</ul>' : '') + '</li>');
+          ? '<div class="ogc-own" style="--sc:' + OG_SC.emp + '"><u>کارفرما</u><span>' + owners.map(o => '<span class="ogc-o"' + (o.ext ? (og.edit ? ' data-ogext="' + esc(o.n) + '"' : ' data-hrprof="' + esc(o.n) + '"') : '') + '>' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(OV(normName(o.n)).d || o.d || 'کارفرما') + '</small>' + addB('e:' + normName(o.n)) + '</span>').join('') + '</span>' + addB('g:emp') + '</div>'
+          : '<div class="ogc-g" style="--sc:' + OG_SC.emp + '"><b>کارفرما</b><small>' + toFa((E ? E.all.length + extN(E) : 0)) + ' نفر</small>' + addB('g:emp') + '</div>';
+        /* نیروی هر کارفرما، زیر قاب کارفرمایان با نام همان کارفرما */
+        const ownStaff = owners.filter(o => xKids('e:' + normName(o.n)).length).map(o => '<li><div class="ogc-g sm" style="--sc:' + OG_SC.emp + '"><b>نیروی ' + esc(o.n) + '</b>' + addB('e:' + normName(o.n)) + '</div><ul>' + xLis('e:' + normName(o.n), OG_SC.emp) + '</ul></li>').join('');
+        top.push('<li>' + ownBox + ul(teamInner + ownStaff, 'g:emp', OG_SC.emp) + '</li>');
       }
       S.filter(x => x.k !== 'emp' && x.k !== 'pm').forEach(x => top.push(grp(x, sideInner(x))));
-      body = '<div class="ogc"><div class="ogc-z" style="zoom:' + og.z + '"><ul class="ogc-t"><li><div class="ogc-root" data-ogroot="1">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small></div>'
-        + '<ul>' + top.slice().reverse().join('') + '</ul></li></ul></div></div>';
+      /* طرفی که هنوز کسی ندارد (مثلاً مشاور): در حالت ویرایش یا اگر گره آزاد دارد دیده می‌شود تا بشود نیرویش را تعریف کرد */
+      OG_SIDES.filter(([k]) => k !== 'emp' && k !== 'pm' && !SG(k) && (og.edit || xKids('g:' + k).length)).forEach(([k, t]) => top.push(grp({k, t, all: [], ext: []}, '')));
+      body = '<div class="ogc"><div class="ogc-z" style="zoom:' + og.z + '"><ul class="ogc-t"><li><div class="ogc-root" data-ogroot="1">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
+        + '<ul>' + xLis('g:root', '#555') + top.slice().reverse().join('') + '</ul></li></ul></div></div>';
     }else{
       const node = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
         return '<li><div class="ogl-n" style="--sc:' + (OG_SC[dsd(n)] || '#777') + '">' + avatarHtml(n, '', true) + '<span class="ogl-tx"><b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + (fl ? ' · طبقه ' + esc(fl) : '') + '</small></span>'
@@ -40486,7 +40509,7 @@
       + (adm && og.view === 'chart' ? '<button type="button" class="ogc-pr' + (og.edit ? ' on' : '') + '" data-ogedit="1">' + (og.edit ? 'پایان ویرایش' : 'ویرایش چارت') + '</button>' : '')
       + '<button type="button" class="ogc-pr" data-ogfs="1">' + (og.fs ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه') + '</button>'
       + '<button type="button" class="ogc-pr" data-ogprint="1">چاپ / PDF</button></div></div>'
-      + (og.edit ? '<div class="ogc-edh">برای تعیین سرپرست، کارت هر نفر را بکشید و روی کارت سرپرستش رها کنید؛ رها کردن روی کادر پروژه سرپرست را خودکار (از روی سمت) می‌کند. با زدن هر کارت، سمت، طرف و طبقات همان نفر ویرایش می‌شود.</div>' : '')
+      + (og.edit ? '<div class="ogc-edh">«+» روی هر کارت یا قاب، زیرمجموعهٔ تازه می‌سازد (نیروی هر کارفرما، مشاور، ناظر یا هر واحد)؛ یک نفر می‌تواند چند جای چارت بیاید. با زدن هر کارت، همان کارت ویرایش می‌شود. برای تعیین سرپرست کاربران، کارتشان را بکشید و روی سرپرست رها کنید.</div>' : '')
       + '<div class="ogc-lg">' + S.map(x => '<span style="--sc:' + OG_SC[x.k] + '"><i></i>' + esc(x.t) + '</span>').join('') + (adm ? '<small>ترتیب سمت‌ها، سرپرست و طبقات هر نفر در «کاربران و دسترسی ← دسترسی‌ها ← سمت‌ها» تعیین می‌شود</small>' : '') + '</div>'
       + body + '</div>';
   }
@@ -40498,10 +40521,68 @@
     const z = t.closest('[data-ogz]'); if(z){ og.zUser = true; og.z = Math.max(.4, Math.min(1.6, Math.round((og.z + (+z.dataset.ogz) * .1) * 10) / 10)); ogRepaintChart(); return; }
     if(t.closest('[data-ogedit]')){ e.preventDefault(); e.stopPropagation(); og.edit = !og.edit; og.ed = ''; ogRepaintChart(); return; }
     if(t.closest('[data-ogfs]')){ e.preventDefault(); e.stopPropagation(); og.fs = !og.fs; og.zUser = false; document.body.classList.toggle('og-fs-on', og.fs); ogRepaintChart(); ogCenter(); return; }
+    if(og.edit && !t.closest('.ogc-pop')){
+      const ad = t.closest('[data-ogadd]'); if(ad){ e.preventDefault(); e.stopPropagation(); ogXPop(ad.closest('.ogc-n, .ogc-g, .ogc-own, .ogc-root, .ogc-o') || ad, {up: ad.dataset.ogadd}); return; }
+      const xn = t.closest('[data-ogx]'); if(xn && !t.closest('button')){ e.preventDefault(); e.stopPropagation(); ogXPop(xn, {id: xn.dataset.ogx}); return; }
+      const en = t.closest('[data-ogext]'); if(en && !t.closest('button')){ e.preventDefault(); e.stopPropagation(); ogXPop(en, {ext: en.dataset.ogext}); return; }
+    }
     /* حالت ویرایش: زدن کارت ← فرم همان نفر کنار کارت */
     if(og.edit && !t.closest('.ogc-pop') && !t.closest('button')){ const c = t.closest('.ogc-n[data-ogn]'); if(c && c.__noClick && Date.now() - c.__noClick < 400){ e.preventDefault(); e.stopPropagation(); return; } if(c){ e.preventDefault(); e.stopPropagation(); ogPop(c); return; } }
     if(!t.closest('.ogc-pop')){ const op = document.querySelector('.ogc-pop'); if(op) op.remove(); }
   }, true);
+  /* فرم گرهٔ آزاد (افزودن/ویرایش) یا اصلاح عنوان طرف بیرونی */
+  function ogXPop(card, o){
+    const old = document.querySelector('.ogc-pop'); if(old) old.remove();
+    const box = card.closest('.og2'); if(!box) return;
+    const pop = document.createElement('div'); pop.className = 'ogc-pop';
+    const P = ogPeople(), pos = ogPositions().filter(x => !x.off).map(x => x.n);
+    const dl = '<datalist id="ogxPpl">' + P.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist><datalist id="ogxPos">' + pos.map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>';
+    if(o.ext){
+      const k = normName(o.ext), ov = og.nodes.get('o:' + k) || {};
+      pop.innerHTML = '<div class="ogc-poph"><b>' + esc(o.ext) + '</b><small>عنوان روی چارت</small></div><div class="ogp-f" data-ogxf="o:' + esc(k) + '" data-ogxext="1">' + dl
+        + '<label><u>عنوان / سمت</u><input type="text" data-ogxv="d" list="ogxPos" value="' + esc(ov.d || '') + '" placeholder="مثلاً مشاور ناظر سازه"></label>'
+        + '<label class="og-chk"><input type="checkbox" data-ogxv="hide"' + (ov.hide ? ' checked' : '') + '> از چارت پنهان شود</label>'
+        + '<div class="ogp-fa"><button type="button" class="mini go" data-ogxsave="1">ذخیره</button><button type="button" class="mini" data-ogxclose="1">انصراف</button></div></div>';
+    }else{
+      const x = o.id ? (og.nodes.get(o.id) || {}) : {};
+      pop.innerHTML = '<div class="ogc-poph"><b>' + (o.id ? 'ویرایش کارت' : 'زیرمجموعهٔ تازه') + '</b><small>نام از فهرست افراد یا هر نام دیگر</small></div><div class="ogp-f" data-ogxf="' + esc(o.id || '') + '" data-ogxup="' + esc(o.id ? (x.up || '') : o.up) + '">' + dl
+        + '<label><u>نام</u><input type="text" data-ogxv="n" list="ogxPpl" value="' + esc(x.n || '') + '" placeholder="نام شخص یا واحد" autocomplete="off"></label>'
+        + '<label><u>سمت</u><input type="text" data-ogxv="r" list="ogxPos" value="' + esc(x.r || '') + '" placeholder="مثلاً ناظر مقیم" autocomplete="off"></label>'
+        + '<label><u>طرف (رنگ)</u><select data-ogxv="sd" data-nons="1"><option value="">مثل بالادست</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + (x.sd === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
+        + '<div class="ogp-fa"><button type="button" class="mini go" data-ogxsave="1">' + (o.id ? 'ذخیره' : 'افزودن') + '</button>'
+        + (o.id ? '<button type="button" class="mini" data-ogxadd="' + esc(o.id) + '">+ زیرمجموعه</button><button type="button" class="mini bad" data-ogxdel="' + esc(o.id) + '">حذف</button>' : '')
+        + '<button type="button" class="mini" data-ogxclose="1">انصراف</button></div></div>';
+    }
+    box.appendChild(pop);
+    const r = card.getBoundingClientRect(), br = box.getBoundingClientRect(), ph = pop.offsetHeight || 300, below = window.innerHeight - r.bottom;
+    pop.style.top = (below > ph + 16 ? r.bottom - br.top + 8 : Math.max(8, r.top - br.top - ph - 8)) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left - br.left, br.width - 348)) + 'px';
+    const f = pop.querySelector('input[type="text"]'); if(f) try{ f.focus(); }catch(e){}
+  }
+  async function ogXSave(f){
+    const v = k => { const el = f.querySelector('[data-ogxv="' + k + '"]'); return !el ? '' : el.type === 'checkbox' ? el.checked : String(el.value || '').trim(); };
+    let id = f.dataset.ogxf, obj;
+    if(f.dataset.ogxext){ obj = {d: v('d')}; if(v('hide')) obj.hide = 1; if(!obj.d && !obj.hide) obj = null; }
+    else{ if(!v('n')){ showDialog('warn', 'نام', 'نام را بنویسید.'); return; }
+      const cur = id ? (og.nodes.get(id) || {}) : {};
+      if(!id) id = 'n' + Date.now().toString(36);
+      obj = Object.assign({}, cur, {n: v('n'), r: v('r'), sd: v('sd'), up: f.dataset.ogxup}); if(!obj.sd) delete obj.sd; }
+    const b = f.querySelector('[data-ogxsave]'); if(b) b.disabled = true;
+    try{ await ogSaveRow(OG_NODE_KIND, id, obj); if(obj) og.nodes.set(id, obj); else og.nodes.delete(id); const pp = document.querySelector('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); try{ shrToast('چارت به‌روز شد'); }catch(e){} }
+    catch(err){ if(b) b.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+  }
+  document.addEventListener('click', async e => {
+    const t = e.target; if(!t.closest || !t.closest('.ogc-pop')) return;
+    if(t.closest('[data-ogxclose]')){ t.closest('.ogc-pop').remove(); return; }
+    const sv = t.closest('[data-ogxsave]'); if(sv){ ogXSave(sv.closest('[data-ogxf]')); return; }
+    const ad = t.closest('[data-ogxadd]'); if(ad){ const c = document.querySelector('.og2 [data-ogx="' + CSS.escape(ad.dataset.ogxadd) + '"]'); if(c) ogXPop(c, {up: 'x:' + ad.dataset.ogxadd}); return; }
+    const dl = t.closest('[data-ogxdel]'); if(dl){ const id = dl.dataset.ogxdel, x = og.nodes.get(id) || {};
+      const sub = Array.from(og.nodes.entries()).filter(([k, y]) => y.up === 'x:' + id);
+      if(!(await askConfirm('حذف از چارت', '«' + (x.n || '') + '» از چارت برداشته می‌شود' + (sub.length ? ' و ' + toFa(sub.length) + ' زیرمجموعه‌اش به بالادست او منتقل می‌شوند' : '') + '.', 'حذف'))) return;
+      try{ for(const [k, y] of sub){ const y2 = Object.assign({}, y, {up: x.up}); await ogSaveRow(OG_NODE_KIND, k, y2); og.nodes.set(k, y2); }
+        await ogSaveRow(OG_NODE_KIND, id, null); og.nodes.delete(id); const pp = document.querySelector('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
+  });
+  document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.closest && e.target.closest('.ogc-pop [data-ogxf] input[type="text"]')){ e.preventDefault(); ogXSave(e.target.closest('[data-ogxf]')); } });
   function ogPop(card){
     const old = document.querySelector('.ogc-pop'); if(old){ old.remove(); if(old.__n === card.dataset.ogn) return; }
     const n = card.dataset.ogn, P = ogPeople(); const box = card.closest('.og2'); if(!box) return;
