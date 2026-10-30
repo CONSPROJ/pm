@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030123808">
+<meta name="pm-build" content="20261030124035">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19827,6 +19827,22 @@
   }
   /* ستون کناری: پرکاربرد و اخیر (فقط دسکتاپ) */
   .sbq, .sbr{display:none;}
+  .lnd{display:none;}
+  @media (min-width:1180px){
+    .panel.lnd-on > :not(.lnd), html.lnd-v :is(#reportView, #viewTb){display:none !important;}
+    .panel.lnd-on > .lnd{display:block;max-width:var(--cw, 1040px);margin:0 auto;padding:6px 0 30px;}
+    .lnd-h{display:flex;align-items:baseline;gap:10px;margin:4px 2px 16px;} .lnd-h b{font-size:18px;font-weight:900;color:var(--ink);} .lnd-h small{font-size:12px;color:var(--muted);}
+    .lnd-g{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:10px;}
+    .lnd-c{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:border-color .15s, box-shadow .15s, transform .15s;min-width:0;}
+    .lnd-c:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--c) 40%, var(--line));box-shadow:0 10px 24px -14px color-mix(in srgb, var(--c) 60%, transparent);}
+    .lnd-c > i{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:color-mix(in srgb, var(--c) 12%, transparent);color:var(--c);font-style:normal;}
+    .lnd-c > i svg{width:20px;height:20px;} .lnd-c > i .ki{display:contents;}
+    .lnd-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+    .lnd-t b{font-size:13.5px;font-weight:800;color:var(--ink);} .lnd-t small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .lnd-t u{text-decoration:none;font-size:10.5px;color:var(--muted);opacity:.85;}
+    .lnd-c > em{font-style:normal;font-size:12px;font-weight:800;min-width:26px;height:24px;padding:0 8px;border-radius:99px;display:grid;place-items:center;background:var(--field);color:var(--muted);}
+    .lnd-c.hot > em{background:var(--alert, #c0392b);color:#fff;}
+  }
   /* کارت‌های فعالیت (دسکتاپ): صفحهٔ اول جمع‌وجور و فهرست یک‌خطی */
   @media (min-width:1180px){
     #deckModal .dh-bs{display:grid !important;grid-template-columns:repeat(3, minmax(0,1fr)) !important;gap:8px !important;padding:4px !important;border-radius:16px;background:var(--field);}
@@ -48243,6 +48259,39 @@
       })).observe(document.documentElement, {attributes: true, attributeFilter: ['style'], childList: true, subtree: true});
     }catch(e){}
     document.querySelectorAll(SEL).forEach(fix);
+  })();
+
+  /* ====== صفحهٔ آغاز «اسناد» و «گزارش‌ها» (دسکتاپ) ======
+     زدن خود «اسناد» یا «گزارش‌ها» در ستون کناری اول فهرستی از دسته‌ها/گزارش‌ها نشان می‌دهد (مثل میز کار)؛
+     با انتخاب هر کدام همان صفحهٔ فعلی باز می‌شود. */
+  (function landing(){
+    const mq = window.matchMedia ? window.matchMedia('(min-width:1180px)') : {matches: false};
+    const KC = {statement:'#2f6f8f', contract:'#b0631c', minute:'#b8456b', letter:'#2a8a6a', design:'#6d5bb5', chore:'#3d7fb0', archive:'#6b7a8c'};
+    const off = () => { document.querySelectorAll('.panel.lnd-on').forEach(p => p.classList.remove('lnd-on')); document.documentElement.classList.remove('lnd-v'); };
+    function build(kind){
+      const pn = document.getElementById(kind === 'adm' ? 'panelAdmin' : 'panelView'); if(!pn) return;
+      let box = pn.querySelector(':scope > .lnd'); if(!box){ box = document.createElement('div'); box.className = 'lnd'; pn.prepend(box); }
+      let items = '';
+      if(kind === 'adm'){
+        items = Array.from(document.querySelectorAll('#admCats > .acat')).filter(c => !c.classList.contains('c-all') && c.offsetParent !== null || (c.dataset.admcat && c.dataset.admcat !== 'all' && c.style.display !== 'none')).map(c => {
+          const k = c.dataset.admcat, b = c.querySelector('.acat-tx b'), sm = c.querySelector('.acat-tx small'), n = c.querySelector('.acat-n'), ic = c.querySelector('.acat-ic'), ls = c.querySelector('.acat-last');
+          return '<button type="button" class="lnd-c' + (c.classList.contains('hot') ? ' hot' : '') + '" data-lndadm="' + esc(k) + '" style="--c:' + (KC[k] || '#5b6b7d') + '"><i>' + (ic ? ic.innerHTML : '') + '</i><span class="lnd-t"><b>' + esc(b ? b.textContent : k) + '</b><small>' + esc(sm ? sm.textContent.trim() : '') + '</small>' + (ls && ls.textContent.trim() ? '<u>' + esc(ls.textContent.trim().replace('آخرین شماره', 'آخرین: ')) + '</u>' : '') + '</span><em>' + esc(n ? n.textContent : '') + '</em></button>'; }).join('');
+      }else{
+        items = Array.from(document.querySelectorAll('#viewKindCaps .kcap[data-kind]')).filter(c => !c.hidden && c.style.display !== 'none').map(c => {
+          const b = c.querySelector('.rk-tx b'), sm = c.querySelector('.rk-tx small'), ic = c.querySelector('.rk-ic');
+          return '<button type="button" class="lnd-c" data-lndview="' + esc(c.dataset.kind) + '" style="--c:var(--vz1, #2f6f9f)"><i>' + (ic ? ic.innerHTML : '') + '</i><span class="lnd-t"><b>' + esc(b ? b.textContent : '') + '</b><small>' + esc(sm ? sm.textContent : '') + '</small></span></button>'; }).join('');
+      }
+      box.innerHTML = '<div class="lnd-h"><b>' + (kind === 'adm' ? 'اسناد و دفتر فنی' : 'گزارش‌ها') + '</b><small>' + (kind === 'adm' ? 'یک دسته را انتخاب کنید' : 'یک گزارش را انتخاب کنید') + '</small></div><div class="lnd-g">' + items + '</div>';
+      pn.classList.add('lnd-on'); document.documentElement.classList.toggle('lnd-v', kind !== 'adm');
+    }
+    document.addEventListener('click', e => {
+      if(!mq.matches || !e.target.closest) return;
+      const t = e.target.closest('#tabAdmin, #tabView');
+      if(t && !e.target.closest('.sb-it, .sb-sub')){ const k = t.id === 'tabAdmin' ? 'adm' : 'view'; setTimeout(() => { try{ build(k); }catch(er){} }, 120); return; }
+      const a = e.target.closest('[data-lndadm]'); if(a){ e.preventDefault(); off(); try{ admSetCat(a.dataset.lndadm); }catch(er){} try{ window.scrollTo({top: 0}); }catch(er){} return; }
+      const v = e.target.closest('[data-lndview]'); if(v){ e.preventDefault(); off(); const c = document.querySelector('#viewKindCaps [data-kind="' + CSS.escape(v.dataset.lndview) + '"]'); if(c) c.click(); try{ window.scrollTo({top: 0}); }catch(er){} return; }
+      if(e.target.closest('[data-sbadm], [data-sbview], [data-sbws], [data-hzgo], #tabHome, #tabTasks, #viewKindCaps .kcap, #admCats .acat')) off();
+    }, true);
   })();
 
   /* ====== چیدمان خودکار دسکتاپ (autoGrid) ======
