@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030130249">
+<meta name="pm-build" content="20261030130341">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -91988,18 +91988,33 @@
             + (hot ? '<em class="hot">' + toFa(hot) + '</em>' : '<u>' + toFa(G.length) + '</u>') + CHV + '</button><div class="sb-gl">' + rows + '</div></div>'; });
       }catch(e){}
       put('tabTasks', h, cur === 'tasks');
+      /* اسناد و گزارش‌ها هم مثل میز کار: دسته‌های تاشو */
+      const S2 = sbgGet();
+      const sgrp = (key, t, rows, act) => { if(!rows) return ''; const op = S2[key] != null ? !!S2[key] : !!act;
+        return '<div class="sb-grp' + (op ? ' open' : '') + '" data-sbg="' + key + '"><button type="button" class="sb-gh sb-ght" aria-expanded="' + op + '"><span>' + esc(t) + '</span><u>' + toFa((rows.match(/class="sb-it/g) || []).length) + '</u>' + CHV + '</button><div class="sb-gl">' + rows + '</div></div>'; };
       /* اسناد */
       let a = '';
       try{
-        a = ADM_ORDER.map(k => it('data-sbadm="' + k + '" class="c-' + k + '"', (ADM_SEC_ICON && ADM_SEC_ICON[k]) || '', KIND_LABEL[k] || k)).join('')
-          + it('data-sbadm="all"', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></svg>', 'همهٔ اسناد')
-          + it('data-sbadm="archive"', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V9M10 13h4"/></svg>', 'آرشیو');
+        let ak = ''; try{ const av = document.getElementById('adminView'); ak = (av && av.dataset.cat) || ''; }catch(e){}
+        const ai = k => k === 'archive'
+          ? it('data-sbadm="archive"', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V9M10 13h4"/></svg>', 'آرشیو')
+          : (ADM_ORDER.indexOf(k) !== -1 ? it('data-sbadm="' + k + '" class="c-' + k + '"', (ADM_SEC_ICON && ADM_SEC_ICON[k]) || '', KIND_LABEL[k] || k) : '');
+        const AG = [['ag-pay', 'اسناد پیمان', ['statement', 'contract']], ['ag-cor', 'مکاتبات و جلسات', ['letter', 'minute']], ['ag-tec', 'فنی و اجرایی', ['design', 'chore']], ['ag-arc', 'بایگانی', ['archive']]];
+        a = AG.map(([key, t, ks]) => sgrp(key, t, ks.map(ai).join(''), cur === 'admin' && ks.indexOf(ak) !== -1)).join('');
+        /* هر نوعی که در گروه‌ها نیامده */
+        a += ADM_ORDER.filter(k => !AG.some(g => g[2].indexOf(k) !== -1)).map(ai).join('');
       }catch(e){ a = ''; }
       put('tabAdmin', a, cur === 'admin');
       /* گزارش‌ها */
       let v = '';
-      try{ v = Array.from(document.querySelectorAll('#viewKindCaps [data-kind]')).filter(b => !b.hidden).map(b => {
-          const t = (b.querySelector('b') || b).textContent.trim(), ic = b.querySelector('svg'); return it('data-sbview="' + b.dataset.kind + '"', ic ? ic.outerHTML : '', t); }).join(''); }catch(e){ v = ''; }
+      try{
+        const vb = document.querySelector('#viewKindCaps [data-kind].on'), vk = vb ? vb.dataset.kind : '';
+        const R = {}; Array.from(document.querySelectorAll('#viewKindCaps [data-kind]')).filter(b => !b.hidden).forEach(b => {
+          const t = (b.querySelector('b') || b).textContent.trim(), ic = b.querySelector('svg'); R[b.dataset.kind] = it('data-sbview="' + b.dataset.kind + '"', ic ? ic.outerHTML : '', t); });
+        const VG = [['vg-pj', 'پروژه', ['intro', 'org']], ['vg-ex', 'اجرا و کنترل', ['daily', 'hr', 'crew', 'pc']], ['vg-fin', 'مالی و اسناد', ['admin', 'dcc', 'cf']], ['vg-res', 'منابع', ['prc', 'wh', 'qc', 'mc']]];
+        v = VG.map(([key, t, ks]) => sgrp(key, t, ks.map(k => R[k] || '').join(''), cur === 'view' && ks.indexOf(vk) !== -1)).join('')
+          + Object.keys(R).filter(k => !VG.some(g => g[2].indexOf(k) !== -1)).map(k => R[k]).join('');
+      }catch(e){ v = ''; }
       put('tabView', v, cur === 'view');
       mark();
     }
