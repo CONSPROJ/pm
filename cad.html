@@ -140,23 +140,24 @@ async function readInWorker(buf){
   try{ return await readOnce(buf); }
   catch(err){ if(/noworker/.test(String(err))) throw err; return await readOnce(copy); }
 }
-/* روی گوشی هر فایل با Worker تازه (حافظه آزاد شود)؛ روی دسکتاپ همان Worker می‌ماند تا خواننده یک بار کامپایل شود */
-const LOWMEM = (window.matchMedia && matchMedia('(max-width:760px)').matches) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+/* هر فایل با Worker تازه خوانده و بعد بسته می‌شود (حافظهٔ WebAssembly کامل آزاد می‌شود)؛ خوانندهٔ کامپایل‌شده
+   (WebAssembly.Module) را صفحه نگه می‌دارد و به Worker بعدی می‌دهد، پس بار دوم دوباره کامپایل نمی‌شود */
+let WMOD = null;
 function readOnce(buf){
-  if(LOWMEM){ try{ if(WK) WK.terminate(); }catch(e){} WK = null; }
+  try{ if(WK) WK.terminate(); }catch(e){} WK = null;
   return new Promise((res, rej) => {
-    try{ if(!WK) WK = new Worker(new URL('./lib/cad-worker.js', location.href), {type: 'module'}); }catch(e){ WK = null; }
+    try{ WK = new Worker(new URL('./lib/cad-worker.js', location.href), {type: 'module'}); if(WMOD) WK.postMessage({mod: WMOD}); }catch(e){ WK = null; }
     /* بی Worker، DWG روی همین صفحه خوانده نمی‌شود (گوشی یخ می‌زد)؛ DXF کوچک اشکالی ندارد */
     const isDwg = /^AC10/.test(new TextDecoder().decode(new Uint8Array(buf).slice(0, 6)));
     const here = () => (isDwg || buf.byteLength > 4e6) ? Promise.reject(new Error('noworker')) : readHere(buf);
     if(!WK) return here().then(res, rej);
     const id = ++wkId;
-    const on = e => { const d = e.data || {}; if(d.id !== id && !d.fatal) return;
+    const on = e => { const d = e.data || {}; if(d.wasmMod){ WMOD = d.wasmMod; return; } if(d.id !== id && !d.fatal) return;
       if(d.fatal){ WK.removeEventListener('message', on); try{ WK.terminate(); }catch(e){} WK = null; rej(new Error('wasm ' + d.fatal)); return; }
       if(d.stage){ busy(d.stage === 'dl' ? 'دریافت خوانندهٔ نقشه… <b>' + toFa(d.p || 0) + '٪</b><div class="pbar"><i style="width:' + (d.p || 0) + '%"></i></div><small style="display:block;opacity:.7;margin-top:4px">فقط بار اول (حدود ۱۰ مگابایت)</small>'
         : d.stage === 'dwg' ? 'در حال خواندن DWG…' : 'در حال ساختن نقشه…'); return; }
       WK.removeEventListener('message', on); WK.removeEventListener('error', er);
-      if(LOWMEM || !d.ok){ try{ WK.terminate(); }catch(e){} WK = null; }
+      try{ WK.terminate(); }catch(e){} WK = null;
       if(d.ok) res(d); else rej(new Error(d.err)); };
     const er = ev => { WK.removeEventListener('message', on); WK.removeEventListener('error', er); try{ WK.terminate(); }catch(e){} WK = null; here().then(res, rej); ev.preventDefault && ev.preventDefault(); };
     WK.addEventListener('message', on); WK.addEventListener('error', er);
@@ -173,11 +174,26 @@ async function readHere(buf){
 }
 /* نقشهٔ پایه روی Canvas (ده‌ها هزار خط بی کندی)؛ نشانه‌ها همچنان SVG روی آن */
 const cv = document.createElement('canvas'); cv.id = 'cv'; stage.insertBefore(cv, view);
-const cx = cv.getContext('2d'), shot = document.createElement('canvas'), sx = shot.getContext('2d');
+/* کشیدن در Worker جدا (OffscreenCanvas) تا صفحه و مرورگر درگیر نشوند؛ مرورگر بی پشتیبانی: همین‌جا */
+let RW = null;
+try{ if(cv.transferControlToOffscreen && window.OffscreenCanvas && window.Path2D && new URLSearchParams(location.search).get('rw') !== '0'){
+  RW = new Worker(new URL('./lib/cad-render.js', location.href), {type: 'module'}); const off = cv.transferControlToOffscreen(); RW.postMessage({init: 1, canvas: off}, [off]);
+  RW.addEventListener('error', () => { RW = null; });
+} }catch(e){ RW = null; }
+const RWQ = new Map(); let rwId = 0;
+if(RW) RW.addEventListener('message', e => { const d = e.data || {}; const k = d.thumb || d.png; if(k && RWQ.has(k)){ RWQ.get(k)(d); RWQ.delete(k); } });
+const rwAsk = msg => new Promise(r => { const id = ++rwId; RWQ.set(id, r); const key = Object.keys(msg)[0]; msg[key].id = id; RW.postMessage(msg); });
+const cx = RW ? null : cv.getContext('2d'), shot = document.createElement('canvas'), sx = shot.getContext('2d');
+const layersOff = () => { const o = {}; (S.layers || new Map()).forEach((v, k) => { if(v === false) o[k] = 1; }); return o; };
+const dprOf = () => Math.min(S.big ? 1.25 : 2, window.devicePixelRatio || 1);
+let rwRaf = 0, rwFull = false;
+function rwView(full){ rwFull = rwFull || full; if(rwRaf) return; rwRaf = requestAnimationFrame(() => { rwRaf = 0; const f = rwFull; rwFull = false;
+  RW.postMessage({view: {vb: Object.assign({}, S.vb), W: stage.clientWidth || 1, H: stage.clientHeight || 1, dpr: dprOf(), off: layersOff(), full: f}}); }); }
 let DB = null, shotVB = null, rT = 0;
 function showDb(out){
   S.nEnt = out.n; S.layers = new Map(out.layers.map(l => [l.ly, true]));
-  DB = out.layers.map(l => ({ly: l.ly, st: l.st.map(([c, L]) => [c, L.map(([d, b]) => ({P: new Path2D(d), b}))]), fill: l.fill.map(([d, c, op, b]) => [new Path2D(d), c, op, b]), tx: l.tx}));
+  if(RW){ DB = true; RW.postMessage({data: out.layers, colors: {'var(--draw)': colOf('var(--draw)')}}); }
+  else DB = out.layers.map(l => ({ly: l.ly, st: l.st.map(([c, L]) => [c, L.map(([d, b]) => ({P: new Path2D(d), b}))]), fill: l.fill.map(([d, c, op, b]) => [new Path2D(d), c, op, b]), tx: l.tx}));
   S.big = out.n > 25000;
   dwgG.innerHTML = '';
   const F = out.snaps, sn = new Array(F.length / 2); for(let k = 0; k < sn.length; k++) sn[k] = [F[k * 2], F[k * 2 + 1]];
@@ -208,8 +224,9 @@ function paint(ctx, v, W, H, dpr, minTx){
     String(str).split('\n').forEach((ln, i) => ctx.fillText(ln, 0, i * ph * 1.35)); ctx.restore(); });
 }
 function fullDraw(){
+  if(RW){ rwView(true); return; }
   rT = 0;
-  const W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = Math.min(S.big ? 1.25 : 2, window.devicePixelRatio || 1);
+  const W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = dprOf();
   if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = shot.width = Math.round(W * dpr); cv.height = shot.height = Math.round(H * dpr); }
   cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
   if(!DB) return;
@@ -217,6 +234,10 @@ function fullDraw(){
   sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, shot.width, shot.height); sx.drawImage(cv, 0, 0); shotVB = Object.assign({}, S.vb);
 }
 /* تصویر کوچک یک ریز محل: همان بخش نقشه با محدودهٔ پررنگ (JPEG سبک برای کارت فضا) */
+async function thumbAsync(pts, color){
+  if(RW){ const r = await rwAsk({thumb: {pts: pts.map(p => ({x: p.x, y: p.y})), color, light: {'var(--draw)': '#1d2430'}}}); return r.url; }
+  return thumbOf(pts, color);
+}
 function thumbOf(pts, color){
   const W = 480, H = 320; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
@@ -234,6 +255,7 @@ function thumbOf(pts, color){
 }
 /* حین حرکت: همان تصویر آخر جابه‌جا/بزرگ می‌شود؛ پس از ایستادن، کشیدن کامل */
 function quickDraw(){
+  if(RW){ rwView(false); return; }
   if(!shotVB){ fullDraw(); return; }
   const v = S.vb, W = stage.clientWidth || 1, H = stage.clientHeight || 1, dpr = cv.width / W, s2 = shotVB.w / v.w;
   cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
@@ -402,7 +424,9 @@ function csv(){ const rows = [['نام', 'نوع', 'مساحت m2', 'محیط/ط
   const b = new Blob(['﻿' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (S.file || 'cad') + '-areas.csv'; a.click(); }
 $('#pngBtn').onclick = () => { const s = new XMLSerializer().serializeToString(view), W = stage.clientWidth * 2, H = stage.clientHeight * 2;
   const st = getComputedStyle(document.documentElement), bg = st.getPropertyValue('--paper') || '#fff', dr = st.getPropertyValue('--draw') || '#000';
-  const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H); fullDraw(); x.drawImage(cv, 0, 0, W, H); x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
+  const img = new Image(); img.onload = async () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    if(RW){ const r = await rwAsk({png: {vb: Object.assign({}, S.vb), W, H, bg}}); if(r && r.bmp) x.drawImage(r.bmp, 0, 0, W, H); } else { fullDraw(); x.drawImage(cv, 0, 0, W, H); }
+    x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s.replace(/var\(--draw\)/g, dr).replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')); };
 /* ---------- انتخاب هاشور یا چندخطی بستهٔ خود نقشه: مساحت و محیط ---------- */
 const pipR = (x, y, r) => { let o = false; for(let k = 0, j = r.length - 1; k < r.length; j = k++){ const a = r[k], b2 = r[j]; if((a[1] > y) !== (b2[1] > y) && x < (b2[0] - a[0]) * (y - a[1]) / (b2[1] - a[1]) + a[0]) o = !o; } return o; };
@@ -440,12 +464,12 @@ function linkHtml(m, i){
     + '<button type="button" class="btn pri" data-lk="' + i + '">' + (m.loc ? 'ثبت دوباره' : 'ثبت در کارت') + '</button></div>'
     + (m.loc ? '<small class="lk-ok">✓ ثبت شد برای ' + String(m.locT || m.loc).replace(/</g, '&lt;') + '</small>' : '');
 }
-$('#list').addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
+$('#list').addEventListener('click', async e => { const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
   const i = +b.dataset.lk, m = S.marks[i], k = (document.querySelector('[data-lks="' + i + '"]') || {}).value, kind = (document.querySelector('[data-lkk="' + i + '"]') || {}).value || 'f';
   if(!m || !k){ b.textContent = 'محل را انتخاب کنید'; return; }
   b.disabled = true; b.textContent = 'در حال ثبت…';
   const A = mArea(m.a != null ? m.a : area(m.pts)), P = mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])));
-  let img = ''; try{ img = thumbOf(m.pts, m.color); }catch(er){}
+  let img = ''; try{ img = await thumbAsync(m.pts, m.color); }catch(er){}
   window.parent.postMessage({cadLink: {i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}}, location.origin); }, true);
 setTool('pan');
 </script>
