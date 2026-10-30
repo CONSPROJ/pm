@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030081617">
+<meta name="pm-build" content="20261030081829">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23266,6 +23266,15 @@
   .flr-rows{display:flex;flex-direction:column;gap:6px;}
   .flr-r{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:5px;padding:9px 11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);min-width:0;}
   .flr-r.link{cursor:pointer;} .flr-r.link:hover{border-color:color-mix(in srgb, var(--ink) 25%, var(--line));}
+  .flr-xw{display:flex;flex-direction:column;min-width:0;}
+  .flr-xw > .flr-r{width:100%;}
+  .flr-xw .flr-xa{display:inline-block;transition:transform .18s;font-style:normal;} .flr-xw.open .flr-xa{transform:rotate(-90deg);}
+  .flr-xw.open > .flr-r{border-color:var(--sky);border-bottom-left-radius:4px;border-bottom-right-radius:4px;}
+  .flr-xl{display:flex;flex-direction:column;gap:4px;margin:4px 0 6px;padding:6px 8px 8px;border-radius:0 0 12px 12px;background:color-mix(in srgb, var(--sky) 5%, transparent);border:1px solid color-mix(in srgb, var(--sky) 20%, var(--line));border-top:0;}
+  .flr-xl[hidden]{display:none !important;}
+  .flr-xh{font-size:10.5px;font-weight:800;color:var(--muted);padding:6px 2px 2px;} .flr-xh small{font-weight:700;margin-inline-start:4px;}
+  .flr-it.rep{cursor:default;} .flr-rd{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:var(--muted);opacity:.6;margin-top:7px;}
+  .flr-xp{all:unset;cursor:pointer;align-self:flex-start;margin-top:4px;font-size:11.5px;font-weight:800;color:var(--sky);padding:6px 4px;}
   [data-theme="dark"] .flr-r{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);}
   .flr-rt{display:flex;align-items:center;gap:8px;min-width:0;}
   .flr-rt .ava{width:26px;height:26px;flex:0 0 26px;}
@@ -74476,8 +74485,9 @@
         const a = String(pick(r,F.activity) || '').trim(); if(a) y.acts.add(a);
         ctr.set(c, y);
         const zk = z || '—', sub = String(pick(r,F.sub) || '').trim();
-        const zz = zones.get(zk) || {men:0, subs:new Set(), ctr:new Set()};
+        const zz = zones.get(zk) || {men:0, subs:new Set(), ctr:new Set(), acts:new Map()};
         zz.men += share; if(sub) zz.subs.add(sub); zz.ctr.add(c);
+        if(a){ const ak = a + '¦' + c; const o = zz.acts.get(ak) || {a, c, sub, men: 0, d: dk}; o.men += share; if(dk > o.d) o.d = dk; zz.acts.set(ak, o); }
         zones.set(zk, zz);
       }else if(prev.has(dk)) prevTot += share;
     });
@@ -74540,6 +74550,8 @@
       if(t){ m.hidden = true; try{ gotoAdminItem('task', t.dataset.flrtask); }catch(err){} return; }
       const pq = e.target.closest('[data-flrpg]');
       if(pq){ m.hidden = true; try{ window.spGoSkill && window.spGoSkill(pq.dataset.flrpg, flrS.k); }catch(err){} return; }
+      const xw = e.target.closest('[data-flrx]');
+      if(xw){ const w = xw.closest('.flr-xw'), L = w && w.querySelector(':scope > .flr-xl'); if(L){ L.hidden = !L.hidden; w.classList.toggle('open', !L.hidden); } return; }
       const c = e.target.closest('[data-flrctr]');
       if(c){ m.hidden = true; try{ openContractorProfile(c.dataset.flrctr); }catch(err){} }
     });
@@ -74618,7 +74630,7 @@
     ctr.forEach((v, c) => addK(c));
     try{ ctrContacts.forEach((c, k) => { if(k) ctrK.add(k); addK(c.name); }); }catch(e){}
     const isCtr = z => { if(!z || z === '—') return false; try{ const k = normName(z); return !!k && (ctrK.has(k) || ctrK.has(normName(ctrCanon(z)))); }catch(e){ return false; } };
-    S.zones.forEach((v, z) => { if(isCtr(z)) return; zones.set(z, {men: v.men / S.days, subs: v.subs, ctr: v.ctr, n: 0}); });
+    S.zones.forEach((v, z) => { if(isCtr(z)) return; zones.set(z, {men: v.men / S.days, subs: v.subs, ctr: v.ctr, acts: v.acts, n: 0}); });
     x.rows.forEach(r => { const p = String(pick(r,T.pos) || '').trim(); if(!p || isCtr(p)) return; const z = Array.from(zones.keys()).find(q => txKey(q) === txKey(p)) || p; const y = zones.get(z) || {men:0, subs:new Set(), ctr:new Set(), n:0}; y.n++; zones.set(z, y); });
     const zs = Array.from(zones.entries()).sort((a, b) => (b[1].men - a[1].men) || (b[1].n - a[1].n));
     const zMax = Math.max(1, ...zs.map(z => z[1].men));
@@ -74655,6 +74667,18 @@
     const pgP = PGS.length ? Math.round(PGS.reduce((a, q) => a + q[1], 0) / PGS.length) : 0;
     const pgSec = PGS.length ? sec('پیشرفت تخصص‌ها <span class="flr-sub">میانگین ' + toFa(pgP) + '٪</span>', PGS.length, '<div class="flr-rows">' + cap(PGS.sort((a, b) => b[1] - a[1]), 6, ([s, v]) =>
         '<button type="button" class="flr-r flr-sk" data-flrpg="' + esc(s) + '"><div class="flr-rt"><b>' + esc(s) + '</b><span>' + toFa(Math.round(v)) + '٪</span></div><div class="flr-bar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%"></i></div></button>') + '</div>') : '';
+    /* لیست فعالیت داخل کارت طبقه: زدن هر محل یا پیمانکار، فعالیت‌هایش همین‌جا باز می‌شود */
+    const tkIt = r => { const st = taskStatus(r), pl = taskPlaceText(r), due = pick(r,T.due);
+      return '<button type="button" class="flr-it" data-flrtask="' + esc(pick(r,T.id) || r.__admId || '') + '"><span class="st ' + st.cls + '"><span class="st-dot"></span></span>'
+        + '<span class="flr-tx"><b>' + esc(pick(r,T.title) || 'بدون عنوان') + '</b><small>' + [st.label, pick(r,T.m1), pl ? 'محل: ' + pl : '', due ? 'موعد ' + taskDate(due) : ''].filter(Boolean).map(esc).join(' · ')
+        + (flrLate(r) ? ' <em class="l">دیرکرد</em>' : '') + '</small></span><i>‹</i></button>'; };
+    const repIt = (a, sub2) => '<div class="flr-it rep"><span class="flr-rd"></span><span class="flr-tx"><b>' + esc(a) + '</b>' + (sub2 ? '<small>' + esc(sub2) + '</small>' : '') + '</span></div>';
+    const xBody = (tks, reps, extra) => '<div class="flr-xl" hidden>'
+      + (tks.length ? '<div class="flr-xh">از لیست فعالیت <small>' + toFa(tks.length) + '</small></div>' + tks.map(tkIt).join('') : '')
+      + (reps.length ? '<div class="flr-xh">از گزارش روزانه <small>' + toFa(reps.length) + '</small></div>' + reps.join('') : '')
+      + (!tks.length && !reps.length ? '<p class="flr-empty">فعالیتی ثبت نشده است.</p>' : '') + (extra || '') + '</div>';
+    const zTasks = z => rows.filter(r => { const p = String(pick(r,T.pos) || '').trim(); return p && txKey(p) === txKey(z); });
+    const cTasks = c => rows.filter(r => { try{ return taskCtrKeys(r).some(q => q !== TK_NO_CTR && sameEntity(q, c)); }catch(e){ return false; } });
     const html =
       '<div class="flr-kps">'
       + kp(fa(S.avg), per === 'day' ? 'نفر نیرو' : 'نفر در روز', '', dTxt)
@@ -74670,16 +74694,17 @@
       + pgSec
       + '<div class="flr-cols">'
       + sec('محل‌های کارکرد', zs.length, zs.length ? '<div class="flr-rows">' + cap(zs, 3, ([z, v]) =>
-            '<div class="flr-r"><div class="flr-rt"><b>' + esc(z) + '</b><span>' + (v.men ? fa(v.men) + ' نفر' : '') + (v.n ? (v.men ? ' · ' : '') + toFa(v.n) + ' فعالیت' : '') + '</span></div>'
+            '<div class="flr-xw"><button type="button" class="flr-r link" data-flrx="1"><div class="flr-rt"><b>' + esc(z) + '</b><span>' + (v.men ? fa(v.men) + ' نفر' : '') + (v.n ? (v.men ? ' · ' : '') + toFa(v.n) + ' فعالیت' : '') + '</span><i class="flr-xa">‹</i></div>'
             + (v.men ? flrHBar(v.men, zMax) : '')
             + ((v.subs && v.subs.size) || (v.ctr && v.ctr.size) ? '<small>' + [v.subs && v.subs.size ? Array.from(v.subs).slice(0, 4).join('، ') : '', v.ctr && v.ctr.size ? Array.from(v.ctr).slice(0, 3).join('، ') : ''].filter(Boolean).map(esc).join(' · ') + '</small>' : '')
-            + '</div>') + '</div>'
+            + '</button>' + xBody(zTasks(z), v.acts ? Array.from(v.acts.values()).sort((a2, b2) => b2.men - a2.men).map(o => repIt(o.a, [o.c, o.sub, toFa(Math.round(o.men)) + ' نفر‌روز'].filter(Boolean).join(' · '))) : []) + '</div>') + '</div>'
           : empty('محلی برای این طبقه ثبت نشده.'))
       + sec('پیمانکاران <span class="flr-sub">' + perWord + '</span>', ctrs.length, ctrs.length ? '<div class="flr-rows">' + cap(ctrs, 3, ([c, v]) =>
-            '<button type="button" class="flr-r link" data-flrctr="' + esc(c) + '"><div class="flr-rt">' + avatarHtml(c, '', true) + '<b>' + esc(c) + '</b><span>'
-            + [v.men ? fa(v.men) + ' نفر' : '', v.n ? toFa(v.n) + ' فعالیت' : ''].filter(Boolean).join(' · ') + '</span><i>‹</i></div>'
+            '<div class="flr-xw"><button type="button" class="flr-r link" data-flrx="1"><div class="flr-rt">' + avatarHtml(c, '', true) + '<b>' + esc(c) + '</b><span>'
+            + [v.men ? fa(v.men) + ' نفر' : '', v.n ? toFa(v.n) + ' فعالیت' : ''].filter(Boolean).join(' · ') + '</span><i class="flr-xa">‹</i></div>'
             + (v.men ? flrHBar(v.men, cMax) : '')
-            + '</button>') + '</div>'
+            + '</button>' + xBody(cTasks(c), v.acts ? Array.from(v.acts).map(a => repIt(a, v.zones && v.zones.size ? Array.from(v.zones).slice(0, 2).join('، ') : '')) : [],
+                '<button type="button" class="flr-xp" data-flrctr="' + esc(c) + '">پروندهٔ ' + esc(c) + ' ‹</button>') + '</div>') + '</div>'
           : empty('پیمانکاری برای این طبقه ثبت نشده.'))
       + '</div>'
       + sec('موانع باز', blks.length, blks.length ? cap(blks, 3, b => '<button type="button" class="flr-it blk" data-flrtask="' + esc(pick(b.r,T.id) || '') + '">'
