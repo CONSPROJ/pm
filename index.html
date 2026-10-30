@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030071720">
+<meta name="pm-build" content="20261030071841">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28079,6 +28079,14 @@
     :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat.hot .acat-n{background:color-mix(in srgb, var(--alert, #c0392b) 12%, var(--surface)) !important;color:var(--alert, #c0392b) !important;}
     :is(html,#z0) :is(body,#z1) #adminView #admCats > .acat :is([data-admquick], .acat-add, .acat-pin, button){display:none !important;}
   }
+
+  /* آرشیو: اسناد عمومی */
+  #arcBody .arc-sel{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:0 10px;font:600 12.5px var(--f);color:var(--ink);max-width:200px;}
+  #arcBody .arc-gl{display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;}
+  #arcBody .arc-g{display:flex;flex-direction:column;gap:6px;}
+  #arcBody .arc-gty{font-style:normal;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb, var(--vz1, var(--sky)) 10%, var(--surface));color:var(--vz1, var(--sky));white-space:nowrap;}
+  #arcBody .arc-gm{font-size:11.5px;color:var(--muted);} #arcBody .arc-gnt{margin:0;font-size:12px;line-height:1.8;color:var(--ink);white-space:pre-wrap;}
+  #arcBody .arc-gnew textarea{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line);padding:8px 10px;font:500 13px var(--f);background:var(--surface);color:var(--ink);}
 
 </style>
 <script>
@@ -66295,6 +66303,35 @@
   const ARC_TYPES = [['', 'همه'], ['pdf', 'PDF'], ['img', 'تصویر'], ['xls', 'اکسل'], ['doc', 'ورد'], ['cad', 'نقشه'], ['zip', 'فشرده']];
   function arcFormsLoad(lists){
     arc.forms = ((lists && lists[ARC_FORM_KIND]) || []).map(v => { try{ const o = JSON.parse(v); o.__raw = v; return o; }catch(e){ return null; } }).filter(o => o && o.t && o.f);
+    arc.gen = ((lists && lists[ARC_GEN_KIND]) || []).map(v => { try{ const o = JSON.parse(v); o.__raw = v; return o; }catch(e){ return null; } }).filter(o => o && o.t);
+  }
+  /* «اسناد عمومی»: هر مدرک دیگری که سند دفتر فنی نیست — مدارک پیمانکار، بیمه، ضمانت‌نامه، مجوز، گواهی…
+     با عنوان، نوع، طرف (پیمانکار یا شخص)، تاریخ، شرح و پیوست. در lists با نوع «سند عمومی». */
+  const ARC_GEN_KIND = 'سند عمومی';
+  const ARC_GEN_TYPES = ['مدارک هویتی', 'رزومه و سوابق', 'گواهی صلاحیت و پروانه', 'بیمه', 'ضمانت‌نامه', 'تعهدنامه', 'مجوز', 'گواهی و آزمایش', 'فاکتور و پیش‌فاکتور', 'نقشه و مشخصات فنی', 'سایر'];
+  function arcGenHtml(){
+    const q = arcNorm(arc.q), L0 = arc.gen || [];
+    const L = L0.filter(f => (!arc.gp || (f.p || '') === arc.gp) && (!arc.gt || f.ty === arc.gt) && (!q || arcNorm([f.t, f.ty, f.p, f.nt].join(' ')).indexOf(q) !== -1))
+      .sort((a, b) => String(b.d || '').localeCompare(String(a.d || '')));
+    const parties = Array.from(new Set(L0.map(f => f.p || '').filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fa'));
+    const me = activeUserName();
+    return '<div class="arc-bar"><label class="arc-q">' + CTX_I.search + '<input type="search" data-arcq placeholder="جست‌وجوی عنوان، طرف یا شرح…" value="' + esc(arc.q) + '"></label>'
+      + '<select class="arc-sel" data-arcgp="1" data-nons="1"><option value="">همهٔ طرف‌ها</option>' + parties.map(p1 => '<option value="' + esc(p1) + '"' + (arc.gp === p1 ? ' selected' : '') + '>' + esc(p1) + '</option>').join('') + '</select>'
+      + '<select class="arc-sel" data-arcgt="1" data-nons="1"><option value="">همهٔ انواع</option>' + ARC_GEN_TYPES.map(t1 => '<option' + (arc.gt === t1 ? ' selected' : '') + '>' + esc(t1) + '</option>').join('') + '</select>'
+      + (arcCanAdd() ? '<button type="button" class="arc-addb" data-arcgadd="1">+ سند عمومی</button>' : '') + '</div>'
+      + (arc.gadd ? '<div class="arc-new arc-gnew"><div class="arc-ng"><label class="ctc-f"><span>عنوان سند</span><input type="text" data-arcg="t" placeholder="مثلاً بیمه‌نامهٔ مسئولیت مدنی ۱۴۰۵"></label>'
+          + '<label class="ctc-f"><span>نوع سند</span><select data-arcg="ty" data-nons="1">' + ARC_GEN_TYPES.map(t1 => '<option>' + esc(t1) + '</option>').join('') + '</select></label></div>'
+          + '<div class="arc-ng"><label class="ctc-f"><span>طرف (پیمانکار، شرکت یا شخص)</span><input type="text" data-arcg="p" list="contractorList" autocomplete="off" placeholder="انتخاب یا نوشتن"></label>'
+          + '<label class="ctc-f"><span>تاریخ سند</span><input type="text" class="date-in" data-arcg="d" value="' + esc(todayShamsi()) + '"></label></div>'
+          + '<label class="ctc-f"><span>شرح <small>اختیاری</small></span><textarea data-arcg="nt" rows="2" placeholder="شمارهٔ سند، اعتبار تا…، توضیح"></textarea></label>'
+          + attachFieldHtml('', 'gen')
+          + '<div class="arc-nacts"><button type="button" class="dz-b pri" data-arcgsave="1">ذخیرهٔ سند</button><button type="button" class="dz-b" data-arcgadd="0">انصراف</button></div></div>' : '')
+      + (L.length ? '<div class="arc-gl">' + L.map(f => { let A = []; try{ A = f.f ? attachList(f.f) : []; }catch(e){}
+          return '<div class="arc-form arc-g"><div class="arc-fh"><b>' + esc(f.t) + '</b><em class="arc-gty">' + esc(f.ty || 'سایر') + '</em>'
+            + ((isAdminUser() || nameKey(f.by) === nameKey(me)) ? '<button type="button" class="arc-fdel" data-arcgdel="' + esc(f.id) + '" title="حذف" aria-label="حذف">✕</button>' : '') + '</div>'
+            + '<small class="arc-gm">' + esc([f.p, f.d ? toFa(f.d) : '', f.by ? 'ثبت: ' + f.by : ''].filter(Boolean).join(' · ')) + '</small>'
+            + (f.nt ? '<p class="arc-gnt">' + esc(f.nt) + '</p>' : '') + A.map(a => attachItemHtml(a, false)).join('') + '</div>'; }).join('') + '</div>'
+        : '<div class="arc-none"><b>' + (L0.length ? 'سندی با این فیلتر نیست' : 'هنوز سند عمومی ثبت نشده') + '</b><small>مدارک پیمانکاران، بیمه‌نامه، ضمانت‌نامه، مجوزها و هر مدرک دیگر را با عنوان، نوع و شرح اینجا نگه دارید.</small></div>');
   }
   const arcCanAdd = () => { try{ return isAdminUser() || can('write.adm'); }catch(e){ return false; } };
   function arcFiles(){
@@ -66365,8 +66402,9 @@
     const nF = arcFiles().length;
     box.innerHTML = '<div class="arc-tabs" role="tablist"><button type="button" data-arctab="files" class="' + (arc.tab === 'files' ? 'on' : '') + '">فایل‌ها <em>' + toFa(nF) + '</em></button>'
       + '<button type="button" data-arctab="forms" class="' + (arc.tab === 'forms' ? 'on' : '') + '">فرم‌ها <em>' + toFa(arc.forms.length) + '</em></button>'
+      + '<button type="button" data-arctab="gen" class="' + (arc.tab === 'gen' ? 'on' : '') + '">اسناد عمومی <em>' + toFa((arc.gen || []).length) + '</em></button>'
       + '<button type="button" data-arctab="gallery" class="' + (arc.tab === 'gallery' ? 'on' : '') + '">گالری پیشرفت</button></div>'
-      + (arc.tab === 'forms' ? arcFormsHtml() : arc.tab === 'gallery' ? (gl.t ? glHtml() : '<div class="empty">در حال جمع‌کردن عکس‌ها…</div>') : arcFilesHtml());
+      + (arc.tab === 'gen' ? arcGenHtml() : arc.tab === 'forms' ? arcFormsHtml() : arc.tab === 'gallery' ? (gl.t ? glHtml() : '<div class="empty">در حال جمع‌کردن عکس‌ها…</div>') : arcFilesHtml());
     if(arc.tab === 'gallery' && !gl.t) glLoad().then(() => { if(arc.tab === 'gallery') arcRender(); });
     arcCount();
   }
@@ -66384,6 +66422,23 @@
       if(!(await askConfirm('حذف فرم', '«' + f.t + '» از آرشیو برداشته شود؟ فایلش در فضای ذخیره‌سازی می‌ماند.', 'حذف'))) return;
       try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(ARC_FORM_KIND) + '&value=eq.' + encodeURIComponent(f.__raw), {method:'DELETE'}); arc.forms = arc.forms.filter(x => x !== f); try{ clearNetCache(); }catch(err){} arcRender(); }
       catch(err){ showDialog('err', 'حذف نشد', friendlyErr(err)); } return; }
+    const ga = t.closest('[data-arcgadd]'); if(ga){ arc.gadd = ga.dataset.arcgadd === '1'; arcRender(); if(arc.gadd){ const i = document.querySelector('#arcBody [data-arcg="t"]'); if(i) i.focus(); } return; }
+    const gd = t.closest('[data-arcgdel]');
+    if(gd){ const f = (arc.gen || []).find(x => String(x.id) === gd.dataset.arcgdel); if(!f) return;
+      if(!(await askConfirm('حذف سند', '«' + f.t + '» از اسناد عمومی برداشته شود؟', 'حذف'))) return;
+      try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(ARC_GEN_KIND) + '&value=eq.' + encodeURIComponent(f.__raw), {method:'DELETE'}); arc.gen = arc.gen.filter(x => x !== f); try{ clearNetCache(); }catch(err){} arcRender(); }
+      catch(err){ showDialog('err', 'حذف نشد', friendlyErr(err)); } return; }
+    const gs = t.closest('[data-arcgsave]');
+    if(gs){ const box = gs.closest('.arc-new'), v = k2 => String((box.querySelector('[data-arcg="' + k2 + '"]') || {}).value || '').trim();
+      const files = String((box.querySelector('.a-link') || {}).value || '').trim();
+      if(!v('t')){ showDialog('warn', 'عنوان سند', 'عنوان سند را بنویسید.'); return; }
+      const o = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: v('t').slice(0, 140), ty: v('ty') || 'سایر', by: activeUserName() || '', d: normDate(v('d')) || todayShamsi()};
+      if(v('p')) o.p = v('p').slice(0, 80); if(v('nt')) o.nt = v('nt').slice(0, 600); if(files) o.f = files;
+      gs.disabled = true;
+      try{ const raw = JSON.stringify(o); await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body:[{kind: ARC_GEN_KIND, value: raw}]});
+        o.__raw = raw; (arc.gen = arc.gen || []).unshift(o); arc.gadd = false; try{ clearNetCache(); }catch(err){} arcRender(); try{ shrToast('سند در اسناد عمومی ذخیره شد'); }catch(err){} }
+      catch(err){ gs.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
+      return; }
     const sv = t.closest('[data-arcsave]');
     if(sv){
       const box = sv.closest('.arc-new'), v = k2 => String((box.querySelector('[data-arcf="' + k2 + '"]') || {}).value || '').trim();
@@ -66400,6 +66455,8 @@
       catch(err){ sv.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); }
     }
   });
+  document.addEventListener('change', e => { const t = e.target; if(!t.matches) return;
+    if(t.matches('#arcBody [data-arcgp]')){ arc.gp = t.value; arcRender(); } else if(t.matches('#arcBody [data-arcgt]')){ arc.gt = t.value; arcRender(); } });
   let arcQT = 0;
   document.addEventListener('input', e => {
     if(!e.target.matches || !e.target.matches('#arcBody [data-arcq]')) return;
