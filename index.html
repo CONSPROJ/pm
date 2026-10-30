@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030193122">
+<meta name="pm-build" content="20261030193919">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -402,6 +402,8 @@
 .ogc-frl b{font-size:12px;font-weight:800;color:var(--sc)} .ogc-frl small{font-size:10px;color:var(--muted)}
 .ogc .ogc-fr > ul.ogc-fru{padding-top:22px}
 .ogc-fr-e{opacity:.7;min-width:150px}
+.og-edit .ogc-fr:not([data-ogk="g:root"]) > .ogc-frl{cursor:grab}
+.og-edit .ogc-fr.og-drag{opacity:.45}
 .ogc-fr-emp{background:color-mix(in srgb,var(--sc) 6%,var(--surface))}
 .ogc-tree2 .ogc-z{padding:6px 10px 10px}
 .og-edit [data-ogk].og-over{outline:2.5px solid var(--accent, #2f6f9f);outline-offset:3px}
@@ -20205,6 +20207,10 @@
   .pf2-lv{color:var(--pc);background:color-mix(in srgb, var(--pc) 13%, var(--surface));}
   .um-todo{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;} .um-td{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:color-mix(in srgb, var(--warn,#b07512) 7%, var(--surface));border:1px solid color-mix(in srgb, var(--warn,#b07512) 25%, var(--line));} .um-td span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;} .um-td b{font-size:12.5px;color:var(--ink);} .um-td small{display:flex;flex-wrap:wrap;gap:4px;} .um-td small i{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface);color:var(--warn,#b07512);} .um-td em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--sky);}
   .pf2-pos{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px;} .pf2-pos i{font-style:normal;} .pf2-pc{font-size:12.5px;font-weight:800;color:var(--pc,var(--sky));padding:3px 12px;border-radius:99px;background:color-mix(in srgb, var(--pc,var(--sky)) 11%, var(--surface));letter-spacing:-.1px;} .pf2-sd{font-size:11px;font-weight:700;color:var(--muted);padding:3px 10px;border-radius:99px;background:var(--field);}
+  .emp-og{border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden;background:var(--surface);} .emp-og.me{border-color:color-mix(in srgb, #c07a24 45%, var(--line));}
+  .emp-ogh{display:flex;align-items:center;gap:9px;padding:9px 11px;cursor:pointer;background:color-mix(in srgb, #c07a24 6%, var(--surface));} .emp-ogh span{flex:1;min-width:0;display:flex;flex-direction:column;} .emp-ogh b{font-size:12.5px;} .emp-ogh small{font-size:10.5px;color:var(--muted);} .emp-ogh em{font-style:normal;font-size:10.5px;font-weight:800;color:#a8681c;}
+  .emp-og > .cpp-l{padding:4px 8px 8px;}
+  .pf2-up{font-size:11px;font-weight:600;color:var(--muted);padding:3px 10px;border-radius:99px;border:1px solid var(--line);} .pf2-nm .pf2-up b, .pf2-up b{color:var(--ink);font-weight:800;font-size:11px !important;display:inline !important;line-height:inherit !important;} .pf2-up[data-pfgo], .pf2-up[data-hrprof]{cursor:pointer;} .pf2-up[data-pfgo]:hover, .pf2-up[data-hrprof]:hover{border-color:var(--sky);}
   .pf2-hero .pf2-lv{color:color-mix(in srgb, var(--pc) 85%, var(--ink));}
   .pf2-me{color:var(--surface);background:var(--ink);}
   .pf2-chat{flex:none;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 15px;margin-bottom:6px;border:0;border-radius:13px;cursor:pointer;
@@ -40944,6 +40950,46 @@
     while(up && guard++ < 8){ const hit = P.find(x => nameKey(x) !== nameKey(n) && ogRoleOf(x) === up); if(hit) return hit; const pp = ogPos(up); up = pp && pp.up; }
     return '';
   }
+  /* ====== رابطه‌های چارت برای همهٔ کارت‌ها ======
+     ogBoss(نام) → بالادستِ همان شخص در چارت: {n, t: 'p' کاربر | 'e' طرف/فرد بیرونی | 'g' گروه | 'x' گرهٔ آزاد}
+     ogTeam(نام) → کسانی که مستقیم زیر همین شخص یا طرف‌اند (کاربر و بیرونی) */
+  const ogExtName = k => { try{ const c = ctrContacts.get(k); if(c && c.name) return c.name; for(const c2 of ctrContacts.values()){ const q = (c2.r || []).find(x => x && normName(x.n) === k); if(q) return q.n; } }catch(e){} return ''; };
+  function ogKeyRef(up){
+    const t = up[0], k = up.slice(2);
+    if(t === 'p'){ const n = ogPeople().find(z => nameKey(z) === k); return n ? {n, t: 'p'} : null; }
+    if(t === 'e'){ const n = ogExtName(k); return n ? {n, t: 'e'} : null; }
+    if(t === 'g') return k === 'root' ? null : {n: OG_SIDE_T(k), t: 'g', k};
+    if(t === 'x'){ const x = og.nodes.get(k); return x && x.n ? {n: x.n, t: 'x'} : null; }
+    return null;
+  }
+  function ogBoss(name){
+    try{
+      const P = ogPeople();
+      if(P.some(x => nameKey(x) === nameKey(name))){
+        const up = (og.per.get(nameKey(name)) || {}).up || '';
+        if(/^[pexg]:/.test(up)) return ogKeyRef(up);
+        const pp = ogParentOf(name, P); return pp ? {n: pp, t: 'p'} : null;
+      }
+      const ov = (og.nodes.get('o:' + normName(name)) || {}).up || '';
+      if(ov) return ogKeyRef(ov);
+      /* فرد بیرونی در فهرست افراد یک طرف: زیر همان طرف */
+      for(const c of ctrContacts.values()){ if((c.r || []).some(x => x && normName(x.n) === normName(name))) return {n: c.name, t: 'e'}; }
+    }catch(e){}
+    return null;
+  }
+  function ogTeam(name){
+    const out = [];
+    try{
+      const P = ogPeople(), isU = P.some(x => nameKey(x) === nameKey(name));
+      const keys = isU ? ['p:' + nameKey(name)] : ['e:' + normName(name)];
+      P.forEach(n => { if(nameKey(n) === nameKey(name)) return; const up = (og.per.get(nameKey(n)) || {}).up || '';
+        if(keys.indexOf(up) !== -1 || (isU && !/^[pexg]:/.test(up) && nameKey(ogParentOf(n, P) || '') === nameKey(name))) out.push({n, u: 1}); });
+      og.nodes.forEach((o, id) => { if(id.indexOf('o:') === 0 && keys.indexOf(o.up) !== -1){ const n = ogExtName(id.slice(2)); if(n) out.push({n}); } });
+      if(!isU){ const c = ctrContacts.get(normName(name)); (c && c.r || []).forEach(x => { if(x && x.n && !(og.nodes.get('o:' + normName(x.n)) || {}).up && !out.some(y => normName(y.n) === normName(x.n))) out.push({n: x.n, r: x.r}); }); }
+    }catch(e){}
+    return out;
+  }
+  window.ogBoss = ogBoss; window.ogTeam = ogTeam;
   async function ogSaveRow(kind, key, obj){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=like.' + encodeURIComponent(String(key).replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
     if(obj) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind, value: key + '¦' + JSON.stringify(obj)}]});
@@ -41054,12 +41100,13 @@
     let body = '';
     /* گره‌های آزاد و اصلاح طرف‌های بیرونی */
     const OV = k => og.nodes.get('o:' + k) || {};
-    const xKids = key => Array.from(og.nodes.entries()).filter(([id, x]) => id.indexOf('o:') !== 0 && x.up === key).sort((a, b) => (+(a[1].o || 0) - +(b[1].o || 0)) || String(a[0]).localeCompare(String(b[0])));
+    const xKids = key => Array.from(og.nodes.entries()).filter(([id, x]) => id.indexOf('o:') !== 0 && id.indexOf('gp:') !== 0 && x.up === key).sort((a, b) => (+(a[1].o || 0) - +(b[1].o || 0)) || String(a[0]).localeCompare(String(b[0])));
     const addB = key => og.edit ? '<button type="button" class="ogc-add" data-ogadd="' + esc(key) + '" title="افزودن زیرمجموعه" aria-label="افزودن زیرمجموعه">+</button>' : '';
     const kup = n => { const u = (og.per.get(nameKey(n)) || {}).up || ''; return /^[exg]:/.test(u) ? u : ''; };
     let cardFn = null;
     const EXTALL = new Map(); EXT.forEach((arr, t) => arr.forEach(e => { EXTALL.set(normName(e.n), {n: e.n, d: e.d, sc: OG_SC[t] || OG_SC.emp}); (e.ppl || []).forEach(q => EXTALL.set(normName(q.n), {n: q.n, d: q.r || '', sc: OG_SC[t] || OG_SC.emp})); }));
-    const moved = (key, sc) => (cardFn ? P.filter(n => kup(n) === key).map(n => cardFn(n, 1)).join('') : '')
+    let grpMoved = () => '';
+    const moved = (key, sc) => grpMoved(key) + (cardFn ? P.filter(n => kup(n) === key).map(n => cardFn(n, 1)).join('') : '')
       + Array.from(EXTALL.entries()).filter(([k]) => OV(k).up === key).map(([k, e]) => extLi({n: e.n, d: e.d, ppl: []}, e.sc || sc, '', true)).join('');
     const xLis = (key, sc, d) => (d || 0) > 10 ? '' : moved(key, sc) + xKids(key).reverse().map(([id, x]) => { const c2 = x.sd ? OG_SC[x.sd] : sc;
       return '<li><div class="ogc-n x" data-ogx="' + esc(id) + '" data-ogk="x:' + esc(id) + '" style="--sc:' + c2 + '">' + avatarHtml(x.n || '؟', '', true) + '<b>' + esc(x.n || '—') + '</b><small>' + esc(x.r || '') + '</small>' + addB('x:' + id) + '</div>'
@@ -41095,19 +41142,25 @@
         if(!u2 && !og.edit) return '';
         return '<div class="ogc-fr' + (cls ? ' ' + cls : '') + (u2 ? '' : ' ogc-fr-e') + '" data-ogk="g:' + k + '" style="--sc:' + (OG_SC[k] || '#777') + '"><span class="ogc-frl"><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div>'; };
+      /* هر گروه اصلی می‌تواند زیر گروه، شخص یا طرف دیگری برود (og.nodes «gp:کلید» → up)؛ پیش‌فرض: شاخهٔ زیر کارفرما */
+      const GF = new Map(), gpUp = k => { const u = (og.nodes.get('gp:' + k) || {}).up || ''; return u === 'g:emp' || u === 'g:root' ? '' : u; };
       const branches = [];
+      const addG = (k, mk) => { GF.set(k, mk); };
       /* تیم مدیریت پیمان */
-      { const f = frDiv('pm', 'تیم مدیریت پیمان', PM ? sideInner(PM) : '', PM ? PM.all.length + extN(PM) : 0); if(f) branches.push(f); }
+      addG('pm', () => frDiv('pm', 'تیم مدیریت پیمان', PM ? sideInner(PM) : '', PM ? PM.all.length + extN(PM) : 0));
       /* طراح و مشاور: دسته‌بندی بر اساس عنوان هر طرف (طراح، ناظر، مشاور…) */
       { const C = SG('cons'); let inner = '';
         if(C){ const byD = new Map(); C.ext.forEach(e => { const d = String(OV(normName(e.n)).d || e.d || 'مشاور').trim(); const key = /طراح/.test(d) ? 'طراح' : /ناظر|نظارت/.test(d) ? 'ناظر و نظارت' : 'مشاور'; if(!byD.has(key)) byD.set(key, []); byD.get(key).push(e); });
           inner = Array.from(byD.entries()).map(([d, arr]) => byD.size > 1 ? sub('cons', d, rev(arr).map(e => extLi(e, OG_SC.cons)).join('')) : rev(arr).map(e => extLi(e, OG_SC.cons)).join('')).join('')
             + rev(C.roots.filter(n => !kup(n))).map(n => card(n, 0)).join(''); }
-        const f = frDiv('cons', 'طراح و مشاور', inner, C ? C.all.length + extN(C) : 0); if(f) branches.push(f); }
+        addG('cons', () => frDiv('cons', 'طراح و مشاور', inner, C ? C.all.length + extN(C) : 0)); }
       /* مالک، پیمانکاران و هر طرف دیگر */
-      S.filter(x => ['emp', 'pm', 'cons'].indexOf(x.k) === -1).forEach(x => { const f = frDiv(x.k, x.t, sideInner(x), x.all.length + extN(x)); if(f) branches.push(f); });
-      if(og.edit) OG_SIDES.filter(([k]) => ['emp', 'pm', 'cons'].indexOf(k) === -1 && !SG(k)).forEach(([k, t]) => { const f = frDiv(k, t, '', 0); if(f) branches.push(f); });
-      const brUl = branches.length ? '<ul>' + rev(branches).map(f => '<li>' + f + '</li>').join('') + '</ul>' : '';
+      S.filter(x => ['emp', 'pm', 'cons'].indexOf(x.k) === -1).forEach(x => addG(x.k, () => frDiv(x.k, x.t, sideInner(x), x.all.length + extN(x))));
+      if(og.edit) OG_SIDES.filter(([k]) => ['emp', 'pm', 'cons'].indexOf(k) === -1 && !SG(k)).forEach(([k, t]) => addG(k, () => frDiv(k, t, '', 0)));
+      /* گروهی که زیر کلید دیگری رفته، همان‌جا (داخل همان قاب یا زیر همان کارت) کشیده می‌شود */
+      const gDone = new Set();
+      grpMoved = key => Array.from(GF.keys()).filter(k => gpUp(k) === key && !gDone.has(k)).map(k => { gDone.add(k); const f = GF.get(k)(); return f ? '<li>' + f + '</li>' : ''; }).join('');
+      const brUl0 = () => { Array.from(GF.keys()).forEach(k => { if(!gpUp(k)){ gDone.add(k); const f = GF.get(k)(); if(f) branches.push(f); } }); return branches.length ? '<ul>' + rev(branches).map(f => '<li>' + f + '</li>').join('') + '</ul>' : ''; };
       /* کارفرما */
       let top = '';
       if(E || og.edit){
@@ -41117,8 +41170,11 @@
         const team = rev(empTeamExt).map(e => extLi(e, OG_SC.emp)).join('') + rev(empTeamRoots.filter(n => !isOwnerUser(n) && !kup(n))).map(n => card(n, 0)).join('');
         const inner = (owners.length ? sub('emp', 'کارفرمایان', ownLis) : '') + (team ? (owners.length ? sub('emp', 'تیم کارفرما', team) : team) : '');
         const f = frDiv('emp', 'کارفرما', inner, E ? E.all.length + extN(E) : 0, 'ogc-fr-emp');
+        const brUl = brUl0();
         top = f ? '<li>' + f + brUl + '</li>' : brUl.replace(/^<ul>|<\/ul>$/g, '');
-      }else top = brUl.replace(/^<ul>|<\/ul>$/g, '');
+      }else top = brUl0().replace(/^<ul>|<\/ul>$/g, '');
+      /* گروهی که مقصدش دیگر در چارت نیست: سر جای پیش‌فرض */
+      { const lost = Array.from(GF.keys()).filter(k => !gDone.has(k)); if(lost.length) top += lost.map(k => { const f = GF.get(k)(); return f ? '<li>' + f + '</li>' : ''; }).join(''); }
       body = '<div class="ogc ogc-tree2"><div class="ogc-z" style="zoom:' + og.z + '">'
         + '<ul class="ogc-t"><li><div class="ogc-root" data-ogroot="1" data-ogk="g:root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
         + '<ul>' + xLis('g:root', '#555') + top + '</ul></li></ul>'
@@ -41238,21 +41294,27 @@
     const isUnder = (a, b, P) => { let x = b, g = 0; while(x && g++ < 30){ if(nameKey(x) === nameKey(a)) return true; x = ogParentOf(x, P); } return false; };
     const tgAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.og-edit [data-ogk]') : null; };
     /* زنجیرهٔ بالادستِ یک کلید (برای جلوگیری از گذاشتن کسی زیر زیرمجموعهٔ خودش) */
-    const upOf = key => { if(/^x:/.test(key)) return (og.nodes.get(key.slice(2)) || {}).up || ''; if(/^e:/.test(key)) return (og.nodes.get('o:' + key.slice(2)) || {}).up || '';
+    const upOf = key => { if(/^g:/.test(key)){ const k = key.slice(2), u = (og.nodes.get('gp:' + k) || {}).up || ''; return u || (k === 'emp' || k === 'root' ? '' : 'g:emp'); }
+      if(/^x:/.test(key)) return (og.nodes.get(key.slice(2)) || {}).up || ''; if(/^e:/.test(key)) return (og.nodes.get('o:' + key.slice(2)) || {}).up || '';
       if(/^p:/.test(key)){ const n = ogPeople().find(z => 'p:' + nameKey(z) === key); if(!n) return ''; const u = (og.per.get(nameKey(n)) || {}).up || ''; if(/^[exg]:/.test(u)) return u; const pp = ogParentOf(n, ogPeople()); return pp ? 'p:' + nameKey(pp) : ''; } return ''; };
     const under = (src, key) => { let k = key, g = 0; while(k && g++ < 40){ if(k === src) return true; k = upOf(k); } return false; };
-    document.addEventListener('pointerdown', e => { if(e.button !== 0) return; const c = e.target.closest && e.target.closest('.og-edit .ogc-n[data-ogk]'); if(!c || e.target.closest('button')) return;
+    document.addEventListener('pointerdown', e => { if(e.button !== 0) return;
+      /* قاب گروه اصلی هم از سربرگش کشیده می‌شود (جز کل پروژه) */
+      const fl = e.target.closest && e.target.closest('.og-edit .ogc-frl');
+      const fr = fl && fl.closest('.ogc-fr[data-ogk^="g:"]');
+      if(fr && fr.dataset.ogk !== 'g:root' && !e.target.closest('button')){ st = {n: '', k: fr.dataset.ogk, card: fr, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null, grp: true}; return; }
+      const c = e.target.closest && e.target.closest('.og-edit .ogc-n[data-ogk]'); if(!c || e.target.closest('button')) return;
       st = {n: c.dataset.ogn || '', k: c.dataset.ogk, card: c, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null}; });
     document.addEventListener('pointermove', e => { if(!st) return;
       if(!st.on){ if(Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return; st.on = true; st.card.classList.add('og-drag');
-        const g = st.card.cloneNode(true); g.className = 'ogc-n og-ghost'; g.removeAttribute('data-ogn'); document.body.appendChild(g); st.ghost = g; document.body.classList.add('og-dragging'); }
+        const g = st.grp ? Object.assign(document.createElement('div'), {className: 'ogc-n og-ghost', innerHTML: '<b>' + esc((st.card.querySelector('.ogc-frl b') || {}).textContent || 'گروه') + '</b><small>گروه</small>'}) : st.card.cloneNode(true); if(!st.grp) g.className = 'ogc-n og-ghost'; g.removeAttribute('data-ogn'); document.body.appendChild(g); st.ghost = g; document.body.classList.add('og-dragging'); }
       e.preventDefault();
       st.ghost.style.left = (e.clientX + 12) + 'px'; st.ghost.style.top = (e.clientY + 12) + 'px';
-      let tg = tgAt(e.clientX, e.clientY); if(tg && (tg.dataset.ogk === st.k || under(st.k, tg.dataset.ogk) || (st.n && tg.dataset.ogn && isUnder(st.n, tg.dataset.ogn, ogPeople())))) tg = null;
+      let tg = tgAt(e.clientX, e.clientY); if(tg && (tg.dataset.ogk === st.k || (st.grp && st.card.contains(tg)) || under(st.k, tg.dataset.ogk) || (st.n && tg.dataset.ogn && isUnder(st.n, tg.dataset.ogn, ogPeople())))) tg = null;
       if(tg !== st.tg){ if(st.tg) st.tg.classList.remove('og-over'); if(tg) tg.classList.add('og-over'); if(tg || !st.keep) st.tg = tg; } }, {passive: false});
     const end = async e => { if(!st) return; const S = st; st = null;
       if(S.ghost) S.ghost.remove(); S.card.classList.remove('og-drag'); document.body.classList.remove('og-dragging'); if(S.tg) S.tg.classList.remove('og-over');
-      { const t2 = tgAt(e.clientX, e.clientY); if(t2 && t2.dataset.ogk !== S.k && !under(S.k, t2.dataset.ogk)) S.tg = t2; }
+      { const t2 = tgAt(e.clientX, e.clientY); if(t2 && t2.dataset.ogk !== S.k && !under(S.k, t2.dataset.ogk) && !(S.grp && S.card.contains(t2))) S.tg = t2; }
       if(S.tg && !S.tg.isConnected) S.tg = document.querySelector('.og-edit [data-ogk="' + CSS.escape(S.tg.dataset.ogk) + '"]');
       if(!S.on || !S.tg) return;
       S.card.__noClick = Date.now();
@@ -41260,6 +41322,13 @@
       /* گرهٔ آزاد یا فرد بیرونی (کارفرما، مشاور…): زیر هر کارت یا قاب */
       if(!S.n){
         try{
+          if(/^g:/.test(S.k)){
+            /* گروه اصلی زیر گروه/شخص/طرف دیگر؛ رها کردن روی کارفرما یا کل پروژه = سر جای پیش‌فرض */
+            const id = 'gp:' + S.k.slice(2), back = tk === 'g:emp' || root;
+            await ogSaveRow(OG_NODE_KIND, id, back ? null : {up: tk}); if(back) og.nodes.delete(id); else og.nodes.set(id, {up: tk});
+            ogRepaintChart(); try{ shrToast(back ? 'گروه به جای پیش‌فرض برگشت' : 'گروه جابه‌جا شد'); }catch(er){}
+            return;
+          }
           if(/^x:/.test(S.k)){ const id = S.k.slice(2), x = Object.assign({}, og.nodes.get(id) || {}, {up: tk}); await ogSaveRow(OG_NODE_KIND, id, x); og.nodes.set(id, x); }
           else{ const id = 'o:' + S.k.slice(2), o = Object.assign({}, og.nodes.get(id) || {}); if(root) delete o.up; else o.up = tk; const has = o.d || o.hide || o.up;
             await ogSaveRow(OG_NODE_KIND, id, has ? o : null); if(has) og.nodes.set(id, o); else og.nodes.delete(id); }
@@ -43895,7 +43964,10 @@
       +   '<span class="pf2-nm"><b>' + esc(name) + '</b>'
       /* فقط سمت (و طرفِ سمت) نشان داده می‌شود؛ سطح دسترسی جای پروفایل نیست */
       +     '<small class="pf2-pos">' + (function(){ let sd = ''; try{ const I = ogPersonInfo(name); sd = I && I.side && I.side !== 'pm' ? OG_SIDE_T(I.side) : ''; }catch(e){}
-              return '<i class="pf2-pc">' + esc(roleOf(name) || 'سمت تعیین نشده') + '</i>' + (sd ? '<i class="pf2-sd">' + esc(sd) + '</i>' : ''); })()
+              /* جایگاه در چارت: زیر نظر چه کسی و چند نفر زیر نظر او */
+              let bs = '', tm = ''; try{ const B = window.ogBoss && ogBoss(name); if(B) bs = '<i class="pf2-up"' + (B.t === 'p' ? ' data-pfgo="' + esc(B.n) + '"' : B.t === 'e' ? ' data-hrprof="' + esc(B.n) + '"' : '') + '>زیر نظر <b>' + esc(B.n) + '</b></i>';
+                const T = window.ogTeam ? ogTeam(name) : []; if(T.length) tm = '<i class="pf2-sd" title="' + esc(T.map(x => x.n).join('، ')) + '">' + toFa(T.length) + ' نفر زیر نظر</i>'; }catch(e){}
+              return '<i class="pf2-pc">' + esc(roleOf(name) || 'سمت تعیین نشده') + '</i>' + (sd ? '<i class="pf2-sd">' + esc(sd) + '</i>' : '') + bs + tm; })()
       +       (me ? '<i class="pf2-me">شما</i>' : '') + '</small></span>'
       +   (!me ? '<button type="button" class="pf2-chat" id="pfChatBtn">' + PF_I.msg + '<span>ارسال پیام</span></button>' : '')
       + '</div>'
@@ -53003,6 +53075,17 @@
     const {own, team} = ctEmpParts(); if(!own.length && !team.length) return '';
     const row = x => '<div class="cpp-r"' + (x.file ? ' data-hrprof="' + esc(x.n) + '" role="button" tabindex="0"' : '') + '><i class="cpp-av">' + avatarHtml(x.n, 'sm', true) + '</i><span><b>' + esc(x.n) + '</b><small>' + esc(x.ro) + '</small></span>'
       + (x.sh ? '<em>' + toFa(x.sh) + '٪</em>' : '') + '</div>';
+    /* نیروی هر کارفرما (طبق چارت) زیر نام خودش؛ بقیه «تیم کارفرما» */
+    const by = new Map(), rest = [];
+    team.forEach(x => { let B = null; try{ B = window.ogBoss && ogBoss(x.n); }catch(e){} const o = B && own.find(z => normName(z.n) === normName(B.n)); if(o){ if(!by.has(o.n)) by.set(o.n, []); by.get(o.n).push(x); } else rest.push(x); });
+    if(by.size){
+      return '<div class="cpp emp-t">'
+        + '<div class="rc-title">کارفرمایان و نیروی هر کدام<span class="n">' + toFa(own.length) + '</span></div>'
+        + own.map(o => { const L = by.get(o.n) || []; return '<div class="emp-og' + (normName(o.n) === normName(name) ? ' me' : '') + '"><div class="emp-ogh" data-hrprof="' + esc(o.n) + '" role="button" tabindex="0">' + avatarHtml(o.n, 'sm', true) + '<span><b>' + esc(o.n) + '</b><small>' + esc(o.ro || 'کارفرما') + (o.sh ? ' · ' + toFa(o.sh) + '٪' : '') + '</small></span>' + (L.length ? '<em>' + toFa(L.length) + ' نفر</em>' : '') + '</div>'
+          + (L.length ? '<div class="cpp-l">' + L.map(row).join('') + '</div>' : '') + '</div>'; }).join('')
+        + (rest.length ? '<div class="rc-title">تیم مشترک کارفرما<span class="n">' + toFa(rest.length) + '</span></div><div class="cpp-l">' + rest.map(row).join('') + '</div>' : '')
+        + '</div>';
+    }
     return '<div class="cpp emp-t">'
       + (own.length ? '<div class="rc-title">کارفرمایان<span class="n">' + toFa(own.length) + '</span></div><div class="emp-own">' + own.map(x => '<span class="emp-o' + (normName(x.n) === normName(name) ? ' me' : '') + '"' + ' data-hrprof="' + esc(x.n) + '">' + avatarHtml(x.n, '', true) + '<b>' + esc(x.n) + '</b><small>' + esc(x.ro) + (x.sh ? ' · ' + toFa(x.sh) + '٪' : '') + '</small></span>').join('') + '</div>' : '')
       + (team.length ? '<div class="rc-title">تیم کارفرما<span class="n">' + toFa(team.length) + '</span></div><div class="cpp-l">' + team.map(row).join('') + '</div>' : '')
@@ -93729,6 +93812,8 @@
   let t = 0; const soon = () => { if(!t) t = setTimeout(scan, 60); };
   new MutationObserver(soon).observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden']});
   scan();
+  /* «زیر نظر …» در کارت شخص: کارت همان سرپرست */
+  document.addEventListener('click', e => { const g = e.target.closest && e.target.closest('[data-pfgo]'); if(!g || !window.openProfile) return; e.preventDefault(); e.stopPropagation(); openProfile(g.dataset.pfgo); });
   /* کشیدن برگه */
   let drag = null;
   const closeSheet = (bg, c) => {
