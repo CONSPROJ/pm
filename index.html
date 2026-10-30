@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030072823">
+<meta name="pm-build" content="20261030073519">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -25272,6 +25272,12 @@
   .all-g summary::-webkit-details-marker{display:none;} .all-g summary::before{content:"▾";color:var(--muted);font-size:10px;transition:transform .15s;} .all-g:not([open]) summary::before{transform:rotate(90deg);}
   .all-g summary b{font-weight:800;color:var(--ink);} .all-g summary em{font-style:normal;font:700 10.5px var(--m);color:var(--muted);background:var(--field);padding:1px 8px;border-radius:99px;}
   /* جدول رجیستر اسناد */
+  .atb tr.atb-add td.wide .atb-qi{min-width:180px;} .atb tr.atb-add td{padding:4px 6px !important;background:color-mix(in srgb, var(--accent) 3%, var(--surface));border-top:1px dashed var(--line);}
+  .atb tr.atb-add .atb-qi{width:100%;min-width:84px;max-width:none;height:32px;border:1px solid transparent;border-radius:8px;background:transparent;font:inherit;font-size:12px;color:var(--ink);padding:0 8px;}
+  .atb tr.atb-add .atb-qi:hover{border-color:var(--line);} .atb tr.atb-add .atb-qi:focus{outline:0;border-color:var(--accent);background:var(--surface);}
+  .atb tr.atb-add .atb-qi::placeholder{color:var(--muted);opacity:.7;}
+  .atb tr.atb-add .atb-addb{width:26px;height:26px;border-radius:8px;border:1px dashed var(--line);background:none;color:var(--accent);font-size:16px;font-weight:700;cursor:pointer;}
+  .atb tr.atb-add.saving{opacity:.55;pointer-events:none;}
   .atb-wrap{overflow:auto;max-height:72vh;border-radius:16px;border:1px solid var(--line);background:var(--surface);margin:4px 0 10px;overscroll-behavior:contain;}
   .atb{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
   .atb th{position:sticky;top:0;z-index:2;background:color-mix(in srgb, var(--field) 92%, var(--surface));text-align:start;font-size:10.5px;font-weight:800;color:var(--muted);
@@ -25308,6 +25314,9 @@
   .atb-age{font:800 12px var(--m);color:var(--ink);} .atb-age small{font:600 9.5px var(--f);color:var(--muted);margin-inline-start:3px;} .atb-age.hot{color:var(--alert);}
   .atb-f{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--m);color:var(--sky);} .atb-f svg{width:13px;height:13px;}
   .atb tfoot td{position:sticky;bottom:0;background:color-mix(in srgb, var(--field) 92%, var(--surface));border-top:1px solid var(--line);border-bottom:0;font-size:11px;}
+  .atb tfoot tr.atb-add td{position:static;font-size:12px;}
+  /* «همهٔ اسناد» کنار گذاشته شد: هر جدول نوع، خودش ستون‌های کامل و ورود سریع دارد */
+  #adminView #admCats > .acat.c-all, [data-sbadm="all"]{display:none !important;}
   .atb tr.atb-x td{padding:0;background:var(--field);white-space:normal;}
   .atb-card{padding:10px;position:sticky;right:0;width:min(720px, calc(100vw - 48px));box-sizing:border-box;}
   .admview-seg:has([data-admview="table"]){grid-template-columns:repeat(3, auto);}
@@ -66514,7 +66523,7 @@
     if(!box) return;
     try{ window.admSkelEnsure && admSkelEnsure(); }catch(e){}
     if(!quiet) admHomeSet(false);
-    if(!document.getElementById('secAdm' + k) || k === 'chore') k = 'statement';
+    if(!document.getElementById('secAdm' + k) || k === 'chore' || k === 'all') k = 'statement';
     admCat = k;
     try{ localStorage.setItem('admCat', k); }catch(e){}
     try{ window.__admBarPaint && window.__admBarPaint(); }catch(e){}
@@ -68859,16 +68868,64 @@
       foot = '<tfoot><tr><td class="atb-i"></td>' + C.map((c, j) => '<td class="' + (c[2] || '') + '">' + (j === 0 ? '<b>جمع ' + toFa(rows.length) + ' مورد</b>'
         : c[0] === 'مبلغ' ? (A ? '<b class="atb-m">' + esc(arToman(A)) + '</b>' : '') : c[0] === 'پرداختی' ? (P ? '<b class="atb-m">' + esc(arToman(P)) + '</b>' : '') : '') + '</td>').join('') + '</tr></tfoot>';
     }
-    return '<div class="atb-wrap">' + '<button type="button" class="ft-btn" data-ftfull aria-label="نمای جدول کامل" title="نمای جدول کامل">' + FT_I + '</button><table class="atb atb-' + k + '"><thead>' + head + '</thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
+    /* سطر ورود سریع (مثل نوشن): همان ستون‌های قابل ویرایش، با Enter ثبت و سطر بعدی آماده */
+    const E0 = ATB_EDIT[k] || {};
+    const add = '<tr class="atb-add" data-atbadd="' + k + '"><td class="atb-i"><button type="button" class="atb-addb" data-atbaddgo title="ثبت سطر (Enter)">+</button></td>'
+      + C.map(c => { const sp = E0[c[0]]; if(!sp) return '<td class="' + (c[2] || '') + '"></td>';
+          const [key, type, extra] = sp;
+          if(type === 'sel') return '<td class="' + (c[2] || '') + '"><select class="atb-qi" data-qk="' + esc(key) + '" data-nons="1"><option value="">' + esc(c[0]) + '</option>' + extra().map(o => '<option value="' + esc(o) + '">' + esc(notifyLabel(o)) + '</option>').join('') + '</select></td>';
+          return '<td class="' + (c[2] || '') + '"><input type="text" size="6" class="atb-qi' + (type === 'date' ? ' date-in' : '') + '" data-qk="' + esc(key) + '" data-qt="' + type + '"' + (type === 'money' ? ' inputmode="decimal"' : '')
+            + (type === 'who' ? ' data-list="engineerList"' : extra ? ' data-list="' + extra + '"' : '') + ' placeholder="' + esc(c[0]) + '" autocomplete="off"></td>'; }).join('') + '</tr>';
+    return '<div class="atb-wrap">' + '<button type="button" class="ft-btn" data-ftfull aria-label="نمای جدول کامل" title="نمای جدول کامل">' + FT_I + '</button><table class="atb atb-' + k + '"><thead>' + head + '</thead><tbody>' + body + '</tbody>' + (foot ? foot.replace('<tfoot>', '<tfoot>' + add) : '<tfoot>' + add + '</tfoot>') + '</table></div>';
   }
+  /* ثبت سطر سریع: نگاشت ستون فارسی ← فیلد ثبت هر نوع (همان saveNewAdmin) */
+  function atbQuickItem(kind, v){
+    if(kind === 'statement') return {contractName:v['نام قرارداد'], party:v['طرف قرارداد'], number:v['شماره صورت وضعیت'], amount:v['مبلغ صورت وضعیت'], paid:v['مبلغ پرداختی'], sentDate:v['تاریخ ارسال'], notify:v['نوع ابلاغ'], owner:v['مسئول'], stType:v['نوع صورت وضعیت']};
+    if(kind === 'contract') return {title:v['عنوان قرارداد'], number:v['شماره قرارداد'], party:v['طرف قرارداد'], amount:v['مبلغ قرارداد'], startDate:v['تاریخ شروع قرارداد'], endDate:v['تاریخ اتمام قرارداد'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], docType:v['نوع سند']};
+    if(kind === 'letter') return {direction:v['جهت نامه'] || '', subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'], sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول']};
+    if(kind === 'design') return {title:v['عنوان مدرک'], number:v['شماره مدرک'], party:v['طراح'], sentDate:v['تاریخ ارسال'], status:v['وضعیت مدرک'], notify:v['وضعیت ابلاغ'], dueDate:v['موعد اتمام'], owner:v['مسئول']};
+    if(kind === 'minute') return {subject:v['شرح بند'] || '', category:v['نوع بند'] || 'اداری', owner:v['مسئول پیگیری'], actionDate:v['تاریخ اقدام'],
+      items:[{text:v['شرح بند'] || '', owner:v['مسئول پیگیری'], follower:v['مسئول پیگیری'], actionDate:v['تاریخ اقدام']}]};
+    return null;
+  }
+  async function atbQuickSave(tr){
+    if(tr.dataset.busy) return;
+    const kind = tr.dataset.atbadd, v = {};
+    tr.querySelectorAll('[data-qk]').forEach(i => { let x = String(i.value || '').trim(); if(!x) return;
+      if(i.dataset.qt === 'money') x = String(amtNum(toEn(x).replace(/[,٬\s]/g, '')));
+      if(i.dataset.qt === 'date') x = normDate(x) || toEn(x);
+      v[i.dataset.qk] = x; });
+    if(!Object.keys(v).length){ const f = tr.querySelector('[data-qk]'); if(f) f.focus(); return; }
+    const item = atbQuickItem(kind, v); if(!item) return;
+    const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[kind];
+    const me = (document.getElementById('admOwner') || {}).value || currentUser || '';
+    if(!item.owner) item.owner = me;
+    const payload = {type:'admin', date: todayShamsi(), project: (document.getElementById('projectName') || {}).value || '', engineer: me};
+    payload[key] = [item];
+    tr.dataset.busy = '1'; tr.classList.add('saving');
+    const r = await post(payload);
+    delete tr.dataset.busy; tr.classList.remove('saving');
+    if(r && r.state !== 'failed'){
+      tr.querySelectorAll('[data-qk]').forEach(i => { i.value = ''; });
+      try{ shrToast('سطر ثبت شد'); }catch(e){}
+      try{ clearNetCache(); }catch(e){}
+      setTimeout(async () => { try{ await loadAdmin(); }catch(e){} const t2 = document.querySelector('tr[data-atbadd="' + kind + '"] [data-qk]'); if(t2) t2.focus(); }, 300);
+    }else showDialog('warn', 'ثبت نشد', lastServerError || 'اتصال برقرار نشد؛ دوباره تلاش کنید.');
+  }
+  document.addEventListener('keydown', e => {
+    const i = e.target.closest && e.target.closest('tr.atb-add [data-qk]'); if(!i) return;
+    if(e.key === 'Enter'){ e.preventDefault(); atbQuickSave(i.closest('tr')); }
+    else if(e.key === 'Escape'){ i.closest('tr').querySelectorAll('[data-qk]').forEach(x => { x.value = ''; }); i.blur(); }
+  });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-atbaddgo]'); if(b){ e.preventDefault(); e.stopPropagation(); atbQuickSave(b.closest('tr')); } }, true);
   /* ====== جدول مثل نوشن: هر خانهٔ ساده همان‌جا ویرایش می‌شود ======
      [کلید فارسی، نوع، گزینه‌ها]؛ خانهٔ «#» کارت کامل را جدا باز می‌کند و دیگر زیر سطر فرمی باز نمی‌شود */
   const ATB_EDIT = {
-    statement: {'شماره': ['شماره صورت وضعیت', 'text'], 'قرارداد / طرف': ['نام قرارداد', 'text'], 'نوع': ['نوع صورت وضعیت', 'sel', () => ST_TYPES], 'مبلغ': ['مبلغ صورت وضعیت', 'money'], 'پرداختی': ['مبلغ پرداختی', 'money'], 'مسئول': ['مسئول', 'who'], 'تاریخ ابلاغ': ['تاریخ ارسال', 'date']},
-    contract: {'شماره': ['شماره قرارداد', 'text'], 'عنوان / موضوع': ['عنوان قرارداد', 'text'], 'طرف قرارداد': ['طرف قرارداد', 'text', 'contractPartyList'], 'نوع': ['نوع سند', 'text'], 'مبلغ': ['مبلغ قرارداد', 'money'], 'شروع': ['تاریخ شروع قرارداد', 'date'], 'مسئول': ['مسئول', 'who']},
-    letter: {'شماره': ['شماره نامه', 'text'], 'موضوع': ['موضوع نامه', 'text'], 'طرف مقابل': ['طرف مقابل', 'text', 'letterPartyList'], 'تاریخ': ['تاریخ ارسال', 'date'], 'موعد پاسخ': ['موعد اتمام', 'date'], 'مسئول': ['مسئول', 'who']},
+    statement: {'شماره': ['شماره صورت وضعیت', 'text'], 'قرارداد / طرف': ['نام قرارداد', 'text'], 'نوع': ['نوع صورت وضعیت', 'sel', () => ST_TYPES], 'مبلغ': ['مبلغ صورت وضعیت', 'money'], 'پرداختی': ['مبلغ پرداختی', 'money'], 'مسئول': ['مسئول', 'who'], 'تاریخ ابلاغ': ['تاریخ ارسال', 'date'], 'ابلاغ': ['نوع ابلاغ', 'sel', () => Object.keys(NOTIFY_CLS)]},
+    contract: {'شماره': ['شماره قرارداد', 'text'], 'عنوان / موضوع': ['عنوان قرارداد', 'text'], 'طرف قرارداد': ['طرف قرارداد', 'text', 'contractPartyList'], 'نوع': ['نوع سند', 'text'], 'مبلغ': ['مبلغ قرارداد', 'money'], 'شروع': ['تاریخ شروع قرارداد', 'date'], 'اتمام': ['تاریخ اتمام قرارداد', 'date'], 'مسئول': ['مسئول', 'who'], 'ابلاغ': ['وضعیت ابلاغ', 'sel', () => Object.keys(NOTIFY_CLS)]},
+    letter: {'شماره': ['شماره نامه', 'text'], 'موضوع': ['موضوع نامه', 'text'], 'طرف مقابل': ['طرف مقابل', 'text', 'letterPartyList'], 'تاریخ': ['تاریخ ارسال', 'date'], 'موعد پاسخ': ['موعد اتمام', 'date'], 'مسئول': ['مسئول', 'who'], 'جهت': ['جهت نامه', 'sel', () => ['دریافتی', 'ارسالی']], 'ابلاغ': ['وضعیت ابلاغ', 'sel', () => Object.keys(NOTIFY_CLS)]},
     minute: {'موضوع / بند': ['شرح بند', 'text'], 'ردیف': ['ردیف بند', 'text'], 'نوع بند': ['نوع بند', 'text'], 'مسئول پیگیری': ['مسئول پیگیری', 'who'], 'تاریخ اقدام': ['تاریخ اقدام', 'date']},
-    design: {'شماره مدرک': ['شماره مدرک', 'text'], 'عنوان مدرک': ['عنوان مدرک', 'text'], 'طراح': ['طراح', 'text', 'contractPartyList'], 'تاریخ دریافت': ['تاریخ ارسال', 'date'], 'موعد': ['موعد اتمام', 'date'], 'مسئول': ['مسئول', 'who']}
+    design: {'شماره مدرک': ['شماره مدرک', 'text'], 'عنوان مدرک': ['عنوان مدرک', 'text'], 'طراح': ['طراح', 'text', 'contractPartyList'], 'تاریخ دریافت': ['تاریخ ارسال', 'date'], 'موعد': ['موعد اتمام', 'date'], 'مسئول': ['مسئول', 'who'], 'وضعیت مدرک': ['وضعیت مدرک', 'sel', () => Object.keys(DS_STAGE_LIM).concat(['تأیید شده'])], 'ابلاغ': ['وضعیت ابلاغ', 'sel', () => Object.keys(NOTIFY_CLS)]}
   };
   /* جدول «همهٔ اسناد»: ستون مشترک ← نام ستون هر نوع */
   const ALL_EDIT = {
@@ -68895,7 +68952,7 @@
     const keep = td.innerHTML;
     td.classList.add('atb-editing');
     if(type === 'sel'){
-      td.innerHTML = '<select class="atb-in" data-nons="1"><option value="">—</option>' + extra().map(o => '<option' + (o === old ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+      td.innerHTML = '<select class="atb-in" data-nons="1"><option value="">—</option>' + extra().map(o => '<option value="' + esc(o) + '"' + (o === old ? ' selected' : '') + '>' + esc(notifyLabel(o)) + '</option>').join('') + '</select>';
     }else{
       td.innerHTML = '<input type="text" class="atb-in' + (type === 'date' ? ' date-in' : '') + '"' + (type === 'money' ? ' inputmode="decimal"' : '')
         + (type === 'who' ? ' data-list="engineerList"' : extra ? ' data-list="' + extra + '"' : '') + ' value="' + esc(shown) + '" autocomplete="off">';
