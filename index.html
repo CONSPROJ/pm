@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030194305">
+<meta name="pm-build" content="20261030194515">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28716,6 +28716,16 @@
   .hrk-row > .hrk.bad{background:color-mix(in srgb, var(--alert, #c0392b) 6%, var(--surface)) !important;}
   @media (max-width:560px){ .hrk-row > .hrk:nth-child(3)::before{display:none;} .hrk-row > .hrk:nth-child(n+3){border-top:1px solid var(--line) !important;} }
 
+  /* مسیر صفحه در سربرگ */
+  .page-title .pt-crumb{display:inline-flex;align-items:center;gap:8px;margin-inline-start:8px;font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .page-title .pt-crumb:empty{display:none;} .page-title .pt-crumb i{font-style:normal;color:var(--muted);font-weight:400;}
+  .page-title.has-crumb .pt-tx{color:var(--muted) !important;cursor:pointer;} .page-title.has-crumb .pt-tx:hover{color:var(--sky) !important;}
+  @media (min-width:1180px){ #pageTitle .pt-crumb{font-size:18px;} }
+  /* جدول اسناد: مرتب‌سازی ستون‌ها و خروجی */
+  .atb thead th:not(.atb-i){cursor:pointer;user-select:none;} .atb thead th:not(.atb-i):hover{color:var(--sky);}
+  .atb thead th[data-srt]::after{content:" ↑";color:var(--sky);font-weight:800;} .atb thead th[data-srt="d"]::after{content:" ↓";}
+  .atb-csv{position:absolute;top:6px;inset-inline-end:44px;z-index:3;height:28px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font:700 11px var(--f);color:var(--muted);cursor:pointer;}
+  .atb-csv:hover{color:var(--sky);border-color:var(--sky);}
   /* =================== سامانهٔ طراحی v1 ===================
      توکن‌ها: گوشه ۸/۱۲/۱۶، حرکت ۱۸۰ms یک منحنی، چهار رنگ وضعیت با یک معنا در همه‌جا
      (قرمز = عقب/رد، کهربایی = نزدیک موعد/منتظر، آبی = جاری، سبز = انجام/تأیید؛ خاکستری = شروع‌نشده) */
@@ -92695,6 +92705,15 @@
       bar.querySelectorAll('[data-sbws]').forEach(b => pick(b, b.dataset.sbws, cur === 'tasks' && b.dataset.sbws === wk));
       bar.querySelectorAll('[data-sbadm]').forEach(b => pick(b, b.dataset.sbadm, cur === 'admin' && b.dataset.sbadm === ak));
       bar.querySelectorAll('[data-sbview]').forEach(b => pick(b, b.dataset.sbview, cur === 'view' && b.dataset.sbview === vk));
+      /* مسیر صفحه در سربرگ: «میز کار › فعالیت‌ها»، «اسناد › قراردادها»، «گزارش‌ها › مالی» */
+      try{ const ph = document.getElementById('pageTitle'); if(ph){
+        let sub = '';
+        if(cur === 'tasks' && wk){ const m = WS_MODS.find(x => x.k === wk); sub = m ? m.t : ''; }
+        else if(cur === 'admin' && ak && ak !== 'all'){ sub = ak === 'archive' ? 'آرشیو' : (KIND_LABEL[ak] || ''); }
+        else if(cur === 'view' && vb){ const t0 = vb.querySelector('b'); sub = (t0 || vb).textContent.trim(); }
+        let cr = ph.querySelector('.pt-crumb'); if(!cr){ cr = document.createElement('span'); cr.className = 'pt-crumb'; ph.querySelector('.pt-tx').after(cr); }
+        if(cr.__t !== sub){ cr.__t = sub; cr.innerHTML = sub ? '<i aria-hidden="true">‹</i><b>' + esc(sub) + '</b>' : ''; }
+        ph.classList.toggle('has-crumb', !!sub); } }catch(e){}
     }
     let t = 0; const soon = (ms) => { clearTimeout(t); t = setTimeout(build, ms || 60); };
     /* واکنش فوری: زیرمنوی بخش همان لحظهٔ کلیک باز می‌شود و زیرمورد همان لحظه برجسته (بازسازی کامل بعداً، بی‌صدا) */
@@ -93920,6 +93939,7 @@
   const SKIP = '#confirmModal, #askConfirmModal, .pg-mode, .a2hs, #fvModal';
   function scan(){
     t = 0;
+    try{ atbPrep(); }catch(e){}
     document.querySelectorAll('div.empty').forEach(el => { if(el.classList.contains('tc-cell')) return; const on = LOAD.test(el.textContent || '') && el.childElementCount <= 2; if(on !== el.classList.contains('is-loading')) el.classList.toggle('is-loading', on); });
     if(!mqM.matches) return;
     document.querySelectorAll('.modal-bg:not([hidden]):not(.ds-sheet)').forEach(bg => { if(bg.matches(SKIP)) return; const c = bg.firstElementChild; if(!c) return; bg.classList.add('ds-sheet'); c.classList.add('ds-card'); });
@@ -93927,6 +93947,32 @@
   let t = 0; const soon = () => { if(!t) t = setTimeout(scan, 60); };
   new MutationObserver(soon).observe(document.body, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden']});
   scan();
+  /* مسیر صفحه: زدن روی نام بخش = برگشت به صفحهٔ آغاز همان بخش */
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('#pageTitle.has-crumb .pt-tx'); if(!t) return;
+    const cur = (document.getElementById('tabBar') || {dataset: {}}).dataset.cur; const id = {tasks: 'tabTasks', admin: 'tabAdmin', view: 'tabView'}[cur];
+    if(cur === 'tasks' && window.wsSet){ window.wsSet(''); return; } const b = id && document.getElementById(id); if(b) b.click(); });
+  /* جدول اسناد: مرتب‌سازی با زدن سرستون (دوباره = برعکس) — ترتیب برای هر نوع سند یادش می‌ماند */
+  const ATS = {}; const faN = v => String(v || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+  const cellKey = td => { const t = faN(td ? td.textContent : ''); if(/^\d{4}\/\d{1,2}\/\d{1,2}/.test(t)) return t.replace(/\/(\d)(?=\/|$)/g, '/0$1'); const n = parseFloat(t.replace(/[,٬\s]/g, '').replace(/[^\d.\-]/g, '')); return /\d/.test(t) && !isNaN(n) && /^[\d\s,٬.\-]+(\s*(میلیون|میلیارد|هزار|تومان|ریال|روز|٪|%))?/.test(t) ? n * (/میلیارد/.test(t) ? 1e9 : /میلیون/.test(t) ? 1e6 : /هزار/.test(t) ? 1e3 : 1) : t; };
+  function atbSort(tb, col, dir){
+    const body = tb.tBodies[0]; if(!body) return;
+    const rows = Array.from(body.rows).filter(r => r.classList.contains('atb-r'));
+    rows.sort((a, b) => { const x = cellKey(a.cells[col]), y = cellKey(b.cells[col]); const c = (typeof x === 'number' && typeof y === 'number') ? x - y : String(x).localeCompare(String(y), 'fa'); return dir === 'd' ? -c : c; });
+    rows.forEach(r => body.appendChild(r));
+    Array.from(tb.tHead.rows[0].cells).forEach((th, i) => { if(i === col) th.dataset.srt = dir; else delete th.dataset.srt; });
+  }
+  document.addEventListener('click', e => { const th = e.target.closest && e.target.closest('table.atb thead th'); if(!th || th.classList.contains('atb-i')) return;
+    const tb = th.closest('table'), k = (tb.className.match(/atb-([a-z]+)/) || [])[1] || '', col = th.cellIndex;
+    const dir = th.dataset.srt === 'a' ? 'd' : 'a'; ATS[k] = {col, dir}; atbSort(tb, col, dir); });
+  /* خروجی CSV همان جدولی که دیده می‌شود (با همان ترتیب) */
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.atb-csv'); if(!b) return; const tb = b.parentElement.querySelector('table.atb'); if(!tb) return;
+    const q = v => '"' + String(v || '').replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"';
+    const head = Array.from(tb.tHead.rows[0].cells).slice(1).map(c => q(c.textContent.replace(/[↑↓]/g, '')));
+    const rows = Array.from(tb.tBodies[0].rows).filter(r => r.classList.contains('atb-r')).map(r => Array.from(r.cells).slice(1).map(c => q(c.textContent)).join(','));
+    const blob = new Blob(['﻿' + [head.join(',')].concat(rows).join('\n')], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = ((tb.className.match(/atb-([a-z]+)/) || [])[1] || 'docs') + '.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+  function atbPrep(){ document.querySelectorAll('.atb-wrap').forEach(w => {
+    const tb = w.querySelector('table.atb'); if(!tb || tb.__srt) return; tb.__srt = 1; const k = (tb.className.match(/atb-([a-z]+)/) || [])[1] || ''; if(ATS[k]) atbSort(tb, ATS[k].col, ATS[k].dir); }); }
   /* «زیر نظر …» در کارت شخص: کارت همان سرپرست */
   document.addEventListener('click', e => { const g = e.target.closest && e.target.closest('[data-pfgo]'); if(!g || !window.openProfile) return; e.preventDefault(); e.stopPropagation(); openProfile(g.dataset.pfgo); });
   /* کشیدن برگه */
