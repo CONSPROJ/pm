@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030031034">
+<meta name="pm-build" content="20261030031239">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -82898,7 +82898,12 @@
      می‌بیند — پس گزارش‌های قدیمی با فهرست قدیمی می‌مانند. */
 
   /* یک روز عقب‌تر، شمسی */
+  const FMD_C = new Map();
   function faMinusDay(fa){
+    const c = FMD_C.get(fa); if(c !== undefined) return c;
+    const r = faMinusDay0(fa); if(FMD_C.size > 5000) FMD_C.clear(); FMD_C.set(fa, r); return r;
+  }
+  function faMinusDay0(fa){
     const pp = faParts(fa);
     if(!pp) return '';
     try{
@@ -86793,9 +86798,10 @@
   function deckDoneFresh(d){
     if(!d) return true;                   // بی‌تاریخ را کنار نمی‌گذاریم
     try{
-      let back = todayShamsi();
-      for(let i = 0; i < DECK_DONE_DAYS; i++) back = faMinusDay(back) || back;
-      return faCmp(d, back) >= 0;
+      /* سرعت: مرز «چند روز اخیر» برای هر روز یک بار (پیش‌تر برای هر مورد از نو حساب می‌شد) */
+      const td = todayShamsi();
+      if(deckDoneFresh.__d !== td){ let back = td; for(let i = 0; i < DECK_DONE_DAYS; i++) back = faMinusDay(back) || back; deckDoneFresh.__d = td; deckDoneFresh.__b = back; }
+      return faCmp(d, deckDoneFresh.__b) >= 0;
     }catch(e){ return true; }
   }
   function deckDoneItems(skip){
@@ -86940,7 +86946,15 @@
     try{ deckIssNews().forEach(x => out.push(x)); }catch(e){}
     return out;
   }
+  /* سرعت: در یک گذر (خانه، نشان، کارت‌ها پشت سر هم) فهرست یک بار ساخته می‌شود */
+  let deckBC = null;
   function deckBuild(){
+    if(deckBC) return deckBC.slice();
+    const r = deckBuild0() || [];
+    deckBC = r; setTimeout(() => { deckBC = null; }, 0);
+    return r.slice();
+  }
+  function deckBuild0(){
     try{ deckReindex(); }catch(e){}
     /* دسته‌های پایه + (برای مدیر) دسته‌های خبری که مورد دارند */
     DECK_GROUPS.length = DECK_BASE_N;
