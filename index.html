@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030131857">
+<meta name="pm-build" content="20261030131940">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19837,6 +19837,7 @@
   }
   /* ستون کناری: پرکاربرد و اخیر (فقط دسکتاپ) */
   .sbq, .sbr{display:none;}
+  .ar-allk{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;font-weight:700;color:var(--vz1, #2f6f9f);} .ar-allk:hover{text-decoration:underline;}
   /* زمان هر مرحله (طرح تازه) */
   .st2 .arc-h{display:flex;align-items:center;gap:8px;}
   .st2-al{margin-inline-start:auto;font-size:10.5px;font-weight:800;color:#b03a2e;background:color-mix(in srgb, #c0392b 10%, transparent);padding:3px 10px;border-radius:99px;}
@@ -54060,16 +54061,12 @@
       const cmp = admCompareHtml(k, list);
       // مقایسهٔ گردش از اول باز است
       if(cmp) h += '<details class="ar-cmp" open><summary>' + AR_I.flow + '<b>مقایسهٔ مدت گردش اسناد</b><span>' + AR_I.chev + '</span></summary>' + cmp + '</details>';
-      Array.from(byStatus.keys())
-        .sort((x, y) => notifyRank(x === 'بدون وضعیت' ? '' : x) - notifyRank(y === 'بدون وضعیت' ? '' : y))
-        .forEach(st => {
-          const items = sortAdmin(k, byStatus.get(st));
-          h += '<div class="ar-sg"><div class="ar-sgh"><b>' + esc(notifyText(st === 'بدون وضعیت' ? '' : st) || st) + '</b>'
-            + '<span>' + toFa(items.length) + '</span></div>'
-            + '<div class="adm-fast ar-fast">'
-            + items.map(r => { arCards.set(k + '|' + String(pick(r,AD.id) || ''), r); return admFastRow(k, r); }).join('')
-            + '</div></div>';
-        });
+      /* فقط آخرین‌ها: هشت سند تازه‌تر (فهرست کامل در خود دفتر فنی است) */
+      const last = list.slice().sort((x, y) => String(dayKey(admSentDate(k, y) || pick(y,AD.date) || '')).localeCompare(String(dayKey(admSentDate(k, x) || pick(x,AD.date) || '')))).slice(0, 8);
+      h += '<div class="ar-sg"><div class="ar-sgh"><b>آخرین ' + esc(KIND_LABEL[k] || '') + '‌ها</b><span>' + toFa(last.length) + ' از ' + toFa(list.length) + '</span>'
+        + '<button type="button" class="ar-allk" data-hzgo="adm:' + k + '">همه در دفتر فنی ‹</button></div>'
+        + '<div class="adm-fast ar-fast">' + last.map(r => { arCards.set(k + '|' + String(pick(r,AD.id) || ''), r); return admFastRow(k, r); }).join('') + '</div></div>';
+      void byStatus;
       h += '</section>';
     });
     return h;
