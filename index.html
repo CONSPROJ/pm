@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030081929">
+<meta name="pm-build" content="20261030082231">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -24857,6 +24857,22 @@
 
   /* گزارش معرفی پروژه */
   .pi{display:flex;flex-direction:column;gap:12px;}
+  @media (min-width:1180px){
+    .pi.pi-dash{gap:14px;}
+    .pi-dash .pi-hero{min-height:210px;}
+    .pi-dash .pi-ht{padding:22px 24px;} .pi-dash .pi-ht h2{font-size:26px;}
+    .pi-dash .pi-kpi{gap:12px;} .pi-dash .pi-kpi > div{padding:14px 16px;border-radius:16px;} .pi-dash .pi-kpi b{font-size:22px;}
+    .pi-cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start;}
+    .pi-main, .pi-side{display:flex;flex-direction:column;gap:14px;min-width:0;}
+    .pi-side{position:sticky;top:calc(var(--hdh, 64px) + 12px);}
+    .pi-dash .pi-sec{padding:16px;}
+    .pi-side .pi-live{grid-template-columns:1fr 1fr;}
+    .pi-side .pi-tech{grid-template-columns:1fr 1fr;}
+    .pi-side .pi-grid{grid-template-columns:1fr;}
+    .pi-side .pi-map{height:190px;}
+    .pi-main .pi-grid{grid-template-columns:repeat(3, minmax(0,1fr));}
+    .pi-dash .pi-edit{align-self:flex-start;}
+  }
   .pi-hero{position:relative;border-radius:22px;overflow:hidden;min-height:170px;display:flex;align-items:flex-end;background:linear-gradient(140deg,#17344f,#2e6488);}
   .pi-cv{position:absolute;inset:0;font-size:90px;opacity:1;background:transparent;}
   .pi-cv:not(.has) i{opacity:.12;}
@@ -92026,6 +92042,7 @@
     pjApply();
   }
   const pjCur = () => PJ.all.get(PJ.cur) || PJ.all.get('p1') || pjDefault();
+  window.pjCur = pjCur;
   const pjMeK = () => nameKey(activeUserName() || '');
   function pjMemOf(pid, name){ const k = nameKey(name || ''); return PJ.mem.find(m => m.pid === pid && nameKey(m.name) === k) || null; }
   function pjMine(){
@@ -92666,6 +92683,28 @@
     const miss = PJ_F.reduce((a, g) => a.concat(g.f), []).filter(f => !p[f.k] && f.k !== 'code').length;
     if(pjCanEdit()) h += '<div class="pi-edit"><button type="button" data-pjopen-info="1">' + PJ_I.info + 'ویرایش اطلاعات پروژه</button>' + (miss > 4 ? '<small>' + toFa(miss) + ' مورد از اطلاعات هنوز خالی است</small>' : '') + '</div>';
     if(p.updated) h += '<p class="pi-up">آخرین به‌روزرسانی ' + esc(toFa(p.updated)) + (p.updatedBy ? ' · ' + esc(p.updatedBy) : '') + '</p>';
+    /* دسکتاپ: داشبورد دوستونه — ستون اصلی (معرفی، زمان، ساختمان، تصاویر) و ستون کناری (امروز، عوامل، مشخصات، موقعیت، تیم) */
+    if(window.matchMedia && window.matchMedia('(min-width:1180px)').matches){
+      try{
+        const tpl = document.createElement('div'); tpl.innerHTML = h + '</div>';
+        const pi = tpl.firstElementChild; pi.classList.add('pi-dash'); pi.dataset.ag = 'off';
+        const SIDE = ['امروز در سامانه', 'عوامل پروژه', 'مشخصات فنی', 'موقعیت', 'تیم پروژه'];
+        const main = document.createElement('div'); main.className = 'pi-main';
+        const side = document.createElement('div'); side.className = 'pi-side';
+        const cols = document.createElement('div'); cols.className = 'pi-cols'; cols.append(main, side);
+        const foot = [];
+        Array.from(pi.children).forEach(c => {
+          if(c.classList.contains('pi-hero') || c.classList.contains('pi-kpi')) return;
+          if(c.classList.contains('pi-edit') || c.classList.contains('pi-up')){ foot.push(c); return; }
+          const t = ((c.querySelector('h3') || {}).firstChild || {}).textContent || '';
+          (SIDE.some(x => t.trim().indexOf(x) === 0) ? side : main).appendChild(c);
+        });
+        const live = Array.from(side.children).find(c => /امروز در سامانه/.test((c.querySelector('h3') || {}).textContent || ''));
+        if(live) live.classList.add('pi-livebox');
+        pi.appendChild(cols); foot.forEach(f => pi.appendChild(f));
+        return pi.outerHTML;
+      }catch(e){}
+    }
     return h + '</div>';
   }
   window.pjIntroHtml = pjIntroHtml;
