@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030035642">
+<meta name="pm-build" content="20261030035827">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27996,6 +27996,22 @@
     #wrkBody .wm3-th > button.on{border-color:var(--ink);}
     #wrkBody .wm3-th + #wmRows{border-radius:16px;}
     :is(html,#z0) :is(body,#z1) #wrkBody .wm3 .wm-ph-add{grid-template-columns:1fr 1fr;} :is(html,#z0) :is(body,#z1) #wrkBody .wm3 .wm-ph-add .mini{grid-column:1 / -1;}
+  }
+
+  /* ستون کناری: دسته‌های تاشوی میز کار، و بی‌کارت کاربر در پایین (عکس و نام فقط بالای صفحه) */
+  @media (min-width:1180px){
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-foot > :is(.sbf-me, .sbf-keys){display:none !important;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-foot{padding:8px 0 !important;border-top:0 !important;justify-content:flex-start !important;flex-direction:row !important;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght{all:unset;box-sizing:border-box;cursor:pointer;display:flex !important;align-items:center;gap:6px;width:100%;padding:8px 10px 6px !important;border-radius:8px;
+      font-size:11px !important;font-weight:700 !important;color:var(--muted) !important;letter-spacing:.1px;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght:hover{background:var(--field);color:var(--ink) !important;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght > span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght > u{text-decoration:none;font-size:10px;opacity:.7;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght > em{font-style:normal;min-width:16px;height:16px;padding:0 5px;box-sizing:border-box;border-radius:99px;display:inline-grid;place-items:center;font-size:9.5px;font-weight:800;color:#fff;background:var(--alert, #c0392b);}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-ght > svg{width:13px;height:13px;flex:none;transition:transform .18s;transform:rotate(90deg);}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-grp.open > .sb-ght > svg{transform:none;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-grp > .sb-gl{display:none;flex-direction:column;}
+    :is(html,#z0) :is(body,#z1) #tabBar .sb-grp.open > .sb-gl, :is(html,#z0) :is(body,#z1) #tabBar.sb-qing .sb-grp > .sb-gl{display:flex;}
   }
 
 </style>
@@ -90897,6 +90913,11 @@
     const box = id => { let d = bar.querySelector('.sb-sub[data-for="' + id + '"]'); if(!d){ const t = document.getElementById(id); if(!t) return null; d = document.createElement('div'); d.className = 'sb-sub'; d.dataset.for = id; t.after(d); } return d; };
     const it = (attr, ic, t, n, hot) => '<button type="button" class="sb-it" ' + attr + '><i>' + (ic || '') + '</i><span>' + esc(t) + '</span>' + (n ? '<em' + (hot ? ' class="hot"' : '') + '>' + toFa(n) + '</em>' : '') + '</button>';
     const grp = t => '<div class="sb-gh">' + esc(t) + '</div>';
+    /* دسته‌های میز کار تاشو؛ پیش‌فرض بسته (جز دستهٔ بخشی که باز است)، و وضعیت هر دسته یادش می‌ماند */
+    const SBG_K = 'siteLogM.sbGrp';
+    const sbgGet = () => { try{ return JSON.parse(localStorage.getItem(SBG_K) || '{}') || {}; }catch(e){ return {}; } };
+    const sbgSet = (k, on) => { try{ const o = sbgGet(); o[k] = on ? 1 : 0; localStorage.setItem(SBG_K, JSON.stringify(o)); }catch(e){} };
+    const CHV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
     function put(id, html, open){ const d = box(id); if(!d) return; if(d.__h !== html){ d.innerHTML = html; d.__h = html; } d.classList.toggle('open', !!open && !!html); }
     function build(){
       if(!mq.matches) return;
@@ -90904,10 +90925,15 @@
       /* میز کار */
       let h = '';
       try{
-        const L = WS_MODS.filter(x => wsOk(x));
+        const L = WS_MODS.filter(x => wsOk(x)), S = sbgGet();
+        let wk = ''; try{ wk = cur === 'tasks' ? (ws.cur || '') : ''; }catch(e){}
+        const ag = wk ? (WS_GOF[wk] || 'etc') : '';
         WS_GRP.forEach(g => { const G = L.filter(x => (WS_GOF[x.k] || 'etc') === g.k); if(!G.length) return;
-          h += grp(g.t) + G.map(x => { let hn = null; try{ hn = wsHint(x.k); }catch(e){}
-            return it('data-sbws="' + x.k + '" style="--c:' + x.c + '"', x.ic ? x.ic() : '', x.t, hn && hn.n, hn && hn.hot); }).join(''); });
+          let hot = 0; const rows = G.map(x => { let hn = null; try{ hn = wsHint(x.k); }catch(e){} if(hn && hn.hot) hot += +hn.n || 1;
+            return it('data-sbws="' + x.k + '" style="--c:' + x.c + '"', x.ic ? x.ic() : '', x.t, hn && hn.n, hn && hn.hot); }).join('');
+          const op = S[g.k] != null ? !!S[g.k] : g.k === ag;
+          h += '<div class="sb-grp' + (op ? ' open' : '') + '" data-sbg="' + g.k + '"><button type="button" class="sb-gh sb-ght" aria-expanded="' + op + '"><span>' + esc(g.t) + '</span>'
+            + (hot ? '<em class="hot">' + toFa(hot) + '</em>' : '<u>' + toFa(G.length) + '</u>') + CHV + '</button><div class="sb-gl">' + rows + '</div></div>'; });
       }catch(e){}
       put('tabTasks', h, cur === 'tasks');
       /* اسناد */
@@ -90944,6 +90970,11 @@
     }
     let t = 0; const soon = (ms) => { clearTimeout(t); t = setTimeout(build, ms || 60); };
     /* واکنش فوری: زیرمنوی بخش همان لحظهٔ کلیک باز می‌شود و زیرمورد همان لحظه برجسته (بازسازی کامل بعداً، بی‌صدا) */
+    bar.addEventListener('click', e => {
+      const gt = e.target.closest && e.target.closest('.sb-ght');
+      if(gt){ e.preventDefault(); e.stopPropagation(); const g = gt.closest('.sb-grp'), on = !g.classList.contains('open'); g.classList.toggle('open', on); gt.setAttribute('aria-expanded', on); sbgSet(g.dataset.sbg, on);
+        const d = g.closest('.sb-sub'); if(d) d.__h = d.innerHTML; return; }
+    }, true);
     bar.addEventListener('click', e => {
       if(!mq.matches) return;
       const t = e.target.closest && e.target.closest('.tab[id]');
@@ -91967,7 +91998,7 @@
       const run = () => { const q = inp.value.trim(); bar.classList.toggle('sb-q', !!q);
         let first = null;
         items().forEach(b => { const hit = !q || b.textContent.indexOf(q) !== -1; b.classList.toggle('sb-hit', !!q && hit); b.hidden = !!q && !hit; if(q && hit && !first) first = b; });
-        bar.querySelectorAll('.sb-gh').forEach(g => { g.hidden = !!q; });
+        bar.querySelectorAll('.sb-gh').forEach(g => { g.hidden = !!q; }); bar.classList.toggle('sb-qing', !!q);
         bar.querySelectorAll('.sb-sub').forEach(d => { d.classList.toggle('sb-qopen', !!q && !!d.querySelector('.sb-it:not([hidden])')); });
         bar.__first = first; };
       inp.addEventListener('input', run);
