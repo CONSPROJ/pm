@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030072633">
+<meta name="pm-build" content="20261030072823">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26115,7 +26115,7 @@
   .ct-range .ctr.on, .hr-rng .ctr.on{background:var(--surface);color:var(--ink);font-weight:800;
     box-shadow:0 1px 2px rgba(0,0,0,.08), 0 2px 8px -2px rgba(0,0,0,.10);}
   .hr-rng .ctc-mini{flex:none;margin-inline-start:6px;}
-  #ctProfModal .ct-stats{display:grid;grid-template-columns:repeat(auto-fit, minmax(74px, 1fr));gap:6px;margin:12px 0 10px;}
+  #ctProfModal .ct-stats{display:none !important;}
   #ctProfModal .ct-stats .hv-s{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;height:auto;min-height:52px;
     padding:8px 10px;border-radius:14px;line-height:1.3;background:var(--surface);border:1px solid var(--line);white-space:nowrap;min-width:0;overflow:hidden;}
   #ctProfModal .ct-stats .hv-s u{font-size:10.5px;font-weight:600;}
@@ -26577,6 +26577,15 @@
   /* کارت پیمانکار روی دسکتاپ: بی تکرار آمار، بازه و زبانه‌ها در یک ردیف، شاخص‌ها یک نوار با جداکننده، بخش‌ها دوستونی */
   @media (min-width:1180px){
     :is(html,#z0) :is(body,#z1) #ctProfModal .ct-body > .ct-stats{display:none !important;}
+    /* خلاصهٔ پروندهٔ پیمانکار، دو ستونه: نمودار کنار روند و موانع */
+    :is(html,#z0) :is(body,#z1) #ctProfModal .modal{max-width:1040px !important;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .hr-pane[data-pane="sum"].on{display:grid !important;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);grid-template-areas:"k k" "c t" "c b" "d d";gap:14px 18px;align-items:start;}
+    #ctProfModal .hr-pane[data-pane="sum"] > .hrk-row{grid-area:k;} #ctProfModal .hr-pane[data-pane="sum"] > .att-wrap{grid-area:c;}
+    #ctProfModal .hr-pane[data-pane="sum"] > .rc-trd{grid-area:t;} #ctProfModal .hr-pane[data-pane="sum"] > .rc-tw{grid-area:b;}
+    #ctProfModal .hr-pane[data-pane="sum"] > .rc-docs{grid-area:d;} #ctProfModal .hr-pane[data-pane="sum"] > .hr-note{grid-column:1 / -1;}
+    #ctProfModal .hr-pane[data-pane="sum"] > * > .rc-title:first-child{margin-top:0 !important;}
+    #ctProfModal .rc-trd .hrd-chs > .hrd-ch{padding:9px 10px !important;}
+    #ctProfModal .rc-tw .rct-row{grid-template-columns:1fr 1fr !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .ct-rep.none{padding:8px 14px !important;min-height:0 !important;margin:10px 16px 0 !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .ct-rep.none small{display:none !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2{display:grid !important;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;row-gap:14px;align-items:center;padding:16px 18px 18px !important;}
@@ -51299,7 +51308,7 @@
                     const mx = Math.max(1, ...series.map(x => x.men)), n = series.length || 1, W = 600, H = 150, bw = W / n;
                     const step = Math.max(1, Math.ceil(n / 8));
                     /* متن برچسب‌ها بیرون از svg (svg کشیده می‌شود و متنِ داخلش هم کج و کشیده می‌شد) */
-                    const xl = '<div class="att-xl" dir="ltr">' + series.map((x, i) => i % step === 0 || i === n - 1 ? '<span style="left:' + ((i * bw + bw / 2) / W * 100).toFixed(2) + '%"' + (i === n - 1 ? ' class="last"' : '') + '>' + esc(dayLabel2(x.d)) + '</span>' : '').join('') + '</div>';
+                    const xl = '<div class="att-xl" dir="ltr">' + series.map((x, i) => (i % step === 0 && (i === n - 1 || n - 1 - i >= step * .6)) || i === n - 1 ? '<span style="left:' + ((i * bw + bw / 2) / W * 100).toFixed(2) + '%"' + (i === n - 1 ? ' class="last"' : '') + '>' + esc(dayLabel2(x.d)) + '</span>' : '').join('') + '</div>';
                     const bars = series.map((x, i) => { const h = x.men ? Math.max(3, Math.round(x.men / mx * (H - 24))) : 2;
                       return '<rect x="' + (i * bw + bw * .14).toFixed(1) + '" y="' + (H - 18 - h) + '" width="' + (bw * .72).toFixed(1) + '" height="' + h + '" rx="2" class="' + (x.men ? 'on' : 'off') + (i === n - 1 ? ' last' : '') + '"><title>' + esc(dayLabel2(x.d)) + ' — ' + (x.men ? toFa(x.men) + ' نفر' : 'غیبت') + '</title></rect>'
                         ; }).join('');
@@ -51327,8 +51336,8 @@
                   const h2 = chip('روزانه', dD, L >= 2 ? dayLabel2(work[L - 1].d) + ' نسبت به ' + dayLabel2(work[L - 2].d) : '')
                     + chip('هفتگی', dW, 'میانگین ۶ روز کاری اخیر نسبت به ۶ روز قبل')
                     + chip('ماهانه', dM, 'نیمهٔ دوم بازه نسبت به نیمهٔ اول');
-                  return h2 ? '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hrd-chs">' + h2 + '</div>'
-                    : '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hr-note">برای مقایسه، بازهٔ «۷ روز» یا «۳۰ روز» را انتخاب کنید.</div>';
+                  return '<div class="rc-trd">' + (h2 ? '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hrd-chs">' + h2 + '</div>'
+                    : '<div class="rc-title">افزایش و کاهش نیرو</div><div class="hr-note">برای مقایسه، بازهٔ «۷ روز» یا «۳۰ روز» را انتخاب کنید.</div>') + '</div>';
                 })())
               + (() => {
                   /* موانع مربوط به همین پیمانکار در بازه (از گزارش‌های روزانه) */
@@ -51395,7 +51404,7 @@
                     + tile2('blk', I2('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'), blkN, 'مانع', blkN ? 'در این بازه و لیست فعالیت' : 'مانعی نیست ✓', act.filter(x => x.open).length)
                     + '</div><div class="rc-pane" data-rcp="act" hidden>' + actList + '</div><div class="rc-pane" data-rcp="blk" hidden>' + blkBody + '</div></div>';
                 })()
-              + '<div class="rc-title">پروندهٔ اداری</div>' + docTiles;
+              + '<div class="rc-docs"><div class="rc-title">پروندهٔ اداری</div>' + docTiles + '</div>';
             const workPane = o.onlyAdm
               ? '<div class="hr-note">در این بازه گزارش کارگاهی برای این پیمانکار ثبت نشده است.</div>'
               : '<div class="rc-title">روند نیرو در بازه</div>' + mini
