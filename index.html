@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030074452">
+<meta name="pm-build" content="20261030075716">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -12736,7 +12736,7 @@
   .jump-bar .mini.on:hover{color:var(--surface);}
   /* خط موییِ جداکننده وقتی نوار چسبیده است */
   .jump-bar{border-bottom:1px solid transparent;}
-  .jump-bar.open{border-bottom-color:var(--line-soft);}
+  .jump-bar.rail-open{border-bottom-color:var(--line-soft);}
 
   /* کشوی فیلتر/جست‌وجو و جعبهٔ فیلتر: یک سطح، یک گردی، یک قلم */
   .toolbar.filterbox,
@@ -17301,7 +17301,7 @@
   #taskFiltersHost #taskSearch{grid-column:1;grid-row:1;}
   #taskFiltersHost #taskFilterDrawer{display:contents !important;}
   #taskFiltersHost #taskFilterDrawer[style*="none"] > *{display:none !important;}
-  #taskFiltersHost:not(:has(#taskFilterDrawer:not([style*="none"]))) #taskSearch{grid-column:1 / -1;}
+  #taskFiltersHost:not(:has(#taskFilterDrawer:not([data-dn]))) #taskSearch{grid-column:1 / -1;}
   #taskFiltersHost #taskFilterDrawer > .fd-toggle{
     grid-column:2;grid-row:1;align-self:stretch;
     height:44px;min-height:44px !important;padding:0 13px;border-radius:14px;gap:7px;white-space:nowrap;
@@ -19248,7 +19248,7 @@
   #adminView > #admJumpBar{position:sticky;top:0;z-index:26;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 2px;margin:0 0 10px;background:var(--canvas);border-bottom:1px solid var(--line);}
   @media (max-width:640px){ #adminView > #admJumpBar{margin:0 -18px 12px;padding:8px 16px;} }
   #adminView > #admJumpBar .mini{flex:0 0 auto;}
-  footer:not(:has(#sheetLink:not([style*="none"]))){display:none !important;}
+  footer:not(:has(#sheetLink:not([data-dn]))){display:none !important;}
   #admJumpBar .jb-sep{flex:0 0 1px;align-self:stretch;margin:4px 2px;background:var(--line);}
   #admJumpBar .jb-sub u{text-decoration:none;font-size:10.5px;opacity:.7;margin-inline-start:3px;}
   .adm-cats{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:10px;margin:0 0 16px;}
@@ -22826,8 +22826,8 @@
   .ftb > .fdrawer:not(.sd2){display:contents !important;}
   .ftb > .fdrawer[style*="none"]{display:none !important;}
   .ftb > .fdrawer[style*="none"] > *{display:none !important;}
-  .ftb:not(:has(> .fdrawer:not(.sd2):not([style*="none"]))) > .sd2{grid-column:1 / -1;}
-  .ftb:empty, .ftb:not(:has(> :not([style*="none"]))){display:none;}
+  .ftb:not(:has(> .fdrawer:not(.sd2):not([data-dn]))) > .sd2{grid-column:1 / -1;}
+  .ftb:empty, .ftb:not(:has(> :not([data-dn]))){display:none;}
   .ftb > .fdrawer:not(.sd2) > .fd-toggle{grid-column:2;grid-row:1;align-self:stretch;min-height:48px !important;}
   .ftb > .fdrawer:not(.sd2) > .fd-chips{grid-column:1 / -1;}
   .ftb > .fdrawer:not(.sd2) > .fd-body{grid-column:1 / -1;}
@@ -26811,7 +26811,7 @@
     :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-c{padding:18px !important;border-radius:16px !important;box-shadow:none !important;border:1px solid var(--line) !important;}
     :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-h > u{font-size:12px !important;font-weight:700 !important;color:var(--muted) !important;text-decoration:none !important;}
     :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-h > b{font-size:26px !important;}
-    :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-h > small:not(:has(.bad, .dn, [class*="late"])){display:none !important;}
+    :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-h > small:not(:has(.bad, .dn, .late)){display:none !important;}
     :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-tk .hd4-dn{transform:scale(1.15);transform-origin:center;}
     :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-fn .hd4-cols span small, :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hd4 .hd4-fn .hd4-cols span u{font-size:10px !important;}
   }
@@ -47981,6 +47981,21 @@
     }catch(e){}
   })();
 
+  /* سرعت: «display:none» درون‌خطیِ چند عنصر به ویژگی data-dn آینه می‌شود تا قانون‌های :has()
+     دیگر [style*=…] نخوانند؛ آن قانون‌ها با هر تغییر style در کل صفحه سبک‌دهی دوباره راه می‌انداختند. */
+  (function dnMirror(){
+    const SEL = '#taskFilterDrawer, #sheetLink, .ftb > *';
+    const fix = el => { const dn = el.style && el.style.display === 'none'; if(dn !== el.hasAttribute('data-dn')) el.toggleAttribute('data-dn', dn); };
+    const scan = n => { if(n.nodeType !== 1) return; if(n.matches(SEL)) fix(n); if(n.firstElementChild) n.querySelectorAll(SEL).forEach(fix); };
+    try{
+      new MutationObserver(ms => ms.forEach(m => {
+        if(m.type === 'attributes'){ if(m.target.matches && m.target.matches(SEL)) fix(m.target); }
+        else m.addedNodes.forEach(n => { if(n.nodeType === 1 && (n.matches(SEL) || (n.classList.contains('ftb') || n.querySelector('.ftb, #taskFilterDrawer, #sheetLink')))) scan(n); });
+      })).observe(document.documentElement, {attributes: true, attributeFilter: ['style'], childList: true, subtree: true});
+    }catch(e){}
+    document.querySelectorAll(SEL).forEach(fix);
+  })();
+
   /* ====== راه‌اندازی ظاهر تازه ====== */
   (function uiBoot(){
     const isSel = el => el.getAttribute('aria-selected') === 'true';
@@ -54549,9 +54564,10 @@
     if(!railScrollBound){
       railScrollBound = true;
       window.addEventListener('scroll', () => {
-        railBars.forEach(b => { if(document.body.contains(b)) b.classList.add('open'); });
+        /* کلاس جدا (نه «open»): «open» در قانون‌های :has() زیادی هست و افزودنش با هر اسکرول کل صفحه را دوباره سبک‌دهی می‌کرد */
+        railBars.forEach(b => { if(b.isConnected && b.offsetParent && !b.classList.contains('rail-open')) b.classList.add('rail-open'); });
         clearTimeout(railTimer);
-        railTimer = setTimeout(() => railBars.forEach(b => b.classList.remove('open')), 1200);
+        railTimer = setTimeout(() => railBars.forEach(b => { if(b.classList.contains('rail-open')) b.classList.remove('rail-open'); }), 1200);
       }, {passive:true});
     }
     if(spyObserver) spyObserver.disconnect();
