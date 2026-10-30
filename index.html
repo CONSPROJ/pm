@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030082624">
+<meta name="pm-build" content="20261030082752">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -20369,6 +20369,17 @@
   .ptb .hri-r.go{cursor:pointer;} .ptb .rc-sub b.bad{color:var(--alert);}
   .ptb .rc-title .n.bad{background:var(--alert);color:#fff;}
   .hri-more{all:unset;cursor:pointer;display:block;margin:6px auto 0;font-size:11.5px;font-weight:700;color:var(--sky);}
+  /* خلاصهٔ مدیریتی بازه: نوار شاخص یکپارچه، نشانه‌های کوتاه، دو فهرست جمع‌وجور */
+  #secExec .rx-ks{gap:0 !important;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);}
+  #secExec .rx-k{background:none !important;border-radius:0 !important;padding:12px 14px !important;position:relative;justify-content:center;}
+  #secExec .rx-k + .rx-k::before{content:"";position:absolute;inset-inline-start:0;top:12px;bottom:12px;width:1px;background:var(--line);}
+  #secExec .rx-k u{text-decoration:none;font-size:10.5px;font-weight:700;color:var(--muted);} #secExec .rx-k b{font-size:17px;font-weight:900;}
+  #secExec .rx-k.avg small{display:block;margin-top:4px;}
+  .rx-spk{display:flex;align-items:flex-end;gap:2px;height:22px;} .rx-spk i{flex:1;min-width:2px;background:color-mix(in srgb, var(--vz1, #2f6f9f) 45%, transparent);border-radius:2px 2px 0 0;} .rx-spk i.pk{background:var(--vz1, #2f6f9f);}
+  .rx-sig{display:flex;flex-wrap:wrap;gap:6px;}
+  .rx-sig span{font-size:11px;font-weight:700;padding:5px 11px;border-radius:99px;background:var(--field);color:var(--ink);cursor:default;}
+  .rx-sig span.ok{background:color-mix(in srgb, var(--ok) 12%, transparent);color:var(--ok);} .rx-sig span.warn{background:color-mix(in srgb, #c98a12 14%, transparent);color:#9a6a0a;} .rx-sig span.bad{background:color-mix(in srgb, var(--alert, #c0392b) 11%, transparent);color:var(--alert, #c0392b);}
+  @media (max-width:640px){ #secExec .rx-ks{grid-template-columns:1fr 1fr !important;} #secExec .rx-k.avg{grid-column:1 / -1;} #secExec .rx-k:nth-child(2n+1)::before{display:none;} #secExec .rx-k{border-top:1px solid var(--line);} #secExec .rx-k:first-child{border-top:0;} }
   .rx{margin:14px 0;padding:14px;border-radius:20px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;}
   .rx-h{display:flex;align-items:center;justify-content:space-between;gap:10px;} .rx-h b{font-size:15px;font-weight:800;} .rx-h small{font-size:11px;color:var(--muted);}
   .rx-open{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--sky);}
@@ -27657,7 +27668,10 @@
     html body #secRange > .tcal-body > .rc-title:has(+ .rc-rows.rc-fl), html body #secRange > .tcal-body > .rc-rows.rc-fl{grid-column:2 / span 2 !important;}
     html body #secRange #attBox > .att-list{grid-template-columns:repeat(3, minmax(0,1fr)) !important;}
     html body #secRange > .tcal-body > .rc-rows.rc-fl{display:grid !important;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(var(--fr, 8), auto);column-gap:28px;}
-    html body #secExec .rx-ks{grid-template-columns:repeat(5, minmax(0,1fr)) !important;}
+    html body #secExec .rx-ks{grid-template-columns:1.5fr repeat(5, minmax(0,1fr)) !important;}
+    /* آمار تکراری روند (همان شاخص‌های خلاصهٔ مدیریتی) پنهان؛ نمودار تمام‌عرض */
+    html body #reportView:has(> #secExec) #secRange > .tcal-body > .rc-stats{display:none !important;}
+    html body #reportView:has(> #secExec) #secRange > .tcal-body > .tr-box{grid-column:1 / -1 !important;}
     html body #reportView{display:grid !important;grid-template-columns:repeat(6, minmax(0,1fr));gap:0 14px;align-items:start;}
     html body #reportView > *{grid-column:1 / -1;min-width:0;}
     html body #reportView > .tcal.sumpanel:not(.open){grid-column:span 2;}
@@ -71456,6 +71470,15 @@
       (it.events || []).forEach(ev => { if(ev.type === 'رفع' && ev.date && dk.has(dayKey(faDateOf(ev.date) || ''))) bFix++; }); })); }catch(e){}
     let pgA = null; try{ const S0 = pgSkills(); if(S0.length) pgA = Math.round(S0.reduce((t, x) => t + pgSkillPct(x), 0) / S0.length); }catch(e){}
     const k = (l, v, sub, cls) => '<div class="rx-k' + (cls ? ' ' + cls : '') + '"><u>' + l + '</u><b>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
+    /* نشانه‌های کوتاه به‌جای جمله‌های بلند */
+    const sig = [];
+    if(trend != null && Math.abs(trend) >= 5) sig.push(['نیرو ' + (trend > 0 ? '▲ ' : '▼ ') + toFa(Math.abs(trend)) + '٪', trend > 0 ? 'ok' : 'warn', 'نیمهٔ دوم دوره نسبت به نیمهٔ اول']);
+    if(topC && tot) sig.push(['بیشترین: ' + esc(topC[0]) + ' ' + toFa(Math.round(topC[1] / tot * 100)) + '٪', '', toFa(topC[1]) + ' نفر-روز']);
+    if(late.length) sig.push([toFa(late.length) + ' فعالیت دیرکرد', 'bad', 'از موعد گذشته و هنوز باز']);
+    if(bOpen) sig.push([toFa(bOpen) + ' مانع باز', 'warn', toFa(bNew) + ' تازه · ' + toFa(bFix) + ' رفع در دوره']);
+    { const iss0 = dedupeIssues(issues || []).length; if(iss0) sig.push([toFa(iss0) + ' مشکل گزارش‌شده', '', 'در گزارش‌های روزانهٔ دوره']); }
+    const spark = (function(){ if(vals.length < 2) return ''; const mx = Math.max(1, ...vals);
+      return '<span class="rx-spk">' + vals.map(v => '<i style="height:' + Math.max(v ? 12 : 4, Math.round(v / mx * 100)) + '%"' + (v === pk && v ? ' class="pk"' : '') + '></i>').join('') + '</span>'; })();
     const ins = [];
     if(trend != null && Math.abs(trend) >= 5) ins.push((trend > 0 ? '▲ ' : '▼ ') + 'نیروی کارگاه در نیمهٔ دوم دوره ' + toFa(Math.abs(trend)) + '٪ ' + (trend > 0 ? 'بیشتر' : 'کمتر') + ' از نیمهٔ اول بوده است.');
     if(topC && tot) ins.push('بیشترین نیرو: ' + esc(topC[0]) + ' با ' + toFa(topC[1]) + ' نفر-روز (' + toFa(Math.round(topC[1] / tot * 100)) + '٪ کل).');
@@ -71470,19 +71493,19 @@
     return '<section class="rx" id="secExec">'
       + '<div class="rx-h"><b>خلاصهٔ مدیریتی</b><small>' + rangeName() + ' · ' + toFa(D.length) + ' روز</small></div>'
       + '<div class="rx-ks">'
-      +   k('میانگین نیروی روزانه', toFa(avg) + ' نفر', work.length ? toFa(work.length) + ' روز کاری' : '')
+      +   k('میانگین نیروی روزانه', toFa(avg) + ' نفر', spark || (work.length ? toFa(work.length) + ' روز کاری' : ''), 'avg')
       +   k('اوج نیرو', toFa(pk) + ' نفر', pkD ? esc(toFa(admDate(pkD) || pkD)) : '')
       +   (pgA != null ? k('پیشرفت فیزیکی', toFa(pgA) + '٪', 'میانگین تخصص‌ها', 'pg') : '')
       +   k('فعالیت تمام‌شده', toFa(done.length), 'در همین دوره', done.length ? 'ok' : '')
       +   k('از موعد گذشته', toFa(late.length), 'فعالیت باز', late.length ? 'bad' : 'ok')
       +   k('موانع', toFa(bNew) + ' تازه · ' + toFa(bFix) + ' رفع', bOpen ? toFa(bOpen) + ' باز' : 'مانع بازی نیست', bOpen ? 'warn' : '')
       + '</div>'
-      + (ins.length ? '<ul class="rx-ins">' + ins.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '')
+      + (sig.length ? '<div class="rx-sig">' + sig.map(x => '<span class="' + x[1] + '" title="' + esc(x[2]) + '">' + x[0] + '</span>').join('') + '</div>' : '')
       + '<div class="rx-cols">'
       +   '<div class="rx-c"><div class="rx-ch">پیش رو<small>موعد تا ' + (ahead === 7 ? 'هفتهٔ آینده' : 'سی روز آینده') + '</small><i>' + toFa(next.length) + '</i></div>'
-      +     (next.length ? next.slice(0, 8).map(tRow).join('') : '<div class="hr-note">کاری با موعد نزدیک نیست.</div>') + '</div>'
+      +     (next.length ? next.slice(0, 5).map(tRow).join('') : '<div class="hr-note">کاری با موعد نزدیک نیست.</div>') + '</div>'
       +   '<div class="rx-c"><div class="rx-ch">تمام‌شده در دوره<i>' + toFa(done.length) + '</i></div>'
-      +     (done.length ? done.slice(0, 8).map(r => '<button type="button" class="rx-t ok" data-rxtask="' + esc(pick(r,T.id) || '') + '"><b>' + esc(pick(r,T.title) || 'فعالیت') + '</b><small>' + esc(toFa(admDate(taskDoneDate(r)) || '')) + (pick(r,T.m1) ? ' · ' + esc(pick(r,T.m1)) : '') + '</small></button>').join('') : '<div class="hr-note">فعالیتی در این دوره تمام نشده است.</div>') + '</div>'
+      +     (done.length ? done.slice(0, 5).map(r => '<button type="button" class="rx-t ok" data-rxtask="' + esc(pick(r,T.id) || '') + '"><b>' + esc(pick(r,T.title) || 'فعالیت') + '</b><small>' + esc(toFa(admDate(taskDoneDate(r)) || '')) + (pick(r,T.m1) ? ' · ' + esc(pick(r,T.m1)) : '') + '</small></button>').join('') : '<div class="hr-note">فعالیتی در این دوره تمام نشده است.</div>') + '</div>'
       + '</div></section>';
   }
   document.addEventListener('click', e => {
