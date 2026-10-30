@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030131940">
+<meta name="pm-build" content="20261030132139">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19989,10 +19989,25 @@
     html body #tabBar .sbr-tx small{font-size:9.5px;color:var(--muted);flex:none;}
     html.sb-mini body #tabBar :is(.sbq, .sbr){display:none !important;}
   }
-  .b2-tl{display:flex;align-items:center;gap:10px;margin:8px 0 10px;padding:8px 12px;border-radius:12px;background:var(--field);}
-  .b2-tl input{flex:1;accent-color:var(--vz1, #2f6f9f);}
-  .b2-play{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--vz1, #2f6f9f);color:#fff;font-size:11px;flex:none;}
-  .b2-tlv{font-size:11.5px;font-weight:800;color:var(--ink);min-width:140px;text-align:center;}
+  .b2-tl{display:flex;align-items:center;gap:12px;margin:8px 0 12px;padding:8px 10px 8px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,30,50,.04);}
+  .b2-play, .b2-fsb{all:unset;cursor:pointer;width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;transition:transform .15s, background .2s;}
+  .b2-play{background:var(--vz1, #2f6f9f);color:#fff;box-shadow:0 4px 12px -4px color-mix(in srgb, var(--vz1, #2f6f9f) 70%, transparent);}
+  .b2-play:hover{transform:scale(1.06);} .b2-play svg{width:15px;height:15px;} .b2-play.on{background:#24577a;}
+  .b2-fsb{border-radius:10px;color:var(--muted);} .b2-fsb:hover{background:var(--field);color:var(--ink);} .b2-fsb svg{width:17px;height:17px;}
+  .b2-tlw{position:relative;flex:1;height:22px;display:flex;align-items:center;direction:ltr;}
+  .b2-tlw::before{content:"";position:absolute;left:0;right:0;height:6px;border-radius:99px;background:var(--field);}
+  .b2-tlp{position:absolute;left:0;height:6px;border-radius:99px;background:linear-gradient(90deg, color-mix(in srgb, var(--vz1, #2f6f9f) 45%, transparent), var(--vz1, #2f6f9f));pointer-events:none;}
+  .b2-tlw input{position:relative;width:100%;margin:0;background:transparent;-webkit-appearance:none;appearance:none;height:22px;cursor:pointer;}
+  .b2-tlw input::-webkit-slider-runnable-track{height:6px;background:transparent;}
+  .b2-tlw input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-5px;border-radius:50%;background:var(--surface);border:3px solid var(--vz1, #2f6f9f);box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  .b2-tlw input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--surface);border:3px solid var(--vz1, #2f6f9f);}
+  .b2-tlv{font-size:12px;font-weight:800;color:var(--ink);min-width:150px;text-align:center;font-variant-numeric:tabular-nums;}
+  #visualChart.b2-day .bld2 > .b2f > .b2-body::before{transition:none !important;animation:none !important;}
+  #visualChart.b2-day .bld2 > .b2f{transition:opacity .25s;}
+  #visualChart.b2-fs{position:fixed !important;inset:0;z-index:300;margin:0 !important;border-radius:0 !important;overflow:auto;background:var(--bg, var(--surface)) !important;padding:18px 28px !important;max-width:none !important;}
+  #visualChart.b2-fs .bld2{max-width:1200px !important;margin:0 auto;}
+  #visualChart.b2-fs .b2-tl{position:sticky;top:0;z-index:5;}
+  body.b2-fs-on{overflow:hidden;}
   #visualChart.b2-day .b2-cs{display:none !important;} #visualChart.b2-day .b2-top3{opacity:.3;pointer-events:none;}
   .b2-sp{width:54px;height:14px;flex:none;margin-inline-start:6px;} .b2-sp polyline{fill:none;stroke:var(--vz1, #2f6f9f);stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-linejoin:round;opacity:.75;}
   .b2-lb[data-flr]{cursor:pointer;} .b2-lb[data-flr]:hover{color:var(--vz1, #2f6f9f) !important;text-decoration:underline;}
@@ -50875,27 +50890,53 @@
 
   /* نمای ساختمان: زدن پیمانکار روی هر طبقه ← فعالیت‌های همان پیمانکار در همان طبقه */
   const B2_ACTS = new Map();
+  /* لغزندهٔ زمان نمای ساختمان: پخش نرم (درون‌یابی بین روزها با requestAnimationFrame)، عدد شمارنده و حالت تمام‌صفحه */
+  let b2Anim = null;
+  function b2Vals(v){ const T2 = window.__B2T; const n = T2.days.length; const out = {};
+    if(v >= n) return null;
+    const a = Math.max(0, Math.floor(v)), b = Math.min(n - 1, a + 1), f = v - a;
+    Object.keys(T2.per).forEach(k => { const o = T2.per[k]; out[k] = (o[T2.days[a]] || 0) * (1 - f) + (o[T2.days[b]] || 0) * f; });
+    return out; }
   function b2TlSet(v){
     const T2 = window.__B2T, box = document.getElementById('visualChart'); if(!T2 || !box) return;
-    const n = T2.days.length, all = v >= n, day = all ? '' : T2.days[v];
+    const n = T2.days.length, all = v >= n, di = Math.min(n - 1, Math.round(v)), day = all ? '' : T2.days[di];
     box.classList.toggle('b2-day', !all);
-    const lab = box.querySelector('[data-b2tlv]'); if(lab) lab.textContent = all ? 'کل بازه' : (function(){ const q = toEn(day).split('/'); const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند']; return toFa(+q[2]) + ' ' + (MN[+q[1] - 1] || ''); })() + ' · روز ' + toFa(v + 1) + ' از ' + toFa(n);
-    let mx = 1; if(!all) Object.values(T2.per).forEach(o => { mx = Math.max(mx, o[day] || 0); });
-    box.querySelectorAll('.b2f[data-b2k]').forEach(f => {
+    const lab = box.querySelector('[data-b2tlv]'); if(lab) lab.textContent = all ? 'کل بازه' : (function(){ const q = toEn(day).split('/'); const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند']; return toFa(+q[2]) + ' ' + (MN[+q[1] - 1] || ''); })() + ' · روز ' + toFa(di + 1) + ' از ' + toFa(n);
+    const V = all ? null : b2Vals(v);
+    let mx = 1; if(V) Object.values(V).forEach(x => { mx = Math.max(mx, x); });
+    if(V && !box.__b2mx) box.__b2mx = Math.max(1, ...T2.days.map(d => Math.max(0, ...Object.values(T2.per).map(o => o[d] || 0))));
+    box.querySelectorAll('.bld2 > .b2f[data-b2k]').forEach(f => {
       const nb = f.querySelector('.b2-n'); if(!nb) return;
       if(f.__o == null){ f.__o = {h: f.style.getPropertyValue('--h'), on: f.classList.contains('on'), html: nb.innerHTML}; }
       if(all){ f.style.setProperty('--h', f.__o.h); f.classList.toggle('on', f.__o.on); nb.innerHTML = f.__o.html; return; }
-      const m = Math.round((T2.per[f.dataset.b2k] || {})[day] || 0);
-      f.style.setProperty('--h', m ? Math.max(.18, m / mx).toFixed(2) : '0'); f.classList.toggle('on', m > 0);
-      nb.innerHTML = m ? '<b>' + toFa(m) + '</b><u>نفر</u>' : '<i>—</i>';
+      const m = V[f.dataset.b2k] || 0, M = box.__b2mx || mx;
+      f.style.setProperty('--h', m >= .5 ? Math.max(.12, m / M).toFixed(3) : '0'); f.classList.toggle('on', m >= .5);
+      const r = Math.round(m); if(nb.__r !== r){ nb.__r = r; nb.innerHTML = r ? '<b>' + toFa(r) + '</b><u>نفر</u>' : '<i>—</i>'; }
     });
+    const rg = box.querySelector('[data-b2tl]'); if(rg && document.activeElement !== rg){ rg.value = Math.min(n, v); }
+    const pr = box.querySelector('.b2-tlp'); if(pr) pr.style.width = (Math.min(n, v) / n * 100).toFixed(2) + '%';
   }
-  document.addEventListener('input', e => { if(e.target.matches && e.target.matches('[data-b2tl]')) b2TlSet(+e.target.value); });
-  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-b2play]'); if(!b) return; e.preventDefault();
-    const r = b.parentElement.querySelector('[data-b2tl]'); if(!r) return;
-    if(b.__t){ clearInterval(b.__t); b.__t = 0; b.textContent = '▶'; return; }
-    let v = +r.value >= +r.max ? 0 : +r.value; b.textContent = '❚❚';
-    b.__t = setInterval(() => { if(!r.isConnected){ clearInterval(b.__t); return; } r.value = v; b2TlSet(v); v++; if(v > +r.max){ clearInterval(b.__t); b.__t = 0; b.textContent = '▶'; } }, 650); });
+  function b2Stop(btn){ if(b2Anim){ cancelAnimationFrame(b2Anim.raf); b2Anim = null; } const b = btn || document.querySelector('[data-b2play]'); if(b){ b.classList.remove('on'); b.innerHTML = B2_PLAY; } }
+  const B2_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>', B2_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>';
+  document.addEventListener('input', e => { if(e.target.matches && e.target.matches('[data-b2tl]')){ b2Stop(); b2TlSet(+e.target.value); } });
+  document.addEventListener('click', e => {
+    const fs = e.target.closest && e.target.closest('[data-b2fs]');
+    if(fs){ e.preventDefault(); const box = document.getElementById('visualChart'); if(!box) return; const on = !box.classList.contains('b2-fs'); box.classList.toggle('b2-fs', on); document.body.classList.toggle('b2-fs-on', on); fs.innerHTML = on ? B2_FSX : B2_FS; return; }
+    const b = e.target.closest && e.target.closest('[data-b2play]'); if(!b) return; e.preventDefault();
+    if(b2Anim){ b2Stop(b); return; }
+    const T2 = window.__B2T; if(!T2) return; const n = T2.days.length;
+    const r = b.parentElement.querySelector('[data-b2tl]'); let v0 = r && +r.value < n ? +r.value : 0;
+    const SPEED = 1.4;   /* روز در ثانیه */
+    b.classList.add('on'); b.innerHTML = B2_PAUSE;
+    let t0 = null;
+    const step = t => { if(!b.isConnected){ b2Anim = null; return; } if(t0 == null) t0 = t; const v = v0 + (t - t0) / 1000 * SPEED;
+      if(v >= n - 1){ b2TlSet(n - 1); b2Anim = null; b.classList.remove('on'); b.innerHTML = B2_PLAY; return; }
+      b2TlSet(v); b2Anim.raf = requestAnimationFrame(step); };
+    b2Anim = {raf: requestAnimationFrame(step)};
+  });
+  const B2_FS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+  const B2_FSX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ const box = document.querySelector('#visualChart.b2-fs'); if(box){ box.classList.remove('b2-fs'); document.body.classList.remove('b2-fs-on'); const f = box.querySelector('[data-b2fs]'); if(f) f.innerHTML = B2_FS; } } });
   function b2PopClose(){ const o = document.querySelector('.b2pop'); if(o) o.remove(); }
   document.addEventListener('click', e => {
     const c = e.target.closest && e.target.closest('[data-b2c]');
@@ -53160,9 +53201,10 @@
     }).join('');
     /* لغزندهٔ زمان: نیروی هر طبقه در هر روزِ بازه (برای دیدن جابه‌جایی نیرو بین طبقه‌ها) */
     window.__B2T = {days: DL, per: Object.fromEntries(Array.from(perFloor.entries()).map(([k, o]) => [k, Object.fromEntries(o.byDay)]))};
-    const tlHtml = DL.length >= 2 ? '<div class="b2-tl"><button type="button" class="b2-play" data-b2play aria-label="پخش روز به روز">▶</button>'
-      + '<input type="range" min="0" max="' + DL.length + '" value="' + DL.length + '" step="1" data-b2tl dir="ltr" aria-label="روز">'
-      + '<span class="b2-tlv" data-b2tlv>کل بازه</span></div>' : '';
+    const tlHtml = DL.length >= 2 ? '<div class="b2-tl"><button type="button" class="b2-play" data-b2play aria-label="پخش روز به روز"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button>'
+      + '<span class="b2-tlw"><span class="b2-tlp" style="width:100%"></span><input type="range" min="0" max="' + DL.length + '" value="' + DL.length + '" step="any" data-b2tl dir="ltr" aria-label="روز"></span>'
+      + '<span class="b2-tlv" data-b2tlv>کل بازه</span>'
+      + '<button type="button" class="b2-fsb" data-b2fs title="تمام‌صفحه" aria-label="تمام‌صفحه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>' : '';
 
     return '<div class="tcal bview open b2wrap" id="visualChart">'
       + '<button type="button" class="tcal-toggle">'
