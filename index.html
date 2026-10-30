@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030195235">
+<meta name="pm-build" content="20261030195509">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -65657,7 +65657,13 @@
     if(m.querySelector('.fv-pdf')){ fvPdfOpen(m, a, S); return; }
     /* نقشهٔ DWG/DXF: فایل همین‌جا گرفته و به نقشه‌خوان داده می‌شود */
     { const fr = m.querySelector('.fv-cad'); if(fr){ const keep = S;
-      const get = a.src === 's3' ? s3Blob(a) : fetch(attachDownloadUrl(a)).then(r => { if(!r.ok) throw new Error('fetch'); return r.blob(); });
+      /* دریافت با درصد پیشرفت برای نقشه‌خوان */
+      const dlP = p => { try{ fr.contentWindow && fr.contentWindow.postMessage({cadDl: p}, location.origin); }catch(e){} };
+      const get = a.src === 's3' ? s3Blob(a) : fetch(attachDownloadUrl(a)).then(async r => { if(!r.ok) throw new Error('fetch');
+        const tot = +r.headers.get('content-length') || 0; if(!tot || !r.body) return r.blob();
+        const rd = r.body.getReader(), parts = []; let got = 0, last = -1;
+        for(;;){ const {done, value} = await rd.read(); if(done) break; parts.push(value); got += value.byteLength; const p = Math.min(99, Math.round(got / tot * 100)); if(p !== last){ last = p; dlP(p); } }
+        return new Blob(parts); });
       let ready = false, buf = null;
       const go = () => { if(ready && buf && fvS === keep){ try{ fr.contentWindow.postMessage({cadFile: buf, name: a.name}, location.origin); }catch(e){} buf = null; } };
       window.addEventListener('message', function h(ev){ if(ev.source === fr.contentWindow && ev.data && ev.data.cadReady){ window.removeEventListener('message', h); ready = true;
