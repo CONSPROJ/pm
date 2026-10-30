@@ -122,7 +122,7 @@ async function openBuffer(buf, name){
     fit(); loadMarks();
   }catch(err){
     console.error(err);
-    $('#empty').hidden = false; $('#empty').innerHTML = '<div class="drop"><b>این فایل خوانده نشد</b>' + (/wasm|fetch|import|module/i.test(String(err)) ? 'کتابخانهٔ خواندن نقشه بار نشد؛ اتصال را بررسی کنید و دوباره باز کنید.' : 'شاید نسخهٔ فایل پشتیبانی نشود؛ آن را در اتوکد با «Save As» به DWG 2018 یا DXF ذخیره کنید.') + '</div>';
+    $('#empty').hidden = false; $('#empty').innerHTML = '<div class="drop"><b>این فایل خوانده نشد</b>' + (/noworker/.test(String(err)) ? 'این مرورگر نمی‌تواند نقشه را در پس‌زمینه بخواند؛ مرورگر را به‌روز کنید یا فایل را دانلود کنید و با اتوکد یا برنامهٔ نقشه باز کنید.' : /memory|wasm|fetch|import|module/i.test(String(err)) ? 'خوانندهٔ نقشه روی این دستگاه بار نشد (حافظه یا اتصال)؛ دوباره امتحان کنید یا فایل را دانلود کنید.' : 'شاید نسخهٔ فایل پشتیبانی نشود؛ آن را در اتوکد با «Save As» به DWG 2018 یا DXF ذخیره کنید.') + '</div>';
   }
 }
 /* خواندن و ساختن نقشه در Worker (صفحه یخ نمی‌زند)؛ اگر Worker نشد، همین‌جا */
@@ -130,13 +130,16 @@ let WK = null, wkId = 0;
 function readInWorker(buf){
   return new Promise((res, rej) => {
     try{ if(!WK) WK = new Worker(new URL('./lib/cad-worker.js', location.href), {type: 'module'}); }catch(e){ WK = null; }
-    if(!WK) return readHere(buf).then(res, rej);
+    /* بی Worker، DWG روی همین صفحه خوانده نمی‌شود (گوشی یخ می‌زد)؛ DXF کوچک اشکالی ندارد */
+    const isDwg = /^AC10/.test(new TextDecoder().decode(new Uint8Array(buf).slice(0, 6)));
+    const here = () => (isDwg || buf.byteLength > 4e6) ? Promise.reject(new Error('noworker')) : readHere(buf);
+    if(!WK) return here().then(res, rej);
     const id = ++wkId;
     const on = e => { const d = e.data || {}; if(d.id !== id) return;
-      if(d.stage){ busy(d.stage === 'dwg' ? 'در حال خواندن DWG…' : 'در حال ساختن نقشه…'); return; }
+      if(d.stage){ busy(d.stage === 'dwg' ? 'در حال خواندن DWG…<small style="display:block;opacity:.7;margin-top:4px">بار اول خوانندهٔ نقشه (حدود ۱۰ مگابایت) دریافت می‌شود</small>' : 'در حال ساختن نقشه…'); return; }
       WK.removeEventListener('message', on); WK.removeEventListener('error', er);
       if(d.ok) res(d); else rej(new Error(d.err)); };
-    const er = ev => { WK.removeEventListener('message', on); WK.removeEventListener('error', er); try{ WK.terminate(); }catch(e){} WK = null; readHere(buf).then(res, rej); ev.preventDefault && ev.preventDefault(); };
+    const er = ev => { WK.removeEventListener('message', on); WK.removeEventListener('error', er); try{ WK.terminate(); }catch(e){} WK = null; here().then(res, rej); ev.preventDefault && ev.preventDefault(); };
     WK.addEventListener('message', on); WK.addEventListener('error', er);
     WK.postMessage({buf, id});
   });
