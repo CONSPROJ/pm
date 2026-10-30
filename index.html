@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030025837">
+<meta name="pm-build" content="20261030031034">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -4372,6 +4372,8 @@
   @media(max-width:560px){ .admview-hint{display:none;} }
 
   .adm-fast{display:flex;flex-direction:column;gap:5px;}
+  /* سرعت: سطرهای بیرون از دید، سبک و چیدمانشان حساب نمی‌شود (فهرست‌های چندصدتایی روی گوشی صفحه را قفل می‌کردند) */
+  .adm-fast > .afr:not(.open), #taskView .tfr-item:not(.open), .wrk-list > .afr:not(.open){content-visibility:auto;contain-intrinsic-size:auto 44px;}
   .afr{
     display:flex;align-items:center;gap:8px;width:100%;cursor:pointer;text-align:start;
     padding:8px 11px;border-radius:14px;border:1px solid var(--line);
@@ -46071,7 +46073,10 @@
 
   /* ====== ابزار ====== */
   const faD = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-  const toFa = n => String(n).split('').map(d => /[0-9]/.test(d) ? faD[d] : d).join('');
+  /* سرعت: تبدیل ارقام با یک replace (پیش‌تر هر نویسه جدا آرایه و regex می‌ساخت) */
+  const TOFA_C = new Map();
+  const toFa = n => { const s = String(n); if(!/[0-9]/.test(s)) return s; const c = TOFA_C.get(s); if(c !== undefined) return c;
+    const r = s.replace(/[0-9]/g, d => faD[d]); if(TOFA_C.size > 30000) TOFA_C.clear(); TOFA_C.set(s, r); return r; };
   /* مدت با واحد مناسب: تا ۴۵ روز «روز»، تا یک سال «ماه و روز»، بیشتر «سال و ماه» */
   function faDur(days){
     const d = Math.round(Math.abs(Number(days)));
@@ -46082,9 +46087,9 @@
     return toFa(y) + ' سال' + (m >= 1 ? ' و ' + toFa(m) + ' ماه' : '');
   }
   window.faDur = faDur;
-  const toEn = s => String(s == null ? '' : s)
+  const toEn = s => { const x = String(s == null ? '' : s); return /[\u06F0-\u06F9\u0660-\u0669]/.test(x) ? x
     .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
-    .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));
+    .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660)) : x; };
   const esc = s => String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -46129,9 +46134,16 @@
   /* ====== تبدیل هر تاریخی به شمسی ======
      ورودی می‌تواند «۱۴۰۵/۰۶/۰۸» یا «1405-06-08» یا «2026-08-30» یا ISO میلادی باشد.
      خروجی همیشه [سال، ماه، روز] شمسی است. */
+  /* سرعت: هر تاریخ یک بار خوانده می‌شود (فهرست‌ها هزاران بار همان تاریخ‌ها را می‌خواندند) */
+  const FAP_C = new Map();
   function faParts(v){
     const raw = String(v == null ? '' : v).trim();
     if(!raw) return null;
+    const c = FAP_C.get(raw); if(c !== undefined) return c && c.slice();
+    const r = faParts0(raw); if(FAP_C.size > 20000) FAP_C.clear(); FAP_C.set(raw, r || null);
+    return r && r.slice();
+  }
+  function faParts0(raw){
     if(/T/.test(raw) || /Z$/.test(raw) || /[+-]\d{2}:\d{2}$/.test(raw)){
       const p = (typeof stampParts === 'function') ? stampParts(raw) : null;
       if(!p) return null;
@@ -46261,8 +46273,10 @@
         first = true;
         box.classList.remove('seg-ready');
       }
+      /* سرعت: نوار پنهان (بخش دیگر) کاری ندارد؛ با دیده‌شدن، ResizeObserver دوباره صدا می‌زند */
+      if(!box.isConnected || box.closest('[hidden]')) return;
       const on = Array.from(box.querySelectorAll(itemSel))
-        .find(el => !el.hidden && el.offsetParent !== null && isOn(el));
+        .find(el => isOn(el) && !el.hidden && el.offsetParent !== null);
       if(!on){ ind.style.opacity = '0'; return; }
       if(first){ box.classList.add('seg-still'); }
       ind.style.opacity = '';
@@ -49509,7 +49523,12 @@
     project:['پروژه','نام پروژه','project'], photos:['عکس','photos']
   };
   // نام ستون‌ها با فاصلهٔ اضافه یا نیم‌فاصله هم درست تشخیص داده شود
+  const NK_C = new Map();
   function normKey(k){
+    const c = NK_C.get(k); if(c !== undefined) return c;
+    const r = normKey0(k); if(NK_C.size > 5000) NK_C.clear(); NK_C.set(k, r); return r;
+  }
+  function normKey0(k){
     return String(k == null ? '' : k)
       .replace(/[\u200c\u200e\u200f\ufeff]/g, '')
       .replace(/\s+/g, ' ')
@@ -49555,18 +49574,20 @@
     /* ستونی که بعداً به ردیف اضافه شده (مثلاً پیوست تازه) */
     if(keys.some(k => Object.prototype.hasOwnProperty.call(row, k) && kk.map[normKey(k)] === undefined)){ kk = pickKeys(row, true); hit = exactHit(); if(hit != null) return hit; }
     // ۲) تطابق تقریبی: اگر نام ستون در شیت کمی فرق داشته باشد
-    const names = Object.keys(kk.map);
-    for(const k of keys){
-      const nk = normKey(k);
-      for(const n of names){
-        if(n && (n.indexOf(nk) !== -1 || nk.indexOf(n) !== -1)){
-          const v = row[kk.map[n]];
-          if(v != null && String(v).trim() !== '') return String(v).trim();
-        }
-      }
+    /* سرعت: ستون‌های نامزد تطابق تقریبی برای هر «مجموعهٔ ستون‌ها × کلیدها» یک بار حساب می‌شود
+       (پیش‌تر برای هر خانهٔ خالی، همهٔ ستون‌ها با همهٔ کلیدها مقایسه می‌شد) */
+    if(!kk.sig) kk.sig = Object.keys(kk.map).join('\u0001');
+    let byK = PICK_FZ.get(keys); if(!byK){ byK = new Map(); try{ PICK_FZ.set(keys, byK); }catch(e){} }
+    let cand = byK.get(kk.sig);
+    if(!cand){
+      cand = []; const names = Object.keys(kk.map);
+      for(const k of keys){ const nk = normKey(k); for(const n of names) if(n && (n.indexOf(nk) !== -1 || nk.indexOf(n) !== -1)) cand.push(kk.map[n]); }
+      if(byK.size > 200) byK.clear(); byK.set(kk.sig, cand);
     }
+    for(const c of cand){ const v = row[c]; if(v != null && String(v).trim() !== '') return String(v).trim(); }
     return '';
   };
+  const PICK_FZ = new WeakMap();
 
   // گزارش‌دهندگان اصلی که هر روز باید گزارش بدهند. ادمین در پنل مدیریت
   // فهرست را عوض می‌کند و برای روزهای خاص «رفع ایراد» می‌زند.
@@ -49649,7 +49670,12 @@
     const al = NAME_ALIAS.size ? NAME_ALIAS.get(x) : null;
     return al ? al.k : x;
   }
+  const NKR_C = new Map();
   function nameKeyRaw(n){
+    const c = NKR_C.get(n); if(c !== undefined) return c;
+    const r = nameKeyRaw0(n); if(NKR_C.size > 20000) NKR_C.clear(); NKR_C.set(n, r); return r;
+  }
+  function nameKeyRaw0(n){
     let x = String(n || '')
       .replace(/[\u200c\u200e\u200f\s]/g, '')
       .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
@@ -64861,7 +64887,8 @@
       if(ck){ const o = isFinite(v) ? Object.assign({}, SF_C.get(ck) || {}, {ret: v}) : null; if(o) SF_C.set(ck, o); else SF_C.delete(ck); sfSaveRow(SF_C_KIND, ck, o).catch(() => {}); } }
   }, true);
   /* فرم که باز شد، خلاصهٔ محاسبه نقاشی شود */
-  new MutationObserver(() => { document.querySelectorAll('.sf:not([data-sfp])').forEach(b => { b.setAttribute('data-sfp', '1'); try{ sfPaint(b); }catch(e){} }); }).observe(document.documentElement, {childList: true, subtree: true});
+  let sfpT = 0;
+  new MutationObserver(() => { if(sfpT) return; sfpT = requestAnimationFrame(() => { sfpT = 0; document.querySelectorAll('.sf:not([data-sfp])').forEach(b => { b.setAttribute('data-sfp', '1'); try{ sfPaint(b); }catch(e){} }); }); }).observe(document.documentElement, {childList: true, subtree: true});
   /* ====== برچسب اسناد: یک سند در چند دسته + اسناد مرتبط ======
      هر سند دفتر فنی می‌تواند برچسب دسته‌های دیگر را هم داشته باشد (مثلاً سند طراحی که نامه هم هست)
      و به اسناد ثبت‌شدهٔ دیگر ارجاع دهد. سند در دستهٔ خودش می‌ماند و در دسته‌های برچسب‌خورده
@@ -68070,7 +68097,7 @@
   function kpSnap(rootSel){ return kpPass(() => kpSnap0(rootSel)); }
   function kpSnap0(rootSel){
     const root = document.querySelector(rootSel);
-    if(!root || !root.querySelector(KP_ITEM + ', .open')) return null;
+    if(!root || root.closest('[hidden]') || !root.querySelector(KP_ITEM + ', .open')) return null;
     const state = new Map();
     root.querySelectorAll(KP_TOGGLE).forEach(el => state.set(kpKey(el, root), el.classList.contains('open')));
     root.querySelectorAll('.open').forEach(el => state.set(kpKey(el, root), true));
@@ -80648,7 +80675,16 @@
         if(/grid/.test(pcs.display)) b.classList.remove('inl');
       }
     }
-    function enhance(sel){
+    /* سرعت: چند فهرست با هم — اول همهٔ خواندن‌ها (اندازه و سبک)، بعد همهٔ نوشتن‌ها؛
+       پیش‌تر هر فهرست یک بار کل صفحه را از نو می‌چید و روی گوشی صفحه قفل می‌شد */
+    function enhanceMany(L){
+      const P = [];
+      L.forEach(sel => { if(sel.__nsBtn || !sel.options || !sel.isConnected) return; try{ P.push(enhance(sel, 1)); }catch(e){} });
+      P.forEach(f => { try{ f && f.ins(); }catch(e){} });
+      P.forEach(f => { try{ if(f) f.sel.__nsCssHide = getComputedStyle(f.sel).display === 'none'; }catch(e){} });
+      P.forEach(f => { try{ f && sync(f.sel, 2); }catch(e){} });
+    }
+    function enhance(sel, defer){
       if(sel.__nsBtn || !sel.options) return;
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'ns-btn';
@@ -80658,14 +80694,17 @@
       const lt = sel.getAttribute('aria-label') || (lab ? lab.textContent : '') || (sel.closest('label') ? (sel.closest('label').querySelector('span, u') || {}).textContent : '') || (fl && fl.querySelector('label') ? fl.querySelector('label').textContent : '');
       if(lt && lt.trim()) b.setAttribute('aria-label', lt.trim().replace(/[:：]\s*$/, ''));
       b.innerHTML = '<span class="ns-v"></span><i class="ns-ar">' + CHEV + '</i>';
-      sel.__nsBtn = b; b.__sel = sel;
       if(sel.classList.contains('ns-native') === false) fit(sel, b);
-      sel.classList.add('ns-native');
-      sel.insertAdjacentElement('afterend', b);
-      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open && open.sel === sel ? close() : show(sel); });
-      sel.addEventListener('change', () => sync(sel));
-      new MutationObserver(() => nsQueue(sel)).observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['disabled','hidden','style','class']});
-      sync(sel, true);
+      const ins = () => {
+        sel.__nsBtn = b; b.__sel = sel;
+        sel.classList.add('ns-native');
+        sel.insertAdjacentElement('afterend', b);
+        b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open && open.sel === sel ? close() : show(sel); });
+        sel.addEventListener('change', () => sync(sel));
+        new MutationObserver(() => nsQueue(sel)).observe(sel, {childList:true, subtree:true, attributes:true, attributeFilter:['disabled','hidden','style','class']});
+      };
+      if(defer) return {sel, ins};
+      ins(); sync(sel, true);
     }
     function listHtml(sel, q){
       const n = s => toEn(String(s || '')).toLowerCase().replace(/[يى]/g, 'ی').replace(/ك/g, 'ک');
@@ -80767,7 +80806,8 @@
       const L = Array.from(document.querySelectorAll(NS_SEL)); let i = 0;
       const idle = window.requestIdleCallback || (f => setTimeout(f, 16));
       const step = () => { const t = performance.now();
-        while(i < L.length && performance.now() - t < 8){ const x = L[i++]; if(x.isConnected && !x.__nsBtn) try{ enhance(x); }catch(e){} }
+        const B = []; while(i < L.length && B.length < 40 && performance.now() - t < 8){ const x = L[i++]; if(x.isConnected && !x.__nsBtn) B.push(x); }
+        enhanceMany(B);
         if(i < L.length) idle(step, {timeout: 500}); };
       idle(step, {timeout: 300});
     };
@@ -80778,8 +80818,10 @@
       if(!nsPend.length || nsT) return;
       nsT = requestAnimationFrame(() => {
         nsT = 0; const L = nsPend; nsPend = []; let hit = false;
-        L.forEach(n => { if(!n.isConnected) return; if(n.matches && n.matches('select')){ if(n.matches(NS_SEL)){ enhance(n); hit = true; } return; }
-          if(n.querySelector && n.querySelector('select')){ n.querySelectorAll(NS_SEL).forEach(x => { enhance(x); hit = true; }); } });
+        const B = [];
+        L.forEach(n => { if(!n.isConnected) return; if(n.matches && n.matches('select')){ if(n.matches(NS_SEL)){ B.push(n); hit = true; } return; }
+          if(n.querySelector && n.querySelector('select')){ n.querySelectorAll(NS_SEL).forEach(x => { B.push(x); hit = true; }); } });
+        enhanceMany(B);
         if(hit) syncAll();
       });
     }).observe(document.documentElement, {childList:true, subtree:true});
@@ -91988,8 +92030,8 @@
       }
     });
     /* راهنمای میان‌بر روی دکمه‌های ثبت */
-    const tip = () => document.querySelectorAll('#submitBtn, .af-foot .go, [data-tesave], .prf-foot .send').forEach(b => { if(!b.title) b.title = 'Ctrl+Enter'; });
-    new MutationObserver(() => tip()).observe(document.body, {childList: true, subtree: true}); tip();
+    /* سرعت: راهنما فقط وقتی نشانگر روی دکمه می‌رود (پیش‌تر با هر تغییر صفحه کل سند جست‌وجو می‌شد) */
+    document.addEventListener('pointerover', e => { const b = e.target.closest && e.target.closest('#submitBtn, .af-foot .go, [data-tesave], .prf-foot .send'); if(b && !b.title) b.title = 'Ctrl+Enter'; }, {passive: true});
     [['tabHome', 1], ['tabTasks', 2], ['tabAdmin', 3], ['tabView', 4]].forEach(([id, n]) => { const t = document.getElementById(id); if(t && !t.title) t.title = 'Alt+' + n; });
   })();
 
