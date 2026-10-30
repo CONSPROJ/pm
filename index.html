@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030131520">
+<meta name="pm-build" content="20261030131638">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -385,6 +385,16 @@
 .ogc-n small{font-size:11px;font-weight:600;color:var(--sc);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ogc-n em{font-style:normal;font-size:10px;color:var(--muted);background:var(--field);padding:1px 7px;border-radius:99px}
 .ogc-tg{all:unset;cursor:pointer;position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);min-width:22px;height:22px;padding:0 5px;box-sizing:border-box;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-size:11px;font-weight:800;color:var(--muted);display:grid;place-items:center;z-index:1}
+.ogc-bands .ogc-z{display:flex;flex-direction:column;align-items:stretch;gap:14px;padding:14px;min-width:max-content}
+.ogb-root{align-self:center;margin-bottom:4px}
+.ogb{direction:rtl;border-radius:18px;border:1px solid color-mix(in srgb,var(--sc) 30%,var(--line));background:color-mix(in srgb,var(--sc) 4%,var(--surface));overflow:visible}
+.ogb.ogb-e{opacity:.75;border-style:dashed}
+.ogb-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid color-mix(in srgb,var(--sc) 22%,var(--line));position:relative}
+.ogb-h > i{width:8px;height:8px;border-radius:50%;background:var(--sc)} .ogb-h b{font-size:13px;font-weight:800;color:var(--sc)} .ogb-h small{font-size:11px;color:var(--muted)}
+.ogb-h .ogc-add{position:static;margin-inline-start:auto}
+.ogb-b{padding:16px 10px 14px;overflow:visible}
+.ogb-b > ul.ogc-t{justify-content:center}
+.ogc-n.own{box-shadow:inset 0 3px 0 var(--sc)}
 .ogc-fr{direction:rtl;display:flex;flex-direction:column;align-items:center;padding:8px 12px 14px;border-radius:24px;border:1.5px dashed color-mix(in srgb,var(--sc) 50%,transparent);background:color-mix(in srgb,var(--sc) 4%,transparent);position:relative}
 .ogc-frl{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:99px;background:color-mix(in srgb,var(--sc) 12%,var(--surface));border:1.5px solid color-mix(in srgb,var(--sc) 45%,transparent);white-space:nowrap;position:relative}
 .ogc-frl b{font-size:12px;font-weight:800;color:var(--sc)} .ogc-frl small{font-size:10px;color:var(--muted)}
@@ -40771,24 +40781,37 @@
         return '<li><div class="ogc-fr" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><span class="ogc-frl"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div></li>'; };
       const sideInner = x => x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + x.roots.filter(n => !kup(n)).slice().reverse().map(n => card(n, 0)).join('');
-      /* درخت با جهت چپ‌به‌راست کشیده می‌شود؛ ترتیب را برمی‌گردانیم تا اولی سمت راست بیاید */
-      let top = [];
-      if(E || PM){
-        const pmLi = PM ? frame(PM, sideInner(PM)) : '';
-        const teamInner = pmLi + empTeamExt.slice().reverse().map(e => extLi(e, OG_SC.emp)).join('') + empTeamRoots.filter(n => !isOwnerUser(n) && !kup(n)).slice().reverse().map(n => card(n, 0)).join('')
-          + ownerKids.slice().reverse().map(n => card(n, 1)).join('');
-        const ownBox = owners.length
-          ? '<div class="ogc-own" data-ogk="g:emp" style="--sc:' + OG_SC.emp + '"><u>کارفرما</u><span>' + owners.map(o => '<span class="ogc-o" data-ogk="e:' + esc(normName(o.n)) + '"' + (o.ext ? (og.edit ? ' data-ogext="' + esc(o.n) + '"' : ' data-hrprof="' + esc(o.n) + '"') : '') + '>' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(OV(normName(o.n)).d || o.d || 'کارفرما') + '</small>' + addB('e:' + normName(o.n)) + '</span>').join('') + '</span>' + addB('g:emp') + '</div>'
-          : '<div class="ogc-g" style="--sc:' + OG_SC.emp + '"><b>کارفرما</b><small>' + toFa((E ? E.all.length + extN(E) : 0)) + ' نفر</small>' + addB('g:emp') + '</div>';
-        /* نیروی هر کارفرما، زیر قاب کارفرمایان با نام همان کارفرما */
-        const ownStaff = owners.filter(o => xLis('e:' + normName(o.n), OG_SC.emp)).map(o => '<li><div class="ogc-g sm" style="--sc:' + OG_SC.emp + '"><b>نیروی ' + esc(o.n) + '</b>' + addB('e:' + normName(o.n)) + '</div><ul>' + xLis('e:' + normName(o.n), OG_SC.emp) + '</ul></li>').join('');
-        top.push('<li>' + ownBox + ul(teamInner + ownStaff, 'g:emp', OG_SC.emp) + '</li>');
+      /* طرح نواری: هر طرف یک نوار جدا با عنوان خودش (کارفرما، تیم مدیریت پیمان، طراح و مشاور، مالک، پیمانکاران)؛
+         درخت هر طرف داخل نوار خودش. کارفرمایان اصلی ردیف بالای نوار کارفرما و نیروی هر کدام زیر خودش. */
+      const rev = a => a.slice().reverse();
+      const band = (k, t, inner, n) => inner ? '<section class="ogb" style="--sc:' + (OG_SC[k] || '#777') + '"><div class="ogb-h" data-ogk="g:' + k + '"><i></i><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</div>'
+        + '<div class="ogb-b"><ul class="ogc-t">' + inner + '</ul></div></section>' : (og.edit ? '<section class="ogb ogb-e" style="--sc:' + (OG_SC[k] || '#777') + '"><div class="ogb-h" data-ogk="g:' + k + '"><i></i><b>' + esc(t) + '</b>' + addB('g:' + k) + '</div></section>' : '');
+      const sub = (k, t, inner) => inner ? '<li><div class="ogc-g sm" style="--sc:' + OG_SC[k] + '"><b>' + esc(t) + '</b></div><ul>' + inner + '</ul></li>' : '';
+      let bands = '';
+      /* کارفرما */
+      if(E || PM || og.edit){
+        const ownLis = owners.map(o => { const k2 = normName(o.n), sc = OG_SC.emp;
+          return '<li><div class="ogc-n own" data-ogk="e:' + esc(k2) + '"' + (o.ext ? (og.edit ? ' data-ogext="' + esc(o.n) + '"' : ' data-hrprof="' + esc(o.n) + '"') : '') + ' style="--sc:' + sc + '">' + avatarHtml(o.n, '', true) + '<b>' + esc(o.n) + '</b><small>' + esc(OV(k2).d || o.d || 'کارفرما') + '</small>' + addB('e:' + k2) + '</div>'
+            + ul(o.ext ? '' : rev(kids(o.n)).map(n => card(n, 1)).join(''), 'e:' + k2, sc) + '</li>'; }).join('');
+        const team = rev(empTeamExt).map(e => extLi(e, OG_SC.emp)).join('') + rev(empTeamRoots.filter(n => !isOwnerUser(n) && !kup(n))).map(n => card(n, 0)).join('') + xLis('g:emp', OG_SC.emp);
+        const inner = (owners.length ? sub('emp', 'کارفرمایان', ownLis) : '') + (team ? (owners.length ? sub('emp', 'تیم کارفرما', team) : team) : '');
+        bands += band('emp', 'کارفرما', inner, E ? E.all.length + extN(E) : 0);
       }
-      S.filter(x => x.k !== 'emp' && x.k !== 'pm').forEach(x => top.push(grp(x, sideInner(x))));
-      /* طرفی که هنوز کسی ندارد (مثلاً مشاور): در حالت ویرایش یا اگر گره آزاد دارد دیده می‌شود تا بشود نیرویش را تعریف کرد */
-      OG_SIDES.filter(([k]) => k !== 'emp' && k !== 'pm' && !SG(k) && (og.edit || xKids('g:' + k).length)).forEach(([k, t]) => top.push(grp({k, t, all: [], ext: []}, '')));
-      body = '<div class="ogc"><div class="ogc-z" style="zoom:' + og.z + '"><ul class="ogc-t"><li><div class="ogc-root" data-ogroot="1" data-ogk="g:root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
-        + '<ul>' + xLis('g:root', '#555') + top.slice().reverse().join('') + '</ul></li></ul></div></div>';
+      /* تیم مدیریت پیمان */
+      if(PM || og.edit) bands += band('pm', 'تیم مدیریت پیمان', PM ? sideInner(PM) + xLis('g:pm', OG_SC.pm) : xLis('g:pm', OG_SC.pm), PM ? PM.all.length + extN(PM) : 0);
+      /* طراح و مشاور: دسته‌بندی بر اساس عنوان هر طرف (طراح، ناظر، مشاور…) */
+      { const C = SG('cons'); let inner = '';
+        if(C){ const byD = new Map(); C.ext.forEach(e => { const d = String(OV(normName(e.n)).d || e.d || 'مشاور').trim(); const key = /طراح/.test(d) ? 'طراح' : /ناظر|نظارت/.test(d) ? 'ناظر و نظارت' : 'مشاور'; if(!byD.has(key)) byD.set(key, []); byD.get(key).push(e); });
+          inner = Array.from(byD.entries()).map(([d, arr]) => byD.size > 1 ? sub('cons', d, rev(arr).map(e => extLi(e, OG_SC.cons)).join('')) : rev(arr).map(e => extLi(e, OG_SC.cons)).join('')).join('')
+            + rev(C.roots.filter(n => !kup(n))).map(n => card(n, 0)).join(''); }
+        bands += band('cons', 'طراح و مشاور', inner + xLis('g:cons', OG_SC.cons), C ? C.all.length + extN(C) : 0); }
+      /* مالک و پیمانکاران و هر طرف دیگر */
+      S.filter(x => ['emp', 'pm', 'cons'].indexOf(x.k) === -1).forEach(x => { bands += band(x.k, x.t, sideInner(x) + xLis('g:' + x.k, OG_SC[x.k]), x.all.length + extN(x)); });
+      if(og.edit) OG_SIDES.filter(([k]) => ['emp', 'pm', 'cons'].indexOf(k) === -1 && !SG(k)).forEach(([k, t]) => { bands += band(k, t, xLis('g:' + k, OG_SC[k]), 0); });
+      body = '<div class="ogc ogc-bands"><div class="ogc-z" style="zoom:' + og.z + '">'
+        + '<div class="ogb-root ogc-root" data-ogroot="1" data-ogk="g:root">' + pjCoverHtml(pj, 'ogc-rc') + '<b>' + esc(pj.name || 'پروژه') + '</b><small>' + toFa(P.length) + ' نفر · ' + toFa(S.length) + ' طرف</small>' + addB('g:root') + '</div>'
+        + (xLis('g:root', '#555') ? '<ul class="ogc-t">' + xLis('g:root', '#555') + '</ul>' : '')
+        + bands + '</div></div>';
     }else{
       const node = (n, d) => { const I = ogPersonInfo(n), K = d < 8 ? kids(n) : [], shut = og.col.has(nameKey(n)), fl = flTx(I);
         return '<li><div class="ogl-n" style="--sc:' + (OG_SC[dsd(n)] || '#777') + '">' + avatarHtml(n, '', true) + '<span class="ogl-tx"><b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + (fl ? ' · طبقه ' + esc(fl) : '') + '</small></span>'
