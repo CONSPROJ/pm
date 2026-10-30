@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030081829">
+<meta name="pm-build" content="20261030081929">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19822,6 +19822,19 @@
   }
   /* ستون کناری: پرکاربرد و اخیر (فقط دسکتاپ) */
   .sbq, .sbr{display:none;}
+  /* موانع گزارش بازه: کارت باز با گروه هر محل */
+  .rx-iss{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 14px;}
+  .rxi-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;} .rxi-h > b{font-size:14px;font-weight:800;color:var(--ink);margin-inline-end:4px;}
+  .rxi-n{font-size:11px;font-weight:800;color:var(--alert, #c0392b);background:color-mix(in srgb, var(--alert, #c0392b) 10%, transparent);padding:3px 10px;border-radius:99px;}
+  .rxi-z{font-size:11px;color:var(--muted);} .rxi-ok{font-size:11.5px;font-weight:700;color:var(--ok);}
+  .rxi-g{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:10px;}
+  .rxi-c{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:color-mix(in srgb, var(--field) 40%, var(--surface));min-width:0;}
+  .rxi-ch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;} .rxi-ch b{font-size:12.5px;font-weight:800;color:var(--ink);}
+  .rxi-ch em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:1px 8px;}
+  .rxi-r{display:flex;gap:8px;padding:6px 0;font-size:12px;line-height:1.7;color:var(--ink);} .rxi-r + .rxi-r{border-top:1px dashed var(--line);}
+  .rxi-r i{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:var(--alert, #c0392b);margin-top:8px;}
+  .rxi-r span{min-width:0;} .rxi-r small{display:block;font-size:10.5px;color:var(--muted);}
+  .rxi-more{font-size:10.5px;font-weight:700;color:var(--muted);padding-top:4px;}
   @media (min-width:1180px){
     .ag{display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));column-gap:14px;align-items:start;}
     .ag > *{grid-column:1 / -1;min-width:0;}
@@ -52701,8 +52714,16 @@
         + '<div class="tcal-body">' + rangeAdmHtml(filterAdminDay(lastAdminDay), days) + '</div></div>'
       : '';
 
-    return head + rangeChartsHtml(rowsAll, days) + byFloor + issuesHtml
-      + admHtml + buildingHtml(rows);
+    /* «گزارش به تفکیک طبقه» و «مالی و اداری» تکراری بودند (پراکندگی طبقات و گزارش «مالی» همین را دارند)؛
+       موانع یک کارت باز و خوانا شد، بعد از نمای ساختمان */
+    void byFloor; void admHtml; void issuesHtml;
+    const issCard = '<section class="rx-iss" id="secIssues"><div class="rxi-h"><b>موانع و مشکلات</b>'
+      + (iss.length ? '<span class="rxi-n">' + toFa(iss.length) + ' مورد</span><span class="rxi-z">در ' + toFa(issZ.length) + ' محل</span>' : '<span class="rxi-ok">مانعی ثبت نشده ✓</span>') + '</div>'
+      + (iss.length ? '<div class="rxi-g">' + issZ.map(([z, arr]) => '<div class="rxi-c"><div class="rxi-ch"><b' + zoneLinkAttr(z) + (zoneLinkAttr(z) ? ' class="zlnk"' : '') + '>' + esc(z) + '</b><em>' + toFa(arr.length) + '</em></div>'
+          + arr.slice(0, 4).map(r => '<div class="rxi-r"><i></i><span>' + esc(pick(r,I.text) || '') + '<small>' + esc([pick(r,F.date) ? taskDate(pick(r,F.date)) : '', r.__issN > 1 ? toFa(r.__issN) + ' بار گزارش شده' : '', pick(r,I.who)].filter(Boolean).join(' · ')) + '</small></span></div>').join('')
+          + (arr.length > 4 ? '<div class="rxi-more">و ' + toFa(arr.length - 4) + ' مورد دیگر</div>' : '') + '</div>').join('') + '</div>' : '')
+      + '</section>';
+    return head + rangeChartsHtml(rowsAll, days) + buildingHtml(rows) + issCard;
   }
 
   function buildingHtml(rows){
