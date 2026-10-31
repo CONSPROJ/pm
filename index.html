@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261031021152">
+<meta name="pm-build" content="20261031023533">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28809,6 +28809,8 @@
 
   /* فهرست‌های بلند: ردیف‌های بیرون از صفحه چیده و کشیده نمی‌شوند (دستگاه‌های ضعیف) */
   .adm-fast > .afr, .adm-fast > .afr-cg, .fz-list > .fz{content-visibility:auto;contain-intrinsic-size:auto 64px;}
+  /* گوشی: «بستن» پایین کارت‌ها تنها در یک ردیف جدا می‌افتاد؛ ضربدر سربرگ کافی است */
+  @media (max-width:1179px){ :is(html,#z0) :is(body,#z1) #deckModal .dk-foot .dk-closebtn{display:none !important;} }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -36040,7 +36042,7 @@
     setTimeout(() => el.classList.remove('flash'), 2400);
   }
 
-  async function gotoAdminItem(kind, id, gotoWho){
+  async function gotoAdminItem(kind, id, gotoWho, noDeck){
     // اعلان جریمه: پنل خودِ شخص، بخش «جریمه‌ها»
     // اعلان مرخصی: کارتابل خودِ شخص، بخش «مرخصی»
     if(kind === 'صندوق ورودی'){ try{ window.homeWrite && window.homeWrite('ib'); }catch(e){} return null; }
@@ -36132,7 +36134,7 @@
       }catch(e){}
     }
     /* هر جا که باشیم: خودِ کارت همان‌جا باز می‌شود؛ رفتن به صفحهٔ فهرست فقط اگر در کارت‌ها نبود */
-    try{ if(window.deckOpenAt && window.deckOpenAt(TASK_KINDS.indexOf(String(kind)) !== -1 ? 'task' : kind, id)) return null; }catch(e){}
+    try{ if(!noDeck && window.deckOpenAt && window.deckOpenAt(TASK_KINDS.indexOf(String(kind)) !== -1 ? 'task' : kind, id)) return null; }catch(e){}
     if(TASK_KINDS.indexOf(String(kind)) !== -1){
       /* فیلتر شخص یا جست‌وجو ممکن است مورد را پنهان کرده باشد */
       try{
@@ -90270,10 +90272,22 @@
         }
       }
       else if(mode === 'list'){ deckShowList(g, true); }
+      else if(deckWantCards && deckStartCards()){ /* داده رسید: مستقیم اسلاید */ }
       else deckShowCats(true);
+      deckWantCards = false;
     }
   }
-  function openDeck(){
+  /* کارت‌ها از همان اول اسلایدی باز می‌شوند (نه صفحهٔ فهرست دسته‌ها)، روی نخستین دستهٔ کارِ باز */
+  let deckWantCards = false;
+  function deckStartCards(){
+    const z = DECK_GROUPS.find(z0 => !z0.news && !z0.doneGrp && !z0.virt && deckGrpItems(z0.g).length)
+      || DECK_GROUPS.find(z0 => !z0.virt && deckGrpItems(z0.g).length);
+    if(!z) return false;
+    deckBranch = deckBranchOf(z.g);
+    deckShowCards(0, z.g, true);
+    return true;
+  }
+  function openDeck(cats){
     const bg = document.getElementById('deckModal');
     if(!bg) return;
     /* اگر در برگهٔ فعالیت شخصی انتخاب شده، کارت‌ها همان شخص را
@@ -90286,6 +90300,8 @@
     if(!deckWho && deckMineFirst() && !deckMineOnly()) deckWho = activeUserName();
     deckItems = deckBuild();
     deckRender();
+    deckWantCards = false;
+    if(cats !== false && cats !== 'cats'){ try{ if(!deckStartCards()) deckWantCards = true; }catch(e){} }
     deckEnsureData();
     bg.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -90314,7 +90330,7 @@
     const hit = items.filter(hasId).sort((a, b) => rk(a) - rk(b))[0];
     if(!hit) return false;
     deckWho = '';
-    openDeck();
+    openDeck(false);
     deckBranch = deckBranchOf(hit.grp);
     deckGrp = hit.grp;
     const view = deckGrpItems(hit.grp);
@@ -90507,7 +90523,11 @@
         if(lst) lst.querySelectorAll('.dk-row').forEach((c2, k2) => c2.classList.toggle('sel', k2 === deckSel));
         return;
       }
-      if(e.target.closest('[data-dk-opensel]')){ deckShowCards(deckSel || 0); return; }
+      if(e.target.closest('[data-dk-opensel]')){
+        /* روی کارت‌ها: «دیدن مورد» یعنی رفتن به خودِ سند همین کارت (پیش‌تر کاری نمی‌کرد) */
+        if(deckMode === 'cards'){ const x = deckView[deckIdx]; const gb = document.querySelector('#deckTrack .dk-card [data-dk-go="' + deckIdx + '"]');
+          if(gb){ gb.click(); return; } if(x && x.goto && x.goto.id){ closeDeck(); try{ gotoAdminItem(x.goto.kind, x.goto.id, x.goto.who, true); }catch(err){} } return; }
+        deckShowCards(deckSel || 0); return; }
       if(e.target.closest('[data-dk-list]')){ deckShowList(deckGrp); return; }
       if(e.target.closest('[data-dk-next]')){ deckGo(deckIdx + 1); return; }
       if(e.target.closest('[data-dk-prev]')){ deckGo(deckIdx - 1); return; }
@@ -90902,10 +90922,10 @@
       if(go){
         const x = deckView[+go.dataset.dkGo];
         const keepI = deckIdx, keepG = deckGrp;
-        pushNavBack('کارت‌های فعالیت', () => { openDeck(); try{ deckShowCards(keepI, keepG); }catch(e2){} });
+        pushNavBack('کارت‌های فعالیت', () => { openDeck(false); try{ deckShowCards(keepI, keepG); }catch(e2){} });
         closeDeck();
         if(x && x.goto && x.goto.id){
-          try{ await gotoAdminItem(x.goto.kind, x.goto.id, x.goto.who); }catch(err){}
+          try{ await gotoAdminItem(x.goto.kind, x.goto.id, x.goto.who, true); }catch(err){}
         }
         return;
       }
