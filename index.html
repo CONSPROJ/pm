@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261031011209">
+<meta name="pm-build" content="20261031011733">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27034,6 +27034,16 @@
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2{display:grid !important;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;row-gap:14px;align-items:center;padding:16px 18px 18px !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2 > .hr-tabs{grid-column:1;grid-row:1;margin:0 !important;justify-self:start;width:auto !important;display:inline-flex !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2 > .hr-tabs > *{flex:0 0 auto !important;min-width:120px;}
+    /* تب‌های اصلی روی محتوا نمی‌چسبند (روی کلید «گزارش روزانه/موانع» می‌افتادند)؛ گزارش روزانه و موانع دوستونه */
+    :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split > .hr-tabs{position:static !important;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk{margin-top:6px;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk-sw{display:inline-flex !important;width:auto;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk-sw button{flex:0 0 auto;min-width:150px;padding-inline:14px;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .ctd-log, :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .cwk-iss{display:grid !important;grid-template-columns:repeat(2, minmax(0,1fr));gap:8px 10px;align-items:start;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .ctd-log > .hri-all, :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .cwk-iss > .hri-all{grid-column:1 / -1;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .cdl-d{margin:0 !important;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .cdl-d summary{padding:8px 12px;}
+    :is(html,#z0) :is(body,#z1) #ctProfModal .cwk .cdl-r{padding:8px 12px;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2 > .ct-range{grid-column:2;grid-row:1;margin:0 !important;width:auto !important;display:inline-flex !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2 > .ct-range > *{flex:0 0 auto !important;padding-inline:12px !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .hr-split.ct2 > .hr-pane{grid-column:1 / -1;margin:0 !important;}
@@ -36113,6 +36123,8 @@
         }
       }catch(e){}
     }
+    /* هر جا که باشیم: خودِ کارت همان‌جا باز می‌شود؛ رفتن به صفحهٔ فهرست فقط اگر در کارت‌ها نبود */
+    try{ if(window.deckOpenAt && window.deckOpenAt(TASK_KINDS.indexOf(String(kind)) !== -1 ? 'task' : kind, id)) return null; }catch(e){}
     if(TASK_KINDS.indexOf(String(kind)) !== -1){
       /* فیلتر شخص یا جست‌وجو ممکن است مورد را پنهان کرده باشد */
       try{
@@ -36143,7 +36155,7 @@
       && (adminAll || []).find(x => String(pick(x.row,AD.id)) === String(id));
     switchTab('admin');
     if(had){ try{ admSetCat(had.kind, true); admHomeSet(false); }catch(e){} }
-    else await loadAdmin();
+    else{ await loadAdmin(); try{ admSetCat(KIND_LABEL[kind] ? kind : 'statement', true); admHomeSet(false); }catch(e){} }
     // اگر فیلتر یا جست‌وجویی مورد را پنهان کرده، اول پاکش کن
     let el = await revealItem(id, '#adminView');
     if(!el && (qAdmin || elVal('fAdmOwner') || elVal('fAdmParty') || elVal('fAdmNotify'))){
@@ -48931,7 +48943,10 @@
     document.addEventListener('click', e => {
       if(!mq.matches || !e.target.closest) return;
       const t = e.target.closest('#tabAdmin, #tabView');
-      if(t && !e.target.closest('.sb-it, .sb-sub')){ const k = t.id === 'tabAdmin' ? 'adm' : 'view'; setTimeout(() => { try{ build(k); }catch(er){} }, 120); return; }
+      if(t && !e.target.closest('.sb-it, .sb-sub')){ const k = t.id === 'tabAdmin' ? 'adm' : 'view';
+        /* صفحهٔ آغاز همان لحظه (با محتوای قبلی‌اش) — پیش‌تر ۱۲۰ms محتوای قبلی بخش دیده می‌شد و بعد این صفحه می‌پرید */
+        try{ const pn = document.getElementById(k === 'adm' ? 'panelAdmin' : 'panelView'); if(pn && pn.querySelector(':scope > .lnd')){ pn.classList.add('lnd-on'); document.documentElement.classList.toggle('lnd-v', k !== 'adm'); } else build(k); }catch(er){}
+        setTimeout(() => { try{ build(k); }catch(er){} }, 120); return; }
       const a = e.target.closest('[data-lndadm]'); if(a){ e.preventDefault(); off(); try{ admSetCat(a.dataset.lndadm); }catch(er){} try{ window.scrollTo({top: 0}); }catch(er){} return; }
       const v = e.target.closest('[data-lndview]'); if(v){ e.preventDefault(); off(); const c = document.querySelector('#viewKindCaps [data-kind="' + CSS.escape(v.dataset.lndview) + '"]'); if(c) c.click(); try{ window.scrollTo({top: 0}); }catch(er){} return; }
       if(e.target.closest('[data-sbadm], [data-sbview], [data-sbws], [data-hzgo], #tabHome, #tabTasks, #viewKindCaps .kcap, #admCats .acat')) off();
@@ -92726,8 +92741,10 @@
     /* زیرفهرستی که یک بار باز شد (میز کار، اسناد، گزارش‌ها) با رفتن به بخش دیگر بسته نمی‌شود */
     const SBS_K = 'siteLogM.sbSubOpen';
     const sbsGet = () => { try{ return JSON.parse(localStorage.getItem(SBS_K) || '{}') || {}; }catch(e){ return {}; } };
+    /* زیرفهرست هر بخش با زدن روی خود بخش باز و با زدن دوباره بسته می‌شود؛ همان حالت می‌ماند */
+    const sbsHas = id => Object.prototype.hasOwnProperty.call(sbsGet(), id);
     const sbsOpen = id => !!sbsGet()[id];
-    const sbsSet = id => { try{ const o = sbsGet(); if(o[id]) return; o[id] = 1; localStorage.setItem(SBS_K, JSON.stringify(o)); }catch(e){} };
+    const sbsSet = (id, on) => { try{ const o = sbsGet(); o[id] = on ? 1 : 0; localStorage.setItem(SBS_K, JSON.stringify(o)); }catch(e){} };
     function put(id, html, open){ const d = box(id); if(!d) return; if(d.__h !== html){ d.innerHTML = html; d.__h = html; } d.classList.toggle('open', !!open && !!html); }
     function build(){
       if(!mq.matches) return;
@@ -92745,7 +92762,7 @@
           h += '<div class="sb-grp' + (op ? ' open' : '') + '" data-sbg="' + g.k + '"><button type="button" class="sb-gh sb-ght" aria-expanded="' + op + '"><span>' + esc(g.t) + '</span>'
             + (hot ? '<em class="hot">' + toFa(hot) + '</em>' : '<u>' + toFa(G.length) + '</u>') + CHV + '</button><div class="sb-gl">' + rows + '</div></div>'; });
       }catch(e){}
-      put('tabTasks', h, cur === 'tasks' || sbsOpen('tabTasks'));
+      put('tabTasks', h, (sbsHas('tabTasks') ? sbsOpen('tabTasks') : cur === 'tasks'));
       /* اسناد و گزارش‌ها هم مثل میز کار: دسته‌های تاشو */
       const S2 = sbgGet();
       const sgrp = (key, t, rows, act) => { if(!rows) return ''; const op = S2[key] != null ? !!S2[key] : !!act;
@@ -92759,7 +92776,7 @@
           : (ADM_ORDER.indexOf(k) !== -1 ? it('data-sbadm="' + k + '" class="c-' + k + '"', (ADM_SEC_ICON && ADM_SEC_ICON[k]) || '', KIND_LABEL[k] || k) : '');
         a = ADM_ORDER.filter(k => k !== 'all').map(ai).join('') + (ADM_ORDER.indexOf('archive') === -1 ? ai('archive') : ''); void ak;
       }catch(e){ a = ''; }
-      put('tabAdmin', a, cur === 'admin' || sbsOpen('tabAdmin'));
+      put('tabAdmin', a, (sbsHas('tabAdmin') ? sbsOpen('tabAdmin') : cur === 'admin'));
       /* گزارش‌ها */
       let v = '';
       try{
@@ -92768,7 +92785,7 @@
           const t = (b.querySelector('b') || b).textContent.trim(), ic = b.querySelector('svg'); R[b.dataset.kind] = it('data-sbview="' + b.dataset.kind + '"', ic ? ic.outerHTML : '', t); });
         v = Object.keys(R).map(k => R[k]).join(''); void vk;
       }catch(e){ v = ''; }
-      put('tabView', v, cur === 'view' || sbsOpen('tabView'));
+      put('tabView', v, (sbsHas('tabView') ? sbsOpen('tabView') : cur === 'view'));
       /* جای چسبیدن «ثبت تازه» و جست‌وجو زیر سربرگ ستون */
       try{ const nb = bar.querySelector('#navBrand'), ta = bar.querySelector('.tab-add'); if(nb && ta){ const t1 = nb.offsetHeight - 16 + 6; bar.style.setProperty('--sbT1', t1 + 'px'); bar.style.setProperty('--sbT2', (t1 + ta.offsetHeight + 10) + 'px'); } }catch(e){}
       mark();
@@ -92809,8 +92826,9 @@
     bar.addEventListener('click', e => {
       if(!mq.matches) return;
       const t = e.target.closest && e.target.closest('.tab[id]');
-      if(t && !t.classList.contains('tab-add')){ if(t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView') sbsSet(t.id);
-        bar.querySelectorAll('.sb-sub').forEach(x => x.classList.toggle('open', !!x.__h && (x.dataset.for === t.id || sbsOpen(x.dataset.for)))); }
+      if(t && !t.classList.contains('tab-add')){
+        if(t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView'){ const d0 = bar.querySelector('.sb-sub[data-for="' + t.id + '"]'); sbsSet(t.id, !(d0 && d0.classList.contains('open'))); }
+        bar.querySelectorAll('.sb-sub').forEach(x => x.classList.toggle('open', !!x.__h && sbsOpen(x.dataset.for))); }
       const si = e.target.closest && e.target.closest('.sb-it');
       if(si){ bar.querySelectorAll('.sb-it.on').forEach(x => { if(x !== si) x.classList.remove('on'); }); si.classList.add('on'); bar.__pend = {k: si.dataset.sbws || si.dataset.sbadm || si.dataset.sbview, until: Date.now() + 1500}; }
     }, true);
