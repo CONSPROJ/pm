@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261031010305">
+<meta name="pm-build" content="20261031010550">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -41148,6 +41148,7 @@
   /* کارت‌های خانه: «جایگاه من» برای بی‌جایگاه‌ها، «درخواست‌های جایگاه» برای ادمین */
   const OG_PL_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.5"/><rect x="3" y="16" width="6" height="5" rx="1.5"/><rect x="15" y="16" width="6" height="5" rx="1.5"/><path d="M12 8v4M6 16v-2h12v2"/></svg>';
   window.ogHomeCards = card => { const out = []; try{
+    if(!ogSetupOn() && !ogCanEdit()) return out;
     if(!og.req){ ogReqLoad().then(() => { try{ homeRender(); }catch(e){} }); return out; }
     const me = ogMe(), q = og.req.get(nameKey(me));
     if(me && ogSetupOn() && ogUnplaced(me)) out.push(card('ind', OG_PL_IC, 'جایگاه شما در چارت', q ? 'درخواست شما منتظر تأیید است' : 'طرف، سمت و سرپرست خود را انتخاب کنید', q ? 'ویرایش' : 'انتخاب', 'data-ogplace="1"'));
@@ -52854,17 +52855,6 @@
   /* سرعت کارت پیمانکار: دریافت داده از لحظهٔ لمس شروع می‌شود، نه بعد از رها کردن انگشت */
   document.addEventListener('pointerdown', e => { const el = e.target.closest && e.target.closest('[data-hrprof]'); const n = el && el.dataset.hrprof; if(!n) return;
     try{ const t = ctrTypeOf(n); if(t === 'cons' || t === 'emp' || t === 'own') return; hrCardFor(n, 'month', todayShamsi()).catch(() => {}); }catch(err){} }, {capture: true, passive: true});
-  /* کارت پیمانکار سریع‌تر: با رفتن موس روی نام پیمانکار، داده و کارتش از قبل آماده می‌شود (همان کلید حافظهٔ کارت) */
-  (function(){
-    let t = 0, last = '';
-    document.addEventListener('pointerover', e => {
-      if(e.pointerType && e.pointerType !== 'mouse') return;
-      const el = e.target.closest && e.target.closest('[data-hrprof],[data-cdxprof],[data-ctdn],[data-ktctr],[data-flrctr],[data-piprof],[data-ctpname]'); if(!el) return;
-      const n = el.dataset.hrprof || el.dataset.cdxprof || el.dataset.ctdn || el.dataset.ktctr || el.dataset.flrctr || el.dataset.piprof || el.dataset.ctpname || '';
-      if(!n || n === last) return;
-      clearTimeout(t); t = setTimeout(() => { last = n; try{ const ty = ctrTypeOf(n); if(ty === 'emp' || ty === 'cons' || ty === 'own') return; }catch(er){} try{ hrCardFor(n, 'month', todayShamsi()).catch(() => {}); }catch(er){} }, 140);
-    }, {passive: true});
-  })();
   function hrCardFor(name, mode, ref){
     const d0 = ref || lastDate || normDate(dateInput.value) || todayShamsi();
     const mk = name + '|' + mode + '|' + d0;
@@ -65685,7 +65675,7 @@
         window.addEventListener('message', async ev => { const d = ev.data || {}; if(ev.origin !== location.origin || !d.cadLink || !window.spCadLink) return;
           const src = ev.source;
           try{ const t = await window.spCadLink(d.cadLink); src && src.postMessage({cadLinked: d.cadLink.k, t, kind: d.cadLink.kind, i: d.cadLink.i}, location.origin); try{ shrToast('مساحت در کارت «' + t + '» ثبت شد'); }catch(e){} }
-          catch(err){ src && src.postMessage({cadLinkErr: 1, i: d.cadLink.i}, location.origin); try{ showDialog('err', 'ثبت نشد', friendlyErr(err)); }catch(e){} } }); }
+          catch(err){ let msg = ''; try{ msg = friendlyErr(err); }catch(e){ msg = String(err && err.message || err); } src && src.postMessage({cadLinkErr: 1, i: d.cadLink.i, msg}, location.origin); } }); }
       get.then(b => b.arrayBuffer()).then(x => { buf = x; go(); }).catch(() => {}); } }
     if(a.src === 's3' && (k === 'img' || k === 'pdf')){
       const el = m.querySelector('.fv-img, .fv-frame'), keep = S;
@@ -77834,12 +77824,22 @@
      در نقشه‌خوان هر محدوده (کشیده‌شده یا هاشور خود نقشه) به یک فضا وصل می‌شود: مساحت کف/سقف و محیط
      در شناسنامهٔ همان فضا، و تصویر کوچک همان بخش نقشه در «تصویر فضا» (کلید¦data:image/jpeg…). */
   const SP_IMG_KIND = 'تصویر فضا', spImgC = new Map();
+  /* تصویر در فضای ابری سایت (نه در جدول فهرست‌ها: هر ردیف آنجا حداکثر حدود ۲٫۷ کیلوبایت جا دارد و تصویر خطای سرور می‌داد)؛
+     در شناسنامهٔ فضا فقط پیوند «s3:کلید#نام» می‌ماند */
   async function spImgSave(k, url){
-    await supaFetch('lists?kind=eq.' + encodeURIComponent(SP_IMG_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
-    await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: SP_IMG_KIND, value: k + '¦' + url}]});
+    const bin = atob(String(url).split(',')[1] || ''), u8 = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const f = new File([u8], 'space-' + String(k).replace(/[^\w\u0600-\u06FF-]+/g, '_').slice(0, 40) + '.jpg', {type: 'image/jpeg'});
+    const link = await s3UpMain(f, null, 'space');
     spImgC.set(k, Promise.resolve(url));
+    return link;
   }
   function spImgGet(k){
+    const q = spPP(k);
+    if(typeof q.im === 'string' && /^s3b?:/.test(q.im)){
+      if(!spImgC.has(k)){ const m = q.im.match(/^(s3b?):([^#,]+)[^#]*#?(.*)$/);
+        spImgC.set(k, m ? s3Url(m[2], decodeURIComponent(m[3] || ''), false, m[1] === 's3b' ? 2 : 1).catch(() => '') : Promise.resolve('')); }
+      return spImgC.get(k);
+    }
     if(!spImgC.has(k)) spImgC.set(k, supaFetch('lists?select=value&kind=eq.' + encodeURIComponent(SP_IMG_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {prefer: 'return=representation'})
       .then(r => { const v = r && r[0] && String(r[0].value || ''); const i = v ? v.indexOf('¦') : -1; return i > 0 ? v.slice(i + 1) : ''; }).catch(() => ''));
     return spImgC.get(k);
@@ -77851,9 +77851,12 @@
   window.spCadLink = async L => {
     const q = Object.assign({}, spPP(L.k));
     if(L.kind !== 'c') q.a = L.a; if(L.kind !== 'f') q.c = L.a;
-    q.pr = L.p; q.f = L.file || q.f; if(L.img) q.im = 1;
-    if(L.img) await spImgSave(L.k, L.img);
+    q.pr = L.p; q.f = L.file || q.f;
+    /* اول عددها ثبت می‌شوند؛ تصویر جدا، تا اگر فضای ابری در دسترس نبود مساحت از دست نرود */
+    let imgErr = '';
+    if(L.img){ try{ q.im = await spImgSave(L.k, L.img); }catch(e){ imgErr = (e && e.message) || 'تصویر ذخیره نشد'; } }
     await spPPSave(L.k, q);
+    if(imgErr) try{ shrToast('مساحت ثبت شد؛ تصویر ذخیره نشد (' + imgErr + ')'); }catch(e){}
     try{ spwRepaint(); }catch(e){}
     const o = window.spCadLocs().find(x => x.k === L.k); return o ? o.t : L.k;
   };

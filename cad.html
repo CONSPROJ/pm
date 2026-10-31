@@ -52,6 +52,18 @@
 .pick[hidden]{display:none;} .pick b{font-size:12.5px;display:flex;flex-direction:column;} .pick b small{font-weight:500;color:var(--muted);font-size:10.5px;}
 .pick span{display:flex;flex-direction:column;} .pick u{text-decoration:none;font-size:10.5px;color:var(--muted);} .pick em{font-style:normal;font-weight:800;font-size:15px;}
 .lk{grid-column:1 / -1;display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;} .lk select{height:28px;font-size:11.5px;flex:1 1 120px;min-width:0;} .lk .btn{height:28px;font-size:11px;padding:0 9px;} .lk-ok{color:var(--ok) !important;font-weight:700;} .mk .lk .btn{color:#fff;font-size:11px;padding:0 9px;} .mk .lk .btn:hover{color:#fff;opacity:.9;}
+.mk .lk-pick{all:unset;box-sizing:border-box;flex:1 1 100%;min-height:32px;padding:6px 10px;border-radius:9px;border:1px dashed var(--line);background:var(--surface);font-size:12px;color:var(--muted);cursor:pointer;line-height:1.5;}
+.mk .lk-pick.on{border-style:solid;border-color:var(--acc);color:var(--ink);font-weight:700;}
+.lk-k{display:inline-flex;gap:2px;padding:2px;border-radius:9px;background:var(--field);} .mk .lk-k button{all:unset;cursor:pointer;padding:4px 10px;border-radius:7px;font-size:11.5px;font-weight:700;color:var(--muted);} .mk .lk-k button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1);}
+.lk-err{color:var(--bad) !important;font-weight:700;} .btn[disabled]{opacity:.5;cursor:default;}
+#locPick{position:fixed;inset:0;z-index:50;background:rgba(10,14,20,.35);display:grid;place-items:center;padding:12px;}
+.lp{width:min(420px,100%);max-height:min(560px,88vh);display:flex;flex-direction:column;background:var(--surface);border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;}
+.lp-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 6px;} .lp-h button{all:unset;cursor:pointer;font-size:15px;color:var(--muted);padding:2px 6px;}
+.lp-q{margin:4px 12px 8px;height:38px !important;border-radius:11px !important;}
+.lp-l{overflow:auto;padding:0 10px 12px;} .lp-g{margin-top:8px;} .lp-g > b{display:block;font-size:11.5px;color:var(--muted);padding:4px 4px;}
+.lp-g button{all:unset;box-sizing:border-box;display:block;width:100%;padding:9px 10px;border-radius:10px;font-size:13px;cursor:pointer;} .lp-g button:hover{background:var(--field);} .lp-g button.on{background:color-mix(in srgb,var(--acc) 12%,transparent);color:var(--acc);font-weight:800;}
+.lp-0{color:var(--muted);text-align:center;padding:20px;}
+.dbar{position:absolute;bottom:58px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 26px -10px rgba(0,0,0,.35);z-index:4;} .dbar[hidden]{display:none;} .dbar .btn{height:36px;padding:0 14px;}
 .pbar{width:220px;height:6px;border-radius:99px;background:var(--field);margin:10px auto 0;overflow:hidden;} .pbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .15s;}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
 </style>
@@ -301,7 +313,7 @@ $('#zfit').onclick = fit;
 window.addEventListener('resize', () => apply(true));
 const ptrs = new Map(); let pan = null, pinch = null;
 stage.addEventListener('pointerdown', e => {
-  if(e.target.closest('.zoom, .pick')) return;
+  if(e.target.closest('.zoom, .pick, .dbar')) return;
   flush();
   stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if(ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; pan = null; return; }
@@ -455,22 +467,53 @@ function pickAt(cX, cY){
 S.locs = [];
 window.addEventListener('message', e => { if(e.origin !== location.origin) return; const d = e.data || {};
   if(Array.isArray(d.cadLocs)){ S.locs = d.cadLocs; render(); }
-  if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
-  if(d.cadLinkErr){ const b = document.querySelector('[data-lk="' + d.i + '"]'); if(b){ b.disabled = false; b.textContent = 'خطا؛ دوباره'; } } });
+  if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; m.locSel = d.cadLinked; m.lkErr = ''; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
+  if(d.cadLinkErr){ const m = S.marks[d.i]; if(m){ m.lkErr = 'ثبت نشد: ' + (d.msg || 'خطای سرور') + ' — دوباره بزنید'; render(); } } });
+/* محل در سامانه: فهرست جست‌وجوپذیر به تفکیک طبقه (به‌جای select)؛ انتخاب در خود محدوده می‌ماند تا با هر بازسازی گم نشود */
+const escH = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const locT = k => (S.locs.find(o => o.k === k) || {}).t || k;
 function linkHtml(m, i){
   if(!S.locs.length || !(m.type === 'area' || m.type === 'hatch')) return '';
-  const opts = '<option value="">محل در سامانه…</option>' + S.locs.map(o => '<option value="' + o.k.replace(/"/g, '&quot;') + '"' + (m.loc === o.k ? ' selected' : '') + '>' + o.t.replace(/</g, '&lt;') + '</option>').join('');
-  return '<div class="lk"><select data-lks="' + i + '">' + opts + '</select><select data-lkk="' + i + '"><option value="f"' + (m.lk === 'c' ? '' : ' selected') + '>کف</option><option value="c"' + (m.lk === 'c' ? ' selected' : '') + '>سقف</option><option value="b"' + (m.lk === 'b' ? ' selected' : '') + '>کف و سقف</option></select>'
-    + '<button type="button" class="btn pri" data-lk="' + i + '">' + (m.loc ? 'ثبت دوباره' : 'ثبت در کارت') + '</button></div>'
-    + (m.loc ? '<small class="lk-ok">✓ ثبت شد برای ' + String(m.locT || m.loc).replace(/</g, '&lt;') + '</small>' : '');
+  const sel = m.locSel || m.loc || '', kd = m.lkSel || m.lk || 'f';
+  return '<div class="lk"><button type="button" class="lk-pick' + (sel ? ' on' : '') + '" data-lkpick="' + i + '">' + (sel ? escH(locT(sel)) : 'انتخاب محل در سامانه…') + '</button>'
+    + '<span class="lk-k">' + [['f', 'کف'], ['c', 'سقف'], ['b', 'هر دو']].map(([v, t]) => '<button type="button" data-lkk="' + i + ':' + v + '" class="' + (kd === v ? 'on' : '') + '">' + t + '</button>').join('') + '</span>'
+    + '<button type="button" class="btn pri" data-lk="' + i + '"' + (sel ? '' : ' disabled') + '>' + (m.loc && m.loc === sel ? 'ثبت دوباره' : 'ثبت در کارت') + '</button></div>'
+    + (m.lkErr ? '<small class="lk-err">' + escH(m.lkErr) + '</small>' : '')
+    + (m.loc ? '<small class="lk-ok">✓ ثبت شد برای ' + escH(m.locT || locT(m.loc)) + '</small>' : '');
 }
-$('#list').addEventListener('click', async e => { const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
-  const i = +b.dataset.lk, m = S.marks[i], k = (document.querySelector('[data-lks="' + i + '"]') || {}).value, kind = (document.querySelector('[data-lkk="' + i + '"]') || {}).value || 'f';
-  if(!m || !k){ b.textContent = 'محل را انتخاب کنید'; return; }
-  b.disabled = true; b.textContent = 'در حال ثبت…';
+function locPickOpen(i){
+  let ov = document.getElementById('locPick'); if(ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'locPick';
+  ov.innerHTML = '<div class="lp"><div class="lp-h"><b>محل در سامانه</b><button type="button" data-lpx aria-label="بستن">✕</button></div><input type="search" placeholder="جست‌وجو: طبقه، واحد، محل…" class="lp-q"><div class="lp-l"></div></div>';
+  document.body.appendChild(ov);
+  const L = ov.querySelector('.lp-l'), q = ov.querySelector('.lp-q');
+  const paint = () => { const t = q.value.trim(); const G = new Map();
+    S.locs.filter(o => !t || o.t.indexOf(t) !== -1).forEach(o => { const g = String(o.t).split(/ — | › /)[0]; if(!G.has(g)) G.set(g, []); G.get(g).push(o); });
+    L.innerHTML = G.size ? Array.from(G.entries()).map(([g, A]) => '<div class="lp-g"><b>' + escH(g) + '</b>' + A.map(o => { const rest = o.t.slice(g.length).replace(/^\s*(—|›)\s*/, '') || 'کل طبقه'; return '<button type="button" data-lpk="' + escH(o.k) + '" class="' + ((S.marks[i] || {}).locSel === o.k ? 'on' : '') + '">' + escH(rest) + '</button>'; }).join('') + '</div>').join('') : '<p class="lp-0">موردی پیدا نشد.</p>'; };
+  paint(); q.oninput = paint; setTimeout(() => { try{ q.focus(); }catch(e){} }, 30);
+  ov.addEventListener('click', e => { if(e.target === ov || e.target.closest('[data-lpx]')){ ov.remove(); return; }
+    const b = e.target.closest('[data-lpk]'); if(!b) return; const m = S.marks[i]; if(m){ m.locSel = b.dataset.lpk; m.lkErr = ''; save(); render(); } ov.remove(); });
+}
+$('#list').addEventListener('click', async e => {
+  const pk = e.target.closest('[data-lkpick]'); if(pk){ e.stopPropagation(); locPickOpen(+pk.dataset.lkpick); return; }
+  const kk = e.target.closest('[data-lkk]'); if(kk){ e.stopPropagation(); const [i, v] = kk.dataset.lkk.split(':'); const m = S.marks[+i]; if(m){ m.lkSel = v; save(); render(); } return; }
+  const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
+  const i = +b.dataset.lk, m = S.marks[i]; if(!m) return;
+  const k = m.locSel || m.loc, kind = m.lkSel || m.lk || 'f';
+  if(!k){ locPickOpen(i); return; }
+  b.disabled = true; b.textContent = 'در حال ثبت…'; m.lkErr = '';
   const A = mArea(m.a != null ? m.a : area(m.pts)), P = mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])));
   let img = ''; try{ img = await thumbAsync(m.pts, m.color); }catch(er){}
   window.parent.postMessage({cadLink: {i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}}, location.origin); }, true);
+/* گوشی: دابل‌کلیک و Enter نیست؛ حین کشیدن، نوار «تمام / نقطهٔ قبل / لغو» */
+const dbar = document.createElement('div'); dbar.className = 'dbar'; dbar.hidden = true;
+dbar.innerHTML = '<button type="button" class="btn pri" data-db="ok">✓ تمام</button><button type="button" class="btn" data-db="undo">↶ نقطهٔ قبل</button><button type="button" class="btn" data-db="x">✕ لغو</button>';
+stage.appendChild(dbar);
+dbar.addEventListener('pointerdown', e => e.stopPropagation());
+dbar.addEventListener('click', e => { const b = e.target.closest('[data-db]'); if(!b) return; e.stopPropagation();
+  if(b.dataset.db === 'ok') finish(); else if(b.dataset.db === 'x') cancel(); else if(S.cur && S.cur.pts.length){ S.cur.pts.pop(); if(!S.cur.pts.length) cancel(); else preview(null); } dbarSync(); });
+function dbarSync(){ const c = S.cur, need = c ? ((c.type === 'area' || c.type === 'hatch') ? 3 : 2) : 0; dbar.hidden = !c || !c.pts.length; const ok = dbar.querySelector('[data-db="ok"]'); if(ok) ok.disabled = !c || c.pts.length < need; }
+setInterval(dbarSync, 250);
 setTool('pan');
 </script>
 </body>
