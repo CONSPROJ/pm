@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261031011733">
+<meta name="pm-build" content="20261031021152">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28807,6 +28807,8 @@
     :is(html,#z0) :is(body,#z1) .modal-bg.ds-sheet > .ds-card.ds-back{transition:transform .2s var(--ease);}
   }
 
+  /* فهرست‌های بلند: ردیف‌های بیرون از صفحه چیده و کشیده نمی‌شوند (دستگاه‌های ضعیف) */
+  .adm-fast > .afr, .adm-fast > .afr-cg, .fz-list > .fz{content-visibility:auto;contain-intrinsic-size:auto 64px;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -32974,6 +32976,8 @@
   const FEED_COLOR = {critical:'var(--alert)', done:'var(--ok)', due:'#c0703a',
     nudge:'var(--warn)', mention:'#6d5bb5', comment:'#2f6f8f', missing:'#a3485a', mine:'#3f7a52'};
 
+  /* فهرست اعلان‌ها تکه‌تکه: هر بخش ۲۵ کارت اول، بقیه با «نمایش بیشتر» (پیش‌تر صدها کارت یکجا و صفحه کند) */
+  const feedLim = {};
   let feedCat = '';        // دستهٔ انتخاب‌شده در فیلتر؛ خالی یعنی همه
   const isMgrView = () => isAdminUser() || (typeof can === 'function' && can('deck.manager'));
   /* اعلان‌ها بی‌پرش: فقط وقتی چیزی واقعاً عوض شده دوباره کشیده می‌شود،
@@ -32987,7 +32991,7 @@
     body.innerHTML = html;
     body.__h = html;
     body.classList.toggle('fz-calm', !first);
-    sc.forEach(([el, t]) => { el.scrollTop = t; });
+    sc.forEach(([el, t]) => { if(t) el.scrollTop = t; });
   }
   function renderNotif(){
     const body = document.getElementById('notifBody');
@@ -33072,7 +33076,9 @@
                     + '>' + esc(note) + '</span>' : '')
         +   '<span class="fz-sec-all">' + (nNew ? '<em>' + toFa(nNew) + ' تازه</em>' : '') + toFa(rows.length) + '</span>'
         + '</div>'
-        + '<div class="fz-list">' + rows.map(x => feedCardHtml(x, idx++)).join('') + '</div>'
+        + '<div class="fz-list">' + rows.slice(0, feedLim[cat] || 25).map(x => feedCardHtml(x, idx++)).join('')
+        + (rows.length > (feedLim[cat] || 25) ? '<button type="button" class="hri-all fz-more" data-fzmore="' + cat + '">نمایش ' + toFa(Math.min(50, rows.length - (feedLim[cat] || 25))) + ' مورد دیگر از ' + toFa(rows.length - (feedLim[cat] || 25)) + '</button>' : '')
+        + '</div>'
         + '</section>';
     });
 
@@ -33088,7 +33094,7 @@
       feedShowSeen = false;
       /* برگشت از کارت فعالیتی که از همین فهرست باز شده بود: همان دسته و همان جای فهرست */
       const ret = window.__notifRetNow; window.__notifRetNow = null;
-      if(!ret){ feedKeep.clear(); window.__notifRet = null; }
+      if(!ret){ feedKeep.clear(); window.__notifRet = null; for(const k in feedLim) delete feedLim[k]; }
       const sub0 = document.getElementById('notifSub'); if(sub0) sub0.textContent = 'در حال بررسی…';
       /* فهرستِ دفعهٔ قبل همان لحظه دیده می‌شود؛ تازه‌سازی پشت آن */
       { const nb = document.getElementById('notifBody'); if(!ret && !window.__notifAt){ nb.innerHTML = feedSkelHtml(); nb.__h = ''; } nb.classList.remove('fz-calm'); }
@@ -33129,6 +33135,8 @@
     });
 
     document.getElementById('notifBody').addEventListener('click', e => {
+      const mo = e.target.closest('[data-fzmore]');
+      if(mo){ e.stopImmediatePropagation(); const c = mo.dataset.fzmore; feedLim[c] = (feedLim[c] || 25) + 50; renderNotif(); return; }
       const fr0 = e.target.closest('[data-fread]');
       if(!fr0 || fr0.__go) return;
       const card0 = fr0.closest('.fz');
@@ -39054,7 +39062,7 @@
     if(o && (o.done || o.rate)) cendCfg.set(k, o); else cendCfg.delete(k);
     cendStore();
   }
-  setTimeout(() => { cendLoad().then(() => { try{ if(typeof applyAdminFilters === 'function' && document.querySelector('#adminView:not([hidden])')) applyAdminFilters(); }catch(e){} }); }, 2500);
+  setTimeout(() => { cendLoad().then(() => { try{ if(!adminLoaded) return; const pa = document.getElementById('panelAdmin'); if(pa && pa.offsetParent) applyAdminFilters(); else window.__admDirty = 1; }catch(e){} }); }, 2500);
   /* ====== جدول بهای قرارداد ======
      هر قرارداد (با الحاقیه‌هایش) یک فهرست بها دارد: کد، شرح ردیف، واحد و بهای واحد.
      متره و صورت وضعیت بهای هر ردیف را از همین جدول برمی‌دارند (بها دستی نوشته نمی‌شود).
@@ -39876,7 +39884,9 @@
     let boxes = Array.from(document.querySelectorAll('#ctDir, .ctd-host'));
     if(!boxes.length) return;
     const vis = boxes.filter(b => b.offsetParent);
-    if(vis.length) boxes = vis;
+    /* دفترچهٔ پنهان ساخته نمی‌شود (هزاران گره در پس‌زمینه)؛ هنگام دیده شدن (wsSet/pf3Show) */
+    if(!vis.length){ boxes.forEach(b => { b.__stale = 1; }); return; }
+    boxes = vis; boxes.forEach(b => { b.__stale = 0; });
     try{ let dl = document.getElementById('ctdDiscList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctdDiscList'; document.body.appendChild(dl); }
       dl.innerHTML = tkCatsAll().map(c => '<option value="' + esc(c) + '">').join(''); }catch(e){}
     const ed = can('ctr.contact');
@@ -44305,6 +44315,7 @@
     pf3Sub[nav.dataset.pf3] = k;
     nav.querySelectorAll('[data-pf3go]').forEach(b => b.classList.toggle('on', b.dataset.pf3go === k));
     host.querySelectorAll(':scope > .pf3-pane').forEach(p => p.classList.toggle('on', p.dataset.pf3p === k));
+    { const cd = host.querySelector(':scope > .pf3-pane.on #ctDir'); if(cd && (cd.__stale || !cd.firstChild)) setTimeout(() => { try{ ctcRepaint(); }catch(e){} }, 0); }
     if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person' || nav.dataset.pf3 === 'settings'){
       const p = host.querySelector(':scope > .pf3-pane.on'), tb = nav.querySelector('[data-pf3go="' + k + '"]');
       if(p && tb && nav.dataset.pf3 !== 'kart' && !p.querySelector(':scope > .kt-ph')){
@@ -48628,6 +48639,7 @@
     if(name === 'tasks' && !tasksLoaded) loadTasks();
     if(name === 'admin'){
       if(!adminLoaded) loadAdmin();
+      else if(window.__admDirty){ window.__admDirty = 0; try{ applyAdminFilters(); }catch(e){} }
     }
     if(name === 'home'){ try{ homeRefresh(); }catch(e){} }
     if(changed){ try{ liveOnTab(name); }catch(e){} }
@@ -67823,6 +67835,7 @@
     if(!document.getElementById('secAdm' + k) || k === 'chore' || k === 'all') k = 'statement';
     admCat = k;
     try{ localStorage.setItem('admCat', k); }catch(e){}
+    { const lz = document.getElementById('admList-' + k); if(lz && lz.__lazy && adminLoaded){ lz.__lazy = 0; try{ applyAdminFilters(); }catch(e){} } }
     try{ window.__admBarPaint && window.__admBarPaint(); }catch(e){}
     box.dataset.cat = k;
     box.querySelectorAll('[data-admcat]').forEach(c => {
@@ -69114,6 +69127,8 @@
     };
 
     let ltrSeg = '';
+    let curCatL = ''; try{ curCatL = admCat; }catch(e){}
+    const lazyOff = !!(qAdmin || kindFilter || otherFilter || elVal('fAdmOwner')) || !curCatL;
     ADM_ORDER.forEach(k => {
       const raw = items.filter(x => x.kind === k);
       const list = raw.filter(x => !admFinished(x)).concat(raw.filter(admFinished));
@@ -69165,6 +69180,10 @@
         if(!hide) sm.innerHTML = dccSummaryHtml(list.map(x => x.row));
       }
       if(!box || hide) return;
+      /* فقط دستهٔ باز ساخته می‌شود (پیش‌تر هر پنج دسته با همهٔ ردیف‌ها، ده‌ها هزار گره، حتی در خانه)؛
+         بقیه هنگام باز شدن در admSetCat. جست‌وجو و فیلتر همه را نشان می‌دهند. */
+      if(!lazyOff && k !== curCatL){ box.__lazy = 1; box.innerHTML = ''; return; }
+      box.__lazy = 0;
       if(k === 'letter' && box && !hide){
         const nIn = list.filter(x => ltrDirOf(x.row) === 'دریافتی').length, nOut = list.length - nIn;
         ltrSeg = '<div class="ltr-seg" role="tablist">'
