@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261030200058">
+<meta name="pm-build" content="20261031010305">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -21911,7 +21911,8 @@
   html.tc-fs-on, html.tc-fs-on body{overflow:hidden !important;}
   html.tc-fs-on :is(.app-head,#pageTitle){visibility:hidden !important;}
   /* نیاکانِ تقویمِ تمام‌صفحه نباید transform/filter داشته باشند، وگرنه fixed درون همان قاب می‌ماند */
-  html.tc-fs-on body :has(.tcal.tc-fs){transform:none !important;filter:none !important;backdrop-filter:none !important;contain:none !important;will-change:auto !important;z-index:2147483000 !important;animation:none !important;}
+  /* نیاکانِ تقویمِ تمام‌صفحه (با JS علامت می‌خورند؛ :has سراسری در سافاری آیفون کل صفحه را کند می‌کرد) */
+  .tc-fs-anc{transform:none !important;filter:none !important;backdrop-filter:none !important;contain:none !important;will-change:auto !important;z-index:2147483000 !important;animation:none !important;}
   @media (min-width:1180px){
     :is(html,#z0) :is(body,#z1) .tcal.tc-fs .tc2-side .tc-day{max-height:calc(100vh - 230px);}
     :is(html,#z0) :is(body,#z1) .tcal.tc-fs .tc2-body{grid-template-columns:minmax(0,1fr) 340px;}
@@ -74114,14 +74115,15 @@
 
     /* تمام‌صفحه: همان تقویم روی کل صفحه؛ بازسازی (ماه بعد/قبل) حالت را نگه می‌دارد */
     const tcWrap = box.querySelector('.tcal');
-    if(tcWrap && box.__tcFs){ tcWrap.classList.add('open', 'tc-fs'); document.documentElement.classList.add('tc-fs-on'); }
+    const ancMark = on => { document.querySelectorAll('.tc-fs-anc').forEach(x => x.classList.remove('tc-fs-anc')); if(!on || !tcWrap) return; let n = tcWrap.parentElement; while(n && n !== document.body){ n.classList.add('tc-fs-anc'); n = n.parentElement; } };
+    if(tcWrap && box.__tcFs){ tcWrap.classList.add('open', 'tc-fs'); document.documentElement.classList.add('tc-fs-on'); ancMark(true); }
     const fsB = box.querySelector('[data-tc-fs]');
     if(fsB) fsB.addEventListener('click', () => {
       box.__tcFs = !box.__tcFs;
       if(tcWrap){ tcWrap.classList.toggle('tc-fs', box.__tcFs); if(box.__tcFs) tcWrap.classList.add('open'); }
-      document.documentElement.classList.toggle('tc-fs-on', !!box.__tcFs);
+      document.documentElement.classList.toggle('tc-fs-on', !!box.__tcFs); ancMark(!!box.__tcFs);
       if(box.__tcFs && !window.__tcFsEsc){ window.__tcFsEsc = 1; document.addEventListener('keydown', ev => { if(ev.key !== 'Escape') return; const f = document.querySelector('.tcal.tc-fs'); if(!f) return;
-        const bx = f.parentElement; if(bx) bx.__tcFs = false; f.classList.remove('tc-fs'); document.documentElement.classList.remove('tc-fs-on'); ev.stopPropagation(); }, true); }
+        const bx = f.parentElement; if(bx) bx.__tcFs = false; f.classList.remove('tc-fs'); document.documentElement.classList.remove('tc-fs-on'); document.querySelectorAll('.tc-fs-anc').forEach(x => x.classList.remove('tc-fs-anc')); ev.stopPropagation(); }, true); }
     });
     const home = box.querySelector('[data-tc-home]');
     if(home) home.addEventListener('click', () => {
