@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261031010550">
+<meta name="pm-build" content="20261031011209">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28751,6 +28751,10 @@
     :is(html,#z0) :is(body,#z1) #wrkBody .wm3 > .wm2-h > *{min-width:0;}
     :is(html,#z0) :is(body,#z1) #wrkBody .wm3 .wm2-ed{padding-inline:10px !important;}
   }
+  /* کارت‌های فعالیت: ورود کارت با یک محو کوتاه */
+  @keyframes dkIn{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #deckTrack > .dk-card.dk-in{animation:dkIn .18s ease-out both;}
+  @media (prefers-reduced-motion: reduce){ #deckTrack > .dk-card.dk-in{animation:none;} }
   /* =================== سامانهٔ طراحی v1 ===================
      توکن‌ها: گوشه ۸/۱۲/۱۶، حرکت ۱۸۰ms یک منحنی، چهار رنگ وضعیت با یک معنا در همه‌جا
      (قرمز = عقب/رد، کهربایی = نزدیک موعد/منتظر، آبی = جاری، سبز = انجام/تأیید؛ خاکستری = شروع‌نشده) */
@@ -32338,17 +32342,21 @@
       + 'stroke-linecap="round"><path d="M12 7.5v6"/><path d="M12 17h.01"/></svg></button>';
   }
 
+  let notifAt = 0;
   async function loadNotif(force){
+    /* تا ۴۵ ثانیه بعد از بار قبل، دوباره از سرور خوانده نمی‌شود (سرعت + مصرف کمتر Supabase) */
+    if(!force && notifAt && Date.now() - notifAt < 45000) return;
     try{
-      const b = await fetchBundle(normDate(dateInput.value) || todayShamsi());
-      const allN = await loadAllNudges(force);
-      try{ await loadFeedReads(); }catch(e){}
+      /* درخواست‌ها هم‌زمان (پیش‌تر پشت سر هم) */
+      const cmP = loadComments(false).catch(() => null);
+      const [b, allN] = await Promise.all([fetchBundle(normDate(dateInput.value) || todayShamsi()), loadAllNudges(force), loadFeedReads().catch(() => {})]);
       try{ await mergeReviewCols(b.admin); }catch(e){}
+      notifAt = Date.now(); window.__notifAt = notifAt;
       notifCache.items = buildAlerts(b.admin);
       notifCache.nudges = myNudges(allN);
       // نظرها و پاسخ‌هایی که به من مربوط‌اند
       try{
-        const rows = await loadComments(false);
+        const rows = await cmP;
         const me = activeUserName();
         notifCache.comments = (rows || []).filter(r => {
           if(nameKey(pick(r,N.from)) === nameKey(me)) return false;   // نظر خودم نه
@@ -33072,7 +33080,9 @@
       const ret = window.__notifRetNow; window.__notifRetNow = null;
       if(!ret){ feedKeep.clear(); window.__notifRet = null; }
       const sub0 = document.getElementById('notifSub'); if(sub0) sub0.textContent = 'در حال بررسی…';
-      { const nb = document.getElementById('notifBody'); if(!ret){ nb.innerHTML = feedSkelHtml(); nb.__h = ''; } nb.classList.remove('fz-calm'); }
+      /* فهرستِ دفعهٔ قبل همان لحظه دیده می‌شود؛ تازه‌سازی پشت آن */
+      { const nb = document.getElementById('notifBody'); if(!ret && !window.__notifAt){ nb.innerHTML = feedSkelHtml(); nb.__h = ''; } nb.classList.remove('fz-calm'); }
+      if(window.__notifAt && !ret){ try{ renderNotif(); }catch(e){} }
 
       feedCat = ret ? (ret.cat || '') : '';        // فیلتر دسته بین دو بار باز کردن نچسبد (جز برگشت)
 
@@ -90115,27 +90125,32 @@
        حرکت ورود نمی‌گیرد؛ همین حرکتِ تکراری هنگام ورق زدن پرش داشت. */
     const was = track.children[deckIdx];
     const fresh0 = !(was && was.dataset.dkFilled === '1');
-    deckFillAround(deckIdx);
+    /* فقط کارت جاری همین الان ساخته می‌شود؛ همسایه‌ها وقتی مرورگر بیکار شد (ورق زدن روی دستگاه ضعیف کند بود) */
+    deckFillOne(deckIdx);
+    clearTimeout(deckFillT); const want = deckIdx;
+    deckFillT = setTimeout(() => { const run = () => { if(deckIdx === want) deckFillAround(want); }; if(window.requestIdleCallback) requestIdleCallback(run, {timeout: 600}); else run(); }, 260);
     const card = track.children[deckIdx];
     if(card){
       /* در چیدمان راست‌به‌چپ، scrollLeft منفی است و محاسبهٔ دستی کار
-         نمی‌کرد؛ خودِ مرورگر کارت را وسط می‌آورد. */
-      try{ card.scrollIntoView({behavior: deckQuiet ? 'auto' : 'smooth', block:'nearest', inline:'center'}); }
+         نمی‌کرد؛ خودِ مرورگر کارت را وسط می‌آورد. پرش مستقیم + یک محو کوتاه (اسکرول نرم کل نوار سنگین بود) */
+      try{ card.scrollIntoView({behavior: 'auto', block:'nearest', inline:'center'}); }
       catch(e){ track.scrollLeft = card.offsetLeft - track.offsetLeft; }
-      if(!deckQuiet && fresh0) deckAnimate(card);
+      if(!deckQuiet) deckAnimate(card, fresh0);
     }
     deckSyncDots();
   }
   /* هر بار که کارت عوض می‌شود، اجزایش پشت سر هم می‌آیند */
+  /* یک محو کوتاه روی خود کارت (پیش‌تر هر جزء جدا با تأخیر پلکانی حرکت می‌کرد و هر بار چیدمان را دوباره حساب می‌کرد) */
   function deckAnimate(card){
     if(!card) return;
-    const kids = Array.from(card.children);
-    kids.forEach((el, k) => {
-      el.style.animation = 'none';
-      void el.offsetWidth;
-      el.style.animation = 'dkItem .55s cubic-bezier(.22,.7,.2,1) both';
-      el.style.animationDelay = (k * 90) + 'ms';
-    });
+    card.classList.remove('dk-in'); requestAnimationFrame(() => card.classList.add('dk-in'));
+  }
+  let deckFillT = 0;
+  function deckFillOne(i){
+    const track = document.getElementById('deckTrack'); if(!track) return;
+    const el = track.children[i]; if(!el || el.dataset.dkFilled === '1') return;
+    el.outerHTML = deckCardHtml(deckView[i], i, deckView.length);
+    const fresh = track.children[i]; if(fresh) fresh.dataset.dkFilled = '1';
   }
   function deckMarkSeenToday(){
     try{ localStorage.setItem(DECK_SEEN_KEY, todayShamsi()); }catch(e){}
