@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105093754">
+<meta name="pm-build" content="20261105132251">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -64718,11 +64718,15 @@
           + f('a-dParty', pick(r,AD.dOrigin) === 'پیمانکار' ? 'پیمانکارِ ارسال‌کننده' : 'طراح (نفرات پروژه، مشاور، پیمانکار یا شرکت طراح)', pick(r,AD.dParty), false, (function(){ try{ designerListEnsure(pick(r,AD.dOrigin)); }catch(e){} return 'designerList'; })())
           + fo('a-owner','مسئول پیگیری در پروژه', pick(r,AD_OWNER.design)), 'two')
         + sec('cal', 'محل اجرا',
-            '<div class="field" style="margin-bottom:8px;"><label>طبقه <small>(یک یا چند)</small></label><select class="a-dFloor" data-flp="1" data-flpm="1"><option value="">—</option>'
-              + (/,/.test(flrCur) ? '<option value="' + esc(flrCur) + '" selected>' + esc(flrCur) + '</option>' : '')
-              + BUILDING.map(b => '<option value="' + b.key + '"' + (b.key === flrCur ? ' selected' : '') + '>' + esc(b.label) + '</option>').join('')
-              + '<option value="ALL"' + (flrCur === 'ALL' ? ' selected' : '') + '>کل ساختمان / چند طبقه</option></select></div>'
-          + f('a-dZone','محل جزء', pick(r,AD.dZone), false, 'zoneList'), 'two')
+            (function(){
+              /* محل مثل گزارش روزانه: طبقه (یک یا چند) ← محل ← محل جزء؛ مقدار در همان ستون‌های طبقه و محل ذخیره می‌شود */
+              const fsk = flrCur ? (flrCur === 'ALL' ? ['ALL'] : flrCur.split(/[,،]/).map(x => x.trim()).filter(Boolean)) : [];
+              const zr = String(pick(r,AD.dZone) || ''), zi = zr.indexOf(' › '), l1 = zi > 0 ? zr.slice(0, zi) : zr, sub = zi > 0 ? zr.slice(zi + 3) : '';
+              let comp = ''; try{ comp = fsk.length ? slCompose(fsk, l1) : l1; }catch(e){ comp = l1; }
+              const uid = 'ds' + Math.random().toString(36).slice(2, 8);
+              return '<div class="field ds-sl" style="grid-column:1 / -1">' + slHtml('a-dSlZ', 'a-dSub', comp, sub, uid + 'z', uid + 'p') + '</div>'
+                + '<input type="hidden" class="a-dFloor" value="' + esc(flrCur) + '"><input type="hidden" class="a-dZone" value="' + esc(zr) + '">';
+            })(), 'one')
         + sec('cal', isNewItem ? 'ویرایش و زمان‌بندی' : 'ویرایش جاری (تغییر شماره = ویرایش تازه در تاریخچه)',
             f('a-dRev','شمارهٔ ویرایش (Rev)', pick(r,AD.dRev) || (isNewItem ? '0' : ''))
           + fd('a-dDate','تاریخ دریافت این ویرایش', exact(r,'تاریخ ارسال'))
@@ -67091,6 +67095,10 @@
       put(o,'وضعیت مدرک','a-dStatus'); put(o,'وضعیت ابلاغ','a-dNotify');
       { const sd = host.querySelector('.a-dSide'), at = host.querySelector('.a-dAt'); if(sd && sd.value) o.__dsSide0 = ({'داخل پروژه':'in','مشاور':'cons','کارفرما':'emp','پیمانکار':'ctr'})[sd.value] || ''; if(at && at.value.trim()) o.__dsAt0 = at.value.trim(); } put(o,'موعد اتمام','a-due');
       put(o,'مسئول','a-owner'); put(o,'توضیحات','a-dNote'); put(o,'لینک','a-link');
+      { const hz = host.querySelector('.a-dSlZ'); if(hz){ let P = {fs: [], l1: ''}; try{ P = slParse(hz.value); }catch(e){}
+          const sb = String((host.querySelector('.a-dSub') || {}).value || '').trim(), l1 = String(P.l1 || '').trim();
+          const hf = host.querySelector('.a-dFloor'), hzn = host.querySelector('.a-dZone');
+          if(hf) hf.value = (P.fs || []).join(','); if(hzn) hzn.value = (l1 && l1 !== 'همهٔ فضاها' ? l1 : '') + (sb ? ' › ' + sb : ''); } }
       put(o,'نوع سند','a-dType'); put(o,'مبدأ','a-dOrigin'); put(o,'طبقه','a-dFloor'); put(o,'محل کارکرد','a-dZone');
     }else{
       put(o,'موضوع نامه','a-lSubject'); put(o,'شماره نامه','a-lNo'); put(o,'طرف مقابل','a-lParty');
