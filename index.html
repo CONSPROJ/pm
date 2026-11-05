@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105201329">
+<meta name="pm-build" content="20261105201722">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -40535,13 +40535,22 @@
     try{ i.focus({preventScroll: true}); }catch(e){ i.focus(); }
     try{ i.setSelectionRange(i.value.length, i.value.length); }catch(e){}
   };
+  /* هر خطا در ساختن دفترچه، به‌جای صفحهٔ خالی، روی همان صفحه با متن خطا و «تلاش دوباره» نشان داده می‌شود */
   function ctcRepaint(focusId){
+    try{ return ctcRepaint0(focusId); }
+    catch(e){ console.error('ctcRepaint', e);
+      document.querySelectorAll('#ctDir, .ctd-host').forEach(b => { if(b.offsetParent) b.innerHTML = '<div class="empty" style="margin:16px 0">نمایش نیروی انسانی با خطا روبه‌رو شد: <code dir="ltr">' + esc(String(e && e.message || e).slice(0, 160)) + '</code><br><button type="button" class="mini" data-ctrretry="1" style="margin-top:8px">تلاش دوباره</button></div>'; });
+      try{ window.__ctcErr = String(e && e.stack || e); }catch(er){} }
+  }
+  function ctcRepaint0(focusId){
     /* دفترچه هم در پنل مدیریت (#ctDir) هست، هم در «گزارش پیمانکار» (.ctd-host) */
     let boxes = Array.from(document.querySelectorAll('#ctDir, .ctd-host'));
     if(!boxes.length) return;
     const vis = boxes.filter(b => b.offsetParent);
     /* دفترچهٔ پنهان ساخته نمی‌شود (هزاران گره در پس‌زمینه)؛ هنگام دیده شدن (wsSet/pf3Show) */
-    if(!vis.length){ boxes.forEach(b => { b.__stale = 1; }); return; }
+    if(!vis.length){ boxes.forEach(b => { b.__stale = 1;
+        /* همین که دیده شد خودش ساخته شود (پیش‌تر اگر وسط انیمیشن زبانه صدا زده می‌شد، صفحهٔ نیروی انسانی خالی می‌ماند) */
+        if(!b.__io && window.IntersectionObserver){ b.__io = new IntersectionObserver(en => { if(en.some(x => x.isIntersecting) && b.__stale){ try{ ctcRepaint(); }catch(e){} } }); b.__io.observe(b); } }); return; }
     boxes = vis; boxes.forEach(b => { b.__stale = 0; });
     try{ let dl = document.getElementById('ctdDiscList'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctdDiscList'; document.body.appendChild(dl); }
       dl.innerHTML = tkCatsAll().map(c => '<option value="' + esc(c) + '">').join(''); }catch(e){}
@@ -49065,6 +49074,8 @@
         + '<span class="ws-bt" style="--c:' + (x.c || 'var(--sky)') + '"><i>' + (x.ic ? x.ic() : '') + '</i><b>' + (x.t || '') + '</b>' + (x.s ? '<small class="ws-bs">' + esc(x.s) + '</small>' : '') + '</span>'
         + '<button type="button" class="ws-bxl" data-xlhub="' + esc(ws.cur) + '" title="دانلود و ورود با اکسل (با راهنما)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8l8 8M16 8l-8 8"/></svg><span>اکسل</span></button>'
         + (ad && ws.cur !== 'tasks' ? '<button type="button" class="ws-badd" data-ws-add="' + ws.cur + '" style="--c:' + (x.c || 'var(--sky)') + '">' + WS_PLUS + '<span>' + esc(ad.t) + '</span></button>' : '');
+      /* نوار «نیروی انسانی» هست ولی دفترچه پنهان یا خالی ماند: همین‌جا درست می‌شود */
+      { const ctd = document.getElementById('wsCtd'); if(ctd){ ctd.hidden = ws.cur !== 'ctr'; if(ws.cur === 'ctr'){ const h = document.getElementById('wsHost'); if(h) h.hidden = false; if(!ctd.firstElementChild || ctd.__stale) setTimeout(() => { try{ ctcRepaint(); }catch(e){} }, 0); } } }
     }
   }
   /* سرِ هر دسته: نشان رنگی، عنوان، توضیح کوتاه و شمار */
@@ -49152,13 +49163,18 @@
     if(host) host.hidden = !mod;
     if(ctd) ctd.hidden = k !== 'ctr';
     if(!mod || k === 'ctr'){ try{ if(document.querySelector('[data-wmode].on')) window.wpickSetMode(''); }catch(e){} }
-    if(k === 'ctr'){ try{ ctcRepaint(); ctrEnsureDocs().then(ok => { if(ok) ctcRepaint(); }); }catch(e){} }
+    if(k === 'ctr'){ try{ ctcRepaint(); ctrEnsureDocs().then(ok => { if(ok) ctcRepaint(); }); }catch(e){}
+      /* تا وقتی واقعاً ساخته نشده، چند بار دیگر (هر ۱۵۰ms، حداکثر ۳ ثانیه) */
+      let n = 0; const again = () => { if(ws.cur !== 'ctr') return; const b = document.querySelector('#wsCtd #ctDir, #wsCtd .ctd-host'); if(b && b.offsetParent && b.firstElementChild && !b.__stale) return;
+        try{ ctcRepaint(); }catch(e){ console.error(e); if(b && b.offsetParent && !b.firstElementChild){ b.innerHTML = '<div class="empty">نمایش نیروی انسانی با خطا روبه‌رو شد (' + esc(String(e && e.message || e).slice(0, 120)) + '). <button type="button" class="mini" data-ctrretry="1">تلاش دوباره</button></div>'; return; } }
+        if(++n < 20) setTimeout(again, 150); }; setTimeout(again, 120); }
     else if(mod){ try{ window.wpickSetMode(k); }catch(e){} }
     wsPaint();
     const anim = !k ? document.getElementById('wsList') : mod ? host : null;
     if(anim){ anim.classList.remove('wp-in'); void anim.offsetWidth; anim.classList.add('wp-in'); }
   }
   window.wsSet = wsSet;
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-ctrretry]')){ const b = document.getElementById('wsCtd'); if(b) b.innerHTML = ''; try{ ctcRepaint(); }catch(er){ showDialog('err', 'نیروی انسانی', friendlyErr(er)); } } });
   /* بعد از هر wpickSetMode: اگر میز کار باز است، ماژول همین‌جا بماند */
   window.wsAfterMode = m => {
     const cur = (document.getElementById('tabBar') || {dataset:{}}).dataset.cur;
