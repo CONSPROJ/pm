@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105093320">
+<meta name="pm-build" content="20261105093434">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -64723,6 +64723,9 @@
           + fd('a-due','موعد پاسخ', pick(r,AD.due)), 'three')
         + sec('flow', 'وضعیت',
             chips(sel('a-dStatus','وضعیت سند', DESIGN_STATES, exact(r,'وضعیت مدرک')))
+          /* همین حالا نزد کیست (طرف و نام)؛ در گردش سند «نزد …» و روزشمار از همین ثبت می‌شود */
+          + (isNewItem ? chips(sel('a-dSide','الان نزد کدام طرف است؟', ['داخل پروژه','مشاور','کارفرما','پیمانکار'], ''))
+              + f('a-dAt','نام شخص یا شرکت (نزد چه کسی)', '', false, (function(){ try{ designerListEnsure(''); }catch(e){} return 'designerList'; })()) : '')
           + chips(notifySel('a-dNotify', exact(r,'وضعیت ابلاغ'))), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'توضیحات', f('a-dNote','توضیحات', exact(r,'توضیحات'), true), 'one'));
@@ -67079,7 +67082,8 @@
     }else if(kind === 'design'){
       put(o,'عنوان مدرک','a-dTitle'); put(o,'شماره مدرک','a-dNo'); put(o,'رشته','a-dDisc');
       put(o,'ویرایش','a-dRev'); put(o,'طراح','a-dParty'); put(o,'تاریخ ارسال','a-dDate');
-      put(o,'وضعیت مدرک','a-dStatus'); put(o,'وضعیت ابلاغ','a-dNotify'); put(o,'موعد اتمام','a-due');
+      put(o,'وضعیت مدرک','a-dStatus'); put(o,'وضعیت ابلاغ','a-dNotify');
+      { const sd = host.querySelector('.a-dSide'), at = host.querySelector('.a-dAt'); if(sd && sd.value) o.__dsSide0 = ({'داخل پروژه':'in','مشاور':'cons','کارفرما':'emp','پیمانکار':'ctr'})[sd.value] || ''; if(at && at.value.trim()) o.__dsAt0 = at.value.trim(); } put(o,'موعد اتمام','a-due');
       put(o,'مسئول','a-owner'); put(o,'توضیحات','a-dNote'); put(o,'لینک','a-link');
       put(o,'نوع سند','a-dType'); put(o,'مبدأ','a-dOrigin'); put(o,'طبقه','a-dFloor'); put(o,'محل کارکرد','a-dZone');
     }else{
@@ -67290,12 +67294,12 @@
       Object.assign(item, {title:v['عنوان مدرک'], number:v['شماره مدرک'], discipline:v['رشته'],
         revision:v['ویرایش'], party:v['طراح'], sentDate:v['تاریخ ارسال'], status:v['وضعیت مدرک'],
         notify:v['وضعیت ابلاغ'], dueDate:v['موعد اتمام'], owner:v['مسئول'], link:v['لینک'], note:v['توضیحات'],
-        docType:v['نوع سند'], origin:v['مبدأ'], floor:v['طبقه'], zone:v['محل کارکرد']});
+        docType:v['نوع سند'], origin:v['مبدأ'], floor:v['طبقه'], zone:v['محل کارکرد'], side: v.__dsSide0 || '', at: v.__dsAt0 || ''});
     }else{
       Object.assign(item, {direction:v['جهت نامه'] || '', subject:v['موضوع نامه'], number:v['شماره نامه'], party:v['طرف مقابل'],
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک']});
     }
-    delete v.__bands; delete v.__att;
+    delete v.__bands; delete v.__att; delete v.__dsSide0; delete v.__dsAt0;
     if(!document.getElementById('admOwner').value.trim()){
       showDialog('warn','تهیه‌کننده انتخاب نشده','اول تهیه‌کنندهٔ گزارش را در همین تب انتخاب کنید.');
       return;
@@ -71054,6 +71058,8 @@
     const d = faDateOf(x.sentDate || '') || todayShamsi();
     const log = [{st:'دریافت', d, by: activeUserName()}];
     if(x.status && x.status !== 'دریافت') log.push({st: x.status, d, by: activeUserName()});
+    /* «الان نزد …» از فرم ثبت: روی آخرین مرحله */
+    if(x.side){ const L = log[log.length - 1]; L.side = x.side; if(x.at) L.at = x.at; }
     return [{rev: String(x.revision || '0'), date: d, by: activeUserName(), note: x.note || '', log}];
   }
   /* حذف (del = شمارهٔ ردیف) یا ترتیب تازه (order = آرایهٔ ردیف‌ها از قدیمی به تازه)؛ آخری ویرایش جاری می‌شود */
