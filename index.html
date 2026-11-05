@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105161412">
+<meta name="pm-build" content="20261105161619">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29294,6 +29294,18 @@
   .ws-bxl + .ws-badd{margin-inline-start:6px !important;}
   :is(html,#z0) :is(body,#z1) .adm-xwrap{display:flex !important;flex-direction:row !important;flex-wrap:wrap;gap:8px;align-items:center !important;justify-content:flex-end !important;} :is(html,#z0) :is(body,#z1) .adm-xwrap > .adm-xbar{flex:1 0 100%;}
   :is(html,#z0) :is(body,#z1) .adm-xwrap > .adm-xtg{margin:0 !important;}
+  /* هشدار زودهنگام (خانه) */
+  .hew{border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:14px 16px;margin:12px 0;display:flex;flex-direction:column;gap:8px;}
+  .hew-h{display:flex;align-items:baseline;gap:10px;} .hew-h b{font-size:14px;} .hew-h small{font-size:11.5px;color:var(--muted);} .hew-h em{font-style:normal;color:var(--alert);font-weight:700;}
+  .hew-all{margin-inline-start:auto;border:0;background:none;color:var(--sky);font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+  .hew-l{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;}
+  .hew-r{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-align:start;cursor:pointer;color:inherit;font:inherit;min-width:0;position:relative;}
+  .hew-r::before{content:'';position:absolute;inset-inline-start:-1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--tc);}
+  .hew-r.warn{--tc:#c79a2b;} .hew-r.bad{--tc:var(--alert);}
+  .hew-r:hover{background:color-mix(in srgb, var(--tc) 6%, var(--surface));}
+  .hew-r > i{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb, var(--tc) 13%, transparent);color:var(--tc);} .hew-r > i svg{width:16px;height:16px;}
+  .hew-r > span{display:flex;flex-direction:column;min-width:0;} .hew-r b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .hew-r small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hew:not(.all) .hew-r.more{display:none;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -93980,6 +93992,39 @@
       else if(t === 'view'){ switchTab('view'); setTimeout(() => { const v = document.querySelector('#viewKindCaps [data-kind="' + k + '"]'); if(v) v.click(); }, 60); }
     }catch(er){}
     try{ window.scrollTo({top: 0}); }catch(er){} }, true);
+  /* ====== هشدار زودهنگام ======
+     پیش از آنکه چیزی بحرانی شود: قراردادهایی که تا ۳۰ روز تمام می‌شوند، مدرک طراحی که بیش از ۱۴ روز نزد
+     مشاور/کارفرما مانده، صورت وضعیت پرداخت‌نشدهٔ بیش از ۴۵ روز و مانع باز بیش از ۷ روز. همه از داده‌های
+     همین صفحه (بی‌درخواست اضافه)؛ هر ردیف با یک کلیک باز می‌شود. */
+  function hmEarly(){
+    let ok = false; try{ ok = hmDashOk() || tabOk('admin'); }catch(e){} if(!ok) return '';
+    const L = [], t0 = todayShamsi();
+    const A = adminAll || [];
+    try{ A.filter(a => a && a.kind === 'contract' && a.row).forEach(a => { const r = a.row; if(admCancelled(r) || admFinishedCt(r)) return;
+      const S = window.ctrEndState ? window.ctrEndState(r) : null; if(!S || !S.end || S.over > 0 || S.done) return;
+      const left = faDiff(t0, S.end); if(left == null || left < 0 || left > 30) return;
+      L.push({w: 100 - left, tone: left <= 10 ? 'bad' : 'warn', ic: 'ct', t: 'قرارداد «' + (pick(r,AD.cTitle) || pick(r,AD.cParty) || '') + '»', s: (left ? toFa(left) + ' روز دیگر تمام می‌شود' : 'امروز تمام می‌شود') + ' · ' + toFa(S.end), go: 'contract|' + pick(r,AD.id)}); }); }catch(e){}
+    try{ A.filter(a => a && a.kind === 'design' && a.row).forEach(a => { const r = a.row; if(admCancelled(r)) return; const h = dsHolderNow(r);
+      if(!h || (h.side !== 'cons' && h.side !== 'emp') || h.days == null || h.days <= 14 || h.days > 35) return;
+      L.push({w: 60 + Math.min(40, h.days - 14), tone: h.days > 28 ? 'bad' : 'warn', ic: 'ds', t: 'مدرک «' + (pick(r,AD.dTitle) || pick(r,AD.dNo) || '') + '»', s: toFa(h.days) + ' روز نزد ' + (h.txt || (h.side === 'emp' ? 'کارفرما' : 'مشاور')), go: 'design|' + pick(r,AD.id)}); }); }catch(e){}
+    try{ stLive(A.filter(a => a && a.kind === 'statement' && a.row).map(a => a.row)).forEach(r => { const amt = amtNum(pick(r,AD.sAmount)); if(!amt || paidOf(r) >= amt) return;
+      const d = admSentDate('statement', r) || pick(r,AD.sDate); const n = d ? daysSince(d) : null; if(n == null || n <= 45 || n > 90) return;
+      L.push({w: 50 + Math.min(40, (n - 45) / 3), tone: n > 75 ? 'bad' : 'warn', ic: 'st', t: 'صورت وضعیت ' + (pick(r,AD.sNo) ? toFa(pick(r,AD.sNo)) + ' ' : '') + '«' + (pick(r,AD.sName) || '') + '»', s: toFa(n) + ' روز از ارسال · مانده ' + arToman(amt - paidOf(r)) + ' تومان', go: 'statement|' + pick(r,AD.id)}); }); }catch(e){}
+    try{ if(typeof tbCache !== 'undefined' && tbCache && tbCache.items) tbCache.items.forEach(list => list.forEach(it => { if(!it.open) return; const n = daysSince(faDateOf(it.date) || ''); if(n == null || n <= 7 || n > 30) return;
+      L.push({w: 40 + Math.min(50, n), tone: n > 21 ? 'bad' : 'warn', ic: 'blk', t: 'مانع: ' + (it.text || ''), s: toFa(n) + ' روز باز' + (it.kind ? ' · ' + it.kind : '') + (it.ctr ? ' · ' + it.ctr : ''), go: 'task|' + (it.task || '')}); })); }catch(e){}
+    if(!L.length) return '';
+    L.sort((a, b) => b.w - a.w);
+    const I = {ct: HM_I.ct || '', ds: HM_I.doc || '', st: HM_I.st || HM_I.money || '', blk: (typeof TD_I !== 'undefined' && TD_I.warn) || ''};
+    const nb = L.filter(x => x.tone === 'bad').length;
+    return '<section class="hew h3-a" style="--i:1"><div class="hew-h"><b>هشدار زودهنگام</b><small>' + toFa(L.length) + ' مورد نزدیک به بحرانی شدن' + (nb ? ' · <em>' + toFa(nb) + ' فوری</em>' : '') + '</small>'
+      + (L.length > 5 ? '<button type="button" class="hew-all" data-hewall="1">همه (' + toFa(L.length) + ')</button>' : '') + '</div><div class="hew-l">'
+      + L.map((x, i) => '<button type="button" class="hew-r ' + x.tone + (i >= 5 ? ' more' : '') + '" data-hewgo="' + esc(x.go) + '"><i>' + (I[x.ic] || '') + '</i><span><b>' + esc(x.t) + '</b><small>' + esc(x.s) + '</small></span></button>').join('')
+      + '</div></section>';
+  }
+  document.addEventListener('click', e => { const t = e.target; if(!t.closest) return;
+    if(t.closest('[data-hewall]')){ const s = t.closest('.hew'); if(s) s.classList.add('all'); t.closest('[data-hewall]').remove(); return; }
+    const g = t.closest('[data-hewgo]'); if(!g) return; e.preventDefault(); const [k, id] = g.dataset.hewgo.split('|'); if(!id) return;
+    try{ if(window.deckOpenAt && window.deckOpenAt(k, id)) return; }catch(er){} try{ gotoAdminItem(k, id); }catch(er){} });
   function homeRender(){
     const box = document.getElementById('homeView');
     if(!box) return;
@@ -94011,7 +94056,7 @@
     let deskHome = false; try{ deskHome = window.matchMedia('(min-width:1180px)').matches; }catch(e){}
     const top = deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) + (window.repPanelHtml ? window.repPanelHtml() : '')
       : h3Hero(work, tk) + (window.repPanelHtml ? window.repPanelHtml() : '') + h3Project(day, dDate, adm, tk, prc);
-    const h = '<div class="h3' + (deskHome ? ' hdx' : '') + '">' + top + (deskHome ? '' : h3Dash(day, dDate, adm, tk)) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
+    const h = '<div class="h3' + (deskHome ? ' hdx' : '') + '">' + top + (function(){ try{ return hmEarly(); }catch(e){ return ''; } })() + (deskHome ? '' : h3Dash(day, dDate, adm, tk)) + h3KartBox(G) + h3Quick() + G.prj + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
