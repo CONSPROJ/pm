@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105160653">
+<meta name="pm-build" content="20261105161412">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29292,6 +29292,8 @@
   .xlh-subs{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--field);align-self:flex-start;} .xlh-subs button{height:32px;padding:0 14px;border:0;border-radius:9px;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;} .xlh-subs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   .ws-bxl{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-inline-start:auto;} .ws-bxl svg{width:15px;height:15px;color:#1f7a4a;}
   .ws-bxl + .ws-badd{margin-inline-start:6px !important;}
+  :is(html,#z0) :is(body,#z1) .adm-xwrap{display:flex !important;flex-direction:row !important;flex-wrap:wrap;gap:8px;align-items:center !important;justify-content:flex-end !important;} :is(html,#z0) :is(body,#z1) .adm-xwrap > .adm-xbar{flex:1 0 100%;}
+  :is(html,#z0) :is(body,#z1) .adm-xwrap > .adm-xtg{margin:0 !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -49194,6 +49196,7 @@
         requestAnimationFrame(() => tb.classList.add('pop'));
       }catch(e){}
     }
+    if(name === 'tasks' && applyTaskFilters.dirty) try{ applyTaskFilters(); }catch(e){}
     dock.style.display = (name === 'write') ? 'block' : 'none';
     document.body.classList.toggle('has-dock', name === 'write');
     if(name === 'write' && typeof rebuildWriteJump === 'function') rebuildWriteJump();
@@ -75421,7 +75424,7 @@
   function daLoad(lists){
     daMap = new Map();
     ((lists && lists[DA_KIND]) || []).forEach(v => { const a = String(v).split(DA_SEP); if(a.length >= 3 && a[2]) daMap.set(a[0] + ':' + nameKey(a[1]), a[2].trim()); });
-    if(!daDone) setTimeout(() => { try{ daRun(false); }catch(e){} }, 5000);
+    if(!daDone) setTimeout(() => { const go = () => { try{ daRun(false); }catch(e){} }; if(window.requestIdleCallback) requestIdleCallback(go, {timeout: 15000}); else go(); }, 25000);
   }
   /* همه را می‌بیند و فقط خالی‌ها و تعیین‌های خودکارِ قبلی را به‌روز می‌کند */
   async function daRun(report){
@@ -84082,6 +84085,10 @@
       pick(r,T.title), pick(r,T.m1), pick(r,T.m2), pick(r,T.side),
       pick(r,T.pos), pick(r,T.blockers)], qTask));
     lastTasks = {list, who, all: tasksAll};
+    /* زبانهٔ کارها باز نیست: فهرست بعداً (با باز شدن زبانه) ساخته می‌شود — روی گوشی ساختنش در پس‌زمینه ~۶۰۰ms قفل می‌کرد */
+    const pt = document.getElementById('panelTasks');
+    if(pt && pt.hidden){ applyTaskFilters.dirty = true; return; }
+    applyTaskFilters.dirty = false;
     renderTasks(list, who);
   }
 
@@ -90029,10 +90036,13 @@
   }
   /* سرعت: در یک گذر (خانه، نشان، کارت‌ها پشت سر هم) فهرست یک بار ساخته می‌شود */
   let deckBC = null;
-  function deckBuild(){
-    if(deckBC) return deckBC.slice();
+  /* کش ساخت کارت‌ها: تا وقتی داده‌ها (همان آرایه‌ها)، کاربر و روز عوض نشده و حداکثر ۲۰ ثانیه، دوباره ساخته نمی‌شود
+     (پیش‌تر هر فراخوانی — نشان، خانه، زنگوله — از نو می‌ساخت و روی گوشی هر بار ~۴۰۰ms قفل می‌شد) */
+  function deckBuild(force){
+    let sg = ''; try{ sg = [activeUserName(), todayShamsi(), deckMineOnly() ? 1 : 0, (typeof tbCache !== 'undefined' && tbCache && tbCache.at) || 0].join('|'); }catch(e){}
+    if(!force && deckBC && deckBC.ta === tasksAll && deckBC.aa === adminAll && deckBC.sg === sg && Date.now() - deckBC.t < 20000) return deckBC.r.slice();
     const r = deckBuild0() || [];
-    deckBC = r; setTimeout(() => { deckBC = null; }, 0);
+    deckBC = {r, ta: tasksAll, aa: adminAll, sg, t: Date.now()};
     return r.slice();
   }
   function deckBuild0(){
@@ -91588,7 +91598,7 @@
       const mode = deckMode, g = deckGrp, keep = deckIdx;
       const sig = arr => (arr || []).map(x => x.fid + ':' + x.level).join('|');
       const before = sig(deckView);
-      deckItems = deckBuild();
+      deckItems = deckBuild(true);
       if(mode === 'cards'){
         /* کارت‌ها فقط وقتی از نو ساخته می‌شوند که فهرستشان واقعاً عوض شده */
         if(sig(deckGrpItems(g)) !== before){
@@ -91625,7 +91635,7 @@
       if(pt && !pt.hidden && tw && String(tw).trim()) deckWho = String(tw).trim();
     }catch(e){}
     if(!deckWho && deckMineFirst() && !deckMineOnly()) deckWho = activeUserName();
-    deckItems = deckBuild();
+    deckItems = deckBuild(true);
     deckRender();
     deckWantCards = false;
     deckEnsureData();
@@ -92611,7 +92621,7 @@
     {k:'statement', t:'صورت وضعیت', ic:'st'}, {k:'contract', t:'قرارداد', ic:'ct'},
     {k:'letter', t:'نامه', ic:'lt'}, {k:'minute', t:'صورتجلسه', ic:'mn'}, {k:'design', t:'سند طراحی', ic:'dz'}
   ];
-  let homeT = 0, homeBusy = null, homeAt = 0, homeWho = '';
+  let homeT = 0, homeBusy = null, homeAt = 0, homeWho = '', homeLastR = 0;
   const homeDays = {};          // تاریخ ← {rows, issues, machines, prev}
   let homeWorkList = [];
   const homeKeep = {adm:null, tasks:null};
@@ -92630,9 +92640,11 @@
         if(!homeFirstT0) homeFirstT0 = Date.now();
         if(Date.now() - homeFirstT0 < 2500){ homeSoon(); return; }
       }
+      homeLastR = Date.now();
       try{ homeRender(); }catch(e){ console.error(e); }
-    }, 140);
+    }, homeAt ? Math.max(140, 1500 - (Date.now() - homeLastR)) : 140);
   }
+  /* بعد از اولین نقاشی خانه، رسیدن پشت‌سرهم داده‌ها دست‌کم ۱٫۵ ثانیه فاصله می‌گیرد (گوشی ضعیف هر بار ~۴۰۰ms قفل می‌شد) */
   window.homeSoon = homeSoon;
   /* نقش صفحهٔ اول: مدیر (ادمین و سطح ۲ یا اجازهٔ کارت مدیر)، کارشناس،
      سرپرست کارگری، فقط‌مشاهده */
