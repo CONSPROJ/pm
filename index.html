@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105140236">
+<meta name="pm-build" content="20261105140846">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29079,6 +29079,27 @@
     :is(html,#z0) :is(body,#z1) #ctProfModal .ct-card .ct-body > .hr-split:has(> .hr-note:only-child){display:block !important;padding:0 !important;margin-top:14px !important;}
     :is(html,#z0) :is(body,#z1) #ctProfModal .ct-card .ct-body > .hr-split:has(> .hr-note:only-child) > .hr-note{margin:0 !important;}
   }
+  /* ورود گروهی آرشیو */
+  .arc-addb.ghost{background:none !important;border:1px solid var(--line) !important;color:var(--ink) !important;}
+  .arc-bulk{display:flex;flex-direction:column;gap:10px;}
+  .arc-bulk .arb-h{display:flex;flex-direction:column;gap:2px;} .arc-bulk .arb-h small{color:var(--muted);font-size:11.5px;}
+  .arb-drop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px;border:1.5px dashed var(--line);border-radius:14px;font-size:12px;color:var(--muted);}
+  .arb-drop .ghost{margin-inline-start:auto;}
+  .arb-paste{display:flex;flex-direction:column;gap:6px;} .arb-paste textarea{width:100%;box-sizing:border-box;font-size:12px;}
+  .arb-all{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted);} .arb-all :is(input,select){height:32px;font-size:12px;min-width:0;flex:1 1 120px;}
+  .arb-tbl{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:52vh;}
+  .arb-r{display:grid;grid-template-columns:28px minmax(160px,2fr) minmax(110px,1fr) minmax(110px,1fr) 100px minmax(90px,1fr) minmax(110px,1.2fr) 28px;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);min-width:820px;}
+  .arb-r:last-child{border-bottom:0;} .arb-r > span:first-child{font-size:11px;color:var(--muted);text-align:center;}
+  .arb-r :is(input,select){height:30px;font-size:12px;min-width:0;width:100%;box-sizing:border-box;}
+  .arb-r.arb-hd{position:sticky;top:0;background:var(--surface);z-index:1;font-size:11px;font-weight:700;color:var(--muted);}
+  .arb-r.ok{background:color-mix(in srgb, var(--ok) 8%, transparent);} .arb-r.err{background:color-mix(in srgb, var(--alert) 8%, transparent);}
+  .arb-fn{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right;} .arb-fn i{font-style:normal;color:var(--sky);} .arb-fn em{font-style:normal;opacity:.7;}
+  .arb-x{width:26px;height:26px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:8px;} .arb-x:hover{background:var(--field);color:var(--alert);}
+  @media (max-width:760px){ .arb-r{min-width:760px;} }
+  .arc-bulk :is(.arb-r, .arb-all) :is(input, select){padding-block:0 !important;line-height:28px !important;border:1px solid var(--line) !important;border-radius:9px !important;background-color:var(--surface) !important;padding-inline:8px !important;}
+  .arc-bulk :is(.arb-r, .arb-all) select{padding-inline-end:22px !important;background-position:left 7px center !important;}
+  .arc-bulk .dz-b{height:34px !important;min-height:0 !important;padding:0 14px !important;border-radius:10px !important;border:1px solid var(--line) !important;box-shadow:none !important;font-size:12px !important;}
+  .arc-bulk .dz-b.pri{border-color:transparent !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -68215,6 +68236,92 @@
      با عنوان، نوع، طرف (پیمانکار یا شخص)، تاریخ، شرح و پیوست. در lists با نوع «سند عمومی». */
   const ARC_GEN_KIND = 'سند عمومی';
   const ARC_GEN_TYPES = ['مدارک هویتی', 'رزومه و سوابق', 'گواهی صلاحیت و پروانه', 'بیمه', 'ضمانت‌نامه', 'تعهدنامه', 'مجوز', 'گواهی و آزمایش', 'فاکتور و پیش‌فاکتور', 'نقشه و مشخصات فنی', 'سایر'];
+  /* ====== ورود گروهی پرونده‌های قدیمی ======
+     چند فایل یک‌جا (یا فهرستی چسبانده از اکسل: عنوان، نوع، طرف، تاریخ، شرح) ← هر کدام یک ردیف
+     با عنوان از نام فایل، نوع و تاریخ حدسی؛ «برای همه» نوع/طرف/تاریخ را یک‌جا پر می‌کند.
+     بارگذاری دوتا دوتا و ذخیره با یک درخواست. */
+  const ARC_TY_GUESS = [[/بیمه|insur/i, 'بیمه'], [/ضمانت|guarant/i, 'ضمانت‌نامه'], [/تعهد/, 'تعهدنامه'], [/مجوز|پروانه|permit/i, 'مجوز'], [/صلاحیت|گواهینامه|رتبه/, 'گواهی صلاحیت و پروانه'], [/آزمایش|تست|test|گواهی/i, 'گواهی و آزمایش'], [/فاکتور|invoice|پیش.?فاکتور/i, 'فاکتور و پیش‌فاکتور'], [/رزومه|سوابق|cv|resume/i, 'رزومه و سوابق'], [/کارت.?ملی|شناسنامه|هویت|passport/i, 'مدارک هویتی']];
+  function arcGuess(name){
+    const base = String(name || '').replace(/\.[^.]+$/, '');
+    let ty = ''; ARC_TY_GUESS.some(([re, t]) => { if(re.test(base) && ARC_GEN_TYPES.indexOf(t) !== -1){ ty = t; return true; } return false; });
+    let d = '', m = toEn(base).match(/(1[34]\d{2})[\s._\/-]?(0?[1-9]|1[0-2])[\s._\/-]?(0?[1-9]|[12]\d|3[01])(?!\d)/);
+    if(m) d = normDate(m[1] + '/' + m[2] + '/' + m[3]) || '';
+    const t = base.replace(/[_]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 140);
+    return {t, ty, d}; }
+  function arcBulkHtml(){
+    const B = arc.bulk, R = B.rows, busy = !!B.busy;
+    const tyOpts = sel => '<option value="">—</option>' + ARC_GEN_TYPES.map(t1 => '<option' + (sel === t1 ? ' selected' : '') + '>' + esc(t1) + '</option>').join('');
+    return '<div class="arc-new arc-bulk"><div class="arb-h"><b>ورود گروهی اسناد</b><small>چند فایل را یک‌جا انتخاب یا رها کنید، یا فهرستی از اکسل بچسبانید؛ هر ردیف یک سند عمومی می‌شود.</small></div>'
+      + '<div class="arb-drop" data-arbdrop="1"><input type="file" multiple data-arbfiles="1" hidden><button type="button" class="dz-b" data-arbpick="1">انتخاب فایل‌ها</button><span>یا فایل‌ها را اینجا رها کنید</span>'
+      + '<button type="button" class="dz-b ghost" data-arbpaste="1">چسباندن از اکسل</button></div>'
+      + (B.paste ? '<div class="arb-paste"><textarea rows="4" data-arbtxt="1" placeholder="هر سطر یک سند؛ ستون‌ها با Tab (از اکسل): عنوان، نوع، طرف، تاریخ، شرح"></textarea><button type="button" class="dz-b pri" data-arbparse="1">افزودن ردیف‌ها</button></div>' : '')
+      + (R.length ? '<div class="arb-all"><span>برای همه:</span><select data-arball="ty" data-nons="1">' + tyOpts('') + '</select><input type="text" data-arball="p" list="contractorList" placeholder="طرف"><input type="text" class="date-in" data-arball="d" placeholder="تاریخ"><button type="button" class="dz-b" data-arbapply="1">اعمال</button></div>'
+        + '<div class="arb-tbl"><div class="arb-r arb-hd"><span>#</span><span>عنوان</span><span>نوع</span><span>طرف</span><span>تاریخ</span><span>شرح</span><span>فایل</span><span></span></div>'
+        + R.map((r, i) => '<div class="arb-r' + (r.st === 'ok' ? ' ok' : r.st === 'err' ? ' err' : '') + '" data-arbi="' + i + '"><span>' + toFa(i + 1) + '</span>'
+          + '<input type="text" data-arbf="t" value="' + esc(r.t || '') + '" placeholder="عنوان">'
+          + '<select data-arbf="ty" data-nons="1">' + tyOpts(r.ty) + '</select>'
+          + '<input type="text" data-arbf="p" list="contractorList" value="' + esc(r.p || '') + '">'
+          + '<input type="text" class="date-in" data-arbf="d" value="' + esc(r.d ? toFa(r.d) : '') + '" placeholder="امروز">'
+          + '<input type="text" data-arbf="nt" value="' + esc(r.nt || '') + '">'
+          + '<span class="arb-fn" title="' + esc(r.file ? r.file.name : '') + '">' + (r.file ? esc(r.file.name) + (r.pr != null && r.st !== 'ok' ? ' <i>' + toFa(r.pr) + '٪</i>' : '') : '<em>بدون فایل</em>') + (r.st === 'ok' ? ' ✓' : r.st === 'err' ? ' ✕' : '') + '</span>'
+          + '<button type="button" class="arb-x" data-arbdel="' + i + '" aria-label="حذف"' + (busy ? ' disabled' : '') + '>✕</button></div>').join('') + '</div>' : '')
+      + '<div class="arc-nacts"><button type="button" class="dz-b pri" data-arbsave="1"' + (busy || !R.length ? ' disabled' : '') + '>' + (busy ? 'در حال بارگذاری…' : 'ذخیرهٔ ' + toFa(R.length) + ' سند') + '</button><button type="button" class="dz-b" data-arbulk="0"' + (busy ? ' disabled' : '') + '>بستن</button></div></div>';
+  }
+  function arcBulkAddFiles(list){ const B = arc.bulk; if(!B) return;
+    Array.from(list || []).slice(0, 200).forEach(f => { const g = arcGuess(f.name); B.rows.push({file: f, t: g.t, ty: g.ty || B.ty || '', p: B.p || '', d: g.d || B.d || '', nt: ''}); });
+    arcRender(); }
+  function arcBulkSync(el){ const row = el.closest('[data-arbi]'); if(!row || !arc.bulk) return; const r = arc.bulk.rows[+row.dataset.arbi]; if(!r) return;
+    const k = el.dataset.arbf; r[k] = k === 'd' ? (normDate(el.value) || '') : el.value; }
+  async function arcBulkSave(){
+    const B = arc.bulk; if(!B || B.busy) return;
+    const R = B.rows.filter(r => r.st !== 'ok');
+    if(R.some(r => !String(r.t || '').trim())){ showDialog('warn', 'عنوان سند', 'همهٔ ردیف‌ها عنوان لازم دارند.'); return; }
+    B.busy = true; arcRender();
+    const me = activeUserName() || '';
+    let next = 0;
+    const work = async () => { while(next < R.length){ const r = R[next++];
+      if(r.file && !r.link){ try{ r.link = await uploadS3Any(r.file, pc => { r.pr = Math.round(pc * 100) || 0; const el = document.querySelector('[data-arbi="' + B.rows.indexOf(r) + '"] .arb-fn i'); if(el) el.textContent = toFa(r.pr) + '٪'; }, 'gen'); }catch(err){ r.st = 'err'; r.er = friendlyErr(err); } } } };
+    await Promise.all([work(), work()]);
+    const ok = R.filter(r => r.st !== 'err');
+    const objs = ok.map((r, k) => { const o = {id: Date.now().toString(36) + k.toString(36) + Math.random().toString(36).slice(2, 5), t: String(r.t).trim().slice(0, 140), ty: r.ty || 'سایر', by: me, d: normDate(r.d) || todayShamsi()};
+      if(r.p) o.p = String(r.p).trim().slice(0, 80); if(r.nt) o.nt = String(r.nt).slice(0, 600); if(r.link) o.f = r.link; o.__r = r; return o; });
+    if(objs.length){
+      try{ const body = objs.map(o => { const r = o.__r; delete o.__r; o.__raw0 = r; return {kind: ARC_GEN_KIND, value: JSON.stringify(Object.assign({}, o, {__raw0: undefined}))}; });
+        await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'}, body});
+        objs.forEach((o, k) => { o.__raw0.st = 'ok'; delete o.__raw0; o.__raw = body[k].value; (arc.gen = arc.gen || []).unshift(o); });
+        try{ clearNetCache(); }catch(err){}
+      }catch(err){ objs.forEach(o => { if(o.__raw0){ o.__raw0.st = 'err'; delete o.__raw0; } }); B.busy = false; arcRender(); showDialog('err', 'ذخیره نشد', friendlyErr(err)); return; }
+    }
+    B.busy = false;
+    const bad = B.rows.filter(r => r.st === 'err').length;
+    B.rows = B.rows.filter(r => r.st !== 'ok');
+    if(!B.rows.length) arc.bulk = null;
+    arcRender();
+    try{ shrToast(toFa(objs.length) + ' سند ذخیره شد' + (bad ? ' · ' + toFa(bad) + ' فایل بارگذاری نشد' : '')); }catch(err){}
+  }
+  document.addEventListener('click', e => {
+    const t = e.target; if(!t.closest) return;
+    const ob = t.closest('[data-arcbulk]'); if(ob){ arc.bulk = arc.bulk || {rows: []}; arc.gadd = false; arcRender(); return; }
+    if(!arc.bulk) return;
+    if(t.closest('[data-arbulk="0"]')){ arc.bulk = null; arcRender(); return; }
+    if(t.closest('[data-arbpick]')){ const inp = document.querySelector('[data-arbfiles]'); if(inp) inp.click(); return; }
+    if(t.closest('[data-arbpaste]')){ arc.bulk.paste = !arc.bulk.paste; arcRender(); return; }
+    if(t.closest('[data-arbparse]')){ const ta = document.querySelector('[data-arbtxt]'); const tx = ta ? ta.value : '';
+      tx.split(/\r?\n/).map(l => l.trim()).filter(Boolean).slice(0, 300).forEach(l => { const c = l.split('\t').map(x => x.trim()); const ty = ARC_GEN_TYPES.find(x => x === c[1]) || (c[1] ? arcGuess(c[1]).ty : '') || arcGuess(c[0]).ty;
+        arc.bulk.rows.push({t: c[0], ty: ty || '', p: c[2] || '', d: normDate(c[3] || '') || arcGuess(c[0]).d || '', nt: c[4] || ''}); });
+      arc.bulk.paste = false; arcRender(); return; }
+    const del = t.closest('[data-arbdel]'); if(del){ arc.bulk.rows.splice(+del.dataset.arbdel, 1); arcRender(); return; }
+    if(t.closest('[data-arbapply]')){ const g = k => String((document.querySelector('[data-arball="' + k + '"]') || {}).value || '').trim();
+      const ty = g('ty'), p1 = g('p'), d = normDate(g('d')) || '';
+      arc.bulk.rows.forEach(r => { if(ty) r.ty = ty; if(p1) r.p = p1; if(d) r.d = d; }); Object.assign(arc.bulk, {ty, p: p1, d}); arcRender(); return; }
+    if(t.closest('[data-arbsave]')){ arcBulkSave(); return; }
+  });
+  document.addEventListener('change', e => { const t = e.target; if(!t || !t.matches) return;
+    if(t.matches('[data-arbfiles]')){ arcBulkAddFiles(t.files); t.value = ''; return; }
+    if(t.matches('[data-arbf]')) arcBulkSync(t); });
+  document.addEventListener('input', e => { if(e.target && e.target.matches && e.target.matches('[data-arbf]')) arcBulkSync(e.target); });
+  ['dragover', 'drop'].forEach(ev => document.addEventListener(ev, e => { const z = e.target && e.target.closest && e.target.closest('[data-arbdrop]'); if(!z) return; e.preventDefault();
+    if(ev === 'drop' && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) arcBulkAddFiles(e.dataTransfer.files); }));
   function arcGenHtml(){
     const q = arcNorm(arc.q), L0 = arc.gen || [];
     const L = L0.filter(f => (!arc.gp || (f.p || '') === arc.gp) && (!arc.gt || f.ty === arc.gt) && (!q || arcNorm([f.t, f.ty, f.p, f.nt].join(' ')).indexOf(q) !== -1))
@@ -68224,7 +68331,8 @@
     return '<div class="arc-bar"><label class="arc-q">' + CTX_I.search + '<input type="search" data-arcq placeholder="جست‌وجوی عنوان، طرف یا شرح…" value="' + esc(arc.q) + '"></label>'
       + '<select class="arc-sel" data-arcgp="1" data-nons="1"><option value="">همهٔ طرف‌ها</option>' + parties.map(p1 => '<option value="' + esc(p1) + '"' + (arc.gp === p1 ? ' selected' : '') + '>' + esc(p1) + '</option>').join('') + '</select>'
       + '<select class="arc-sel" data-arcgt="1" data-nons="1"><option value="">همهٔ انواع</option>' + ARC_GEN_TYPES.map(t1 => '<option' + (arc.gt === t1 ? ' selected' : '') + '>' + esc(t1) + '</option>').join('') + '</select>'
-      + (arcCanAdd() ? '<button type="button" class="arc-addb" data-arcgadd="1">+ سند عمومی</button>' : '') + '</div>'
+      + (arcCanAdd() ? '<button type="button" class="arc-addb" data-arcgadd="1">+ سند عمومی</button><button type="button" class="arc-addb ghost" data-arcbulk="1" title="چند فایل یا فهرست اکسل یک‌جا">ورود گروهی</button>' : '') + '</div>'
+      + (arc.bulk ? arcBulkHtml() : '')
       + (arc.gadd ? '<div class="arc-new arc-gnew"><div class="arc-ng"><label class="ctc-f"><span>عنوان سند</span><input type="text" data-arcg="t" placeholder="مثلاً بیمه‌نامهٔ مسئولیت مدنی ۱۴۰۵"></label>'
           + '<label class="ctc-f"><span>نوع سند</span><select data-arcg="ty" data-nons="1">' + ARC_GEN_TYPES.map(t1 => '<option>' + esc(t1) + '</option>').join('') + '</select></label></div>'
           + '<div class="arc-ng"><label class="ctc-f"><span>طرف (پیمانکار، شرکت یا شخص)</span><input type="text" data-arcg="p" list="contractorList" autocomplete="off" placeholder="انتخاب یا نوشتن"></label>'
