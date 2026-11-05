@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105091618">
+<meta name="pm-build" content="20261105091847">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28958,6 +28958,12 @@
     html body :is(#adminView, .adm-host) .adm-fast .afr .afr-st{justify-self:start;}
     html body :is(#adminView, .adm-host) .adm-fast .afr .afr-date{white-space:nowrap;}
   }
+  .trs{margin-top:16px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--surface);}
+  .trs-h{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;} .trs-h b{font-size:13px;} .trs-h small{font-size:11px;color:var(--muted);}
+  .trs-r{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);} .trs-r:last-child{border-bottom:0;}
+  .trs-k{flex:none;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--field);color:var(--muted);}
+  .trs-t{flex:1;min-width:0;display:flex;flex-direction:column;} .trs-t b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .trs-t small{font-size:11px;color:var(--muted);}
+  .trs-0{color:var(--muted);font-size:12px;padding:10px;text-align:center;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -42821,6 +42827,7 @@
   async function renderUserLog(){
     if(!document.getElementById('ulx')) return;
     if(ulx.rows) ulxPaint(); else ulxLoad();
+    try{ if(document.getElementById('trashBox') && window.trashPaint) window.trashPaint(); }catch(e){}
   }
 
   /* وضعیت پنل کاربران؛ بیرون از تابع تا بعد از هر ذخیره و رندر دوباره
@@ -46517,7 +46524,7 @@
           +   '<textarea id="bcMsg" placeholder="متن پیام به همهٔ کاربران…"></textarea></div>'
           +   '<div class="pf2-cf"><button type="button" class="mini go" id="bcSend">' + PF_I.mega + 'ارسال به همه</button></div>'
           + '</div></div>'
-          + '<div class="pf3-pane" data-pf3p="log"><div class="ulx" id="ulx"></div></div>';
+          + '<div class="pf3-pane" data-pf3p="log"><div class="ulx" id="ulx"></div>' + (isAdminUser() ? '<div class="trs" id="trashBox"></div>' : '') + '</div>';
         setTimeout(() => { try{ if(pf3Sub.settings === 'log') renderUserLog(); }catch(e){} }, 40);
 
         h += '<div class="pf3-pane" data-pf3p="users"><div id="adminPanel" class="um-host"><div class="empty">در حال دریافت فهرست کاربران…</div></div></div>';
@@ -59198,6 +59205,56 @@
   }
 
   // ویرایش، حذف، فعالیت و تلنگر در Supabase
+  /* ====== سطل بازیافت (بازگردانی برای مدیر) ======
+     هر حذف: ردیف خام در فهرست‌ها (kind «سطل بازیافت») — اگر بزرگ بود، در فضای ابری و فقط پیوندش.
+     نگه‌داری: ۶۰ مورد آخر. بازگردانی همان ردیف را با همان شناسه برمی‌گرداند. */
+  const TRASH_KIND = 'سطل بازیافت';
+  async function trashKeep(table, target, id){
+    if(!table || !id || /^(lists|nudges|feed_reads)$/.test(table)) return;
+    const R = await supaFetch(table + '?id=eq.' + encodeURIComponent(id) + '&limit=1');
+    const row = Array.isArray(R) ? R[0] : null; if(!row) return;
+    let title = ''; try{ const r0 = (typeof admRowById === 'function') ? admRowById(id) : null; title = r0 ? (arTitleOf(target, r0) || '') : ''; }catch(e){}
+    if(!title) title = String(row.title || row.subject || row.name || row.activity || row.number || id).slice(0, 80);
+    const meta = {t: table, g: target || '', id: String(id), ti: title, by: activeUserName(), at: new Date().toISOString()};
+    let body = JSON.stringify(Object.assign({}, meta, {row}));
+    if(body.length > 2200){
+      try{ const f = new File([JSON.stringify(row)], 'trash-' + table + '-' + id + '.json', {type: 'application/json'}); meta.lk = await s3UpMain(f, null, 'trash'); body = JSON.stringify(meta); }
+      catch(e){ body = JSON.stringify(Object.assign({}, meta, {row: null, big: 1})); }
+    }
+    await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: TRASH_KIND, value: meta.at + '¦' + body}]});
+  }
+  async function trashList(){
+    const R = await supaFetch('lists?kind=eq.' + encodeURIComponent(TRASH_KIND) + '&select=value&order=value.desc&limit=60');
+    return (R || []).map(x => { const v = String(x.value || ''), i = v.indexOf('¦'); try{ return Object.assign({key: v.slice(0, i), raw: v}, JSON.parse(v.slice(i + 1))); }catch(e){ return null; } }).filter(Boolean);
+  }
+  async function trashRestore(it){
+    let row = it.row;
+    if(!row && it.lk){ const m = String(it.lk).match(/^s3b?:([^#]+)#?(.*)$/); const u = m ? await s3Url(m[1], m[2] || '', false) : ''; if(u){ const r = await fetch(u); row = await r.json(); } }
+    if(!row) throw new Error('نسخهٔ ذخیره‌شدهٔ این مورد در دسترس نیست');
+    await supaFetch(it.t + '?on_conflict=id', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [row]});
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(TRASH_KIND) + '&value=eq.' + encodeURIComponent(it.raw), {method: 'DELETE'});
+    try{ clearNetCache(); }catch(e){}
+  }
+  window.trashList = trashList; window.trashRestore = trashRestore; window.__trashKeep = trashKeep;
+  async function trashPaint(){
+    const box = document.getElementById('trashBox'); if(!box) return;
+    box.innerHTML = '<div class="trs-h"><b>سطل بازیافت</b><small>اسناد و ردیف‌های حذف‌شده — بازگردانی با همان شناسه و همهٔ اطلاعات</small></div><div class="trs-l"><div class="trs-0">در حال دریافت…</div></div>';
+    let L = []; try{ L = await trashList(); }catch(e){ box.querySelector('.trs-l').innerHTML = '<div class="trs-0">دریافت نشد.</div>'; return; }
+    const KL = {statements:'صورت وضعیت', contracts:'قرارداد', letters:'نامه', minutes:'صورتجلسه', designs:'سند طراحی', tasks:'فعالیت', activities:'گزارش', issues:'مانع', machines:'ماشین‌آلات'};
+    box.querySelector('.trs-l').innerHTML = L.length ? L.map((x, i) => '<div class="trs-r"><span class="trs-k">' + esc(KL[x.t] || x.t) + '</span><span class="trs-t"><b>' + esc(x.ti || x.id) + '</b><small>حذف: ' + esc(x.by || '—') + ' · ' + esc(stampFa(x.at) || '') + '</small></span>'
+        + '<button type="button" class="mini" data-trsr="' + i + '"' + (x.row || x.lk ? '' : ' disabled title="نسخهٔ کامل ذخیره نشد"') + '>بازگردانی</button></div>').join('')
+      : '<div class="trs-0">چیزی حذف نشده است.</div>';
+    box.__L = L;
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-trsr]'); if(!b) return;
+    const box = b.closest('#trashBox'); const it = box && box.__L && box.__L[+b.dataset.trsr]; if(!it) return;
+    if(!(await askConfirm('بازگردانی', '«' + (it.ti || it.id) + '» با همهٔ اطلاعاتش برگردانده شود؟', 'بازگردانی'))) return;
+    b.disabled = true; b.textContent = 'در حال بازگردانی…';
+    try{ await trashRestore(it); shrToast('برگردانده شد'); try{ adminLoaded = false; tasksLoaded = false; }catch(er){} trashPaint(); }
+    catch(err){ b.disabled = false; b.textContent = 'بازگردانی'; showDialog('err', 'بازگردانده نشد', friendlyErr(err)); }
+  });
+  window.trashPaint = trashPaint;
   async function supaAction(obj){
     try{
       if(obj.action === 'nudge'){
@@ -59213,6 +59270,8 @@
       }
       const table = (obj.action === 'taskUpdate') ? 'tasks' : (SUPA_TABLE[obj.target] || 'activities');
       if(obj.action === 'delete'){
+        /* سطل بازیافت: پیش از حذف، خودِ ردیف (همان‌طور که در پایگاه‌داده است) نگه داشته می‌شود تا مدیر بتواند برگرداند */
+        try{ await trashKeep(table, obj.target, obj.id); }catch(e){}
         await supaFetch(table + '?id=eq.' + encodeURIComponent(obj.id), {method:'DELETE'});
         return true;
       }
