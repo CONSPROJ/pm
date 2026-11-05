@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105141238">
+<meta name="pm-build" content="20261105141549">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29129,6 +29129,16 @@
   .df2-ln.over::before{background:var(--alert);} .df2-ln.over span{color:var(--alert);background:color-mix(in srgb, var(--alert) 10%, var(--surface));}
   .df2-ln.over u{text-decoration:none;font-weight:600;opacity:.8;}
   @media (max-width:640px){ .df2-r{grid-template-columns:1fr;gap:4px;} .df2-k{flex-direction:row;gap:8px;align-items:baseline;padding:0;} .df2-leg{margin:0;} }
+  /* متره: از نقشه */
+  .mqc{display:flex;flex-direction:column;gap:10px;margin:0 0 12px;}
+  .mqc-opt{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;} .mqc-opt label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+  .mqc-opt label.h{margin-inline-start:auto;color:var(--muted);} .mqc-opt label.h input{width:56px;height:28px;font-size:12px;text-align:center;}
+  .mqc-t .mq-tr{display:grid;grid-template-columns:28px minmax(140px,1.6fr) 80px 80px 80px minmax(130px,1.2fr) minmax(130px,1.4fr) 84px;gap:8px;align-items:center;cursor:pointer;}
+  .mqc-t .mq-tr.mq-th{cursor:default;} .mqc-t .mq-tr span{min-width:0;font-size:12px;} .mqc-t .mq-tr span:nth-child(7){white-space:normal;line-height:1.6;}
+  .mqc-in{font-style:normal;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:color-mix(in srgb, var(--ok) 13%, transparent);color:var(--ok);}
+  .mqc-w{display:block;font-size:10.5px;color:#b07512;}
+  .mqc-act{display:flex;gap:8px;} .mx-btn.pri{background:var(--sky) !important;color:#fff !important;border-color:transparent !important;}
+  @media (max-width:760px){ .mqc-t{overflow-x:auto;} .mqc-t .mq-tr{min-width:760px;} }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -78676,6 +78686,7 @@
     spFloors().forEach(f => { const fk = f.key, fl = f.label || fk; out.push({k: 'F ' + fk, t: fl + ' — کل طبقه'});
       spL1(fk).forEach(o => { if(o.unit){ out.push({k: 'U ' + o.v, t: fl + ' › ' + o.t}); spPartsOf(o.v).forEach(x => out.push({k: o.v + '/' + x, t: fl + ' › ' + o.t + ' › ' + x})); }
         else out.push({k: 'F ' + fk + '/' + o.v, t: fl + ' › ' + o.t}); }); }); }catch(e){} return out; };
+  window.spPPOf = k => { try{ return (sp.pp && sp.pp.get(k)) || null; }catch(e){ return null; } };
   window.spCadLink = async L => {
     const q = Object.assign({}, spPP(L.k));
     if(L.kind !== 'c') q.a = L.a; if(L.kind !== 'f') q.c = L.a;
@@ -79586,12 +79597,70 @@
   const mqCodeTo = (c, fk) => { const m = toEn(String(c || '')).match(/^([A-Za-z]+)-([^-]+)-(.+)$/); return m ? m[1] + '-' + mqFloorNo(fk) + '-' + m[3] : c; };
 
   /* ====== ۲) داده پایه ====== */
+  /* ====== از نقشه به داده پایه ======
+     هر فضا/ریز محلی که در نقشه‌خوان به آن پیوند خورده (شناسنامهٔ فضا: a کف، c سقف، pr محیط،
+     w دیوارهای کدگذاری‌شده، cn آیتم‌های شمرده‌شده) یک‌جا ردیف داده پایه می‌شود؛ ردیف‌ها نشان
+     `src` دارند و ورود دوباره همان‌ها را به‌روز می‌کند، تکراری نمی‌سازد. */
+  function mqCadLocs(L){
+    const out = [], P = k => (window.spPPOf ? window.spPPOf(k) : null);
+    const add = (k, z, s, t) => { const q = P(k); if(q && (q.a || q.c || q.pr || q.w || q.cn)) out.push({k, f: L.f, z, s, t, q}); };
+    if(!L.z) add('F ' + L.f, '', '', 'کل طبقه');
+    let Z = []; try{ Z = spL1(L.f); }catch(e){}
+    Z.forEach(o => { if(L.z && o.v !== L.z) return;
+      if(o.unit){ if(!L.s) add('U ' + o.v, o.v, '', o.t); try{ spPartsOf(o.v).forEach(pt => { if(!L.s || L.s === pt) add(o.v + '/' + pt, o.v, pt, o.t + ' › ' + pt); }); }catch(e){} }
+      else if(!L.s) add('F ' + L.f + '/' + o.v, o.v, '', o.t); });
+    return out; }
+  function mqCadHtml(){
+    const C = mqCadLocs(mq.loc), H = mq.cadH || 3;
+    if(!C.length) return '<div class="mq-card mqc"><div class="mq-ch"><b>از نقشه</b><small>هنوز هیچ فضایی از این ' + (mq.loc.z ? 'محل' : 'طبقه') + ' در نقشه‌خوان مساحت نگرفته است. در نقشه‌خوان محدوده بکشید و «ثبت در کارت فضا» را بزنید.</small></div></div>';
+    const has = x => { let n = 0; mq.b.forEach(e => { if(String(e.src || '').indexOf('cad|' + x.k + '|') === 0) n++; }); return n; };
+    return '<div class="mq-card mqc"><div class="mq-ch"><b>از نقشه</b><small>' + toFa(C.length) + ' محل با اندازه از نقشه‌خوان. انتخاب کنید چه چیزی ردیف داده پایه شود؛ ورود دوباره ردیف‌های قبلی همان محل را به‌روز می‌کند.</small></div>'
+      + '<div class="mqc-opt"><label><input type="checkbox" data-mqco="floor" checked> کف</label><label><input type="checkbox" data-mqco="slab" checked> سقف</label><label><input type="checkbox" data-mqco="wall" checked> دیوار</label><label><input type="checkbox" data-mqco="cnt" checked> آیتم‌های شمرده‌شده</label>'
+      + '<label class="h">ارتفاع دیوار (اگر در نقشه نیامده) <input type="text" inputmode="decimal" data-mqch="1" value="' + toFa(H) + '"> m</label></div>'
+      + '<div class="mq-tbl mqc-t"><div class="mq-tr mq-th"><span></span><span>محل</span><span>کف m²</span><span>سقف m²</span><span>محیط m</span><span>دیوار کدگذاری‌شده</span><span>آیتم‌ها</span><span>در داده پایه</span></div>'
+      + C.map((x, i) => { const q = x.q, n = has(x);
+          /* «کل طبقه» وقتی واحدها/محل‌ها هم اندازه دارند، پیش‌فرض انتخاب نیست (دوبار شمرده نشود) */
+          const whole = /^F [^/]+$/.test(x.k) && C.length > 1;
+          return '<label class="mq-tr" data-mqci="' + i + '"><span><input type="checkbox" data-mqcl="' + esc(x.k) + '"' + (whole ? '' : ' checked') + '></span><span><b>' + esc(x.t) + '</b>' + (whole ? '<small class="mqc-w">جمع کل؛ با واحدها دوبار شمرده می‌شود</small>' : '') + '</span>'
+            + '<span class="mq-c-n">' + (q.a ? qtFmt(q.a) : '<i>—</i>') + '</span><span class="mq-c-n">' + (q.c ? qtFmt(q.c) : '<i>—</i>') + '</span><span class="mq-c-n">' + (q.pr ? qtFmt(q.pr) : '<i>—</i>') + '</span>'
+            + '<span>' + (q.w ? toFa(q.w.n) + ' دیوار · ' + qtFmt(q.w.l) + ' m' + (q.w.h ? ' × ' + toFa(q.w.h) : '') : '<i>—</i>') + '</span>'
+            + '<span>' + (q.cn ? Object.keys(q.cn).map(c => esc(c) + ' ' + toFa(q.cn[c])).join('، ') : '<i>—</i>') + '</span>'
+            + '<span>' + (n ? '<em class="mqc-in">' + toFa(n) + ' ردیف</em>' : '<i>—</i>') + '</span></label>'; }).join('') + '</div>'
+      + '<div class="mqc-act"><button type="button" class="mx-btn pri" data-mqcgo="1">افزودن به داده پایه</button><button type="button" class="mx-btn" data-mqcad="0">بستن</button></div></div>';
+  }
+  async function mqCadImport(){
+    const C = mqCadLocs(mq.loc), box = document.querySelector('#qtArea .mqc'); if(!box) return;
+    const on = k => { const c = box.querySelector('[data-mqco="' + k + '"]'); return !!(c && c.checked); };
+    const pick = new Set(Array.from(box.querySelectorAll('[data-mqcl]')).filter(c => c.checked).map(c => c.dataset.mqcl));
+    const H = qtNum((box.querySelector('[data-mqch]') || {}).value) || 3; mq.cadH = H;
+    const bySrc = new Map(); mq.b.forEach((e, id) => { if(e.src) bySrc.set(e.src, id); });
+    const ids = []; let nNew = 0, nUp = 0;
+    const put = (x, tag, o) => { const src = 'cad|' + x.k + '|' + tag; let id = bySrc.get(src), e = id ? mq.b.get(id) : null;
+      const base = {f: x.f, src}; if(x.z) base.z = x.z; if(x.s) base.s = x.s;
+      if(e){ Object.assign(e, o, base); nUp++; } else { id = mqNid('b'); e = Object.assign({c: mqNextCode(o.t, x.f), q: 1}, o, base); mq.b.set(id, e); nNew++; }
+      ids.push(id); };
+    C.filter(x => pick.has(x.k)).forEach(x => { const q = x.q;
+      if(on('floor') && q.a) put(x, 'floor', {t: 'floor', l: Math.round(q.a * 100) / 100, w: 1, n: 'کف · از نقشه'});
+      if(on('slab') && (q.c || q.a)) put(x, 'slab', {t: 'slab', l: Math.round((q.c || q.a) * 100) / 100, w: 1, n: 'سقف · از نقشه'});
+      if(on('wall')){ if(q.w && q.w.l) put(x, 'wall', {t: 'wall', l: Math.round(q.w.l * 100) / 100, h: qtNum(q.w.h) || H, n: 'دیوار کدگذاری‌شده (' + toFa(q.w.n) + ')' + (q.w.c ? ' ' + q.w.c : '')});
+        else if(q.pr) put(x, 'wall', {t: 'wall', l: Math.round(q.pr * 100) / 100, h: H, n: 'دیوار محیطی · از نقشه'}); }
+      if(on('cnt') && q.cn) Object.keys(q.cn).forEach(c => { const n = +q.cn[c] || 0; if(n) put(x, 'cn:' + c, {t: 'oth', l: 1, q: n, n: c + ' · از نقشه'}); }); });
+    if(!ids.length){ showDialog('warn', 'چیزی برای افزودن نیست', 'محلی انتخاب نشده یا اندازهٔ انتخاب‌شده در نقشه ثبت نشده است.'); return; }
+    mq.cad = false; qtRender();
+    try{ await mqSaveMany(MQ_B, ids); shrToast((nNew ? toFa(nNew) + ' ردیف تازه' : '') + (nNew && nUp ? ' · ' : '') + (nUp ? toFa(nUp) + ' ردیف به‌روز شد' : '') + ' — از نقشه'); }
+    catch(err){ showDialog('err', 'ثبت کامل نشد', friendlyErr(err)); }
+  }
+  document.addEventListener('click', e => { const t = e.target; if(!t.closest || !t.closest('#qtArea')) return;
+    const b = t.closest('[data-mqcad]'); if(b){ mq.cad = b.dataset.mqcad === '1' ? !mq.cad : false; qtRender(); return; }
+    if(t.closest('[data-mqcgo]')) mqCadImport(); });
   function mqBaseHtml(){
     const ed = qtCanE(), L = mq.loc;
     const all = mqElsUnder(L);
     let wa = 0, wd = 0, sa = 0, no = 0, vv = 0; all.forEach(e => { const g = mqGeo(e); if(e.t === 'wall'){ wa += g.a; wd += g.d; no += (e.op || []).reduce((t, o) => t + (mqHas(o.q) ? qtNum(o.q) : 1), 0) * (mqHas(e.q) ? qtNum(e.q) : 1); } else if(e.t === 'slab' || e.t === 'floor') sa += g.a; vv += g.v; });
     let h = '<div class="mq-top">' + mqLocBar((L.f && ed ? '<button type="button" class="mx-btn" data-mqbcp="1">' + MQ_I.cp + '<span>کپی این ' + (L.z ? 'محل' : 'طبقه') + ' به طبقات دیگر</span></button>' : '')
+      + (L.f && ed ? '<button type="button" class="mx-btn' + (mq.cad ? ' on' : '') + '" data-mqcad="1" title="مساحت، محیط، دیوارها و آیتم‌های شمرده‌شده در نقشه‌خوان">' + MQ_I.cp + '<span>از نقشه</span></button>' : '')
       + '<button type="button" class="mx-btn" data-mqbx="1">' + MQ_I.xl + '<span>اکسل</span></button><span class="mq-sv"></span>') + '</div>';
+    if(mq.cad && L.f && ed) h += mqCadHtml();
     h += mqKpi([['دیوار ناخالص', qtFmt(wa) + ' m²', ''], ['کسورات بازشو', qtFmt(wd) + ' m²', toFa(no) + ' درب و پنجره', 'neg'], ['دیوار خالص', qtFmt(Math.max(0, wa - wd)) + ' m²', ''], ['سقف و کف', qtFmt(sa) + ' m²', ''], ['حجم', qtFmt(vv) + ' m³', '']]);
     if(mq.cp && mq.cp.k === 'b') h += mqCopyHtml();
     h += mqOpTypesHtml(ed);
