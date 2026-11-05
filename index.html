@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105141745">
+<meta name="pm-build" content="20261105142100">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -2759,6 +2759,7 @@
   .ds-side{--c:var(--sky);display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
   .ds-side.s-cons{--c:#6d5bb5;} .ds-side.s-emp{--c:#2a8a86;} .ds-side.s-ctr{--c:var(--warn);}
   .ds-side i{width:8px;height:8px;border-radius:50%;background:var(--c);}
+  .ds-side.auto{cursor:default;} .ds-auto{align-self:center;font-size:11px;color:var(--muted);}
   .ds-side.on{border-color:var(--c);background:color-mix(in srgb, var(--c) 12%, var(--surface));}
   .ds-body{display:flex;flex-direction:column;gap:12px;}
   .ds-blk{display:flex;flex-direction:column;gap:7px;} .ds-blk > u{text-decoration:none;font-size:12.5px;font-weight:800;}
@@ -29160,6 +29161,9 @@
   .sp-det{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;}
   .spd-h{display:flex;align-items:center;gap:12px;} .spd-h b{font-size:16px;display:block;} .spd-h small{font-size:11.5px;color:var(--muted);}
   .spd-st{margin:0;font-size:11.5px;} .spd-st b{color:var(--ink);}
+  .spd-cad{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;}
+  .spd-ch{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;} .spd-ch b{font-size:12.5px;} .spd-ch span{font-size:11px;color:var(--muted);margin-inline-start:auto;}
+  .spd-cr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:12px;padding:4px 0;border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent);} .spd-cr small{grid-column:1/-1;font-size:10.5px;color:var(--muted);}
   .sp-det .sp-fb{padding:0 !important;border:0 !important;background:none !important;margin:0 !important;}
 </style>
 <script>
@@ -64901,8 +64905,8 @@
         + sec('flow', 'وضعیت',
             chips(sel('a-dStatus','وضعیت سند', DESIGN_STATES, exact(r,'وضعیت مدرک')))
           /* همین حالا نزد کیست (طرف و نام)؛ در گردش سند «نزد …» و روزشمار از همین ثبت می‌شود */
-          + (isNewItem ? chips(sel('a-dSide','الان نزد کدام طرف است؟', ['داخل پروژه','مشاور','کارفرما','پیمانکار'], ''))
-              + f('a-dAt','نام شخص یا شرکت (نزد چه کسی)', '', false, (function(){ try{ designerListEnsure(''); }catch(e){} return 'designerList'; })()) : '')
+          /* «الان نزد کدام طرف» دیگر پرسیده نمی‌شود: از وضعیت سند (و نام نگه‌دارنده، اگر نوشته شود) خودش معلوم می‌شود */
+          + (isNewItem ? f('a-dAt','نزد چه کسی؟ <small>اختیاری — طرف از وضعیت سند خودش تعیین می‌شود</small>', '', false, (function(){ try{ designerListEnsure(''); }catch(e){} return 'designerList'; })()) : '')
           + chips(notifySel('a-dNotify', exact(r,'وضعیت ابلاغ'))), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'توضیحات', f('a-dNote','توضیحات', exact(r,'توضیحات'), true), 'one'));
@@ -66319,6 +66323,9 @@
         try{ const L = window.spCadLocs ? window.spCadLocs() : []; if(L.length) fr.contentWindow.postMessage({cadLocs: L}, location.origin); }catch(e){}
         go(); } });
       if(!window.__cadLinkOn){ window.__cadLinkOn = 1;
+        window.addEventListener('message', async ev => { const d = ev.data || {}; if(ev.origin !== location.origin || !d.cadQt || !window.mqFromCad) return;
+          const src = ev.source; try{ const n = await window.mqFromCad(d.cadQt.keys || [], d.cadQt.kind); src && src.postMessage({cadQtDone: d.cadQt.i, n}, location.origin); try{ shrToast(n ? toFa(n) + ' ردیف در داده پایهٔ متره ثبت یا به‌روز شد' : 'اندازه‌ای برای متره پیدا نشد'); }catch(e){} }
+          catch(e){ src && src.postMessage({cadQtDone: d.cadQt.i, err: (e && e.message) || 'ثبت نشد'}, location.origin); } });
         window.addEventListener('message', async ev => { const d = ev.data || {}; if(ev.origin !== location.origin || !d.cadLink || !window.spCadLink) return;
           const src = ev.source;
           try{ const t = await window.spCadLink(d.cadLink); src && src.postMessage({cadLinked: d.cadLink.k, t, kind: d.cadLink.kind, i: d.cadLink.i}, location.origin); try{ shrToast('مساحت در کارت «' + t + '» ثبت شد'); }catch(e){} }
@@ -67260,7 +67267,7 @@
       put(o,'عنوان مدرک','a-dTitle'); put(o,'شماره مدرک','a-dNo'); put(o,'رشته','a-dDisc');
       put(o,'ویرایش','a-dRev'); put(o,'طراح','a-dParty'); put(o,'تاریخ ارسال','a-dDate');
       put(o,'وضعیت مدرک','a-dStatus'); put(o,'وضعیت ابلاغ','a-dNotify');
-      { const sd = host.querySelector('.a-dSide'), at = host.querySelector('.a-dAt'); if(sd && sd.value) o.__dsSide0 = ({'داخل پروژه':'in','مشاور':'cons','کارفرما':'emp','پیمانکار':'ctr'})[sd.value] || ''; if(at && at.value.trim()) o.__dsAt0 = at.value.trim(); } put(o,'موعد اتمام','a-due');
+      { const at = host.querySelector('.a-dAt'); if(at && at.value.trim()){ o.__dsAt0 = at.value.trim(); try{ const ty = ctrTypeOf(o.__dsAt0); if(ty === 'emp' || ty === 'cons' || ty === 'ctr') o.__dsSide0 = ty; }catch(e){} } } put(o,'موعد اتمام','a-due');
       put(o,'مسئول','a-owner'); put(o,'توضیحات','a-dNote'); put(o,'لینک','a-link');
       { const hz = host.querySelector('.a-dSlZ'); if(hz){ let P = {fs: [], l1: ''}; try{ P = slParse(hz.value); }catch(e){}
           const sb = String((host.querySelector('.a-dSub') || {}).value || '').trim(), l1 = String(P.l1 || '').trim();
@@ -71462,7 +71469,7 @@
   function dsDefSide(st, r){
     if(dsDone(st)) return '';
     if(st === 'دریافت' || st === 'در حال بررسی') return 'in';
-    if(st === 'نزد مشاور/کارفرما') return 'cons';
+    if(st === 'نزد مشاور/کارفرما'){ try{ const ds = window.pjDesignSide && window.pjDesignSide(); if(ds === 'emp') return 'emp'; }catch(e){} return 'cons'; }
     const o = String(pick(r || {},AD.dOrigin) || '');
     return o === 'پیمانکار' ? 'ctr' : o === 'کارفرما' ? 'emp' : o === 'مشاور' ? 'cons' : 'in';
   }
@@ -72102,7 +72109,8 @@
     const box = m.querySelector('.ds-holdp'); if(!box) return;
     const fin = S.st && dsDone(S.st);
     box.hidden = !S.st || fin || !S.side;
-    box.querySelector('.ds-sides').innerHTML = DS_SIDES.map(x => '<button type="button" class="ds-side s-' + x.k + (S.side === x.k ? ' on' : '') + '" data-dsside="' + x.k + '"><i></i>' + x.t + '</button>').join('');
+    /* طرف از خود وضعیت سند معلوم است (`dsDefSide`)؛ فقط نشان داده می‌شود، دکمهٔ انتخاب لازم نیست */
+    box.querySelector('.ds-sides').innerHTML = (function(){ const x = dsSideOf(S.side); return x ? '<span class="ds-side s-' + x.k + ' on auto" title="از وضعیت سند"><i></i>' + x.t + '</span><small class="ds-auto">خودکار از وضعیت سند</small>' : ''; })();
     const inp = box.querySelector('.ds-at'), pk = box.querySelector('.ds-pk');
     if(S.side === 'in'){ try{ designerListEnsure(); }catch(e){} inp.setAttribute('data-list', 'engineerList'); inp.placeholder = 'نام نفر داخل پروژه'; pk.innerHTML = ''; return; }
     try{ dsAtListFill(S.side, S.disc); }catch(e){}
@@ -78674,7 +78682,7 @@
     await supaFetch('lists?kind=eq.' + encodeURIComponent(SP_PP_KIND) + '&value=like.' + encodeURIComponent(k.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
     const v = {}; if(o.a) v.a = o.a; if(o.u) v.u = o.u; if(o.n) v.n = o.n;
     /* از نقشه: مساحت سقف، محیط، نام فایل نقشه و داشتن تصویر — فرم مساحت آن‌ها را پاک نمی‌کند */
-    const prev = spPP(k); ['c', 'pr', 'f', 'im'].forEach(x => { const val = o[x] != null ? o[x] : prev[x]; if(val) v[x] = val; });
+    const prev = spPP(k); ['c', 'pr', 'f', 'im', 'w', 'cn'].forEach(x => { const val = o[x] != null ? o[x] : prev[x]; if(val) v[x] = val; });
     if(Object.keys(v).length) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: SP_PP_KIND, value: k + '¦' + JSON.stringify(v)}]});
     if(!sp.pp) sp.pp = new Map();
     if(Object.keys(v).length) sp.pp.set(k, v); else sp.pp.delete(k);
@@ -78706,8 +78714,8 @@
   }
   window.spCadLocs = () => { const out = []; try{ if(!spCanE()) return out;
     spFloors().forEach(f => { const fk = f.key, fl = f.label || fk; out.push({k: 'F ' + fk, t: fl + ' — کل طبقه'});
-      spL1(fk).forEach(o => { if(o.unit){ out.push({k: 'U ' + o.v, t: fl + ' › ' + o.t}); spPartsOf(o.v).forEach(x => out.push({k: o.v + '/' + x, t: fl + ' › ' + o.t + ' › ' + x})); }
-        else out.push({k: 'F ' + fk + '/' + o.v, t: fl + ' › ' + o.t}); }); }); }catch(e){} return out; };
+      spL1(fk).forEach(o => { if(o.unit){ const tp = String(((sp.units.get(o.v) || {}).tp) || '').trim(); out.push({k: 'U ' + o.v, t: fl + ' › ' + o.t, tp, f: fk}); spPartsOf(o.v).forEach(x => out.push({k: o.v + '/' + x, t: fl + ' › ' + o.t + ' › ' + x, tp, pt: x, f: fk})); }
+        else out.push({k: 'F ' + fk + '/' + o.v, t: fl + ' › ' + o.t, pt: o.t, f: fk}); }); }); }catch(e){} return out; };
   window.spPPOf = k => { try{ return (sp.pp && sp.pp.get(k)) || null; }catch(e){ return null; } };
   window.spCadLink = async L => {
     const q = Object.assign({}, spPP(L.k));
@@ -78857,6 +78865,16 @@
     const det = '<div class="spd-h"><span class="spb-k lg" dir="ltr">' + esc(/^\d+$/.test(cur.key) ? toFa(cur.key) : cur.key) + '</span><div><b>' + esc(cur.label) + '</b><small>'
         + esc([U.length ? toFa(U.length) + ' واحد' : '', spZonesOwn(cur.key).length ? toFa(spZonesOwn(cur.key).length) + ' محل' : '', q && q.a ? 'کف ' + toFa(Math.round(q.a)) + ' m² (از نقشه)' : ''].filter(Boolean).join(' · ')) + '</small></div></div>'
       + (U.length ? '<div class="spd-st">' + SP_ST.map(([k, t, tn]) => '<span class="st-' + k + '"><i></i>' + t + ' <b>' + toFa(cnt(k)) + '</b></span>').join('') + '</div>' : '')
+      + (function(){ /* اندازه‌های ثبت‌شده از نقشه‌خوان برای همین طبقه: هر واحد/محل یک خط؛ واحد بی‌اندازه = جمع اجزایش */
+          const L = []; let tot = 0;
+          (cur.units || []).forEach(u => { const q0 = P('U ' + u); let a = q0 && q0.a ? +q0.a : 0, parts = [];
+            try{ spPartsOf(u).forEach(pt => { const q1 = P(u + '/' + pt); if(q1 && q1.a) parts.push([pt, +q1.a]); }); }catch(e){}
+            if(!a && parts.length) a = parts.reduce((t, x) => t + x[1], 0);
+            if(a || parts.length) L.push({t: spUnitLb(u), a, parts}); tot += a; });
+          spZonesOwn(cur.key).forEach(z => { const q1 = P('F ' + cur.key + '/' + z); if(q1 && q1.a){ L.push({t: z, a: +q1.a, parts: []}); tot += +q1.a; } });
+          if(!L.length) return '';
+          return '<div class="spd-cad"><div class="spd-ch"><b>مساحت‌ها از نقشه</b><span>' + toFa(L.length) + ' محل · جمع ' + toFa(Math.round(tot * 10) / 10) + ' m²</span></div>'
+            + L.map(x => '<div class="spd-cr"><span>' + esc(x.t) + '</span><b>' + (x.a ? toFa(Math.round(x.a * 10) / 10) + ' m²' : '—') + '</b>' + (x.parts.length ? '<small>' + x.parts.map(p0 => esc(p0[0]) + ' ' + toFa(Math.round(p0[1] * 10) / 10)).join(' · ') + '</small>' : '') + '</div>').join('') + '</div>'; })()
       + spFloorBody(cur);
     return '<div class="sp-split"><div class="sp-bld"><div class="spb-hd"><b>نمای ساختمان</b><span class="spb-lg">' + SP_ST.map(([k, t]) => '<span class="st-' + k + '"><i></i>' + t + '</span>').join('') + '</span></div>' + rows + '</div><div class="sp-det">' + det + '</div></div>';
   }
@@ -79680,23 +79698,38 @@
             + '<span>' + (n ? '<em class="mqc-in">' + toFa(n) + ' ردیف</em>' : '<i>—</i>') + '</span></label>'; }).join('') + '</div>'
       + '<div class="mqc-act"><button type="button" class="mx-btn pri" data-mqcgo="1">افزودن به داده پایه</button><button type="button" class="mx-btn" data-mqcad="0">بستن</button></div></div>';
   }
-  async function mqCadImport(){
-    const C = mqCadLocs(mq.loc), box = document.querySelector('#qtArea .mqc'); if(!box) return;
-    const on = k => { const c = box.querySelector('[data-mqco="' + k + '"]'); return !!(c && c.checked); };
-    const pick = new Set(Array.from(box.querySelectorAll('[data-mqcl]')).filter(c => c.checked).map(c => c.dataset.mqcl));
-    const H = qtNum((box.querySelector('[data-mqch]') || {}).value) || 3; mq.cadH = H;
+  /* کلید شناسنامهٔ فضا ← طبقه/محل/محل جزء متره */
+  function mqKeyLoc(k){
+    let m = /^F ([^/]+)(?:\/(.+))?$/.exec(k); if(m) return {f: m[1], z: m[2] || '', s: ''};
+    m = /^U (.+)$/.exec(k); const uz = m ? m[1] : String(k).split('/')[0], pt = m ? '' : String(k).split('/').slice(1).join('/');
+    let fk = ''; try{ const o = (window.spCadLocs ? window.spCadLocs() : []).find(x => x.k === k); if(o && o.f) fk = o.f; }catch(e){}
+    return fk ? {f: fk, z: uz, s: pt} : null; }
+  /* از نقشه‌خوان (دکمهٔ «به متره»): همان محل‌هایی که ثبت شدند، یک‌جا ردیف داده پایه می‌شوند */
+  window.mqFromCad = async (keys, kind) => {
+    try{ await mqEnsure(); }catch(e){}
+    const C = (keys || []).map(k => { const L = mqKeyLoc(k), q = window.spPPOf ? window.spPPOf(k) : null; return L && q ? Object.assign({k, q}, L) : null; }).filter(Boolean);
+    const r = mqCadRows(C, {floor: kind !== 'c', slab: kind !== 'f', wall: true, cnt: true}, mq.cadH || 3);
+    if(!r.ids.length) return 0; try{ await mqSaveMany(MQ_B, r.ids); }catch(e){ throw e; } try{ qtRender(); }catch(e){} return r.ids.length; };
+  function mqCadRows(C, on, H){
     const bySrc = new Map(); mq.b.forEach((e, id) => { if(e.src) bySrc.set(e.src, id); });
     const ids = []; let nNew = 0, nUp = 0;
     const put = (x, tag, o) => { const src = 'cad|' + x.k + '|' + tag; let id = bySrc.get(src), e = id ? mq.b.get(id) : null;
       const base = {f: x.f, src}; if(x.z) base.z = x.z; if(x.s) base.s = x.s;
       if(e){ Object.assign(e, o, base); nUp++; } else { id = mqNid('b'); e = Object.assign({c: mqNextCode(o.t, x.f), q: 1}, o, base); mq.b.set(id, e); nNew++; }
       ids.push(id); };
-    C.filter(x => pick.has(x.k)).forEach(x => { const q = x.q;
-      if(on('floor') && q.a) put(x, 'floor', {t: 'floor', l: Math.round(q.a * 100) / 100, w: 1, n: 'کف · از نقشه'});
-      if(on('slab') && (q.c || q.a)) put(x, 'slab', {t: 'slab', l: Math.round((q.c || q.a) * 100) / 100, w: 1, n: 'سقف · از نقشه'});
-      if(on('wall')){ if(q.w && q.w.l) put(x, 'wall', {t: 'wall', l: Math.round(q.w.l * 100) / 100, h: qtNum(q.w.h) || H, n: 'دیوار کدگذاری‌شده (' + toFa(q.w.n) + ')' + (q.w.c ? ' ' + q.w.c : '')});
+    C.forEach(x => { const q = x.q;
+      if(on.floor && q.a) put(x, 'floor', {t: 'floor', l: Math.round(q.a * 100) / 100, w: 1, n: 'کف · از نقشه'});
+      if(on.slab && (q.c || q.a)) put(x, 'slab', {t: 'slab', l: Math.round((q.c || q.a) * 100) / 100, w: 1, n: 'سقف · از نقشه'});
+      if(on.wall){ if(q.w && q.w.l) put(x, 'wall', {t: 'wall', l: Math.round(q.w.l * 100) / 100, h: qtNum(q.w.h) || H, n: 'دیوار کدگذاری‌شده (' + toFa(q.w.n) + ')' + (q.w.c ? ' ' + q.w.c : '')});
         else if(q.pr) put(x, 'wall', {t: 'wall', l: Math.round(q.pr * 100) / 100, h: H, n: 'دیوار محیطی · از نقشه'}); }
-      if(on('cnt') && q.cn) Object.keys(q.cn).forEach(c => { const n = +q.cn[c] || 0; if(n) put(x, 'cn:' + c, {t: 'oth', l: 1, q: n, n: c + ' · از نقشه'}); }); });
+      if(on.cnt && q.cn) Object.keys(q.cn).forEach(c => { const n = +q.cn[c] || 0; if(n) put(x, 'cn:' + c, {t: 'oth', l: 1, q: n, n: c + ' · از نقشه'}); }); });
+    return {ids, nNew, nUp}; }
+  async function mqCadImport(){
+    const C = mqCadLocs(mq.loc), box = document.querySelector('#qtArea .mqc'); if(!box) return;
+    const on = k => { const c = box.querySelector('[data-mqco="' + k + '"]'); return !!(c && c.checked); };
+    const pick = new Set(Array.from(box.querySelectorAll('[data-mqcl]')).filter(c => c.checked).map(c => c.dataset.mqcl));
+    const H = qtNum((box.querySelector('[data-mqch]') || {}).value) || 3; mq.cadH = H;
+    const {ids, nNew, nUp} = mqCadRows(C.filter(x => pick.has(x.k)), {floor: on('floor'), slab: on('slab'), wall: on('wall'), cnt: on('cnt')}, H);
     if(!ids.length){ showDialog('warn', 'چیزی برای افزودن نیست', 'محلی انتخاب نشده یا اندازهٔ انتخاب‌شده در نقشه ثبت نشده است.'); return; }
     mq.cad = false; qtRender();
     try{ await mqSaveMany(MQ_B, ids); shrToast((nNew ? toFa(nNew) + ' ردیف تازه' : '') + (nNew && nUp ? ' · ' : '') + (nUp ? toFa(nUp) + ' ردیف به‌روز شد' : '') + ' — از نقشه'); }

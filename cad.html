@@ -82,6 +82,7 @@
 .cnt-p .cf :is(input,select){width:100%;min-width:0;height:30px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:inherit;padding:0 6px;}
 .cnt-p small b[dir]{unicode-bidi:isolate;white-space:nowrap;font-family:ui-monospace,monospace;} .cnt-p .cf-pv{font-size:11px;color:var(--muted);background:color-mix(in srgb, var(--line) 35%, transparent);border-radius:8px;padding:6px 8px;} .cnt-p .cf-pv b{color:inherit;font-family:ui-monospace,monospace;font-size:12px;}
 .cnt-p{max-height:calc(100% - 24px);overflow:auto;}
+.lp-qk{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;color:var(--muted);} .lp-qk select{height:32px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:inherit;padding:0 6px;max-width:46%;} .lp-qk .btn{height:32px;font-size:12px;} .lp-qn{font-size:11px;}
 .mk .wl{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;} .mk .wl .btn{height:26px;font-size:11px;padding:0 9px;}
 .lp-g label.lp-c{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font-size:13px;cursor:pointer;} .lp-g label.lp-c:hover{background:var(--field);} .lp-g label.lp-c input{width:16px;height:16px;}
 .lp-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line);} .lp-ft small{color:var(--muted);font-size:11px;}
@@ -551,6 +552,7 @@ function pickAt(cX, cY){
 S.locs = [];
 window.addEventListener('message', e => { if(e.origin !== location.origin) return; const d = e.data || {};
   if(Array.isArray(d.cadLocs)){ S.locs = d.cadLocs; render(); }
+  if(d.cadQtDone != null){ const m = S.marks[d.cadQtDone]; if(m){ delete m.qtBusy; m.qtN = d.err ? 0 : (d.n || 0); m.lkErr = d.err ? 'متره: ' + d.err : ''; save(); render(); } }
   if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.ldone = m.ldone || {}; m.ldone[d.cadLinked] = d.t || 1; m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; m.lkErr = ''; if(!Array.isArray(m.lsel)) m.lsel = [d.cadLinked]; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
   if(d.cadLinkErr){ const m = S.marks[d.i]; if(m){ m.lkErr = 'ثبت نشد: ' + (d.msg || 'خطای سرور') + ' — دوباره بزنید'; render(); } } });
 /* محل در سامانه: فهرست جست‌وجوپذیر به تفکیک طبقه (به‌جای select)؛ انتخاب در خود محدوده می‌ماند تا با هر بازسازی گم نشود */
@@ -562,17 +564,23 @@ function linkHtml(m, i){
   if(!S.locs.length || !(m.type === 'area' || m.type === 'hatch')) return '';
   const L0 = lselOf(m), sel = L0.length, kd = m.lkSel || m.lk || 'f', dn = m.ldone || (m.loc ? {[m.loc]: m.locT || 1} : {});
   const nDone = L0.filter(k => dn[k]).length;
-  return '<div class="lk"><button type="button" class="lk-pick' + (sel ? ' on' : '') + '" data-lkpick="' + i + '">' + (sel ? (sel === 1 ? escH(locT(L0[0])) : toFa(sel) + ' محل: ' + escH(L0.slice(0, 3).map(k => locT(k).split(/ — | › /).pop()).join('، ')) + (sel > 3 ? '…' : '')) : 'انتخاب محل در سامانه… (یک یا چند)') + '</button>'
+  return '<div class="lk"><button type="button" class="lk-pick' + (sel ? ' on' : '') + '" data-lkpick="' + i + '">' + (sel ? (sel === 1 ? escH(locT(L0[0])) : toFa(sel) + ' محل: ' + escH(L0.slice(0, 3).map(k => { const P = locT(k).split(/ — | › /); return P.length > 2 ? P.slice(-2).join(' ') : P.pop(); }).join('، ')) + (sel > 3 ? '…' : '')) : 'انتخاب محل در سامانه… (یک یا چند)') + '</button>'
     + '<span class="lk-k">' + [['f', 'کف'], ['c', 'سقف'], ['b', 'هر دو']].map(([v, t]) => '<button type="button" data-lkk="' + i + ':' + v + '" class="' + (kd === v ? 'on' : '') + '">' + t + '</button>').join('') + '</span>'
-    + '<button type="button" class="btn pri" data-lk="' + i + '"' + (sel ? '' : ' disabled') + '>' + (nDone && nDone === sel ? 'ثبت دوباره' : (sel > 1 ? 'ثبت در ' + toFa(sel) + ' کارت' : 'ثبت در کارت')) + '</button></div>'
+    + '<button type="button" class="btn pri" data-lk="' + i + '"' + (sel ? '' : ' disabled') + '>' + (nDone && nDone === sel ? 'ثبت دوباره' : (sel > 1 ? 'ثبت در ' + toFa(sel) + ' کارت' : 'ثبت در کارت')) + '</button>'
+    + '<button type="button" class="btn" data-lkqt="' + i + '"' + (sel ? '' : ' disabled') + ' title="ثبت در کارت فضا و افزودن کف/سقف/دیوار/آیتم‌ها به داده پایهٔ متره">+ متره</button></div>'
     + (m.lkErr ? '<small class="lk-err">' + escH(m.lkErr) + '</small>' : '')
+    + (m.qtBusy ? '<small class="lk-ok">در حال افزودن به متره…</small>' : m.qtN ? '<small class="lk-ok">✓ ' + toFa(m.qtN) + ' ردیف در متره</small>' : '')
     + (nDone ? '<small class="lk-ok">✓ ثبت شد برای ' + (nDone === 1 ? escH(locT(L0.find(k => dn[k]))) : toFa(nDone) + ' از ' + toFa(sel) + ' محل') + '</small>' : '');
 }
 function locPickOpen(i){
   let ov = document.getElementById('locPick'); if(ov) ov.remove();
   ov = document.createElement('div'); ov.id = 'locPick';
   const m0 = S.marks[i] || {}; const picked = new Set(lselOf(m0));
-  ov.innerHTML = '<div class="lp"><div class="lp-h"><b>محل در سامانه <small style="font-weight:500;color:var(--muted)">یک یا چند محل — مثلاً یک تیپ برای چند طبقه</small></b><button type="button" data-lpx aria-label="بستن">✕</button></div><input type="search" placeholder="جست‌وجو: طبقه، واحد، محل… (عدد فارسی یا انگلیسی)" class="lp-q"><div class="lp-l"></div>'
+  ov.innerHTML = '<div class="lp"><div class="lp-h"><b>محل در سامانه <small style="font-weight:500;color:var(--muted)">یک یا چند محل — مثلاً یک تیپ برای چند طبقه</small></b><button type="button" data-lpx aria-label="بستن">✕</button></div><input type="search" placeholder="جست‌وجو: طبقه، واحد، محل… (عدد فارسی یا انگلیسی)" class="lp-q">' + (function(){ const T = Array.from(new Set(S.locs.map(o => o.tp).filter(Boolean))).sort(), P = Array.from(new Set(S.locs.map(o => o.pt).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fa'));
+    if(!T.length && !P.length) return '';
+    return '<div class="lp-qk"><span>انتخاب سریع:</span>' + (T.length ? '<select data-lpt><option value="">همهٔ تیپ‌ها</option>' + T.map(t => '<option>' + escH(t) + '</option>').join('') + '</select>' : '')
+      + (P.length ? '<select data-lpp><option value="">همهٔ فضاها / محل جزءها</option>' + P.map(t => '<option>' + escH(t) + '</option>').join('') + '</select>' : '')
+      + '<button type="button" class="btn" data-lpqk>انتخاب همه</button><small class="lp-qn"></small></div>'; })() + '<div class="lp-l"></div>'
     + '<div class="lp-ft"><small class="lp-n"></small><span style="display:flex;gap:6px"><button type="button" class="btn" data-lpall>همهٔ نتیجه‌ها</button><button type="button" class="btn pri" data-lpok>تمام</button></span></div></div>';
   document.body.appendChild(ov);
   const L = ov.querySelector('.lp-l'), q = ov.querySelector('.lp-q');
@@ -582,19 +590,26 @@ function locPickOpen(i){
     S.locs.filter(o => !t || t.split(/\s+/).every(w => nz(o.t).indexOf(w) !== -1)).forEach(o => { const g = String(o.t).split(/ — | › /)[0]; if(!G.has(g)) G.set(g, []); G.get(g).push(o); });
     L.innerHTML = G.size ? Array.from(G.entries()).map(([g, A]) => '<div class="lp-g"><b>' + escH(g) + '</b>' + A.map(o => { const rest = o.t.slice(g.length).replace(/^\s*(—|›)\s*/, '') || 'کل طبقه'; return '<label class="lp-c"><input type="checkbox" data-lpk="' + escH(o.k) + '"' + (picked.has(o.k) ? ' checked' : '') + '>' + escH(rest) + '</label>'; }).join('') + '</div>').join('') : '<p class="lp-0">موردی پیدا نشد.</p>';
     ov.querySelector('.lp-n').textContent = picked.size ? toFa(picked.size) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده'; };
+  /* انتخاب سریع: «همهٔ آشپزخانه‌های تیپ A» در همهٔ طبقه‌ها با یک کلیک */
+  const lpQuick = () => { const tp = (ov.querySelector('[data-lpt]') || {}).value || '', pt = (ov.querySelector('[data-lpp]') || {}).value || '';
+    return S.locs.filter(o => (!tp || o.tp === tp) && (pt ? o.pt === pt : !!tp && /^U /.test(o.k))); };
+  const qkN = () => { const n = ov.querySelector('.lp-qn'); if(!n) return; const tp = (ov.querySelector('[data-lpt]') || {}).value, pt = (ov.querySelector('[data-lpp]') || {}).value; n.textContent = (tp || pt) ? toFa(lpQuick().length) + ' محل' : ''; };
+  ov.addEventListener('change', e => { if(e.target.matches('[data-lpt], [data-lpp]')) qkN(); });
   paint(); q.oninput = paint; setTimeout(() => { try{ q.focus(); }catch(e){} }, 30);
   const commit = () => { const m = S.marks[i]; if(m){ m.lsel = Array.from(picked); m.locSel = m.lsel[0] || ''; m.lkErr = ''; save(); render(); } ov.remove(); };
   ov.addEventListener('change', e => { const b = e.target.closest('[data-lpk]'); if(!b) return; if(b.checked) picked.add(b.dataset.lpk); else picked.delete(b.dataset.lpk); ov.querySelector('.lp-n').textContent = picked.size ? toFa(picked.size) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده'; });
   ov.addEventListener('click', e => { if(e.target === ov || e.target.closest('[data-lpx]')){ ov.remove(); return; }
     if(e.target.closest('[data-lpok]')){ commit(); return; }
+    if(e.target.closest('[data-lpqk]')){ const M = lpQuick(); M.forEach(o => picked.add(o.k)); paint(); ov.querySelector('.lp-n').textContent = toFa(picked.size) + ' محل انتخاب شده'; return; }
     if(e.target.closest('[data-lpall]')){ ov.querySelectorAll('[data-lpk]').forEach(c => { c.checked = true; picked.add(c.dataset.lpk); }); ov.querySelector('.lp-n').textContent = toFa(picked.size) + ' محل انتخاب شده'; return; } });
   q.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); commit(); } });
 }
 $('#list').addEventListener('click', async e => {
   const pk = e.target.closest('[data-lkpick]'); if(pk){ e.stopPropagation(); locPickOpen(+pk.dataset.lkpick); return; }
   const kk = e.target.closest('[data-lkk]'); if(kk){ e.stopPropagation(); const [i, v] = kk.dataset.lkk.split(':'); const m = S.marks[+i]; if(m){ m.lkSel = v; save(); render(); } return; }
-  const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
-  const i = +b.dataset.lk, m = S.marks[i]; if(!m) return;
+  const bq = e.target.closest('[data-lkqt]');
+  const b = bq || e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
+  const i = +(bq ? b.dataset.lkqt : b.dataset.lk), m = S.marks[i]; if(!m) return;
   const keys = lselOf(m), kind = m.lkSel || m.lk || 'f';
   if(!keys.length){ locPickOpen(i); return; }
   b.disabled = true; b.textContent = 'در حال ثبت…'; m.lkErr = '';
@@ -603,7 +618,10 @@ $('#list').addEventListener('click', async e => {
   /* دیوارها و آیتم‌های شمرده‌شدهٔ داخل همین محدوده هم خلاصه‌وار به کارت فضا می‌روند */
   const extra = markExtra(m);
   for(const k of keys){ window.parent.postMessage({cadLink: Object.assign({i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}, extra)}, location.origin);
-    await new Promise(r => setTimeout(r, 350)); } }, true);
+    await new Promise(r => setTimeout(r, 350)); }
+  /* «+ متره»: بعد از ثبت همهٔ کارت‌ها، همان محل‌ها ردیف داده پایهٔ متره می‌شوند */
+  if(bq){ const t0 = Date.now(); while(Date.now() - t0 < 9000 && !keys.every(k => (m.ldone || {})[k])) await new Promise(r => setTimeout(r, 250));
+    m.qtBusy = 1; render(); window.parent.postMessage({cadQt: {i, keys, kind}}, location.origin); } }, true);
 /* گوشی: دابل‌کلیک و Enter نیست؛ حین کشیدن، نوار «تمام / نقطهٔ قبل / لغو» */
 const dbar = document.createElement('div'); dbar.className = 'dbar'; dbar.hidden = true;
 dbar.innerHTML = '<button type="button" class="btn pri" data-db="ok">✓ تمام</button><button type="button" class="btn" data-db="undo">↶ نقطهٔ قبل</button><button type="button" class="btn" data-db="x">✕ لغو</button>';
