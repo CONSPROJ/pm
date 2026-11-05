@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105182908">
+<meta name="pm-build" content="20261105195334">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29356,6 +29356,17 @@
   .spa-in{width:76px;height:30px;text-align:center;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:0 6px;}
   .spa-in.busy{opacity:.55;} .spa-in.ok{border-color:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb, var(--ok) 25%, transparent);}
   .spa-h{display:block;padding:8px 12px 10px;font-size:10.5px;color:var(--muted);line-height:1.8;}
+  /* QR فضاها و جلسهٔ هماهنگی */
+  .spd-qr{flex:none;height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;letter-spacing:.3px;}
+  .spd-qr:hover{border-color:var(--sky);color:var(--sky);} .spb-hd .spd-qr{margin-inline-start:auto;} .spb-hd .spd-qr + .spb-lg{margin-inline-start:8px;}
+  .spd-h .spd-qr{order:9;margin-inline-start:auto;} .spq-row{display:flex;justify-content:flex-start;margin:0 0 10px;}
+  .qrs header{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;border-bottom:2px solid #1b1f24;padding-bottom:8px;} .qrs header b{font-size:16px;} .qrs header small{font-size:11px;color:#556;}
+  .qrs-g{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:12px;}
+  .qrs-c{border:1px dashed #b8bec8;border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;break-inside:avoid;page-break-inside:avoid;}
+  .qrs-q{width:120px;height:120px;} .qrs-q svg{width:100%;height:100%;display:block;} .qrs-c b{font-size:13px;} .qrs-c small{font-size:10px;color:#667;}
+  .mtg-pp{font-size:11.5px;color:#334;margin:0 0 6px;} .mtg h2 small{font-size:10px;color:#889;font-weight:600;}
+  :is(html,#z0) :is(body,#z1) .mtg-t{table-layout:fixed !important;width:100% !important;display:table !important;} .mtg-t thead{display:table-header-group !important;} .mtg-t tbody{display:table-row-group !important;} .mtg-t tr{display:table-row !important;} .mtg-t th, .mtg-t td{display:table-cell !important;}
+  .mtg-t td.c, .mtg-t th.c{width:30px;text-align:center;} .mtg-t th:nth-child(3){width:24%;} .mtg-t th:nth-child(4){width:20%;} .mtg-t tr.off td{opacity:.4;text-decoration:line-through;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -79052,7 +79063,7 @@
     catch(err){ i.classList.remove('busy'); showDialog('err', 'ثبت نشد', friendlyErr(err)); } });
   function spFloorBody(f){
     const units = f.units || [], zs = spZonesOwn(f.key);
-    let h = '';
+    let h = window.innerWidth < 1180 ? '<div class="spq-row"><button type="button" class="spd-qr" data-spqr="' + esc(f.key) + '">کد QR این طبقه' + (units.length ? ' و ' + toFa(units.length) + ' واحد' : '') + '</button></div>' : '';
     {
       h += '<div class="sp-fb">';
       if(units.length) h += '<div class="sp-sh">واحدها <em>محل سطح ۱؛ اجزای هر واحد محل جزء</em></div><div class="sp-us">' + units.map(spChip).join('') + '</div>';
@@ -79066,6 +79077,37 @@
     h += spAreasHtml(f);
     return h;
   }
+  /* ====== کد QR طبقه و واحد ======
+     هر طبقه/واحد یک کد که روی دیوار کارگاه نصب می‌شود؛ اسکن ← همین سامانه، بخش فضاها، همان طبقه و کارت واحد.
+     کتابخانهٔ QR (MIT) فقط وقتی لازم شد بارگذاری می‌شود. */
+  let qrLib = null;
+  function qrLoad(){ if(window.qrcode) return Promise.resolve(); if(qrLib) return qrLib;
+    qrLib = new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'lib/qrcode-1.4.4.js'; sc.onload = ok; sc.onerror = () => { qrLib = null; no(new Error('کتابخانهٔ QR بارگذاری نشد')); }; document.head.appendChild(sc); }); return qrLib; }
+  const spLink = (fk, u) => location.origin + location.pathname + '?sp=' + encodeURIComponent(fk) + (u ? '&u=' + encodeURIComponent(u) : '');
+  function qrSvg(txt){ const q = window.qrcode(0, 'M'); q.addData(txt); q.make(); return q.createSvgTag({cellSize: 4, margin: 2, scalable: true}); }
+  async function spQrSheet(list){
+    try{ await qrLoad(); }catch(e){ showDialog('err', 'QR', friendlyErr(e)); return; }
+    const pj = (function(){ try{ return pjCur(); }catch(e){ return {}; } })();
+    const html = '<section class="qrs"><header><b>' + esc(pj.name || 'پروژه') + '</b><small>کد QR فضاها — اسکن کنید تا کارت همین فضا در سامانه باز شود</small></header><div class="qrs-g">'
+      + list.map(x => '<div class="qrs-c"><div class="qrs-q">' + qrSvg(spLink(x.f, x.u)) + '</div><b>' + esc(x.t) + '</b><small>' + esc(x.s || '') + '</small></div>').join('') + '</div></section>';
+    let m = document.getElementById('qrM'); if(m) m.remove();
+    m = document.createElement('div'); m.id = 'qrM'; m.className = 'modal-bg';
+    m.innerHTML = '<div class="modal wkr-m"><div class="wkr-bar"><b>کد QR فضاها</b><span>' + toFa(list.length) + ' برچسب · چاپ کنید و در کارگاه نصب کنید</span><button type="button" class="xlh-b pri" data-qrp="1">چاپ</button><button type="button" class="ico-btn" data-qrx="1" aria-label="بستن">✕</button></div><div class="wkr-body">' + html + '</div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-qrx]')){ m.remove(); return; }
+      if(e.target.closest('[data-qrp]')){ const area = document.getElementById('printArea'); area.innerHTML = html; const old = document.title; document.title = 'QR فضاها - ' + (pj.name || '');
+        window.addEventListener('afterprint', () => { document.title = old; area.innerHTML = ''; }, {once: true}); window.print(); } });
+  }
+  function spQrList(fk){ const out = []; spFloors().forEach(f => { if(fk && f.key !== fk) return; out.push({f: f.key, t: f.label, s: (f.units || []).length ? toFa(f.units.length) + ' واحد' : 'طبقه'});
+    (f.units || []).forEach(u => { const o = sp.units.get(u) || {}; out.push({f: f.key, u, t: spUnitLb(u), s: f.label + (o.tp ? ' · تیپ ' + o.tp : '')}); }); }); return out; }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-spqr]'); if(!b) return; e.preventDefault(); e.stopPropagation();
+    const v = b.dataset.spqr; if(v === '*') spQrSheet(spQrList('')); else if(v.indexOf('u:') === 0){ const u = v.slice(2), f = spFloorOf(u); spQrSheet([{f: f ? f.key : '', u, t: spUnitLb(u), s: f ? f.label : ''}]); } else spQrSheet(spQrList(v)); }, true);
+  /* باز شدن از QR: ?sp=طبقه&u=واحد */
+  (function(){ let qs; try{ qs = new URLSearchParams(location.search); }catch(e){ return; } const fk = qs.get('sp'); if(!fk) return; const u = qs.get('u') || '';
+    let n = 0; const go = () => { n++; try{ if(!activeUserName() || !spFloors().length){ if(n < 40) setTimeout(go, 500); return; }
+      switchTab('tasks'); window.wsSet && window.wsSet('sp'); sp.tab = 'fl'; sp.open = fk; sp.unit = u; spRender();
+      try{ history.replaceState(null, '', location.pathname); }catch(e){} }catch(e){ if(n < 40) setTimeout(go, 500); } };
+    setTimeout(go, 1500); })();
   /* ====== دسکتاپ: نمای ساختمان (طبقه‌ها روی هم، هر واحد یک خانه به رنگ وضعیت فروش) + جزئیات طبقهٔ انتخابی ====== */
   function spBldHtml(){
     const F = spFloors(); if(!F.length) return '';
@@ -79083,11 +79125,11 @@
         + '<span class="spb-a">' + (q && q.a ? toFa(Math.round(q.a)) + '<small>m²</small>' : '') + '</span></button>'; }).join('');
     const U = cur.units || [], q = P('F ' + cur.key);
     const cnt = k => U.filter(u => ((sp.units.get(u) || {}).st || 'free') === k).length;
-    const det = '<div class="spd-h"><span class="spb-k lg" dir="ltr">' + esc(/^\d+$/.test(cur.key) ? toFa(cur.key) : cur.key) + '</span><div><b>' + esc(cur.label) + '</b><small>'
+    const det = '<div class="spd-h"><button type="button" class="spd-qr" data-spqr="' + esc(cur.key) + '" title="کد QR این طبقه و واحدهایش برای نصب در کارگاه">QR</button><span class="spb-k lg" dir="ltr">' + esc(/^\d+$/.test(cur.key) ? toFa(cur.key) : cur.key) + '</span><div><b>' + esc(cur.label) + '</b><small>'
         + esc([U.length ? toFa(U.length) + ' واحد' : '', spZonesOwn(cur.key).length ? toFa(spZonesOwn(cur.key).length) + ' محل' : '', q && q.a ? 'کف ' + toFa(Math.round(q.a)) + ' m² (از نقشه)' : ''].filter(Boolean).join(' · ')) + '</small></div></div>'
       + (U.length ? '<div class="spd-st">' + SP_ST.map(([k, t, tn]) => '<span class="st-' + k + '"><i></i>' + t + ' <b>' + toFa(cnt(k)) + '</b></span>').join('') + '</div>' : '')
       + spFloorBody(cur);
-    return '<div class="sp-split"><div class="sp-bld"><div class="spb-hd"><b>نمای ساختمان</b><span class="spb-lg">' + SP_ST.map(([k, t]) => '<span class="st-' + k + '"><i></i>' + t + '</span>').join('') + '</span></div>' + rows + '</div><div class="sp-det">' + det + '</div></div>';
+    return '<div class="sp-split"><div class="sp-bld"><div class="spb-hd"><b>نمای ساختمان</b><button type="button" class="spd-qr" data-spqr="*" title="کد QR همهٔ طبقه‌ها و واحدها">QR همه</button><span class="spb-lg">' + SP_ST.map(([k, t]) => '<span class="st-' + k + '"><i></i>' + t + '</span>').join('') + '</span></div>' + rows + '</div><div class="sp-det">' + det + '</div></div>';
   }
   /* تگ‌ها (همان شکل اعضای پروژه): هر مقدار یک برچسب، حذف با ×، افزودن با Enter */
   function spTagsHtml(key, vals, ed, list, ph, person){
@@ -79106,7 +79148,7 @@
     const own = spSplit(o.own);
     const st = o.st || 'free';
     return '<div class="sp-card"><div class="sp-ch"><span class="sp-ck" dir="ltr">' + esc(toFa(u)) + '</span><span><b>' + esc(spUnitLb(u)) + '</b><small>' + esc(f ? f.label : '') + '</small></span>'
-      + '<button type="button" class="sp-x" data-spu="' + esc(u) + '" aria-label="بستن">×</button></div>'
+      + '<button type="button" class="spd-qr" data-spqr="u:' + esc(u) + '" title="کد QR این واحد">QR</button><button type="button" class="sp-x" data-spu="' + esc(u) + '" aria-label="بستن">×</button></div>'
       + '<div class="sp-g"><div class="te-f"><u>وضعیت فروش</u><div class="wh-seg sm">' + SP_ST.map(([k, t]) => '<button type="button" data-spst="' + k + '" class="' + (st === k ? 'on' : '') + '"' + (ed ? '' : ' disabled') + '>' + t + '</button>').join('') + '</div></div>'
       + '<div class="te-f"><u>مالک <em>یک یا چند نفر؛ نام و نام خانوادگی</em></u>' + spTagsHtml('own', own, ed, 'spOwnList', 'از پروندهٔ نیروی انسانی یا نام و نام خانوادگی تازه', true) + '</div>'
       + '<label class="te-f"><u>متراژ (m²)</u><input type="text" data-spf="area" inputmode="decimal" value="' + esc(o.area ? toFa(o.area) : '') + '"' + (ed || pe ? '' : ' readonly') + '></label>'
@@ -94033,6 +94075,7 @@
             try{ if(canRemind()) q('', PF_I.log, 'یادآور', '#c48a1a', 'data-h3k="rem"'); }catch(e){}
             try{ if(wrkFineApprover()){ const nf = (wrkPending || []).filter(isFineAny).length; q('', TD_I.warn, 'جریمه' + (nf ? ' <em class="hz-qn">' + toFa(nf) + '</em>' : ''), '#c0392b', 'data-h3k="fine"'); } }catch(e){}
             if(tabOk('view')) q('', 'week', 'گزارش هفتگی کارفرما', '#1f7a4a', 'data-wkrep="1"');
+            if(tabOk('admin') || tabOk('tasks')) q('', 'task', 'جلسهٔ هماهنگی', '#6d5bb5', 'data-mtg="1"');
             if(tabOk('view')){ q('view:daily', 'week', 'گزارش روزانه', '#2f6f9f'); q('view:pc', 'chart', 'کنترل پروژه', '#6d5bb5'); q('view:cf', 'money', 'گزارش مالی', '#2a8a6a'); q('view:hr', 'people', 'نیروی انسانی', '#b07512'); q('view:org', 'compass', 'چارت سازمانی', '#5b6b7d'); }
             if(tabOk('admin')){ q('adm:statement', 'st', 'صورت وضعیت‌ها', '#2f6f8f'); q('adm:contract', 'ct', 'قراردادها', '#b0631c'); }
             if(tabOk('tasks')) q('ws:tasks', 'task', 'فعالیت‌ها', '#3d7fb0');
@@ -94132,6 +94175,59 @@
         window.addEventListener('afterprint', () => { document.title = old; area.innerHTML = ''; }, {once: true}); window.print(); } });
   }
   window.wkReport = wkReport;
+  /* ====== جلسهٔ هماهنگی هفتگی: دستور جلسهٔ خودکار ======
+     از داده‌های همین صفحه: موانع باز، فعالیت‌های دیر یا با موعد این هفته، مدارک نزد مشاور/کارفرما،
+     صورت وضعیت‌های منتظر پرداخت و قراردادهای رو به اتمام. هر بند مسئول دارد؛ چاپ یا ثبت مستقیم صورتجلسه. */
+  function mtgAgendaItems(){
+    const t0 = todayShamsi(), now = new Date(); now.setHours(0,0,0,0); const S = [];
+    const add = (sec, text, owner, meta, w) => S.push({sec, text, owner: owner || '', meta: meta || '', w: w || 0, on: true});
+    try{ if(typeof tbCache !== 'undefined' && tbCache && tbCache.items) tbCache.items.forEach(list => list.forEach(it => { if(!it.open) return; const n = daysSince(faDateOf(it.date) || '') || 0; const tr = it.task ? taskById(it.task) : null;
+      add('موانع باز', 'رفع مانع: ' + (it.text || '') + (tr ? ' (فعالیت: ' + (pick(tr,T.title) || '') + ')' : ''), it.ctr || (tr ? pick(tr,T.m1) : '') || '', toFa(n) + ' روز باز' + (it.kind ? ' · ' + it.kind : ''), 100 + n); })); }catch(e){}
+    try{ (tasksAll || []).filter(r => r && !r.__adm && !r.__admKind).forEach(r => { if(taskStatus(r).cls === 'done') return; const d = taskDue(r); if(!d) return; const dd = Math.round((d - now) / 86400000);
+      if(dd < 0) add('فعالیت‌های عقب از موعد', pick(r,T.title) || '', pick(r,T.m1) || '', toFa(-dd) + ' روز گذشته', 80 - dd);
+      else if(dd <= 7) add('موعد این هفته', pick(r,T.title) || '', pick(r,T.m1) || '', dd ? toFa(dd) + ' روز مانده' : 'امروز', 60 - dd); }); }catch(e){}
+    try{ (adminAll || []).filter(a => a && a.kind === 'design' && a.row).forEach(a => { const h = dsHolderNow(a.row); if(!h || (h.side !== 'cons' && h.side !== 'emp') || !(h.days > 7)) return;
+      add('مدارک منتظر مشاور/کارفرما', 'پیگیری مدرک ' + (pick(a.row,AD.dNo) ? toFa(pick(a.row,AD.dNo)) + ' ' : '') + '«' + (pick(a.row,AD.dTitle) || '') + '»', h.txt || '', toFa(h.days) + ' روز نزد ' + (h.side === 'emp' ? 'کارفرما' : 'مشاور'), 50 + h.days); }); }catch(e){}
+    try{ stLive((adminAll || []).filter(a => a && a.kind === 'statement' && a.row).map(a => a.row)).forEach(r => { const amt = amtNum(pick(r,AD.sAmount)); if(!amt || paidOf(r) >= amt) return; const d = admSentDate('statement', r); const n = d ? daysSince(d) : null; if(n == null || n < 30) return;
+      add('مالی', 'تعیین تکلیف صورت وضعیت ' + (pick(r,AD.sNo) ? toFa(pick(r,AD.sNo)) + ' ' : '') + '«' + (pick(r,AD.sName) || '') + '»', pick(r,AD.sParty) || '', toFa(n) + ' روز · مانده ' + arToman(amt - paidOf(r)) + ' تومان', 40 + Math.min(40, n / 4)); }); }catch(e){}
+    try{ (adminAll || []).filter(a => a && a.kind === 'contract' && a.row).forEach(a => { const r = a.row; if(admCancelled(r) || admFinishedCt(r)) return; const E = window.ctrEndState ? window.ctrEndState(r) : null; if(!E || !E.end || E.done) return;
+      const left = faDiff(t0, E.end); if(left == null || left > 30) return; add('قراردادها', (left < 0 ? 'تعیین تکلیف قرارداد منقضی ' : 'تمدید یا اتمام قرارداد ') + '«' + (pick(r,AD.cTitle) || '') + '»', pick(r,AD.cParty) || '', left < 0 ? toFa(-left) + ' روز از اتمام گذشته' : toFa(left) + ' روز مانده', 45 + (30 - left)); }); }catch(e){}
+    const ORD = ['موانع باز', 'فعالیت‌های عقب از موعد', 'موعد این هفته', 'مدارک منتظر مشاور/کارفرما', 'قراردادها', 'مالی'];
+    const G = ORD.map(sec => ({sec, L: S.filter(x => x.sec === sec).sort((a, b) => b.w - a.w).slice(0, 12)})).filter(g => g.L.length);
+    return G;
+  }
+  function mtgOpen(){
+    const G = mtgAgendaItems(), t0 = todayShamsi(), next = normDate(faAddDays(toFa(t0), 7)) || t0;
+    const pj = (function(){ try{ return pjCur(); }catch(e){ return {}; } })();
+    const people = Array.from(new Set(G.flatMap(g => g.L.map(x => x.owner)).filter(Boolean))).slice(0, 20);
+    let m = document.getElementById('mtgM'); if(m) m.remove();
+    m = document.createElement('div'); m.id = 'mtgM'; m.className = 'modal-bg';
+    const body = () => '<section class="wkr mtg"><header class="wkr-h"><div><small>دستور جلسهٔ هماهنگی هفتگی</small><h1>' + esc(pj.name || 'پروژه') + '</h1><p>تاریخ جلسه: ' + esc(toFa(t0)) + '</p></div><div class="wkr-by"><span>تهیه: ' + esc(activeUserName() || '') + '</span><span>' + toFa(G.reduce((t, g) => t + g.L.filter(x => x.on).length, 0)) + ' بند</span></div></header>'
+      + (people.length ? '<p class="mtg-pp"><b>مدعوین پیشنهادی:</b> ' + people.map(esc).join('، ') + '</p>' : '')
+      + (G.length ? G.map((g, gi) => '<h2>' + esc(g.sec) + ' <small>' + toFa(g.L.length) + '</small></h2><table class="wkr-t mtg-t"><thead><tr><th class="c"></th><th>بند</th><th>مسئول</th><th>وضعیت</th></tr></thead><tbody>'
+          + g.L.map((x, i) => '<tr class="' + (x.on ? '' : 'off') + '"><td class="c"><input type="checkbox" data-mtgon="' + gi + ':' + i + '"' + (x.on ? ' checked' : '') + '></td><td>' + esc(x.text) + '</td><td>' + esc(x.owner || '—') + '</td><td>' + esc(x.meta) + '</td></tr>').join('') + '</tbody></table>').join('')
+        : '<p class="wkr-e">موردی برای دستور جلسه پیدا نشد — مانع باز، کار دیر یا سند منتظری نیست.</p>')
+      + '<footer class="wkr-f">دستور جلسه خودکار از سامانهٔ پروژه · بندهای تیک‌خورده در صورتجلسه ثبت می‌شوند (موعد اقدام: ' + esc(toFa(next)) + ')</footer></section>';
+    m.innerHTML = '<div class="modal wkr-m"><div class="wkr-bar"><b>جلسهٔ هماهنگی هفتگی</b><span>بندها را تیک بزنید/بردارید؛ چاپ کنید یا مستقیم صورتجلسه ثبت شود</span><button type="button" class="xlh-b" data-mtgp="1">چاپ</button><button type="button" class="xlh-b pri" data-mtgsave="1">ثبت صورتجلسه</button><button type="button" class="ico-btn" data-mtgx="1" aria-label="بستن">✕</button></div><div class="wkr-body">' + body() + '</div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('change', e => { const c = e.target.closest('[data-mtgon]'); if(!c) return; const [gi, i] = c.dataset.mtgon.split(':').map(Number); G[gi].L[i].on = c.checked; c.closest('tr').classList.toggle('off', !c.checked); });
+    m.addEventListener('click', async e => { if(e.target === m || e.target.closest('[data-mtgx]')){ m.remove(); return; }
+      if(e.target.closest('[data-mtgp]')){ const area = document.getElementById('printArea'); area.innerHTML = body().replace(/<td class="c">[\s\S]*?<\/td>|<th class="c"><\/th>/g, '').replace(/<tr class="off">[\s\S]*?<\/tr>/g, ''); const old = document.title; document.title = 'دستور جلسه - ' + (pj.name || '') + ' - ' + toFa(t0).replace(/\//g, '-');
+        window.addEventListener('afterprint', () => { document.title = old; area.innerHTML = ''; }, {once: true}); window.print(); return; }
+      const sv = e.target.closest('[data-mtgsave]'); if(!sv) return;
+      const items = G.flatMap(g => g.L.filter(x => x.on).map(x => ({text: x.text + (x.meta ? ' (' + x.meta + ')' : ''), owner: x.owner || activeUserName(), follower: activeUserName(), actionDate: next})));
+      if(!items.length){ showDialog('warn', 'بندی انتخاب نشده', 'دست‌کم یک بند را تیک بزنید.'); return; }
+      if(!(await askConfirm('ثبت صورتجلسه', toFa(items.length) + ' بند با موعد اقدام ' + toFa(next) + ' در صورتجلسهٔ «جلسهٔ هماهنگی هفتگی» ثبت شود؟ مسئول هر بند پیگیری را می‌بیند.', 'ثبت'))) return;
+      sv.disabled = true; sv.textContent = 'در حال ثبت…';
+      const me = activeUserName() || '';
+      const payload = {type: 'admin', date: t0, project: (document.getElementById('projectName') || {}).value || '', engineer: me,
+        minutes: [{subject: 'جلسهٔ هماهنگی هفتگی ' + toFa(t0), meetDate: t0, category: 'اجرایی', owner: me, actionDate: next, items}]};
+      const r = await post(payload);
+      if(r && r.state !== 'failed'){ m.remove(); try{ clearNetCache(); }catch(er){} try{ shrToast('صورتجلسه با ' + toFa(items.length) + ' بند ثبت شد'); }catch(er){} setTimeout(() => { try{ loadAdmin(); }catch(er){} }, 400); }
+      else { sv.disabled = false; sv.textContent = 'ثبت صورتجلسه'; showDialog('warn', 'ثبت نشد', lastServerError || 'اتصال برقرار نشد؛ دوباره تلاش کنید.'); } });
+  }
+  window.mtgOpen = mtgOpen;
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-mtg]'); if(!b) return; e.preventDefault(); e.stopPropagation(); mtgOpen(); }, true);
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-wkrep]'); if(!b) return; e.preventDefault(); e.stopPropagation(); b.disabled = true; wkReport().catch(er => showDialog('err', 'گزارش ساخته نشد', friendlyErr(er))).finally(() => { b.disabled = false; }); }, true);
   function homeRender(){
     const box = document.getElementById('homeView');
