@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105203204">
+<meta name="pm-build" content="20261105203727">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29410,6 +29410,18 @@
   .fxk-b{font-style:normal;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--field);color:var(--muted);white-space:nowrap;} .fxk-b.ok{background:color-mix(in srgb, var(--ok) 14%, transparent);color:var(--ok);} .fxk-b.warn{background:color-mix(in srgb, #c79a2b 16%, transparent);color:#9a7417;} .fxk-b.bad{background:color-mix(in srgb, var(--alert) 13%, transparent);color:var(--alert);}
   :is(#adminView, .adm-host) .adm-grp-head .g-av{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:11px;}
   :is(#adminView, .adm-host) .adm-grp-head .g-av img{width:100%;height:100%;object-fit:cover;}
+
+  /* مرتب‌سازی: معیار + جهت (یک شکل در همهٔ دسته‌های اسناد) */
+  #admViewBar .avb-sort{gap:6px;padding-inline-end:4px;}
+  #admViewBar .avb-dir{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px 0 8px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font:700 11.5px/1 var(--f);cursor:pointer;white-space:nowrap;flex:none;}
+  #admViewBar .avb-dir svg{width:13px;height:13px;flex:0 0 13px;transition:transform .18s;}
+  #admViewBar .avb-dir.up svg{transform:rotate(180deg);}
+  #admViewBar .avb-dir:hover{border-color:color-mix(in srgb, var(--sky) 45%, var(--line));color:var(--sky);}
+  #admViewBar .avb-dir:focus-visible{outline:2px solid var(--sky);outline-offset:1px;}
+  @media(max-width:620px){
+    #admViewBar .avb-dir{width:28px;padding:0;justify-content:center;}
+    #admViewBar .avb-dir b{display:none;}
+  }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -30118,19 +30130,21 @@
       </button>
       <label class="avb-sel avb-sort" title="ترتیب موارد">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3.5 16.5L7 20l3.5-3.5"/><path d="M17 20V4M13.5 7.5L17 4l3.5 3.5"/></svg>
-        <u class="avb-pre">ترتیب</u><select id="admSortSel" aria-label="ترتیب">
-          <option value="new-desc">آخرین ثبت‌شده</option>
-          <option value="new-asc">اولین ثبت‌شده</option>
-          <option value="date-desc">تاریخ سند، جدید به قدیم</option>
-          <option value="date-asc">تاریخ سند، قدیم به جدید</option>
-          <option value="act-desc">آخرین تغییر یا گردش</option>
-          <option value="due-asc">نزدیک‌ترین موعد</option>
-          <option value="no-desc">شماره، بزرگ به کوچک</option>
-          <option value="no-asc">شماره، کوچک به بزرگ</option>
-          <option value="title-asc">عنوان (الفبا)</option>
-          <option value="party-asc">طرف (الفبا)</option>
-          <option value="amt-desc" data-money="1">مبلغ، بیشترین</option>
+        <u class="avb-pre">مرتب‌سازی</u><select id="admSortSel" aria-label="مرتب‌سازی بر اساس">
+          <optgroup label="زمان">
+            <option value="new">زمان ثبت در سامانه</option>
+            <option value="date">تاریخ سند</option>
+            <option value="act">آخرین فعالیت</option>
+            <option value="due">سررسید</option>
+          </optgroup>
+          <optgroup label="مشخصات">
+            <option value="no">شمارهٔ سند</option>
+            <option value="title">عنوان</option>
+            <option value="party" data-party="1">طرف قرارداد</option>
+            <option value="amt" data-money="1">مبلغ</option>
+          </optgroup>
         </select>
+        <button type="button" class="avb-dir" id="admSortDir" aria-label="جهت مرتب‌سازی"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg><b></b></button>
       </label>
     </div>
     <div id="adminView"><div class="empty">برای دیدن موارد دفتر فنی، دکمهٔ «نمایش» را بزنید.</div></div>
@@ -61371,7 +61385,15 @@
   /* مرتب‌سازی دستی دفتر فنی: '' یعنی همان گروه‌بندی همیشگی؛ با شماره یا تاریخ
      موارد هر بخش بی‌گروه و پشت سر هم می‌آیند */
   /* پیش‌فرض: آخرین سندی که ثبت شده اول (زمان ثبت)؛ «تاریخ سند» جداست */
-  const ADM_SORTS = ['new-desc','new-asc','date-desc','date-asc','act-desc','due-asc','no-desc','no-asc','title-asc','party-asc','amt-desc'];
+  const ADM_SORT_F = ['new','date','act','due','no','title','party','amt'];
+  const ADM_SORTS = ADM_SORT_F.flatMap(f => [f + '-desc', f + '-asc']);
+  /* جهت پیش‌فرض هر معیار: زمان‌ها جدید اول، سررسید نزدیک اول، متن‌ها الفبایی، عدد و مبلغ بزرگ اول */
+  const ADM_SORT_DEF = {new:'desc', date:'desc', act:'desc', due:'asc', no:'desc', title:'asc', party:'asc', amt:'desc'};
+  /* برچسب جهت، به زبان همان معیار */
+  const admSortDirTxt = (f, dir) => f === 'due' ? (dir === 'asc' ? 'نزدیک‌ترین اول' : 'دورترین اول')
+    : (f === 'title' || f === 'party') ? (dir === 'asc' ? 'الف تا ی' : 'ی تا الف')
+    : (f === 'no' || f === 'amt') ? (dir === 'desc' ? 'بزرگ به کوچک' : 'کوچک به بزرگ')
+    : (dir === 'desc' ? 'جدید به قدیم' : 'قدیم به جدید');
   let admSort = 'new-desc';
   try{ const so = localStorage.getItem('admSort2'); if(ADM_SORTS.indexOf(so) !== -1) admSort = so; }catch(e){}
   /* گروه‌بندی هر دسته جدا ذخیره می‌شود؛ گزینه‌ها برای همه یک شکل‌اند.
@@ -61394,7 +61416,8 @@
   function admSortRows(kind, rows){
     const [by, dir] = String(admSort || 'new-desc').split('-'), sg = dir === 'asc' ? 1 : -1;
     const noVal = r => { const t = toEn(String(pick(r, AD[ADM_NO_KEYS[kind]] || []) || '')); const m = t.match(/\d+/g); return m ? m.reduce((n, x) => n * 10000 + (+x), 0) : null; };
-    const dVal = r => { const d = latestDateOf(kind, r); return d ? d.getTime() : null; };
+    /* «تاریخ سند» همان تاریخی است که در سطر دیده می‌شود (طراحی: تاریخ آخرین گردش) */
+    const dVal = r => { let d = null; try{ const raw = admRowDateRaw(kind, r); d = raw ? faToDate(String(faDateOf(raw) || raw)) : null; }catch(e){} if(!d) d = latestDateOf(kind, r); return d ? d.getTime() : null; };
     /* زمان ثبت (created_at)؛ اگر نبود تاریخ ثبت و بعد شناسهٔ عددی */
     const newVal = r => { const t = pick(r,AD.time); if(t){ const ms = Date.parse(String(t)); if(isFinite(ms)) return ms; const d = faToDate(String(t)); if(d) return d.getTime(); }
       const d = faToDate(String(pick(r,AD.date) || '')); const id = +toEn(String(pick(r,AD.id) || '')) || 0; return d ? d.getTime() + (id % 86400000) / 1e6 : (id || null); };
@@ -61490,7 +61513,7 @@
     if((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.admdl != null){ e.preventDefault(); e.stopPropagation(); e.target.click(); }
   }, true);
   /* تاریخ سند برای سطر فهرست: «۲۴ شهریور» (سال دیگر: با سال) */
-  function admRowDate(kind, r){
+  function admRowDateRaw(kind, r){
     let d = '';
     try{
       if(kind === 'design'){
@@ -61504,6 +61527,10 @@
       else if(kind === 'minute') d = pick(r,AD.mMeet);
       if(!d) d = pick(r,AD.date) || pick(r,AD.time);
     }catch(e){}
+    return d;
+  }
+  function admRowDate(kind, r){
+    const d = admRowDateRaw(kind, r);
     const m = toEn(String(faDateOf(d || '') || '')).match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
     if(!m) return '';
     let y0 = ''; try{ y0 = toEn(todayShamsi()).slice(0, 4); }catch(e){}
@@ -71060,18 +71087,30 @@
       }
       if(so){
         const noNum = k === 'minute', money = k === 'statement' || k === 'contract';
-        so.querySelectorAll('option[value^="no-"]').forEach(o => { o.hidden = noNum; o.disabled = noNum; });
+        so.querySelectorAll('option[value="no"]').forEach(o => { o.hidden = noNum; o.disabled = noNum; });
         so.querySelectorAll('option[data-money]').forEach(o => { o.hidden = !money; o.disabled = !money; });
-        const bad = (noNum && /^no-/.test(admSort)) || (!money && admSort === 'amt-desc');
-        so.value = bad ? 'new-desc' : (admSort || 'new-desc');
-        bar.classList.toggle('sorted', so.value !== 'new-desc');
+        /* برچسب‌ها به زبان همان دسته */
+        const pt = {statement:'طرف قرارداد', contract:'طرف قرارداد', letter:'طرف مکاتبه', minute:'پیگیری‌کننده', design:'مشاور / طراح'}[k] || 'طرف';
+        so.querySelectorAll('option[data-party]').forEach(o => { o.textContent = pt; });
+        const dt = so.querySelector('option[value="date"]'); if(dt) dt.textContent = k === 'design' ? 'تاریخ گردش' : k === 'minute' ? 'تاریخ جلسه' : 'تاریخ سند';
+        const ac = so.querySelector('option[value="act"]'); if(ac){ ac.hidden = k === 'design'; ac.disabled = k === 'design'; }
+        let [f, dir] = String(admSort || 'new-desc').split('-');
+        if((noNum && f === 'no') || (!money && f === 'amt') || (k === 'design' && f === 'act')){ f = 'new'; dir = 'desc'; }
+        if(dir !== 'asc' && dir !== 'desc') dir = ADM_SORT_DEF[f] || 'desc';
+        so.value = f;
+        const db = document.getElementById('admSortDir');
+        if(db){ const t = admSortDirTxt(f, dir); db.querySelector('b').textContent = t; db.title = 'جهت: ' + t + ' (برای وارونه کردن بزنید)'; db.classList.toggle('up', dir === 'asc'); }
+        bar.classList.toggle('sorted', f + '-' + dir !== 'new-desc');
       }
       place();
     };
     window.__admBarPaint = paint;
     paint();
     const redraw = () => { paint(); try{ applyAdminFilters(); }catch(e2){} };
-    if(so) so.addEventListener('change', () => { admSort = so.value; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} redraw(); });
+    const setSort = v => { admSort = v; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} redraw(); };
+    if(so) so.addEventListener('change', () => setSort(so.value + '-' + (ADM_SORT_DEF[so.value] || 'desc')));
+    { const db = document.getElementById('admSortDir');
+      if(db) db.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const [f, dir] = String(admSort || 'new-desc').split('-'); setSort((so ? so.value : f) + '-' + (dir === 'asc' ? 'desc' : 'asc')); }); }
     if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
@@ -95795,7 +95834,7 @@
     /* مرتب‌سازی از سرستون: «تاریخ» (جدید↔قدیم) و «عنوان / شماره» (بزرگ↔کوچک) */
     const mark = () => document.querySelectorAll('#adminView .afr-hdr [data-hsort]').forEach(b => { const on = String(admSort || 'date-desc').indexOf(b.dataset.hsort + '-') === 0; b.classList.toggle('on', on); const i = b.querySelector('i'); if(i) i.textContent = on ? (/asc$/.test(admSort) ? '▲' : '▼') : ''; });
     document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#adminView .afr-hdr [data-hsort]'); if(!b) return; e.preventDefault(); e.stopPropagation();
-      const k = b.dataset.hsort, cur = admSort || 'new-desc'; admSort = cur === k + '-desc' ? k + '-asc' : k + '-desc';
+      const k = b.dataset.hsort, cur = admSort || 'new-desc', d0 = (ADM_SORT_DEF[k] || 'desc'), d1 = d0 === 'asc' ? 'desc' : 'asc'; admSort = cur === k + '-' + d0 ? k + '-' + d1 : k + '-' + d0;
       try{ localStorage.setItem('admSort2', admSort); }catch(err){} try{ window.__admBarPaint && window.__admBarPaint(); }catch(err){} applyAdminFilters(); }, true);
     let t = 0; const av = document.getElementById('adminView');
     if(av) new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; put(); }); }).observe(av, {childList: true, subtree: true});
