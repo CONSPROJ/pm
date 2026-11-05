@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>بهینه‌ساز برش</title>
+<style>
+  :root{--bg:#f4f5f7;--surface:#fff;--field:#eef0f3;--line:#e2e5ea;--ink:#1d2430;--muted:#6b7586;--acc:#2f6f9f;--ok:#3f8a62;--bad:#c0392b;--warn:#b7791f;}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--bg:#11151b;--surface:#181d25;--field:#222833;--line:#2c3440;--ink:#e6e9ee;--muted:#9aa3b1;} }
+  :root[data-theme="dark"]{--bg:#11151b;--surface:#181d25;--field:#222833;--line:#2c3440;--ink:#e6e9ee;--muted:#9aa3b1;}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Vazirmatn,"IRANSans",Tahoma,sans-serif;font-size:13px;}
+  .top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);}
+  .top b{font-size:14px;margin-inline-end:auto;} .top small{color:var(--muted);font-weight:500;}
+  .btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;background:var(--field);color:var(--ink);white-space:nowrap;}
+  .btn.pri{background:var(--acc);color:#fff;} .btn.sm{height:28px;padding:0 9px;font-size:11.5px;} .btn:hover{filter:brightness(.97);} .btn.bad{color:var(--bad);}
+  input, select{font:inherit;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 8px;min-width:0;}
+  input:focus, select:focus{outline:none;border-color:var(--acc);}
+  .wrap{max-width:1400px;margin:0 auto;padding:14px;display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:14px;align-items:start;}
+  @media (max-width:980px){ .wrap{grid-template-columns:1fr;} }
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .card h3{margin:0;font-size:13px;display:flex;align-items:center;gap:8px;} .card h3 small{color:var(--muted);font-weight:500;margin-inline-start:auto;}
+  .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;} label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);font-weight:700;}
+  label.tg{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-weight:600;font-size:12px;} label.tg input{height:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;} th{color:var(--muted);font-weight:700;text-align:start;padding:4px;font-size:11px;}
+  td{padding:3px 2px;} td input{width:100%;height:30px;font-size:12px;padding:0 6px;} td.n input{direction:ltr;text-align:center;}
+  td input[type=checkbox]{width:18px;height:18px;padding:0;}
+  td .x{all:unset;cursor:pointer;color:var(--muted);font-size:16px;padding:0 6px;} td .x:hover{color:var(--bad);}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;} .kpis div{background:var(--field);border-radius:12px;padding:10px;} .kpis u{display:block;text-decoration:none;color:var(--muted);font-size:11px;} .kpis b{font-size:18px;}
+  .mat{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px;}
+  .mat > h4{margin:0;font-size:12.5px;display:flex;gap:8px;align-items:center;} .mat > h4 span{color:var(--muted);font-weight:500;}
+  .sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+  .sh{border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--bg);} .sh > b{font-size:11.5px;display:flex;justify-content:space-between;margin-bottom:6px;} .sh > b span{color:var(--muted);font-weight:500;}
+  .sh svg{width:100%;height:auto;display:block;background:#fff;border-radius:6px;}
+  .muted{color:var(--muted);font-size:11.5px;line-height:1.8;}
+  .empty{color:var(--muted);text-align:center;padding:30px;}
+  .err{color:var(--bad);font-weight:700;}
+  @media print{ .top, .card.inp, .noprint{display:none !important;} body{background:#fff;} .wrap{display:block;padding:0;} .card{border:0;padding:0;} .sh{break-inside:avoid;border:1px solid #999;background:#fff;} .sheets{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="top">
+  <b>بهینه‌ساز برش ورق <small>چیدمان قطعات روی ورق MDF، فلز و … · تعداد ورق · پرت · کدگذاری</small></b>
+  <button type="button" class="btn" id="csvIn">ورود از اکسل (CSV)</button>
+  <button type="button" class="btn" id="csvOut">خروجی اکسل</button>
+  <button type="button" class="btn" id="print">چاپ نقشهٔ برش</button>
+  <button type="button" class="btn pri" id="run">محاسبهٔ بهترین چیدمان</button>
+  <input type="file" id="file" accept=".csv,.txt" hidden>
+</div>
+<div class="wrap">
+  <div class="card inp">
+    <h3>جنس و ورق</h3>
+    <div class="g">
+      <label>جنس<select id="mat"></select></label>
+      <label>ضخامت (mm)<select id="thk"></select></label>
+      <label>اندازهٔ ورق (mm)<select id="sheet"></select></label>
+    </div>
+    <div class="g">
+      <label>طول ورق<input type="number" id="sw" min="1"></label>
+      <label>عرض ورق<input type="number" id="sh" min="1"></label>
+      <label>ضخامت تیغ / برش (mm)<input type="number" id="kerf" min="0" step="0.1"></label>
+      <label>دورریز لبهٔ ورق (mm)<input type="number" id="trim" min="0" step="1"></label>
+    </div>
+    <label class="tg"><input type="checkbox" id="grain"> راه چوب/الیاف مهم است (قطعه‌هایی که «چرخش» ندارند نمی‌چرخند)</label>
+    <label class="tg"><input type="checkbox" id="guil" checked> برش گیوتینی (هر برش سرتاسری؛ مناسب اره‌های پنل‌بُر)</label>
+    <p class="muted">اندازه‌های پیش‌فرض متداول‌اند (مثلاً MDF ۱۸۳×۳۶۶ یا ۱۲۲×۲۴۴، ورق فلزی ۱۰۰×۲۰۰ / ۱۲۵×۲۵۰)؛ «اندازهٔ دلخواه» را برای ابعاد کشور یا تأمین‌کنندهٔ خودتان بزنید.</p>
+    <h3>قطعه‌ها <small id="pcount"></small></h3>
+    <table><thead><tr><th style="width:68px">کد</th><th>نام</th><th style="width:70px">طول</th><th style="width:70px">عرض</th><th style="width:52px">تعداد</th><th style="width:40px" title="اجازهٔ چرخش">↻</th><th style="width:24px"></th></tr></thead><tbody id="rows"></tbody></table>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" id="add">+ قطعه</button><button type="button" class="btn sm" id="sample">نمونهٔ کابینت</button><button type="button" class="btn sm bad" id="clear">پاک کردن همه</button></div>
+    <p class="muted">کد هر قطعه روی نقشهٔ برش نوشته می‌شود (خالی بگذارید تا خودکار P01، P02… شود). طول در جهت طول ورق است.</p>
+  </div>
+  <div class="card">
+    <h3>نتیجه <small id="when"></small></h3>
+    <div id="out"><div class="empty">قطعه‌ها را وارد کنید و «محاسبهٔ بهترین چیدمان» را بزنید.</div></div>
+  </div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const FA = '۰۱۲۳۴۵۶۷۸۹', toFa = v => String(v).replace(/\d/g, d => FA[d]);
+const fmt = (v, d) => toFa((+v).toLocaleString('en-US', {maximumFractionDigits: d == null ? 1 : d}));
+const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const toEn = v => String(v == null ? '' : v).replace(/[۰-۹]/g, d => FA.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+try{ const th = new URLSearchParams(location.search).get('theme'); if(th) document.documentElement.dataset.theme = th; }catch(e){}
+/* جنس‌ها: ضخامت‌ها و ورق‌های متداول (mm) */
+const MATS = {
+  mdf: {t: 'MDF / ام‌دی‌اف', th: [3, 6, 8, 12, 16, 18, 22, 25], sh: [[3660, 1830], [2440, 1220], [2800, 2070], [2750, 1830]], kerf: 4, trim: 10},
+  pb:  {t: 'نئوپان (Particle Board)', th: [8, 16, 18, 25], sh: [[3660, 1830], [2440, 1220], [2800, 2070]], kerf: 4, trim: 10},
+  ply: {t: 'تخته‌لایی (Plywood)', th: [4, 6, 9, 12, 15, 18, 21], sh: [[2440, 1220], [2500, 1250], [2440, 1525]], kerf: 3.5, trim: 8},
+  hpl: {t: 'HPL / کامپکت', th: [6, 8, 10, 12, 13], sh: [[3050, 1300], [3660, 1830], [4200, 1300]], kerf: 3.5, trim: 10},
+  st:  {t: 'ورق فولادی', th: [0.5, 0.7, 0.9, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10], sh: [[2000, 1000], [2500, 1250], [3000, 1500], [6000, 1500], [6000, 2000]], kerf: 0.3, trim: 5},
+  gal: {t: 'ورق گالوانیزه', th: [0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.25, 1.5, 2], sh: [[2000, 1000], [2500, 1250], [3000, 1250]], kerf: 0.3, trim: 5},
+  al:  {t: 'ورق آلومینیوم', th: [0.5, 1, 1.5, 2, 3, 4, 5, 6], sh: [[2000, 1000], [2500, 1250], [3000, 1500]], kerf: 0.3, trim: 5},
+  ss:  {t: 'ورق استیل', th: [0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 3], sh: [[2000, 1000], [2440, 1220], [3000, 1500]], kerf: 0.3, trim: 5},
+  gyp: {t: 'صفحهٔ کناف / گچ‌برگ', th: [9.5, 12.5, 15], sh: [[2400, 1200], [2600, 1200], [3000, 1200]], kerf: 2, trim: 0},
+  gl:  {t: 'شیشه', th: [4, 5, 6, 8, 10, 12], sh: [[3210, 2250], [3660, 2440], [2440, 1830]], kerf: 0, trim: 10}
+};
+const ST = {key: 'cut.v1', parts: [], mat: 'mdf', th: 16, sw: 3660, sh: 1830, kerf: 4, trim: 10, grain: false, guil: true};
+function load(){ try{ Object.assign(ST, JSON.parse(localStorage.getItem(ST.key) || '{}')); }catch(e){} if(!ST.parts || !ST.parts.length) ST.parts = [{c: '', n: '', l: '', w: '', q: 1, r: true}]; }
+function save(){ try{ localStorage.setItem(ST.key, JSON.stringify(ST)); }catch(e){} }
+function matUi(){
+  $('#mat').innerHTML = Object.entries(MATS).map(([k, m]) => '<option value="' + k + '"' + (k === ST.mat ? ' selected' : '') + '>' + m.t + '</option>').join('');
+  const M = MATS[ST.mat] || MATS.mdf;
+  $('#thk').innerHTML = M.th.map(t => '<option' + (+t === +ST.th ? ' selected' : '') + '>' + t + '</option>').join('') + (M.th.indexOf(+ST.th) === -1 ? '<option selected>' + ST.th + '</option>' : '');
+  const cur = ST.sw + 'x' + ST.sh;
+  $('#sheet').innerHTML = M.sh.map(([a, b]) => '<option value="' + a + 'x' + b + '"' + (cur === a + 'x' + b ? ' selected' : '') + '>' + toFa(a / 10) + ' × ' + toFa(b / 10) + ' cm</option>').join('') + '<option value="custom"' + (M.sh.some(([a, b]) => a + 'x' + b === cur) ? '' : ' selected') + '>اندازهٔ دلخواه…</option>';
+  $('#sw').value = ST.sw; $('#sh').value = ST.sh; $('#kerf').value = ST.kerf; $('#trim').value = ST.trim; $('#grain').checked = !!ST.grain; $('#guil').checked = ST.guil !== false;
+}
+$('#mat').onchange = e => { ST.mat = e.target.value; const M = MATS[ST.mat]; ST.th = M.th[Math.min(5, M.th.length - 1)]; [ST.sw, ST.sh] = M.sh[0]; ST.kerf = M.kerf; ST.trim = M.trim; matUi(); save(); };
+$('#thk').onchange = e => { ST.th = +e.target.value; save(); };
+$('#sheet').onchange = e => { if(e.target.value !== 'custom'){ const [a, b] = e.target.value.split('x').map(Number); ST.sw = a; ST.sh = b; $('#sw').value = a; $('#sh').value = b; } else $('#sw').focus(); save(); };
+['sw', 'sh', 'kerf', 'trim'].forEach(k => $('#' + k).oninput = e => { ST[k] = +toEn(e.target.value) || 0; save(); });
+$('#grain').onchange = e => { ST.grain = e.target.checked; save(); };
+$('#guil').onchange = e => { ST.guil = e.target.checked; save(); };
+function rowsUi(){
+  $('#rows').innerHTML = ST.parts.map((p, i) => '<tr data-i="' + i + '"><td class="n"><input data-f="c" value="' + esc(p.c) + '" placeholder="P' + String(i + 1).padStart(2, '0') + '"></td>'
+    + '<td><input data-f="n" value="' + esc(p.n) + '" placeholder="مثلاً بدنهٔ کناری"></td><td class="n"><input data-f="l" inputmode="decimal" value="' + esc(p.l) + '"></td><td class="n"><input data-f="w" inputmode="decimal" value="' + esc(p.w) + '"></td>'
+    + '<td class="n"><input data-f="q" inputmode="numeric" value="' + esc(p.q) + '"></td><td style="text-align:center"><input type="checkbox" data-f="r"' + (p.r !== false ? ' checked' : '') + ' title="اجازهٔ چرخش ۹۰ درجه"></td><td><button type="button" class="x" data-x="' + i + '">×</button></td></tr>').join('');
+  const n = ST.parts.reduce((t, p) => t + (+toEn(p.q) || 0), 0); $('#pcount').textContent = toFa(ST.parts.length) + ' ردیف · ' + toFa(n) + ' قطعه';
+}
+$('#rows').addEventListener('input', e => { const t = e.target, tr = t.closest('tr'); if(!tr) return; const p = ST.parts[+tr.dataset.i]; const f = t.dataset.f;
+  p[f] = f === 'r' ? t.checked : t.value; save(); if(f === 'q') rowsUi.__t = setTimeout(() => { const n = ST.parts.reduce((s, x) => s + (+toEn(x.q) || 0), 0); $('#pcount').textContent = toFa(ST.parts.length) + ' ردیف · ' + toFa(n) + ' قطعه'; }, 50); });
+$('#rows').addEventListener('change', e => { if(e.target.dataset.f === 'r'){ const tr = e.target.closest('tr'); ST.parts[+tr.dataset.i].r = e.target.checked; save(); } });
+$('#rows').addEventListener('click', e => { const x = e.target.closest('[data-x]'); if(!x) return; ST.parts.splice(+x.dataset.x, 1); if(!ST.parts.length) ST.parts.push({c: '', n: '', l: '', w: '', q: 1, r: true}); save(); rowsUi(); });
+$('#rows').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); const tr = e.target.closest('tr'); if(+tr.dataset.i === ST.parts.length - 1){ ST.parts.push({c: '', n: '', l: '', w: '', q: 1, r: true}); save(); rowsUi(); } const nx = $('#rows').querySelector('tr[data-i="' + (+tr.dataset.i + 1) + '"] [data-f="' + e.target.dataset.f + '"]'); if(nx) nx.focus(); } });
+$('#add').onclick = () => { ST.parts.push({c: '', n: '', l: '', w: '', q: 1, r: true}); save(); rowsUi(); const L = $('#rows').querySelectorAll('tr'); const i = L[L.length - 1].querySelector('[data-f="n"]'); if(i) i.focus(); };
+$('#clear').onclick = () => { if(!confirm('همهٔ قطعه‌ها پاک شوند؟')) return; ST.parts = [{c: '', n: '', l: '', w: '', q: 1, r: true}]; save(); rowsUi(); $('#out').innerHTML = '<div class="empty">قطعه‌ها را وارد کنید.</div>'; };
+$('#sample').onclick = () => { ST.parts = [
+  {c: 'B1', n: 'بدنهٔ کناری کابینت زمینی', l: 720, w: 560, q: 8, r: false}, {c: 'B2', n: 'کف و سقف', l: 764, w: 560, q: 8, r: false},
+  {c: 'D1', n: 'درب', l: 716, w: 396, q: 8, r: false}, {c: 'S1', n: 'طبقه', l: 760, w: 520, q: 4, r: true},
+  {c: 'W1', n: 'بدنهٔ کابینت دیواری', l: 700, w: 320, q: 6, r: false}, {c: 'W2', n: 'کف و سقف دیواری', l: 564, w: 320, q: 6, r: true},
+  {c: 'K1', n: 'قید پشت', l: 764, w: 100, q: 8, r: true}]; save(); rowsUi(); };
+/* ---------- چیدمان: MaxRects (چند قاعده، بهترین نتیجه) + حالت گیوتینی (نوار به نوار) ---------- */
+function parts(){
+  const out = [];
+  ST.parts.forEach((p, i) => { const l = +toEn(p.l), w = +toEn(p.w), q = Math.max(0, Math.round(+toEn(p.q) || 0)); if(!(l > 0 && w > 0 && q > 0)) return;
+    const code = String(p.c || '').trim() || ('P' + String(i + 1).padStart(2, '0'));
+    for(let k = 0; k < q; k++) out.push({id: out.length, code, name: p.n || '', l, w, rot: ST.grain ? p.r !== false : p.r !== false, row: i, k: k + 1, q}); });
+  return out;
+}
+function maxRects(P, W, H, kerf, rule, sortBy){
+  const items = P.slice().sort(sortBy), sheets = [];
+  const fits = (fr, w, h) => w <= fr.w + 1e-6 && h <= fr.h + 1e-6;
+  const score = (fr, w, h) => { const lw = fr.w - w, lh = fr.h - h;
+    if(rule === 'bssf') return [Math.min(lw, lh), Math.max(lw, lh)]; if(rule === 'blsf') return [Math.max(lw, lh), Math.min(lw, lh)];
+    if(rule === 'baf') return [fr.w * fr.h - w * h, Math.min(lw, lh)]; return [fr.y, fr.x]; };
+  const newSheet = () => { const s = {free: [{x: 0, y: 0, w: W, h: H}], used: []}; sheets.push(s); return s; };
+  for(const it of items){
+    let best = null;
+    for(const s of sheets){ for(const fr of s.free){
+      for(const o of (it.rot ? [[it.l, it.w, false], [it.w, it.l, true]] : [[it.l, it.w, false]])){ const [w, h, r] = o; const wk = w + kerf, hk = h + kerf;
+        const ok = fits(fr, wk, hk) || (fits(fr, w, h) && (fr.x + w >= W - 1e-6 || fr.w - w < kerf) && (fr.y + h >= H - 1e-6 || fr.h - h < kerf));
+        if(!ok) continue; const sc = score(fr, Math.min(wk, fr.w), Math.min(hk, fr.h));
+        if(!best || sc[0] < best.sc[0] - 1e-9 || (Math.abs(sc[0] - best.sc[0]) < 1e-9 && sc[1] < best.sc[1])) best = {s, fr, w, h, r, sc}; } } }
+    if(!best){ const s = newSheet(); const fr = s.free[0];
+      const o = (it.rot ? [[it.l, it.w, false], [it.w, it.l, true]] : [[it.l, it.w, false]]).find(([w, h]) => w <= W && h <= H);
+      if(!o) return {err: it}; best = {s, fr, w: o[0], h: o[1], r: o[2]}; }
+    const {s, fr, w, h, r} = best; const rect = {x: fr.x, y: fr.y, w: Math.min(w + kerf, W - fr.x), h: Math.min(h + kerf, H - fr.y)};
+    s.used.push({x: fr.x, y: fr.y, w, h, r, it});
+    /* تقسیم همهٔ فضاهای آزادِ هم‌پوشان با قطعهٔ تازه */
+    const nf = [];
+    for(const f of s.free){ if(rect.x >= f.x + f.w || rect.x + rect.w <= f.x || rect.y >= f.y + f.h || rect.y + rect.h <= f.y){ nf.push(f); continue; }
+      if(rect.x > f.x) nf.push({x: f.x, y: f.y, w: rect.x - f.x, h: f.h}); if(rect.x + rect.w < f.x + f.w) nf.push({x: rect.x + rect.w, y: f.y, w: f.x + f.w - rect.x - rect.w, h: f.h});
+      if(rect.y > f.y) nf.push({x: f.x, y: f.y, w: f.w, h: rect.y - f.y}); if(rect.y + rect.h < f.y + f.h) nf.push({x: f.x, y: rect.y + rect.h, w: f.w, h: f.y + f.h - rect.y - rect.h}); }
+    s.free = nf.filter((a, i) => a.w > 1 && a.h > 1 && !nf.some((b, j) => j !== i && a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h && (j < i || a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h)));
+  }
+  return {sheets};
+}
+/* گیوتینی: نوارهای هم‌ارتفاع در طول ورق (هر برش سرتاسری)، قطعه‌ها در هر نوار پشت سر هم؛ نوار دوم در فضای خالی بالای قطعه‌های کوتاه‌تر */
+function guillotine(P, W, H, kerf, sortBy){
+  const items = P.slice().sort(sortBy), sheets = []; const newSheet = () => { const s = {strips: [], y: 0, used: []}; sheets.push(s); return s; };
+  for(const it of items){ let placed = false;
+    const opts = it.rot ? [[it.l, it.w, false], [it.w, it.l, true]] : [[it.l, it.w, false]];
+    for(const s of sheets){ for(const st of s.strips){ for(const [w, h, r] of opts.slice().sort((a, b) => Math.abs(st.h - a[1]) - Math.abs(st.h - b[1]))){ if(h <= st.h + 1e-6 && st.x + w <= W + 1e-6){ s.used.push({x: st.x, y: st.y, w, h, r, it}); st.x += w + kerf; placed = true; break; } } if(placed) break; }
+      if(placed) break;
+      for(const [w, h, r] of opts.slice().sort((a, b) => b[1] - a[1] ? a[1] - b[1] : 0)){ if(s.y + h <= H + 1e-6 && w <= W){ const st = {y: s.y, h, x: w + kerf}; s.strips.push(st); s.used.push({x: 0, y: s.y, w, h, r, it}); s.y += h + kerf; placed = true; break; } }
+      if(placed) break; }
+    if(!placed){ const s = newSheet(); const o = opts.filter(([w, h]) => w <= W && h <= H).sort((a, b) => a[1] - b[1])[0]; if(!o) return {err: it};
+      const st = {y: 0, h: o[1], x: o[0] + kerf}; s.strips.push(st); s.used.push({x: 0, y: 0, w: o[0], h: o[1], r: o[2], it}); s.y = o[1] + kerf; } }
+  return {sheets};
+}
+const SORTS = [(a, b) => b.l * b.w - a.l * a.w, (a, b) => Math.max(b.l, b.w) - Math.max(a.l, a.w) || b.l * b.w - a.l * a.w, (a, b) => b.w - a.w || b.l - a.l, (a, b) => (b.l + b.w) - (a.l + a.w)];
+function solve(){
+  const P = parts(); if(!P.length) return {err: 'empty'};
+  const T = +ST.trim || 0, W = (+ST.sw || 0) - 2 * T, H = (+ST.sh || 0) - 2 * T, K = +ST.kerf || 0;
+  if(W <= 0 || H <= 0) return {err: 'sheet'};
+  const tries = [];
+  if(ST.guil !== false) SORTS.forEach(s => tries.push(guillotine(P, W, H, K, s)));
+  ['bssf', 'blsf', 'baf', 'bl'].forEach(r => SORTS.forEach(s => tries.push(maxRects(P, W, H, K, r, s))));
+  const ok = tries.filter(t => !t.err); if(!ok.length) return {err: 'big', it: (tries[0] || {}).err};
+  /* بهترین: کمترین ورق، بعد پُرترین ورق آخر کمتر (پرت قابل استفاده بزرگ‌تر) */
+  const fill = s => s.used.reduce((t, u) => t + u.w * u.h, 0);
+  ok.sort((a, b) => a.sheets.length - b.sheets.length || fill(a.sheets[a.sheets.length - 1]) - fill(b.sheets[b.sheets.length - 1]));
+  const best = ok[0]; return {best, W, H, T, K, P, guil: ST.guil !== false && tries.indexOf(best) < SORTS.length};
+}
+const PAL = ['#cfe3f5', '#d8efd9', '#f7e3c9', '#e9dcf5', '#f5d6d6', '#d6eef0', '#f2ecc9', '#dfe4ea', '#f6d9ea', '#d9e8d0'];
+function sheetSvg(s, R, n){
+  const SW = +ST.sw, SH = +ST.sh, T = R.T; const fs = Math.max(SW, SH) / 55;
+  let h = '<svg viewBox="0 0 ' + SW + ' ' + SH + '" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="' + SW + '" height="' + SH + '" fill="#f3f0ea" stroke="#999" stroke-width="' + (SW / 400) + '"/>'
+    + (T ? '<rect x="' + T + '" y="' + T + '" width="' + (SW - 2 * T) + '" height="' + (SH - 2 * T) + '" fill="#fbfaf7" stroke="#c9c2b4" stroke-dasharray="' + (SW / 150) + '" stroke-width="' + (SW / 800) + '"/>' : '');
+  s.used.forEach(u => { const x = u.x + T, y = u.y + T, c = PAL[u.it.row % PAL.length];
+    h += '<rect x="' + x + '" y="' + y + '" width="' + u.w + '" height="' + u.h + '" fill="' + c + '" stroke="#4a5568" stroke-width="' + (SW / 600) + '"/>';
+    const f = Math.min(fs, u.h / 2.6, u.w / 5.5); if(f > SW / 400){
+      h += '<text x="' + (x + u.w / 2) + '" y="' + (y + u.h / 2) + '" font-size="' + f + '" text-anchor="middle" dominant-baseline="middle" font-family="Tahoma" font-weight="700" fill="#1d2430">' + esc(u.it.code) + (u.r ? ' ↻' : '') + '</text>'
+        + '<text x="' + (x + u.w / 2) + '" y="' + (y + u.h / 2 + f * 1.15) + '" font-size="' + (f * .72) + '" text-anchor="middle" dominant-baseline="middle" font-family="Tahoma" fill="#4a5568">' + Math.round(u.w) + '×' + Math.round(u.h) + '</text>'; } });
+  return h + '</svg>'; }
+function run(){
+  const R = solve(), out = $('#out');
+  if(R.err === 'empty'){ out.innerHTML = '<div class="empty">هیچ قطعهٔ کاملی (طول، عرض، تعداد) وارد نشده.</div>'; return; }
+  if(R.err === 'sheet'){ out.innerHTML = '<div class="empty err">اندازهٔ ورق یا دورریز لبه درست نیست.</div>'; return; }
+  if(R.err === 'big'){ out.innerHTML = '<div class="empty err">قطعهٔ «' + esc(R.it && R.it.code) + '» (' + toFa(R.it && R.it.l) + '×' + toFa(R.it && R.it.w) + ') از ورق بزرگ‌تر است.</div>'; return; }
+  const S0 = R.best.sheets, area = +ST.sw * +ST.sh, used = R.P.reduce((t, p) => t + p.l * p.w, 0), tot = S0.length * area, waste = tot ? (1 - used / tot) * 100 : 0;
+  const last = S0[S0.length - 1], lastFill = last.used.reduce((t, u) => t + u.w * u.h, 0) / area * 100;
+  R.when = new Date(); ST.last = {sheets: S0.length, waste};
+  const M = MATS[ST.mat] || {t: ''};
+  /* هر قطعه کد شماره‌دار: کد-شماره (مثلاً B1-3) و ورقی که رویش است */
+  const tags = []; S0.forEach((s, si) => s.used.forEach(u => tags.push({s: si + 1, code: u.it.code, k: u.it.k, q: u.it.q, name: u.it.name, l: u.it.l, w: u.it.w, r: u.r, x: Math.round(u.x + R.T), y: Math.round(u.y + R.T)})));
+  R.tags = tags; window.__R = R;
+  out.innerHTML = '<div class="kpis"><div><u>تعداد ورق</u><b>' + toFa(S0.length) + '</b></div><div><u>پرت کل</u><b>' + fmt(waste) + '٪</b></div><div><u>مساحت قطعه‌ها</u><b>' + fmt(used / 1e6, 2) + ' m²</b></div><div><u>پر بودن ورق آخر</u><b>' + fmt(lastFill) + '٪</b></div></div>'
+    + '<p class="muted">' + esc(M.t) + ' ' + toFa(ST.th) + ' میلی‌متر · ورق ' + toFa(ST.sw) + '×' + toFa(ST.sh) + ' · تیغ ' + toFa(ST.kerf) + ' · دورریز لبه ' + toFa(ST.trim) + ' · ' + (R.guil ? 'چیدمان گیوتینی (برش سرتاسری)' : 'چیدمان آزاد (MaxRects)') + ' · ' + toFa(R.P.length) + ' قطعه. ↻ یعنی قطعه چرخیده است.</p>'
+    + '<div class="mat"><h4>نقشهٔ برش <span>' + toFa(S0.length) + ' ورق</span></h4><div class="sheets">'
+    + S0.map((s, i) => { const f = s.used.reduce((t, u) => t + u.w * u.h, 0) / area * 100; return '<div class="sh"><b>ورق ' + toFa(i + 1) + ' <span>' + toFa(s.used.length) + ' قطعه · پر ' + fmt(f) + '٪</span></b>' + sheetSvg(s, R, i) + '</div>'; }).join('')
+    + '</div></div>'
+    + '<div class="mat"><h4>فهرست قطعه‌ها با کد</h4><table><thead><tr><th>کد</th><th>نام</th><th>اندازه</th><th>ورق</th><th>چرخش</th></tr></thead><tbody>'
+    + tags.map(t => '<tr><td dir="ltr" style="text-align:right"><b>' + esc(t.code + '-' + t.k) + '</b></td><td>' + esc(t.name) + '</td><td dir="ltr" style="text-align:right">' + t.l + '×' + t.w + '</td><td>' + toFa(t.s) + '</td><td>' + (t.r ? '↻' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+  $('#when').textContent = 'محاسبه شد';
+  save();
+}
+$('#run').onclick = run;
+$('#print').onclick = () => { if(!window.__R) run(); setTimeout(() => window.print(), 100); };
+$('#csvOut').onclick = () => { const R = window.__R; if(!R) run(); const T = (window.__R || {}).tags || [];
+  const rows = [['Code', 'Name', 'Length', 'Width', 'Sheet', 'Rotated', 'X', 'Y']].concat(T.map(t => [t.code + '-' + t.k, '"' + String(t.name).replace(/"/g, '""') + '"', t.l, t.w, t.s, t.r ? 1 : 0, t.x, t.y]));
+  const b = new Blob(['﻿' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'cut-list.csv'; a.click(); };
+/* ورود: ستون‌ها «کد، نام، طول، عرض، تعداد، چرخش(۰/۱)» یا «نام، طول، عرض، تعداد» */
+$('#csvIn').onclick = () => $('#file').click();
+$('#file').onchange = async e => { const f = e.target.files[0]; if(!f) return; const t = await f.text(); const L = t.split(/\r?\n/).map(x => x.split(/[,;\t]/).map(y => y.replace(/^"|"$/g, '').trim())).filter(r => r.some(Boolean));
+  const num = v => +toEn(v); const out = [];
+  L.forEach(r => { if(r.length >= 5 && num(r[2]) && num(r[3])) out.push({c: r[0], n: r[1], l: num(r[2]), w: num(r[3]), q: num(r[4]) || 1, r: r[5] == null ? true : !/^(0|no|خیر|false)$/i.test(r[5])});
+    else if(r.length >= 4 && num(r[1]) && num(r[2])) out.push({c: '', n: r[0], l: num(r[1]), w: num(r[2]), q: num(r[3]) || 1, r: true}); });
+  if(!out.length){ alert('ستون‌ها شناخته نشد. قالب: کد، نام، طول، عرض، تعداد، چرخش'); return; }
+  ST.parts = out; save(); rowsUi(); e.target.value = ''; };
+load(); matUi(); rowsUi();
+</script>
+</body>
+</html>
