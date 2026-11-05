@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105182707">
+<meta name="pm-build" content="20261105182908">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29342,6 +29342,20 @@
     html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) > .afr-meta > .afr-dls{order:6;} html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) > .afr-meta > .afr-sh{order:7;}
     html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) > .afr-meta > .afr-date + .afr-d::before{content:'·';margin-inline-end:8px;opacity:.6;}
   }
+  /* فضاها: مساحت‌های طبقه */
+  .spa{border:1px solid var(--line);border-radius:14px;padding:0;margin-top:12px;background:var(--surface);}
+  .spa > summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;} .spa > summary::-webkit-details-marker{display:none;}
+  .spa > summary b{font-size:13px;} .spa > summary span{font-size:11.5px;color:var(--muted);margin-inline-start:auto;}
+  .spa-l{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+  .spa-r{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid color-mix(in srgb, var(--line) 60%, transparent);font-size:12px;min-height:38px;}
+  .spa-r:last-child{border-bottom:0;} .spa-r.u{background:color-mix(in srgb, var(--field) 55%, transparent);font-weight:700;} .spa-r.p{padding-inline-start:28px;} .spa-r.s{padding-inline-start:28px;color:var(--muted);font-size:11px;min-height:30px;}
+  .spa-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:none;font:inherit;color:inherit;text-align:start;padding:0;} button.spa-n{cursor:pointer;color:var(--sky);}
+  .spa-src{font-style:normal;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--field);color:var(--muted);flex:none;} .spa-src.cad{background:color-mix(in srgb, #1f7a4a 14%, transparent);color:#1f7a4a;}
+  .spa-v{margin-inline-start:auto;display:flex;align-items:center;gap:4px;flex:none;} .spa-v small{font-size:10px;color:var(--muted);}
+  :is(html,#z0) :is(body,#z1) .spa .spa-in{width:84px !important;min-width:0 !important;max-width:84px !important;flex:none !important;height:30px !important;margin:0 !important;}
+  .spa-in{width:76px;height:30px;text-align:center;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:0 6px;}
+  .spa-in.busy{opacity:.55;} .spa-in.ok{border-color:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb, var(--ok) 25%, transparent);}
+  .spa-h{display:block;padding:8px 12px 10px;font-size:10.5px;color:var(--muted);line-height:1.8;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -79012,6 +79026,30 @@
     return h + '</div>';
   }
   /* بدنهٔ طبقه (واحدها، فرم واحد، محل‌ها) — در فهرست گوشی زیر سرطبقه، در دسکتاپ در ستون جزئیات */
+  /* مساحت‌های طبقه: هر واحد، اجزای واحد و محل‌های طبقه — از شناسنامهٔ فضا (نقشه‌خوان یا دستی)، اگر نبود از کارت واحد؛
+     همین‌جا ویرایش می‌شود و همه‌جا (کارت واحد، کارت طبقه، متره، گزارش) همان عدد خوانده می‌شود */
+  function spAreasHtml(f){
+    const P = k => spPP(k) || {}, ed = spCanE(), U = f.units || [], Z = spZonesOwn(f.key);
+    if(!U.length && !Z.length) return '';
+    let tot = 0;
+    const src = q => q.f ? '<em class="spa-src cad" title="' + esc(q.f) + '">نقشه</em>' : (q.a ? '<em class="spa-src">دستی</em>' : '');
+    const inp = (k, v, ph) => ed ? '<input type="text" inputmode="decimal" class="spa-in" data-sparea="' + esc(k) + '" value="' + esc(v ? toFa(v) : '') + '" placeholder="' + esc(ph || '—') + '">' : '<b>' + (v ? toFa(v) : '—') + '</b>';
+    const rows = [];
+    U.forEach(u => { const q = P('U ' + u), card = +((sp.units.get(u) || {}).area) || 0; let parts = [];
+      try{ parts = spPartsOf(u).map(pt => ({pt, q: P(u + '/' + pt)})); }catch(e){}
+      const psum = parts.reduce((t, x) => t + (+x.q.a || 0), 0), a = +q.a || card || 0; tot += a || psum;
+      rows.push('<div class="spa-r u"><button type="button" class="spa-n" data-spu="' + esc(u) + '" title="کارت واحد">' + esc(spUnitLb(u)) + '</button>' + src(q) + (!q.a && card ? '<em class="spa-src">کارت واحد</em>' : '') + '<span class="spa-v">' + inp('U ' + u, q.a || '', card ? toFa(card) : (psum ? toFa(Math.round(psum * 10) / 10) : '')) + '<small>m²</small></span></div>');
+      parts.forEach(x => rows.push('<div class="spa-r p"><span class="spa-n">' + esc(x.pt) + '</span>' + src(x.q) + '<span class="spa-v">' + inp(u + '/' + x.pt, x.q.a || '') + '<small>m²</small></span></div>'));
+      if(parts.length && psum) rows.push('<div class="spa-r s"><span class="spa-n">جمع اجزای ' + esc(spUnitLb(u)) + '</span><span class="spa-v"><b>' + toFa(Math.round(psum * 10) / 10) + '</b><small>m²</small></span></div>'); });
+    Z.forEach(z => { const q = P('F ' + f.key + '/' + z); tot += +q.a || 0; rows.push('<div class="spa-r z"><span class="spa-n">' + esc(z) + '</span>' + src(q) + '<span class="spa-v">' + inp('F ' + f.key + '/' + z, q.a || '') + '<small>m²</small></span></div>'); });
+    return '<details class="spa"' + (window.innerWidth >= 1180 ? ' open' : '') + '><summary><b>مساحت‌ها</b><span>' + (tot ? 'جمع ' + toFa(Math.round(tot * 10) / 10) + ' m²' : 'هنوز مساحتی ثبت نشده') + '</span></summary>'
+      + '<div class="spa-l">' + rows.join('') + '</div>' + (ed ? '<small class="spa-h">عدد را بنویسید؛ همان لحظه ثبت می‌شود. مساحت‌های «نقشه» از نقشه‌خوان آمده‌اند و با ثبت دوباره از نقشه به‌روز می‌شوند.</small>' : '') + '</details>';
+  }
+  document.addEventListener('change', async e => { const i = e.target; if(!i || !i.matches || !i.matches('input[data-sparea]')) return;
+    const k = i.dataset.sparea, v = parseFloat(toEn(i.value).replace(/[^\d.]/g, '')) || 0, q = spPP(k) || {};
+    i.classList.add('busy');
+    try{ await spPPSave(k, {a: v ? Math.round(v * 100) / 100 : 0, u: q.u || '', n: q.n || ''}); i.classList.remove('busy'); i.classList.add('ok'); setTimeout(() => { i.classList.remove('ok'); try{ spRender(); }catch(er){} }, 700); }
+    catch(err){ i.classList.remove('busy'); showDialog('err', 'ثبت نشد', friendlyErr(err)); } });
   function spFloorBody(f){
     const units = f.units || [], zs = spZonesOwn(f.key);
     let h = '';
@@ -79025,6 +79063,7 @@
         + (spCanE() ? '<span class="sp-zadd"><input type="text" data-spzin="' + esc(f.key) + '" placeholder="' + (rs ? 'محل تازه' : 'فضای تازه') + '" list="spZoneSug"><button type="button" data-spzadd="' + esc(f.key) + '">افزودن</button></span>' : (zs.length ? '' : '<span class="sp-none">محلی ثبت نشده</span>'))
         + '</div></div>';
     }
+    h += spAreasHtml(f);
     return h;
   }
   /* ====== دسکتاپ: نمای ساختمان (طبقه‌ها روی هم، هر واحد یک خانه به رنگ وضعیت فروش) + جزئیات طبقهٔ انتخابی ====== */
@@ -79047,16 +79086,6 @@
     const det = '<div class="spd-h"><span class="spb-k lg" dir="ltr">' + esc(/^\d+$/.test(cur.key) ? toFa(cur.key) : cur.key) + '</span><div><b>' + esc(cur.label) + '</b><small>'
         + esc([U.length ? toFa(U.length) + ' واحد' : '', spZonesOwn(cur.key).length ? toFa(spZonesOwn(cur.key).length) + ' محل' : '', q && q.a ? 'کف ' + toFa(Math.round(q.a)) + ' m² (از نقشه)' : ''].filter(Boolean).join(' · ')) + '</small></div></div>'
       + (U.length ? '<div class="spd-st">' + SP_ST.map(([k, t, tn]) => '<span class="st-' + k + '"><i></i>' + t + ' <b>' + toFa(cnt(k)) + '</b></span>').join('') + '</div>' : '')
-      + (function(){ /* اندازه‌های ثبت‌شده از نقشه‌خوان برای همین طبقه: هر واحد/محل یک خط؛ واحد بی‌اندازه = جمع اجزایش */
-          const L = []; let tot = 0;
-          (cur.units || []).forEach(u => { const q0 = P('U ' + u); let a = q0 && q0.a ? +q0.a : 0, parts = [];
-            try{ spPartsOf(u).forEach(pt => { const q1 = P(u + '/' + pt); if(q1 && q1.a) parts.push([pt, +q1.a]); }); }catch(e){}
-            if(!a && parts.length) a = parts.reduce((t, x) => t + x[1], 0);
-            if(a || parts.length) L.push({t: spUnitLb(u), a, parts}); tot += a; });
-          spZonesOwn(cur.key).forEach(z => { const q1 = P('F ' + cur.key + '/' + z); if(q1 && q1.a){ L.push({t: z, a: +q1.a, parts: []}); tot += +q1.a; } });
-          if(!L.length) return '';
-          return '<div class="spd-cad"><div class="spd-ch"><b>مساحت‌ها از نقشه</b><span>' + toFa(L.length) + ' محل · جمع ' + toFa(Math.round(tot * 10) / 10) + ' m²</span></div>'
-            + L.map(x => '<div class="spd-cr"><span>' + esc(x.t) + '</span><b>' + (x.a ? toFa(Math.round(x.a * 10) / 10) + ' m²' : '—') + '</b>' + (x.parts.length ? '<small>' + x.parts.map(p0 => esc(p0[0]) + ' ' + toFa(Math.round(p0[1] * 10) / 10)).join(' · ') + '</small>' : '') + '</div>').join('') + '</div>'; })()
       + spFloorBody(cur);
     return '<div class="sp-split"><div class="sp-bld"><div class="spb-hd"><b>نمای ساختمان</b><span class="spb-lg">' + SP_ST.map(([k, t]) => '<span class="st-' + k + '"><i></i>' + t + '</span>').join('') + '</span></div>' + rows + '</div><div class="sp-det">' + det + '</div></div>';
   }
