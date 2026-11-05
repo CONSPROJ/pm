@@ -77,6 +77,11 @@
 .cnt-p{position:absolute;top:12px;left:12px;z-index:5;width:min(330px,calc(100% - 24px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px -14px rgba(0,0,0,.4);padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:12px;}
 .cnt-p[hidden]{display:none;} .cnt-p b{font-size:12.5px;} .cnt-p .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;} .cnt-p .btn{height:30px;font-size:11.5px;}
 .cnt-p small{color:var(--muted);} .cnt-p input{height:30px;font-size:12px;}
+.cnt-p .cf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;} .cnt-p .cf label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:var(--muted);min-width:0;}
+.cnt-p .cf label:first-child{grid-column:1/-1;} .cnt-p .cf label.cf-c{grid-column:1/-1;} .cnt-p .cf label[hidden]{display:none;}
+.cnt-p .cf :is(input,select){width:100%;min-width:0;height:30px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:inherit;padding:0 6px;}
+.cnt-p small b[dir]{unicode-bidi:isolate;white-space:nowrap;font-family:ui-monospace,monospace;} .cnt-p .cf-pv{font-size:11px;color:var(--muted);background:color-mix(in srgb, var(--line) 35%, transparent);border-radius:8px;padding:6px 8px;} .cnt-p .cf-pv b{color:inherit;font-family:ui-monospace,monospace;font-size:12px;}
+.cnt-p{max-height:calc(100% - 24px);overflow:auto;}
 .mk .wl{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;} .mk .wl .btn{height:26px;font-size:11px;padding:0 9px;}
 .lp-g label.lp-c{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font-size:13px;cursor:pointer;} .lp-g label.lp-c:hover{background:var(--field);} .lp-g label.lp-c input{width:16px;height:16px;}
 .lp-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line);} .lp-ft small{color:var(--muted);font-size:11px;}
@@ -377,11 +382,12 @@ function snap(w, e){
 const HINT = {pline: 'نقطه‌ها را پشت سر هم بزنید · Enter یا دابل‌کلیک یا «✓ تمام» · ⊥ عمود: F8 · Alt: بدون گیرش',
   cut: 'اول محدودهٔ اصلی را از فهرست انتخاب کنید، بعد دور بخشی که باید کم شود را بکشید · Enter برای ثبت کسر',
   wall: 'دور فضا (یا مسیر دیوارها) را چندخطی بکشید · Enter: پنجرهٔ کدگذاری — هر ضلع یک کد و طول',
-  count: 'روی یک آیتم (بلاک: اسپرینکلر، دتکتور، شستی، دریچه…) بزنید؛ بعد «انتخاب مشابه» و کدگذاری',
+  count: 'روی نماد بزنید (انتخاب مشابه) یا «شروع کدگذاری دستی» و هرجای نقشه کلیک کنید',
   line: 'نقطهٔ اول و دوم را بزنید · Shift یا ⊥ عمود: افقی/عمودی · Alt: بدون گیرش', measure: 'دو نقطه را بزنید تا فاصله نشان داده شود',
   pan: 'روی هر هاشور یا محدودهٔ بستهٔ نقشه بزنید تا مساحت و محیطش را ببینید', area: 'گوشه‌ها را یکی‌یکی بزنید · دابل‌کلیک یا Enter برای بستن · Esc لغو', hatch: 'محدودهٔ هاشور را بکشید · دابل‌کلیک یا Enter برای بستن'};
 function setTool(t){ S.tool = t; cancel(); document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); stage.className = 'stage t-' + t;
-  const h = $('#hint'); h.hidden = !HINT[t]; h.textContent = HINT[t] || ''; }
+  const h = $('#hint'); h.hidden = !HINT[t]; h.textContent = HINT[t] || '';
+  try{ if(t === 'count'){ if(S.cg < 0) cntIntro(); } else { cntP.hidden = true; S.cg = -1; } }catch(e){} }
 document.querySelectorAll('#tools button').forEach(b => b.onclick = () => setTool(b.dataset.t));
 window.addEventListener('keydown', e => { if(e.target.matches('input,select')) return;
   const k = e.key.toLowerCase();
@@ -659,7 +665,38 @@ function wallDlg(i){
 /* ================= شمارشگر آیتم (مثل NumInc) =================
    روی یک بلاک بزنید → «انتخاب مشابه» (همان بلاک و لایه، در کل نقشه / دید فعلی / داخل محدوده) یا با کلیک تک‌تک؛
    هر آیتم کد ماندگار می‌گیرد (پیشوند + شماره) و دسته دارد (اسپرینکلر، دتکتور، شستی، دریچه…). */
-const CNT_CATS = ['اسپرینکلر', 'دتکتور دود', 'دتکتور حرارتی', 'شستی اعلام حریق', 'آژیر/فلاشر', 'دریچهٔ هوا', 'دیفیوزر', 'چراغ', 'پریز', 'کلید', 'جعبه تقسیم', 'شیر', 'کفشوی', 'دوربین', 'سایر'];
+const CNT_CATS = [['اسپرینکلر','SP'], ['دتکتور دود','SD'], ['دتکتور حرارتی','HD'], ['شستی اعلام حریق','MCP'], ['آژیر/فلاشر','HS'], ['دریچهٔ هوا','AG'], ['دیفیوزر','DF'], ['چراغ','LT'], ['پریز','SO'], ['کلید','SW'], ['جعبه تقسیم','JB'], ['شیر','V'], ['کفشوی','FD'], ['دوربین','CAM'], ['بلندگو','SPK'], ['سایر','IT']];
+/* تنظیم کدگذاری: [اختصار]-[طبقه]-[زون]-[شماره با n رقم] — آخرین تنظیم به یاد می‌ماند */
+function cntCfg(){ let c = {}; try{ c = JSON.parse(localStorage.getItem('cad.ccfg') || '{}') || {}; }catch(e){} return Object.assign({cat: '', a: '', fl: '', z: '', sep: '-', dg: 3, start: 1, ord: 'yx'}, c); }
+function cntPre(c){ const t = [c.a, c.fl, c.z].map(x => String(x || '').trim()).filter(Boolean); return t.length ? t.join(c.sep) + c.sep : ''; }
+function cntForm(c, pfx){
+  const catOpts = CNT_CATS.map(x => '<option value="' + escH(x[0]) + '" data-a="' + x[1] + '"' + (c.cat === x[0] ? ' selected' : '') + '>' + escH(x[0]) + ' (' + x[1] + ')</option>').join('');
+  const known = CNT_CATS.some(x => x[0] === c.cat);
+  return '<div class="cf"><label>دسته<select data-' + pfx + '="catSel"><option value="">— انتخاب —</option>' + catOpts + '<option value="__c"' + (c.cat && !known ? ' selected' : '') + '>دستهٔ دیگر…</option></select></label>'
+    + '<label class="cf-c"' + (c.cat && !known ? '' : ' hidden') + '>نام دسته<input type="text" data-' + pfx + '="cat" value="' + escH(c.cat || '') + '" placeholder="مثلاً هیدرانت"></label>'
+    + '<label>اختصار<input type="text" dir="ltr" data-' + pfx + '="a" value="' + escH(c.a || '') + '" placeholder="SP"></label>'
+    + '<label>طبقه<input type="text" dir="ltr" data-' + pfx + '="fl" value="' + escH(c.fl || '') + '" placeholder="F3"></label>'
+    + '<label>زون/محل<input type="text" dir="ltr" data-' + pfx + '="z" value="' + escH(c.z || '') + '" placeholder="A"></label>'
+    + '<label>جداکننده<select data-' + pfx + '="sep">' + [['-','-'],['.','.'],['/','/'],['_','_'],['','بدون']].map(x => '<option value="' + x[0] + '"' + (c.sep === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label>'
+    + '<label>رقم شماره<select data-' + pfx + '="dg">' + [2,3,4].map(n => '<option' + (+c.dg === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label>'
+    + '<label>شروع از<input type="number" min="0" dir="ltr" data-' + pfx + '="start" value="' + (+c.start || 1) + '"></label></div>'
+    + '<div class="cf-pv">نمونهٔ کد: <b dir="ltr" data-cpv></b></div>'; }
+function cntRead(pfx){ const q = k => cntP.querySelector('[data-' + pfx + '="' + k + '"]'), v = k => String((q(k) || {}).value || '').trim();
+  const sel = q('catSel'), sv = sel ? sel.value : '';
+  const cat = sv && sv !== '__c' ? sv : v('cat');
+  return {cat, a: v('a').toUpperCase(), fl: v('fl').toUpperCase(), z: v('z').toUpperCase(), sep: q('sep') ? q('sep').value : '-', dg: +v('dg') || 3, start: (n => isNaN(n) ? 1 : Math.max(0, n))(parseInt(toEn(v('start')), 10)), ord: v('ord') || 'yx'}; }
+function cntPv(pfx){ const c = cntRead(pfx), el = cntP.querySelector('[data-cpv]'); if(el) el.textContent = cntPre(c) + String(c.start).padStart(c.dg, '0') + ' , ' + cntPre(c) + String(c.start + 1).padStart(c.dg, '0') + ' …'; }
+function toEn(t){ return String(t).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }
+function cntSaveCfg(c){ try{ localStorage.setItem('cad.ccfg', JSON.stringify(c)); }catch(e){} }
+/* شروع ابزار: هم «روی نماد بزنید» و هم «کدگذاری دستی بدون نماد» از همان اول */
+function cntIntro(){
+  if(S.cg >= 0) return; tmpG.innerHTML = '';
+  const hasIns = !!(S.ins && S.ins.nm && S.ins.nm.length), c = cntCfg();
+  cntP.hidden = false; cntP.__same = null;
+  cntP.innerHTML = '<b>کدگذاری آیتم‌ها</b><small>' + (hasIns ? 'روی یک نماد (بلاک) بزنید تا همهٔ مشابه‌ها یک‌جا کد بخورند؛ یا بدون نماد، دستی هرجای نقشه کلیک کنید.' : 'این نقشه نماد (بلاک) ندارد؛ دستی هرجای نقشه کلیک کنید تا آیتم با کد ثبت شود.') + '</small>'
+    + cntForm(c, 'cc')
+    + '<div class="row"><button type="button" class="btn pri" data-cnew="manual">شروع کدگذاری دستی</button>' + (S.marks.some(m => m.type === 'count') ? '<small>یا گروهی را از فهرست کنار صفحه باز کنید</small>' : '') + '<button type="button" class="btn" data-cx style="margin-inline-start:auto">✕</button></div>';
+  cntPv('cc'); }
 let CI = null;   /* شبکهٔ جست‌وجوی نقاط درج بلاک‌ها */
 function insIndex(){ CI = null; const I = S.ins; if(!I || !I.nm || !I.nm.length) return; let bw = 1000; if(S.base) bw = Math.max(S.base.w, S.base.h);
   const cell = Math.max(bw / 300, 1e-6), g = new Map();
@@ -675,8 +712,8 @@ function cntSvg(m, i, on){
   const c = m.color || '#c0392b', k = S.vb.w / (stage.clientWidth || 1), r = 7 * k;
   return (m.items || []).map(it => '<circle cx="' + it.x + '" cy="' + it.y + '" r="' + r + '" fill="' + c + '" fill-opacity="' + (on ? .35 : .18) + '" stroke="' + c + '" stroke-width="' + (on ? 2 : 1.3) + '" vector-effect="non-scaling-stroke"/>'
     + (m.lbl === false ? '' : '<g transform="translate(' + it.x + ',' + it.y + ') scale(' + k + ',' + (-k) + ')"><text class="lab" x="9" y="-8" style="font-size:10px;direction:ltr" fill="' + c + '">' + escH(it.c) + '</text></g>')).join(''); }
-function cntCode(m, n){ return (m.pre || '') + pad3(n); }
-function cntNext(m){ let mx = (+m.start || 1) - 1; (m.items || []).forEach(it => { const t = String(it.c || '').slice((m.pre || '').length); const v = parseInt(t, 10); if(!isNaN(v) && v > mx) mx = v; }); return mx + 1; }
+function cntCode(m, n){ return (m.pre || '') + String(n).padStart(+m.dg || 3, '0'); }
+function cntNext(m){ let mx = (m.start == null ? 1 : +m.start) - 1; (m.items || []).forEach(it => { const t = String(it.c || '').slice((m.pre || '').length); const v = parseInt(t, 10); if(!isNaN(v) && v > mx) mx = v; }); return mx + 1; }
 function cntClick(p){
   const k = insNear(p);
   const g = S.marks[S.cg];
@@ -686,7 +723,12 @@ function cntClick(p){
     const ex = (g.items || []).findIndex(it => Math.hypot(it.x - x, it.y - y) < 1e-6 || (k < 0 && Math.hypot(it.x - p.x, it.y - p.y) < 10 * S.vb.w / (stage.clientWidth || 1)));
     if(ex >= 0) g.items.splice(ex, 1); else (g.items = g.items || []).push({x, y, b: k >= 0 ? S.ins.nm[k] : '', c: cntCode(g, cntNext(g))});
     save(); render(); cntOpen(S.cg); return; }
-  if(k < 0){ cntP.hidden = false; cntP.innerHTML = '<b>آیتمی اینجا نیست</b><small>روی خودِ نماد (بلاک) بزنید. نمادهای کشیده‌شده با خط ساده بلاک نیستند؛ برای آن‌ها یک گروه خالی بسازید و تک‌تک کلیک کنید.</small><div class="row"><button type="button" class="btn" data-cnew="manual">گروه دستی (کلیک تک‌تک)</button><button type="button" class="btn" data-cx>بستن</button></div>'; return; }
+  if(k < 0){ /* بدون نماد: یک گروه دستی با تنظیم فعلی می‌سازد و همین نقطه اولین آیتم می‌شود */
+    if(cntP.hidden || !cntP.querySelector('[data-cc="dg"]')){ cntIntro(); return; }
+    const c = cntRead('cc');
+    const m = {type: 'count', cat: c.cat || 'آیتم', pre: cntPre(c), dg: c.dg, start: c.start, sc: c, blk: '', color: '#c0392b', name: c.cat || 'آیتم', items: [], man: 1};
+    m.items.push({x: p.x, y: p.y, b: '', c: cntCode(m, c.start)}); cntSaveCfg(c);
+    S.marks.push(m); S.sel = S.cg = S.marks.length - 1; save(); render(); cntOpen(S.cg); return; }
   S.cpick = k; const nm = S.ins.nm[k], ly = S.ins.ly[k];
   const same = []; for(let j = 0; j < S.ins.nm.length; j++) if(S.ins.nm[j] === nm && S.ins.ly[j] === ly) same.push(j);
   const v = S.vb, inView = same.filter(j => { const x = S.ins.xy[j * 2], y = -S.ins.xy[j * 2 + 1]; return x >= v.x && x <= v.x + v.w && y >= v.y && y <= v.y + v.h; }).length;
@@ -694,41 +736,53 @@ function cntClick(p){
   tmpG.innerHTML = '<circle cx="' + S.ins.xy[k * 2] + '" cy="' + S.ins.xy[k * 2 + 1] + '" r="' + (10 * S.vb.w / stage.clientWidth) + '" fill="none" stroke="#e67e22" stroke-width="2.4" vector-effect="non-scaling-stroke"/>';
   cntP.hidden = false;
   cntP.innerHTML = '<b>آیتم: <span dir="ltr">' + escH(nm) + '</span></b><small>لایه <span dir="ltr">' + escH(ly) + '</span> · ' + toFa(same.length) + ' مورد مشابه در کل نقشه</small>'
-    + '<div class="row"><input type="text" data-cc="cat" list="cntCats" placeholder="دسته (مثلاً اسپرینکلر)" style="flex:1 1 140px"><input type="text" data-cc="pre" dir="ltr" placeholder="پیشوند کد، مثلاً SP-F3-" style="flex:1 1 120px"></div>'
-    + '<datalist id="cntCats">' + CNT_CATS.map(x => '<option value="' + escH(x) + '">').join('') + '</datalist>'
+    + cntForm(cntCfg(), 'cc')
     + '<div class="row"><small>ترتیب شماره:</small><select data-cc="ord"><option value="yx">ردیف‌ها، بالا به پایین</option><option value="xy">ستون‌ها، چپ به راست</option><option value="rtl">ردیف‌ها، راست به چپ</option></select></div>'
     + '<div class="row"><button type="button" class="btn pri" data-cnew="all">انتخاب مشابه: کل نقشه (' + toFa(same.length) + ')</button><button type="button" class="btn" data-cnew="view">در دید فعلی (' + toFa(inView) + ')</button>'
     + (inArea >= 0 ? '<button type="button" class="btn" data-cnew="area">داخل محدودهٔ انتخابی (' + toFa(inArea) + ')</button>' : '') + '<button type="button" class="btn" data-cnew="one">فقط همین، بعد تک‌تک</button><button type="button" class="btn" data-cx>✕</button></div>';
   cntP.__same = {same, inArea: inArea >= 0 ? same.filter(j => pip(S.ins.xy[j * 2], S.ins.xy[j * 2 + 1], selM.pts)) : [], nm};
+  cntPv('cc');
 }
 const pip = (x, y, pts) => { let o = false; for(let a = 0, b = pts.length - 1; a < pts.length; b = a++){ const P = pts[a], Q = pts[b]; if((P.y > y) !== (Q.y > y) && x < (Q.x - P.x) * (y - P.y) / (Q.y - P.y) + P.x) o = !o; } return o; };
 cntP.addEventListener('click', e => {
   if(e.target.closest('[data-cx]')){ cntP.hidden = true; S.cg = -1; tmpG.innerHTML = ''; render(); return; }
   const nb = e.target.closest('[data-cnew]');
   if(nb){ const how = nb.dataset.cnew, I = S.ins, Sm = cntP.__same || {same: [], inArea: []};
-    const cat = String((cntP.querySelector('[data-cc="cat"]') || {}).value || '').trim() || 'آیتم', pre = String((cntP.querySelector('[data-cc="pre"]') || {}).value || '').trim(), ord = (cntP.querySelector('[data-cc="ord"]') || {}).value || 'yx';
+    const c = cntRead('cc'), cat = c.cat || 'آیتم', pre = cntPre(c), ord = (cntP.querySelector('[data-cc="ord"]') || {}).value || 'yx'; cntSaveCfg(c);
     let L = how === 'all' ? Sm.same : how === 'area' ? Sm.inArea : how === 'one' ? [S.cpick] : how === 'view' ? Sm.same.filter(j => { const v = S.vb, x = I.xy[j * 2], y = -I.xy[j * 2 + 1]; return x >= v.x && x <= v.x + v.w && y >= v.y && y <= v.y + v.h; }) : [];
     const P = L.map(j => ({x: I.xy[j * 2], y: I.xy[j * 2 + 1], b: I.nm[j]}));
     const tol = (S.base ? Math.max(S.base.w, S.base.h) : 1000) / 400;
     P.sort((a, b) => ord === 'xy' ? (Math.round(a.x / tol) - Math.round(b.x / tol) || b.y - a.y) : (Math.round(b.y / tol) - Math.round(a.y / tol) || (ord === 'rtl' ? b.x - a.x : a.x - b.x)));
-    const m = {type: 'count', cat, pre, start: 1, blk: Sm.nm || '', color: '#c0392b', name: cat, items: []};
-    P.forEach((it, n) => m.items.push(Object.assign(it, {c: cntCode(m, n + 1)})));
+    const m = {type: 'count', cat, pre, start: c.start, dg: c.dg, sc: c, blk: Sm.nm || '', color: '#c0392b', name: cat, items: [], man: how === 'manual' ? 1 : 0};
+    P.forEach((it, n) => m.items.push(Object.assign(it, {c: cntCode(m, c.start + n)})));
     S.marks.push(m); S.sel = S.cg = S.marks.length - 1; save(); render(); cntOpen(S.cg); return; }
-  const ok = e.target.closest('[data-cok]'); if(ok){ const m = S.marks[S.cg]; if(m){ const g = k => String((cntP.querySelector('[data-cg="' + k + '"]') || {}).value || '').trim();
-      const np = g('pre'); m.cat = g('cat') || m.cat; m.name = m.cat;
-      if(np !== (m.pre || '')){ const old = m.pre || ''; m.items.forEach(it => { if(String(it.c).indexOf(old) === 0) it.c = np + String(it.c).slice(old.length); }); m.pre = np; }
+  const ok = e.target.closest('[data-cok]'); if(ok){ const m = S.marks[S.cg]; if(m){ const c = cntRead('cg'), np = cntPre(c);
+      m.cat = c.cat || m.cat; m.name = m.cat; m.sc = c; m.start = c.start;
+      const old = m.pre || '', dg = +m.dg || 3;
+      if(np !== old || c.dg !== dg){ m.items.forEach(it => { const t = String(it.c); if(t.indexOf(old) === 0){ const n = parseInt(t.slice(old.length), 10); it.c = np + (isNaN(n) ? t.slice(old.length) : String(n).padStart(c.dg, '0')); } }); m.pre = np; m.dg = c.dg; }
+      cntSaveCfg(Object.assign(cntCfg(), c));
       m.lbl = !!(cntP.querySelector('[data-cg="lbl"]') || {}).checked; save(); render(); }
     cntP.hidden = true; S.cg = -1; tmpG.innerHTML = ''; return; }
-  const rn = e.target.closest('[data-crenum]'); if(rn){ const m = S.marks[S.cg]; if(m){ m.items.forEach((it, n) => { it.c = cntCode(m, (+m.start || 1) + n); }); save(); render(); cntOpen(S.cg); } }
+  const rn = e.target.closest('[data-crenum]'); if(rn){ const m = S.marks[S.cg]; if(m){ const c = cntRead('cg'); m.pre = cntPre(c); m.dg = c.dg; m.start = c.start; m.sc = c; m.cat = c.cat || m.cat; m.name = m.cat; m.items.forEach((it, n) => { it.c = cntCode(m, (+m.start || 0) + n); }); save(); render(); cntOpen(S.cg); } }
+  const ul = e.target.closest('[data-cundo]'); if(ul){ const m = S.marks[S.cg]; if(m && m.items && m.items.length){ m.items.pop(); save(); render(); cntOpen(S.cg); } }
 });
+cntP.addEventListener('change', e => { const t = e.target;
+  if(t.matches('select[data-cc="catSel"], select[data-cg="catSel"]')){ const pf = t.matches('[data-cc]') ? 'cc' : 'cg', o = t.selectedOptions[0], cw = cntP.querySelector('.cf-c'), ab = cntP.querySelector('[data-' + pf + '="a"]'), ci = cntP.querySelector('[data-' + pf + '="cat"]');
+    if(cw) cw.hidden = t.value !== '__c'; if(t.value !== '__c'){ if(ci) ci.value = t.value; if(ab && o && o.dataset.a) ab.value = o.dataset.a; } else if(ci){ ci.value = ''; ci.focus(); } }
+  cntPv(t.matches('[data-cg]') ? 'cg' : 'cc'); });
+cntP.addEventListener('input', e => cntPv(e.target.matches('[data-cg]') ? 'cg' : 'cc'));
+cntP.addEventListener('keydown', e => e.stopPropagation());
 function cntOpen(i){
   const m = S.marks[i]; if(!m) return; S.cg = i; S.sel = i; if(S.tool !== 'count') setTool('count');
   cntP.hidden = false;
-  cntP.innerHTML = '<b>' + escH(m.cat || 'آیتم') + ' — ' + toFa((m.items || []).length) + ' عدد</b><small>روی هر نماد بزنید تا اضافه یا برداشته شود؛ کد هر آیتم ماندگار است (تازه‌ها شمارهٔ بعدی را می‌گیرند).</small>'
-    + '<div class="row"><input type="text" data-cg="cat" list="cntCats" value="' + escH(m.cat || '') + '" style="flex:1 1 120px"><input type="text" data-cg="pre" dir="ltr" value="' + escH(m.pre || '') + '" placeholder="پیشوند" style="flex:1 1 100px"></div>'
-    + '<datalist id="cntCats">' + CNT_CATS.map(x => '<option value="' + escH(x) + '">').join('') + '</datalist>'
+  const c = m.sc || Object.assign(cntCfg(), {cat: m.cat || '', a: '', fl: '', z: '', start: +m.start || 1, dg: +m.dg || 3});
+  if(!m.sc && m.pre){ c.a = String(m.pre).replace(/[-./_]+$/, ''); c.fl = ''; c.z = ''; }
+  const n = (m.items || []).length, last = n ? m.items[n - 1].c : '';
+  cntP.innerHTML = '<b>' + escH(m.cat || 'آیتم') + ' — ' + toFa(n) + ' عدد</b><small>' + (m.man ? 'هرجای نقشه کلیک کنید تا آیتم تازه با کد بعدی ثبت شود (نزدیک نماد بود، روی آن می‌نشیند)؛ روی آیتم موجود بزنید تا برداشته شود.' : 'روی هر نماد یا هر نقطه بزنید تا اضافه یا برداشته شود؛ تازه‌ها شمارهٔ بعدی را می‌گیرند.') + (last ? ' آخرین: <b dir="ltr">' + escH(last) + '</b> · بعدی: <b dir="ltr">' + escH(cntCode(m, cntNext(m))) + '</b>' : '') + '</small>'
+    + cntForm(c, 'cg')
     + '<label class="row" style="gap:6px"><input type="checkbox" data-cg="lbl"' + (m.lbl === false ? '' : ' checked') + '> کدها روی نقشه</label>'
-    + '<div class="row"><button type="button" class="btn pri" data-cok>تمام</button><button type="button" class="btn" data-crenum>شماره‌گذاری دوباره از ' + toFa(m.start || 1) + '</button><button type="button" class="btn" data-cx>✕</button></div>'; }
+    + '<div class="row"><button type="button" class="btn pri" data-cok>تمام</button><button type="button" class="btn" data-crenum>شماره‌گذاری دوباره</button>' + (n ? '<button type="button" class="btn" data-cundo>برداشتن آخرین</button>' : '') + '<button type="button" class="btn" data-cx>✕</button></div>';
+  cntPv('cg'); }
 function rowXHtml(m, i){
   const on = i === S.sel;
   if(m.type === 'wall'){ const n = ((m.walls && m.walls.segs) || []).length, L = (m.walls && m.walls.segs || []).reduce((t, g) => t + g.l, 0);
