@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105141549">
+<meta name="pm-build" content="20261105141745">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29139,6 +29139,28 @@
   .mqc-w{display:block;font-size:10.5px;color:#b07512;}
   .mqc-act{display:flex;gap:8px;} .mx-btn.pri{background:var(--sky) !important;color:#fff !important;border-color:transparent !important;}
   @media (max-width:760px){ .mqc-t{overflow-x:auto;} .mqc-t .mq-tr{min-width:760px;} }
+  /* فضاها و طبقات — دسکتاپ: نمای ساختمان + جزئیات */
+  .sp-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,1fr);gap:18px;align-items:start;}
+  .sp-bld{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;max-height:calc(100vh - 240px);overflow-y:auto;position:sticky;top:12px;}
+  .spb-hd{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);} .spb-hd b{font-size:13px;}
+  .spb-lg, .spd-st{display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-inline-start:auto;} .spb-lg span, .spd-st span{display:inline-flex;align-items:center;gap:4px;}
+  .spb-lg i, .spd-st i{width:9px;height:9px;border-radius:3px;background:var(--uc);}
+  .sp-split :is(.st-free){--uc:color-mix(in srgb, var(--muted) 28%, var(--surface));} .sp-split .st-res{--uc:#d9a23b;} .sp-split .st-pre{--uc:#4f7bb8;} .sp-split .st-sold{--uc:#2f8a6a;}
+  .spb-r{display:grid;grid-template-columns:44px minmax(110px,150px) minmax(0,1fr) 64px;gap:10px;align-items:center;width:100%;padding:7px 12px;border:0;border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);background:none;text-align:start;cursor:pointer;color:inherit;font:inherit;}
+  .spb-r:last-child{border-bottom:0;} .spb-r:hover{background:color-mix(in srgb, var(--sky) 5%, transparent);}
+  .spb-r.on{background:color-mix(in srgb, var(--sky) 10%, transparent);box-shadow:inset -3px 0 0 var(--sky);}
+  .spb-k{display:grid;place-items:center;height:28px;min-width:36px;padding:0 6px;border-radius:8px;background:var(--field);font-size:11.5px;font-weight:800;color:var(--ink);}
+  .spb-k.lg{height:40px;min-width:52px;font-size:14px;border-radius:12px;}
+  .spb-r.on .spb-k{background:var(--sky);color:#fff;}
+  .spb-t{display:flex;flex-direction:column;min-width:0;} .spb-t b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .spb-t small{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .spb-u{display:flex;gap:3px;min-width:0;} .spb-u i{flex:1 1 0;max-width:46px;min-width:16px;height:24px;border-radius:5px;background:var(--uc);display:grid;place-items:center;font-style:normal;font-size:9.5px;font-weight:700;color:color-mix(in srgb, var(--ink) 70%, transparent);}
+  .spb-u i:is(.st-sold,.st-pre,.st-res){color:#fff;}
+  .spb-u em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:4px 8px;border:1px dashed var(--line);border-radius:6px;width:100%;}
+  .spb-a{font-size:11.5px;font-weight:700;text-align:end;white-space:nowrap;} .spb-a small{font-size:9.5px;color:var(--muted);margin-inline-start:2px;font-weight:600;}
+  .sp-det{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .spd-h{display:flex;align-items:center;gap:12px;} .spd-h b{font-size:16px;display:block;} .spd-h small{font-size:11.5px;color:var(--muted);}
+  .spd-st{margin:0;font-size:11.5px;} .spd-st b{color:var(--ink);}
+  .sp-det .sp-fb{padding:0 !important;border:0 !important;background:none !important;margin:0 !important;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -78796,7 +78818,14 @@
       + [units.length ? toFa(units.length) + ' واحد' + (sold ? ' · ' + toFa(sold) + ' فروخته' : '') : (KN[f.kind] || ''), zs.length ? toFa(zs.length) + ' محل' : ''].filter(Boolean).join(' · ')
       + '</small></span>' + (units.length ? '<span class="sp-bar">' + units.map(u => '<i class="st-' + ((sp.units.get(u) || {}).st || 'free') + '"></i>').join('') + '</span>' : '')
       + '<span class="sp-ar"></span></button>';
-    if(op){
+    if(op) h += spFloorBody(f);
+    return h + '</div>';
+  }
+  /* بدنهٔ طبقه (واحدها، فرم واحد، محل‌ها) — در فهرست گوشی زیر سرطبقه، در دسکتاپ در ستون جزئیات */
+  function spFloorBody(f){
+    const units = f.units || [], zs = spZonesOwn(f.key);
+    let h = '';
+    {
       h += '<div class="sp-fb">';
       if(units.length) h += '<div class="sp-sh">واحدها <em>محل سطح ۱؛ اجزای هر واحد محل جزء</em></div><div class="sp-us">' + units.map(spChip).join('') + '</div>';
       if(sp.unit && units.indexOf(sp.unit) !== -1) h += spUnitForm(sp.unit);
@@ -78806,7 +78835,30 @@
         + (spCanE() ? '<span class="sp-zadd"><input type="text" data-spzin="' + esc(f.key) + '" placeholder="' + (rs ? 'محل تازه' : 'فضای تازه') + '" list="spZoneSug"><button type="button" data-spzadd="' + esc(f.key) + '">افزودن</button></span>' : (zs.length ? '' : '<span class="sp-none">محلی ثبت نشده</span>'))
         + '</div></div>';
     }
-    return h + '</div>';
+    return h;
+  }
+  /* ====== دسکتاپ: نمای ساختمان (طبقه‌ها روی هم، هر واحد یک خانه به رنگ وضعیت فروش) + جزئیات طبقهٔ انتخابی ====== */
+  function spBldHtml(){
+    const F = spFloors(); if(!F.length) return '';
+    if(!sp.open || !F.some(f => f.key === sp.open)) sp.open = (F.find(f => (f.units || []).length) || F[0]).key;
+    const cur = F.find(f => f.key === sp.open);
+    const P = k => (window.spPPOf ? window.spPPOf(k) : null);
+    const KN = {base:'زیرزمین', gf:'همکف', tech:'فنی', top:'بام'};
+    const mx = Math.max(1, ...F.map(f => (f.units || []).length));
+    const rows = F.map(f => { const U = f.units || [], zs = spZonesOwn(f.key), q = P('F ' + f.key), on = f.key === sp.open;
+      const sold = U.filter(u => { const t = (sp.units.get(u) || {}).st; return t === 'sold' || t === 'pre'; }).length;
+      return '<button type="button" class="spb-r' + (on ? ' on' : '') + (U.length ? '' : ' nu') + '" data-spfl="' + esc(f.key) + '">'
+        + '<span class="spb-k" dir="ltr">' + esc(/^\d+$/.test(f.key) ? toFa(f.key) : f.key) + '</span>'
+        + '<span class="spb-t"><b>' + esc(f.label) + '</b><small>' + esc([U.length ? toFa(U.length) + ' واحد' + (sold ? ' · ' + toFa(sold) + ' فروخته' : '') : (KN[f.kind] || ''), zs.length ? toFa(zs.length) + ' محل' : ''].filter(Boolean).join(' · ') || '—') + '</small></span>'
+        + '<span class="spb-u" style="--n:' + mx + '">' + (U.length ? U.map(u => { const o = sp.units.get(u) || {}; return '<i class="st-' + (o.st || 'free') + '" title="' + esc(spUnitLb(u) + ' · ' + spStOf(o.st || 'free')[1] + (o.own ? ' · ' + o.own : '')) + '">' + esc(toFa(String(u).slice(-2))) + '</i>'; }).join('') : '<em>' + (zs.length ? esc(zs.slice(0, 3).join('، ')) + (zs.length > 3 ? '…' : '') : 'فضای مشترک') + '</em>') + '</span>'
+        + '<span class="spb-a">' + (q && q.a ? toFa(Math.round(q.a)) + '<small>m²</small>' : '') + '</span></button>'; }).join('');
+    const U = cur.units || [], q = P('F ' + cur.key);
+    const cnt = k => U.filter(u => ((sp.units.get(u) || {}).st || 'free') === k).length;
+    const det = '<div class="spd-h"><span class="spb-k lg" dir="ltr">' + esc(/^\d+$/.test(cur.key) ? toFa(cur.key) : cur.key) + '</span><div><b>' + esc(cur.label) + '</b><small>'
+        + esc([U.length ? toFa(U.length) + ' واحد' : '', spZonesOwn(cur.key).length ? toFa(spZonesOwn(cur.key).length) + ' محل' : '', q && q.a ? 'کف ' + toFa(Math.round(q.a)) + ' m² (از نقشه)' : ''].filter(Boolean).join(' · ')) + '</small></div></div>'
+      + (U.length ? '<div class="spd-st">' + SP_ST.map(([k, t, tn]) => '<span class="st-' + k + '"><i></i>' + t + ' <b>' + toFa(cnt(k)) + '</b></span>').join('') + '</div>' : '')
+      + spFloorBody(cur);
+    return '<div class="sp-split"><div class="sp-bld"><div class="spb-hd"><b>نمای ساختمان</b><span class="spb-lg">' + SP_ST.map(([k, t]) => '<span class="st-' + k + '"><i></i>' + t + '</span>').join('') + '</span></div>' + rows + '</div><div class="sp-det">' + det + '</div></div>';
   }
   /* تگ‌ها (همان شکل اعضای پروژه): هر مقدار یک برچسب، حذف با ×، افزودن با Enter */
   function spTagsHtml(key, vals, ed, list, ph, person){
@@ -78902,7 +78954,7 @@
       .map(([k, t]) => '<button type="button" class="kcap sm' + (sp.tab === k ? ' on' : '') + '" data-sptab="' + k + '">' + t + '</button>').join('');
     body.innerHTML = '<div class="wh-in">' + spDLs() + (sp.tab === 'mt' ? mtHtml() : sp.tab === 'set' ? spTypesHtml() + spSetHtml() : sp.tab === 'pg' ? pgHtml() : sp.tab === 'sale' ? spKpis() + spSaleHtml()
       : spKpis() + spGlobalHtml() + '<p class="sp-hint">' + (resi ? 'محل اصلی همه‌جا طبقه است؛ در طبقهٔ مسکونی محل سطح ۱ واحد و محل جزء اجزای واحد است. روی هر طبقه بزنید.'
-          : 'پروژهٔ ' + esc((pjCur() || {}).type || 'غیرمسکونی') + ': روی هر طبقه بزنید و فضاهایش (مثلاً ' + esc(spSugByType().slice(0, 3).join('، ') || 'اتاق‌ها و سالن‌ها') + ') را اضافه کنید؛ همین فضاها در گزارش روزانه، متره و پیشرفت می‌آیند.') + '</p><div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>') + '</div>';
+          : 'پروژهٔ ' + esc((pjCur() || {}).type || 'غیرمسکونی') + ': روی هر طبقه بزنید و فضاهایش (مثلاً ' + esc(spSugByType().slice(0, 3).join('، ') || 'اتاق‌ها و سالن‌ها') + ') را اضافه کنید؛ همین فضاها در گزارش روزانه، متره و پیشرفت می‌آیند.') + '</p>' + (window.innerWidth >= 1180 ? spBldHtml() : '<div class="sp-fls">' + spFloors().map(spFloorHtml).join('') + '</div>')) + '</div>';
   }
   window.spRender = spRender;
   window.spVisible = () => { try{ return spCanE() || spCanS() || can('sp.prog') || can('sp.view'); }catch(e){ return false; } };
@@ -78923,7 +78975,7 @@
     const host = document.getElementById('spArea'); if(!host || !host.contains(e.target)) return;
     const t = e.target;
     const tb = t.closest('[data-sptab]'); if(tb){ sp.tab = tb.dataset.sptab; spRender(); return; }
-    const fl = t.closest('[data-spfl]'); if(fl){ sp.open = sp.open === fl.dataset.spfl ? '' : fl.dataset.spfl; sp.unit = ''; spRender(); return; }
+    const fl = t.closest('[data-spfl]'); if(fl){ const dsk = !!fl.closest('.sp-bld'); sp.open = dsk ? fl.dataset.spfl : (sp.open === fl.dataset.spfl ? '' : fl.dataset.spfl); sp.unit = ''; spRender(); return; }
     const f2 = t.closest('[data-spfl2]'); if(f2){ sp.f = f2.dataset.spfl2; spRender(); return; }
     const go = t.closest('[data-spgo]'); if(go){ const f = spFloorOf(go.dataset.spgo); sp.tab = 'fl'; sp.open = f ? f.key : ''; sp.unit = go.dataset.spgo; spRender();
       try{ host.querySelector('.sp-card').scrollIntoView({block: 'center', behavior: 'smooth'}); }catch(err){} return; }
