@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105093127">
+<meta name="pm-build" content="20261105093320">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -31806,12 +31806,17 @@
     }
     function close(){ cal.hidden = true; target = null; }
 
+    /* هر فیلد تاریخ در سایت تقویم دارد: کلاس date-in، یا نام کلاسش «date/Date» دارد، یا نمونه‌اش «۱۴۰۵/۰۷/۰۱» است */
+    const DATE_PH = /^[۰-۹0-9]{4}\/[۰-۹0-9]{1,2}\/[۰-۹0-9]{1,2}$/;
+    const isDateInp = el => !!(el && el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search' || !el.type) && !el.readOnly && !el.disabled
+      && (el.classList.contains('date-in') || /(^|[\s-])(date|ds-date|ds-rdate)($|\s)|[a-z]Date\b|-date\b/.test(el.className || '') || DATE_PH.test(String(el.placeholder || '').trim()) || el.dataset.date === '1'));
+    const dateInp = t => { const i = t && t.closest ? t.closest('input') : null; return isDateInp(i) ? i : null; };
     document.addEventListener('focusin', e => {
-      const inp = e.target.closest('input.date-in');
+      const inp = dateInp(e.target);
       if(inp) open(inp); else if(!e.target.closest('.jcal')) close();
     });
     document.addEventListener('click', e => {
-      if(e.target.closest('input.date-in') || e.target.closest('.jcal')) return;
+      if(dateInp(e.target) || e.target.closest('.jcal')) return;
       close();
     });
     window.addEventListener('scroll', () => { if(!cal.hidden) place(); }, {passive:true});
@@ -61031,6 +61036,48 @@
     return toFa(+m[3]) + ' ' + (FA_MONTHS[+m[2] - 1] || '') + ' ' + toFa(m[1]);
   }
   /* قرارداد تمام‌شده، کنسل‌شده یا «انقضا اعلام شد» دیگر «منقضی» نشان داده نمی‌شود */
+  /* متن آمادهٔ اشتراک، متناسب با نوع سند: سلام، سطر عنوان، مشخصات لازمِ همان نوع، و جملهٔ پایانی؛
+     موعد داخلی، مسئول داخلی و مرحلهٔ بررسی داخلی در متنِ بیرونی نمی‌آید */
+  function admShareText(kind, r, docNo, party){
+    const g = k => String(pick(r, k) || '').trim(), no = docNo ? toFa(docNo) : '';
+    let pj = ''; try{ pj = String((window.pjCur && window.pjCur().name) || exact(r, 'پروژه') || '').trim(); }catch(e){}
+    const L = [];
+    const hi = party ? 'با سلام و احترام، ' + party : 'با سلام و احترام';
+    const amt = v => v ? moneyFa(v) + ' ریال' + (function(){ try{ return ' (' + arToman(amtNum(v)) + ' تومان)'; }catch(e){ return ''; } })() : '';
+    if(kind === 'statement'){
+      L.push(hi, '', 'صورت وضعیت' + (no ? ' شمارهٔ ' + no : '') + (sRevRaw(r) && sRevRaw(r) !== '0' ? ' (اصلاحیهٔ ' + toFa(sRevRaw(r)) + ')' : '') + (g(AD.sName) ? ' — ' + g(AD.sName) : ''));
+      if(g(AD.sCno)) L.push('شمارهٔ قرارداد: ' + toFa(g(AD.sCno)));
+      if(g(AD.sAmount)) L.push('مبلغ: ' + amt(g(AD.sAmount)));
+      if(g(AD.sDate)) L.push('تاریخ: ' + toFa(admDate(g(AD.sDate)) || g(AD.sDate)));
+      L.push('', 'خواهشمند است پس از بررسی، نتیجه را اعلام فرمایید.');
+    } else if(kind === 'contract'){
+      L.push(hi, '', (ctIsInvoice(r) ? 'فاکتور' : 'قرارداد') + (no ? ' شمارهٔ ' + no : '') + (g(AD.cTitle) ? ' — ' + g(AD.cTitle) : '') + (g(AD.cAdd) ? ' (الحاقیهٔ ' + toFa(g(AD.cAdd)) + ')' : ''));
+      if(g(AD.cAmount)) L.push('مبلغ: ' + amt(g(AD.cAmount)));
+      if(g(AD.cStart)) L.push('تاریخ شروع: ' + toFa(admDate(g(AD.cStart)) || g(AD.cStart)));
+      try{ const e = admDate(cEndRaw(r)); if(e) L.push('تاریخ اتمام: ' + toFa(e)); }catch(e){}
+      L.push('', 'لطفاً پس از مطالعه، ملاحظات یا تأیید خود را اعلام فرمایید.');
+    } else if(kind === 'letter'){
+      L.push(hi, '', 'نامهٔ' + (no ? ' شمارهٔ ' + no : '') + (g(AD.lSubject) ? ' — موضوع: ' + g(AD.lSubject) : ''));
+      if(g(AD.date)) L.push('تاریخ: ' + toFa(admDate(g(AD.date)) || g(AD.date)));
+      L.push('', 'متن کامل نامه پیوست است.');
+    } else if(kind === 'minute'){
+      L.push(hi, '', 'صورتجلسهٔ' + (g(AD.mSubject) ? ' «' + g(AD.mSubject) + '»' : '') + (g(AD.mMeet) ? ' — مورخ ' + toFa(admDate(g(AD.mMeet)) || g(AD.mMeet)) : ''));
+      if(g(AD.mText)) L.push('بند: ' + g(AD.mText));
+      if(g(AD.mOwner)) L.push('مسئول انجام: ' + g(AD.mOwner));
+      if(g(AD.mDate)) L.push('موعد اقدام: ' + toFa(admDate(g(AD.mDate)) || g(AD.mDate)));
+      L.push('', 'لطفاً بر اساس این بند اقدام فرمایید.');
+    } else if(kind === 'design'){
+      let rv = ''; try{ const R = dsRevsOf(r); rv = (R[R.length - 1] || {}).rev || ''; }catch(e){}
+      L.push(hi, '', 'مدرک طراحی' + (no ? ' ' + no : '') + (g(AD.dTitle) ? ' — ' + g(AD.dTitle) : '') + (rv !== '' ? ' (Rev ' + rv + ')' : ''));
+      if(g(AD.dDisc)) L.push('رشته: ' + dsDiscs(g(AD.dDisc)).join('، '));
+      if(g(AD.dType)) L.push('نوع: ' + g(AD.dType));
+      L.push('', 'خواهشمند است پس از بررسی، کد نتیجه (A/B/C/D) و ملاحظات را اعلام فرمایید.');
+    } else {
+      L.push(hi, '', (KIND_LABEL[kind] || 'سند') + (no ? ' شمارهٔ ' + no : ''));
+    }
+    if(pj) L.push('', 'پروژهٔ ' + pj);
+    return L.join('\n').replace(/\n{3,}/g, '\n\n');
+  }
   function admFinishedCt(r){ const st = String(pick(r,AD.review) || ''); return st === RV_PAID || st === RV_CANCEL || !!String(exact(r,'اعلام انقضا') || '').trim(); }
   function admFastRow(kind, r){
     const id = String(pick(r,AD.id) || '');
@@ -64136,13 +64183,7 @@
           link: (attachList(pick(r,AD.link)).find(a => a.src !== 's3') || {}).url || '',
           /* فقط مشخصاتی که برای طرف بیرونی مناسب است؛ موعد، تاریخ ابلاغ، مسئول
              داخلی و وضعیت بررسی در متن اشتراک نمی‌آید */
-          shareBody: [
-            KIND_LABEL[kind] + (docNo ? ' شمارهٔ ' + toFa(docNo) : ''),
-            kind === 'statement' && pick(r,AD.sName) ? 'قرارداد: ' + pick(r,AD.sName) : '',
-            kind === 'contract' && pick(r,AD.cTitle) ? 'عنوان: ' + pick(r,AD.cTitle) : '',
-            kind === 'letter' && pick(r,AD.lSubject) ? 'موضوع: ' + pick(r,AD.lSubject) : '',
-            kind === 'statement' && pick(r,AD.sAmount) ? 'مبلغ: ' + moneyFa(pick(r,AD.sAmount)) + ' ریال' : ''
-          ].filter(Boolean).join('\n')
+          shareBody: admShareText(kind, r, docNo, party)
         })
 
       /* ====== سطر خلاصه (حالت بسته) ======
