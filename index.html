@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105132251">
+<meta name="pm-build" content="20261105133117">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29009,6 +29009,19 @@
     html body :is(#adminView, .adm-host) .adm-fast > .afr.afr-hdr .afr-hs.on{color:var(--vz1, #2f6f9f) !important;}
     html body :is(#adminView, .adm-host) .adm-fast > .afr.afr-hdr .afr-hs i{font-style:normal;font-size:9px !important;}
   }
+  /* «طرف» و «مسئول» یک قلم و یک رنگ، عکس هم‌اندازه */
+  @media (min-width:1180px){
+    html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) :is(.afr-party > .afr-pn, .afr-own > .afr-onm){font-size:12px !important;font-weight:600 !important;color:var(--ink) !important;opacity:.85;font-family:var(--f) !important;}
+    html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) .afr-party > .afr-pav, html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) .afr-own > .ava{width:26px !important;height:26px !important;flex:0 0 26px !important;font-size:10px !important;}
+    html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) .afr-party{gap:7px !important;}
+    html body :is(#adminView, .adm-host) .adm-fast .afr:not(.afr-hdr) .afr-own{gap:7px !important;}
+  }
+  /* کارت شخص دسکتاپ: منوی بخش‌ها ثابت سرِ جایش، روی سربرگ نمی‌لغزد */
+  @media (min-width:1180px){
+    :is(html,#z0) :is(body,#z1) #profileModal.pf2:not(.pg-mode) .modal-body:has(> .pc2) > .pf3-nav{position:static !important;top:auto !important;}
+    :is(html,#z0) :is(body,#z1) #profileModal.pf2:not(.pg-mode) .modal-body:has(> .pc2){overflow-anchor:none;grid-template-rows:repeat(4, max-content) !important;align-content:start !important;}
+    :is(html,#z0) :is(body,#z1) #profileModal.pf2:not(.pg-mode) .modal-body:has(> .pc2) > .pf2-hero{min-height:max-content;flex:none;}
+  }
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -44593,7 +44606,12 @@
     /* در کارتابل، بخش باز شده زیر کاشی‌هاست؛ صفحه خودش تا آن می‌رود */
     if(nav.dataset.pf3 === 'kart' || nav.dataset.pf3 === 'person' || nav.dataset.pf3 === 'settings'){
       const pane = nav.parentElement.querySelector(':scope > .pf3-pane.on');
-      if(pane) setTimeout(() => pane.scrollIntoView({behavior:'smooth', block:'start'}), 30);
+      if(pane) setTimeout(() => {
+        /* فقط اگر بخش باز شده دیده نمی‌شود، آرام تا سرِ آن می‌رود (بدون پرش) */
+        const sc = pane.closest('.modal-body') || document.scrollingElement, R = sc.getBoundingClientRect ? sc.getBoundingClientRect() : {top:0, bottom:innerHeight};
+        const t = pane.getBoundingClientRect().top, bot = Math.min(R.bottom || innerHeight, innerHeight);
+        if(t > bot - 140 || t < (R.top || 0)) sc.scrollBy({top: t - (R.top || 0) - 12, behavior:'smooth'});
+      }, 30);
     }
   });
 
@@ -47718,11 +47736,20 @@
     return toFa(j[0] + '/' + p(j[1]) + '/' + p(j[2]));
   }
 
+  /* خواندن تاریخ واردشده در هر شکلی: ۱۴۰۵/۸/۳، 1405-08-03، ۱۴۰۵.۸.۳، 14050803، ۳/۸/۱۴۰۵ (روز اول)، ٠٣/٠٨/١٤٠٥ (عربی)،
+     ۰۵/۰۸/۰۳ (سال دورقمی) و میلادی 2026-10-25 (به شمسی)؛ روز نامعتبر (مثلاً ۳۱ مهر) رد می‌شود */
   function normDate(v){
-    const p = toEn(v).replace(/[^\d]+/g,'/').split('/').filter(Boolean);
+    let t = toEn(String(v == null ? '' : v)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+    if(!t) return null;
+    if(/^\d{8}$/.test(t)) t = t.slice(0, 4) + '/' + t.slice(4, 6) + '/' + t.slice(6);
+    const p = t.replace(/[^\d]+/g,'/').split('/').filter(Boolean);
     if(p.length !== 3) return null;
-    const y=+p[0], m=+p[1], d=+p[2];
-    if(!(y>=1300 && y<=1500 && m>=1 && m<=12 && d>=1 && d<=31)) return null;
+    let y = +p[0], m = +p[1], d = +p[2];
+    if(p[0].length <= 2 && p[2].length === 4){ y = +p[2]; d = +p[0]; }           /* روز/ماه/سال */
+    else if(p[0].length === 2 && p[2].length <= 2 && y < 100){ y = 1400 + y; }   /* سال دورقمی */
+    if(y >= 1900 && y <= 2200){ try{ const J = g2j(y, m, d); if(J){ y = J[0]; m = J[1]; d = J[2]; } }catch(e){ return null; } }
+    const dim = m <= 6 ? 31 : (m <= 11 ? 30 : 30);
+    if(!(y>=1300 && y<=1500 && m>=1 && m<=12 && d>=1 && d<=dim)) return null;
     const pad = x => String(x).padStart(2,'0');
     return toFa(y+'/'+pad(m)+'/'+pad(d));
   }
@@ -47736,7 +47763,8 @@
     const raw = String(v == null ? '' : v).trim();
     if(!raw) return null;
     const c = FAP_C.get(raw); if(c !== undefined) return c && c.slice();
-    const r = faParts0(raw); if(FAP_C.size > 20000) FAP_C.clear(); FAP_C.set(raw, r || null);
+    /* تاریخ‌های ثبت‌شده به شکل‌های دیگر (۳/۸/۱۴۰۵، 14050803، عدد عربی…) هم درست خوانده و نمایش داده می‌شوند */
+    const r = faParts0(raw) || (function(){ const n = normDate(raw); return n ? toEn(n).split('/').map(Number) : null; })(); if(FAP_C.size > 20000) FAP_C.clear(); FAP_C.set(raw, r || null);
     return r && r.slice();
   }
   function faParts0(raw){
@@ -61162,8 +61190,8 @@
             /* نشان‌های فهرست: ویرایش جاری سند طراحی، الحاقیهٔ قرارداد، قرارداد منقضی */
             if(kind === 'design'){ const R = dsRevsOf(r), c = R[R.length - 1]; return '<em class="afr-tg rvn" title="ویرایش جاری">Rev ' + esc(toFa(String((c && c.rev) || pick(r,AD.dRev) || '0'))) + (R.length > 1 ? '<small>/' + toFa(R.length) + '</small>' : '') + '</em>'; }
             if(kind === 'contract' && pick(r,AD.cAdd)) return '<em class="afr-tg ad">الحاقیه ' + esc(toFa(pick(r,AD.cAdd))) + '</em>';
-            if(kind === 'contract'){ const S = window.ctrEndState ? window.ctrEndState(r) : null;
-              const rv0 = String(effectiveReview(r) || ''); if(S && S.over > 0 && !S.done && !admFinishedCt(r) && rv0 && rv0 !== 'تایید شده' && rv0 !== RV_PAID && !/^تأیید/.test(rv0)) return '<em class="afr-tg ex" title="' + esc(toFa(S.over) + ' روز از اتمام (' + toFa(S.end) + ') گذشته' + (S.pen ? ' · جریمه ' + arToman(S.pen) + ' تومان' : '')) + '">منقضی · ' + esc(toFa(S.over)) + ' روز</em>'; }
+            /* «منقضی» در عنوان حذف شد؛ فقط ستون وضعیت آن را نشان می‌دهد */
+
           }catch(e){} return ''; })(); return tg ? '<span class="afr-l2">' + tg + '</span>' : ''; })()
       +   '</span>'
       /* ستون‌ها همیشه ساخته می‌شوند (حتی خالی) تا جای روز/دانلود/اشتراک در همهٔ سطرها یکی بماند */
@@ -67111,6 +67139,8 @@
     // صورت وضعیت و قرارداد: نوع ابلاغ از مرحلهٔ رسیدگی پیروی می‌کند
     if((kind === 'statement' || kind === 'contract') && NOTIFY_BY_REVIEW[o['وضعیت رسیدگی']])
       o[kind === 'statement' ? 'نوع ابلاغ' : 'وضعیت ابلاغ'] = NOTIFY_BY_REVIEW[o['وضعیت رسیدگی']];
+    /* تاریخ‌ها همیشه به شکل یکسان ۱۴۰۵/۰۸/۰۳ ذخیره می‌شوند (هر شکلی که تایپ شده باشد) */
+    Object.keys(o).forEach(k => { if(!/^(تاریخ|موعد)/.test(k) || typeof o[k] !== 'string' || !o[k].trim()) return; const n = normDate(o[k]); if(n) o[k] = n; });
     return o;
   }
 
@@ -92895,10 +92925,16 @@
     if(HM_WK.busy || (HM_WK.d && Date.now() - HM_WK.at < 600000)) return HM_WK.d;
     HM_WK.busy = true;
     const days = []; let d0 = todayShamsi(); for(let i = 0; i < 7; i++){ days.unshift(d0); d0 = faMinusDay(d0) || d0; }
-    supaFetch('activities?select=date_fa,contractor,ostad,shagerd&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(days[6]) + '&limit=20000', {prefer: 'return=representation'})
-      .then(rows => { const M = new Map(days.map(d => [d, {d, t: 0, c: new Map()}]));
+    const rg = '&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(days[6]);
+    /* کارگران حاضر (حضور روزانهٔ نیروی کارگری) هم در شمار نفرات هر روز می‌آیند */
+    Promise.all([supaFetch('activities?select=date_fa,contractor,ostad,shagerd' + rg + '&limit=20000', {prefer: 'return=representation'}),
+                 supaFetch('worker_daily?select=date_fa,worker_code,state' + rg + '&limit=20000', {prefer: 'return=representation'}).catch(() => [])])
+      .then(([rows, wr]) => { const M = new Map(days.map(d => [d, {d, t: 0, w: 0, c: new Map()}]));
         (rows || []).forEach(r => { const o = M.get(normDate(r.date_fa) || r.date_fa); if(!o) return; const n = (num(r.ostad) || 0) + (num(r.shagerd) || 0); o.t += n;
           const c = String(r.contractor || '').trim(); if(c && !isAmani(c)) o.c.set(c, (o.c.get(c) || 0) + n); });
+        const seenW = new Set();
+        (wr || []).forEach(r => { if(r.state === 'off') return; const d = normDate(r.date_fa) || r.date_fa, o = M.get(d); if(!o) return;
+          const k = d + '|' + String(r.worker_code || ''); if(r.worker_code && seenW.has(k)) return; seenW.add(k); o.w++; o.t++; });
         HM_WK.d = days.map(d => M.get(d)); HM_WK.at = Date.now(); HM_WK.busy = false; try{ homeSoon(); }catch(e){} })
       .catch(() => { HM_WK.busy = false; HM_WK.at = Date.now(); HM_WK.d = HM_WK.d || []; });
     return HM_WK.d;
@@ -92924,8 +92960,8 @@
     const top = Array.from(seen.entries()).sort((a, b) => b[1].days - a[1].days || b[1].n - a[1].n)[0];
     const tot = W.reduce((t, x) => t + x.t, 0), act = W.filter(x => x.t).length;
     return '<div class="hd4-c hd4-wk" data-hmv="daily|week" role="button" tabindex="0"><div class="hd4-h"><u>نیروی کارگاه · هفت روز</u><b><span>' + toFa(act ? Math.round(tot / act) : 0) + '</span><i>نفر در روز</i></b>'
-      + '<small>امروز ' + toFa((W.find(x => x.d === t0) || {t: 0}).t) + ' نفر</small></div>'
-      + '<div class="wk-bars">' + W.map(x => '<span class="' + (x.d === t0 ? 'td' : '') + (x.t ? '' : ' z') + '" title="' + esc(toFa(x.d)) + ': ' + toFa(x.t) + ' نفر"><i style="height:' + Math.max(x.t ? 8 : 3, Math.round(x.t / mx * 100)) + '%"></i><u>' + dn(x.d) + '</u></span>').join('') + '</div>'
+      + (function(){ const T = W.find(x => x.d === t0) || {t: 0, w: 0}; return '<small>امروز ' + toFa(T.t) + ' نفر' + (T.w ? ' · ' + toFa(T.w) + ' کارگر' : '') + '</small>'; })() + '</div>'
+      + '<div class="wk-bars">' + W.map(x => '<span class="' + (x.d === t0 ? 'td' : '') + (x.t ? '' : ' z') + '" title="' + esc(toFa(x.d)) + ': ' + toFa(x.t) + ' نفر' + (x.w ? ' (کارگر ' + toFa(x.w) + ')' : '') + '"><i style="height:' + Math.max(x.t ? 8 : 3, Math.round(x.t / mx * 100)) + '%"></i><u>' + dn(x.d) + '</u></span>').join('') + '</div>'
       + hmWkPeople(absent, top) + '<div class="wk-ft" hidden>' + (absent.length ? '<span class="bad" title="' + esc(absent.join('، ')) + '">' + toFa(absent.length) + ' پیمانکار دیروز غایب: ' + esc(absent.slice(0, 2).join('، ')) + (absent.length > 2 ? '…' : '') + '</span>' : '<span>دیروز همه حاضر بودند</span>')
       + (top ? '<span>بیشترین حضور: <b>' + esc(top[0]) + '</b> (' + toFa(top[1].days) + ' روز)</span>' : '') + '</div></div>';
   }
