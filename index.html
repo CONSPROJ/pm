@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105200950">
+<meta name="pm-build" content="20261105201329">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29405,6 +29405,8 @@
   @media (max-width:900px){ .fxk-new{grid-template-columns:1fr 1fr;} .fxk-new button{grid-column:1/-1;} }
   .fxk-tw{overflow-x:auto;} .fxk-t td small{display:block;font-size:10.5px;color:var(--muted);} .fxk-t .spa-in{width:70px;}
   .fxk-b{font-style:normal;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--field);color:var(--muted);white-space:nowrap;} .fxk-b.ok{background:color-mix(in srgb, var(--ok) 14%, transparent);color:var(--ok);} .fxk-b.warn{background:color-mix(in srgb, #c79a2b 16%, transparent);color:#9a7417;} .fxk-b.bad{background:color-mix(in srgb, var(--alert) 13%, transparent);color:var(--alert);}
+  :is(#adminView, .adm-host) .adm-grp-head .g-av{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:11px;}
+  :is(#adminView, .adm-host) .adm-grp-head .g-av img{width:100%;height:100%;object-fit:cover;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -30114,10 +30116,17 @@
       <label class="avb-sel avb-sort" title="ترتیب موارد">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3.5 16.5L7 20l3.5-3.5"/><path d="M17 20V4M13.5 7.5L17 4l3.5 3.5"/></svg>
         <u class="avb-pre">ترتیب</u><select id="admSortSel" aria-label="ترتیب">
-          <option value="date-desc">تازه‌ترین</option>
-          <option value="date-asc">قدیمی‌ترین</option>
+          <option value="new-desc">آخرین ثبت‌شده</option>
+          <option value="new-asc">اولین ثبت‌شده</option>
+          <option value="date-desc">تاریخ سند، جدید به قدیم</option>
+          <option value="date-asc">تاریخ سند، قدیم به جدید</option>
+          <option value="act-desc">آخرین تغییر یا گردش</option>
+          <option value="due-asc">نزدیک‌ترین موعد</option>
           <option value="no-desc">شماره، بزرگ به کوچک</option>
           <option value="no-asc">شماره، کوچک به بزرگ</option>
+          <option value="title-asc">عنوان (الفبا)</option>
+          <option value="party-asc">طرف (الفبا)</option>
+          <option value="amt-desc" data-money="1">مبلغ، بیشترین</option>
         </select>
       </label>
     </div>
@@ -61342,8 +61351,10 @@
   }catch(e){}
   /* مرتب‌سازی دستی دفتر فنی: '' یعنی همان گروه‌بندی همیشگی؛ با شماره یا تاریخ
      موارد هر بخش بی‌گروه و پشت سر هم می‌آیند */
-  let admSort = 'date-desc';
-  try{ const so = localStorage.getItem('admSort'); if(['no-desc','no-asc','date-desc','date-asc'].indexOf(so) !== -1) admSort = so; }catch(e){}
+  /* پیش‌فرض: آخرین سندی که ثبت شده اول (زمان ثبت)؛ «تاریخ سند» جداست */
+  const ADM_SORTS = ['new-desc','new-asc','date-desc','date-asc','act-desc','due-asc','no-desc','no-asc','title-asc','party-asc','amt-desc'];
+  let admSort = 'new-desc';
+  try{ const so = localStorage.getItem('admSort2'); if(ADM_SORTS.indexOf(so) !== -1) admSort = so; }catch(e){}
   /* گروه‌بندی هر دسته جدا ذخیره می‌شود؛ گزینه‌ها برای همه یک شکل‌اند.
      نامه پیش‌فرض بی‌گروه و تازه‌ترین بالا. */
   const ADM_GRP_OPTS = {
@@ -61362,12 +61373,22 @@
   function admGrpSet(k, v){ try{ localStorage.setItem('admGrp.' + k, v); }catch(e){} }
   const ADM_NO_KEYS = {statement: 'sNo', contract: 'cNo', letter: 'lNo', design: 'dNo'};
   function admSortRows(kind, rows){
-    const [by, dir] = admSort.split('-'), sg = dir === 'asc' ? 1 : -1;
+    const [by, dir] = String(admSort || 'new-desc').split('-'), sg = dir === 'asc' ? 1 : -1;
     const noVal = r => { const t = toEn(String(pick(r, AD[ADM_NO_KEYS[kind]] || []) || '')); const m = t.match(/\d+/g); return m ? m.reduce((n, x) => n * 10000 + (+x), 0) : null; };
     const dVal = r => { const d = latestDateOf(kind, r); return d ? d.getTime() : null; };
-    const f = by === 'no' ? noVal : dVal;
+    /* زمان ثبت (created_at)؛ اگر نبود تاریخ ثبت و بعد شناسهٔ عددی */
+    const newVal = r => { const t = pick(r,AD.time); if(t){ const ms = Date.parse(String(t)); if(isFinite(ms)) return ms; const d = faToDate(String(t)); if(d) return d.getTime(); }
+      const d = faToDate(String(pick(r,AD.date) || '')); const id = +toEn(String(pick(r,AD.id) || '')) || 0; return d ? d.getTime() + (id % 86400000) / 1e6 : (id || null); };
+    const actVal = r => { let t = 0; try{ if(kind === 'design') dsRevsOf(r).forEach(v => (v.log || []).forEach(x => { const d = x && x.d ? faToDate(x.d) : null; if(d && +d > t) t = +d; })); }catch(e){} const d = latestDateOf(kind, r); return Math.max(t, d ? d.getTime() : 0, newVal(r) || 0) || null; };
+    const dueVal = r => { const d = faToDate(String(pick(r,AD.due) || '')); return d && !admIsDone(kind, r) ? d.getTime() : null; };
+    const amtVal = r => { const v = kind === 'statement' ? amtNum(pick(r,AD.sAmount)) : kind === 'contract' ? amtNum(pick(r,AD.cAmount)) : 0; return v || null; };
+    const titleOf = r => String(pick(r, kind === 'statement' ? AD.sName : kind === 'contract' ? AD.cTitle : kind === 'letter' ? AD.lSubject : kind === 'minute' ? AD.mText : AD.dTitle) || '');
+    const partyOf = r => String(pick(r, kind === 'statement' ? AD.sParty : kind === 'contract' ? AD.cParty : kind === 'letter' ? AD.lParty : kind === 'minute' ? AD.mFollow : AD.dParty) || '');
+    if(by === 'title' || by === 'party'){ const g = by === 'title' ? titleOf : partyOf; return rows.slice().sort((a, b) => { const x = g(a), y = g(b); if(!x && !y) return 0; if(!x) return 1; if(!y) return -1; return x.localeCompare(y, 'fa') * sg; }); }
+    const f = by === 'no' ? noVal : by === 'new' ? newVal : by === 'act' ? actVal : by === 'due' ? dueVal : by === 'amt' ? amtVal : dVal;
+    const M = new Map(rows.map(r => [r, f(r)]));
     return rows.slice().sort((a, b) => {
-      const va = f(a), vb = f(b);
+      const va = M.get(a), vb = M.get(b);
       if(va == null && vb == null) return 0;
       if(va == null) return 1; if(vb == null) return -1;
       return (va - vb) * sg;
@@ -69725,12 +69746,7 @@
   }
   function admSortDoneLast(kind, rows){
     /* اسناد طراحی: در آخرین لایه به ترتیب تاریخ آخرین گردش، تازه‌ترین بالا */
-    if(kind === 'design'){
-      const dOf = r => { let t = 0; try{ dsRevsOf(r).forEach(v => (v.log || []).forEach(x => { const d = x && x.d ? faToDate(x.d) : null; if(d && +d > t) t = +d; })); }catch(e){}
-        if(!t){ const d = faToDate(admDate(pick(r,AD.date)) || ''); if(d) t = +d; } return t; };
-      const m = new Map(rows.map(r => [r, dOf(r)]));
-      return rows.slice().sort((a, b) => ((admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0)) || (m.get(b) - m.get(a)));
-    }
+    /* ترتیب انتخابی کاربر حفظ می‌شود (پیش‌تر اسناد طراحی همیشه با تاریخ گردش خودش مرتب می‌شد و «ترتیب» کار نمی‌کرد) */
     return rows.slice().sort((a, b) =>
       (admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0));
   }
@@ -69842,7 +69858,7 @@
         : (admGrpOpen.get(key) === true);
       return '<div class="adm-grp' + (sub ? ' adm-sub' : '') + ' g-' + meta.c + (open ? ' open' : '') + '" data-grp="' + esc(key) + '">'
         + '<button type="button" class="adm-grp-head" aria-expanded="' + open + '">'
-        +   '<i class="gd" aria-hidden="true"></i>'
+        +   (meta.av ? '<span class="ap-ic ava g-av">' + (function(){ try{ return ctrAvaIn(meta.av); }catch(e){ return esc(initialsOf(meta.av)); } })() + '</span>' : '<i class="gd" aria-hidden="true"></i>')
         +   '<span class="g-tx"><b>' + esc(meta.t) + '</b></span>'
         +   '<span class="gn">' + toFa(list.length) + ' مورد</span>'
         +   '<span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>'
@@ -69901,10 +69917,13 @@
         list.forEach(r => { const k = dsPersonOf(r); if(!m.has(k)) m.set(k, []); m.get(k).push(r); });
         return Array.from(m.entries()).sort((a, b) => (a[0] === 'بدون طراح') - (b[0] === 'بدون طراح') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
           .map(([pn, l]) => {
-            const k = key0 + '|p:' + pn;
-            if(!admGrpOpen.has(k)) admGrpOpen.set(k, true);
-            const bad = l.filter(r => dsCls(r) === 'bad').length;
-            return grpHtml(k, {t: pn, c: bad ? 'bad' : 'info'}, l, bodyHtml(l), true);
+            /* همان شکل «به تفکیک طرف» بقیهٔ اسناد: عکس، نام (پرونده) و شمار */
+            const none = pn === 'بدون طراح';
+            return '<div class="adm-pty">'
+              + '<div class="adm-pty-h"><span class="ap-ic ava">' + (none ? '—' : ctrAvaIn(pn)) + '</span>'
+              +   (none ? '<b>' + pn + '</b>' : '<button type="button" class="ap-n" data-hrprof="' + esc(pn) + '" title="پروندهٔ ' + esc(pn) + '">' + esc(pn) + '</button>')
+              +   '<u>' + toFa(l.length) + ' مورد</u></div>'
+              + bodyHtml(l) + '</div>';
           }).join('');
       };
       const openP = k => { if(dsGrpPerson && !admGrpOpen.has(k)) admGrpOpen.set(k, true); return k; };
@@ -69915,7 +69934,7 @@
         return Array.from(m.entries()).sort((a, b) => (a[0] === 'بدون طراح') - (b[0] === 'بدون طراح') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
           .map(([pn, l]) => {
             const bad = l.filter(r => dsCls(r) === 'bad').length, ok = l.filter(r => dsCls(r) === 'ok').length;
-            return grpHtml('design|d:' + pn, {t: pn, c: bad ? 'bad' : (ok === l.length ? 'ok' : 'info')}, l, bodyHtml(l), false);
+            return grpHtml('design|d:' + pn, {t: pn, c: bad ? 'bad' : (ok === l.length ? 'ok' : 'info'), av: pn === 'بدون طراح' ? '' : pn}, l, bodyHtml(l), false);
           }).join('');
       }
       if(dsGrpMode === 'floor'){
@@ -70168,7 +70187,7 @@
       }
       /* ترتیب: تازه‌ترین همان ترتیب کامل پیش‌فرض است (تاریخ، زمان ثبت، شماره)؛ بقیه دستی */
       let rows = sortAdmin(k, list.map(x => x.row));
-      if(admSort && admSort !== 'date-desc') rows = admSortRows(k, rows);
+      rows = admSortRows(k, rows);
       const grp = admGrpOf(k);
       if(k === 'letter'){
         rows = rows.filter(r => ltrDirOf(r) === admLtrDir);
@@ -71021,17 +71040,19 @@
         }
       }
       if(so){
-        const noNum = k === 'minute';
+        const noNum = k === 'minute', money = k === 'statement' || k === 'contract';
         so.querySelectorAll('option[value^="no-"]').forEach(o => { o.hidden = noNum; o.disabled = noNum; });
-        so.value = (noNum && /^no-/.test(admSort)) ? 'date-desc' : (admSort || 'date-desc');
-        bar.classList.toggle('sorted', so.value !== 'date-desc');
+        so.querySelectorAll('option[data-money]').forEach(o => { o.hidden = !money; o.disabled = !money; });
+        const bad = (noNum && /^no-/.test(admSort)) || (!money && admSort === 'amt-desc');
+        so.value = bad ? 'new-desc' : (admSort || 'new-desc');
+        bar.classList.toggle('sorted', so.value !== 'new-desc');
       }
       place();
     };
     window.__admBarPaint = paint;
     paint();
     const redraw = () => { paint(); try{ applyAdminFilters(); }catch(e2){} };
-    if(so) so.addEventListener('change', () => { admSort = so.value; try{ localStorage.setItem('admSort', admSort); }catch(e2){} redraw(); });
+    if(so) so.addEventListener('change', () => { admSort = so.value; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} redraw(); });
     if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
@@ -95755,8 +95776,8 @@
     /* مرتب‌سازی از سرستون: «تاریخ» (جدید↔قدیم) و «عنوان / شماره» (بزرگ↔کوچک) */
     const mark = () => document.querySelectorAll('#adminView .afr-hdr [data-hsort]').forEach(b => { const on = String(admSort || 'date-desc').indexOf(b.dataset.hsort + '-') === 0; b.classList.toggle('on', on); const i = b.querySelector('i'); if(i) i.textContent = on ? (/asc$/.test(admSort) ? '▲' : '▼') : ''; });
     document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#adminView .afr-hdr [data-hsort]'); if(!b) return; e.preventDefault(); e.stopPropagation();
-      const k = b.dataset.hsort, cur = admSort || 'date-desc'; admSort = cur === k + '-desc' ? k + '-asc' : k + '-desc';
-      try{ localStorage.setItem('admSort', admSort); }catch(err){} try{ window.__admBarPaint && window.__admBarPaint(); }catch(err){} applyAdminFilters(); }, true);
+      const k = b.dataset.hsort, cur = admSort || 'new-desc'; admSort = cur === k + '-desc' ? k + '-asc' : k + '-desc';
+      try{ localStorage.setItem('admSort2', admSort); }catch(err){} try{ window.__admBarPaint && window.__admBarPaint(); }catch(err){} applyAdminFilters(); }, true);
     let t = 0; const av = document.getElementById('adminView');
     if(av) new MutationObserver(() => { if(!t) t = requestAnimationFrame(() => { t = 0; put(); }); }).observe(av, {childList: true, subtree: true});
   })();
@@ -96006,6 +96027,13 @@
   document.addEventListener('click', e => { const g = e.target.closest && e.target.closest('[data-pfgo]'); if(!g || !window.openProfile) return; e.preventDefault(); e.stopPropagation(); openProfile(g.dataset.pfgo); });
   /* کشیدن برگه */
   let drag = null;
+  function sheetAtTop(el, c){
+    for(let n = el; n && n !== c.parentElement; n = n.parentElement){
+      if(n.nodeType !== 1) continue;
+      if((n.scrollTop || 0) > 0){ const oy = getComputedStyle(n).overflowY; if(oy === 'auto' || oy === 'scroll' || n === c) return false; }
+    }
+    return true;
+  }
   const closeSheet = (bg, c) => {
     const x = c.querySelector('[data-ctx], .dk-modal .x, .tx-x, .sp-x, [data-x], [data-ucdx], [data-fvx], .mc-x, [data-close], .modal-close, button[aria-label="بستن"], button.x');
     if(x){ x.click(); }
@@ -96015,16 +96043,20 @@
   document.addEventListener('touchstart', e => {
     if(!mqM.matches) return; const c = e.target.closest && e.target.closest('.ds-sheet > .ds-card'); if(!c) return;
     const r = c.getBoundingClientRect(), y = e.touches[0].clientY;
-    /* فقط از نوار بالای برگه (دستگیره و سربرگ) یا وقتی محتوا در بالاست */
-    const inHead = y - r.top < 64, top = (c.scrollTop || 0) <= 0;
+    /* فقط از نوار بالای برگه (دستگیره و سربرگ) یا وقتی محتوا در بالاست.
+       «بالا بودن» باید برای هر لایهٔ اسکرول‌شونده بین انگشت و برگه درست باشد — پیش‌تر فقط scrollTop خود برگه دیده می‌شد
+       (همیشه ۰، چون اسکرول در modal-body است) و برگشتن به بالای محتوا برگه را می‌بست */
+    const inHead = y - r.top < 64, top = sheetAtTop(e.target, c);
     if(!inHead && !top) return;
-    if(e.target.closest('input, textarea, select, [contenteditable], .no-sheet-drag')) return;
-    drag = {c, bg: c.parentElement, y0: y, dy: 0, head: inHead, t0: Date.now()};
+    if(e.target.closest('input, textarea, select, [contenteditable], .no-sheet-drag, .dk-track, .pf3-nav, [style*="overflow-x"]')) return;
+    drag = {c, bg: c.parentElement, y0: y, x0: e.touches[0].clientX, dy: 0, head: inHead, t0: Date.now(), tg: e.target};
   }, {passive: true});
   document.addEventListener('touchmove', e => {
-    if(!drag) return; const dy = e.touches[0].clientY - drag.y0;
-    if(dy <= 0){ if(drag.dy > 0){ drag.c.style.transform = ''; } drag.dy = 0; return; }
-    if(!drag.head && (drag.c.scrollTop || 0) > 0){ drag = null; return; }
+    if(!drag) return; const dy = e.touches[0].clientY - drag.y0, dx = e.touches[0].clientX - drag.x0;
+    /* کشیدن افقی (ورق زدن، اسکرول افقی) برگه را نمی‌کشد */
+    if(drag.dy === 0 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6){ drag = null; return; }
+    if(dy <= 0){ if(drag.dy > 0){ drag.c.style.transform = ''; } drag.dy = 0; if(!drag.head) drag = null; return; }
+    if(!drag.head && !sheetAtTop(drag.tg, drag.c)){ drag.c.style.transform = ''; drag = null; return; }
     drag.dy = dy; drag.c.classList.add('ds-drag'); drag.c.style.transform = 'translateY(' + dy + 'px)';
   }, {passive: true});
   document.addEventListener('touchend', () => {
