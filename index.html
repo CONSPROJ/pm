@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105200100">
+<meta name="pm-build" content="20261105200950">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -44287,7 +44287,7 @@
     /* کارتابل و ابزارهای مدیریت حالا در خانه‌اند (به شکل صفحه)؛ پروفایل خودِ آدم فقط تنظیمات حساب */
     const pfTab0 = window.__pfTab || ''; window.__pfTab = '';
     const pfPage = window.__pfPage || null; window.__pfPage = null;
-    { const pm = document.getElementById('profileModal'); if(pm){ pm.classList.toggle('pg-mode', !!pfPage); pm.dataset.pgt = pfPage ? pfPage.t : ''; } }
+    { const pm = document.getElementById('profileModal'); if(pm){ pm.classList.toggle('pg-mode', !!pfPage); pm.dataset.pgt = pfPage ? pfPage.t : ''; pm.dataset.pgAt = String(Date.now()); } }
     profileState = {name,
       tab: pfTab0 || (mineProfile ? 'settings' : 'person'),
                     /* کارتابل خودِ شخص همیشه امروز را نشان می‌دهد، نه روزِ مانده در حافظه */
@@ -49127,8 +49127,14 @@
     setTimeout(() => { const i = document.querySelector('.sp-ov:not([hidden]) input'); if(i){ i.value = q; i.dispatchEvent(new Event('input', {bubbles:true})); i.focus(); } }, 80);
   }
   function wsSet(k){
+    try{ closePgPages(); }catch(e){}
     if(k && k !== ws.cur){ try{ window.sbUse && window.sbUse('w:' + k); }catch(e){} }
-    if(k){ const x = wsMod(k); if(!x || !wsOk(x)) k = 'tasks'; else if(x.go){ x.go(); return; } }
+    if(k){ const x = wsMod(k);
+      /* دسترسی‌ها هنوز از سرور نرسیده: به‌جای رفتن بی‌صدا به «فعالیت‌ها»، تا چند ثانیه دوباره امتحان می‌شود */
+      if(x && !wsOk(x) && k !== 'tasks'){ const n = (wsSet.__rt && wsSet.__rt.k === k) ? wsSet.__rt.n + 1 : 1; wsSet.__rt = {k, n};
+        if(n <= 8){ clearTimeout(wsSet.__rtT); wsSet.__rtT = setTimeout(() => { if(wsSet.__rt && wsSet.__rt.k === k) wsSet(k); }, 600); if(n === 1) try{ shrToast('در حال آماده شدن «' + x.t + '»…'); }catch(e){} return; } }
+      wsSet.__rt = null;
+      if(!x || !wsOk(x)) k = 'tasks'; else if(x.go){ x.go(); return; } }
     ws.cur = k;
     const panel = document.getElementById('panelTasks'), host = document.getElementById('wsHost'), ctd = document.getElementById('wsCtd');
     wsRestore();
@@ -49276,7 +49282,14 @@
       try{ homeSoon(); }catch(e){}
     }, 0);
   }
+  /* صفحه‌های تمام‌قد (کارهای من، مرخصی، …) با رفتن به زبانه یا بخش دیگر بسته می‌شوند — پیش‌تر فقط با «خانه» می‌رفتند */
+  function closePgPages(){
+    const pm = document.getElementById('profileModal');
+    if(pm && !pm.hidden && pm.classList.contains('pg-mode') && Date.now() - (+pm.dataset.pgAt || 0) > 400){ const x = document.getElementById('profileX'); if(x) x.click(); else pm.hidden = true; }
+  }
+  window.closePgPages = closePgPages;
   function switchTab(name){
+    try{ closePgPages(); }catch(e){}
     if(name === 'admin') try{ window.admSkelEnsure && admSkelEnsure(); }catch(e){}
     if(!TABS[name]) name = 'home';
     if(!panelOk(name)) name = 'home';
@@ -91865,7 +91878,7 @@
       prev = el;
     }
     /* حذف کارت‌های پیشین جای نوار را جابه‌جا می‌کند؛ کارت جاری بی‌حرکت سر جایش برمی‌گردد */
-    const cur = track.querySelector(':scope > [data-dk="' + i + '"]'); if(cur && cur.dataset.dkFilled === '1'){ const r = track.getBoundingClientRect(), c = cur.getBoundingClientRect(); const dx = (c.left + c.width / 2) - (r.left + r.width / 2); if(Math.abs(dx) > 2){ const sb = track.style.scrollBehavior; track.style.scrollBehavior = 'auto'; track.scrollLeft += dx; track.style.scrollBehavior = sb; } }
+    const cur = track.querySelector(':scope > [data-dk="' + i + '"]'); if(cur){ const r = track.getBoundingClientRect(), c = cur.getBoundingClientRect(); const dx = (c.left + c.width / 2) - (r.left + r.width / 2); if(Math.abs(dx) > 2){ const sn = track.style.scrollSnapType, sb = track.style.scrollBehavior; track.style.scrollSnapType = 'none'; track.style.scrollBehavior = 'auto'; cur.scrollIntoView({behavior:'instant', block:'nearest', inline:'center'}); track.style.scrollSnapType = sn; track.style.scrollBehavior = sb; } }
   }
   function deckFillAround(i){
     deckWindow(i);
@@ -92666,6 +92679,10 @@
        جابه‌جایی DOM در میانهٔ اسکرول، خودِ اسکرول را قطع می‌کرد و
        صفحه قفل می‌شد. */
     let scrollT = null;
+    const deckSettle = () => { clearTimeout(scrollT); try{ const t = track(); if(!t) return; const before = Array.from(t.children).map(c => c.dataset.dk).join(',');
+        deckFillAround(deckIdx); const after = Array.from(t.children).map(c => c.dataset.dk).join(',');
+        const c = deckEl(deckIdx); if(c && before !== after){ const sb = t.style.scrollSnapType; t.style.scrollSnapType = 'none'; c.scrollIntoView({behavior:'instant', block:'nearest', inline:'center'}); t.style.scrollSnapType = sb; } }catch(err){} };
+    document.addEventListener('scrollend', e => { const t = track(); if(t && e.target === t) deckSettle(); }, true);
     document.addEventListener('scroll', e => {
       if(e.target && e.target.id === 'deckPeople'){ deckArrowState(); return; }
       const t = track();
@@ -92680,13 +92697,11 @@
         const d = Math.abs((cr.left + cr.width / 2) - mid);
         if(d < best){ best = d; idx = +c.dataset.dk; }
       });
-      if(idx !== deckIdx){
-        deckIdx = idx;
-        deckSyncDots();
-        clearTimeout(scrollT);
-        /* بعد از ایستادن: پنجره دوباره چیده می‌شود و کارت جاری سرِ جایش می‌ماند */
-        scrollT = setTimeout(() => { try{ deckFillAround(deckIdx); const c = deckEl(deckIdx); if(c) c.scrollIntoView({behavior:'instant', block:'nearest', inline:'center'}); }catch(err){} }, 160);
-      }
+      if(idx !== deckIdx){ deckIdx = idx; deckSyncDots(); }
+      /* فقط بعد از ایستادن کامل اسکرول (نه وسط حرکت چسبیدن): پنجره دوباره چیده و کارت دقیقاً وسط می‌نشیند
+         — پیش‌تر وسط انیمیشن چسبیدن اجرا می‌شد و کارت چند پیکسل کج می‌ماند و لبهٔ کارت کناری پیدا بود */
+      clearTimeout(scrollT);
+      scrollT = setTimeout(deckSettle, 'onscrollend' in window ? 400 : 220);
     }, true);
     document.addEventListener('keydown', e => {
       if(document.getElementById('deckModal').hidden) return;
