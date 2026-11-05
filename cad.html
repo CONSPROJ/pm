@@ -66,6 +66,20 @@
 .dbar{position:absolute;bottom:58px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 26px -10px rgba(0,0,0,.35);z-index:4;} .dbar[hidden]{display:none;} .dbar .btn{height:36px;padding:0 14px;}
 .pbar{width:220px;height:6px;border-radius:99px;background:var(--field);margin:10px auto 0;overflow:hidden;} .pbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .15s;}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+#orthoBtn.on{background:var(--acc);color:#fff;}
+.mdl{position:fixed;inset:0;z-index:60;background:rgba(10,14,20,.38);display:grid;place-items:center;padding:12px;}
+.mdl > div{width:min(520px,100%);max-height:min(640px,92vh);overflow:auto;background:var(--surface);border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.mdl h4{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center;} .mdl h4 button{all:unset;cursor:pointer;color:var(--muted);font-size:15px;padding:2px 6px;}
+.mdl .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px 10px;} .mdl label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-weight:700;}
+.mdl label.tg{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-weight:600;} .mdl input[type=text], .mdl input[type=number], .mdl select{width:100%;}
+.mdl .ft{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px;} .mdl small{color:var(--muted);font-size:11px;line-height:1.7;}
+.mdl .pv{font:600 11.5px ui-monospace,monospace;direction:ltr;text-align:left;background:var(--field);border-radius:10px;padding:8px 10px;max-height:150px;overflow:auto;white-space:pre;}
+.cnt-p{position:absolute;top:12px;left:12px;z-index:5;width:min(330px,calc(100% - 24px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px -14px rgba(0,0,0,.4);padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:12px;}
+.cnt-p[hidden]{display:none;} .cnt-p b{font-size:12.5px;} .cnt-p .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;} .cnt-p .btn{height:30px;font-size:11.5px;}
+.cnt-p small{color:var(--muted);} .cnt-p input{height:30px;font-size:12px;}
+.mk .wl{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;} .mk .wl .btn{height:26px;font-size:11px;padding:0 9px;}
+.lp-g label.lp-c{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font-size:13px;cursor:pointer;} .lp-g label.lp-c:hover{background:var(--field);} .lp-g label.lp-c input{width:16px;height:16px;}
+.lp-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line);} .lp-ft small{color:var(--muted);font-size:11px;}
 </style>
 </head>
 <body>
@@ -77,13 +91,19 @@
       <button type="button" data-t="line" title="خط (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.5"/><circle cx="19" cy="5" r="1.5"/></svg>خط</button>
       <button type="button" data-t="area" title="محدوده و مساحت (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 7l7-3 9 5-3 10H6z"/></svg>محدوده</button>
       <button type="button" data-t="hatch" title="هاشور (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12l8-8M4 20L20 4M12 20l8-8"/></svg>هاشور</button>
+      <button type="button" data-t="pline" title="چندخطی (P) — چند نقطه پشت سر هم"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-9 5 6 6-10"/></svg>چندخطی</button>
+      <button type="button" data-t="cut" title="کسر از محدوده (X) — بخشی از محدودهٔ انتخاب‌شده را کم کنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="9" y="9" width="7" height="7" stroke-dasharray="2 2"/></svg>کسر</button>
+      <button type="button" data-t="wall" title="کدگذاری دیوار (W) — چندخطی بکشید تا هر ضلع کد و طول بگیرد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8l8-4 8 4v12z"/><path d="M9 12h6M9 16h6"/></svg>دیوارها</button>
+      <button type="button" data-t="count" title="شمارش آیتم (C) — روی یک آیتم (اسپرینکلر، دتکتور، …) بزنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="7" cy="17" r="2.5"/><path d="M15 17h5M17.5 14.5v5"/></svg>شمارش</button>
       <button type="button" data-t="measure" title="اندازه‌گیری (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>اندازه</button>
     </div>
     <select id="hpat" title="الگوی هاشور"><option value="diag">هاشور مورب</option><option value="cross">هاشور ضربدری</option><option value="dots">نقطه‌ای</option><option value="solid">توپر</option></select>
     <input type="color" id="col" value="#2f6f9f" title="رنگ" style="width:36px;height:32px;padding:2px;border-radius:9px;border:1px solid var(--line);background:var(--surface)">
     <select id="unit" title="واحد نقشه"><option value="1000">واحد نقشه: میلی‌متر</option><option value="100">سانتی‌متر</option><option value="1">متر</option></select>
     <button type="button" class="btn" id="openBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>باز کردن</button>
+    <button type="button" class="btn" id="orthoBtn" title="عمود (F8 یا O): خط‌ها فقط افقی و عمودی">⊥ عمود</button>
     <button type="button" class="btn" id="pngBtn" title="خروجی تصویر">PNG</button>
+    <button type="button" class="btn" id="printBtn" title="چاپ نمای فعلی با محدوده‌ها و کدها">چاپ</button>
     <input type="file" id="file" accept=".dwg,.dxf" hidden>
   </div>
   <div class="main">
@@ -210,12 +230,13 @@ function showDb(out){
   dwgG.innerHTML = '';
   const F = out.snaps, sn = new Array(F.length / 2); for(let k = 0; k < sn.length; k++) sn[k] = [F[k * 2], F[k * 2 + 1]];
   S.regions = (out.regions || []).map(g => Object.assign(g, {r: g.r.map(F => { const o = []; for(let k = 0; k < F.length; k += 2) o.push([F[k], F[k + 1]]); return o; })})); pickClear();
+  S.ins = out.ins || null; insIndex();
   S.snaps = sn; S.bounds = out.bounds; S.base = out.bounds ? {x: out.bounds.x0, y: -out.bounds.y1, w: out.bounds.x1 - out.bounds.x0 || 1, h: out.bounds.y1 - out.bounds.y0 || 1} : null;
   layerList(); index();
 }
 const colOf = c => c && c.indexOf('var(') === 0 ? (getComputedStyle(document.documentElement).getPropertyValue(c.slice(4, -1)).trim() || '#333') : c;
 /* کشیدن لایه‌ها روی هر بوم با هر نما (نمای اصلی و تصویر کوچک ریز محل) */
-function paint(ctx, v, W, H, dpr, minTx){
+function paint(ctx, v, W, H, dpr, minTx, noFill){
   const k = W / v.w;
   ctx.setTransform(k * dpr, 0, 0, -k * dpr, -v.x * k * dpr, -v.y * k * dpr);
   ctx.lineWidth = 1 / k; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -224,7 +245,7 @@ function paint(ctx, v, W, H, dpr, minTx){
   const X0 = v.x, X1 = v.x + v.w, Y0 = -(v.y + v.h), Y1 = -v.y, tiny = .6 / k;
   const vis = b => !b || (b[2] >= X0 && b[0] <= X1 && b[3] >= Y0 && b[1] <= Y1 && (b[2] - b[0] > tiny || b[3] - b[1] > tiny));
   DB.forEach(L => { if(S.layers.get(L.ly) === false) return;
-    L.fill.forEach(([P, c, op, b]) => { if(!vis(b)) return; ctx.globalAlpha = op; ctx.fillStyle = colOf(c); ctx.fill(P, 'evenodd'); });
+    if(!noFill) L.fill.forEach(([P, c, op, b]) => { if(!vis(b)) return; ctx.globalAlpha = op; ctx.fillStyle = colOf(c); ctx.fill(P, 'evenodd'); });
     ctx.globalAlpha = 1;
     L.st.forEach(([c, K]) => { ctx.strokeStyle = colOf(c); for(let i = 0; i < K.length; i++){ if(vis(K[i].b)) ctx.stroke(K[i].P); } });
     L.tx.forEach(t => tx.push(t)); });
@@ -246,11 +267,11 @@ function fullDraw(){
   sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, shot.width, shot.height); sx.drawImage(cv, 0, 0); shotVB = Object.assign({}, S.vb);
 }
 /* تصویر کوچک یک ریز محل: همان بخش نقشه با محدودهٔ پررنگ (JPEG سبک برای کارت فضا) */
-async function thumbAsync(pts, color){
-  if(RW){ const r = await rwAsk({thumb: {pts: pts.map(p => ({x: p.x, y: p.y})), color, light: {'var(--draw)': '#1d2430'}}}); return r.url; }
-  return thumbOf(pts, color);
+async function thumbAsync(pts, color, holes){
+  if(RW){ const r = await rwAsk({thumb: {pts: pts.map(p => ({x: p.x, y: p.y})), holes: (holes || []).map(h => h.map(p => ({x: p.x, y: p.y}))), color, light: {'var(--draw)': '#1d2430'}}}); return r.url; }
+  return thumbOf(pts, color, holes);
 }
-function thumbOf(pts, color){
+function thumbOf(pts, color, holes){
   const W = 480, H = 320; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
   let w = (x1 - x0) || 1, h = (y1 - y0) || 1; const pad = .35; w *= 1 + pad * 2; h *= 1 + pad * 2;
@@ -259,10 +280,11 @@ function thumbOf(pts, color){
   const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
   const dk = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light';
-  try{ if(DB) paint(g, v, W, H, 1, 6); }finally{ if(dk) document.documentElement.dataset.theme = dk; else delete document.documentElement.dataset.theme; }
+  try{ if(DB) paint(g, v, W, H, 1, 6, true); }finally{ if(dk) document.documentElement.dataset.theme = dk; else delete document.documentElement.dataset.theme; }
   const k = W / v.w; g.setTransform(k, 0, 0, -k, -v.x * k, -v.y * k);
   g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath();
-  g.globalAlpha = .22; g.fillStyle = color || '#2f6f9f'; g.fill(); g.globalAlpha = 1; g.lineWidth = 2.5 / k; g.strokeStyle = color || '#2f6f9f'; g.stroke();
+  (holes || []).forEach(H0 => { H0.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); });
+  g.globalAlpha = .3; g.fillStyle = color || '#2f6f9f'; g.fill('evenodd'); g.globalAlpha = 1; g.lineWidth = 2.5 / k; g.strokeStyle = color || '#2f6f9f'; g.stroke();
   return c.toDataURL('image/jpeg', .74);
 }
 /* حین حرکت: همان تصویر آخر جابه‌جا/بزرگ می‌شود؛ پس از ایستادن، کشیدن کامل */
@@ -344,29 +366,50 @@ function snap(w, e){
   const tol = 10 * S.vb.w / (stage.clientWidth || 1); let best = null, bd = tol;
   const cx = Math.floor(w.x / S.snapCell), cy = Math.floor(w.y / S.snapCell), r = Math.ceil(tol / S.snapCell);
   for(let i = -r; i <= r; i++) for(let j = -r; j <= r; j++){ const L = S.grid.get((cx + i) + ':' + (cy + j)); if(L) L.forEach(p => { const d = Math.hypot(p[0] - w.x, p[1] - w.y); if(d < bd){ bd = d; best = p; } }); }
-  if(S.cur && S.cur.pts.length && e && e.shiftKey){ const a = S.cur.pts[S.cur.pts.length - 1]; return Math.abs(w.x - a.x) > Math.abs(w.y - a.y) ? {x: w.x, y: a.y} : {x: a.x, y: w.y}; }
-  return best ? {x: best[0], y: best[1], snapped: true} : w;
+  const p0 = best ? {x: best[0], y: best[1], snapped: true} : w;
+  /* عمود (دکمهٔ «⊥ عمود»، F8 یا نگه داشتن Shift): از نقطهٔ قبلی فقط افقی یا عمودی */
+  if(S.cur && S.cur.pts.length && ((e && e.shiftKey) !== !!S.ortho)){ const a = S.cur.pts[S.cur.pts.length - 1];
+    return Math.abs(p0.x - a.x) > Math.abs(p0.y - a.y) ? {x: p0.x, y: a.y, snapped: p0.snapped} : {x: a.x, y: p0.y, snapped: p0.snapped}; }
+  return p0;
 }
 
 /* ---------- ابزارها ---------- */
-const HINT = {line: 'نقطهٔ اول و دوم را بزنید · Shift: افقی/عمودی · Alt: بدون گیرش', measure: 'دو نقطه را بزنید تا فاصله نشان داده شود',
+const HINT = {pline: 'نقطه‌ها را پشت سر هم بزنید · Enter یا دابل‌کلیک یا «✓ تمام» · ⊥ عمود: F8 · Alt: بدون گیرش',
+  cut: 'اول محدودهٔ اصلی را از فهرست انتخاب کنید، بعد دور بخشی که باید کم شود را بکشید · Enter برای ثبت کسر',
+  wall: 'دور فضا (یا مسیر دیوارها) را چندخطی بکشید · Enter: پنجرهٔ کدگذاری — هر ضلع یک کد و طول',
+  count: 'روی یک آیتم (بلاک: اسپرینکلر، دتکتور، شستی، دریچه…) بزنید؛ بعد «انتخاب مشابه» و کدگذاری',
+  line: 'نقطهٔ اول و دوم را بزنید · Shift یا ⊥ عمود: افقی/عمودی · Alt: بدون گیرش', measure: 'دو نقطه را بزنید تا فاصله نشان داده شود',
   pan: 'روی هر هاشور یا محدودهٔ بستهٔ نقشه بزنید تا مساحت و محیطش را ببینید', area: 'گوشه‌ها را یکی‌یکی بزنید · دابل‌کلیک یا Enter برای بستن · Esc لغو', hatch: 'محدودهٔ هاشور را بکشید · دابل‌کلیک یا Enter برای بستن'};
 function setTool(t){ S.tool = t; cancel(); document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); stage.className = 'stage t-' + t;
   const h = $('#hint'); h.hidden = !HINT[t]; h.textContent = HINT[t] || ''; }
 document.querySelectorAll('#tools button').forEach(b => b.onclick = () => setTool(b.dataset.t));
 window.addEventListener('keydown', e => { if(e.target.matches('input,select')) return;
   const k = e.key.toLowerCase();
+  if(e.key === 'F8' || k === 'o'){ e.preventDefault(); orthoSet(!S.ortho); return; }
   if(k === 'escape') cancel(); else if(k === 'enter') finish(); else if(k === 'h') setTool('pan'); else if(k === 'l') setTool('line'); else if(k === 'a') setTool('area'); else if(k === 'b') setTool('hatch'); else if(k === 'm') setTool('measure');
+  else if(k === 'p') setTool('pline'); else if(k === 'x') setTool('cut'); else if(k === 'w') setTool('wall'); else if(k === 'c' && !e.ctrlKey && !e.metaKey) setTool('count');
   else if((k === 'delete' || k === 'backspace') && S.sel >= 0){ S.marks.splice(S.sel, 1); S.sel = -1; save(); render(); }
   else if(k === 'z' && (e.ctrlKey || e.metaKey) && S.marks.length){ S.marks.pop(); save(); render(); } });
+function orthoSet(on){ S.ortho = !!on; const b = $('#orthoBtn'); if(b) b.classList.toggle('on', S.ortho); try{ localStorage.setItem('cad.ortho', S.ortho ? '1' : ''); }catch(e){} }
+$('#orthoBtn').onclick = () => orthoSet(!S.ortho);
+try{ orthoSet(localStorage.getItem('cad.ortho') === '1'); }catch(e){}
 function addPoint(p){
-  if(!S.cur) S.cur = {type: S.tool, pts: [], color: $('#col').value, pat: $('#hpat').value, name: ''};
+  if(S.tool === 'count'){ cntClick(p); return; }
+  if(S.tool === 'cut' && !S.cur && !(S.marks[S.sel] && (S.marks[S.sel].type === 'area' || S.marks[S.sel].type === 'hatch'))){ const h = $('#hint'); h.hidden = false; h.textContent = 'اول محدودهٔ اصلی را در فهرست کنار صفحه انتخاب کنید'; return; }
+  if(!S.cur) S.cur = {type: S.tool === 'pline' ? 'line' : S.tool, pts: [], color: $('#col').value, pat: $('#hpat').value, name: '', multi: S.tool === 'pline' || S.tool === 'wall' || S.tool === 'cut'};
   S.cur.pts.push({x: p.x, y: p.y});
-  if((S.tool === 'line' || S.tool === 'measure') && S.cur.pts.length === 2) finish();
+  if((S.tool === 'line' || S.tool === 'measure') && !S.cur.multi && S.cur.pts.length === 2) finish();
   else preview(p);
 }
 function finish(){
   const c = S.cur; if(!c) return;
+  /* کسر: حفره در محدودهٔ انتخاب‌شده */
+  if(c.type === 'cut'){ const m = S.marks[S.sel]; S.cur = null; tmpG.innerHTML = '';
+    if(m && c.pts.length >= 3){ (m.holes = m.holes || []).push(c.pts); save(); } render(); index(); return; }
+  /* دیوارها: چندخطی ← پنجرهٔ کدگذاری */
+  if(c.type === 'wall'){ S.cur = null; tmpG.innerHTML = ''; if(c.pts.length < 2){ render(); return; }
+    const m = {type: 'wall', pts: c.pts, color: c.color, name: 'دیوارهای ' + toFa(S.marks.filter(x => x.type === 'wall').length + 1), closed: c.pts.length >= 3};
+    S.marks.push(m); S.sel = S.marks.length - 1; save(); render(); index(); wallDlg(S.sel); return; }
   const need = c.type === 'area' || c.type === 'hatch' ? 3 : 2;
   if(c.pts.length >= need){ if(c.type === 'area') c.name = 'محدودهٔ ' + toFa(S.marks.filter(m => m.type === 'area').length + 1); if(c.type === 'hatch') c.name = 'هاشور ' + toFa(S.marks.filter(m => m.type === 'hatch').length + 1);
     S.marks.push(c); S.sel = S.marks.length - 1; save(); }
@@ -378,6 +421,10 @@ const area = pts => Math.abs(pts.reduce((t, p, i) => { const q = pts[(i + 1) % p
 const U = () => +$('#unit').value;   /* واحد نقشه در هر متر */
 const mLen = v => v / U(), mArea = v => v / (U() * U());
 const pstr = pts => pts.map(p => p.x + ',' + p.y).join(' ');
+/* مساحت محدوده منهای کسرها (حفره‌ها) */
+const markA = m => Math.max(0, (m.a != null ? m.a : area(m.pts)) - (m.holes || []).reduce((t, h) => t + area(h), 0));
+const markP = m => (m.p != null ? m.p : len(m.pts.concat([m.pts[0]]))) + (m.holes || []).reduce((t, h) => t + len(h.concat([h[0]])), 0);
+const ringD = pts => 'M' + pts.map(p => p.x + ' ' + p.y).join('L') + 'Z';
 function patId(c, pat){ const id = 'p' + pat + c.replace('#', ''); if(!document.getElementById(id)){
     const defs = view.querySelector('defs'), sz = 8 * S.vb.w / (stage.clientWidth || 1);
     const p = document.createElementNS(NS, 'pattern'); p.id = id; p.setAttribute('patternUnits', 'userSpaceOnUse');
@@ -389,6 +436,11 @@ function patId(c, pat){ const id = 'p' + pat + c.replace('#', ''); if(!document.
     defs.appendChild(p); } return id; }
 function shape(m, i){
   const c = m.color || '#2f6f9f', on = i === S.sel;
+  if(m.type === 'wall') return wallSvg(m, i, on);
+  if(m.type === 'count') return cntSvg(m, i, on);
+  if((m.type === 'area' || m.type === 'hatch') && m.holes && m.holes.length){
+    const fill = m.type === 'hatch' ? (m.pat === 'solid' ? c : 'url(#' + patId(c, m.pat) + ')') : c;
+    return '<path data-i="' + i + '" d="' + ringD(m.pts) + m.holes.map(ringD).join('') + '" fill-rule="evenodd" fill="' + fill + '" fill-opacity="' + (m.type === 'area' ? .14 : (m.pat === 'solid' ? .45 : 1)) + '" stroke="' + c + '" stroke-width="' + (on ? 2.6 : 1.6) + '" vector-effect="non-scaling-stroke"/>'; }
   if(m.type === 'line' || m.type === 'measure') return '<polyline data-i="' + i + '" points="' + pstr(m.pts) + '" fill="none" stroke="' + c + '" stroke-width="' + (on ? 3 : 2) + '"' + (m.type === 'measure' ? ' stroke-dasharray="6 4"' : '') + ' vector-effect="non-scaling-stroke"/>';
   const fill = m.type === 'hatch' ? (m.pat === 'solid' ? c : 'url(#' + patId(c, m.pat) + ')') : c;
   return '<polygon data-i="' + i + '" points="' + pstr(m.pts) + '" fill="' + fill + '" fill-opacity="' + (m.type === 'area' ? .14 : (m.pat === 'solid' ? .45 : 1)) + '" stroke="' + c + '" stroke-width="' + (on ? 2.6 : 1.6) + '" vector-effect="non-scaling-stroke"/>';
@@ -396,7 +448,7 @@ function shape(m, i){
 function preview(p){
   if(!S.cur || !S.cur.pts.length){ tmpG.innerHTML = p && p.snapped ? '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (5 * S.vb.w / stage.clientWidth) + '" fill="none" stroke="#e67e22" stroke-width="2" vector-effect="non-scaling-stroke"/>' : ''; return; }
   const c = S.cur, pts = c.pts.concat(p ? [p] : []), col = c.color;
-  const closed = c.type === 'area' || c.type === 'hatch';
+  const closed = c.type === 'area' || c.type === 'hatch' || c.type === 'cut';
   const L = closed && pts.length >= 3 ? 'مساحت ' + fmt(mArea(area(pts))) + ' m²' : 'طول ' + fmt(mLen(len(pts))) + ' m';
   tmpG.innerHTML = (closed ? '<polygon points="' + pstr(pts) + '" fill="' + col + '" fill-opacity=".12" stroke="' + col + '" stroke-width="1.6" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>'
     : '<polyline points="' + pstr(pts) + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>')
@@ -409,22 +461,33 @@ function centroid(pts){ let x = 0, y = 0; pts.forEach(p => { x += p.x; y += p.y;
 function drawLabels(){ render(true); }
 function render(onlyDraw){
   mkG.innerHTML = S.marks.map(shape).join('') + S.marks.map((m, i) => {
-    const t = m.type === 'area' || m.type === 'hatch' ? (m.name ? m.name + ' · ' : '') + fmt(mArea(m.a != null ? m.a : area(m.pts))) + ' m²' : fmt(mLen(len(m.pts))) + ' m';
+    if(m.type === 'wall' || m.type === 'count') return '';
+    const t = m.type === 'area' || m.type === 'hatch' ? (m.name ? m.name + ' · ' : '') + fmt(mArea(markA(m))) + ' m²' : fmt(mLen(len(m.pts))) + ' m';
     return label(m.type === 'area' || m.type === 'hatch' ? centroid(m.pts) : m.pts[1], t); }).join('');
   if(onlyDraw === true) return;
   const L = $('#list');
   L.innerHTML = S.marks.length ? S.marks.map((m, i) => { const closed = m.type === 'area' || m.type === 'hatch';
+    if(m.type === 'wall' || m.type === 'count') return rowXHtml(m, i);
     return '<div class="mk' + (i === S.sel ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + m.color + '"></i>'
       + (closed ? '<input type="text" value="' + (m.name || '').replace(/"/g, '&quot;') + '" data-nm="' + i + '" placeholder="نام ریز محل">' : '<span>' + (m.type === 'measure' ? 'اندازه' : 'خط') + '</span>')
       + '<button type="button" data-del="' + i + '" title="حذف">×</button>'
-      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(m.a != null ? m.a : area(m.pts))) + ' m² · محیط ' + fmt(mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])))) + ' m' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small>' + linkHtml(m, i) + '</div>'; }).join('')
+      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(markA(m))) + ' m²' + (m.holes && m.holes.length ? ' (پس از ' + toFa(m.holes.length) + ' کسر)' : '') + ' · محیط ' + fmt(mLen(markP(m))) + ' m' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small>'
+      + (closed ? '<div class="wl">' + (m.holes && m.holes.length ? '<button type="button" class="btn" data-unhole="' + i + '">برداشتن کسرها</button>' : '') + '<button type="button" class="btn" data-mkwall="' + i + '">کدگذاری دیوارهای این محدوده</button></div>' : '')
+      + linkHtml(m, i) + '</div>'; }).join('')
     : '<p style="color:var(--muted);padding:6px 8px;font-size:12px;line-height:1.9">با «محدوده» گوشه‌های هر ریز محل را بزنید تا مساحت و محیطش حساب شود؛ با «هاشور» محدودهٔ رنگی و با «خط» و «اندازه» فاصله‌ها را بکشید. همه روی همین دستگاه برای همین فایل ذخیره می‌شود.</p>';
-  const A = S.marks.filter(m => m.type === 'area');
+  const A = S.marks.filter(m => m.type === 'area' || m.type === 'hatch'), Wn = S.marks.filter(m => m.type === 'wall'), Cn = S.marks.filter(m => m.type === 'count');
   $('#cnt').textContent = S.marks.length ? toFa(S.marks.length) : '';
-  $('#sum').innerHTML = A.length ? '<span>جمع مساحت محدوده‌ها</span><b>' + fmt(A.reduce((t, m) => t + mArea(m.a != null ? m.a : area(m.pts)), 0)) + ' m²</b><button type="button" class="btn" id="csv">خروجی اکسل (CSV)</button>' : '';
+  $('#sum').innerHTML = (A.length ? '<span>جمع مساحت محدوده‌ها</span><b>' + fmt(A.reduce((t, m) => t + mArea(markA(m)), 0)) + ' m²</b>' : '')
+    + (Wn.length ? '<span>دیوارها: ' + toFa(Wn.reduce((t, m) => t + ((m.walls && m.walls.segs) || []).length, 0)) + ' کد · ' + fmt(mLen(Wn.reduce((t, m) => t + len(m.closed ? m.pts.concat([m.pts[0]]) : m.pts), 0))) + ' m</span>' : '')
+    + (Cn.length ? '<span>آیتم‌ها: ' + Cn.map(m => escH(m.cat || 'آیتم') + ' ' + toFa((m.items || []).length)).join(' · ') + '</span>' : '')
+    + (S.marks.length ? '<button type="button" class="btn" id="csv">خروجی اکسل (CSV)</button>' : '');
   const cv = $('#csv'); if(cv) cv.onclick = csv;
 }
 $('#list').addEventListener('click', e => { const d = e.target.closest('[data-del]'); if(d){ S.marks.splice(+d.dataset.del, 1); S.sel = -1; save(); render(); index(); return; }
+  const uh = e.target.closest('[data-unhole]'); if(uh){ const m = S.marks[+uh.dataset.unhole]; if(m){ delete m.holes; save(); render(); } return; }
+  const mw = e.target.closest('[data-mkwall]'); if(mw){ const m = S.marks[+mw.dataset.mkwall]; if(m){ const w = {type: 'wall', pts: m.pts.slice(), color: m.color, name: 'دیوارهای ' + (m.name || ''), closed: true, of: +mw.dataset.mkwall}; S.marks.push(w); S.sel = S.marks.length - 1; save(); render(); wallDlg(S.sel); } return; }
+  const we = e.target.closest('[data-wedit]'); if(we){ wallDlg(+we.dataset.wedit); return; }
+  const ce = e.target.closest('[data-cedit]'); if(ce){ cntOpen(+ce.dataset.cedit); return; }
   if(e.target.closest('select, .lk')) return;
   const r = e.target.closest('.mk'); if(r){ S.sel = +r.dataset.i; render(); } });
 $('#list').addEventListener('input', e => { const n = e.target.closest('[data-nm]'); if(n){ S.marks[+n.dataset.nm].name = n.value; save(); render(true); } });
@@ -432,13 +495,28 @@ $('#unit').onchange = () => { try{ localStorage.setItem('cad.unit', $('#unit').v
 try{ const u = localStorage.getItem('cad.unit'); if(u) $('#unit').value = u; }catch(e){}
 function save(){ try{ localStorage.setItem(S.key, JSON.stringify(S.marks)); }catch(e){} try{ if(window.parent !== window) window.parent.postMessage({cadMarks: S.marks, name: S.file, unit: U()}, location.origin); }catch(e){} }
 function loadMarks(){ try{ S.marks = JSON.parse(localStorage.getItem(S.key) || '[]') || []; }catch(e){ S.marks = []; } render(); index(); }
-function csv(){ const rows = [['نام', 'نوع', 'مساحت m2', 'محیط/طول m']].concat(S.marks.map(m => [m.name || '', m.type, (m.type === 'area' || m.type === 'hatch') ? mArea(area(m.pts)).toFixed(2) : '', ((m.type === 'area' || m.type === 'hatch') ? mLen(len(m.pts.concat([m.pts[0]]))) : mLen(len(m.pts))).toFixed(2)]));
+function csv(){ const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['نام', 'نوع', 'مساحت m2', 'محیط/طول m']].concat(S.marks.filter(m => m.type !== 'wall' && m.type !== 'count').map(m => [m.name || '', m.type, (m.type === 'area' || m.type === 'hatch') ? mArea(markA(m)).toFixed(2) : '', ((m.type === 'area' || m.type === 'hatch') ? mLen(markP(m)) : mLen(len(m.pts))).toFixed(2)]));
+  /* مثل PLSEGEXPORT: Coding, Area (1), Length, Height, Area 2 */
+  S.marks.filter(m => m.type === 'wall' && m.walls).forEach(m => { rows.push([]); rows.push(['Coding', 'Area (1)', 'Length', 'Height', 'Area 2']);
+    m.walls.segs.forEach((g, k) => rows.push([q(g.c), k === 0 && m.closed ? mArea(area(m.pts)).toFixed(m.walls.cfg.dec) : '', g.l.toFixed(m.walls.cfg.dec), m.walls.cfg.h || '', m.walls.cfg.h ? (g.l * m.walls.cfg.h).toFixed(m.walls.cfg.dec) : ''])); });
+  S.marks.filter(m => m.type === 'count').forEach(m => { rows.push([]); rows.push(['Code', 'Category', 'Block', 'X', 'Y']);
+    (m.items || []).forEach(it => rows.push([q(it.c), q(m.cat || ''), q(it.b || ''), it.x.toFixed(2), it.y.toFixed(2)])); });
   const b = new Blob(['﻿' + rows.map(r => r.join(',')).join('\n')], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (S.file || 'cad') + '-areas.csv'; a.click(); }
+/* چاپ: همان تصویر PNG در پنجرهٔ چاپ (برای همهٔ فایل‌ها) */
+$('#printBtn').onclick = () => { S.__print = true; $('#pngBtn').onclick(); };
+function pngDone(url){
+  if(!S.__print){ const a = document.createElement('a'); a.href = url; a.download = (S.file || 'cad') + '.png'; a.click(); return; }
+  S.__print = false;
+  const w = window.open('', '_blank'); if(!w){ const a = document.createElement('a'); a.href = url; a.download = (S.file || 'cad') + '.png'; a.click(); return; }
+  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>' + escH(S.file || 'نقشه') + '</title><style>@page{size:A4 landscape;margin:10mm}body{margin:0;font-family:Tahoma,sans-serif}h1{font-size:13px;margin:0 0 6px}img{width:100%;height:auto;border:1px solid #ccc}</style></head><body><h1>' + escH(S.file || '') + '</h1><img src="' + url + '" onload="setTimeout(function(){window.print()},200)"></body></html>');
+  w.document.close();
+}
 $('#pngBtn').onclick = () => { const s = new XMLSerializer().serializeToString(view), W = stage.clientWidth * 2, H = stage.clientHeight * 2;
   const st = getComputedStyle(document.documentElement), bg = st.getPropertyValue('--paper') || '#fff', dr = st.getPropertyValue('--draw') || '#000';
   const img = new Image(); img.onload = async () => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
     if(RW){ const r = await rwAsk({png: {vb: Object.assign({}, S.vb), W, H, bg}}); if(r && r.bmp) x.drawImage(r.bmp, 0, 0, W, H); } else { fullDraw(); x.drawImage(cv, 0, 0, W, H); }
-    x.drawImage(img, 0, 0, W, H); const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = (S.file || 'cad') + '.png'; a.click(); };
+    x.drawImage(img, 0, 0, W, H); pngDone(c.toDataURL('image/png')); };
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s.replace(/var\(--draw\)/g, dr).replace('<svg ', '<svg width="' + W + '" height="' + H + '" ')); };
 /* ---------- انتخاب هاشور یا چندخطی بستهٔ خود نقشه: مساحت و محیط ---------- */
 const pipR = (x, y, r) => { let o = false; for(let k = 0, j = r.length - 1; k < r.length; j = k++){ const a = r[k], b2 = r[j]; if((a[1] > y) !== (b2[1] > y) && x < (b2[0] - a[0]) * (y - a[1]) / (b2[1] - a[1]) + a[0]) o = !o; } return o; };
@@ -467,44 +545,59 @@ function pickAt(cX, cY){
 S.locs = [];
 window.addEventListener('message', e => { if(e.origin !== location.origin) return; const d = e.data || {};
   if(Array.isArray(d.cadLocs)){ S.locs = d.cadLocs; render(); }
-  if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; m.locSel = d.cadLinked; m.lkErr = ''; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
+  if(d.cadLinked){ const m = S.marks[d.i]; if(m){ m.ldone = m.ldone || {}; m.ldone[d.cadLinked] = d.t || 1; m.loc = d.cadLinked; m.locT = d.t || ''; m.lk = d.kind; m.lkErr = ''; if(!Array.isArray(m.lsel)) m.lsel = [d.cadLinked]; if(!m.name) m.name = String(d.t || d.cadLinked).split(' › ').pop(); save(); render(); } }
   if(d.cadLinkErr){ const m = S.marks[d.i]; if(m){ m.lkErr = 'ثبت نشد: ' + (d.msg || 'خطای سرور') + ' — دوباره بزنید'; render(); } } });
 /* محل در سامانه: فهرست جست‌وجوپذیر به تفکیک طبقه (به‌جای select)؛ انتخاب در خود محدوده می‌ماند تا با هر بازسازی گم نشود */
 const escH = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const locT = k => (S.locs.find(o => o.k === k) || {}).t || k;
+/* یک محدوده برای چند محل (تیپ یا چند طبقه): فهرست محل‌ها در m.lsel، ثبت‌شده‌ها در m.ldone */
+const lselOf = m => { if(Array.isArray(m.lsel)) return m.lsel; const v = m.locSel || m.loc; return v ? [v] : []; };
 function linkHtml(m, i){
   if(!S.locs.length || !(m.type === 'area' || m.type === 'hatch')) return '';
-  const sel = m.locSel || m.loc || '', kd = m.lkSel || m.lk || 'f';
-  return '<div class="lk"><button type="button" class="lk-pick' + (sel ? ' on' : '') + '" data-lkpick="' + i + '">' + (sel ? escH(locT(sel)) : 'انتخاب محل در سامانه…') + '</button>'
+  const L0 = lselOf(m), sel = L0.length, kd = m.lkSel || m.lk || 'f', dn = m.ldone || (m.loc ? {[m.loc]: m.locT || 1} : {});
+  const nDone = L0.filter(k => dn[k]).length;
+  return '<div class="lk"><button type="button" class="lk-pick' + (sel ? ' on' : '') + '" data-lkpick="' + i + '">' + (sel ? (sel === 1 ? escH(locT(L0[0])) : toFa(sel) + ' محل: ' + escH(L0.slice(0, 3).map(k => locT(k).split(/ — | › /).pop()).join('، ')) + (sel > 3 ? '…' : '')) : 'انتخاب محل در سامانه… (یک یا چند)') + '</button>'
     + '<span class="lk-k">' + [['f', 'کف'], ['c', 'سقف'], ['b', 'هر دو']].map(([v, t]) => '<button type="button" data-lkk="' + i + ':' + v + '" class="' + (kd === v ? 'on' : '') + '">' + t + '</button>').join('') + '</span>'
-    + '<button type="button" class="btn pri" data-lk="' + i + '"' + (sel ? '' : ' disabled') + '>' + (m.loc && m.loc === sel ? 'ثبت دوباره' : 'ثبت در کارت') + '</button></div>'
+    + '<button type="button" class="btn pri" data-lk="' + i + '"' + (sel ? '' : ' disabled') + '>' + (nDone && nDone === sel ? 'ثبت دوباره' : (sel > 1 ? 'ثبت در ' + toFa(sel) + ' کارت' : 'ثبت در کارت')) + '</button></div>'
     + (m.lkErr ? '<small class="lk-err">' + escH(m.lkErr) + '</small>' : '')
-    + (m.loc ? '<small class="lk-ok">✓ ثبت شد برای ' + escH(m.locT || locT(m.loc)) + '</small>' : '');
+    + (nDone ? '<small class="lk-ok">✓ ثبت شد برای ' + (nDone === 1 ? escH(locT(L0.find(k => dn[k]))) : toFa(nDone) + ' از ' + toFa(sel) + ' محل') + '</small>' : '');
 }
 function locPickOpen(i){
   let ov = document.getElementById('locPick'); if(ov) ov.remove();
   ov = document.createElement('div'); ov.id = 'locPick';
-  ov.innerHTML = '<div class="lp"><div class="lp-h"><b>محل در سامانه</b><button type="button" data-lpx aria-label="بستن">✕</button></div><input type="search" placeholder="جست‌وجو: طبقه، واحد، محل…" class="lp-q"><div class="lp-l"></div></div>';
+  const m0 = S.marks[i] || {}; const picked = new Set(lselOf(m0));
+  ov.innerHTML = '<div class="lp"><div class="lp-h"><b>محل در سامانه <small style="font-weight:500;color:var(--muted)">یک یا چند محل — مثلاً یک تیپ برای چند طبقه</small></b><button type="button" data-lpx aria-label="بستن">✕</button></div><input type="search" placeholder="جست‌وجو: طبقه، واحد، محل… (عدد فارسی یا انگلیسی)" class="lp-q"><div class="lp-l"></div>'
+    + '<div class="lp-ft"><small class="lp-n"></small><span style="display:flex;gap:6px"><button type="button" class="btn" data-lpall>همهٔ نتیجه‌ها</button><button type="button" class="btn pri" data-lpok>تمام</button></span></div></div>';
   document.body.appendChild(ov);
   const L = ov.querySelector('.lp-l'), q = ov.querySelector('.lp-q');
-  const paint = () => { const t = q.value.trim(); const G = new Map();
-    S.locs.filter(o => !t || o.t.indexOf(t) !== -1).forEach(o => { const g = String(o.t).split(/ — | › /)[0]; if(!G.has(g)) G.set(g, []); G.get(g).push(o); });
-    L.innerHTML = G.size ? Array.from(G.entries()).map(([g, A]) => '<div class="lp-g"><b>' + escH(g) + '</b>' + A.map(o => { const rest = o.t.slice(g.length).replace(/^\s*(—|›)\s*/, '') || 'کل طبقه'; return '<button type="button" data-lpk="' + escH(o.k) + '" class="' + ((S.marks[i] || {}).locSel === o.k ? 'on' : '') + '">' + escH(rest) + '</button>'; }).join('') + '</div>').join('') : '<p class="lp-0">موردی پیدا نشد.</p>'; };
+  /* جست‌وجو با عدد فارسی، انگلیسی یا عربی؛ ی/ي و ک/ك یکی */
+  const nz = v => String(v || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\u200c/g, ' ').toLowerCase();
+  const paint = () => { const t = nz(q.value.trim()); const G = new Map();
+    S.locs.filter(o => !t || t.split(/\s+/).every(w => nz(o.t).indexOf(w) !== -1)).forEach(o => { const g = String(o.t).split(/ — | › /)[0]; if(!G.has(g)) G.set(g, []); G.get(g).push(o); });
+    L.innerHTML = G.size ? Array.from(G.entries()).map(([g, A]) => '<div class="lp-g"><b>' + escH(g) + '</b>' + A.map(o => { const rest = o.t.slice(g.length).replace(/^\s*(—|›)\s*/, '') || 'کل طبقه'; return '<label class="lp-c"><input type="checkbox" data-lpk="' + escH(o.k) + '"' + (picked.has(o.k) ? ' checked' : '') + '>' + escH(rest) + '</label>'; }).join('') + '</div>').join('') : '<p class="lp-0">موردی پیدا نشد.</p>';
+    ov.querySelector('.lp-n').textContent = picked.size ? toFa(picked.size) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده'; };
   paint(); q.oninput = paint; setTimeout(() => { try{ q.focus(); }catch(e){} }, 30);
+  const commit = () => { const m = S.marks[i]; if(m){ m.lsel = Array.from(picked); m.locSel = m.lsel[0] || ''; m.lkErr = ''; save(); render(); } ov.remove(); };
+  ov.addEventListener('change', e => { const b = e.target.closest('[data-lpk]'); if(!b) return; if(b.checked) picked.add(b.dataset.lpk); else picked.delete(b.dataset.lpk); ov.querySelector('.lp-n').textContent = picked.size ? toFa(picked.size) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده'; });
   ov.addEventListener('click', e => { if(e.target === ov || e.target.closest('[data-lpx]')){ ov.remove(); return; }
-    const b = e.target.closest('[data-lpk]'); if(!b) return; const m = S.marks[i]; if(m){ m.locSel = b.dataset.lpk; m.lkErr = ''; save(); render(); } ov.remove(); });
+    if(e.target.closest('[data-lpok]')){ commit(); return; }
+    if(e.target.closest('[data-lpall]')){ ov.querySelectorAll('[data-lpk]').forEach(c => { c.checked = true; picked.add(c.dataset.lpk); }); ov.querySelector('.lp-n').textContent = toFa(picked.size) + ' محل انتخاب شده'; return; } });
+  q.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); commit(); } });
 }
 $('#list').addEventListener('click', async e => {
   const pk = e.target.closest('[data-lkpick]'); if(pk){ e.stopPropagation(); locPickOpen(+pk.dataset.lkpick); return; }
   const kk = e.target.closest('[data-lkk]'); if(kk){ e.stopPropagation(); const [i, v] = kk.dataset.lkk.split(':'); const m = S.marks[+i]; if(m){ m.lkSel = v; save(); render(); } return; }
   const b = e.target.closest('[data-lk]'); if(!b) return; e.stopPropagation();
   const i = +b.dataset.lk, m = S.marks[i]; if(!m) return;
-  const k = m.locSel || m.loc, kind = m.lkSel || m.lk || 'f';
-  if(!k){ locPickOpen(i); return; }
+  const keys = lselOf(m), kind = m.lkSel || m.lk || 'f';
+  if(!keys.length){ locPickOpen(i); return; }
   b.disabled = true; b.textContent = 'در حال ثبت…'; m.lkErr = '';
-  const A = mArea(m.a != null ? m.a : area(m.pts)), P = mLen(m.p != null ? m.p : len(m.pts.concat([m.pts[0]])));
-  let img = ''; try{ img = await thumbAsync(m.pts, m.color); }catch(er){}
-  window.parent.postMessage({cadLink: {i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}}, location.origin); }, true);
+  const A = mArea(markA(m)), P = mLen(markP(m));
+  let img = ''; try{ img = await thumbAsync(m.pts, m.color, m.holes); }catch(er){}
+  /* دیوارها و آیتم‌های شمرده‌شدهٔ داخل همین محدوده هم خلاصه‌وار به کارت فضا می‌روند */
+  const extra = markExtra(m);
+  for(const k of keys){ window.parent.postMessage({cadLink: Object.assign({i, k, kind, a: Math.round(A * 100) / 100, p: Math.round(P * 100) / 100, img, file: S.file}, extra)}, location.origin);
+    await new Promise(r => setTimeout(r, 350)); } }, true);
 /* گوشی: دابل‌کلیک و Enter نیست؛ حین کشیدن، نوار «تمام / نقطهٔ قبل / لغو» */
 const dbar = document.createElement('div'); dbar.className = 'dbar'; dbar.hidden = true;
 dbar.innerHTML = '<button type="button" class="btn pri" data-db="ok">✓ تمام</button><button type="button" class="btn" data-db="undo">↶ نقطهٔ قبل</button><button type="button" class="btn" data-db="x">✕ لغو</button>';
@@ -514,6 +607,146 @@ dbar.addEventListener('click', e => { const b = e.target.closest('[data-db]'); i
   if(b.dataset.db === 'ok') finish(); else if(b.dataset.db === 'x') cancel(); else if(S.cur && S.cur.pts.length){ S.cur.pts.pop(); if(!S.cur.pts.length) cancel(); else preview(null); } dbarSync(); });
 function dbarSync(){ const c = S.cur, need = c ? ((c.type === 'area' || c.type === 'hatch') ? 3 : 2) : 0; dbar.hidden = !c || !c.pts.length; const ok = dbar.querySelector('[data-db="ok"]'); if(ok) ok.disabled = !c || c.pts.length < need; }
 setInterval(dbarSync, 250);
+/* ================= کدگذاری دیوارها (مثل PLSEGEXPORT) =================
+   هر ضلعِ چندخطی یک کد: «محل-علامت+شماره[-Lطول]»، طول به متر، ارتفاع اختیاری → مساحت دیوار (Area 2).
+   تنظیمات برای دفعهٔ بعد می‌ماند؛ کدها روی نقشه کنار هر ضلع نوشته می‌شوند و در خروجی اکسل هم هستند. */
+const pad3 = n => String(n).padStart(3, '0');
+const WCFG0 = () => { try{ return Object.assign({loc: 'LOC', mark: 'W', start: 1, dec: 3, incl: true, h: '', lbl: true, side: 1}, JSON.parse(localStorage.getItem('cad.wcfg') || '{}')); }catch(e){ return {loc: 'LOC', mark: 'W', start: 1, dec: 3, incl: true, h: '', lbl: true, side: 1}; } };
+function wallSegs(m){ const P = m.closed ? m.pts.concat([m.pts[0]]) : m.pts, out = [];
+  for(let k = 1; k < P.length; k++) out.push({a: P[k - 1], b: P[k], l: mLen(Math.hypot(P[k].x - P[k - 1].x, P[k].y - P[k - 1].y))});
+  return out; }
+function wallBuild(m, cfg){
+  const S0 = wallSegs(m), segs = S0.map((g, k) => ({c: cfg.loc + '-' + cfg.mark + pad3(+cfg.start + k) + (cfg.incl ? '-L' + g.l.toFixed(cfg.dec) : ''), l: g.l}));
+  m.walls = {cfg: Object.assign({}, cfg), segs}; }
+function wallSvg(m, i, on){
+  const c = m.color || '#2f6f9f', P = m.closed ? m.pts.concat([m.pts[0]]) : m.pts;
+  let h = '<polyline data-i="' + i + '" points="' + pstr(P) + '" fill="none" stroke="' + c + '" stroke-width="' + (on ? 3.2 : 2.4) + '" vector-effect="non-scaling-stroke"/>';
+  if(!m.walls || m.walls.cfg.lbl === false) return h;
+  const k = S.vb.w / (stage.clientWidth || 1), off = 12 * k * (m.walls.cfg.side || 1);
+  wallSegs(m).forEach((g, j) => { const sg = m.walls.segs[j]; if(!sg) return; const dx = g.b.x - g.a.x, dy = g.b.y - g.a.y, L = Math.hypot(dx, dy) || 1;
+    const mx = (g.a.x + g.b.x) / 2 - dy / L * off, my = (g.a.y + g.b.y) / 2 + dx / L * off;
+    let ang = Math.atan2(dy, dx) * 180 / Math.PI; if(ang > 90) ang -= 180; if(ang < -90) ang += 180;
+    h += '<g transform="translate(' + mx + ',' + my + ') scale(' + k + ',' + (-k) + ') rotate(' + (-ang) + ')"><text class="lab" text-anchor="middle" dominant-baseline="middle" style="font-size:10.5px;direction:ltr" fill="' + c + '">' + escH(sg.c) + '</text></g>'; });
+  return h; }
+function wallDlg(i){
+  const m = S.marks[i]; if(!m) return; const cfg = Object.assign(WCFG0(), (m.walls && m.walls.cfg) || {});
+  if(!m.walls && m.of != null && S.marks[m.of] && S.marks[m.of].name) cfg.loc = String(S.marks[m.of].name).replace(/\s+/g, '-');
+  const d = document.createElement('div'); d.className = 'mdl';
+  d.innerHTML = '<div><h4>کدگذاری دیوارها <button type="button" data-x>✕</button></h4>'
+    + '<small>هر ضلع یک کد می‌گیرد: <b dir="ltr">محل-علامت+شماره-Lطول</b>. طول به متر؛ با ارتفاع، مساحت هر دیوار (طول × ارتفاع) هم حساب می‌شود.</small>'
+    + '<div class="g"><label>محل / پیشوند<input type="text" data-k="loc" dir="ltr" value="' + escH(cfg.loc) + '"></label>'
+    + '<label>علامت ضلع<select data-k="mark">' + ['W', 'L', 'H', 'P', 'C', 'D'].map(x => '<option' + (x === cfg.mark ? ' selected' : '') + '>' + x + '</option>').join('') + (['W', 'L', 'H', 'P', 'C', 'D'].indexOf(cfg.mark) === -1 ? '<option selected>' + escH(cfg.mark) + '</option>' : '') + '</select></label>'
+    + '<label>علامت دلخواه<input type="text" data-k="cmark" dir="ltr" placeholder="مثلاً WL" value=""></label>'
+    + '<label>شمارهٔ شروع<input type="number" data-k="start" min="1" value="' + (+cfg.start || 1) + '"></label>'
+    + '<label>رقم اعشار<select data-k="dec">' + [0, 1, 2, 3].map(x => '<option' + (x === +cfg.dec ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>'
+    + '<label>ارتفاع (m، اختیاری)<input type="number" step="0.01" data-k="h" value="' + escH(cfg.h) + '"></label>'
+    + '<label>طرف نوشته<select data-k="side"><option value="1"' + (+cfg.side !== -1 ? ' selected' : '') + '>چپ مسیر</option><option value="-1"' + (+cfg.side === -1 ? ' selected' : '') + '>راست مسیر</option></select></label></div>'
+    + '<label class="tg"><input type="checkbox" data-k="incl"' + (cfg.incl ? ' checked' : '') + '>طول در خودِ کد بیاید</label>'
+    + '<label class="tg"><input type="checkbox" data-k="lbl"' + (cfg.lbl !== false ? ' checked' : '') + '>کدها روی نقشه نوشته شوند</label>'
+    + '<label class="tg"><input type="checkbox" data-k="closed"' + (m.closed ? ' checked' : '') + '>مسیر بسته است (آخرین ضلع به اولی)</label>'
+    + '<div class="pv" data-pv></div>'
+    + '<div class="ft"><button type="button" class="btn" data-x>انصراف</button><button type="button" class="btn pri" data-ok>ثبت کدها</button></div></div>';
+  document.body.appendChild(d);
+  const rd = () => { const g = k => d.querySelector('[data-k="' + k + '"]'); const cm = g('cmark').value.trim();
+    return {loc: g('loc').value.trim() || 'LOC', mark: cm || g('mark').value, start: Math.max(1, +g('start').value || 1), dec: +g('dec').value, h: g('h').value.trim() ? +g('h').value : '', side: +g('side').value, incl: g('incl').checked, lbl: g('lbl').checked, closed: g('closed').checked}; };
+  const pv = () => { const c0 = rd(), tmp = Object.assign({}, m, {closed: c0.closed}); wallBuild(tmp, c0);
+    d.querySelector('[data-pv]').textContent = 'Coding, Length' + (c0.h ? ', Height, Area 2' : '') + '\n' + tmp.walls.segs.map(g => g.c + ', ' + g.l.toFixed(c0.dec) + (c0.h ? ', ' + c0.h + ', ' + (g.l * c0.h).toFixed(c0.dec) : '')).join('\n')
+      + '\n— ' + toFa(tmp.walls.segs.length) + ' ضلع · جمع ' + fmt(tmp.walls.segs.reduce((t, g) => t + g.l, 0)) + ' m'; };
+  pv(); d.addEventListener('input', pv); d.addEventListener('change', pv);
+  d.addEventListener('click', e => { if(e.target === d || e.target.closest('[data-x]')){ d.remove(); if(!m.walls){ S.marks.splice(i, 1); S.sel = -1; save(); render(); } return; }
+    if(e.target.closest('[data-ok]')){ const c0 = rd(); m.closed = c0.closed; wallBuild(m, c0); try{ const sv = Object.assign({}, c0, {start: +c0.start + m.walls.segs.length}); delete sv.closed; localStorage.setItem('cad.wcfg', JSON.stringify(sv)); }catch(err){} d.remove(); save(); render(); } });
+}
+/* ================= شمارشگر آیتم (مثل NumInc) =================
+   روی یک بلاک بزنید → «انتخاب مشابه» (همان بلاک و لایه، در کل نقشه / دید فعلی / داخل محدوده) یا با کلیک تک‌تک؛
+   هر آیتم کد ماندگار می‌گیرد (پیشوند + شماره) و دسته دارد (اسپرینکلر، دتکتور، شستی، دریچه…). */
+const CNT_CATS = ['اسپرینکلر', 'دتکتور دود', 'دتکتور حرارتی', 'شستی اعلام حریق', 'آژیر/فلاشر', 'دریچهٔ هوا', 'دیفیوزر', 'چراغ', 'پریز', 'کلید', 'جعبه تقسیم', 'شیر', 'کفشوی', 'دوربین', 'سایر'];
+let CI = null;   /* شبکهٔ جست‌وجوی نقاط درج بلاک‌ها */
+function insIndex(){ CI = null; const I = S.ins; if(!I || !I.nm || !I.nm.length) return; let bw = 1000; if(S.base) bw = Math.max(S.base.w, S.base.h);
+  const cell = Math.max(bw / 300, 1e-6), g = new Map();
+  for(let k = 0; k < I.nm.length; k++){ const x = I.xy[k * 2], y = I.xy[k * 2 + 1], key = Math.floor(x / cell) + ':' + Math.floor(y / cell); if(!g.has(key)) g.set(key, []); g.get(key).push(k); }
+  CI = {cell, g}; }
+function insNear(w){ if(!CI) return -1; const tol = 14 * S.vb.w / (stage.clientWidth || 1), r = Math.ceil(tol / CI.cell), cx = Math.floor(w.x / CI.cell), cy = Math.floor(w.y / CI.cell); let best = -1, bd = tol;
+  for(let i = -r; i <= r; i++) for(let j = -r; j <= r; j++){ const L = CI.g.get((cx + i) + ':' + (cy + j)); if(L) L.forEach(k => { const d = Math.hypot(S.ins.xy[k * 2] - w.x, S.ins.xy[k * 2 + 1] - w.y); if(d < bd){ bd = d; best = k; } }); }
+  return best; }
+const cntP = document.createElement('div'); cntP.className = 'cnt-p'; cntP.hidden = true; stage.appendChild(cntP);
+cntP.addEventListener('pointerdown', e => e.stopPropagation());
+S.cg = -1; S.cpick = -1;
+function cntSvg(m, i, on){
+  const c = m.color || '#c0392b', k = S.vb.w / (stage.clientWidth || 1), r = 7 * k;
+  return (m.items || []).map(it => '<circle cx="' + it.x + '" cy="' + it.y + '" r="' + r + '" fill="' + c + '" fill-opacity="' + (on ? .35 : .18) + '" stroke="' + c + '" stroke-width="' + (on ? 2 : 1.3) + '" vector-effect="non-scaling-stroke"/>'
+    + (m.lbl === false ? '' : '<g transform="translate(' + it.x + ',' + it.y + ') scale(' + k + ',' + (-k) + ')"><text class="lab" x="9" y="-8" style="font-size:10px;direction:ltr" fill="' + c + '">' + escH(it.c) + '</text></g>')).join(''); }
+function cntCode(m, n){ return (m.pre || '') + pad3(n); }
+function cntNext(m){ let mx = (+m.start || 1) - 1; (m.items || []).forEach(it => { const t = String(it.c || '').slice((m.pre || '').length); const v = parseInt(t, 10); if(!isNaN(v) && v > mx) mx = v; }); return mx + 1; }
+function cntClick(p){
+  const k = insNear(p);
+  const g = S.marks[S.cg];
+  /* گروه باز است: کلیک روی آیتم = افزودن/برداشتن (کد ماندگار: شمارهٔ بعدی) */
+  if(g && g.type === 'count'){
+    const x = k >= 0 ? S.ins.xy[k * 2] : p.x, y = k >= 0 ? S.ins.xy[k * 2 + 1] : p.y;
+    const ex = (g.items || []).findIndex(it => Math.hypot(it.x - x, it.y - y) < 1e-6 || (k < 0 && Math.hypot(it.x - p.x, it.y - p.y) < 10 * S.vb.w / (stage.clientWidth || 1)));
+    if(ex >= 0) g.items.splice(ex, 1); else (g.items = g.items || []).push({x, y, b: k >= 0 ? S.ins.nm[k] : '', c: cntCode(g, cntNext(g))});
+    save(); render(); cntOpen(S.cg); return; }
+  if(k < 0){ cntP.hidden = false; cntP.innerHTML = '<b>آیتمی اینجا نیست</b><small>روی خودِ نماد (بلاک) بزنید. نمادهای کشیده‌شده با خط ساده بلاک نیستند؛ برای آن‌ها یک گروه خالی بسازید و تک‌تک کلیک کنید.</small><div class="row"><button type="button" class="btn" data-cnew="manual">گروه دستی (کلیک تک‌تک)</button><button type="button" class="btn" data-cx>بستن</button></div>'; return; }
+  S.cpick = k; const nm = S.ins.nm[k], ly = S.ins.ly[k];
+  const same = []; for(let j = 0; j < S.ins.nm.length; j++) if(S.ins.nm[j] === nm && S.ins.ly[j] === ly) same.push(j);
+  const v = S.vb, inView = same.filter(j => { const x = S.ins.xy[j * 2], y = -S.ins.xy[j * 2 + 1]; return x >= v.x && x <= v.x + v.w && y >= v.y && y <= v.y + v.h; }).length;
+  const selM = S.marks[S.sel], inArea = selM && (selM.type === 'area' || selM.type === 'hatch') ? same.filter(j => pip(S.ins.xy[j * 2], S.ins.xy[j * 2 + 1], selM.pts)).length : -1;
+  tmpG.innerHTML = '<circle cx="' + S.ins.xy[k * 2] + '" cy="' + S.ins.xy[k * 2 + 1] + '" r="' + (10 * S.vb.w / stage.clientWidth) + '" fill="none" stroke="#e67e22" stroke-width="2.4" vector-effect="non-scaling-stroke"/>';
+  cntP.hidden = false;
+  cntP.innerHTML = '<b>آیتم: <span dir="ltr">' + escH(nm) + '</span></b><small>لایه <span dir="ltr">' + escH(ly) + '</span> · ' + toFa(same.length) + ' مورد مشابه در کل نقشه</small>'
+    + '<div class="row"><input type="text" data-cc="cat" list="cntCats" placeholder="دسته (مثلاً اسپرینکلر)" style="flex:1 1 140px"><input type="text" data-cc="pre" dir="ltr" placeholder="پیشوند کد، مثلاً SP-F3-" style="flex:1 1 120px"></div>'
+    + '<datalist id="cntCats">' + CNT_CATS.map(x => '<option value="' + escH(x) + '">').join('') + '</datalist>'
+    + '<div class="row"><small>ترتیب شماره:</small><select data-cc="ord"><option value="yx">ردیف‌ها، بالا به پایین</option><option value="xy">ستون‌ها، چپ به راست</option><option value="rtl">ردیف‌ها، راست به چپ</option></select></div>'
+    + '<div class="row"><button type="button" class="btn pri" data-cnew="all">انتخاب مشابه: کل نقشه (' + toFa(same.length) + ')</button><button type="button" class="btn" data-cnew="view">در دید فعلی (' + toFa(inView) + ')</button>'
+    + (inArea >= 0 ? '<button type="button" class="btn" data-cnew="area">داخل محدودهٔ انتخابی (' + toFa(inArea) + ')</button>' : '') + '<button type="button" class="btn" data-cnew="one">فقط همین، بعد تک‌تک</button><button type="button" class="btn" data-cx>✕</button></div>';
+  cntP.__same = {same, inArea: inArea >= 0 ? same.filter(j => pip(S.ins.xy[j * 2], S.ins.xy[j * 2 + 1], selM.pts)) : [], nm};
+}
+const pip = (x, y, pts) => { let o = false; for(let a = 0, b = pts.length - 1; a < pts.length; b = a++){ const P = pts[a], Q = pts[b]; if((P.y > y) !== (Q.y > y) && x < (Q.x - P.x) * (y - P.y) / (Q.y - P.y) + P.x) o = !o; } return o; };
+cntP.addEventListener('click', e => {
+  if(e.target.closest('[data-cx]')){ cntP.hidden = true; S.cg = -1; tmpG.innerHTML = ''; render(); return; }
+  const nb = e.target.closest('[data-cnew]');
+  if(nb){ const how = nb.dataset.cnew, I = S.ins, Sm = cntP.__same || {same: [], inArea: []};
+    const cat = String((cntP.querySelector('[data-cc="cat"]') || {}).value || '').trim() || 'آیتم', pre = String((cntP.querySelector('[data-cc="pre"]') || {}).value || '').trim(), ord = (cntP.querySelector('[data-cc="ord"]') || {}).value || 'yx';
+    let L = how === 'all' ? Sm.same : how === 'area' ? Sm.inArea : how === 'one' ? [S.cpick] : how === 'view' ? Sm.same.filter(j => { const v = S.vb, x = I.xy[j * 2], y = -I.xy[j * 2 + 1]; return x >= v.x && x <= v.x + v.w && y >= v.y && y <= v.y + v.h; }) : [];
+    const P = L.map(j => ({x: I.xy[j * 2], y: I.xy[j * 2 + 1], b: I.nm[j]}));
+    const tol = (S.base ? Math.max(S.base.w, S.base.h) : 1000) / 400;
+    P.sort((a, b) => ord === 'xy' ? (Math.round(a.x / tol) - Math.round(b.x / tol) || b.y - a.y) : (Math.round(b.y / tol) - Math.round(a.y / tol) || (ord === 'rtl' ? b.x - a.x : a.x - b.x)));
+    const m = {type: 'count', cat, pre, start: 1, blk: Sm.nm || '', color: '#c0392b', name: cat, items: []};
+    P.forEach((it, n) => m.items.push(Object.assign(it, {c: cntCode(m, n + 1)})));
+    S.marks.push(m); S.sel = S.cg = S.marks.length - 1; save(); render(); cntOpen(S.cg); return; }
+  const ok = e.target.closest('[data-cok]'); if(ok){ const m = S.marks[S.cg]; if(m){ const g = k => String((cntP.querySelector('[data-cg="' + k + '"]') || {}).value || '').trim();
+      const np = g('pre'); m.cat = g('cat') || m.cat; m.name = m.cat;
+      if(np !== (m.pre || '')){ const old = m.pre || ''; m.items.forEach(it => { if(String(it.c).indexOf(old) === 0) it.c = np + String(it.c).slice(old.length); }); m.pre = np; }
+      m.lbl = !!(cntP.querySelector('[data-cg="lbl"]') || {}).checked; save(); render(); }
+    cntP.hidden = true; S.cg = -1; tmpG.innerHTML = ''; return; }
+  const rn = e.target.closest('[data-crenum]'); if(rn){ const m = S.marks[S.cg]; if(m){ m.items.forEach((it, n) => { it.c = cntCode(m, (+m.start || 1) + n); }); save(); render(); cntOpen(S.cg); } }
+});
+function cntOpen(i){
+  const m = S.marks[i]; if(!m) return; S.cg = i; S.sel = i; if(S.tool !== 'count') setTool('count');
+  cntP.hidden = false;
+  cntP.innerHTML = '<b>' + escH(m.cat || 'آیتم') + ' — ' + toFa((m.items || []).length) + ' عدد</b><small>روی هر نماد بزنید تا اضافه یا برداشته شود؛ کد هر آیتم ماندگار است (تازه‌ها شمارهٔ بعدی را می‌گیرند).</small>'
+    + '<div class="row"><input type="text" data-cg="cat" list="cntCats" value="' + escH(m.cat || '') + '" style="flex:1 1 120px"><input type="text" data-cg="pre" dir="ltr" value="' + escH(m.pre || '') + '" placeholder="پیشوند" style="flex:1 1 100px"></div>'
+    + '<datalist id="cntCats">' + CNT_CATS.map(x => '<option value="' + escH(x) + '">').join('') + '</datalist>'
+    + '<label class="row" style="gap:6px"><input type="checkbox" data-cg="lbl"' + (m.lbl === false ? '' : ' checked') + '> کدها روی نقشه</label>'
+    + '<div class="row"><button type="button" class="btn pri" data-cok>تمام</button><button type="button" class="btn" data-crenum>شماره‌گذاری دوباره از ' + toFa(m.start || 1) + '</button><button type="button" class="btn" data-cx>✕</button></div>'; }
+function rowXHtml(m, i){
+  const on = i === S.sel;
+  if(m.type === 'wall'){ const n = ((m.walls && m.walls.segs) || []).length, L = (m.walls && m.walls.segs || []).reduce((t, g) => t + g.l, 0);
+    return '<div class="mk' + (on ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + m.color + '"></i><input type="text" value="' + escH(m.name || '') + '" data-nm="' + i + '" placeholder="نام"><button type="button" data-del="' + i + '" title="حذف">×</button>'
+      + '<small>' + (n ? toFa(n) + ' دیوار کد‌گذاری شد · ' + fmt(L) + ' m' + (m.walls.cfg.h ? ' · مساحت دیوار ' + fmt(L * m.walls.cfg.h) + ' m²' : '') + ' · <span dir="ltr">' + escH(m.walls.segs[0].c) + ' …</span>' : 'هنوز کد نخورده') + '</small>'
+      + '<div class="wl"><button type="button" class="btn" data-wedit="' + i + '">تنظیم کدگذاری</button></div></div>'; }
+  const n = (m.items || []).length;
+  return '<div class="mk' + (on ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + (m.color || '#c0392b') + ';border-radius:50%"></i><input type="text" value="' + escH(m.name || m.cat || '') + '" data-nm="' + i + '" placeholder="دسته"><button type="button" data-del="' + i + '" title="حذف">×</button>'
+    + '<small>' + toFa(n) + ' عدد' + (m.blk ? ' · بلاک <span dir="ltr">' + escH(m.blk) + '</span>' : '') + (n ? ' · <span dir="ltr">' + escH(m.items[0].c) + ' … ' + escH(m.items[n - 1].c) + '</span>' : '') + '</small>'
+    + '<div class="wl"><button type="button" class="btn" data-cedit="' + i + '">افزودن/برداشتن و کدها</button></div></div>'; }
+/* خلاصهٔ دیوارها و آیتم‌های داخل یک محدوده برای کارت فضا (کوچک؛ جزئیات در خروجی اکسل) */
+function markExtra(m){
+  const o = {}; const inside = (x, y) => pip(x, y, m.pts) && !(m.holes || []).some(h => pip(x, y, h));
+  const W = S.marks.filter(w => w.type === 'wall' && w.walls && (S.marks[w.of] === m || (w.pts.length && inside(centroid(w.pts).x, centroid(w.pts).y))));
+  if(W.length){ const segs = W.flatMap(w => w.walls.segs); o.w = {n: segs.length, l: Math.round(segs.reduce((t, g) => t + g.l, 0) * 100) / 100}; const h = W[0].walls.cfg.h; if(h) o.w.h = h; o.w.c = segs.slice(0, 1).map(g => g.c)[0] || ''; }
+  const C = {}; S.marks.filter(x => x.type === 'count').forEach(g => (g.items || []).forEach(it => { if(inside(it.x, it.y)) C[g.cat || 'آیتم'] = (C[g.cat || 'آیتم'] || 0) + 1; }));
+  if(Object.keys(C).length) o.cn = C;
+  return o; }
 setTool('pan');
 </script>
 </body>
