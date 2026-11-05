@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105085342">
+<meta name="pm-build" content="20261105085952">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28886,6 +28886,13 @@
   .flp-ft small{font-size:10.5px;color:var(--muted);} .flp-done{all:unset;cursor:pointer;padding:5px 14px;border-radius:9px;background:var(--vz1, #2f6f9f);color:#fff;font-size:12px;font-weight:800;}
   .adm-endack{all:unset;cursor:pointer;margin-inline-start:8px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:800;color:var(--vz3, #3f7a52);border:1px solid color-mix(in srgb, var(--vz3, #3f7a52) 40%, transparent);}
   .adm-endack:hover{background:color-mix(in srgb, var(--vz3, #3f7a52) 10%, transparent);}
+  /* کارت‌های فعالیت: فقط کارت روی صفحه چیده و کشیده می‌شود (پیش‌تر با هر ورق، همهٔ ۱۰۰+ کارت دوباره layout می‌شدند) */
+  #deckTrack > .dk-card{content-visibility:auto;contain-intrinsic-size:auto 100% auto 640px;}
+  .fz-sec-go{all:unset;cursor:pointer;margin-inline-start:8px;font-size:11px;font-weight:800;color:var(--vz1, #2f6f9f);white-space:nowrap;}
+  .fz-sec-go:hover{text-decoration:underline;}
+  /* بحرانی‌های پروژه (نظارتی): ردیف‌های فشرده‌تر از اعلان‌های شخصی */
+  .fz-list.fz-compact > .fz{padding-block:8px !important;}
+  .fz-list.fz-compact > .fz .fz-f{transform:scale(.94);transform-origin:right center;}
 </style>
 <script>
 /* به‌روزرسانی خودکار: وب‌اپلیکیشنِ نصب‌شده روی آیفون نسخهٔ قدیم را نگه می‌داشت و
@@ -32002,7 +32009,7 @@
      می‌شوند. قبلاً هر ردیفِ نخوانده را می‌شمرد، از جمله ردیف‌هایی که
      به هیچ دستهٔ نمایشی نمی‌خوردند و در فهرست ظاهر نمی‌شدند — نتیجه‌اش
      شمارنده‌ای بود که عدد داشت ولی پنجره خالی بود. */
-  const FEED_CATS = ['critical','done','due','nudge','comment','missing'];
+  const FEED_CATS = ['critical','done','due','nudge','mention','comment','missing'];
   const feedShown = feed => (feed || []).filter(x =>
     x && FEED_CATS.indexOf(x.dcat || x.cat) !== -1);
 
@@ -32504,14 +32511,16 @@
   };
   /* «بحرانی» دستهٔ مستقل خودش است، نه یک نوار جدا بالای فهرست. اینطوری
      شمارندهٔ هر کپسول با همان چیزی که نشان داده می‌شود یکی است. */
+  /* ترتیب بخش‌ها: اول آنچه مستقیم به خودِ من مربوط است (تلنگر، نام‌بردن، نظر، کار من)،
+     بعد خبرها، و «بحرانی‌های پروژه» (نظارتی) آخر — دیگر بالای همه گیر نمی‌کند */
   const FEED_SEC = [
-    ['critical', 'موارد بحرانی'],
-    ['done',     'اعلام تکمیل'],
-    ['due',      'نیاز به اقدام'],
     ['nudge',    'تلنگرها'],
     ['mention',  'نام‌بردن‌ها'],
     ['comment',  'نظرها و پاسخ‌ها'],
-    ['missing',  'نقص گزارش']
+    ['due',      'نیاز به اقدام من'],
+    ['missing',  'نقص گزارش'],
+    ['done',     'اعلام تکمیل'],
+    ['critical', 'بحرانی‌های پروژه']
   ];
 
   /* خوانده‌شده‌های محلی برای مواردی که ردیف دیتابیس ندارند (موعدها) */
@@ -32721,11 +32730,12 @@
       if(ADM_FEED_K.indexOf(x.kind) !== -1){
         try{ const aid = String((x.row && x.row.__admId) || x.id); const a0 = (adminAll || []).find(a => a.kind === x.kind && String(pick(a.row,AD.id)) === aid); held = a0 && admHeldBy(x.kind, a0.row); }catch(e){}
       }
+      /* کارِ خودم: هر بامداد دوباره تازه (تا حل نشده یادم بماند).
+         بحرانیِ دیگران (نظارتی): یک بار خوانده = خوانده؛ فقط وقتی مرحله‌اش عوض شود دوباره تازه می‌شود.
+         پیش‌تر هر روز صدها مورد دوباره «تازه» می‌شدند و بالای اعلان‌ها گیر می‌کردند. */
+      const fid0 = mineItem ? ('due:' + todayShamsi() + ':' + key) : ('crit:' + key + ':' + normName(String((held ? 'نزد ' + held.who : x.stage) || '')));
       out.push({
-        /* شناسه روزِ جاری را در خودش دارد، پس هر بامداد یک شناسهٔ
-           تازه می‌شود و «خوانده شد»ِ دیروز روی آن نمی‌افتد. مورد
-           بحرانی که حل نشده، هر روز از نو نخوانده است. */
-        cat:'due', fid:'due:' + todayShamsi() + ':' + key,
+        cat:'due', fid: fid0,
         level: x.level === 'hot' ? 'hot' : 'warm',
         side: x.side || '',                    // 'employer' = بحرانی به حساب کارفرما
         who: x.who || '', avatars: x.avatars || null, title: x.title || 'مورد باز',
@@ -32734,7 +32744,7 @@
         // باید همان کلیدی باشد که در fid رفته؛ برای هشدارهایی که tag
         // دارند (مثل بررسی داخلی) این دو یکی نبودند و «خواندم» هیچ‌وقت
         // اثر نمی‌کرد
-        seen: lseen.has('due:' + todayShamsi() + ':' + key),
+        seen: lseen.has(fid0),
         goto:{kind: x.kind || '', id: x.id, who: x.who || ''},
         canRemind: mgr && !!x.who && !mineItem,
         mine: mineItem
@@ -32765,7 +32775,7 @@
         const base = mineM || g;
         g.avatars = names; g.who = names[0] || g.who;
         g.goto = base.goto; g.mine = ms.some(m => m.mine);
-        g.fid = 'due:' + todayShamsi() + ':grp:' + ms.map(m => String(m.goto && m.goto.id)).sort().join(',');
+        g.fid = (ms.some(m => m.mine) ? 'due:' + todayShamsi() : 'crit') + ':grp:' + ms.map(m => String(m.goto && m.goto.id)).sort().join(',');
         g.seen = ms.every(m => m.seen) || lseen.has(g.fid);
         const others = names.filter(n => nameKey(n) !== nameKey(me));
         g.canRemind = mgr && others.length > 0;
@@ -32933,7 +32943,8 @@
     const rank = l => (l === 'hot' ? 0 : (l === 'warm' ? 1 : 2));
     // دستهٔ نمایشی: هر مورد بحرانیِ غیرِ «نقص گزارش» به دستهٔ بحرانی می‌رود
     out.forEach(x => {
-      x.dcat = (x.level === 'hot' && x.cat !== 'missing' && x.cat !== 'done')
+      /* بحرانیِ خودم در «نیاز به اقدام من» می‌ماند (با نشان بحرانی)؛ فقط موارد دیگران «بحرانی‌های پروژه» است */
+      x.dcat = (x.level === 'hot' && x.cat !== 'missing' && x.cat !== 'done' && !(x.cat === 'due' && x.mine) && x.cat !== 'nudge' && x.cat !== 'mention' && x.cat !== 'comment')
         ? 'critical' : x.cat;
     });
     return out.filter(x => !gone.has(String(x.fid))).sort((a,b) => {
@@ -33153,9 +33164,11 @@
                     + (cat === 'missing' ? ' title="' + esc(REQUIRED_REPORTERS.join('، ')) + '"' : '')
                     + '>' + esc(note) + '</span>' : '')
         +   '<span class="fz-sec-all">' + (nNew ? '<em>' + toFa(nNew) + ' تازه</em>' : '') + toFa(rows.length) + '</span>'
+        +   (cat === 'critical' ? '<button type="button" class="fz-sec-go" data-fzdeck="x-hot">مرور در کارت‌ها ›</button>' : '')
         + '</div>'
-        + '<div class="fz-list">' + rows.slice(0, feedLim[cat] || 25).map(x => feedCardHtml(x, idx++)).join('')
-        + (rows.length > (feedLim[cat] || 25) ? '<button type="button" class="hri-all fz-more" data-fzmore="' + cat + '">نمایش ' + toFa(Math.min(50, rows.length - (feedLim[cat] || 25))) + ' مورد دیگر از ' + toFa(rows.length - (feedLim[cat] || 25)) + '</button>' : '')
+        + (function(){ const lim = feedLim[cat] || (cat === 'critical' ? 8 : 25);
+            return '<div class="fz-list' + (cat === 'critical' ? ' fz-compact' : '') + '">' + rows.slice(0, lim).map(x => feedCardHtml(x, idx++)).join('')
+            + (rows.length > lim ? '<button type="button" class="hri-all fz-more" data-fzmore="' + cat + '">نمایش ' + toFa(Math.min(50, rows.length - lim)) + ' مورد دیگر از ' + toFa(rows.length - lim) + '</button>' : ''); })()
         + '</div>'
         + '</section>';
     });
@@ -33213,8 +33226,10 @@
     });
 
     document.getElementById('notifBody').addEventListener('click', e => {
+      const dg = e.target.closest('[data-fzdeck]');
+      if(dg){ e.stopImmediatePropagation(); try{ window.__closeNotif && window.__closeNotif(); openDeck(false); deckBranch = deckBranchOf(dg.dataset.fzdeck); deckShowCards(0, dg.dataset.fzdeck); }catch(err){ try{ openDeck(); }catch(e2){} } return; }
       const mo = e.target.closest('[data-fzmore]');
-      if(mo){ e.stopImmediatePropagation(); const c = mo.dataset.fzmore; feedLim[c] = (feedLim[c] || 25) + 50; renderNotif(); return; }
+      if(mo){ e.stopImmediatePropagation(); const c = mo.dataset.fzmore; feedLim[c] = (feedLim[c] || (c === 'critical' ? 8 : 25)) + 50; renderNotif(); return; }
       const fr0 = e.target.closest('[data-fread]');
       if(!fr0 || fr0.__go) return;
       const card0 = fr0.closest('.fz');
