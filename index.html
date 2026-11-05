@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105133931">
+<meta name="pm-build" content="20261105140236">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -90662,12 +90662,9 @@
     const n = deckView.length;
     /* فقط کارت‌های نزدیک ساخته می‌شوند؛ بقیه قالب خالی‌اند و هنگام
        رسیدن پر می‌شوند. با ۳۰ کارتِ سنگین، کشیدن چپ و راست کند بود. */
+    /* مجازی: فقط پنجره‌ای ۵تایی از کارت‌ها در صفحه است (با ۵۰۰ کارت، هر ورق ۲۰۰ms طول می‌کشید) */
     wrap.innerHTML = n
-      ? deckView.map((x, i) =>
-          '<article class="dk-card holder ' + (x.level === 'hot' ? 'hot' : (x.level === 'warm' ? 'warm' : 'calm'))
-          + '" data-dk="' + i + '" data-dk-lazy="1">'
-          + '<div class="dk-skel"><b>' + esc(x.title || '') + '</b><span>در حال آماده‌سازی…</span></div>'
-          + '</article>').join('')
+      ? ''
       : '<article class="dk-card calm"><h3 class="dk-title">موردی در این دسته نیست</h3>'
         + '<div class="dk-acts"><button type="button" class="mini go" data-dk-cats="1">دسته‌ها</button></div></article>';
     /* تا ۱۲ مورد: یک تکه برای هر کارت. بیشتر از آن تکه‌ها ریز و خالی‌نما
@@ -90741,28 +90738,30 @@
     }
   }
   /* کارت‌های i-1 تا i+1 را پر می‌کند و دورترها را خالی می‌کند */
-  function deckFillAround(i){
-    const track = document.getElementById('deckTrack');
-    if(!track) return;
-    const n = deckView.length;
-    for(let k = 0; k < n; k++){   // eslint-disable-line
-      const el = track.children[k];
-      if(!el) continue;
-      const near = Math.abs(k - i) <= 1;
-      if(k === i && el.dataset.dkFilled === '1') continue;   // کارت جاری دست نخورد
-      if(near && el.dataset.dkFilled !== '1'){
-        el.outerHTML = deckCardHtml(deckView[k], k, n);
-        const fresh = track.children[k];
-        if(fresh) fresh.dataset.dkFilled = '1';
-      }else if(!near && el.dataset.dkFilled === '1' && Math.abs(k - i) > 2){
-        const x = deckView[k];
-        el.outerHTML = '<article class="dk-card holder '
-          + (x.level === 'hot' ? 'hot' : (x.level === 'warm' ? 'warm' : 'calm'))
-          + '" data-dk="' + k + '" data-dk-lazy="1">'
-          + '<div class="dk-skel"><b>' + esc(x.title || '') + '</b><span>در حال آماده‌سازی…</span></div>'
-          + '</article>';
-      }
+  const DK_W = 2;
+  function deckHolderHtml(k){ const x = deckView[k] || {};
+    return '<article class="dk-card holder ' + (x.level === 'hot' ? 'hot' : (x.level === 'warm' ? 'warm' : 'calm'))
+      + '" data-dk="' + k + '" data-dk-lazy="1"><div class="dk-skel"><b>' + esc(x.title || '') + '</b><span>در حال آماده‌سازی…</span></div></article>'; }
+  function deckEl(i){ const t = document.getElementById('deckTrack'); return t ? t.querySelector(':scope > [data-dk="' + i + '"]') : null; }
+  /* پنجره را دور i می‌چیند: کارت‌های موجود (پرشده) نگه داشته می‌شوند، بقیه قالب سبک */
+  function deckWindow(i){
+    const track = document.getElementById('deckTrack'); if(!track) return;
+    const n = deckView.length; if(!n) return;
+    const a = Math.max(0, i - DK_W), b = Math.min(n - 1, i + DK_W);
+    const keep = new Map(); Array.from(track.children).forEach(c => { const k = +c.dataset.dk; if(c.dataset.dk != null && k >= a && k <= b) keep.set(k, c); else c.remove(); });
+    let prev = null;
+    for(let k = a; k <= b; k++){
+      let el = keep.get(k);
+      if(!el){ const tmp = document.createElement('div'); tmp.innerHTML = deckHolderHtml(k); el = tmp.firstChild; }
+      if(prev){ if(prev.nextSibling !== el) prev.after(el); } else if(track.firstChild !== el) track.prepend(el);
+      prev = el;
     }
+    /* حذف کارت‌های پیشین جای نوار را جابه‌جا می‌کند؛ کارت جاری بی‌حرکت سر جایش برمی‌گردد */
+    const cur = track.querySelector(':scope > [data-dk="' + i + '"]'); if(cur && cur.dataset.dkFilled === '1'){ const r = track.getBoundingClientRect(), c = cur.getBoundingClientRect(); const dx = (c.left + c.width / 2) - (r.left + r.width / 2); if(Math.abs(dx) > 2){ const sb = track.style.scrollBehavior; track.style.scrollBehavior = 'auto'; track.scrollLeft += dx; track.style.scrollBehavior = sb; } }
+  }
+  function deckFillAround(i){
+    deckWindow(i);
+    for(let k = i - 1; k <= i + 1; k++) if(k >= 0 && k < deckView.length) deckFillOne(k);
   }
   function deckGo(i){
     const track = document.getElementById('deckTrack');
@@ -90770,17 +90769,18 @@
     deckIdx = Math.max(0, Math.min(deckView.length - 1, i));
     /* کارتی که از قبل (به‌عنوان همسایه) ساخته و دیده شده، دوباره
        حرکت ورود نمی‌گیرد؛ همین حرکتِ تکراری هنگام ورق زدن پرش داشت. */
-    const was = track.children[deckIdx];
+    deckWindow(deckIdx);
+    const was = deckEl(deckIdx);
     const fresh0 = !(was && was.dataset.dkFilled === '1');
     /* فقط کارت جاری همین الان ساخته می‌شود؛ همسایه‌ها وقتی مرورگر بیکار شد (ورق زدن روی دستگاه ضعیف کند بود) */
     deckFillOne(deckIdx);
     clearTimeout(deckFillT); const want = deckIdx;
     deckFillT = setTimeout(() => { const run = () => { if(deckIdx === want) deckFillAround(want); }; if(window.requestIdleCallback) requestIdleCallback(run, {timeout: 600}); else run(); }, 260);
-    const card = track.children[deckIdx];
+    const card = deckEl(deckIdx);
     if(card){
       /* در چیدمان راست‌به‌چپ، scrollLeft منفی است و محاسبهٔ دستی کار
          نمی‌کرد؛ خودِ مرورگر کارت را وسط می‌آورد. پرش مستقیم + یک محو کوتاه (اسکرول نرم کل نوار سنگین بود) */
-      try{ card.scrollIntoView({behavior: 'auto', block:'nearest', inline:'center'}); }
+      try{ card.scrollIntoView({behavior: 'instant', block:'nearest', inline:'center'}); }
       catch(e){ track.scrollLeft = card.offsetLeft - track.offsetLeft; }
       if(!deckQuiet) deckAnimate(card, fresh0);
     }
@@ -90795,9 +90795,9 @@
   let deckFillT = 0;
   function deckFillOne(i){
     const track = document.getElementById('deckTrack'); if(!track) return;
-    const el = track.children[i]; if(!el || el.dataset.dkFilled === '1') return;
-    el.outerHTML = deckCardHtml(deckView[i], i, deckView.length);
-    const fresh = track.children[i]; if(fresh) fresh.dataset.dkFilled = '1';
+    const el = deckEl(i); if(!el || el.dataset.dkFilled === '1') return;
+    const tmp = document.createElement('div'); tmp.innerHTML = deckCardHtml(deckView[i], i, deckView.length);
+    const fresh = tmp.firstElementChild; if(!fresh) return; fresh.dataset.dkFilled = '1'; el.replaceWith(fresh);
   }
   function deckMarkSeenToday(){
     try{ localStorage.setItem(DECK_SEEN_KEY, todayShamsi()); }catch(e){}
@@ -91566,16 +91566,18 @@
       const r = t.getBoundingClientRect();
       const mid = r.left + r.width / 2;
       let idx = deckIdx, best = Infinity;
-      Array.from(t.children).forEach((c, k) => {
+      Array.from(t.children).forEach(c => {
+        if(c.dataset.dk == null) return;
         const cr = c.getBoundingClientRect();
         const d = Math.abs((cr.left + cr.width / 2) - mid);
-        if(d < best){ best = d; idx = k; }
+        if(d < best){ best = d; idx = +c.dataset.dk; }
       });
       if(idx !== deckIdx){
         deckIdx = idx;
         deckSyncDots();
         clearTimeout(scrollT);
-        scrollT = setTimeout(() => { try{ deckFillAround(deckIdx); }catch(err){} }, 140);
+        /* بعد از ایستادن: پنجره دوباره چیده می‌شود و کارت جاری سرِ جایش می‌ماند */
+        scrollT = setTimeout(() => { try{ deckFillAround(deckIdx); const c = deckEl(deckIdx); if(c) c.scrollIntoView({behavior:'instant', block:'nearest', inline:'center'}); }catch(err){} }, 160);
       }
     }, true);
     document.addEventListener('keydown', e => {
