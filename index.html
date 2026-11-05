@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105160507">
+<meta name="pm-build" content="20261105160653">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29289,6 +29289,7 @@
   .xlh-more{padding:8px;text-align:center;font-size:11px;color:var(--muted);}
   .xlh-prog{height:22px;border-radius:99px;background:var(--field);position:relative;overflow:hidden;} .xlh-prog i{position:absolute;inset-block:0;inset-inline-start:0;width:0;background:color-mix(in srgb, var(--sky) 35%, transparent);transition:width .2s;} .xlh-prog span{position:relative;display:block;text-align:center;font-size:11px;line-height:22px;}
   .xlh-ft{display:flex;gap:8px;justify-content:flex-end;}
+  .xlh-subs{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--field);align-self:flex-start;} .xlh-subs button{height:32px;padding:0 14px;border:0;border-radius:9px;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;} .xlh-subs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   .ws-bxl{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-inline-start:auto;} .ws-bxl svg{width:15px;height:15px;color:#1f7a4a;}
   .ws-bxl + .ws-badd{margin-inline-start:6px !important;}
 </style>
@@ -80941,8 +80942,9 @@
     document.getElementById('xlhT').textContent = 'اکسل · ' + S.title;
     document.getElementById('xlhS').textContent = S.sub || 'دانلود داده‌ها با راهنما، یا ورود گروهی از فایل اکسل';
     const canImp = !!(S.save || (S.custom && S.custom.imp));
+    const subs = S.subs ? '<div class="xlh-subs">' + S.subs.map(([k, t]) => '<button type="button" class="' + (xl.k === k ? 'on' : '') + '" data-xla="sub" data-k="' + k + '">' + esc(t) + '</button>').join('') + '</div>' : '';
     if(xl.res){ B.innerHTML = xlPreviewHtml(); return; }
-    B.innerHTML = '<div class="xlh-cards">'
+    B.innerHTML = subs + '<div class="xlh-cards">'
       + '<div class="xlh-c"><span class="xlh-ci">' + XL_I.dl + '</span><b>دانلود داده‌ها</b><small>همهٔ ردیف‌های این بخش در یک فایل اکسل، همراه برگهٔ «راهنما» که هر ستون را توضیح می‌دهد.</small>'
       +   '<button type="button" class="xlh-b pri" data-xla="exp">' + XL_I.dl + '<span>دانلود اکسل</span></button></div>'
       + '<div class="xlh-c' + (canImp ? '' : ' off') + '"><span class="xlh-ci up">' + XL_I.up + '</span><b>ورود از اکسل</b>'
@@ -80979,6 +80981,7 @@
   async function xlAct(a, b){
     const S = xl.spec; if(!S) return;
     if(a === 'back'){ xl.res = null; xlPaint(); return; }
+    if(a === 'sub'){ const k = b.dataset.k; if(XL_SPECS[k]){ xl.k = k; xl.spec = XL_SPECS[k]; xl.res = null; xlPaint(); } return; }
     if(!xlReady()) return;
     if(a === 'tpl'){ xlWrite(S, [], true); return; }
     if(a === 'exp'){
@@ -81069,6 +81072,36 @@
         await spSaveRow(SP_UNIT_KIND, u, Object.keys(o).length ? JSON.stringify(o) : null); if(Object.keys(o).length) sp.units.set(u, o); ok++; prog(n, R.length); }
       return {ok, fail: 0}; },
     after: () => { try{ spRender(); }catch(e){} }};
+  /* ماشین‌آلات: دستگاه‌ها و کارکرد روزانه */
+  XL_SPECS.mc = {title: 'ماشین‌آلات — دستگاه‌ها', sheet: 'دستگاه‌ها', subs: [['mc', 'دستگاه‌ها'], ['mc:log', 'کارکرد و خرابی']],
+    cols: [{k: 'n', t: 'نام دستگاه', req: true, ex: 'تاورکرین شمالی'}, {k: 'type', t: 'نوع', type: 'sel', opts: () => MC_TYPES, free: true, ex: 'تاورکرین'}, {k: 'owner', t: 'مالک / پیمانکار', ex: 'شرکت بالابر'},
+           {k: 'plate', t: 'پلاک / شماره سریال'}, {k: 'rate', t: 'نرخ ساعتی', type: 'money', ex: 1500000}, {k: 'svc', t: 'دورهٔ سرویس (ساعت)', type: 'num', ex: 250}],
+    rows: async () => { await mcLoad(); return mc.items.filter(i => !i.off); },
+    save: async (R, prog) => { await mcLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; if(mc.items.some(i => normKey(i.n) === normKey(v.n))) continue;
+        const o = {n: v.n, type: v.type || '', owner: v.owner || '', plate: v.plate || '', rate: v.rate || 0, svc: v.svc || 0, off: false};
+        o.c = whNextNo('MC', mc.items.map(i => ({no: i.c}))); const id = await ndPost(ndRow(MC_KIND, o.c, o)); mc.items.push(Object.assign({id}, o)); ok++; prog(n, R.length); }
+      return {ok, fail: 0}; }, after: () => { try{ mcRender(); }catch(e){} }};
+  XL_SPECS['mc:log'] = {title: 'ماشین‌آلات — کارکرد', sheet: 'کارکرد', subs: XL_SPECS.mc.subs,
+    cols: [{k: 'm', t: 'دستگاه', req: true, help: 'کد (MC-…) یا نام دستگاه ثبت‌شده', ex: 'MC-001'}, {k: 't', t: 'نوع', type: 'sel', opts: () => Object.keys(MC_LT).map(k => MC_LT[k].t), ex: 'کارکرد'},
+           {k: 'date', t: 'تاریخ', req: true, type: 'date', ex: '1405/08/14'}, {k: 'h', t: 'ساعت', type: 'num', ex: 8, help: 'برای کارکرد و خرابی'}, {k: 'op', t: 'اپراتور'}, {k: 'act', t: 'شرح کار'}, {k: 'cost', t: 'هزینه', type: 'money'}, {k: 'note', t: 'یادداشت'}],
+    check: (o, err) => { const i = mc.items.find(x => x.c === o.m || normKey(x.n) === normKey(o.m || '')); if(o.m && !i) err.m = 'دستگاه پیدا نشد'; else if(i) o.m = i.c; if(o.h > 24) err.h = 'بیش از ۲۴ ساعت'; },
+    rows: async () => { await mcLoad(); return mc.logs.map(l => Object.assign({}, l, {t: (MC_LT[l.t] || {}).t || l.t})); },
+    save: async (R, prog) => { await mcLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; const tk = Object.keys(MC_LT).find(k => MC_LT[k].t === v.t) || 'work'; const no = whNextNo('ML', mc.logs);
+        const o = whPack({no, t: tk, m: v.m, date: v.date || todayShamsi(), h: v.h || 0, op: v.op, act: v.act, cost: v.cost || 0, note: v.note, proj: whProj()}, ['no','t','m','date','h','op','act','cost','note','proj']);
+        const id = await ndPost(ndRow(MCL_KIND, no, o)); mc.logs.push(Object.assign({id}, o)); ok++; prog(n, R.length); }
+      return {ok, fail: 0}; }, after: () => { try{ mcRender(); }catch(e){} }};
+  /* تغییرات و ادعا */
+  XL_SPECS.co = {title: 'تغییرات و ادعا', sheet: 'تغییرات',
+    cols: [{k: 't', t: 'نوع', type: 'sel', opts: () => Object.keys(CO_T).map(k => CO_T[k].t), ex: 'دستور تغییر کار'}, {k: 'title', t: 'عنوان', req: true, ex: 'افزایش ضخامت دیوار'}, {k: 'ctr', t: 'طرف', req: true, help: 'پیمانکار یا کارفرما', ex: 'پیمانکار حسینی'},
+           {k: 'contract', t: 'قرارداد'}, {k: 'date', t: 'تاریخ', type: 'date'}, {k: 'amt', t: 'اثر مالی', type: 'money', help: 'منفی = کاهش', ex: 25000000}, {k: 'days', t: 'اثر زمانی (روز)', type: 'num'}, {k: 'desc', t: 'شرح'}, {k: 'why', t: 'علت'}],
+    rows: async () => { await coLoad(); return co.list.map(x => Object.assign({}, x, {t: (CO_T[x.t] || {}).t || x.t})); },
+    save: async (R, prog) => { await coLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; const tk = Object.keys(CO_T).find(k => CO_T[k].t === v.t) || 'co'; const no = whNextNo(CO_T[tk].p, co.list);
+        const o = whPack({no, t: tk, date: v.date || todayShamsi(), ctr: v.ctr, contract: v.contract, title: v.title, desc: v.desc, why: v.why, amt: v.amt || 0, days: v.days || 0, st: 'ثبت شد', log: [{st: 'ثبت شد', by: activeUserName(), d: todayShamsi()}]}, ['no','t','date','ctr','contract','title','desc','why','amt','days','st','log']);
+        const id = await ndPost(ndRow(CO_KIND, no, o)); co.list.push(Object.assign({id}, o)); ok++; prog(n, R.length); }
+      return {ok, fail: 0}; }, after: () => { try{ coRender(); }catch(e){} }};
   /* بخش‌هایی که ورود دقیق خودشان را دارند: همین پنجره، همان کار قبلی */
   XL_SPECS.tasks = {title: 'فعالیت‌های اجرایی', sub: 'دانلود همهٔ فعالیت‌ها با راهنما؛ ورود فقط ستون‌های ✎ را اصلاح می‌کند و پیش از ذخیره تغییرات را نشان می‌دهد', custom: {exp: () => txExport(), imp: f => txImport(f)}};
   XL_SPECS.ctr = {title: 'پیمانکاران و تماس‌ها', sub: 'فهرست پیمانکاران با شماره‌ها؛ ورود همان فایل اصلاح‌شده', custom: {exp: () => ctdExport(), imp: f => ctdImport(f)}};
