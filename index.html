@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261105203918">
+<meta name="pm-build" content="20261105205515">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -49177,12 +49177,13 @@
     wsRestore();
     const mod = !!k && k !== 'tasks';
     panel.classList.toggle('ws-mod', mod);
+    if(!mod && applyTaskFilters.dirty) setTimeout(() => { try{ if(applyTaskFilters.dirty) applyTaskFilters(); }catch(e){} }, 0);
     if(host) host.hidden = !mod;
     if(ctd) ctd.hidden = k !== 'ctr';
     if(!mod || k === 'ctr'){ try{ if(document.querySelector('[data-wmode].on')) window.wpickSetMode(''); }catch(e){} }
     if(k === 'ctr'){ try{ ctcRepaint(); ctrEnsureDocs().then(ok => { if(ok) ctcRepaint(); }); }catch(e){}
       /* تا وقتی واقعاً ساخته نشده، چند بار دیگر (هر ۱۵۰ms، حداکثر ۳ ثانیه) */
-      let n = 0; const again = () => { if(ws.cur !== 'ctr') return; const b = document.querySelector('#wsCtd #ctDir, #wsCtd .ctd-host'); if(b && b.offsetParent && b.firstElementChild && !b.__stale) return;
+      let n = 0; const again = () => { if(ws.cur !== 'ctr') return; const b = document.querySelector('#wsCtd #ctDir, #wsCtd .ctd-host') || document.getElementById('wsCtd'); if(b && b.offsetParent && b.firstElementChild && !b.__stale) return;
         try{ ctcRepaint(); }catch(e){ console.error(e); if(b && b.offsetParent && !b.firstElementChild){ b.innerHTML = '<div class="empty">نمایش نیروی انسانی با خطا روبه‌رو شد (' + esc(String(e && e.message || e).slice(0, 120)) + '). <button type="button" class="mini" data-ctrretry="1">تلاش دوباره</button></div>'; return; } }
         if(++n < 20) setTimeout(again, 150); }; setTimeout(again, 120); }
     else if(mod){ try{ window.wpickSetMode(k); }catch(e){} }
@@ -49479,14 +49480,18 @@
         if(r.left < br.left || r.right > br.right) on.scrollIntoView({inline:'center', block:'nearest'});
       }
     }
+    /* سرعت/گرما: اندازه‌گیری همهٔ بخش‌ها در هر فریم اسکرول، گوشی را داغ می‌کرد؛ حالا حداکثر هر ۱۴۰ms */
+    let jLast = 0;
     window.addEventListener('scroll', () => {
       if(ticking) return;
       ticking = true;
-      requestAnimationFrame(update);
+      const w = Math.max(0, 140 - (performance.now() - jLast));
+      setTimeout(() => requestAnimationFrame(() => { jLast = performance.now(); update(); }), w);
     }, {passive:true});
     window.addEventListener('resize', update);
     document.addEventListener('click', () => setTimeout(update, 400));
-    setInterval(() => { if(!document.hidden) update(); }, 2500);   // در تب پنهان اندازه‌گیری نشود
+    /* پشتیبان برای تغییرهای بی‌اسکرول؛ پیش‌تر هر ۲.۵ ثانیه کل صفحه اندازه‌گیری می‌شد (گرمای گوشی) */
+    setInterval(() => { if(!document.hidden) update(); }, 8000);
     window.updateJumpActive = update;
   })();
 
@@ -49798,16 +49803,18 @@
     const onScroll = () => {
       if(ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        document.documentElement.classList.toggle('scrolled', window.scrollY > 6);
-        document.querySelectorAll('.jump-bar').forEach(jb => {
-          if(!jb.offsetParent){ jb.classList.remove('stuck'); return; }
-          const top = parseFloat(getComputedStyle(jb).top) || 0;
-          jb.classList.toggle('stuck', window.scrollY > 6
-            && jb.getBoundingClientRect().top <= top + 1);
-        });
+      setTimeout(() => requestAnimationFrame(() => {
+        const sc = window.scrollY > 6, de = document.documentElement;
+        if(de.classList.contains('scrolled') !== sc) de.classList.toggle('scrolled', sc);
+        const L = document.getElementsByClassName('jump-bar');
+        for(let i = 0; i < L.length; i++){ const jb = L[i];
+          if(!jb.offsetParent){ if(jb.classList.contains('stuck')) jb.classList.remove('stuck'); continue; }
+          if(jb.__top == null) jb.__top = parseFloat(getComputedStyle(jb).top) || 0;
+          const st = sc && jb.getBoundingClientRect().top <= jb.__top + 1;
+          if(jb.classList.contains('stuck') !== st) jb.classList.toggle('stuck', st);
+        }
         ticking = false;
-      });
+      }), 120);
     };
     window.addEventListener('scroll', onScroll, {passive:true});
     onScroll();
@@ -52234,7 +52241,7 @@
   const B2_FS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
   const B2_FSX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
   document.addEventListener('keydown', e => { if(e.key === 'Escape'){ const box = document.querySelector('#visualChart.b2-fs'); if(box){ box.classList.remove('b2-fs'); document.body.classList.remove('b2-fs-on'); const f = box.querySelector('[data-b2fs]'); if(f) f.innerHTML = B2_FS; } } });
-  function b2PopClose(){ const o = document.querySelector('.b2pop'); if(o) o.remove(); }
+  function b2PopClose(){ if(!document.body.__b2n) return; const o = document.querySelector('.b2pop'); if(o) o.remove(); document.body.__b2n = 0; }
   document.addEventListener('click', e => {
     const c = e.target.closest && e.target.closest('[data-b2c]');
     if(!c){ if(!(e.target.closest && e.target.closest('.b2pop'))) b2PopClose(); return; }
@@ -52250,7 +52257,7 @@
           '<div class="b2p-r"><span><b>' + esc(x.a || 'بدون شرح فعالیت') + '</b><small>' + [x.sk, x.u ? toFa(x.u) : '', x.z].filter(Boolean).map(esc).join(' · ') + '</small></span><em>' + toFa(Math.round(x.m)) + ' نفر</em></div>').join('')).join('')
         : '<div class="b2p-e">فعالیتی ثبت نشده است.</div>') + '</div>'
       + '<button type="button" class="b2p-go" data-hrprof="' + esc(name) + '">پروندهٔ ' + esc(name) + ' ‹</button>';
-    document.body.appendChild(pop);
+    document.body.appendChild(pop); document.body.__b2n = 1;
     const r = c.getBoundingClientRect(), W = pop.offsetWidth, H = pop.offsetHeight;
     let left = Math.min(window.innerWidth - W - 10, Math.max(10, r.left + r.width / 2 - W / 2));
     let top = r.bottom + 8; if(top + H > window.innerHeight - 10) top = Math.max(10, r.top - H - 8);
@@ -84561,7 +84568,7 @@
     lastTasks = {list, who, all: tasksAll};
     /* زبانهٔ کارها باز نیست: فهرست بعداً (با باز شدن زبانه) ساخته می‌شود — روی گوشی ساختنش در پس‌زمینه ~۶۰۰ms قفل می‌کرد */
     const pt = document.getElementById('panelTasks');
-    if(pt && pt.hidden){ applyTaskFilters.dirty = true; return; }
+    if(pt && (pt.hidden || pt.classList.contains('ws-mod'))){ applyTaskFilters.dirty = true; return; }
     applyTaskFilters.dirty = false;
     renderTasks(list, who);
   }
@@ -84864,7 +84871,7 @@
   (function(){
     const btn = document.getElementById('toTop');
     if(!btn) return;
-    const onScroll = () => btn.classList.toggle('show', window.scrollY > 320);
+    let tts = null; const onScroll = () => { const v = window.scrollY > 320; if(v !== tts){ tts = v; btn.classList.toggle('show', v); } };
     window.addEventListener('scroll', onScroll, {passive:true});
     onScroll();
     btn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
