@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106094230">
+<meta name="pm-build" content="20261106095022">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28489,6 +28489,18 @@
   html body :is(#adminView, .adm-host) #admList-design .adm-grp-body > .adm-pty > .adm-pty-h{display:flex !important;align-items:center;padding:8px 14px !important;background:color-mix(in srgb, var(--sky) 5%, var(--surface));border-bottom:1px solid var(--line-soft, var(--line));border-top:1px solid var(--line-soft, var(--line));}
   html body :is(#adminView, .adm-host) #admList-design .adm-grp-body > .adm-pty:first-child > .adm-pty-h{border-top:0;}
   html body :is(#adminView, .adm-host) #admList-design .adm-pty-h .ap-ic{width:26px !important;height:26px !important;}
+
+  /* کلید استودیو/کلاسیک: قانون‌های دکمه‌های ستون کناری رویش نیفتد */
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm{height:34px;padding:3px !important;margin:0 !important;border-radius:999px !important;gap:0 !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button{all:unset;box-sizing:border-box;position:relative;z-index:1;display:inline-flex !important;align-items:center;justify-content:center;gap:5px !important;height:28px !important;min-height:0 !important;min-width:0;padding:0 8px !important;border-radius:999px !important;font:700 11px/1 var(--f) !important;color:var(--muted) !important;cursor:pointer;white-space:nowrap;overflow:hidden;transition:color .25s ease;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button.on{color:var(--ink) !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button svg{width:15px !important;height:15px !important;flex:0 0 15px !important;margin:0 !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button span{display:none !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm{flex:0 0 auto !important;width:auto !important;grid-template-columns:36px 36px !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button{width:36px !important;padding:0 !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button svg{width:17px !important;height:17px !important;flex-basis:17px !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > .vm-th{top:3px;bottom:3px;width:36px !important;}
+  :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot{gap:6px;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -32796,8 +32808,19 @@
       && (!feedCat || (feedCat === 'mine' ? x.forMe : x.dcat === feedCat));
 
     let idx = 0;
+    /* تازه‌ترین‌ها اول: خوانده‌نشده‌های ۴۸ ساعت اخیر (به جز نقص گزارش و بحرانی‌های قدیمی)، جدیدترین بالا؛ در دسته‌های پایین تکرار نمی‌شوند */
+    const tsOf = x => { const t = x.time ? Date.parse(String(x.time)) : NaN; return isFinite(t) ? t : 0; };
+    const NOW = Date.now();
+    const top = feed.filter(x => inFilter(x) && !x.seen && x.dcat !== 'missing' && tsOf(x) && NOW - tsOf(x) < 48 * 3600e3).sort((a, b) => tsOf(b) - tsOf(a)).slice(0, 12);
+    const topSet = new Set(top);
+    if(top.length && !feedCat){
+      h += '<section class="fz-sec fresh" style="--fc:var(--sky)"><div class="fz-sec-head"><span class="fz-sec-ic">' + (FEED_ICON.due || '') + '</span><b>تازه‌ترین</b><span class="fz-sec-note">تازه رسیده، جدیدترین بالا</span><span class="fz-sec-all"><em>' + toFa(top.length) + ' تازه</em></span></div>'
+        + '<div class="fz-list">' + top.map(x => feedCardHtml(x, idx++)).join('') + '</div></section>';
+    }
     FEED_SEC.forEach(([cat, label]) => {
-      const rows = feed.filter(x => x.dcat === cat && inFilter(x));
+      const rows = feed.filter(x => x.dcat === cat && inFilter(x) && (feedCat || !topSet.has(x)))
+        /* داخل هر دسته هم: خوانده‌نشده اول، بعد جدیدتر */
+        .sort((a, b) => (a.seen ? 1 : 0) - (b.seen ? 1 : 0));
       if(!rows.length) return;
       const nNew = rows.filter(x => !x.seen).length;
       const note = (cat === 'critical')
@@ -56752,6 +56775,11 @@
     if(!pop.hidden && isCtrIn(popInput)){ const st = pop.scrollTop; drawPop(popInput.__pkTyped ? popInput.value : ''); pop.scrollTop = st; }
   }
   window.ctrFormPrime = ctrFormPrime;
+  /* ورودی‌هایی که datalist بومی دارند (list=…) هم همین فهرست سفارشی را می‌گیرند؛
+     datalist بومی در آیفون تقریباً هیچ‌چیز نشان نمی‌دهد (مثلاً «طرف» اسناد عمومی) */
+  const toDataList = el => { if(el && el.matches && el.matches('input[list]') && !el.hasAttribute('data-list')){ el.setAttribute('data-list', el.getAttribute('list')); el.removeAttribute('list'); el.setAttribute('autocomplete', 'off'); } };
+  document.addEventListener('focusin', e => toDataList(e.target), true);
+  document.addEventListener('pointerdown', e => toDataList(e.target), true);
   document.addEventListener('focusin', e => {
     const el = e.target.closest ? e.target.closest('input[data-list]') : null;
     if(el && el === popPickedEl && Date.now() - popPickedAt < 700) return;
@@ -64197,7 +64225,8 @@
 
   function admEditHtml(kind, r, id){
     const isNewItem = id === 'new';
-    const defDate = normDate(dateInput.value) || todayShamsi();
+    /* سند تازه همیشه با تاریخ امروز؛ پیش‌تر از تاریخ انتخاب‌شدهٔ گزارش‌ها (گاهی روزهای قدیمی) می‌آمد */
+    const defDate = todayShamsi();
     const f = (cls, lbl, val, ta, list) =>
       '<div class="field" style="margin-bottom:8px;"><label>'+lbl+'</label>'
       + (ta ? '<textarea class="'+cls+'">'+esc(val)+'</textarea>'
@@ -80987,7 +81016,7 @@
      حضور ۴۰ امتیاز (روزهای حضور از روزهای کاری کارگاه) · به‌موقع بودن ۳۰ (فعالیت‌های عقب از موعد) ·
      موانع ۱۵ (موانع باز به نام او) · حجم کار ۱۵ (نفر-روز نسبت به بیشترین). */
   async function fxScoresOpen(){
-    const m = fxModal('fxScM', 'امتیاز عملکرد پیمانکاران', '۳۰ روز اخیر · حضور، به‌موقع بودن، موانع و حجم کار', '<div class="fx-wait">در حال محاسبه…</div>', true);
+    const m = fxModal('fxScM', 'KPI پیمانکاران', '۳۰ روز اخیر · حضور، به‌موقع بودن، موانع و حجم کار', '<div class="fx-wait">در حال محاسبه…</div>', true);
     let R = {dates: [], rows: []}; try{ R = await fetchRange(todayShamsi(), 'month'); }catch(e){}
     const days = new Set(), M = new Map(), g = c => { if(!M.has(c)) M.set(c, {c, d: new Set(), md: 0, late: 0, open: 0, blk: 0}); return M.get(c); };
     (R.rows || []).forEach(r => { const c = String(pick(r,F.contractor) || '').trim(); if(!c || isAmani(c)) return; const d = normDate(pick(r,F.date) || ''); if(!d) return; days.add(d); const o = g(c); o.d.add(d); o.md += (num(pick(r,F.ostad)) || 0) + (num(pick(r,F.shagerd)) || 0); });
@@ -80999,9 +81028,9 @@
       const sc = Math.round(att * 40 + ont * 30 + blk * 15 + vol * 15); return Object.assign(o, {att, ont, sc}); }).sort((a, b) => b.sc - a.sc);
     const B = m.querySelector('.fx-bd'); if(!B) return;
     const tone = v => v >= 75 ? 'ok' : v >= 55 ? 'warn' : 'bad';
-    B.innerHTML = L.length ? '<table class="fxc-t"><thead><tr><th>#</th><th>پیمانکار</th><th>امتیاز</th><th>حضور</th><th>به‌موقع</th><th>موانع باز</th><th>نفر-روز</th></tr></thead><tbody>'
+    B.innerHTML = L.length ? '<table class="fxc-t"><thead><tr><th>#</th><th>پیمانکار</th><th>KPI</th><th>حضور</th><th>به‌موقع</th><th>موانع باز</th><th>نفر-روز</th></tr></thead><tbody>'
         + L.map((o, i) => '<tr><td>' + toFa(i + 1) + '</td><td><button type="button" class="fxc-n" data-ktctr="' + esc(o.c) + '">' + esc(o.c) + '</button></td><td><span class="fxc-s ' + tone(o.sc) + '"><i style="width:' + o.sc + '%"></i><b>' + toFa(o.sc) + '</b></span></td><td>' + toFa(o.d.size) + '/' + toFa(N) + ' روز</td><td>' + (o.open ? toFa(o.open - o.late) + '/' + toFa(o.open) : '—') + '</td><td>' + (o.blk ? '<em class="bad">' + toFa(o.blk) + '</em>' : '۰') + '</td><td>' + toFa(o.md) + '</td></tr>').join('')
-        + '</tbody></table><small class="fxf-note">امتیاز از ۱۰۰: حضور ۴۰ (روزهای حضور از ' + toFa(N) + ' روز کاری کارگاه) · به‌موقع ۳۰ (فعالیت‌های باز سر موعد) · موانع ۱۵ (هر مانع باز به نام او کم می‌کند) · حجم کار ۱۵ (نفر-روز نسبت به پرکارترین). روی نام بزنید تا پروندهٔ پیمانکار باز شود.</small>'
+        + '</tbody></table><small class="fxf-note">KPI از ۱۰۰: حضور ۴۰ (روزهای حضور از ' + toFa(N) + ' روز کاری کارگاه) · به‌موقع ۳۰ (فعالیت‌های باز سر موعد) · موانع ۱۵ (هر مانع باز به نام او کم می‌کند) · حجم کار ۱۵ (نفر-روز نسبت به پرکارترین). روی نام بزنید تا پروندهٔ پیمانکار باز شود.</small>'
       : '<div class="fx-empty"><b>در ۳۰ روز اخیر گزارشی از پیمانکاران نیست</b></div>';
     B.addEventListener('click', e => { const n = e.target.closest('[data-ktctr]'); if(n){ m.remove(); openContractorProfile(n.dataset.ktctr); } });
   }
@@ -93911,7 +93940,7 @@
             if(tabOk('view')) q('', 'week', 'گزارش هفتگی کارفرما', '#1f7a4a', 'data-wkrep="1"');
             if(tabOk('admin') || tabOk('tasks')) q('', 'task', 'جلسهٔ هماهنگی', '#6d5bb5', 'data-mtg="1"');
             q('', 'chart', 'پیش‌بینی پروژه', '#2f6f9f', 'data-fxgo="fc"');
-            if(tabOk('view')) q('', 'people', 'امتیاز پیمانکاران', '#b0631c', 'data-fxgo="sc"');
+            if(tabOk('view')) q('', 'people', 'KPI پیمانکاران', '#b0631c', 'data-fxgo="sc"');
             q('', 'task', 'بتن و آزمایش', '#5a6577', 'data-fxgo="con"');
             if(tabOk('view')){ q('view:daily', 'week', 'گزارش روزانه', '#2f6f9f'); q('view:pc', 'chart', 'کنترل پروژه', '#6d5bb5'); q('view:cf', 'money', 'گزارش مالی', '#2a8a6a'); q('view:hr', 'people', 'نیروی انسانی', '#b07512'); q('view:org', 'compass', 'چارت سازمانی', '#5b6b7d'); }
             if(tabOk('admin')){ q('adm:statement', 'st', 'صورت وضعیت‌ها', '#2f6f8f'); q('adm:contract', 'ct', 'قراردادها', '#b0631c'); }
