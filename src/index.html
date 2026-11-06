@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106200023">
+<meta name="pm-build" content="20261106200408">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -96867,6 +96867,8 @@
   function rcCan(k){
     try{
       if(isAdminUser()) return true;
+      if(k === 'bud' || k === 'vnd') return can('rep.cf') || can('rep.adm');
+      if(['rsk', 'rfi', 'smt', 'itp', 'dly', 'mnt'].indexOf(k) !== -1){ const R = REGS[{rsk: 'rsk', rfi: 'rfi', smt: 'smt', itp: 'itp', dly: 'dly', mnt: 'mnt'}[k]]; try{ return !!(R && (R.canNew() || regCanQc() || can('rep.adm'))); }catch(e){ return false; } }
       if(k === 'debt' || k === 'st' || k === 'ct') return can('rep.cf') || can('rep.adm') || can('tab.admin');
       if(k === 'cf') return can('rep.cf');
       if(k === 'task' || k === 'la') return can('tab.tasks');
@@ -96881,6 +96883,68 @@
     }catch(e){}
     return false;
   }
+  /* ====== گزارش‌های دفترهای کارگاهی (ریسک، RFI، مدارک، ITP، تأخیر و هوا، بودجه، تعمیرات، ارزیابی) ====== */
+  const rgL = k => (fxC.get(REGS[k].kind) || []).map(x => x.o);
+  const rgSt = (k, s) => { const S0 = REGS[k].st.find(x => x[0] === s); return S0 ? S0[1] : s || ''; };
+  const rgN = v => +toEn(v || 0) || 0;
+  const rgDays = (a, b) => { try{ return faDiff(a, b); }catch(e){ return null; } };
+  function rcRisk(){ const L = rgL('rsk'); if(!L.length) return null;
+    const act = L.filter(o => o.st === 'open' || o.st === 'mit'), sc = o => regScore(o), lvl = s => s >= 15 ? 'بالا' : s >= 8 ? 'متوسط' : 'پایین';
+    const hm = []; for(let p = 5; p >= 1; p--){ const r = ['احتمال ' + toFa(p)]; for(let i = 1; i <= 5; i++) r.push(toFa(act.filter(o => rgN(o.p) === p && rgN(o.i) === i).length || '') || '·'); hm.push(r); }
+    const cats = {}; act.forEach(o => { const c = o.cat || 'سایر'; cats[c] = cats[c] || [0, 0, 0]; cats[c][0]++; if(sc(o) >= 15) cats[c][1]++; cats[c][2] += sc(o); });
+    const over = act.filter(o => o.due && daysSince(o.due) > 0);
+    return {title: 'گزارش ریسک پروژه', sub: toFa(act.length) + ' ریسک فعال از ' + toFa(L.length),
+      kpi: [['ریسک فعال', toFa(act.length)], ['ریسک بالا (۱۵ به بالا)', toFa(act.filter(o => sc(o) >= 15).length)], ['بدون اقدام کاهشی', toFa(act.filter(o => !String(o.resp || '').trim()).length)], ['بازبینی گذشته', toFa(over.length)], ['رخ‌داده', toFa(L.filter(o => o.st === 'hit').length)], ['میانگین امتیاز', toFa((act.reduce((t, o) => t + sc(o), 0) / Math.max(1, act.length)).toFixed(1))]],
+      tables: [{t: 'نقشهٔ حرارتی (احتمال × اثر) ریسک‌های فعال', heat: 1, head: ['', 'اثر ۱', 'اثر ۲', 'اثر ۳', 'اثر ۴', 'اثر ۵'], rows: hm},
+        {t: '۱۰ ریسک اول', head: ['شماره', 'شرح', 'دسته', 'احتمال', 'اثر', 'امتیاز', 'سطح', 'مسئول', 'اقدام کاهشی', 'وضعیت'], rows: act.slice().sort((a, b) => sc(b) - sc(a)).slice(0, 10).map(o => [o.no || '', o.item || '', o.cat || '', toFa(o.p || ''), toFa(o.i || ''), sc(o), lvl(sc(o)), o.own || '', o.resp || '—', rgSt('rsk', o.st)])},
+        {t: 'ریسک بر اساس دسته', head: ['دسته', 'تعداد فعال', 'ریسک بالا', 'میانگین امتیاز'], rows: Object.entries(cats).sort((a, b) => b[1][2] - a[1][2]).map(([c, v]) => [c, v[0], v[1], toFa((v[2] / v[0]).toFixed(1))])},
+        {t: 'همهٔ ریسک‌ها', head: ['شماره', 'شرح', 'دسته', 'امتیاز', 'مسئول', 'تاریخ بازبینی', 'وضعیت'], rows: L.slice().sort((a, b) => sc(b) - sc(a)).map(o => [o.no || '', o.item || '', o.cat || '', sc(o), o.own || '', o.due ? toFa(o.due) : '', rgSt('rsk', o.st)])}]}; }
+  function rcRfi(){ const L = rgL('rfi'); if(!L.length) return null; const open = L.filter(o => o.st === 'open'), late = open.filter(o => o.due && daysSince(o.due) > 0);
+    const resp = L.map(o => { const a = (o.log || []).find(l => l.st === 'ans'); return a && o.log[0] ? rgDays(o.log[0].d, a.d) : null; }).filter(x => x != null);
+    const by = {}; L.forEach(o => { const k = o.to || '—'; by[k] = by[k] || [0, 0, 0]; by[k][0]++; if(o.st === 'open') by[k][1]++; if(o.st === 'open' && o.due && daysSince(o.due) > 0) by[k][2]++; });
+    return {title: 'گزارش RFI', sub: toFa(L.length) + ' درخواست اطلاعات فنی',
+      kpi: [['کل', toFa(L.length)], ['منتظر پاسخ', toFa(open.length)], ['گذشته از مهلت', toFa(late.length)], ['میانگین زمان پاسخ', resp.length ? toFa((resp.reduce((a, b) => a + b, 0) / resp.length).toFixed(1)) + ' روز' : '—'], ['اثر بر زمان یا هزینه', toFa(L.filter(o => o.imp && o.imp !== 'ندارد').length)]],
+      tables: [{t: 'RFIهای منتظر پاسخ', head: ['شماره', 'موضوع', 'رشته', 'ارجاع به', 'مهلت', 'روز تأخیر'], rows: open.sort((a, b) => String(a.due).localeCompare(String(b.due))).map(o => [o.no || '', o.item || '', o.disc || '', o.to || '', o.due ? toFa(o.due) : '', o.due && daysSince(o.due) > 0 ? daysSince(o.due) : ''])},
+        {t: 'بر اساس پاسخ‌دهنده', head: ['مشاور / طراح', 'کل', 'باز', 'گذشته از مهلت'], rows: Object.entries(by).map(([k, v]) => [k, v[0], v[1], v[2]])},
+        {t: 'همهٔ RFIها', head: ['شماره', 'موضوع', 'رشته', 'وضعیت', 'اثر', 'پاسخ'], rows: L.map(o => [o.no || '', o.item || '', o.disc || '', rgSt('rfi', o.st), o.imp || '', o.ans || ''])}]}; }
+  function rcSmt(){ const L = rgL('smt'); if(!L.length) return null; const c = s => L.filter(o => o.st === s).length, by = {};
+    L.forEach(o => { const k = o.ctr || '—'; by[k] = by[k] || {n: 0, A: 0, B: 0, C: 0, sub: 0}; by[k].n++; by[k][o.st] = (by[k][o.st] || 0) + 1; });
+    return {title: 'گزارش ارسال مدارک فنی', sub: toFa(L.length) + ' مدرک',
+      kpi: [['کل', toFa(L.length)], ['منتظر بررسی', toFa(c('sub'))], ['A تأیید', toFa(c('A'))], ['B با اصلاحات', toFa(c('B'))], ['C رد', toFa(c('C'))], ['نرخ تأیید اولیه', L.length ? toFa(Math.round(c('A') / L.length * 100)) + '٪' : '—']],
+      tables: [{t: 'بر اساس پیمانکار', head: ['پیمانکار', 'کل', 'A', 'B', 'C', 'منتظر'], rows: Object.entries(by).map(([k, v]) => [k, v.n, v.A, v.B, v.C, v.sub])},
+        {t: 'همهٔ مدارک', head: ['شماره', 'عنوان', 'نوع', 'پیمانکار', 'ویرایش', 'وضعیت', 'نظر'], rows: L.map(o => [o.no || '', o.item || '', o.tp || '', o.ctr || '', o.rev ? toFa(o.rev) : '', rgSt('smt', o.st), o.cm || ''])}]}; }
+  function rcItp(){ const L = rgL('itp'); if(!L.length) return null; const done = L.filter(o => o.st === 'pass' || o.st === 'fail'), by = {};
+    L.forEach(o => { const k = o.ctr || '—'; by[k] = by[k] || [0, 0, 0]; by[k][0]++; if(o.st === 'pass') by[k][1]++; if(o.st === 'fail') by[k][2]++; });
+    return {title: 'گزارش بازرسی و آزمون (ITP)', sub: toFa(L.length) + ' نقطهٔ بازرسی',
+      kpi: [['کل', toFa(L.length)], ['منتظر بازرسی', toFa(L.filter(o => o.st === 'req').length)], ['نقطهٔ توقف منتظر', toFa(L.filter(o => o.st === 'req' && /^H/.test(o.pt || '')).length)], ['قبول', toFa(L.filter(o => o.st === 'pass').length)], ['رد', toFa(L.filter(o => o.st === 'fail').length)], ['نرخ قبول', done.length ? toFa(Math.round(L.filter(o => o.st === 'pass').length / done.length * 100)) + '٪' : '—']],
+      tables: [{t: 'بر اساس پیمانکار', head: ['پیمانکار', 'کل', 'قبول', 'رد', 'نرخ قبول'], rows: Object.entries(by).map(([k, v]) => [k, v[0], v[1], v[2], v[1] + v[2] ? toFa(Math.round(v[1] / (v[1] + v[2]) * 100)) + '٪' : '—'])},
+        {t: 'همهٔ نقطه‌ها', head: ['شماره', 'فعالیت', 'طبقه', 'پیمانکار', 'نوع نقطه', 'تاریخ', 'وضعیت', 'نظر'], rows: L.map(o => [o.no || '', o.item || '', o.fl ? floorLabel(o.fl) : '', o.ctr || '', (o.pt || '').split(' — ')[0], o.date ? toFa(o.date) : '', rgSt('itp', o.st), o.cm || ''])}]}; }
+  function rcDly(){ const L = rgL('dly'), W = (fxC.get(WXD_K) || []).map(x => Object.assign({d: x.id}, x.o)); if(!L.length && !W.length) return null;
+    const cause = {}; L.forEach(o => { const k = o.cause || 'سایر'; cause[k] = cause[k] || [0, 0, 0]; cause[k][0]++; cause[k][1] += rgN(o.days); if(o.st === 'ok') cause[k][2] += rgN(o.days); });
+    const mon = {}; W.forEach(x => { const m = x.d.slice(0, 7); mon[m] = mon[m] || [0, 0, 0, -99, 99]; mon[m][0]++; if(x.pr >= 1) mon[m][1]++; if(x.tn <= 0) mon[m][2]++; mon[m][3] = Math.max(mon[m][3], x.tx); mon[m][4] = Math.min(mon[m][4], x.tn); });
+    const tot = L.filter(o => o.st !== 'no').reduce((t, o) => t + rgN(o.days), 0), ok = L.filter(o => o.st === 'ok').reduce((t, o) => t + rgN(o.days), 0);
+    return {title: 'گزارش تأخیرات و وضع هوا', sub: toFa(L.length) + ' رویداد تأخیر · ' + toFa(W.length) + ' روز هوای ثبت‌شده',
+      kpi: [['روز تأخیر ثبت‌شده', toFa(tot)], ['تمدید پذیرفته', toFa(ok) + ' روز'], ['درخواست تمدید باز', toFa(L.filter(o => o.st === 'claim').length)], ['ساعت توقف', toFa(L.reduce((t, o) => t + rgN(o.hrs), 0))], ['روز بارانی', toFa(W.filter(x => x.pr >= 1).length)], ['روز یخبندان', toFa(W.filter(x => x.tn <= 0).length)]],
+      tables: [{t: 'تأخیر بر اساس علت', head: ['علت', 'رویداد', 'روز تأخیر', 'روز تمدید پذیرفته'], rows: Object.entries(cause).sort((a, b) => b[1][1] - a[1][1]).map(([k, v]) => [k, v[0], v[1], v[2]])},
+        {t: 'هوای ماهانه (از پایگاه داده)', head: ['ماه', 'روز ثبت‌شده', 'روز بارانی', 'روز یخبندان', 'بیشینه', 'کمینه'], rows: Object.entries(mon).sort((a, b) => b[0].localeCompare(a[0])).map(([m, v]) => [toFa(m), v[0], v[1], v[2], toFa(Math.round(v[3])) + '°', toFa(Math.round(v[4])) + '°'])},
+        {t: 'رویدادهای تأخیر', head: ['تاریخ', 'شرح', 'علت', 'هوا', 'ساعت توقف', 'روز تأخیر', 'وضعیت'], rows: L.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map(o => [o.date ? toFa(o.date) : '', o.item || '', o.cause || '', o.wx || '', rgN(o.hrs), rgN(o.days), rgSt('dly', o.st)])}]}; }
+  function rcBud(){ const L = rgL('cc'); if(!L.length) return null; const t = k => L.reduce((s, o) => s + rgN(o[k]), 0), b = t('bud');
+    const grp = {}; L.forEach(o => { const g = o.grp || 'سایر'; grp[g] = grp[g] || [0, 0, 0]; grp[g][0] += rgN(o.bud); grp[g][1] += rgN(o.com); grp[g][2] += rgN(o.act); });
+    return {title: 'بودجه و هزینه', sub: toFa(L.length) + ' کد هزینه',
+      kpi: [['بودجه', rcMoney(b * 10)], ['تعهد شده', rcMoney(t('com') * 10)], ['هزینهٔ واقعی', rcMoney(t('act') * 10)], ['مصرف بودجه', b ? toFa(Math.round(t('act') / b * 100)) + '٪' : '—'], ['کدهای بیش از بودجه', toFa(L.filter(o => rgN(o.act) > rgN(o.bud) && rgN(o.bud)).length)]],
+      tables: [{t: 'بر اساس سرفصل', head: ['سرفصل', 'بودجه', 'تعهد', 'واقعی', 'درصد مصرف'], money: [1, 2, 3], sum: true, rows: Object.entries(grp).map(([g, v]) => [g, v[0] * 10, v[1] * 10, v[2] * 10, v[0] ? toFa(Math.round(v[2] / v[0] * 100)) + '٪' : '—'])},
+        {t: 'کدهای هزینه', head: ['کد', 'شرح', 'سرفصل', 'بودجه', 'تعهد', 'واقعی', 'مانده'], money: [3, 4, 5, 6], sum: true, rows: L.slice().sort((a, b) => String(a.code).localeCompare(String(b.code), 'fa', {numeric: true})).map(o => [o.code || '', o.item || '', o.grp || '', rgN(o.bud) * 10, rgN(o.com) * 10, rgN(o.act) * 10, (rgN(o.bud) - Math.max(rgN(o.com), rgN(o.act))) * 10])}]}; }
+  function rcMnt(){ const L = rgL('mnt'); if(!L.length) return null; const last = {}; L.forEach(o => { const k = o.item + '|' + (o.code || ''); if(!last[k] || String(o.date) > String(last[k].date)) last[k] = o; });
+    const D = Object.values(last);
+    return {title: 'تعمیر و نگهداری ماشین‌آلات', sub: toFa(D.length) + ' دستگاه · ' + toFa(L.length) + ' سابقه',
+      kpi: [['دستگاه', toFa(D.length)], ['از کار افتاده', toFa(D.filter(o => o.st === 'down' || o.st === 'wait').length)], ['سررسید گذشته', toFa(D.filter(o => o.nx && daysSince(o.nx) > 0).length)], ['هزینهٔ کل', rcMoney(L.reduce((t, o) => t + rgN(o.cost), 0) * 10)]],
+      tables: [{t: 'وضعیت هر دستگاه', head: ['دستگاه', 'کد', 'آخرین کار', 'تاریخ', 'سررسید بعدی', 'وضعیت'], rows: D.sort((a, b) => String(a.nx || '9').localeCompare(String(b.nx || '9'))).map(o => [o.item || '', o.code || '', o.tp || '', o.date ? toFa(o.date) : '', o.nx ? toFa(o.nx) + (daysSince(o.nx) > 0 ? ' (گذشته)' : '') : '', rgSt('mnt', o.st)])},
+        {t: 'سوابق', head: ['تاریخ', 'دستگاه', 'نوع کار', 'کارکرد', 'هزینه', 'شرح'], money: [4], sum: true, rows: L.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map(o => [o.date ? toFa(o.date) : '', o.item || '', o.tp || '', o.hrs ? toFa(o.hrs) : '', rgN(o.cost) * 10, o.note || ''])}]}; }
+  function rcVnd(){ const L = rgL('vnd'); if(!L.length) return null; const M = {}; L.forEach(o => { const k = o.item || '—'; M[k] = M[k] || []; M[k].push(o); });
+    const av = (A, f) => A.reduce((t, o) => t + rgN(o[f]), 0) / A.length, R = Object.entries(M).map(([k, A]) => [k, A[0].tp || '', A.length, av(A, 'q'), av(A, 't'), av(A, 's'), av(A, 'c'), A.reduce((t, o) => t + regAvg(o), 0) / A.length]).sort((a, b) => b[7] - a[7]);
+    return {title: 'ارزیابی پیمانکاران و تأمین‌کنندگان', sub: toFa(R.length) + ' طرف · ' + toFa(L.length) + ' ارزیابی',
+      kpi: [['طرف ارزیابی‌شده', toFa(R.length)], ['میانگین کل', toFa((R.reduce((t, r) => t + r[7], 0) / Math.max(1, R.length)).toFixed(1)) + ' از ۵'], ['عملکرد ضعیف (زیر ۲٫۵)', toFa(R.filter(r => r[7] < 2.5).length)]],
+      tables: [{t: 'رتبه‌بندی', head: ['رتبه', 'نام', 'نقش', 'دفعات', 'کیفیت', 'زمان', 'ایمنی', 'همکاری', 'میانگین'], rows: R.map((r, i) => [i + 1, r[0], r[1], r[2]].concat(r.slice(3).map(v => toFa(v.toFixed(1)))))}]}; }
   const RC_LIST = [
     {k: 'debt', t: 'بدهکاری‌ها', d: 'مانده مطالبات هر پیمانکار، تأییدشده و در بررسی', ic: 'debt', c: '#c0392b', need: {adm: 1}, f: rcDebt},
     {k: 'all', t: 'گزارش جامع پروژه', d: 'همهٔ بخش‌ها در یک فایل: مالی، فعالیت، ایمنی، کیفیت، تدارکات…', ic: 'all', c: '#2f6f9f', need: {adm: 1, hse: 1, qc: 1, prc: 1, wh: 1, co: 1, mc: 1}, f: rcAll},
@@ -96895,7 +96959,15 @@
     {k: 'prc', t: 'تدارکات', d: 'اقلام درخواست خرید و وضعیت', ic: 'prc', c: '#6d5bb5', need: {prc: 1}, f: () => rcMod('prc')},
     {k: 'wh', t: 'انبار', d: 'موجودی و ورود و خروج', ic: 'wh', c: '#b07f12', need: {wh: 1}, f: () => rcMod('wh')},
     {k: 'co', t: 'تغییرات و ادعا', d: 'دستور تغییر و ادعاها', ic: 'co', c: '#b5527e', need: {co: 1}, f: () => rcMod('co')},
-    {k: 'mc', t: 'ماشین‌آلات', d: 'دستگاه‌ها و کارکرد', ic: 'mc', c: '#5b6b7d', need: {mc: 1}, f: () => rcMod('mc')}
+    {k: 'mc', t: 'ماشین‌آلات', d: 'دستگاه‌ها و کارکرد', ic: 'mc', c: '#5b6b7d', need: {mc: 1}, f: () => rcMod('mc')},
+    {k: 'rsk', t: 'ریسک پروژه', d: 'نقشهٔ حرارتی احتمال × اثر، ریسک‌های بالا، دسته‌ها و اقدام‌ها', ic: 'hse', c: '#b5523b', reg: ['rsk'], f: rcRisk, big: 1},
+    {k: 'rfi', t: 'RFI', d: 'منتظر پاسخ، گذشته از مهلت، زمان پاسخ هر مشاور', ic: 'task', c: '#3b6ea5', reg: ['rfi'], f: rcRfi},
+    {k: 'smt', t: 'ارسال مدارک', d: 'A/B/C، نرخ تأیید اولیه و وضعیت هر پیمانکار', ic: 'st', c: '#5a6fb0', reg: ['smt'], f: rcSmt},
+    {k: 'itp', t: 'ITP', d: 'نقطه‌های منتظر، نرخ قبول بازرسی هر پیمانکار', ic: 'qc', c: '#2f7d6b', reg: ['itp'], f: rcItp},
+    {k: 'dly', t: 'تأخیرات و وضع هوا', d: 'روز تأخیر بر اساس علت، تمدید، و هوای ماهانه از تاریخچه', ic: 'task', c: '#4f7fa3', reg: ['dly'], wx: 1, f: rcDly},
+    {k: 'bud', t: 'بودجه و هزینه', d: 'بودجه، تعهد و واقعی هر سرفصل و کد هزینه', ic: 'debt', c: '#8a6a1f', reg: ['cc'], f: rcBud},
+    {k: 'mnt', t: 'تعمیر و نگهداری', d: 'وضعیت هر دستگاه، سررسیدها و هزینهٔ تعمیرات', ic: 'mc', c: '#6b5b3e', reg: ['mnt'], f: rcMnt},
+    {k: 'vnd', t: 'ارزیابی پیمانکاران', d: 'رتبه‌بندی بر اساس کیفیت، زمان، ایمنی و همکاری', ic: 'all', c: '#7a5bc4', reg: ['vnd'], f: rcVnd}
   ];
   window.rcCanAny = () => RC_LIST.some(x => rcCan(x.k));
   /* ---------- خروجی ---------- */
@@ -96932,7 +97004,7 @@
     if(!t.rows.length) return '<h3>' + esc(t.t) + '</h3><p class="rcp-e">موردی نیست.</p>';
     const sum = t.sum ? '<tr class="sum">' + t.head.map((h, i) => '<td>' + (i === 0 ? 'جمع' : money.has(i) ? rcMoney(t.rows.reduce((a, r) => a + (+r[i] || 0), 0)) : '') + '</td>').join('') + '</tr>' : '';
     return '<h3>' + esc(t.t) + ' <small>' + toFa(t.rows.length) + ' ردیف</small></h3><table class="rcp-t"><thead><tr>' + t.head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>'
-      + t.rows.map(r => '<tr>' + r.map((v, i) => '<td' + (money.has(i) ? ' class="m"' : '') + '>' + (money.has(i) ? rcMoney(v) : esc(typeof v === 'number' ? toFa(v) : String(v == null ? '' : v))) + '</td>').join('') + '</tr>').join('') + sum + '</tbody></table>';
+      + t.rows.map((r, ri) => '<tr>' + r.map((v, i) => '<td' + (money.has(i) ? ' class="m"' : '') + (t.heat && i ? (function(){ const sc = (5 - ri) * i; return ' style="text-align:center;font-weight:800;background:' + (sc >= 15 ? '#f3c4bd' : sc >= 8 ? '#f8e2b8' : '#d9eedf') + '"'; })() : '') + '>' + (money.has(i) ? rcMoney(v) : esc(typeof v === 'number' ? toFa(v) : String(v == null ? '' : v))) + '</td>').join('') + '</tr>').join('') + sum + '</tbody></table>';
   }
   function rcPdfHtml(m){
     const pj = (function(){ try{ return pjCur() || {}; }catch(e){ return {}; } })();
@@ -96957,7 +97029,7 @@
   async function rcRun(k, how, btn){
     const R = RC_LIST.find(x => x.k === k); if(!R || RC.busy) return;
     RC.busy = true; const lab = btn ? btn.innerHTML : ''; if(btn){ btn.disabled = true; btn.innerHTML = '<i class="rc-sp"></i>در حال آماده‌سازی'; }
-    try{ await rcEnsure(R.need || {}); const m = R.f(); if(!m) throw new Error('داده‌ای برای این گزارش نیست');
+    try{ await rcEnsure(R.need || {}); if(R.reg) await Promise.all(R.reg.map(k => fxList(REGS[k].kind, true))); if(R.wx) await fxList(WXD_K, true).catch(() => null); const m = R.f(); if(!m) throw new Error('هنوز موردی در این بخش ثبت نشده است');
       if(how === 'xls') await rcXls(m); else rcPdf(m); }
     catch(e){ showDialog('err', 'گزارش ساخته نشد', friendlyErr ? friendlyErr(e) : String(e && e.message || e)); }
     finally{ RC.busy = false; if(btn){ btn.disabled = false; btn.innerHTML = lab; } }
