@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106145744">
+<meta name="pm-build" content="20261106150133">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28858,6 +28858,9 @@
   .apv-r > span{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;} .apv-r b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .apv-r small{font-size:11.5px;color:var(--muted);}
   .apv-r.hot small{color:var(--alert, #c0392b);font-weight:700;}
   .apv-r > i{font-style:normal;flex:none;font-size:12px;font-weight:800;color:var(--sky);}
+
+  .fd-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb, var(--sky) 8%, var(--surface));border:1px solid color-mix(in srgb, var(--sky) 30%, var(--line));font-size:12px;font-weight:700;color:var(--ink);}
+  .fd-bar button{all:unset;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--sky);padding:3px 8px;border-radius:8px;} .fd-bar button:hover{background:color-mix(in srgb, var(--sky) 12%, transparent);}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -78706,6 +78709,52 @@
       .concat(qc.ncrs.map(n => [n.no, toEn(n.date || ''), n.ctr, n.sev, n.disc, n.fl, n.loc, n.desc, toEn(n.due || ''), n.st, n.fix || '', toEn(n.close || ''), n.ir || ''].map(q).join(',')));
     gtDownload('کیفیت-' + toEn(todayShamsi()).replace(/\//g, '-') + '.csv', '﻿' + A.join('\r\n') + '\r\n\r\n' + B.join('\r\n'), 'text/csv;charset=utf-8');
   });
+  /* ====== پیش‌نویس خودکار فرم‌ها ======
+     فرم‌های ثبت (سند تازهٔ اسناد، HSE، کنترل کیفیت، دفترهای ثبت) با هر تغییر روی دستگاه ذخیره می‌شوند؛
+     اگر صفحه بسته شد یا اینترنت رفت، با باز شدن دوبارهٔ همان فرم (هنوز دست‌نخورده) نوشته‌ها برمی‌گردند و
+     یک نوار «پیش‌نویس بازگردانی شد · پاک کردن» می‌آید. بعد از ثبت موفق (فرم خالی شد یا بسته شد) پاک می‌شود.
+     فقط فیلدهایی که با مقدار پیش‌فرضشان فرق دارند نگه داشته می‌شوند (تاریخ امروز و … دست نمی‌خورد). */
+  (function(){
+    const PFX = 'siteLogM.fdraft:';
+    const T = [
+      {sel: '#adminView .nf[data-persist="1"] > .nf-body', key: el => 'doc:' + ((el.closest('.nf') || {dataset:{}}).dataset.newKind || '')},
+      {sel: '#hseBody', key: () => 'hse:' + ((document.querySelector('#hseTabs .on') || {dataset:{}}).dataset.hstab || '')},
+      {sel: '#qcBody', key: () => 'qc:' + (((document.querySelector('#qcTabs .on') || {}).textContent) || '').trim()},
+      {sel: '#regM .rg-form', key: el => { const h = el.querySelector('.rg-fh b'); const t = h ? h.textContent.trim() : ''; return /^ثبت /.test(t) ? 'reg:' + t : ''; }}];
+    const F = el => Array.from(el.querySelectorAll('input:not([type=hidden]):not([type=file]):not([type=password]):not([type=search]), textarea, select')).filter(x => !x.disabled && !x.closest('.combo-pop'));
+    const sigOf = L => { const c = {}; return L.map(x => { const b = x.tagName + ':' + (x.name || x.id || (String(x.className || '').split(/\s+/)[0]) || x.type || ''); c[b] = (c[b] || 0) + 1; return b + '#' + c[b]; }); };
+    const dirty = x => x.type === 'checkbox' || x.type === 'radio' ? x.checked !== x.defaultChecked : x.tagName === 'SELECT' ? Array.from(x.options).some(o => o.selected !== o.defaultSelected) : x.value !== x.defaultValue;
+    const get = k => { try{ return JSON.parse(localStorage.getItem(PFX + k) || 'null'); }catch(e){ return null; } };
+    const put = (k, v) => { try{ if(v) localStorage.setItem(PFX + k, JSON.stringify(v)); else localStorage.removeItem(PFX + k); }catch(e){} };
+    const host = el => { for(const t of T){ const h = el.closest ? el.closest(t.sel) : null; if(h){ const k = t.key(h); if(k) return {h, k}; } } return null; };
+    const save = (h, k) => { const L = F(h); if(L.length < 2) return; const S = sigOf(L), v = {};
+      L.forEach((x, i) => { if(!dirty(x)) return; v[S[i]] = (x.type === 'checkbox' || x.type === 'radio') ? (x.checked ? 1 : 0) : x.value; });
+      put(k, Object.keys(v).length ? {v, t: Date.now()} : null); };
+    const tm = new WeakMap();
+    document.addEventListener('input', e => { const r = host(e.target); if(!r || r.h.__fdRestoring) return; clearTimeout(tm.get(r.h)); tm.set(r.h, setTimeout(() => save(r.h, r.k), 400)); }, true);
+    document.addEventListener('change', e => { const r = host(e.target); if(!r || r.h.__fdRestoring) return; clearTimeout(tm.get(r.h)); tm.set(r.h, setTimeout(() => save(r.h, r.k), 200)); }, true);
+    const done = new WeakSet();
+    const restore = () => { T.forEach(t => document.querySelectorAll(t.sel).forEach(h => {
+      if(done.has(h) || !h.getClientRects().length) return; const k = t.key(h); if(!k) return; const L = F(h); if(L.length < 2) return; done.add(h);
+      const d = get(k); if(!d || !d.v || Date.now() - (d.t || 0) > 14 * 864e5) return;
+      if(L.some(dirty)) return;                       /* فرم دست‌خورده: کاری نمی‌کنیم */
+      const S = sigOf(L); let n = 0; h.__fdRestoring = 1;
+      L.forEach((x, i) => { if(!(S[i] in d.v)) return; const v = d.v[S[i]]; if(x.type === 'checkbox' || x.type === 'radio') x.checked = !!v; else x.value = v; n++;
+        try{ x.dispatchEvent(new Event('input', {bubbles: true})); x.dispatchEvent(new Event('change', {bubbles: true})); }catch(e){} });
+      h.__fdRestoring = 0;
+      if(!n) return;
+      const bar = document.createElement('div'); bar.className = 'fd-bar'; bar.innerHTML = '<span>پیش‌نویس بازگردانی شد · ' + toFa(n) + ' فیلد</span><button type="button" data-fdclr>پاک کردن</button>';
+      bar.querySelector('[data-fdclr]').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); put(k, null); L.forEach(x => { if(x.type === 'checkbox' || x.type === 'radio') x.checked = x.defaultChecked; else if(x.tagName === 'SELECT') Array.from(x.options).forEach(o => o.selected = o.defaultSelected); else x.value = x.defaultValue; try{ x.dispatchEvent(new Event('input', {bubbles: true})); }catch(er){} }); bar.remove(); });
+      h.insertBefore(bar, h.firstChild); })); };
+    let rq = 0; const soon = () => { if(!rq) rq = setTimeout(() => { rq = 0; try{ restore(); }catch(e){} }, 250); };
+    document.addEventListener('click', e => {
+      soon();
+      /* ثبت: اگر بعدش فرم خالی شد یا رفت، پیش‌نویس پاک شود */
+      const b = e.target.closest && e.target.closest('[data-save], [data-rgsave], button.go, button[type=submit], .btn.pri'); if(!b) return; const r = host(b); if(!r) return;
+      const chk = () => { if(!r.h.isConnected || !r.h.getClientRects().length || !F(r.h).some(dirty)) put(r.k, null); };
+      setTimeout(chk, 1800); setTimeout(chk, 5000); }, true);
+    window.addEventListener('load', () => setTimeout(soon, 1500));
+  })();
   /* ====== ارسال امن در نبود اینترنت ======
      ثبت‌های بخش‌های تازه (انبار، کیفیت، تغییرات، ماشین‌آلات، گالری) اگر
      اینترنت قطع باشد در صف دستگاه می‌مانند و با وصل شدن خودشان فرستاده می‌شوند. */
@@ -78728,7 +78777,7 @@
     if(oqBusy || !navigator.onLine) return; const L = oqGet(); if(!L.length){ oqBadge(); return; }
     oqBusy = true; const rest = [];
     for(let i = 0; i < L.length; i++){
-      try{ await supaFetch('nudges', {method:'POST', body:[L[i]]}); }
+      try{ const x = L[i]; if(x && x.__op === 'fx'){ await window.fxPutNet(x.kind, x.id, x.o); } else await supaFetch('nudges', {method:'POST', body:[x]}); }
       catch(e){ if(oqNet(e)){ rest.push.apply(rest, L.slice(i)); break; } rest.push(L[i]); }
     }
     oqSet(rest); oqBusy = false; oqBadge();
@@ -81289,10 +81338,19 @@
     fxC.set(kind, L); return L;
   }
   async function fxPut(kind, id, o){
+    /* بی‌اینترنت (یا قطع وسط کار): تغییر روی دستگاه می‌ماند، همان لحظه در برنامه دیده می‌شود و با وصل شدن فرستاده می‌شود */
+    const local = () => { const L = fxC.get(kind); if(L){ const i = L.findIndex(x => x.id === id); if(o){ if(i >= 0) L[i].o = o; else L.push({id, o}); } else if(i >= 0) L.splice(i, 1); } };
+    const queue = () => { oqSet(oqGet().filter(x => !(x && x.__op === 'fx' && x.kind === kind && x.id === id)).concat([{__op: 'fx', kind, id, o: o || null}])); local(); oqBadge();
+      try{ shrToast('اینترنت قطع است؛ تغییر روی دستگاه ماند و با وصل شدن فرستاده می‌شود'); }catch(e){} };
+    if(!navigator.onLine){ queue(); return; }
+    try{ await fxPutNet(kind, id, o); }catch(e){ if(oqNet(e)){ queue(); return; } throw e; }
+    local();
+  }
+  async function fxPutNet(kind, id, o){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=like.' + encodeURIComponent(String(id).replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
     if(o) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind, value: id + '¦' + JSON.stringify(o)}]});
-    const L = fxC.get(kind); if(L){ const i = L.findIndex(x => x.id === id); if(o){ if(i >= 0) L[i].o = o; else L.push({id, o}); } else if(i >= 0) L.splice(i, 1); }
   }
+  window.fxPutNet = fxPutNet;
   const fxId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const fxUrlC = new Map();
   function fxImg(link){ if(!link) return Promise.resolve(''); if(fxUrlC.has(link)) return fxUrlC.get(link);
