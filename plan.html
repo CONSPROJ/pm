@@ -17,7 +17,7 @@
   .ttl{display:flex;flex-direction:column;gap:1px;margin-inline-end:auto;min-width:0;} .ttl b{font-size:15px;font-weight:800;} .ttl small{color:var(--muted);font-size:11.5px;}
   .btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:9px;font-size:12px;font-weight:700;background:var(--field);color:var(--ink);white-space:nowrap;}
   .btn:hover{filter:brightness(.96);} .btn.pri{background:var(--acc);color:#fff;} .btn.on{background:color-mix(in srgb, var(--acc) 14%, var(--surface));color:var(--acc);} .btn[disabled]{opacity:.45;pointer-events:none;}
-  .btn svg{width:15px;height:15px;}
+  .btn svg{width:15px;height:15px;} .btn em.bdg{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:var(--warn);padding:1px 6px;border-radius:999px;}
   .seg{display:inline-flex;background:var(--field);border-radius:10px;padding:3px;gap:2px;} .seg .btn{height:26px;background:transparent;padding:0 9px;} .seg .btn.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   input, select{font:inherit;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 8px;min-width:0;}
   input:focus, select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 15%, transparent);}
@@ -84,6 +84,10 @@
   .hl{display:flex;flex-direction:column;gap:8px;} .hr{padding:9px 12px;border-radius:12px;background:var(--field);} .hh{display:flex;justify-content:space-between;gap:8px;margin-bottom:3px;} .hh small{color:var(--muted);font-size:11px;}
   .hc{font-size:12px;line-height:1.9;} .hc u{text-decoration:none;color:var(--muted);font-weight:700;} .hc s{color:var(--muted);} .hc em{font-style:normal;font-weight:700;} .hc i{font-style:normal;font-weight:700;} .hc .ad{color:var(--ok);} .hc .rm{color:var(--bad);}
   .io{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:var(--field);} .io b{font-size:13px;} .io small{color:var(--muted);font-size:11.5px;line-height:1.8;margin-bottom:6px;} .io .btn{align-self:flex-start;background:var(--surface);} .io .btn.pri{background:var(--acc);}
+  i.lk{font-style:normal;font-size:10px;color:var(--acc);margin-inline-end:2px;flex:none;} i.lk.gone{color:var(--bad);}
+  .tk-k{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;} .tk-k > div{flex:1 1 120px;padding:9px 12px;border-radius:12px;background:var(--field);display:flex;flex-direction:column;gap:2px;} .tk-k u{text-decoration:none;font-size:11px;color:var(--muted);font-weight:700;} .tk-k b{font-size:17px;} .tk-k b.w{color:var(--warn);} .tk-k small{font-size:10.5px;color:var(--muted);}
+  .tk-l{display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto;background:var(--surface);border-radius:10px;padding:6px;margin-bottom:8px;} .tk-l label{display:flex;gap:8px;align-items:flex-start;padding:5px;border-radius:8px;cursor:pointer;} .tk-l label:hover{background:var(--field);} .tk-l input{height:auto;margin-top:3px;} .tk-l b{font-size:12px;display:block;} .tk-l small{font-size:10.5px;color:var(--muted);}
+  .io + .io{margin-top:10px;}
   .empty{padding:40px 20px;text-align:center;color:var(--muted);line-height:2;}
   @media (max-width:900px){ .main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,1fr);} .split{display:none;} .top .hide-s{display:none;} td.bd, td.ct, th.bd, th.ct, td.pr, th.pr, td.vr, th.vr{display:none;} .fb input{width:100%;} }
   @media print{ body{height:auto;overflow:visible;} .top, .st, .split, .kp .noprint{display:none !important;} .main{display:block;} .tw, .gw{overflow:visible;} .gw{page-break-before:always;} }
@@ -103,6 +107,7 @@
   <button class="btn" data-a="bl" data-ed>خط مبنا</button>
   <button class="btn" data-a="evm">منحنی S</button>
   <button class="btn hide-s" data-a="tpl" data-ed>قالب ساختمانی</button>
+  <button class="btn" data-a="tk" id="tkB">فهرست فعالیت‌ها</button>
   <button class="btn" data-a="res">منابع</button>
   <button class="btn" data-a="alloc">تخصیص</button>
   <button class="btn" data-a="hist">سابقه</button>
@@ -197,7 +202,7 @@ async function flush(){
     $('#sts').textContent = 'ذخیره شد ✓ ' + new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
   }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد؛ دوباره تلاش می‌شود'; setTimeout(flush, 5000); }
 }
-const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0});
+const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0});
 
 /* ---------- تقویم کاری ---------- */
 let CAL = null;
@@ -282,7 +287,7 @@ function render(){
     const dis = ed ? '' : ' disabled', inp = (f, v, cls, extra) => '<input data-f="' + f + '" value="' + esc(v) + '"' + (cls ? ' class="' + cls + '"' : '') + (extra || '') + dis + '>';
     return '<tr data-id="' + a.id + '" class="' + (sum ? 'sum ' : '') + (cr ? 'crit ' : '') + (S.sel === a.id ? 'sel' : '') + '">'
       + '<td class="n">' + toFa(i + 1) + '</td><td class="c">' + toFa(W.get(a.id)) + '</td>'
-      + '<td class="nm"><span class="nmw" style="padding-inline-start:' + (x.lv * 16) + 'px"><button class="tg' + (sum ? '' : ' x') + '" data-fold="' + a.id + '">' + (S.fold.has(a.id) ? '◀' : '▼') + '</button>' + inp('n', a.n, 'nmx') + '</span></td>'
+      + '<td class="nm"><span class="nmw" style="padding-inline-start:' + (x.lv * 16) + 'px"><button class="tg' + (sum ? '' : ' x') + '" data-fold="' + a.id + '">' + (S.fold.has(a.id) ? '◀' : '▼') + '</button>' + (a.tk ? '<i class="lk' + (a.tkGone ? ' gone' : '') + '" title="' + (a.tkGone ? 'در فهرست فعالیت‌ها حذف شده' : 'پیوند با فهرست فعالیت‌های سامانه؛ پیشرفت از وضعیت آن می‌آید') + '">' + (a.tkGone ? '⨯' : '⛓') + '</i>' : '') + inp('n', a.n, 'nmx') + '</span></td>'
       + (sum ? '<td class="ro">' + toFa(r.du) + '</td>' : '<td class="d">' + inp('d', a.ms ? '۰' : toFa(a.d), '', ' inputmode="numeric"') + '</td>')
       + (sum ? '<td class="ro">' + d2fa(wDay(r.es)) + '</td>' : '<td class="dt">' + inp('s', d2fa(wDay(r.es)), '', ' title="تغییر = محدودیت «شروع نه زودتر از»"') + '</td>')
       + '<td class="ro">' + d2fa(wDay(Math.max(r.es, r.ef - 1))) + '</td>'
@@ -293,7 +298,7 @@ function render(){
       + (sum ? '<td class="bd ro">' + money(C.bOf(a)) + '</td>' : '<td class="bd">' + inp('b', a.b ? toFa(Math.round(a.b).toLocaleString('en-US')) : '', '', ' inputmode="numeric" dir="ltr"') + '</td>')
       + '<td class="ct">' + (sum ? '' : inp('rs', rsTxt(a), '', ' list="ctrDl" placeholder="—" title="مثلاً: پیمانکار اسکلت ×۸، پیمانکار برق ×۲"')) + '</td></tr>'; }).join('')
     : '<tr><td colspan="12"><div class="empty">هنوز فعالیتی نیست.<br>' + (ed ? '«+ فعالیت» بزنید یا یک برنامهٔ آماده بسازید.<br><button class="btn pri" data-a="tpl" style="margin-top:10px">ساختن از قالب ساختمانی</button>' : 'برنامه‌ای ثبت نشده است.') + '</div></td></tr>';
-  renderGantt(rows); renderKp();
+  renderGantt(rows); renderKp(); cpmPublish(); tkBadge();
   $('#ste').textContent = S.err;
   $('#stl').textContent = toFa(C.leaves.length) + ' فعالیت · پایان پروژه ' + d2fa(wDay(C.pEnd - 1)) + ' · ' + toFa(C.pEnd - C.s0) + ' روز کاری' + (S.ro ? ' · فقط خواندنی' : '');
 }
@@ -378,7 +383,7 @@ document.addEventListener('click', e => { const t = e.target;
   const z = t.closest('[data-z]'); if(z){ S.cfg.zoom = z.dataset.z; $$('[data-z]').forEach(b => b.classList.toggle('on', b === z)); queueSave('__cfg'); render(); return; }
   const f = t.closest('[data-fold]'); if(f){ const id = f.dataset.fold; S.fold.has(id) ? S.fold.delete(id) : S.fold.add(id); render(); return; }
   const b = t.closest('[data-a]'); if(b){ const k = b.dataset.a;
-    if(k === 'cfg') return cfgOpen(); if(k === 'bl') return blOpen(); if(k === 'evm') return evmOpen(); if(k === 'tpl') return tplOpen(); if(k === 'csv') return csvOut(); if(k === 'res') return resOpen(); if(k === 'alloc') return allocOpen(); if(k === 'hist') return histOpen(); if(k === 'io') return ioOpen(); if(k === 'print') return window.print();
+    if(k === 'cfg') return cfgOpen(); if(k === 'bl') return blOpen(); if(k === 'evm') return evmOpen(); if(k === 'tpl') return tplOpen(); if(k === 'csv') return csvOut(); if(k === 'res') return resOpen(); if(k === 'tk') return tkOpen(); if(k === 'alloc') return allocOpen(); if(k === 'hist') return histOpen(); if(k === 'io') return ioOpen(); if(k === 'print') return window.print();
     if(S.ro) return; act(k); return; }
   const tr = t.closest('#tb tr[data-id]'); if(tr) setSel(tr.dataset.id);
   const gr = t.closest('#gb [data-id], #gb [data-bar]'); if(gr) setSel(gr.dataset.id || gr.dataset.bar);
@@ -506,7 +511,7 @@ function resNames(){ const s = new Set(S.ctrs); Object.keys(resCfg()).forEach(n 
 function ctrDatalist(){ let dl = document.getElementById('ctrDl'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctrDl'; document.body.appendChild(dl); } dl.innerHTML = resNames().map(n => '<option value="' + esc(n) + '">').join(''); }
 
 /* ---------- سابقهٔ تغییرات (Audit) ---------- */
-const FLD = {n: 'نام', p: 'گروه', o: 'ترتیب', d: 'مدت', dep: 'پیش‌نیاز', pc: 'پیشرفت', sn: 'محدودیت شروع', as: 'شروع واقعی', af: 'پایان واقعی', b: 'بودجه', ac: 'هزینهٔ واقعی', rs: 'منابع', ms: 'نقطهٔ عطف', note: 'یادداشت'};
+const FLD = {n: 'نام', p: 'گروه', o: 'ترتیب', d: 'مدت', dep: 'پیش‌نیاز', pc: 'پیشرفت', sn: 'محدودیت شروع', as: 'شروع واقعی', af: 'پایان واقعی', b: 'بودجه', ac: 'هزینهٔ واقعی', rs: 'منابع', ms: 'نقطهٔ عطف', note: 'یادداشت', tk: 'پیوند فهرست'};
 const fmtV = (f, v) => { if(v == null || v === '' || (Array.isArray(v) && !v.length)) return '—'; if(f === 'sn' || f === 'as' || f === 'af') return d2fa(v); if(f === 'rs') return v.map(r => r.n + '×' + toFa(r.q)).join('، ');
   if(f === 'dep') return toFa(v.length) + ' مورد'; if(f === 'p'){ const x = S.acts.find(a => a.id === v); return x ? x.n : '—'; } if(f === 'pc') return toFa(v) + '٪'; if(f === 'b' || f === 'ac') return money(v); return toFa(String(v)).slice(0, 80); };
 function auditDiff(ids){ const rows = [];
@@ -701,6 +706,84 @@ function rowPass(a){ const C = S.calc, r = C.R.get(a.id); if(!r) return true;
 function lateOf(a, r){ if((+a.pc || 0) >= 100) return 0; const pl = plannedPct(r.es, r.ef, S.cfg.status); return Math.max(0, Math.round(pl - (+a.pc || 0))); }
 function blVar(a, r){ const bl = S.bls.find(b => b.id === S.cfg.blSel) || S.bls[S.bls.length - 1]; if(!bl || !bl.o.d[a.id] || !r) return null; const f = r.ef > r.es ? wDay(r.ef - 1) : wDay(r.es); return wIdx(f) - wIdx(bl.o.d[a.id][1]); }
 
+/* ====================== پیوند با «فهرست فعالیت‌ها»ی سامانه (جدول tasks) ======================
+   هر فعالیت برنامه با a.tk به یک ردیف فهرست وصل است.
+   از فهرست ← برنامه: عنوان، وضعیت (انجام‌شده/در حال اجرا)، تاریخ تکمیل → پیشرفت و تاریخ‌های واقعی (خودکار با هر باز شدن).
+   از برنامه ← فهرست: تاریخ شروع و موعد برنامه‌ریزی‌شده و پیش‌نیازها (با تأیید).
+   خلاصهٔ محاسبه (شروع، پایان، شناوری، بحرانی) برای هر فعالیت فهرست در «زمان‌بندی: محاسبه» تا کارت فعالیت در سامانه نشانش دهد. */
+const K_CPM = 'زمان‌بندی: محاسبه';
+function tkBadge(){ const b = document.getElementById('tkB'); if(!b || !S.tasks) return; const n = tkUnlinked().length; b.innerHTML = 'فهرست فعالیت‌ها' + (n ? ' <em class="bdg">' + toFa(n) + ' تازه</em>' : ' ✓'); }
+S.tasks = null;
+const tOne = v => v === true || /^(true|1|yes|y|بله|✓)$/i.test(String(v == null ? '' : v).trim());
+const tState = t => tOne(t.done) ? 'done' : tOne(t.doing) ? 'doing' : 'todo';
+const tkById = id => (S.tasks || []).find(t => String(t.id) === String(id));
+async function tasksLoad(){ try{ S.tasks = await api('tasks?select=*&limit=10000&order=id.asc') || []; }catch(e){ S.tasks = null; } return S.tasks; }
+/* فهرست ← برنامه (بی‌خطر، خودکار) */
+function tkPull(){ if(!S.tasks) return 0; let n = 0; const td = todayD();
+  S.acts.forEach(a => { if(!a.tk) return; const t = tkById(a.tk); if(!t){ if(!a.tkGone){ a.tkGone = 1; queueSave(a.id); n++; } return; }
+    const b = JSON.stringify([a.n, a.pc, a.as, a.af, a.tkGone]);
+    if(a.tkGone) delete a.tkGone;
+    if(t.title && String(t.title).trim() && String(t.title).trim() !== a.n) a.n = String(t.title).trim().slice(0, 200);
+    const st = tState(t), r = S.calc && S.calc.R.get(a.id), ps = r ? wDay(r.es) : td;
+    const ts = fa2d(t.start_date);
+    if(st === 'done'){ a.pc = 100; const dd = fa2d(t.done_date); a.af = dd != null ? dd : (a.af != null ? a.af : td); if(a.as == null) a.as = ts != null && ts <= a.af ? ts : Math.min(ps, a.af); if(a.af < a.as) a.as = a.af; }
+    else if(st === 'doing'){ if(!(a.pc > 0 && a.pc < 100)) a.pc = 50; if(a.as == null) a.as = ts != null && ts <= td ? ts : Math.min(ps, td); a.af = null; }
+    else { a.pc = 0; a.as = null; a.af = null; }
+    if(JSON.stringify([a.n, a.pc, a.as, a.af, a.tkGone]) !== b){ queueSave(a.id); n++; } });
+  return n; }
+function tkUnlinked(){ if(!S.tasks) return []; const L = new Set(S.acts.filter(a => a.tk).map(a => String(a.tk))); return S.tasks.filter(t => !L.has(String(t.id)) && String(t.title || '').trim()); }
+/* افزودن فعالیت‌های فهرست به برنامه، گروه‌بندی بر اساس رشته */
+function tkImport(list){ buildCal(); const made = new Map();
+  const grp = cat => { const k = cat || 'سایر'; let g = S.acts.find(a => !a.tk && a.cat === k && !a.p) || S.acts.find(a => !a.tk && !a.p && a.n === k);
+    if(!g){ g = {id: uid(), n: k, p: '', o: S.acts.filter(x => !x.p).length, d: 0, dep: [], pc: 0, cat: k}; S.acts.push(g); queueSave(g.id); } else if(!g.cat){ g.cat = k; queueSave(g.id); } return g; };
+  list.forEach(t => { const g = grp(String(t.category || '').trim()); const s0 = fa2d(t.start_date), e0 = fa2d(t.due_date);
+    const d = s0 != null && e0 != null && e0 >= s0 ? Math.max(1, wIdx(e0 + 1) - wIdx(s0)) : 5;
+    const a = {id: uid(), n: String(t.title).trim().slice(0, 200), p: g.id, o: S.acts.filter(x => x.p === g.id).length, d, dep: [], pc: 0, tk: String(t.id)};
+    if(s0 != null) a.sn = s0;
+    const side = String(t.side || '').trim(); if(side && S.ctrs.indexOf(side) !== -1) a.rs = [{n: side, q: 1}];
+    const own = [t.owner1, t.owner2].filter(Boolean).join('، '); const fl = String(t.floor || t.position || '').trim(); if(own || fl) a.note = [own ? 'مسئول: ' + own : '', fl ? 'محل: ' + fl : ''].filter(Boolean).join(' · ');
+    S.acts.push(a); made.set(String(t.id), a); });
+  /* پیش‌نیازهای خود فهرست */
+  const byTk = new Map(S.acts.filter(a => a.tk).map(a => [String(a.tk), a]));
+  list.forEach(t => { const a = made.get(String(t.id)); let D = t.deps; if(typeof D === 'string'){ try{ D = JSON.parse(D); }catch(e){ D = []; } }
+    (Array.isArray(D) ? D : []).forEach(x => { const p = byTk.get(String(x.id)); if(p && p !== a) a.dep.push({id: p.id, t: x.t || 'FS', l: +x.lag || 0}); }); });
+  const mn = Math.min(...Array.from(made.values()).map(a => a.sn == null ? Infinity : a.sn)); if(isFinite(mn) && mn < S.cfg.start){ S.cfg.start = mn; buildCal(); }
+  made.forEach(a => queueSave(a.id)); S.cfgLog = 'از فهرست فعالیت‌ها: ' + made.size + ' فعالیت افزوده شد'; queueSave('__cfg'); return made.size; }
+/* برنامه ← فهرست: تاریخ شروع و موعد و پیش‌نیازها */
+function tkPushPlan(){ compute(); const C = S.calc, out = [];
+  S.acts.forEach(a => { if(!a.tk || C.isSum(a)) return; const t = tkById(a.tk), r = C.R.get(a.id); if(!t || !r) return;
+    const sd = d2fa(wDay(r.es)), fd = d2fa(wDay(Math.max(r.es, r.ef - 1)));
+    const deps = (a.dep || []).map(d => { const p = S.acts.find(x => x.id === d.id); return p && p.tk ? {id: String(p.tk), t: d.t || 'FS', lag: +d.l || 0} : null; }).filter(Boolean);
+    let cur = t.deps; if(typeof cur === 'string'){ try{ cur = JSON.parse(cur); }catch(e){ cur = []; } }
+    if(tState(t) === 'done') return;   /* کار تمام‌شده دست نمی‌خورد؛ «تاریخ ابلاغ» هم همیشه همان می‌ماند */
+    const ch = {}; void sd; if(toEn(t.due_date || '') !== toEn(fd)) ch.due_date = fd;
+    if(JSON.stringify(cur || []) !== JSON.stringify(deps) && ('deps' in t)) ch.deps = deps;
+    if(Object.keys(ch).length) out.push({t, ch, a}); });
+  return out; }
+async function tkSendPlan(L){ let ok = 0, bad = 0;
+  for(const x of L){ try{ await api('tasks?id=eq.' + encodeURIComponent(x.t.id), {method: 'PATCH', body: x.ch}); Object.assign(x.t, x.ch); ok++; }catch(e){ bad++; } }
+  auditPut([auditNote('تاریخ‌های برنامه به فهرست فعالیت‌ها رفت: ' + ok + ' فعالیت' + (bad ? '، ' + bad + ' ناموفق' : ''))]); return {ok, bad}; }
+async function tkOpen(){
+  const bg = dlg('پیوند با فهرست فعالیت‌ها', '<div id="tkL" class="empty">در حال خواندن فهرست فعالیت‌های سامانه…</div>'); bg.querySelector('.dlg').style.width = 'min(680px,100%)';
+  await tasksLoad(); const L = bg.querySelector('#tkL');
+  if(!S.tasks){ L.textContent = 'فهرست فعالیت‌ها خوانده نشد.'; return; }
+  const paint = () => { compute(); const un = tkUnlinked(), lk = S.acts.filter(a => a.tk && !S.calc.isSum(a)), gone = lk.filter(a => a.tkGone).length, push = tkPushPlan();
+    const cnt = k => S.tasks.filter(t => tState(t) === k && lk.some(a => String(a.tk) === String(t.id))).length;
+    L.className = ''; L.innerHTML = '<div class="tk-k"><div><u>در فهرست سامانه</u><b>' + toFa(S.tasks.length) + '</b></div><div><u>پیوند خورده</u><b>' + toFa(lk.length) + '</b><small>' + toFa(cnt('done')) + ' انجام‌شده · ' + toFa(cnt('doing')) + ' در حال اجرا</small></div><div><u>بیرون از برنامه</u><b class="' + (un.length ? 'w' : '') + '">' + toFa(un.length) + '</b></div>' + (gone ? '<div><u>حذف‌شده از فهرست</u><b class="w">' + toFa(gone) + '</b></div>' : '') + '</div>'
+      + '<div class="io"><b>از فهرست به برنامه</b><small>وضعیت هر فعالیت فهرست (در حال اجرا، انجام‌شده و تاریخ تکمیل) و عنوانش با هر باز شدن برنامه خودکار به پیشرفت و تاریخ‌های واقعی می‌آید.</small>'
+        + (un.length ? '<div class="tk-l">' + un.slice(0, 40).map(t => '<label><input type="checkbox" data-tki="' + esc(t.id) + '" checked><span><b>' + esc(t.title) + '</b><small>' + esc([t.category, t.side, t.floor ? 'طبقه ' + toFa(t.floor) : '', t.due_date ? 'موعد ' + toFa(t.due_date) : ''].filter(Boolean).join(' · ')) + '</small></span></label>').join('') + (un.length > 40 ? '<small>و ' + toFa(un.length - 40) + ' فعالیت دیگر</small>' : '') + '</div>'
+          + (S.ro ? '' : '<button class="btn pri" data-tkimp>افزودن ' + toFa(un.length) + ' فعالیت به برنامه (گروه‌بندی بر اساس رشته)</button>') : '<small>همهٔ فعالیت‌های فهرست در برنامه هستند ✓</small>') + '</div>'
+      + '<div class="io"><b>از برنامه به فهرست</b><small>«موعد اتمام» هر فعالیت فهرست با پایان برنامه‌ریزی‌شده (حاصل مسیر بحرانی) و پیش‌نیازهایش با برنامه یکی می‌شود تا مسئولان، یادآورها و برنامهٔ سه‌هفته‌ای سامانه با همین برنامه کار کنند. فعالیت‌های انجام‌شده و «تاریخ ابلاغ» دست نمی‌خورند.</small>'
+        + (push.length ? '<small><b>' + toFa(push.length) + '</b> فعالیت موعد یا پیش‌نیاز متفاوت دارد.</small>' + (S.ro ? '' : '<button class="btn pri" data-tkpush>ارسال موعدها به فهرست فعالیت‌ها</button>') : '<small>تاریخ‌های فهرست با برنامه یکی است ✓</small>') + '</div>';
+    const im = L.querySelector('[data-tkimp]'); if(im) im.onclick = () => { const sel = new Set(Array.from(L.querySelectorAll('[data-tki]:checked')).map(i => i.dataset.tki)); const list = un.filter((t, i) => i >= 40 || sel.has(String(t.id))); const n = tkImport(list); render(); paint(); alert(toFa(n) + ' فعالیت به برنامه افزوده شد.'); };
+    const pu = L.querySelector('[data-tkpush]'); if(pu) pu.onclick = async () => { if(!confirm('موعد اتمام و پیش‌نیازهای ' + toFa(push.length) + ' فعالیت در فهرست سامانه با برنامه یکی شود؟')) return; pu.disabled = true; const r = await tkSendPlan(push); alert(toFa(r.ok) + ' فعالیت به‌روز شد' + (r.bad ? '؛ ' + toFa(r.bad) + ' مورد ناموفق (اجازهٔ ویرایش؟)' : '.')); paint(); }; };
+  paint(); }
+/* خلاصهٔ محاسبه برای کارت فعالیت در سامانه */
+let cpmLast = '', cpmT = 0;
+function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(() => { const C = S.calc; if(!C) return; const m = {};
+  S.acts.forEach(a => { if(!a.tk || C.isSum(a)) return; const r = C.R.get(a.id); if(!r) return; m[a.tk] = [toEn(d2fa(wDay(r.es))), toEn(d2fa(wDay(Math.max(r.es, r.ef - 1)))), r.tf, r.tf <= 0 ? 1 : 0, Math.round(+a.pc || 0), a.id]; });
+  const js = JSON.stringify(m); if(js === cpmLast) return; cpmLast = js; bigPut(K_CPM, 'cpm', {at: Date.now(), end: toEn(d2fa(wDay(C.pEnd - 1))), m}).catch(() => { cpmLast = ''; }); }, 2500); }
+
 /* ---------- شروع ---------- */
 (async () => {
   $('#sts').textContent = 'در حال خواندن…';
@@ -721,6 +804,8 @@ function blVar(a, r){ const bl = S.bls.find(b => b.id === S.cfg.blSel) || S.bls[
   $$('[data-ed]').forEach(b => { if(S.ro) b.disabled = true; });
   $$('[data-z]').forEach(b => b.classList.toggle('on', b.dataset.z === S.cfg.zoom));
   ctrDatalist(); render();
+  tasksLoad().then(T => { if(!T) return; compute(); const n = S.ro ? 0 : tkPull(); if(n) S.cfgLog = 'به‌روزرسانی خودکار از فهرست فعالیت‌ها: ' + n + ' فعالیت'; render(); });
+  try{ const f = new URLSearchParams(location.search).get('focus'); if(f){ const a = S.acts.find(x => String(x.tk) === f || x.id === f); if(a){ let p = a.p; while(p){ S.fold.delete(p); p = (S.acts.find(x => x.id === p) || {}).p; } S.sel = a.id; render(); setTimeout(() => { const tr = document.querySelector('#tb tr[data-id="' + a.id + '"]'); if(tr) tr.scrollIntoView({block: 'center'}); }, 80); } } }catch(e){}
   setTimeout(() => { const gw = $('#gw'); gw.scrollLeft = gw.scrollWidth; }, 60);
   let qt = 0; $('#fq').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200); });
 })();
