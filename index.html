@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106101714">
+<meta name="pm-build" content="20261106102053">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28640,6 +28640,20 @@
     .dz2-top{flex-wrap:wrap;} .dz2-dt{order:9;flex-basis:100%;font-size:11px;margin-top:-2px;}
     .dz2-b{padding:0 7px !important;}
     .dz2-f{max-width:100%;}
+  }
+
+  /* استودیو (دسکتاپ): نام بخش فقط یک بار — در مسیر سربرگ («میز کار › ایمنی…»)؛ «میز کار» در مسیر، دکمهٔ بازگشت است.
+     سرتیتر بزرگ و دکمهٔ بازگشت داخل صفحه (که همان را تکرار می‌کرد) پنهان؛ فقط دکمه‌های کار (اکسل، + ثبت) می‌مانند */
+  @media(min-width:1180px){
+    :is(html,#z0) :is(body,#z1) #pageTitle.has-crumb .pt-tx{pointer-events:auto;cursor:pointer;border-radius:8px;transition:color var(--d1) ease, background-color var(--d1) ease;padding:2px 6px;margin:-2px -6px;}
+    :is(html,#z0) :is(body,#z1) #pageTitle.has-crumb .pt-tx:hover{color:var(--sky);background:color-mix(in srgb, var(--sky) 8%, transparent);}
+    :is(html,#z0) :is(body,#z1) #pageTitle.has-crumb .pt-tx::before{content:'‹';display:none;}
+    :is(html,#z0) :is(body,#z1) #panelTasks.ws-mod > #wsBar > .ws-back, :is(html,#z0) :is(body,#z1) #panelTasks.ws-mod > #wsBar .ws-bt{display:none !important;}
+    :is(html,#z0) :is(body,#z1) #panelTasks.ws-mod > #wsBar{justify-content:flex-end;min-height:0 !important;padding:0 !important;margin:0 0 -4px !important;}
+    :is(html,#z0) :is(body,#z1) #panelTasks.ws-mod > #wsBar:not(:has(button:not(.ws-back))){display:none !important;}
+    :is(html,#z0) :is(body,#z1) #admBar > .ws-back, :is(html,#z0) :is(body,#z1) #admBar > .ws-bt{display:none !important;}
+    :is(html,#z0) :is(body,#z1) #admBar{justify-content:flex-end;min-height:0 !important;padding:0 !important;background:none !important;border:0 !important;box-shadow:none !important;}
+    :is(html,#z0) :is(body,#z1) #admBar:not(:has(.ws-badd)){display:none !important;}
   }
 </style>
 <script>
@@ -68412,6 +68426,15 @@
   });
   /* زدن زبانهٔ اسناد: از زبانهٔ دیگر همان حالت قبلی؛ زدن دوباره روی همین زبانه: فهرست */
   window.admTap = () => { admHome.tap = true; };
+  /* دسکتاپ: بخش اول مسیر سربرگ («میز کار ›»، «اسناد ›») همان دکمهٔ بازگشت است */
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('#pageTitle.has-crumb .pt-tx, #pageTitle.has-crumb .pt-ic'); if(!t) return;
+    const cur = (document.getElementById('tabBar') || {dataset:{}}).dataset.cur;
+    if(cur === 'tasks'){ try{ window.wsSet(''); }catch(err){} }
+    else if(cur === 'admin'){ try{ admHomeSet(true); }catch(err){} }
+    else return;
+    try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(err){}
+  });
   window.admOnTab = changed => { const t = admHome.tap; admHome.tap = false; if(t && !changed) admHomeSet(true); };
   setTimeout(() => { try{ admHomeSet(admHome.on); }catch(e){} }, 0);
   /* آخرین شمارهٔ هر دسته: جدیدترین سند بر اساس تاریخ و بعد شماره */
