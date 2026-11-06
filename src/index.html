@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106145235">
+<meta name="pm-build" content="20261106145744">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28842,6 +28842,22 @@
   .dh-ch li{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:12px;} .dh-ch li u{text-decoration:none;font-weight:700;color:var(--muted);min-width:90px;}
   .dh-ch .dh-o{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--muted) 50%, transparent);} .dh-ch .dh-n{color:var(--ink);font-weight:600;} .dh-ch b{color:var(--muted);font-weight:400;}
   .dh-ch i{font-style:normal;color:var(--muted);} .dh-ch .dh-note{color:var(--muted);}
+
+  .apv{display:flex;flex-direction:column;gap:14px;}
+  .apv-sum{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);}
+  .apv-sum b{font-size:14px;font-weight:800;} .apv-sum small{font-size:11.5px;color:var(--muted);}
+  .apv-sum.due{border-color:color-mix(in srgb, var(--alert, #c0392b) 30%, var(--line));background:color-mix(in srgb, var(--alert, #c0392b) 4%, var(--surface));}
+  .apv-sum.ok{border-color:color-mix(in srgb, var(--ok, #2f8a5f) 30%, var(--line));}
+  .apv-gh{display:flex;align-items:center;gap:8px;margin:0 2px 8px;} .apv-gh b{font-size:13.5px;font-weight:800;flex:1 1 auto;}
+  .apv-gi{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--field);color:var(--ink);} .apv-gi svg{width:16px;height:16px;}
+  .apv-gh em{font-style:normal;min-width:22px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--alert, #c0392b);color:#fff;}
+  .apv-l{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);}
+  .apv-r{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;}
+  .apv-r + .apv-r{border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
+  .apv-r:hover{background:var(--field);}
+  .apv-r > span{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;} .apv-r b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .apv-r small{font-size:11.5px;color:var(--muted);}
+  .apv-r.hot small{color:var(--alert, #c0392b);font-weight:700;}
+  .apv-r > i{font-style:normal;flex:none;font-size:12px;font-weight:800;color:var(--sky);}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -48525,6 +48541,7 @@
     {k:'org', t:'چارت سازمانی', s:'ساخت و ویرایش چارت، جایگاه افراد و تأیید درخواست‌ها', c:'#2f6f9f', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.5"/><rect x="3" y="16" width="6" height="5" rx="1.5"/><rect x="15" y="16" width="6" height="5" rx="1.5"/><path d="M12 8v4M6 16v-2h12v2"/></svg>',
       ok:() => !!(window.ogCanEdit && window.ogCanEdit()), go:() => { try{ window.ogDeskOpen(); }catch(e){} }},
     {k:'qt', t:'متره و برآورد', s:'داده پایه دیوارها، کارکرد صورت وضعیت و مصالح', c:'#8a5a2f', area:'qtArea', ic:() => HM_I.qt, ok:() => !!(window.qtVisible && window.qtVisible())},
+    {k:'apv', t:'کارتابل تأیید', s:'هر چیزی که منتظر تأیید شماست: اسناد، جریمه، مرخصی، مجوز کار، ورود مصالح', c:'#c0392b', ic:() => WS_GI('<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>'), ok:() => true, go:() => wsFire('apvopen')},
     /* ابزارهای گزارش و تحلیل (پیش‌تر فقط میان‌برهای خانه بودند) */
     {k:'rc', t:'مرکز گزارش و خروجی', s:'بدهکاری‌ها، گزارش جامع، جریان نقدی و هر گزارش به PDF یا اکسل', c:'#c0392b', ic:() => HM_I.money, ok:() => !!(window.rcCanAny && rcCanAny()), go:() => wsFire('rcopen')},
     {k:'la', t:'برنامهٔ سه‌هفته‌ای', s:'کارهای ۲۱ روز آینده و آمادگی هرکدام: نقشه، مانع و نیرو', c:'#1f7a6a', ic:() => HM_I.task, ok:() => { try{ return can('tab.tasks'); }catch(e){ return true; } }, go:() => wsFire('laopen')},
@@ -48557,7 +48574,7 @@
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
     {t:'داده و تطبیق', d:'نام‌ها، محل و طبقه، تخصص‌ها و جدول‌ها', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود و زنجیرهٔ تأیید', c:'#c4553f', ks:['sec','up','chain'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
-  const WS_GOF = {tasks:'fld', crew:'fld', wrk:'fld', la:'fld', mtg:'fld', qc:'qhs', hse:'qhs', ptw:'qhs', con:'qhs', prc:'res', mrc:'res', wh:'res', mc:'res', qt:'fin', co:'fin', ib:'fin', rc:'ana', kpi:'ana', fc:'ana', wkr:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj', cad:'prj', cut:'prj', gl:'prj'};
+  const WS_GOF = {apv:'fld', tasks:'fld', crew:'fld', wrk:'fld', la:'fld', mtg:'fld', qc:'qhs', hse:'qhs', ptw:'qhs', con:'qhs', prc:'res', mrc:'res', wh:'res', mc:'res', qt:'fin', co:'fin', ib:'fin', rc:'ana', kpi:'ana', fc:'ana', wkr:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj', cad:'prj', cut:'prj', gl:'prj'};
   const wsMod = k => WS_MODS.find(x => x.k === k);
   const wsOk = x => { try{ return !!x.ok(); }catch(e){ return false; } };
   const wsAll = () => WS_MODS.filter(wsOk);
@@ -48579,6 +48596,7 @@
   function wsHint(k){
     const me0 = nameKey(activeUserName());
     try{
+      if(k === 'apv'){ const n = window.apvCount ? window.apvCount() : 0; return n ? {t: toFa(n) + ' مورد منتظر تأیید شما', n, hot:true} : {t: 'چیزی منتظر تأیید شما نیست', ok:true}; }
       if(k === 'tasks'){ const e = document.getElementById('tkwTasksSub'); const t = e ? e.textContent.trim() : ''; return /[0-9۰-۹]/.test(t) ? {t} : null; }
       if(k === 'crew'){
         const dF = normDate(dateInput.value) || yesterdayShamsi(), D = homeDays[dF]; if(!D) return null;
@@ -81523,6 +81541,47 @@
       try{ switchTab('tasks'); wsSet('wh'); await whLoad(); wh.draft = {kind: 'in', date: x.o.date || todayShamsi(), lines: [{d: x.o.item, q: +toEn(String(x.o.q || 0)) || 0}], use: {}, src: 'free', from: x.o.sup || '', note: 'از کنترل ورود ' + (x.o.no || '') + (x.o.bill ? ' · بارنامه ' + x.o.bill : '')}; wh.tab = 'in'; await whRender();
         x.o.whNo = 'pending'; }catch(er){ showDialog('err', 'انبار باز نشد', friendlyErr(er)); } return; }
   }
+  /* ====== کارتابل تأیید: هر چیزی که منتظر تأیید من است، یک‌جا ======
+     بررسی داخلی اسناد (صورت وضعیت، قرارداد، نامه)، جریمه‌ها، مرخصی‌ها، مجوز کار (HSE)، ورود مصالح (QC)،
+     درخواست‌های جایگاه چارت. هر ردیف همان جایی را باز می‌کند که تأیید/رد آن‌جا انجام می‌شود. */
+  function apvItems(){
+    const me = activeUserName(), mk = nameKey(me), G = [];
+    const add = (k, t, ic, rows) => { if(rows.length) G.push({k, t, ic, rows}); };
+    try{ const R = [];
+      (adminAll || []).forEach(a => { if(['statement', 'contract', 'letter'].indexOf(a.kind) === -1) return; const r = a.row;
+        if(String(pick(r,AD.review) || '') !== 'بررسی داخلی') return;
+        const rev = String(pick(r,AD.rvWho) || '').split('|').map(x => x.trim()).filter(Boolean); if(!rev.some(n => nameKey(n) === mk)) return;
+        const dn = reviewersDoneOf(r); if(dn instanceof Set && dn.has(mk)) return;
+        const no = pick(r, AD[ADM_NO_KEYS[a.kind]] || []) || '', party = admParty(a.kind, r) || '';
+        let dl = null; try{ dl = daysSince(rvStartOf(r, 'rvIS')); }catch(e){}
+        R.push({t: (KIND_LABEL[a.kind] || '') + (no ? ' ' + toFa(no) : '') + (party ? ' — ' + party : ''), s: dl != null && dl > 0 ? faDur(dl) + ' منتظر' : 'تازه', hot: dl != null && dl > 7, go: () => gotoAdminItem(a.kind, pick(r,AD.id)), d: dl || 0}); });
+      R.sort((x, y) => y.d - x.d); add('doc', 'بررسی داخلی اسناد', (typeof KIND_ICON !== 'undefined' && KIND_ICON.statement) || '', R); }catch(e){}
+    try{ if(wrkFineApprover()){ const F = (wrkPending || []).filter(isFineAny);
+      add('fine', 'جریمه‌ها', TD_I.warn, F.map(c => ({t: String((c.payload && (c.payload.name || c.payload.who || c.payload.title)) || c.title || c.who || 'جریمه'), s: String(c.date || c.date_fa || ''), go: () => h3Open('kart', 'fine', 'جریمه‌ها')}))); } }catch(e){}
+    try{ add('leave', 'مرخصی', LV_I.plane, leaveWaiting().map(o => ({t: String(o.who || ''), s: [o.from, o.to].filter(Boolean).map(toFa).join(' تا '), go: () => { try{ lvState.view = 'wait'; }catch(e){} h3Open('kart', 'leave', 'مرخصی'); }}))); }catch(e){}
+    try{ if(regCanHse()) add('ptw', 'مجوز کار', REG_I.ptw, regList('ptw').filter(x => x.o.st === 'req').map(x => ({t: [x.o.type, x.o.ctr].filter(Boolean).join(' · ') || 'مجوز کار', s: x.o.fl ? floorLabel(x.o.fl) : '', go: () => { regOpen('ptw').then(() => { RG.st = 'req'; regPaint(); }); }}))); }catch(e){}
+    try{ if(regCanQc()) add('mrc', 'کنترل ورود مصالح', REG_I.mrc, regList('mrc').filter(x => x.o.st === 'in' || x.o.st === 'cond').map(x => ({t: [x.o.item, x.o.q ? toFa(x.o.q) + ' ' + (x.o.u || '') : ''].filter(Boolean).join(' · ') || 'محموله', s: x.o.sup || '', go: () => { regOpen('mrc').then(() => { RG.st = x.o.st; regPaint(); }); }}))); }catch(e){}
+    try{ if(typeof ogCanEdit === 'function' && ogCanEdit() && og.req && og.req.size) add('org', 'جایگاه در چارت', OG_PL_IC, Array.from(og.req.values()).map(q => ({t: String(q.n || q.name || ''), s: 'درخواست جایگاه', go: () => ogDeskOpen()}))); }catch(e){}
+    try{ const h = wsHint('wh'); if(h && h.hot) add('wh', 'تحویل کالا از انبار', HM_I.wh, [{t: h.t, s: '', go: () => { switchTab('tasks'); wsSet('wh'); }}]); }catch(e){}
+    return G;
+  }
+  window.apvCount = () => { try{ return apvItems().reduce((n, g) => n + g.rows.length, 0); }catch(e){ return 0; } };
+  let apvCache = [];
+  async function apvOpen(){
+    const m = fxModal('apvM', 'کارتابل تأیید', 'هر چیزی که منتظر تأیید شماست، یک‌جا', '<div class="fx-wait">در حال دریافت…</div>', true);
+    try{ const L = []; if(regCanHse()) L.push(fxList(REGS.ptw.kind, true)); if(regCanQc()) L.push(fxList(REGS.mrc.kind, true)); await Promise.all(L); }catch(e){}
+    const G = apvItems(); apvCache = [];
+    const B = m.querySelector('.fx-bd'); const n = G.reduce((a, g) => a + g.rows.length, 0);
+    B.innerHTML = '<div class="apv">'
+      + '<div class="apv-sum ' + (n ? 'due' : 'ok') + '"><b>' + (n ? toFa(n) + ' مورد منتظر تأیید شما' : 'چیزی منتظر تأیید شما نیست ✓') + '</b>' + (n ? '<small>' + G.map(g => g.t + ' ' + toFa(g.rows.length)).join(' · ') + '</small>' : '') + '</div>'
+      + G.map(g => '<section class="apv-g"><div class="apv-gh"><span class="apv-gi">' + (g.ic || '') + '</span><b>' + esc(g.t) + '</b><em>' + toFa(g.rows.length) + '</em></div><div class="apv-l">'
+        + g.rows.map(r => { const i = apvCache.push(r.go) - 1; return '<button type="button" class="apv-r' + (r.hot ? ' hot' : '') + '" data-apvgo="' + i + '"><span><b>' + esc(r.t) + '</b>' + (r.s ? '<small>' + esc(r.s) + '</small>' : '') + '</span><i>بررسی ›</i></button>'; }).join('')
+        + '</div></section>').join('') + '</div>';
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-apvgo]'); if(!b) return; e.preventDefault(); e.stopPropagation();
+    const f = apvCache[+b.dataset.apvgo]; const m = document.getElementById('apvM'); if(m) m.hidden = true; try{ f && f(); }catch(err){} }, true);
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-apvopen]'); if(!b) return; e.preventDefault(); e.stopPropagation(); apvOpen(); }, true);
+  window.apvOpen = apvOpen;
   async function regOpen(k){
     const R = REGS[k]; if(!R) return; RG.k = k; RG.q = ''; RG.st = ''; RG.fl = ''; RG.open = ''; RG.draft = null;
     const m = fxModal('regM', R.t, esc(R.sub), '<div class="fx-wait">در حال دریافت…</div>', true); m.classList.add('rg-' + k);
