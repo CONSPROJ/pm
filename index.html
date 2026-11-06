@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106061958">
+<meta name="pm-build" content="20261106062814">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28448,6 +28448,33 @@
   .wkr-k em{font-style:normal;color:#c0392b;font-size:.8em;}
 
   .sp-find{margin:0 0 12px;} .sp-find .la-q{max-width:520px;}
+
+  /* ====== اسکلت بارگذاری (هم‌شکل محتوا) ====== */
+  :is(html,#z0) :is(div.empty, div.fx-wait).is-loading.has-skl{display:block !important;padding:4px 0 !important;font-size:0 !important;line-height:0 !important;color:transparent !important;border:0 !important;background:none !important;text-align:start !important;min-height:0 !important;}
+  :is(html,#z0) :is(div.empty, div.fx-wait).is-loading.has-skl::before, :is(html,#z0) :is(div.empty, div.fx-wait).is-loading.has-skl::after{display:none !important;content:none !important;}
+  .skl{--sk:color-mix(in srgb, var(--ink) 7%, var(--surface));--sk2:color-mix(in srgb, var(--ink) 4.5%, var(--surface));position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.4;isolation:isolate;}
+  [data-theme="dark"] .skl{--sk:color-mix(in srgb, #fff 9%, var(--surface));--sk2:color-mix(in srgb, #fff 5%, var(--surface));}
+  .skl b{display:block;height:11px;border-radius:7px;background:var(--sk);} .skl b.s{height:8px;background:var(--sk2);margin-top:7px;} .skl b.l{height:18px;margin-top:8px;}
+  .skl i{display:block;flex:none;background:var(--sk);}
+  .skl i.c{width:34px;height:34px;border-radius:11px;} .skl i.av{width:52px;height:52px;border-radius:50%;} .skl i.p{width:58px;height:22px;border-radius:999px;background:var(--sk2);margin-inline-start:auto;}
+  .skl span{flex:1 1 auto;min-width:0;}
+  .sk-r{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-radius:14px;background:var(--surface);}
+  .sk-rows{display:flex;flex-direction:column;gap:8px;}
+  .sk-ks{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:10px;}
+  .sk-k{padding:14px;border:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-radius:16px;background:var(--surface);}
+  .sk-ch{padding:16px;border:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-radius:16px;background:var(--surface);height:170px;}
+  .sk-ax{height:100%;display:flex;align-items:flex-end;gap:10px;} .sk-ax i{flex:1 1 0;border-radius:8px 8px 3px 3px;background:var(--sk2);}
+  .sk-hero{display:flex;align-items:center;gap:14px;padding:18px;border:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-radius:20px;background:var(--surface);}
+  .skl-cards{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:10px;}
+  .sk-cd{padding:14px;border:1px solid color-mix(in srgb, var(--line) 75%, transparent);border-radius:16px;background:var(--surface);}
+  .sk-ct{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  /* درخشش: یک لایهٔ روی اسکلت که فقط جابه‌جا می‌شود (transform، سبک برای گوشی) */
+  .skl::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;transform:translateX(100%);background:linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--surface) 70%, transparent) 50%, transparent 80%);animation:sklMv 1.5s cubic-bezier(.4,0,.2,1) infinite;}
+  @keyframes sklMv{to{transform:translateX(-100%);}}
+  .skl{animation:sklIn .35s ease both;} @keyframes sklIn{from{opacity:0;}to{opacity:1;}}
+  @media(max-width:620px){ .sk-ks{grid-template-columns:repeat(2, minmax(0,1fr));} .skl-cards{grid-template-columns:1fr;} .skl-rows .sk-r:nth-child(n+5){display:none;} }
+  @media (prefers-reduced-motion: reduce){ .skl::after{animation:none;display:none;} }
+  html.rm .skl::after{animation:none;display:none;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -57544,7 +57571,18 @@
     /* بعد از اجرای project.sql، کلید یکتای جدول‌ها ستون پروژه را هم دارد */
     if(pjColOn() && /[?&]on_conflict=/.test(path) && !/^(people|feed_reads)\b/.test(path) && !/on_conflict=[^&]*project_id/.test(path))
       path = path.replace(/([?&]on_conflict=)([^&]*)/, (m, a, b) => a + b + (b ? '%2C' : '') + 'project_id');
-    const res = await fetch(SUPA_URL + '/rest/v1/' + path, {
+    /* خواندن‌های هم‌زمانِ یکسان یک درخواست می‌شوند (هر کدام نسخهٔ خودش را می‌گیرد)؛ و خواندن بیش از ۳۰ ثانیه رها می‌شود */
+    const isGet = !o.method || o.method === 'GET';
+    const dk = isGet ? path + '|' + pjHdrId() + '|' + (o.prefer || '') + '|' + JSON.stringify(o.headers || {}) : '';
+    if(!isGet) SUPA_RC.clear();
+    if(isGet && !o.__noDedupe){ const c = SUPA_RC.get(dk); if(c && Date.now() - c.t < 3000) return c.v ? JSON.parse(c.v) : null; }
+    if(isGet && !o.__noDedupe && SUPA_INFL.has(dk)){ const t0 = await SUPA_INFL.get(dk); return t0 ? JSON.parse(t0) : null; }
+    if(isGet && !o.__noDedupe){ const pr = supaFetchRaw(path, Object.assign({}, o, {__noDedupe: true, __text: true})); SUPA_INFL.set(dk, pr); try{ const t1 = await pr; SUPA_RC.set(dk, {t: Date.now(), v: t1}); if(SUPA_RC.size > 80) SUPA_RC.delete(SUPA_RC.keys().next().value); return t1 ? JSON.parse(t1) : null; }finally{ SUPA_INFL.delete(dk); } }
+    const ac = (isGet && typeof AbortController === 'function') ? new AbortController() : null;
+    const tmo = ac ? setTimeout(() => { try{ ac.abort(); }catch(e){} }, 30000) : 0;
+    let res;
+    try{ res = await fetch(SUPA_URL + '/rest/v1/' + path, {
+      signal: ac ? ac.signal : undefined,
       method: o.method || 'GET',
       headers: Object.assign({
         'apikey': SUPA_KEY,
@@ -57554,7 +57592,9 @@
         'x-pm-project': pjHdrId()
       }, (window.pmTok && window.pmTok()) ? {'x-pm-token': window.pmTok()} : {}, o.headers || {}),
       body: o.body ? JSON.stringify(o.body) : undefined
-    });
+    }); }
+    catch(e){ if(e && e.name === 'AbortError'){ const er = new Error('پاسخ پایگاه‌داده بیش از ۳۰ ثانیه طول کشید؛ اتصال را بررسی کنید و دوباره امتحان کنید.'); er.status = 0; er.raw = true; throw er; } throw e; }
+    finally{ clearTimeout(tmo); }
     if(!res.ok){
       /* متن پاسخ را هم نگه می‌داریم: PostgREST نام ستونِ نبوده را همان‌جا
          می‌نویسد و بدون آن نمی‌شود خطا را خودکار ترمیم کرد. */
@@ -57577,8 +57617,10 @@
       throw er;
     }
     const txt = await res.text();
+    if(o.__text) return txt;
     return txt ? JSON.parse(txt) : null;
   }
+  var SUPA_INFL = new Map(), SUPA_RC = new Map();   // درخواست‌های در جریان، و حافظهٔ ۳ ثانیه‌ای خواندن‌های یکسان (با هر نوشتن پاک می‌شود)
 
   /* ====== ویرایشگر پایگاه داده (فقط ادمین) ======
      جدول‌ها را مستقیم از Supabase می‌خواند و ویرایش می‌کند:
@@ -65062,7 +65104,28 @@
   /* عکس: یک نسخهٔ کوچک (حدود ۲۰ کیلوبایت) هم کنارش ذخیره می‌شود تا فهرست‌ها و
      گزارش‌ها فقط همان را بارگیری کنند و عکس اصلی فقط با باز کردن بیاید.
      لینک: s3:<کلید>,<کلید کوچک>#نام */
+  /* عکس‌های بزرگ گوشی (۳ تا ۸ مگابایت) پیش از بارگذاری کوچک می‌شوند: حداکثر ۲۵۶۰ پیکسل،
+     WebP اگر مرورگر بسازد (وگرنه JPEG)؛ فقط اگر واقعاً کوچک‌تر شد جایگزین می‌شود. گیف و SVG دست نمی‌خورند. */
+  async function imgSlim(file){
+    try{
+      if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type || '') || typeof createImageBitmap !== 'function') return file;
+      let bmp; try{ bmp = await createImageBitmap(file, {imageOrientation: 'from-image'}); }catch(e){ bmp = await createImageBitmap(file); }
+      const MX = 2560, sc = Math.min(1, MX / Math.max(bmp.width, bmp.height));
+      if(sc === 1 && file.size < 700 * 1024){ try{ bmp.close(); }catch(e){} return file; }
+      const w = Math.round(bmp.width * sc), h = Math.round(bmp.height * sc);
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+      if(!/png/i.test(file.type)){ g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); }
+      g.drawImage(bmp, 0, 0, w, h); try{ bmp.close(); }catch(e){}
+      let blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.82));
+      if(!blob || blob.type !== 'image/webp') blob = await new Promise(r => c.toBlob(r, /png/i.test(file.type) ? 'image/png' : 'image/jpeg', 0.85));
+      if(!blob || blob.size >= file.size) return file;
+      const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg';
+      return new File([blob], String(file.name || 'photo').replace(/\.[^.]+$/, '') + '.' + ext, {type: blob.type, lastModified: Date.now()});
+    }catch(e){ return file; }
+  }
+  window.imgSlim = imgSlim;
   async function uploadS3Any(file, onProgress, kind){
+    if(file && /^image\//.test(file.type || '')) file = await imgSlim(file);
     let link = await s3UpMain(file, onProgress, kind);
     const key = link.slice(link.indexOf(':') + 1, link.indexOf('#'));
     if(/^image\//.test(file.type || '')){
@@ -65086,8 +65149,9 @@
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(bmp, 0, 0, w, h);
     try{ bmp.close(); }catch(e){}
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72));
-    return blob ? new File([blob], 'thumb.jpg', {type:'image/jpeg'}) : null;
+    let blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.72));
+    if(!blob || blob.type !== 'image/webp') blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72));
+    return blob ? new File([blob], blob.type === 'image/webp' ? 'thumb.webp' : 'thumb.jpg', {type: blob.type}) : null;
   }
   /* پیش‌نمایش کوچک: فقط وقتی روی صفحه دیده شود، و چند تا با یک درخواست */
   const s3Local = new Map(), s3ThumbC = new Map();
@@ -78225,7 +78289,15 @@
     const o = window.spCadLocs().find(x => x.k === L.k); return o ? o.t : L.k;
   };
   /* تصویر کوچک ریز محل در کارت فضا: بعد از رندر، از سرور (یک بار) پر می‌شود */
-  function spImgFill(root){ (root || document).querySelectorAll('img[data-spimg]:not([src])').forEach(im => { spImgGet(im.dataset.spimg).then(u => { if(u){ im.src = u; im.closest('.spf-im') && im.closest('.spf-im').classList.add('has'); } else { const w = im.closest('.spf-im'); if(w) w.remove(); } }); }); }
+  /* عکس‌ها فقط وقتی نزدیک دید آمدند (۳۰۰px جلوتر) نشانی و دانلود می‌شوند؛ در چاپ و پنجره‌های پنهان، فوری */
+  const LZ = {io: null, fn: new WeakMap()};
+  function lazyImg(im, fn){
+    if(typeof IntersectionObserver !== 'function' || im.closest('#printArea, .rcp, .wkr')){ fn(im); return; }
+    if(!LZ.io) LZ.io = new IntersectionObserver(es => es.forEach(e => { if(!e.isIntersecting) return; const f = LZ.fn.get(e.target); LZ.io.unobserve(e.target); LZ.fn.delete(e.target); if(f) f(e.target); }), {rootMargin: '300px'});
+    if(LZ.fn.has(im)) return; LZ.fn.set(im, fn); LZ.io.observe(im);
+  }
+  window.lazyImg = lazyImg;
+  function spImgFill(root){ (root || document).querySelectorAll('img[data-spimg]:not([src])').forEach(im0 => lazyImg(im0, im => { im.decoding = 'async'; spImgGet(im.dataset.spimg).then(u => { if(u){ im.src = u; im.closest('.spf-im') && im.closest('.spf-im').classList.add('has'); } else { const w = im.closest('.spf-im'); if(w) w.remove(); } }); })); }
   window.spImgFill = spImgFill;
   const SP_PART0 = ['پذیرایی', 'آشپزخانه', 'اتاق خواب', 'سرویس بهداشتی', 'حمام', 'بالکن', 'راهرو'];
   const SP_ST = [['free', 'آزاد', 'mu'], ['res', 'رزرو', 'warn'], ['pre', 'پیش‌فروش', 'run'], ['sold', 'فروخته‌شده', 'ok']];
@@ -80584,7 +80656,7 @@
   function fxImg(link){ if(!link) return Promise.resolve(''); if(fxUrlC.has(link)) return fxUrlC.get(link);
     const pr = (async () => { let a = null; try{ a = attachList(link)[0]; }catch(e){} if(!a) return ''; if(a.src === 's3'){ const k = a.thumb && !fxImg.full ? a.thumb : a.key; return await s3Url(k, a.name, false, a.slot); } return a.url; })().catch(() => '');
     fxUrlC.set(link, pr); return pr; }
-  function fxImgFill(root){ (root || document).querySelectorAll('img[data-fximg]:not([src])').forEach(im => { const full = im.dataset.full === '1'; fxImg.full = full; const p = fxImg(im.dataset.fximg); fxImg.full = false; p.then(u => { if(u) im.src = u; }); }); }
+  function fxImgFill(root){ (root || document).querySelectorAll('img[data-fximg]:not([src])').forEach(im0 => lazyImg(im0, im => { im.decoding = 'async'; const full = im.dataset.full === '1'; fxImg.full = full; const p = fxImg(im.dataset.fximg); fxImg.full = false; p.then(u => { if(u) im.src = u; }); })); }
   function fxPick(accept){ return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept || 'image/*'; i.onchange = () => res(i.files && i.files[0] || null); i.click(); }); }
   function fxModal(id, title, sub, body, wide){
     let m = document.getElementById(id); if(m) m.remove();
@@ -95856,10 +95928,33 @@
   const mqM = window.matchMedia ? matchMedia('(max-width:760px)') : {matches: false};
   const LOAD = /^\s*(در حال|درحال)\s/;
   const SKIP = '#confirmModal, #askConfirmModal, .pg-mode, .a2hs, #fvModal';
+  /* اسکلت بارگذاری: شکلش از جایی که در آن است می‌آید */
+  function sklKind(el){
+    if(el.closest('#homeView')) return 'home';
+    if(el.closest('#reportView, #panelView, .rcp')) return 'report';
+    if(el.closest('[id^="admList-"], #adminView, .adm-host, #taskView, .la-board, .kt-list, #rcModal .rc-grid')) return 'rows';
+    if(el.closest('#wsHost, #wsCtd, #regM, .fx-bd, .wh-in, #profileBody')) return 'cards';
+    return 'rows';
+  }
+  const SK_W = [[68, 40], [54, 32], [74, 46], [48, 28], [62, 38], [58, 34]];
+  function sklHtml(k){
+    const bar = (w, c) => '<b class="' + (c || '') + '" style="width:' + w + '%"></b>';
+    if(k === 'report') return '<div class="skl skl-rep" aria-hidden="true"><div class="sk-ks">' + [0, 1, 2, 3].map(() => '<div class="sk-k">' + bar(42, 's') + bar(64, 'l') + '</div>').join('') + '</div>'
+      + '<div class="sk-ch"><div class="sk-ax">' + [58, 82, 46, 70, 90, 64, 76].map(h => '<i style="height:' + h + '%"></i>').join('') + '</div></div>'
+      + '<div class="sk-rows">' + SK_W.slice(0, 3).map(w => '<div class="sk-r">' + '<i class="c"></i><span>' + bar(w[0]) + bar(w[1], 's') + '</span></div>').join('') + '</div></div>';
+    if(k === 'home') return '<div class="skl skl-home" aria-hidden="true"><div class="sk-hero"><i class="av"></i><span>' + bar(30, 's') + bar(52, 'l') + '</span></div><div class="sk-ks">' + [0, 1, 2, 3].map(() => '<div class="sk-k">' + bar(40, 's') + bar(60, 'l') + '</div>').join('') + '</div>'
+      + '<div class="sk-rows">' + SK_W.slice(0, 4).map(w => '<div class="sk-r"><i class="c"></i><span>' + bar(w[0]) + bar(w[1], 's') + '</span><i class="p"></i></div>').join('') + '</div></div>';
+    if(k === 'cards') return '<div class="skl skl-cards" aria-hidden="true">' + SK_W.slice(0, 4).map(w => '<div class="sk-cd"><div class="sk-ct"><i class="c"></i><span>' + bar(w[0]) + bar(w[1], 's') + '</span><i class="p"></i></div>' + bar(88, 's') + bar(64, 's') + '</div>').join('') + '</div>';
+    return '<div class="skl skl-rows" aria-hidden="true">' + SK_W.map(w => '<div class="sk-r"><i class="c"></i><span>' + bar(w[0]) + bar(w[1], 's') + '</span><i class="p"></i></div>').join('') + '</div>';
+  }
+  window.sklHtml = sklHtml;
   function scan(){
     t = 0;
     try{ atbPrep(); }catch(e){}
-    document.querySelectorAll('div.empty').forEach(el => { if(el.classList.contains('tc-cell')) return; const on = LOAD.test(el.textContent || '') && el.childElementCount <= 2; if(on !== el.classList.contains('is-loading')) el.classList.toggle('is-loading', on); });
+    document.querySelectorAll('div.empty, div.fx-wait').forEach(el => { if(el.classList.contains('tc-cell')) return; const on = LOAD.test(el.textContent || '') && el.childElementCount <= 2; if(on !== el.classList.contains('is-loading')) el.classList.toggle('is-loading', on);
+      /* اسکلت هم‌شکلِ محتوای همان جا، به‌جای چرخک */
+      if(on && !el.querySelector(':scope > .skl')){ el.insertAdjacentHTML('beforeend', sklHtml(sklKind(el))); el.classList.add('has-skl'); el.setAttribute('aria-busy', 'true'); }
+      else if(!on && el.classList.contains('has-skl')){ el.querySelectorAll(':scope > .skl').forEach(x => x.remove()); el.classList.remove('has-skl'); el.removeAttribute('aria-busy'); } });
     if(!mqM.matches) return;
     /* صفحه‌ای که قبلاً برگه بوده و حالا تمام‌قد باز شده (پروفایل ← کارهای من)، برگه نماند */
     document.querySelectorAll('.modal-bg.ds-sheet.pg-mode').forEach(bg => { bg.classList.remove('ds-sheet'); const c = bg.firstElementChild; if(c){ c.classList.remove('ds-card'); c.style.transform = ''; c.style.transition = ''; } });

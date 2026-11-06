@@ -7,9 +7,29 @@ const PAGE_CACHE = 'pm-page-v1';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil((async () => {
   const ks = await caches.keys();
-  await Promise.all(ks.filter(k => k.startsWith('pm-page-') && k !== PAGE_CACHE).map(k => caches.delete(k)));
+  await Promise.all(ks.filter(k => (k.startsWith('pm-page-') && k !== PAGE_CACHE) || (k.startsWith('pm-static-') && k !== STATIC_CACHE)).map(k => caches.delete(k)));
   await self.clients.claim();
 })()));
+
+/* فایل‌های ثابت: کتابخانه‌ها، آیکون‌ها و قلم‌ها.
+   نسخه‌دار (مثل xlsx-0.18.5) و قلم‌ها: اول از حافظه. بی‌نسخه (cad-*.js): از حافظه و هم‌زمان تازه‌سازی برای بار بعد. */
+const STATIC_CACHE = 'pm-static-v1';
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if(req.method !== 'GET') return;
+  let u; try{ u = new URL(req.url); }catch(err){ return; }
+  const font = u.hostname === 'fonts.gstatic.com' || u.hostname === 'fonts.googleapis.com';
+  const own = u.origin === self.location.origin && /\/(lib|icons)\//.test(u.pathname);
+  if(!font && !own) return;
+  const versioned = font || /[-.]\d+\.\d+(\.\d+)?[.-]/.test(u.pathname) || /\.(png|svg|ico|woff2?)$/.test(u.pathname);
+  e.respondWith((async () => {
+    const c = await caches.open(STATIC_CACHE);
+    const hit = await c.match(req);
+    const net = fetch(req).then(res => { if(res && (res.ok || res.type === 'opaque')) c.put(req, res.clone()).catch(() => {}); return res; });
+    if(hit){ if(!versioned) e.waitUntil(net.catch(() => {})); return hit; }
+    return net;
+  })());
+});
 
 self.addEventListener('fetch', e => {
   const req = e.request;
