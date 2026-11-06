@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106195752">
+<meta name="pm-build" content="20261106200023">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -93878,6 +93878,12 @@
       L.push({g:'اسناد دفتر فنی', k:'doc-' + x.k, t:x.t, s:'', ic:x.ic, c:'hc-vio', small:true, run: () => homeNewDoc(x.k)}));
     let addT = false; try{ addT = tabOk('tasks') && canAddTask(); }catch(e){}
     if(addT) L.push({g:'فعالیت', k:'task', t:'فعالیت اجرایی تازه', s:'ابلاغ کار به مسئول، با موعد', ic:'task', c:'hc-ind', run: () => homeNewTask()});
+    /* دفترهای کارگاهی (مجوز کار، ورود مصالح، RFI، ارسال مدارک، ITP، ریسک، تأخیرات، تعمیرات، بودجه، ارزیابی) */
+    try{ const RG0 = [['dly','کارگاه','ثبت تأخیر یا وضع هوا','علت، ساعت توقف و روز تأخیر'], ['ptw','کیفیت و ایمنی','مجوز کار','درخواست مجوز کار در ارتفاع، گرم، حفاری…'], ['itp','کیفیت و ایمنی','درخواست بازرسی ITP','نقطهٔ توقف یا نظارت'],
+        ['rfi','فنی و مهندسی','RFI تازه','سؤال فنی از مشاور یا طراح'], ['smt','فنی و مهندسی','ارسال مدرک فنی','نقشهٔ کارگاهی، نمونه، کاتالوگ'], ['mrc','تدارکات و انبار','ورود مصالح','بارنامه و بازرسی بار رسیده'],
+        ['mnt','تدارکات و انبار','سرویس یا تعمیر دستگاه','کار انجام‌شده و سررسید بعدی'], ['rsk','برنامه‌ریزی','ریسک تازه','احتمال، اثر و اقدام کاهشی'], ['cc','مالی و قرارداد','کد هزینه','بودجهٔ یک سرفصل'], ['vnd','مالی و قرارداد','ارزیابی پیمانکار','امتیاز کیفیت، زمان، ایمنی و همکاری']];
+      RG0.forEach(([k, g, t, sd]) => { const R = REGS[k]; if(!R) return; let ok = false; try{ ok = !!R.canNew(); }catch(e){} if(!ok) return;
+        L.push({g, k: 'reg-' + k, t, s: sd, ic: REG_I[k] || '', c: 'hc-ind', run: () => { regOpen(k).then(() => { try{ RG.draft = {date: todayShamsi(), from: todayShamsi()}; if(k === 'dly' && window.wxGet) window.wxGet().then(c => { try{ Object.assign(RG.draft, wxDraft(c)); regPaint(); }catch(e){} }); regPaint(); const f = document.querySelector('#regM .rg-form input, #regM .rg-form select'); if(f) f.focus(); }catch(e){} }); }}); }); }catch(e){}
     return L;
   }
   /* ====== کارهای اخیر من ======
@@ -93978,7 +93984,7 @@
       + groups.map(g => '<div class="hma-g"><u>' + esc(g.g) + '</u>'
           + '<div class="hma-items' + (g.items.every(x => x.small) ? ' sm' : '') + '">'
           + g.items.map(x => '<button type="button" class="hma-it ' + x.c + (x.small ? ' sm' : '') + '" data-hma="' + esc(x.k) + '">'
-              + '<span class="hma-ic">' + (HM_I[x.ic] || '') + '</span>'
+              + '<span class="hma-ic">' + (HM_I[x.ic] || (/^</.test(x.ic || '') ? x.ic : '')) + '</span>'
               + '<span class="hma-tx"><b>' + esc(x.t) + '</b>' + (x.s ? '<small>' + esc(x.s) + '</small>' : '') + '</span>'
               + '</button>').join('')
           + '</div></div>').join('')
