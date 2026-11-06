@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106095022">
+<meta name="pm-build" content="20261106095328">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -60671,11 +60671,16 @@
     if(by === 'title' || by === 'party'){ const g = by === 'title' ? titleOf : partyOf; return rows.slice().sort((a, b) => { const x = g(a), y = g(b); if(!x && !y) return 0; if(!x) return 1; if(!y) return -1; return x.localeCompare(y, 'fa') * sg; }); }
     const f = by === 'no' ? noVal : by === 'new' ? newVal : by === 'act' ? actVal : by === 'due' ? dueVal : by === 'amt' ? amtVal : dVal;
     const M = new Map(rows.map(r => [r, f(r)]));
+    /* برابرها (مثلاً سندهای قدیمیِ یک‌جا وارد شده با زمان ثبت یکسان): تاریخ سند، بعد شناسه، هم‌جهت */
+    const T = f === dVal ? null : new Map(rows.map(r => [r, dVal(r)]));
+    const idv = r => +toEn(String(pick(r,AD.id) || '')) || 0;
     return rows.slice().sort((a, b) => {
       const va = M.get(a), vb = M.get(b);
       if(va == null && vb == null) return 0;
       if(va == null) return 1; if(vb == null) return -1;
-      return (va - vb) * sg;
+      if(va !== vb) return (va - vb) * sg;
+      if(T){ const ta = T.get(a), tb = T.get(b); if(ta != null && tb != null && ta !== tb) return (ta - tb) * sg; if(ta == null && tb != null) return 1; if(tb == null && ta != null) return -1; }
+      return (idv(a) - idv(b)) * sg;
     });
   }
   let admView = 'fast';   // حالت پایه: فهرست سریع
@@ -69059,6 +69064,8 @@
   function admSortDoneLast(kind, rows){
     /* اسناد طراحی: در آخرین لایه به ترتیب تاریخ آخرین گردش، تازه‌ترین بالا */
     /* ترتیب انتخابی کاربر حفظ می‌شود (پیش‌تر اسناد طراحی همیشه با تاریخ گردش خودش مرتب می‌شد و «ترتیب» کار نمی‌کرد) */
+    /* فقط در ترتیب پیش‌فرض؛ با مرتب‌سازی دستی همان ترتیب انتخابی دست نمی‌خورد */
+    if(String(admSort || 'new-desc') !== 'new-desc') return rows.slice();
     return rows.slice().sort((a, b) =>
       (admIsDone(kind, a) ? 1 : 0) - (admIsDone(kind, b) ? 1 : 0));
   }
@@ -70373,7 +70380,11 @@
     window.__admBarPaint = paint;
     paint();
     const redraw = () => { paint(); try{ applyAdminFilters(); }catch(e2){} };
-    const setSort = v => { admSort = v; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} redraw(); };
+    /* مرتب‌سازی کل فهرست: با گروه‌بندی، ترتیب فقط داخل هر گروه کوچک اعمال می‌شد و به نظر کار نمی‌کرد؛
+       پس با انتخاب مرتب‌سازی، گروه‌بندی همین دسته برداشته می‌شود (از «گروه‌بندی» برمی‌گردد) */
+    const setSort = v => { admSort = v; try{ localStorage.setItem('admSort2', admSort); }catch(e2){}
+      const k = curCat(); if(v !== 'new-desc' && k && k !== 'minute' && admGrpOf(k) !== 'none'){ admGrpSet(k, 'none'); try{ shrToast('برای مرتب‌سازی کل فهرست، گروه‌بندی برداشته شد'); }catch(e2){} }
+      redraw(); };
     if(so) so.addEventListener('change', () => setSort(so.value + '-' + (ADM_SORT_DEF[so.value] || 'desc')));
     { const db = document.getElementById('admSortDir');
       if(db) db.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const [f, dir] = String(admSort || 'new-desc').split('-'); setSort((so ? so.value : f) + '-' + (dir === 'asc' ? 'desc' : 'asc')); }); }
