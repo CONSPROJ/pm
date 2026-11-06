@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106200408">
+<meta name="pm-build" content="20261106200844">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -36710,7 +36710,7 @@
     const lift = el => {
       if(!el || el.hidden || !el.classList || !el.classList.contains('modal-bg')) return;
       let top = 0;
-      document.querySelectorAll('.modal-bg').forEach(o => { if(o !== el && !o.hidden && getComputedStyle(o).display !== 'none') top = Math.max(top, zOf(o)); });
+      document.querySelectorAll('.modal-bg:not([hidden])').forEach(o => { if(o !== el && o.getClientRects().length) top = Math.max(top, zOf(o)); });
       if(top >= zOf(el)){
         if(el.dataset.zKeep === undefined) el.dataset.zKeep = el.style.zIndex || '';
         el.style.zIndex = String(top + 1);
@@ -36720,14 +36720,17 @@
       if(!el || !el.dataset || el.dataset.zKeep === undefined) return;
       el.style.zIndex = el.dataset.zKeep; delete el.dataset.zKeep;
     };
+    /* سرعت: بالا بردن پنجره در همان فریم نقاشی (rAF) انجام می‌شود تا getComputedStyle یک بازمحاسبهٔ اضافهٔ کل صفحه نسازد */
+    const liftQ = new Set(); let liftRaf = 0;
+    const liftLater = el => { liftQ.add(el); if(!liftRaf) liftRaf = requestAnimationFrame(() => { liftRaf = 0; const L = Array.from(liftQ); liftQ.clear(); L.forEach(x => { if(x.isConnected && !x.hidden) lift(x); }); }); };
     const obs = new MutationObserver(muts => {
       muts.forEach(m => {
         if(m.type === 'attributes'){
           const el = m.target;
           if(!el.classList || !el.classList.contains('modal-bg')) return;
-          if(el.hidden) drop(el); else lift(el);
+          if(el.hidden){ liftQ.delete(el); drop(el); } else liftLater(el);
         }else{
-          m.addedNodes.forEach(n => { if(n.nodeType === 1 && n.classList.contains('modal-bg') && !n.hidden) lift(n); });
+          m.addedNodes.forEach(n => { if(n.nodeType === 1 && n.classList.contains('modal-bg') && !n.hidden) liftLater(n); });
         }
       });
     });
@@ -37810,8 +37813,10 @@
     return prev[n];
   }
 
-  /* شباهت دو نام بین ۰ تا ۱ */
-  function nameSim(a, b){
+  /* شباهت دو نام بین ۰ تا ۱ (با حافظه: کارت پیمانکار هر بار صدها مقایسه می‌کرد) */
+  const NSIM_C = new Map(); setInterval(() => NSIM_C.clear(), 120000);
+  function nameSim(a, b){ const k = a + '\u0001' + b; let v = NSIM_C.get(k); if(v === undefined){ v = nameSim0(a, b); if(NSIM_C.size > 60000) NSIM_C.clear(); NSIM_C.set(k, v); } return v; }
+  function nameSim0(a, b){
     const na = normName(a), nb = normName(b);
     if(!na || !nb) return 0;
     if(na === nb) return 1;
@@ -56992,10 +56997,13 @@
   }
 
   /* ====== انتخاب فرد با عکس ====== */
+  let APN_C = null;
   function allPeopleNames(){
     const dl = document.getElementById('engineerList');
+    const n0 = dl ? dl.options.length : 0, f0 = n0 && dl.options[0].value, l0 = n0 && dl.options[n0 - 1].value;
+    if(APN_C && APN_C.n === n0 && APN_C.f === f0 && APN_C.l === l0) return APN_C.v.slice();
     const names = dl ? Array.from(dl.options).map(o => o.value).filter(Boolean) : [];
-    return Array.from(new Set(names)).sort((a,b) => a.localeCompare(b,'fa'));
+    const v = Array.from(new Set(names)).sort((a,b) => a.localeCompare(b,'fa')); APN_C = {n: n0, f: f0, l: l0, v}; return v.slice();
   }
 
   /* لیست کشویی افراد: عکس و نام کنار هم، با جست‌وجو */
