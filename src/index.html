@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106154339">
+<meta name="pm-build" content="20261106154707">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28412,6 +28412,8 @@
   table.rcn td{padding:6px 8px;border-bottom:1px solid var(--line2, #eef0f3);white-space:nowrap;}
   table.rcn td small{display:block;font-size:10.5px;color:var(--muted, #667);font-weight:500;}
   table.rcn tr.bad td{background:rgba(192,57,43,.05);} table.rcn tr.bad .rcn-w0 b{color:#c0392b;}
+  .hz-qk-b:not(.all) .hz-q.x{display:none !important;}
+  .hz-qk-b .hz-qm{color:var(--acc, #2f6f9f);font-weight:700;border-style:dashed;} .hz-qk-b .hz-qm .b, .hz-qk-b.all .hz-qm .a{display:none;} .hz-qk-b.all .hz-qm .b{display:inline;}
   .pf-k{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;} .pf-k > div{flex:1 1 140px;padding:10px 12px;border-radius:12px;background:var(--field, rgba(0,0,0,.04));display:flex;flex-direction:column;gap:3px;}
   .pf-k u{text-decoration:none;font-size:11px;font-weight:700;color:var(--muted, #667);} .pf-k b{font-size:17px;font-weight:800;} .pf-k b.bad, table.pf td.bad{color:#c0392b;font-weight:800;}
   table.pf tr.on td{background:rgba(47,111,159,.06);} .pf-bar{display:inline-block;width:70px;height:6px;border-radius:4px;background:var(--line, #e3e6ea);vertical-align:middle;overflow:hidden;} .pf-bar i{display:block;height:100%;background:#3f8a62;border-radius:4px;}
@@ -81858,6 +81860,8 @@
     rcnPaint();
   }
   window.rcnOpen = rcnOpen;
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-hzqmore]'); if(!b) return; e.preventDefault(); const w = b.closest('.hz-qk-b'); if(!w) return;
+    const on = w.classList.toggle('all'); try{ sessionStorage.setItem('siteLogM.hzqAll', on ? '1' : '0'); }catch(er){} });
   /* ====== داشبورد پورتفولیو (همهٔ پروژه‌ها) — یک فراخوانی سرور (pm_portfolio در scale.sql) ====== */
   async function pfOpen(){
     const m = fxModal('pfM', 'پورتفولیو پروژه‌ها', 'وضعیت همهٔ پروژه‌ها در یک نگاه: پیشرفت برنامه، ریسک، تأخیر، کارهای منتظر و بودجه', '<div class="fx-wait">در حال دریافت…</div>', true);
@@ -94890,7 +94894,11 @@
             if(tabOk('view')){ q('view:daily', 'week', 'گزارش روزانه', '#2f6f9f'); q('view:pc', 'chart', 'کنترل پروژه', '#6d5bb5'); q('view:cf', 'money', 'گزارش مالی', '#2a8a6a'); q('view:hr', 'people', 'نیروی انسانی', '#b07512'); q('view:org', 'compass', 'چارت سازمانی', '#5b6b7d'); }
             if(tabOk('admin')){ q('adm:statement', 'st', 'صورت وضعیت‌ها', '#2f6f8f'); q('adm:contract', 'ct', 'قراردادها', '#b0631c'); }
             if(tabOk('tasks')) q('ws:tasks', 'task', 'فعالیت‌ها', '#3d7fb0');
-            return Q.length ? '<div class="hz-qk hz-qk-b">' + Q.join('') + '</div>' : '';
+            /* فقط چند میان‌بر اول؛ بقیه با «بیشتر» */
+            const MX = 6; let all = false; try{ all = sessionStorage.getItem('siteLogM.hzqAll') === '1'; }catch(e){}
+            const more = Q.length > MX + 1;
+            return Q.length ? '<div class="hz-qk hz-qk-b' + (all ? ' all' : '') + '">' + Q.map((h, i) => more && i >= MX ? h.replace('class="hz-q"', 'class="hz-q x"') : h).join('')
+              + (more ? '<button type="button" class="hz-q hz-qm" data-hzqmore="1"><span class="a">+ ' + toFa(Q.length - MX) + ' میان‌بر دیگر</span><span class="b">کمتر</span></button>' : '') + '</div>' : '';
           })() + '</div>';
     }
     const alert2 = al ? '<button type="button" class="hz-al ' + al[0] + '" ' + al[1] + '><i></i><b>' + al[2] + '</b><small>' + al[3] + '</small><span>' + al[4] + HM_I.go + '</span></button>' : '';
