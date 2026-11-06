@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106104139">
+<meta name="pm-build" content="20261106105445">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28478,7 +28478,7 @@
 
   /* نوار پرش: دسکتاپ با صفحه بالا می‌رود (ستون کناری راهبری را دارد)؛ گوشی با پایین رفتن کنار می‌رود و با بالا آمدن برمی‌گردد */
   @media(min-width:1180px){
-    :is(html,#z0) :is(body,#z1) .jump-bar.seg, :is(html,#z0) :is(body,#z1) #reportView > #jumpBar.jump-bar.seg{position:relative !important;top:auto !important;}
+    :is(html,#z0) :is(body,#z1) .jump-bar.seg, :is(html,#z0) :is(body,#z1) #reportView > #jumpBar.jump-bar.seg{position:sticky !important;top:calc(var(--hdh, 64px) + 10px) !important;z-index:40 !important;}
     :is(html,#z0) :is(body,#z1) .jump-bar.seg.stuck{box-shadow:0 1px 2px rgba(15,23,32,.04), 0 6px 18px -14px rgba(15,23,32,.28) !important;}
   }
   @media(max-width:1179px){
@@ -28796,6 +28796,21 @@
     :is(#adminView, .adm-host) .adm-ctfin .ctdk-m > span{display:flex !important;justify-content:space-between;align-items:baseline;gap:8px;}
     :is(#adminView, .adm-host) .adm-ctfin .ctdk-m > span b{overflow:visible !important;text-overflow:clip !important;white-space:nowrap;max-width:none !important;}
   }
+
+  /* پنجرهٔ ثبت سند تازه: وسط صفحه (نه کنار)، باز شدن سریع و سبک */
+  @keyframes nfPop{from{opacity:0;transform:scale(.97);}to{opacity:1;transform:none;}}
+  @media(min-width:760px){
+    html body :is(#adminView, .adm-host) .nf[data-persist="1"].open{inset:0 !important;margin:auto !important;width:min(940px, 94vw) !important;height:min(880px, 90vh) !important;border-radius:20px !important;
+      box-shadow:0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent), 0 30px 80px -24px rgba(10,20,30,.5) !important;animation:nfPop .18s cubic-bezier(.2,.8,.2,1) both !important;will-change:transform,opacity;}
+  }
+  .nf-back{animation-duration:.15s !important;}
+
+  .nf-back{z-index:2990 !important;}
+  html body :is(#adminView, .adm-host) .nf[data-persist="1"].open{z-index:3000 !important;}
+
+  html body #adminView#adminView .nf[data-persist="1"].open > .nf-body > .af{border:0 !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;padding:0 !important;margin:0 !important;}
+
+  .hr-lnk{all:unset;cursor:pointer;color:var(--sky);font-weight:800;} .hr-lnk:hover{text-decoration:underline;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -44845,6 +44860,18 @@
   });
 
   /* بعد از خواندن محل‌ها: اگر مرکز داده باز است، شمارش و زبانهٔ محل تازه شود */
+  /* هر تطبیقی از هر جا (فضاها ← «تطبیق محل‌ها»، نیروی انسانی ← «اصلاح نام‌ها»، …) برای ادمین در «مرکز داده و تطبیق» باز می‌شود */
+  window.dcOpen = tab => {
+    if(tab) dcState.tab = tab; try{ localStorage.setItem('siteLogM.dcTab', dcState.tab); }catch(e){}
+    const hv = document.getElementById('homeView') || document.body; const x = document.createElement('button'); x.type = 'button'; x.hidden = true; x.dataset.h3s = 'data|مرکز داده و تطبیق'; hv.appendChild(x); x.click(); x.remove();
+    setTimeout(() => { try{ renderDataCenter(); }catch(e){} }, 60);
+  };
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-sptab="mt"], [data-cdxtab="fix"], [data-dcgo]'); if(!t) return;
+    let adm = false; try{ adm = isAdminUser(); }catch(err){} if(!adm) return;
+    e.preventDefault(); e.stopPropagation();
+    window.dcOpen(t.dataset.dcgo || (t.dataset.sptab === 'mt' ? 'loc' : 'names'));
+  }, true);
   window.__dcLocRefresh = () => { const d = document.getElementById('dataCenter'); if(d && d.offsetParent && d.querySelector('.dc-hub')) renderDataCenter(); };
   async function renderDataCenter(force){
     const box = document.getElementById('dataCenter');
@@ -52234,7 +52261,7 @@
         + (unkMen ? '<div class="rc-row rc-unk" title="' + esc(Array.from(unk.keys()).slice(0, 12).join('، ')) + '"><span class="rc-lb">طبقهٔ نامشخص</span>'
             + '<span class="rc-tr"><i style="width:' + Math.round(unkMen / zMax * 100) + '%"></i></span><b>' + toFa(unkMen) + '</b></div>'
             + '<div class="hr-note rc-unkn">' + toFa(unk.size) + ' محل بدون طبقه: ' + esc(Array.from(unk.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]).join('، ')) + (unk.size > 5 ? ' …' : '')
-            + ' — طبقهٔ این محل‌ها را در «مرکز داده و تطبیق ← محل و طبقه» تعیین کنید.</div>' : '')
+            + ' — <button type="button" class="hr-lnk" data-dcgo="loc">تعیین طبقه در مرکز داده و تطبیق ›</button></div>' : '')
         + '</div>'
       : '<div class="empty">داده‌ای نیست.</div>';
 
@@ -67608,7 +67635,7 @@
           const ar = nfBtn.querySelector('.nf-ar');
           if(ar) ar.textContent = open ? '▴' : '▾';
           refreshAdmPending();
-          if(open) card.scrollIntoView({block:'nearest', behavior:'smooth'});
+          if(open && card.dataset.persist !== '1') card.scrollIntoView({block:'nearest', behavior:'smooth'});
         }
         return;
       }
@@ -68701,7 +68728,7 @@
       const tg = sec && sec.querySelector('.nf-toggle');
       const nf = tg && tg.closest('.rv, .nf, [data-new-kind], .chore-box, .gen-box');
       if(tg && !(nf && nf.classList.contains('open'))) tg.click();
-      setTimeout(() => { if(tg) try{ scrollToSection(tg); }catch(err){ tg.scrollIntoView({behavior:'smooth', block:'start'}); } }, 60);
+      if(!(nf && nf.dataset.persist === '1')) setTimeout(() => { if(tg) try{ scrollToSection(tg); }catch(err){ tg.scrollIntoView({behavior:'smooth', block:'start'}); } }, 60);
       return;
     }
     const c = e.target.closest('[data-admcat]');
