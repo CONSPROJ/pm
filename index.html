@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106062814">
+<meta name="pm-build" content="20261106094230">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28475,6 +28475,20 @@
   @media(max-width:620px){ .sk-ks{grid-template-columns:repeat(2, minmax(0,1fr));} .skl-cards{grid-template-columns:1fr;} .skl-rows .sk-r:nth-child(n+5){display:none;} }
   @media (prefers-reduced-motion: reduce){ .skl::after{animation:none;display:none;} }
   html.rm .skl::after{animation:none;display:none;}
+
+  /* نوار پرش: دسکتاپ با صفحه بالا می‌رود (ستون کناری راهبری را دارد)؛ گوشی با پایین رفتن کنار می‌رود و با بالا آمدن برمی‌گردد */
+  @media(min-width:1180px){
+    :is(html,#z0) :is(body,#z1) .jump-bar.seg, :is(html,#z0) :is(body,#z1) #reportView > #jumpBar.jump-bar.seg{position:relative !important;top:auto !important;}
+    :is(html,#z0) :is(body,#z1) .jump-bar.seg.stuck{box-shadow:0 1px 2px rgba(15,23,32,.04), 0 6px 18px -14px rgba(15,23,32,.28) !important;}
+  }
+  @media(max-width:1179px){
+    :is(html,#z0) :is(body,#z1) .jump-bar.seg{transition:transform .28s cubic-bezier(.3,.7,.2,1), opacity .22s ease, box-shadow .3s ease, border-color .3s ease, background-color .3s ease !important;}
+    :is(html,#z0) :is(body,#z1) .jump-bar.seg.jb-away{transform:translateY(calc(-100% - 14px));opacity:0;pointer-events:none;}
+  }
+  /* اسناد طراحی «تفکیک طراح»: سرتیتر هر طراح روی دسکتاپ هم دیده شود (برای بقیهٔ اسناد پنهان است چون طرف ستون خودش را دارد) */
+  html body :is(#adminView, .adm-host) #admList-design .adm-grp-body > .adm-pty > .adm-pty-h{display:flex !important;align-items:center;padding:8px 14px !important;background:color-mix(in srgb, var(--sky) 5%, var(--surface));border-bottom:1px solid var(--line-soft, var(--line));border-top:1px solid var(--line-soft, var(--line));}
+  html body :is(#adminView, .adm-host) #admList-design .adm-grp-body > .adm-pty:first-child > .adm-pty-h{border-top:0;}
+  html body :is(#adminView, .adm-host) #admList-design .adm-pty-h .ap-ic{width:26px !important;height:26px !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -48980,12 +48994,16 @@
       setTimeout(() => requestAnimationFrame(() => {
         const sc = window.scrollY > 6, de = document.documentElement;
         if(de.classList.contains('scrolled') !== sc) de.classList.toggle('scrolled', sc);
+        /* نوار پرش: پایین رفتن ← کنار می‌رود؛ بالا آمدن ← برمی‌گردد */
+        const y = window.scrollY, dy = y - (onScroll.__y || 0); onScroll.__y = y;
+        const away = y > 160 && dy > 6 ? true : (dy < -6 || y < 120 ? false : null);
         const L = document.getElementsByClassName('jump-bar');
         for(let i = 0; i < L.length; i++){ const jb = L[i];
           if(!jb.offsetParent){ if(jb.classList.contains('stuck')) jb.classList.remove('stuck'); continue; }
-          if(jb.__top == null) jb.__top = parseFloat(getComputedStyle(jb).top) || 0;
-          const st = sc && jb.getBoundingClientRect().top <= jb.__top + 1;
+          if(jb.__top == null){ const cs0 = getComputedStyle(jb); jb.__top = parseFloat(cs0.top) || 0; jb.__stk = cs0.position === 'sticky'; }
+          const st = sc && jb.__stk && jb.getBoundingClientRect().top <= jb.__top + 1;
           if(jb.classList.contains('stuck') !== st) jb.classList.toggle('stuck', st);
+          if(away != null && jb.classList.contains('jb-away') !== (away && st)) jb.classList.toggle('jb-away', away && st);
         }
         ticking = false;
       }), 120);
@@ -94303,7 +94321,9 @@
       if(!mq.matches) return;
       const t = e.target.closest && e.target.closest('.tab[id]');
       if(t && !t.classList.contains('tab-add')){
-        if(t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView'){ const d0 = bar.querySelector('.sb-sub[data-for="' + t.id + '"]'); sbsSet(t.id, !(d0 && d0.classList.contains('open'))); }
+        if(t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView'){ const d0 = bar.querySelector('.sb-sub[data-for="' + t.id + '"]'); const on = !(d0 && d0.classList.contains('open')); sbsSet(t.id, on);
+          /* یک زیرفهرست باز در هر لحظه: باز شدن میز کار، اسناد یا گزارش‌ها بقیه را می‌بندد */
+          if(on) ['tabTasks', 'tabAdmin', 'tabView'].forEach(x => { if(x !== t.id) sbsSet(x, 0); }); }
         bar.querySelectorAll('.sb-sub').forEach(x => x.classList.toggle('open', !!x.__h && sbsOpen(x.dataset.for))); }
       const si = e.target.closest && e.target.closest('.sb-it');
       if(si){ bar.querySelectorAll('.sb-it.on').forEach(x => { if(x !== si) x.classList.remove('on'); }); si.classList.add('on'); bar.__pend = {k: si.dataset.sbws || si.dataset.sbadm || si.dataset.sbview, until: Date.now() + 1500}; }
