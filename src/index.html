@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106200844">
+<meta name="pm-build" content="20261106201130">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -27998,6 +27998,7 @@
   .hew-h{display:flex;align-items:baseline;gap:10px;} .hew-h b{font-size:14px;} .hew-h small{font-size:11.5px;color:var(--muted);} .hew-h em{font-style:normal;color:var(--alert);font-weight:700;}
   .hew-all{margin-inline-start:auto;border:0;background:none;color:var(--sky);font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
   .hew-l{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;}
+  @media (min-width:1180px){ .hew-l{grid-template-columns:repeat(3, minmax(0,1fr));} }
   .hew-r{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-align:start;cursor:pointer;color:inherit;font:inherit;min-width:0;position:relative;}
   .hew-r::before{content:'';position:absolute;inset-inline-start:-1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--tc);}
   .hew-r.warn{--tc:#c79a2b;} .hew-r.bad{--tc:var(--alert);}
@@ -94481,7 +94482,7 @@
       const tod = mineL.filter(r => { const d = taskDue(r); return d && d >= now0 && d < tm; });
       const used = new Set(late.concat(tod));
       const ex = mineL.filter(r => !used.has(r) && !r.__adm && !r.__admKind && !/فعالیت عمومی|کار اداری/.test(String(pick(r,T.side) || '')));
-      if(late.length) C.push(card('bad', TD_I.warn, toFa(late.length) + ' کار گذشته از موعد', sub(late), 'دیدن', 'data-h3k="mine"'));
+      if(late.length && !HM_DESK()) C.push(card('bad', TD_I.warn, toFa(late.length) + ' کار گذشته از موعد', sub(late), 'دیدن', 'data-h3k="mine"'));
       if(tod.length) C.push(card('due', HM_I.clock, 'موعد امروز', sub(tod), 'دیدن', 'data-h3k="mine"'));
       if(ex.length) C.push(card('ind', HM_I.task || HM_I.clock, toFa(ex.length) + ' فعالیت اجرایی در جریان', sub(ex), 'دیدن', 'data-h3k="mine"'));
     }catch(e){}
@@ -95184,7 +95185,7 @@
       +   '<button type="button" class="hz-pj2" data-pjopen="1">' + pjCoverHtml(pj, 'hz-pjc') + '<span><b>' + esc(pj.name || 'پروژه') + '</b><small>' + esc([pj.status || '', pgA != null ? toFa(pgA) + '٪ پیشرفت' : ''].filter(Boolean).join(' · ') || 'معرفی پروژه') + '</small></span></button>'
       +   '<button type="button" class="hz-b" data-pjsw="1" aria-haspopup="true">' + toFa(pjN > 1 ? pjN + ' پروژه' : 'پروژه‌ها') + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>'
       + '</div>'
-      + mine + alert2 + band
+      + mine + band
       + '</section>';
   }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-hzgo]'); if(!b) return; e.preventDefault(); e.stopPropagation();
@@ -95199,6 +95200,8 @@
      پیش از آنکه چیزی بحرانی شود: قراردادهایی که تا ۳۰ روز تمام می‌شوند، مدرک طراحی که بیش از ۱۴ روز نزد
      مشاور/کارفرما مانده، صورت وضعیت پرداخت‌نشدهٔ بیش از ۴۵ روز و مانع باز بیش از ۷ روز. همه از داده‌های
      همین صفحه (بی‌درخواست اضافه)؛ هر ردیف با یک کلیک باز می‌شود. */
+  function HM_DESK(){ try{ return window.matchMedia('(min-width:1180px)').matches; }catch(e){ return false; } }
+  function HM_EWN(){ return HM_DESK() ? 3 : 5; }
   function hmEarly(){
     let ok = false; try{ ok = hmDashOk() || tabOk('admin'); }catch(e){} if(!ok) return '';
     const L = [], t0 = todayShamsi();
@@ -95221,8 +95224,8 @@
     const I = {ct: HM_I.ct || '', ds: HM_I.doc || '', st: HM_I.st || HM_I.money || '', blk: (typeof TD_I !== 'undefined' && TD_I.warn) || ''};
     const nb = L.filter(x => x.tone === 'bad').length;
     return '<section class="hew h3-a" style="--i:1"><div class="hew-h"><b>هشدار زودهنگام</b><small>' + toFa(L.length) + ' مورد نزدیک به بحرانی شدن' + (nb ? ' · <em>' + toFa(nb) + ' فوری</em>' : '') + '</small>'
-      + (L.length > 5 ? '<button type="button" class="hew-all" data-hewall="1">همه (' + toFa(L.length) + ')</button>' : '') + '</div><div class="hew-l">'
-      + L.map((x, i) => '<button type="button" class="hew-r ' + x.tone + (i >= 5 ? ' more' : '') + '" data-hewgo="' + esc(x.go) + '"><i>' + (I[x.ic] || '') + '</i><span><b>' + esc(x.t) + '</b><small>' + esc(x.s) + '</small></span></button>').join('')
+      + (L.length > HM_EWN() ? '<button type="button" class="hew-all" data-hewall="1">همه (' + toFa(L.length) + ')</button>' : '') + '</div><div class="hew-l">'
+      + L.map((x, i) => '<button type="button" class="hew-r ' + x.tone + (i >= HM_EWN() ? ' more' : '') + '" data-hewgo="' + esc(x.go) + '"><i>' + (I[x.ic] || '') + '</i><span><b>' + esc(x.t) + '</b><small>' + esc(x.s) + '</small></span></button>').join('')
       + '</div></section>';
   }
   document.addEventListener('click', e => { const t = e.target; if(!t.closest) return;
