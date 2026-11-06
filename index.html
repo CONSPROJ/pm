@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106100355">
+<meta name="pm-build" content="20261106100857">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28572,6 +28572,20 @@
 
   /* جست‌وجو و فیلتر اسناد زیر ردیف بخش‌ها */
   :is(html,#z0) :is(body,#z1) #adminView > .block.adm-srch{display:flex;flex-direction:column;margin:0 0 12px !important;}
+
+  /* مرکز داده و تطبیق */
+  .dc-hub .dc-health{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:8px;margin:12px 0 14px;}
+  .dc-hc{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px 12px;border:1px solid color-mix(in srgb, var(--line) 85%, transparent);border-radius:14px;background:var(--surface);transition:border-color var(--d1) ease, background-color var(--d1) ease, box-shadow var(--d1) ease;}
+  .dc-hc:hover{border-color:color-mix(in srgb, var(--sky) 35%, var(--line));}
+  .dc-hc.on{border-color:var(--sky);background:color-mix(in srgb, var(--sky) 6%, var(--surface));box-shadow:0 0 0 3px color-mix(in srgb, var(--sky) 12%, transparent);}
+  .dc-hc > i{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb, var(--sky) 12%, var(--surface));color:var(--sky);}
+  .dc-hc > i svg{width:17px;height:17px;}
+  .dc-hc span{min-width:0;display:flex;flex-direction:column;gap:2px;} .dc-hc b{font-size:12.5px;font-weight:800;color:var(--ink);} .dc-hc small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dc-hc em{font-style:normal;min-width:26px;height:22px;padding:0 7px;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:800;background:color-mix(in srgb, #2f8a5f 14%, var(--surface));color:#2f8a5f;}
+  .dc-hc.due em{background:color-mix(in srgb, #c0392b 13%, var(--surface));color:#c0392b;}
+  .dc-skl{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);}
+  @media(max-width:900px){ .dc-hub .dc-health{grid-template-columns:repeat(2, minmax(0,1fr));} }
+  @media(max-width:520px){ .dc-hc small{display:none;} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -44286,7 +44300,7 @@
        • جایگزینی کامل: نام قدیمی در همهٔ جدول‌ها به نام تازه تبدیل می‌شود.
        • جدا هستند: پیشنهاد تکراری دیگر نشان داده نمی‌شود.
      تطبیق پیمانکار با طرف قرارداد و ویرایشگر پایگاه داده هم زبانه‌های همین مرکزند. */
-  const dcState = {tab:'db', q:'', f:'all', open:'', busy:false};
+  const dcState = {tab:(function(){ try{ return localStorage.getItem('siteLogM.dcTab') || 'names'; }catch(e){ return 'names'; } })(), q:'', f:'all', open:'', busy:false};
   let dcNames = null;              // Map نام → {types:Set, n}
   async function dcLoad(force){
     if(dcNames && !force) return dcNames;
@@ -44607,6 +44621,8 @@
     renderDataCenter();
   });
 
+  /* بعد از خواندن محل‌ها: اگر مرکز داده باز است، شمارش و زبانهٔ محل تازه شود */
+  window.__dcLocRefresh = () => { const d = document.getElementById('dataCenter'); if(d && d.offsetParent && d.querySelector('.dc-hub')) renderDataCenter(); };
   async function renderDataCenter(force){
     const box = document.getElementById('dataCenter');
     if(!box || !isAdminUser()) return;
@@ -44667,15 +44683,33 @@
           +   '<button type="button" class="mini" data-dcno="' + esc(x.a) + '" data-b="' + esc(x.b) + '">جدا هستند</button>'
           + '</span></div>').join('') + '</div>'
       : '<div class="dc-sg ok"><b>نام تکراری مشکوکی پیدا نشد ✓</b></div>';
-    if(dcState.tab === 'zone') dcState.tab = 'db';
-    box.innerHTML = '<div class="dc">'
-      + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>پایگاه داده</b>'
-      +   '<small>دیدن و ویرایش مستقیم جدول‌ها، خروجی و پشتیبان هر جدول</small></span>'
+    /* ====== مرکز داده و تطبیق: همهٔ تطبیق‌ها یک‌جا ======
+       نام افراد و پیمانکاران (همان پنل تطبیق نام)، محل و طبقه (همان تطبیق فضاها)،
+       تخصص‌ها و پایگاه داده. بالای صفحه «سلامت داده»: هر چه منتظر تصمیم است با شمارش. */
+    if(['names', 'loc', 'skill', 'db'].indexOf(dcState.tab) === -1) dcState.tab = 'names';
+    let nLoc = null, nSk = 0;
+    try{ if(mt.rows) nLoc = mt.rows.filter(x => x.n > 0 && !mtMatchOf(x.z).ok).length; else if(!mt.busy) mtLoad(); }catch(e){}
+    try{ nSk = skDupes(skUsage()).length; }catch(e){}
+    const H = [['names', DC_I.names, 'نام افراد و پیمانکاران', mtPend + sugg.length, 'نام‌های شبیه و تطبیق پیمانکار با طرف قرارداد'],
+      ['loc', DC_I.link, 'محل و طبقه', nLoc, 'محل‌های گزارش که به طبقه یا فضایی وصل نیستند'],
+      ['skill', DC_I.swap, 'تخصص‌ها', nSk, 'تخصص‌های تکراری یا شبیه'],
+      ['db', DC_I.db, 'پایگاه داده', 0, 'ویرایش مستقیم جدول‌ها، خروجی و پشتیبان']];
+    const tot = H.reduce((a, x) => a + (+x[3] || 0), 0);
+    let pane = '';
+    if(dcState.tab === 'names') pane = (sugg.length ? '<details class="dc-dup" open><summary>' + DC_I.names + '<b>' + toFa(sugg.length) + ' نام مشکوک به تکرار</b><small>در کل سامانه (کاربران، گزارش‌ها، طرف‌های قرارداد)</small></summary>' + suggHtml + '</details>' : '')
+      + (function(){ try{ return ctrPanelHtml(); }catch(e){ return '<div class="empty">پنل تطبیق نام آماده نشد.</div>'; } })();
+    else if(dcState.tab === 'loc') pane = '<div class="dc-loc">' + (function(){ try{ return mtHtml(); }catch(e){ return '<div class="empty">تطبیق محل‌ها آماده نشد.</div>'; } })() + '</div>';
+    else if(dcState.tab === 'skill') pane = '<div class="dc-skl"><div class="dc-sgh"><b>' + (nSk ? toFa(nSk) + ' تخصص تکراری یا شبیه' : 'تخصص تکراری پیدا نشد ✓') + '</b><small>یکی کردن تخصص‌ها، نام اصلی و فهرست پروژه در «نیروی انسانی ← تخصص‌ها» است</small></div>'
+      + '<button type="button" class="mini go" data-dcskill="1">' + DC_I.swap + 'باز کردن تخصص‌ها</button></div>';
+    else pane = dbxLaunchHtml();
+    box.innerHTML = '<div class="dc dc-hub">'
+      + '<div class="dc-hero"><span class="dc-hic">' + DC_I.db + '</span><span class="dc-htx"><b>مرکز داده و تطبیق</b>'
+      +   '<small>' + (tot ? toFa(tot) + ' مورد منتظر تصمیم' : 'همهٔ نام‌ها، محل‌ها و تخصص‌ها مرتب‌اند ✓') + '</small></span>'
       +   '<button type="button" class="mini" data-dcreload="1">بازخوانی</button></div>'
-      /* نام‌ها و تطبیق پیمانکار در «پروندهٔ نیروی انسانی» است؛ اینجا فقط پایگاه داده،
-         و اگر نام تکراری مشکوکی باشد یک کادر کوچک برای یکی کردنش */
-      + (sugg.length ? '<details class="dc-dup"><summary>' + DC_I.names + '<b>' + toFa(sugg.length) + ' نام مشکوک به تکرار</b><small>یکی کنید یا جدا بگذارید</small></summary>' + suggHtml + '</details>' : '')
-      + '<div class="dc-pane on">' + dbxLaunchHtml() + '</div>'
+      + '<div class="dc-health">' + H.map(x => '<button type="button" class="dc-hc' + (dcState.tab === x[0] ? ' on' : '') + (x[3] ? ' due' : '') + '" data-dctab="' + x[0] + '">'
+          + '<i>' + x[1] + '</i><span><b>' + x[2] + '</b><small>' + x[4] + '</small></span>'
+          + '<em>' + (x[3] == null ? '…' : x[3] ? toFa(x[3]) : '✓') + '</em></button>').join('') + '</div>'
+      + '<div class="dc-pane on" data-dcp="' + dcState.tab + '">' + pane + '</div>'
       + '</div>';
     if(box.dataset.dcw !== '1'){
       box.dataset.dcw = '1';
@@ -44696,7 +44730,8 @@
   }
   async function dcClick(e){
     const t = e.target;
-    const tb = t.closest('[data-dctab]'); if(tb){ dcState.tab = tb.dataset.dctab; return renderDataCenter(); }
+    const tb = t.closest('[data-dctab]'); if(tb){ dcState.tab = tb.dataset.dctab; try{ localStorage.setItem('siteLogM.dcTab', dcState.tab); }catch(e2){} return renderDataCenter(); }
+    if(t.closest('[data-dcskill]')){ try{ window.openSkillsDir && window.openSkillsDir(); }catch(e2){} return; }
     if(t.closest('[data-zmf],[data-zmrow],[data-zmreload],[data-zmal],[data-zmunal],[data-zmrep],[data-zmgal],[data-zmgrep]')) return zmClick(e);
     const fb = t.closest('[data-dcf]'); if(fb){ dcState.f = fb.dataset.dcf; return renderDataCenter(); }
     const rr = t.closest('[data-dcrow]'); if(rr){ dcState.open = dcState.open === rr.dataset.dcrow ? '' : rr.dataset.dcrow; return renderDataCenter(); }
@@ -48232,7 +48267,7 @@
   WS_GRP.splice(1, 0, WS_GRP.splice(WS_GRP.findIndex(g => g.k === 'hr'), 1)[0]);
   /* مدیریت سامانه هم در سه دسته */
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
-    {t:'داده', d:'جدول‌های پایگاه داده', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
+    {t:'داده و تطبیق', d:'نام‌ها، محل و طبقه، تخصص‌ها و جدول‌ها', c:'#b07512', ks:['data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود و زنجیرهٔ تأیید', c:'#c4553f', ks:['sec','up','chain'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
   const WS_GOF = {rc:'ana', la:'ana', kpi:'ana', fc:'ana', wkr:'ana', mtg:'ana', con:'ana', ptw:'site', mrc:'res', hov:'prj', tasks:'site', crew:'site', wrk:'site', hse:'site', qc:'site', mc:'site', gl:'prj', cad:'prj', cut:'prj', org:'prj', prc:'res', wh:'res', co:'fin', ib:'fin', qt:'fin', sp:'prj', leave:'hr', ctr:'hr'};
   const wsMod = k => WS_MODS.find(x => x.k === k);
@@ -51963,7 +51998,7 @@
         + (unkMen ? '<div class="rc-row rc-unk" title="' + esc(Array.from(unk.keys()).slice(0, 12).join('، ')) + '"><span class="rc-lb">طبقهٔ نامشخص</span>'
             + '<span class="rc-tr"><i style="width:' + Math.round(unkMen / zMax * 100) + '%"></i></span><b>' + toFa(unkMen) + '</b></div>'
             + '<div class="hr-note rc-unkn">' + toFa(unk.size) + ' محل بدون طبقه: ' + esc(Array.from(unk.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => x[0]).join('، ')) + (unk.size > 5 ? ' …' : '')
-            + ' — طبقهٔ این محل‌ها را در «داده و نام‌ها ← محل و طبقه» تعیین کنید.</div>' : '')
+            + ' — طبقهٔ این محل‌ها را در «مرکز داده و تطبیق ← محل و طبقه» تعیین کنید.</div>' : '')
         + '</div>'
       : '<div class="empty">داده‌ای نیست.</div>';
 
@@ -78745,6 +78780,9 @@
   document.addEventListener('change', e => { const i = e.target; if(!i.matches || !i.matches('[data-spfind]')) return; const v = String(i.value || '').trim(); if(!v) return;
     let hit = null; try{ spFloors().forEach(f => (f.units || []).forEach(u => { if(hit) return; const l = spUnitLb(u) + ' · ' + floorLabel(f.key); if(v.indexOf(l) === 0 || toEn(v) === toEn(String(u))) hit = u; })); }catch(er){}
     if(hit != null){ i.value = ''; try{ spUnitOpen(hit); }catch(er){} } });
+  /* تطبیق محل‌ها در «مرکز داده و تطبیق» هم هست؛ هر بار که فضاها از نو کشیده می‌شوند، آن هم */
+  setTimeout(() => { const _spR = spRender; spRender = function(){ const r = _spR.apply(this, arguments);
+    try{ const d = document.querySelector('#dataCenter .dc-loc'); if(d && d.offsetParent && dcState.tab === 'loc') renderDataCenter(); }catch(e){} return r; }; }, 0);
   function spRender(){
     const body = document.getElementById('spBody'); if(!body) return;
     const side = document.getElementById('spSide');
@@ -81413,6 +81451,7 @@
     }catch(e){ mt.sk = []; }
     mt.busy = false;
     if(sp.tab === 'mt') spRender();
+    try{ window.__dcLocRefresh && window.__dcLocRefresh(); }catch(e){}
   }
   /* ====== بررسی نام‌ها: طبقات، محل‌ها و محل‌های جزء جدا ======
      هر سطح جدا (و هر طبقه جدا) بررسی می‌شود؛ نام‌هایی که شبیه‌اند و ممکن است اشتباه تایپی
@@ -81561,7 +81600,8 @@
     const l = f.closest('.mt-r').querySelector('.mt-l'); if(l){ l.setAttribute('data-list', slL1List([f.value || 'ALL'])); }
   });
   document.addEventListener('click', async e => {
-    const host = document.getElementById('spArea'); if(!host || !host.contains(e.target)) return;
+    const host = document.getElementById('spArea'), dch = e.target.closest && e.target.closest('#dataCenter .dc-loc');
+    if(!dch && (!host || !host.contains(e.target))) return;
     const t = e.target;
     if(t.closest('[data-mtall]')){ mt.all = true; spRender(); return; }
     const mlv = t.closest('[data-mrlv]'); if(mlv){ mt.lv = mlv.dataset.mrlv; spRender(); return; }
@@ -93587,7 +93627,7 @@
     const so = (k, t) => 'data-h3s="' + k + '|' + t + '"';
     if(admU) add('adm', 'users', 'کاربران و دسترسی', 'افراد، نقش‌ها و دسترسی‌ها', HM_I.people, 'hc-sky', null, false, so('users', 'کاربران و دسترسی'));
     if(ctT) add('adm', 'ct', 'پروندهٔ نیروی انسانی', 'نام، قرارداد، تماس و تخصص', KT_I.ctr, 'hc-grn', null, false, so('ct', 'پروندهٔ نیروی انسانی'));
-    if(isA){ add('adm', 'data', 'پایگاه داده', 'ویرایش مستقیم جدول‌ها', HM_I.doc, 'hc-amb', null, false, so('data', 'پایگاه داده'));
+    if(isA){ add('adm', 'data', 'مرکز داده و تطبیق', 'نام‌ها، محل و طبقه، تخصص‌ها و پایگاه داده', HM_I.doc, 'hc-amb', null, false, so('data', 'مرکز داده و تطبیق'));
              add('adm', 'rpt', 'مسئولان ثبت روزانه', 'چه کسانی هر روز باید ثبت کنند', HM_I.clock, 'hc-ind', null, false, so('rpt', 'مسئولان ثبت روزانه'));
              add('adm', 'sec', 'امنیت و پشتیبان', 'وضعیت سرور، پشتیبان و ورودها', BK_I.shield, 'hc-red', null, false, so('sec', 'امنیت و پشتیبان'));
              add('adm', 'up', 'محل آپلود', 'جای ذخیرهٔ پیوست‌ها', UP_I.up, 'hc-sky', null, false, so('up', 'محل آپلود'));
