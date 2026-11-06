@@ -96,7 +96,11 @@
 <body>
 <div class="top">
   <span class="ttl"><b>برنامهٔ زمان‌بندی</b><small id="sub">CPM · مسیر بحرانی · خط مبنا · ارزش کسب‌شده</small></span>
-  <button class="btn pri" data-a="add" data-ed>+ فعالیت</button>
+  <button class="btn pri" id="svB" data-a="save" data-ed disabled title="ذخیره (Ctrl+S)">ذخیره شد ✓</button>
+  <button class="btn" id="dcB" data-a="discard" data-ed hidden title="کنار گذاشتن تغییرهای ذخیره‌نشده">لغو تغییرات</button>
+  <span class="seg"><button class="btn" id="unB" data-a="undo" data-ed disabled title="برگشت (Ctrl+Z)">↶</button><button class="btn" id="reB" data-a="redo" data-ed disabled title="دوباره (Ctrl+Y)">↷</button></span>
+  <button class="btn" data-a="add" data-ed title="فعالیت تازه زیر ردیف انتخاب‌شده (Insert)">+ فعالیت</button>
+  <button class="btn" data-a="ms" data-ed title="نقطهٔ عطف (Milestone) با مدت صفر">◆ نقطهٔ عطف</button>
   <button class="btn" data-a="in" data-ed title="زیرمجموعهٔ ردیف بالا">→ تورفتگی</button>
   <button class="btn" data-a="out" data-ed title="بیرون آوردن از گروه">← بیرون</button>
   <button class="btn" data-a="up" data-ed title="جابه‌جایی به بالا">▲</button>
@@ -192,15 +196,44 @@ function bigJoin(rows){ const G = new Map(), out = [];
   rows.forEach(r => { const m = r.id.match(/^(.*)~(\d+)\/(\d+)$/); if(!m){ out.push(r); return; } if(!G.has(m[1])) G.set(m[1], {n: +m[3], p: []}); G.get(m[1]).p[+m[2]] = r.o; });
   G.forEach((g, id) => { if(g.p.filter(x => typeof x === 'string').length !== g.n) return; try{ out.push({id, o: JSON.parse(g.p.join(''))}); }catch(e){} });
   return out; }
-function queueSave(id){ if(S.ro) return; if(id === '__cfg') cfgDirty = true; else dirty.add(id); clearTimeout(saveT); saveT = setTimeout(flush, 700); $('#sts').textContent = 'در حال ذخیره…'; }
+/* ذخیره: پیش‌فرض دستی (دکمهٔ «ذخیره» یا Ctrl+S)؛ «ذخیرهٔ خودکار» اختیاری. تغییرهای ذخیره‌نشده در مرورگر هم نگه داشته می‌شوند. */
+S.auto = (function(){ try{ return localStorage.getItem('siteLogM.plan.auto') === '1'; }catch(e){ return false; } })();
+const DRAFT_K = () => 'siteLogM.plan.draft.' + pj();
+let draftT = 0;
+function queueSave(id){ if(S.ro) return; if(id === '__cfg') cfgDirty = true; else dirty.add(id); histMark();
+  clearTimeout(draftT); draftT = setTimeout(draftSave, 400);
+  if(S.auto){ clearTimeout(saveT); saveT = setTimeout(flush, 900); $('#sts').textContent = 'در حال ذخیره…'; } saveUI(); }
+function draftSave(){ try{ if(!dirty.size && !cfgDirty){ localStorage.removeItem(DRAFT_K()); return; } localStorage.setItem(DRAFT_K(), JSON.stringify({at: Date.now(), acts: S.acts.map(a => Object.assign({id: a.id}, pack(a))), cfg: S.cfg, dirty: Array.from(dirty), cfgDirty})); }catch(e){} }
+function saveUI(){ const b = document.getElementById('svB'), n = dirty.size + (cfgDirty ? 1 : 0); if(!b) return;
+  b.disabled = !n || S.ro; b.innerHTML = (n ? 'ذخیره <em class="bdg">' + toFa(n) + '</em>' : 'ذخیره شد ✓');
+  const u = document.getElementById('unB'), r = document.getElementById('reB'); if(u) u.disabled = !HIS.u.length; if(r) r.disabled = !HIS.r.length;
+  const dc = document.getElementById('dcB'); if(dc) dc.hidden = !n || S.auto;
+  if(n && !S.auto) $('#sts').textContent = toFa(n) + ' تغییر ذخیره نشده'; }
+/* برگشت و دوباره (Ctrl+Z / Ctrl+Y) با عکس از کل برنامه */
+const HIS = {u: [], r: [], last: null, busy: false};
+const snapNow = () => JSON.stringify({a: S.acts, c: {start: S.cfg.start, wd: S.cfg.wd, hol: S.cfg.hol, res: S.cfg.res, status: S.cfg.status}});
+function histMark(){ if(HIS.busy || HIS.q) return; HIS.q = 1; Promise.resolve().then(() => { HIS.q = 0; const now = snapNow(); if(HIS.last != null && HIS.last !== now){ HIS.u.push(HIS.last); if(HIS.u.length > 80) HIS.u.shift(); HIS.r = []; } HIS.last = now; saveUI(); }); }
+function histGo(dir){ const from = dir < 0 ? HIS.u : HIS.r, to = dir < 0 ? HIS.r : HIS.u; if(!from.length) return;
+  const cur = snapNow(), nx = from.pop(); to.push(cur); const A = JSON.parse(nx), B = JSON.parse(cur);
+  const ids = new Set(); const mb = new Map(B.a.map(x => [x.id, JSON.stringify(x)])); A.a.forEach(x => { if(mb.get(x.id) !== JSON.stringify(x)) ids.add(x.id); mb.delete(x.id); }); mb.forEach((v, k) => ids.add(k));
+  HIS.busy = true; S.acts = A.a; const cfgCh = JSON.stringify(A.c) !== JSON.stringify(B.c); Object.assign(S.cfg, A.c);
+  ids.forEach(id => queueSave(id)); if(cfgCh) queueSave('__cfg'); HIS.busy = false; HIS.last = nx; buildCal(); render(); saveUI();
+  $('#sts').textContent = (dir < 0 ? 'برگشت' : 'دوباره') + ' · ' + toFa(ids.size) + ' فعالیت'; }
 async function flush(){
-  const ids = Array.from(dirty); dirty.clear(); const c = cfgDirty; cfgDirty = false;
+  if(S.flushing) return S.flushing;
+  S.flushing = (async () => { await flush0(); })().finally(() => { S.flushing = null; saveUI(); });
+  return S.flushing; }
+async function flush0(){
+  const ids = Array.from(dirty); dirty.clear(); const c = cfgDirty; cfgDirty = false; if(!ids.length && !c) return;
+  $('#sts').textContent = 'در حال ذخیره…';
   try{
     for(const id of ids){ const a = S.acts.find(x => x.id === id); await listPut(K_ACT, id, a ? pack(a) : null); }
     if(c) await bigPut(K_CFG, 'cfg', S.cfg);
     const lg = auditDiff(ids); if(c && S.cfgLog){ lg.push(auditNote(S.cfgLog)); S.cfgLog = ''; } auditPut(lg).catch(() => {});
     $('#sts').textContent = 'ذخیره شد ✓ ' + new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
-  }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد؛ دوباره تلاش می‌شود'; setTimeout(flush, 5000); }
+    if(!dirty.size && !cfgDirty){ try{ localStorage.removeItem(DRAFT_K()); }catch(e){} }
+    cpmPublish();
+  }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد: ' + String(e.message || e).slice(0, 80); if(S.auto) setTimeout(flush, 5000); draftSave(); }
 }
 const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0});
 
@@ -298,7 +331,7 @@ function render(){
       + (sum ? '<td class="bd ro">' + money(C.bOf(a)) + '</td>' : '<td class="bd">' + inp('b', a.b ? toFa(Math.round(a.b).toLocaleString('en-US')) : '', '', ' inputmode="numeric" dir="ltr"') + '</td>')
       + '<td class="ct">' + (sum ? '' : inp('rs', rsTxt(a), '', ' list="ctrDl" placeholder="—" title="مثلاً: پیمانکار اسکلت ×۸، پیمانکار برق ×۲"')) + '</td></tr>'; }).join('')
     : '<tr><td colspan="12"><div class="empty">هنوز فعالیتی نیست.<br>' + (ed ? '«+ فعالیت» بزنید یا یک برنامهٔ آماده بسازید.<br><button class="btn pri" data-a="tpl" style="margin-top:10px">ساختن از قالب ساختمانی</button>' : 'برنامه‌ای ثبت نشده است.') + '</div></td></tr>';
-  renderGantt(rows); renderKp(); cpmPublish(); tkBadge();
+  renderGantt(rows); renderKp(); tkBadge(); saveUI();
   $('#ste').textContent = S.err;
   $('#stl').textContent = toFa(C.leaves.length) + ' فعالیت · پایان پروژه ' + d2fa(wDay(C.pEnd - 1)) + ' · ' + toFa(C.pEnd - C.s0) + ' روز کاری' + (S.ro ? ' · فقط خواندنی' : '');
 }
@@ -360,9 +393,9 @@ const actById = id => S.acts.find(a => a.id === id);
 function setSel(id){ S.sel = id; $$('#tb tr').forEach(t => t.classList.toggle('sel', t.dataset.id === id)); $$('#gb .gr').forEach(t => t.classList.toggle('sel', t.dataset.id === id)); }
 function sibs(a){ return S.acts.filter(x => (x.p || '') === (a.p || '')).sort((x, y) => x.o - y.o); }
 function renorm(pid){ S.acts.filter(x => (x.p || '') === pid).sort((x, y) => x.o - y.o).forEach((x, i) => { if(x.o !== i){ x.o = i; queueSave(x.id); } }); }
-function addAct(after){ const ref = after ? actById(after) : null; const p = ref ? (ref.p || '') : '';
+function addAct(after, ms){ const ref = after ? actById(after) : null; const p = ref ? (ref.p || '') : '';
   const o = ref ? ref.o + 0.5 : (S.acts.filter(x => !x.p).length);
-  const a = {id: uid(), n: 'فعالیت تازه', p, o, d: 5, dep: ref && !S.calc.isSum(ref) ? [{id: ref.id, t: 'FS', l: 0}] : [], pc: 0};
+  const a = {id: uid(), n: ms ? 'نقطهٔ عطف تازه' : 'فعالیت تازه', p, o, d: ms ? 0 : 5, ms: !!ms, dep: ref && !S.calc.isSum(ref) ? [{id: ref.id, t: 'FS', l: 0}] : [], pc: 0};
   S.acts.push(a); renorm(p); queueSave(a.id); S.sel = a.id; render();
   setTimeout(() => { const i = document.querySelector('#tb tr[data-id="' + a.id + '"] input[data-f="n"]'); if(i){ i.focus(); i.select(); } }, 30); }
 function act(kind){
@@ -383,12 +416,21 @@ document.addEventListener('click', e => { const t = e.target;
   const z = t.closest('[data-z]'); if(z){ S.cfg.zoom = z.dataset.z; $$('[data-z]').forEach(b => b.classList.toggle('on', b === z)); queueSave('__cfg'); render(); return; }
   const f = t.closest('[data-fold]'); if(f){ const id = f.dataset.fold; S.fold.has(id) ? S.fold.delete(id) : S.fold.add(id); render(); return; }
   const b = t.closest('[data-a]'); if(b){ const k = b.dataset.a;
-    if(k === 'cfg') return cfgOpen(); if(k === 'bl') return blOpen(); if(k === 'evm') return evmOpen(); if(k === 'tpl') return tplOpen(); if(k === 'csv') return csvOut(); if(k === 'res') return resOpen(); if(k === 'tk') return tkOpen(); if(k === 'alloc') return allocOpen(); if(k === 'hist') return histOpen(); if(k === 'io') return ioOpen(); if(k === 'print') return window.print();
+    if(k === 'cfg') return cfgOpen(); if(k === 'bl') return blOpen(); if(k === 'evm') return evmOpen(); if(k === 'tpl') return tplOpen(); if(k === 'csv') return csvOut(); if(k === 'save'){ flush(); return; } if(k === 'undo') return histGo(-1); if(k === 'redo') return histGo(1);
+    if(k === 'discard'){ if(!confirm('همهٔ تغییرهای ذخیره‌نشده کنار گذاشته شود؟')) return; dirty.clear(); cfgDirty = false; try{ localStorage.removeItem(DRAFT_K()); }catch(e){} location.reload(); return; }
+    if(k === 'ms'){ if(S.ro) return; addAct(S.sel, true); return; }
+    if(k === 'res') return resOpen(); if(k === 'tk') return tkOpen(); if(k === 'alloc') return allocOpen(); if(k === 'hist') return histOpen(); if(k === 'io') return ioOpen(); if(k === 'print') return window.print();
     if(S.ro) return; act(k); return; }
   const tr = t.closest('#tb tr[data-id]'); if(tr) setSel(tr.dataset.id);
   const gr = t.closest('#gb [data-id], #gb [data-bar]'); if(gr) setSel(gr.dataset.id || gr.dataset.bar);
 });
-document.addEventListener('keydown', e => { if(S.ro) return; if(e.target.matches && e.target.matches('#tb input')){
+document.addEventListener('keydown', e => { if(S.ro) return; const mod = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase(), inInp = e.target.matches && e.target.matches('input, textarea, select');
+  if(mod && (k === 's' || k === 'س')){ e.preventDefault(); if(inInp) e.target.blur(); setTimeout(flush, 30); return; }
+  if(mod && !inInp && (k === 'z' || k === 'ظ')){ e.preventDefault(); histGo(e.shiftKey ? 1 : -1); return; }
+  if(mod && !inInp && (k === 'y' || k === 'غ')){ e.preventDefault(); histGo(1); return; }
+  if(!inInp && e.key === 'Insert'){ e.preventDefault(); addAct(S.sel); return; }
+  if(!inInp && e.key === 'Delete' && S.sel){ e.preventDefault(); act('del'); return; }
+  if(e.target.matches && e.target.matches('#tb input')){
   if(e.key === 'Enter'){ e.preventDefault(); e.target.blur(); if(e.target.dataset.f === 'n' && (e.ctrlKey || e.metaKey)) addAct(S.sel); }
   if(e.key === 'Tab' && e.altKey){ e.preventDefault(); act(e.shiftKey ? 'out' : 'in'); } } });
 document.addEventListener('change', e => { const i = e.target; if(i.id === 'sd'){ const d = fa2d(i.value); if(d != null){ S.cfg.status = d; histSnap(); queueSave('__cfg'); render(); } return; }
@@ -427,10 +469,12 @@ function dlg(title, body, foot){ const bg = document.createElement('div'); bg.cl
 function cfgOpen(){ const c = S.cfg, ro = S.ro ? ' disabled' : '';
   const bg = dlg('تقویم و تنظیم پروژه', '<label class="fx"><span>تاریخ شروع پروژه</span><input id="cS" value="' + d2fa(c.start) + '"' + ro + '></label>'
     + '<div class="fx"><span>روزهای کاری هفته</span><div class="wd">' + WDN.map((n, i) => '<label><input type="checkbox" data-wd="' + i + '"' + (c.wd[i] > 0 ? ' checked' : '') + ro + '>' + ['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'][i] + '</label>').join('') + '</div></div>'
+    + '<label class="fx"><span><input type="checkbox" id="cAuto"' + (S.auto ? ' checked' : '') + ro + '> ذخیرهٔ خودکار (هر تغییر بی‌درنگ ذخیره شود)</span><small>خاموش: تغییرها را هر قدر لازم است انجام دهید و با «ذخیره» یا Ctrl+S یک‌جا ثبت کنید؛ «لغو تغییرات» همه را کنار می‌گذارد.</small></label>'
     + '<label class="fx"><span>تعطیلات (هر سطر یک تاریخ)</span><textarea id="cH"' + ro + '>' + esc((c.hol || []).map(toFa).join('\n')) + '</textarea><small>تعطیلات رسمی سال را این‌جا بنویسید (مثلاً ۱۴۰۵/۰۱/۰۱). روز تعطیل در محاسبهٔ مدت‌ها حساب نمی‌شود.</small></label>',
     S.ro ? '' : '<button class="btn pri" data-ok>اعمال</button>');
   const ok = bg.querySelector('[data-ok]'); if(ok) ok.onclick = () => { const st = fa2d(bg.querySelector('#cS').value); if(st != null) c.start = st;
     c.wd = WDN.map((n, i) => bg.querySelector('[data-wd="' + i + '"]').checked ? 1 : 0); if(!c.wd.some(Boolean)) c.wd[0] = 1;
+    S.auto = bg.querySelector('#cAuto').checked; try{ localStorage.setItem('siteLogM.plan.auto', S.auto ? '1' : '0'); }catch(e){} if(S.auto) setTimeout(flush, 300);
     c.hol = bg.querySelector('#cH').value.split(/\n+/).map(x => x.trim()).filter(x => fa2d(x) != null).map(toEn); queueSave('__cfg'); bg.remove(); render(); }; }
 function blOpen(){ const L = S.bls.slice().reverse();
   const bg = dlg('خط مبنا', '<div class="fx"><small>خط مبنا عکسی از برنامهٔ فعلی (شروع و پایان همهٔ فعالیت‌ها) است تا بعداً تأخیرها نسبت به آن سنجیده شوند. نوار خاکستری زیر هر فعالیت در گانت همان خط مبناست.</small></div>'
@@ -803,13 +847,16 @@ function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(()
   if(S.ro) document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">فقط خواندنی — ویرایش برنامه برای مدیر پروژه و ادمین است.</div>');
   $$('[data-ed]').forEach(b => { if(S.ro) b.disabled = true; });
   $$('[data-z]').forEach(b => b.classList.toggle('on', b.dataset.z === S.cfg.zoom));
-  ctrDatalist(); render();
-  tasksLoad().then(T => { if(!T) return; compute(); const n = S.ro ? 0 : tkPull(); if(n) S.cfgLog = 'به‌روزرسانی خودکار از فهرست فعالیت‌ها: ' + n + ' فعالیت'; render(); });
+  /* تغییرهای ذخیره‌نشدهٔ دفعهٔ قبل */
+  if(!S.ro){ try{ const D = JSON.parse(localStorage.getItem(DRAFT_K()) || 'null'); if(D && D.acts && (D.dirty.length || D.cfgDirty) && confirm(toFa(D.dirty.length + (D.cfgDirty ? 1 : 0)) + ' تغییر ذخیره‌نشده از دفعهٔ قبل پیدا شد. بازگردانده شود؟')){
+      S.acts = D.acts; Object.assign(S.cfg, D.cfg || {}); D.dirty.forEach(i => dirty.add(i)); if(D.cfgDirty) cfgDirty = true; S.draftRestored = true; } else if(D) localStorage.removeItem(DRAFT_K()); }catch(e){} }
+  ctrDatalist(); render(); HIS.last = snapNow(); saveUI();
+  tasksLoad().then(T => { if(!T) return; compute(); const n = S.ro ? 0 : tkPull(); if(n){ S.cfgLog = 'به‌روزرسانی خودکار از فهرست فعالیت‌ها: ' + n + ' فعالیت'; if(!S.draftRestored) flush(); } render(); });
   try{ const f = new URLSearchParams(location.search).get('focus'); if(f){ const a = S.acts.find(x => String(x.tk) === f || x.id === f); if(a){ let p = a.p; while(p){ S.fold.delete(p); p = (S.acts.find(x => x.id === p) || {}).p; } S.sel = a.id; render(); setTimeout(() => { const tr = document.querySelector('#tb tr[data-id="' + a.id + '"]'); if(tr) tr.scrollIntoView({block: 'center'}); }, 80); } } }catch(e){}
   setTimeout(() => { const gw = $('#gw'); gw.scrollLeft = gw.scrollWidth; }, 60);
   let qt = 0; $('#fq').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 200); });
 })();
-window.addEventListener('beforeunload', e => { if(dirty.size || cfgDirty){ flush(); e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if(dirty.size || cfgDirty){ draftSave(); if(S.auto) flush(); e.preventDefault(); e.returnValue = ''; } });
 </script>
 </body>
 </html>
