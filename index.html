@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106061210">
+<meta name="pm-build" content="20261106061356">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28439,6 +28439,13 @@
   .rg-log{display:flex;flex-direction:column;gap:3px;margin:12px 0 0;font-size:11.5px;color:var(--muted);} .rg-log span::before{content:'•';margin-inline-end:6px;color:var(--sky);}
   .rg-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
   @media(max-width:620px){ .rg-grid, .rg-cl{grid-template-columns:1fr;} }
+
+  /* گزارش هفتگی: عکس‌های پیشرفت */
+  .wkr-ph{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:8px;margin:6px 0 14px;}
+  .wkr-ph figure{margin:0;border:1px solid #d9dee5;border-radius:10px;overflow:hidden;break-inside:avoid;background:#f7f9fb;}
+  .wkr-ph img{display:block;width:100%;height:150px;object-fit:cover;}
+  .wkr-ph figcaption{font-size:9.5px;color:#5b6573;padding:4px 8px;}
+  .wkr-k em{font-style:normal;color:#c0392b;font-size:.8em;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -93845,6 +93852,25 @@
     const DN = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
     const dn = d => { try{ const p0 = faParts(d), g = j2g(p0[0], p0[1], p0[2]); return DN[new Date(g[0], g[1] - 1, g[2]).getDay()]; }catch(e){ return ''; } };
     const K = (v, l) => '<div class="wkr-k"><b>' + v + '</b><span>' + l + '</span></div>';
+    /* بخش‌های تازه: پیشرفت، مالی، ایمنی و مجوزها، و عکس‌های پیشرفت همین هفته */
+    let wkExtra = '';
+    try{
+      const P = fxProgress(); let C = null; try{ C = cfData(); }catch(e){}
+      const mon = toEn(t0).slice(0, 7);
+      try{ if(!hseState.t) await hseLoad(); }catch(e){}
+      try{ await fxList(REGS.ptw.kind); await fxList(FX_PIN); }catch(e){}
+      const hw = (hseState.list || []).filter(x => inW(x.date)), hh = hw.filter(x => x.sev === 'high').length;
+      const pt = (fxC.get(REGS.ptw.kind) || []).filter(x => x.o.st === 'ok').length;
+      const ncr = (qc && qc.t) ? qc.ncrs.filter(n => n.st !== 'بسته').length : null;
+      wkExtra += '<h2>پیشرفت و مالی</h2><div class="wkr-ks">' + K(toFa(Math.round(P.p || 0)) + '٪', 'پیشرفت کل (' + esc(P.src || '') + ')')
+        + (C ? K(esc(arToman(C.pays.get(mon) || 0)), 'پرداخت این ماه (تومان)') + K(esc(arToman(C.unpaid)), 'بدهی صورت وضعیت‌ها (تومان)') + K(esc(arToman(C.paid)), 'پرداخت تا کنون (تومان)') : '') + '</div>';
+      wkExtra += '<h2>ایمنی و کیفیت</h2><div class="wkr-ks">' + K(toFa(hw.length) + (hh ? ' <em>(' + toFa(hh) + ' شدید)</em>' : ''), 'رخداد ایمنی این هفته') + K(toFa(pt), 'مجوز کار فعال') + (ncr != null ? K(toFa(ncr), 'عدم انطباق باز') : '') + '</div>';
+      const shots = []; (fxC.get(FX_PIN) || []).forEach(p => (p.o.sh || []).forEach(s => { if(s.ph && inW(s.d)) shots.push({ph: s.ph, d: s.d, f: p.o.f, n: p.o.n}); }));
+      shots.sort((a, b) => String(b.d).localeCompare(String(a.d)));
+      const S = shots.slice(0, 6); fxImg.full = true; const U = await Promise.all(S.map(x => fxImg(x.ph).catch(() => ''))); fxImg.full = false;
+      const ok = S.map((x, i) => Object.assign(x, {u: U[i]})).filter(x => x.u);
+      if(ok.length) wkExtra += '<h2>عکس‌های پیشرفت این هفته</h2><div class="wkr-ph">' + ok.map(x => '<figure><img src="' + esc(x.u) + '" alt=""><figcaption>' + esc([x.f ? floorLabel(x.f) : '', x.n, toFa(x.d)].filter(Boolean).join(' · ')) + '</figcaption></figure>').join('') + '</div>';
+    }catch(e){}
     const html = '<section class="wkr"><header class="wkr-h"><div><small>گزارش هفتگی پروژه</small><h1>' + esc(pj.name || 'پروژه') + '</h1><p>از ' + esc(toFa(D[0])) + ' تا ' + esc(toFa(D[D.length - 1])) + '</p></div>'
       + '<div class="wkr-by"><span>تهیه: ' + esc(activeUserName() || '') + '</span><span>تاریخ: ' + esc(toFa(t0)) + '</span></div></header>'
       + '<div class="wkr-ks">' + K(toFa(act ? Math.round(tot / act) : 0), 'میانگین نفرات روزانه') + K(toFa(ctr.size), 'پیمانکار فعال') + K(toFa(iss.length), 'مانع ثبت‌شده') + K(toFa(docs.reduce((t, x) => t + x.n, 0)), 'سند در این هفته')
@@ -93853,6 +93879,7 @@
       + (ctr.size ? '<h2>پیمانکاران این هفته</h2><table class="wkr-t"><thead><tr><th>پیمانکار</th><th>نفر-روز</th></tr></thead><tbody>' + Array.from(ctr.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c, n]) => '<tr><td>' + esc(c) + '</td><td>' + toFa(n) + '</td></tr>').join('') + '</tbody></table>' : '')
       + '<h2>اسناد و مالی</h2><table class="wkr-t"><thead><tr><th>نوع</th><th>این هفته</th></tr></thead><tbody>' + docs.map(x => '<tr><td>' + esc(x.t) + '</td><td>' + toFa(x.n) + '</td></tr>').join('')
       + '<tr class="sum"><td>صورت وضعیت ارسالی این هفته</td><td>' + esc(arToman(stAmt)) + ' تومان</td></tr><tr class="sum"><td>مانده مطالبات پیمانکاران</td><td>' + esc(arToman(stDue)) + ' تومان</td></tr></tbody></table>'
+      + wkExtra
       + '<h2>موانع هفته</h2>' + (iss.length ? '<table class="wkr-t"><thead><tr><th>تاریخ</th><th>شرح</th><th>محل</th></tr></thead><tbody>' + iss.slice(0, 25).map(x => '<tr><td>' + esc(toFa(x.d)) + '</td><td>' + esc(x.t) + '</td><td>' + esc(x.z) + '</td></tr>').join('') + '</tbody></table>' : '<p class="wkr-e">در این هفته مانعی ثبت نشده است.</p>')
       + '<footer class="wkr-f">این گزارش خودکار از سامانهٔ پروژه تهیه شده است.</footer></section>';
     let m = document.getElementById('wkrM'); if(m) m.remove();
@@ -95330,6 +95357,7 @@
     if(need.co && !co.t) J.push(coLoad());
     if(need.mc && !mc.t) J.push(mcLoad());
     if(need.mq && !mq.ld) J.push(mqEnsure());
+    if(need.bud) J.push(budLoad(true));
     await Promise.all(J.map(p => Promise.resolve(p).catch(() => null)));
   }
   const rcRows = k => (adminAll || []).filter(x => x.kind === k).map(x => x.row);
@@ -95384,6 +95412,19 @@
     return {title: 'کنترل صورت وضعیت با متره', sub: 'مبلغ درخواستی در برابر مبلغ متره‌شدهٔ همان قرارداد · مبالغ به تومان · ' + rcPerT(), kpi: [['صورت وضعیت قابل مقایسه', toFa(rows.length)], ['بیش از متره (>۳٪)', toFa(rows.filter(r => r[8] !== 'همخوان').length)]],
       tables: [{t: 'مقایسه', head: ['پیمانکار', 'قرارداد', 'شمارهٔ صورت وضعیت', 'صورت وضعیت متره', 'مبلغ درخواستی', 'مبلغ متره‌شده', 'اختلاف', 'درصد', 'نتیجه'], rows, money: [4, 5, 6], sum: true}]};
   }
+  function rcCf(){
+    const D = cfData(), B = (bud && bud.doc) || {lines: [], fc: {}};
+    const now = toEn(todayShamsi()).slice(0, 7), restCommit = Math.max(0, D.committed - D.paid - D.unpaid);
+    const claim = new Map(); stLive(rcRows('statement')).forEach(r => { const k = rcDk(pick(r,AD.sDate) || pick(r,AD.date)).slice(0, 7); if(k) claim.set(k, (claim.get(k) || 0) + moneyNum(pick(r,AD.sAmount))); });
+    const rows = []; let cum = 0;
+    for(let i = -11; i <= 6; i++){ const k = faMonAdd(now, i), fut = i >= 1; const auto = !fut ? 0 : (i === 1 ? D.unpaid : 0) + restCommit / 6;
+      const a = fut ? 0 : (D.pays.get(k) || 0), f = fut ? (B.fc && B.fc[k] != null && B.fc[k] !== '' ? +B.fc[k] : Math.round(auto)) : 0; cum += a + f;
+      rows.push([faMonName(k), i === 0 ? 'ماه جاری' : fut ? 'پیش‌بینی' : 'واقعی', claim.get(k) || 0, a, f, cum]); }
+    const first = rows.findIndex(r => r[2] || r[3] || r[4]); const R2 = first > 0 ? rows.slice(Math.min(first, 6)) : rows;
+    const n3 = rows.slice(12, 15).reduce((t, r) => t + r[4], 0);
+    return {title: 'جریان نقدی ماهانه', sub: '۱۲ ماه گذشته و ۶ ماه آینده · مبالغ به تومان · پیش‌بینی: عدد ثبت‌شده در بودجه، وگرنه بدهی صورت وضعیت‌ها و باقی تعهد', kpi: [['تعهد (قرارداد + تغییرات)', rcMoney(D.committed)], ['پرداخت‌شده', rcMoney(D.paid)], ['بدهی صورت وضعیت‌ها', rcMoney(D.unpaid)], ['نیاز نقدی ۳ ماه آینده', rcMoney(n3)]],
+      tables: [{t: 'ماه به ماه', head: ['ماه', 'نوع', 'صورت وضعیت ارسالی', 'پرداخت واقعی', 'پیش‌بینی پرداخت', 'تجمعی'], rows: R2, money: [2, 3, 4, 5], sum: true}]};
+  }
   function rcTasks(){
     const now0 = new Date(); now0.setHours(0, 0, 0, 0);
     const L = (tasksAll || []).filter(r => taskStatus(r).cls !== 'done');
@@ -95431,6 +95472,7 @@
     try{
       if(isAdminUser()) return true;
       if(k === 'debt' || k === 'st' || k === 'ct') return can('rep.cf') || can('rep.adm') || can('tab.admin');
+      if(k === 'cf') return can('rep.cf');
       if(k === 'task' || k === 'la') return can('tab.tasks');
       if(k === 'stq') return (can('rep.cf') || can('rep.adm') || can('tab.admin')) && !!(window.qtVisible && qtVisible());
       if(k === 'hse') return can('write.hse') || can('rep.hse');
@@ -95446,6 +95488,7 @@
   const RC_LIST = [
     {k: 'debt', t: 'بدهکاری‌ها', d: 'مانده مطالبات هر پیمانکار، تأییدشده و در بررسی', ic: 'debt', c: '#c0392b', need: {adm: 1}, f: rcDebt},
     {k: 'all', t: 'گزارش جامع پروژه', d: 'همهٔ بخش‌ها در یک فایل: مالی، فعالیت، ایمنی، کیفیت، تدارکات…', ic: 'all', c: '#2f6f9f', need: {adm: 1, hse: 1, qc: 1, prc: 1, wh: 1, co: 1, mc: 1}, f: rcAll},
+    {k: 'cf', t: 'جریان نقدی ماهانه', d: 'پرداخت واقعی، پیش‌بینی و نیاز نقدی ماه‌های آینده', ic: 'debt', c: '#2a8a6a', need: {adm: 1, co: 1, bud: 1}, f: rcCf},
     {k: 'st', t: 'صورت وضعیت‌ها', d: 'همه با وضعیت رسیدگی و پرداخت', ic: 'st', c: '#2f6f8f', need: {adm: 1}, f: rcSt},
     {k: 'ct', t: 'قراردادها', d: 'مبلغ، مهلت، صورت وضعیت‌شده و درصد مصرف', ic: 'ct', c: '#b0631c', need: {adm: 1}, f: rcCt},
     {k: 'task', t: 'فعالیت‌های باز', d: 'به ترتیب نزدیکی موعد', ic: 'task', c: '#3d7fb0', need: {}, f: rcTasks},
