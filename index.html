@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106054801">
+<meta name="pm-build" content="20261106055327">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28298,6 +28298,9 @@
   #vmBack svg{width:16px;height:16px;color:var(--sky);}
   #vmBack:hover{opacity:1;transform:translateY(-2px);}
   @media (prefers-reduced-motion: reduce){ .vm-card, .vm-ck, .sbf-vm > .vm-th, html.vm-going body{transition:none !important;animation:none !important;} }
+
+  /* بدون اجازهٔ اکسل، دکمه‌های اکسل/CSV دیده نمی‌شوند */
+  html.no-xl :is([data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], #wrkHrsXlsM, #wrkHrsXls, #crewXls, .xls-block){display:none !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -30034,6 +30037,7 @@
   document.addEventListener('visibilitychange', () => { if(!document.hidden) sessionGuard(); });
 
   function applyUser(name){
+    setTimeout(() => { try{ xlSync(); }catch(e){} }, 0);
     currentUser = String(name || '').trim();
     if(!currentUser && window.pmTok()){
       /* خروج: نشست روی سرور هم پاک می‌شود؛ اعلان‌های این دستگاه هم قطع می‌شود */
@@ -30769,6 +30773,8 @@
     {g:'ایمنی', k:'write.hse', t:'ثبت گزارش HSE', d:'حادثه، عامل حادثه، تصویر و جریمه', def:[1,2,3]},
     {g:'ایمنی', k:'hse.notify', t:'دریافت اعلان HSE', d:'هر گزارش ایمنی و جریمهٔ تازه', def:[1,2]},
     {g:'تدارکات', k:'proc.notify', t:'دریافت اعلان تدارکات', d:'درخواست خرید تازه و اقلامی که بحرانی شده‌اند — برای هر نفر جدا روشن کنید', def:[]},
+    {g:'سامانه', k:'xl.io', t:'ورود و خروج اکسل',
+     d:'دانلود اکسل/CSV و بارگذاری اکسل در همهٔ بخش‌ها؛ پیش‌فرض فقط مدیر سامانه', def:[1]},
     {g:'سامانه', k:'users.manage', t:'مدیریت کاربران',
      d:'ساختن کاربر، سطح دسترسی، بازنشانی رمز', def:[1]},
     {g:'سامانه', k:'ctr.contact', t:'ویرایش اطلاعات تماس پیمانکاران',
@@ -30869,6 +30875,20 @@
     if(v === 1) return true;                       // ادمین سامانه
     return permLevelsOf(k).indexOf(v) !== -1;
   }
+  /* ====== دروازهٔ اکسل: فعلاً فقط مدیر سامانه؛ مدیر می‌تواند «ورود و خروج اکسل» را به سطح، سمت یا شخص بدهد ====== */
+  function xlOk(){ try{ return !!currentUser && can('xl.io'); }catch(e){ return false; } }
+  window.xlOk = xlOk;
+  const XL_SEL = '[data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], #wrkHrsXlsM, #wrkHrsXls, #crewXls, .xls-block, input[type=file][accept*="xls"], input[type=file][accept*="csv"]';
+  function xlNo(){ try{ showDialog('warn', 'اکسل فقط با اجازهٔ مدیر', 'دانلود و بارگذاری اکسل فعلاً فقط با مدیر سامانه است. اگر لازم دارید، از مدیر بخواهید «ورود و خروج اکسل» را برایتان باز کند.'); }catch(e){ alert('اکسل فقط با اجازهٔ مدیر سامانه'); } }
+  function xlSync(){ const on = xlOk(), de = document.documentElement; if(de.classList.contains('no-xl') === on) de.classList.toggle('no-xl', !on); }
+  window.xlSync = xlSync;
+  document.addEventListener('click', e => { if(xlOk()) return; const t = e.target && e.target.closest && e.target.closest(XL_SEL); if(!t) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); xlNo(); }, true);
+  document.addEventListener('change', e => { if(xlOk()) return; const t = e.target; if(t && t.matches && t.matches('input[type=file][accept*="xls"], input[type=file][accept*="csv"]')){ t.value = ''; e.stopImmediatePropagation(); xlNo(); } }, true);
+  /* خود کتابخانه هم: نوشتن و خواندن فایل بدون اجازه انجام نمی‌شود (هر دکمه‌ای که از قلم افتاده باشد) */
+  (function(){ const wrap = X => { if(!X || typeof X !== 'object') return X; ['writeFile', 'writeFileXLSX', 'read', 'readFile'].forEach(f => { const o = X[f]; if(typeof o !== 'function' || o.__xlg) return; const w = function(){ if(!xlOk()){ xlNo(); throw new Error('اکسل فقط با اجازهٔ مدیر سامانه'); } return o.apply(this, arguments); }; w.__xlg = 1; try{ X[f] = w; }catch(e){} }); return X; };
+    let cur = window.XLSX;
+    try{ Object.defineProperty(window, 'XLSX', {configurable: true, get(){ return wrap(cur); }, set(v){ cur = v; }}); }catch(e){} })();
+  setInterval(xlSync, 5000);
   const PERM_CACHE_KEY = 'siteLogM.permLists.v1';
   function permLoad(lists){
     try{
@@ -30887,6 +30907,7 @@
       });
       permUserMap = m3;
     }catch(e){}
+    setTimeout(() => { try{ xlSync(); }catch(e){} }, 0);
     try{
       const raw = (lists && lists[PERM_KIND]) || [];
       const m = {};
