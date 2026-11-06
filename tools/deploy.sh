@@ -7,8 +7,12 @@ B=$(date -u +%Y%m%d%H%M%S)
 sed -i "s/<meta name=\"pm-build\" content=\"[0-9]*\">/<meta name=\"pm-build\" content=\"$B\">/" index.html
 echo "$B" > build.txt
 T=$(mktemp -d)
-awk '/^<script>$/{n++} n==5' index.html | sed '1d' | sed '/^<\/script>/,$d' > "$T/main.js"
+# بزرگ‌ترین اسکریپت درون‌خطی همان اسکریپت اصلی است (به جایگاهش وابسته نیست)
+python3 -c "import re,sys;s=open('index.html').read();b=re.findall(r'<script>([\s\S]*?)</script>',s);open(sys.argv[1],'w').write(max(b,key=len))" "$T/main.js"
 node --check "$T/main.js"
+# اسکریپت‌های کوچک‌تر هم سینتکس‌شان سنجیده شود
+python3 -c "import re,sys;s=open('index.html').read();b=re.findall(r'<script>([\s\S]*?)</script>',s);[open(sys.argv[1]+'/s%d.js'%i,'w').write(x) for i,x in enumerate(b)]" "$T"
+for f in "$T"/s*.js; do node --check "$f"; done
 git add -A
 git commit -q -m "$1
 
