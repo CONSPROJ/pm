@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106061356">
+<meta name="pm-build" content="20261106061539">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -80507,6 +80507,46 @@
         const o = whPack({no, t: tk, date: v.date || todayShamsi(), ctr: v.ctr, contract: v.contract, title: v.title, desc: v.desc, why: v.why, amt: v.amt || 0, days: v.days || 0, st: 'ثبت شد', log: [{st: 'ثبت شد', by: activeUserName(), d: todayShamsi()}]}, ['no','t','date','ctr','contract','title','desc','why','amt','days','st','log']);
         const id = await ndPost(ndRow(CO_KIND, no, o)); co.list.push(Object.assign({id}, o)); ok++; prog(n, R.length); }
       return {ok, fail: 0}; }, after: () => { try{ coRender(); }catch(e){} }};
+
+  /* ورود و خروج اکسل: ایمنی (HSE)، کنترل کیفیت (درخواست بازرسی و NCR) و تدارکات (اقلام درخواست خرید) */
+  XL_SPECS.hse = {title: 'ایمنی و بهداشت (HSE)', sheet: 'رخدادها',
+    cols: [{k: 'date', t: 'تاریخ', type: 'date', req: true, ex: '1405/08/10'}, {k: 'time', t: 'ساعت', ex: '10:30'}, {k: 'type', t: 'نوع رخداد', type: 'sel', opts: () => HSE_TYPES.map(x => x[1]), req: true, ex: 'شبه‌حادثه'},
+           {k: 'sev', t: 'شدت', type: 'sel', opts: () => HSE_SEV.map(x => x[1]), ex: 'جزئی'}, {k: 'zone', t: 'محل', ex: 'طبقهٔ ۳'}, {k: 'ctr', t: 'پیمانکار'}, {k: 'people', t: 'افراد درگیر'},
+           {k: 'desc', t: 'شرح', req: true, ex: 'افتادن ابزار از داربست'}, {k: 'cause', t: 'عامل / علت', req: true, ex: 'نبود پاخور'}, {k: 'action', t: 'اقدام انجام‌شده'}],
+    rows: async () => { await hseLoad(true); return hseState.list.map(x => Object.assign({}, x, {type: hseTypeT(x.type), sev: hseSevT(x.sev)})); },
+    save: async (R, prog) => { await hseLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; const D = {date: v.date, time: v.time || '', type: (HSE_TYPES.find(x => x[1] === v.type) || HSE_TYPES[0])[0], sev: (HSE_SEV.find(x => x[1] === v.sev) || HSE_SEV[0])[0], zone: v.zone, ctr: v.ctr, people: v.people, desc: v.desc, cause: v.cause, action: v.action, files: '', fine: {}};
+        D.code = hseNextCode();
+        await supaFetch('nudges', {method: 'POST', body: [{date_fa: D.date, from_name: activeUserName(), to_name: activeUserName(), kind: HSE_KIND, item_id: D.code, title: D.code, message: hsePack(D), seen: true}]});
+        hseState.list.unshift(Object.assign({}, D, {id: 'x' + n, by: activeUserName(), at: new Date().toISOString()})); ok++; prog(n, R.length); }
+      await hseLoad(true); return {ok, fail: 0}; }, after: () => { try{ hseRender(); }catch(e){} }};
+  XL_SPECS.qc = {title: 'کنترل کیفیت — درخواست‌های بازرسی', sheet: 'درخواست بازرسی', subs: [['qc', 'درخواست بازرسی'], ['qc:ncr', 'عدم انطباق (NCR)']],
+    cols: [{k: 'when', t: 'تاریخ بازرسی', type: 'date', req: true, ex: '1405/08/12'}, {k: 'ctr', t: 'پیمانکار', req: true}, {k: 'act', t: 'فعالیت', req: true, ex: 'قالب‌بندی دیوار برشی'},
+           {k: 'fl', t: 'طبقه'}, {k: 'loc', t: 'محل'}, {k: 'disc', t: 'رشته'}, {k: 'note', t: 'توضیح'}],
+    rows: async () => { await qcLoad(true); return qc.irs; },
+    save: async (R, prog) => { await qcLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; const no = whNextNo('IR', qc.irs); const o = whPack({no, date: todayShamsi(), when: v.when, ctr: v.ctr, act: v.act, fl: v.fl, loc: v.loc, disc: v.disc, tpl: '', tplN: '', note: v.note, files: '', st: QC_ST.wait, proj: whProj()}, QC_IR_KEYS);
+        await qcPost(QC_IR_KIND, no, o); qc.irs.push(Object.assign({}, o)); ok++; prog(n, R.length); }
+      await qcLoad(true); return {ok, fail: 0}; }, after: () => { try{ qcRender(); }catch(e){} }};
+  XL_SPECS['qc:ncr'] = {title: 'کنترل کیفیت — عدم انطباق (NCR)', sheet: 'NCR', subs: XL_SPECS.qc.subs,
+    cols: [{k: 'ctr', t: 'پیمانکار', req: true}, {k: 'fl', t: 'طبقه'}, {k: 'loc', t: 'محل'}, {k: 'disc', t: 'رشته'}, {k: 'desc', t: 'شرح عدم انطباق', req: true, ex: 'پوشش بتن کمتر از ۲.۵ سانت'},
+           {k: 'sev', t: 'شدت', type: 'sel', opts: () => ['جزئی', 'عمده', 'بحرانی'], ex: 'عمده'}, {k: 'due', t: 'مهلت اقدام اصلاحی', type: 'date'}],
+    rows: async () => { await qcLoad(true); return qc.ncrs; },
+    save: async (R, prog) => { await qcLoad(true); let ok = 0, n = 0;
+      for(const v of R){ n++; try{ await qcSaveNcr({ctr: v.ctr, fl: v.fl, loc: v.loc, disc: v.disc, desc: v.desc, sev: v.sev || 'عمده', due: v.due}); ok++; }catch(e){} prog(n, R.length); }
+      await qcLoad(true); return {ok, fail: R.length - ok}; }, after: () => { try{ qcRender(); }catch(e){} }};
+  XL_SPECS.prc = {title: 'تدارکات — اقلام درخواست خرید', sheet: 'اقلام',
+    cols: [{k: 'code', t: 'کد درخواست', help: 'ردیف‌های هم‌کد یک درخواست می‌شوند؛ خالی = کد خودکار', ex: 'PR-0120'}, {k: 'date', t: 'تاریخ', type: 'date', ex: '1405/08/10'}, {k: 'unit', t: 'واحد درخواست‌کننده', ex: 'اجرا'},
+           {k: 'requester', t: 'درخواست‌کننده'}, {k: 'd', t: 'شرح قلم', req: true, ex: 'سیمان تیپ ۲'}, {k: 'q', t: 'مقدار', type: 'num', req: true, ex: 40}, {k: 'u', t: 'واحد', ex: 'کیسه'},
+           {k: 'need', t: 'تاریخ نیاز', type: 'date'}, {k: 'note', t: 'توضیح'}],
+    rows: async () => { await prcLoad(true); const L = []; (prcState.list || []).forEach(r => (r.items || []).forEach(it => L.push({code: r.code, date: r.date, unit: r.unit, requester: r.requester, d: it.d || it.n || '', q: it.q, u: it.u, need: it.need || '', note: it.note || r.note || ''}))); return L; },
+    save: async (R, prog) => { const G = new Map(); R.forEach(v => { const k = String(v.code || '').trim() || '__' + (v.date || '') + '|' + (v.requester || '') + '|' + (v.unit || ''); if(!G.has(k)) G.set(k, []); G.get(k).push(v); });
+      let ok = 0, n = 0; const fail = [];
+      for(const [k, L] of G){ n += L.length; const h = L[0];
+        const req = {code: k.indexOf('__') === 0 ? '' : k, date: h.date || todayShamsi(), unit: h.unit || '', requester: h.requester || activeUserName(), note: '', sig: {}, files: '', items: L.map(v => ({d: v.d, q: v.q, u: v.u || '', need: v.need || '', note: v.note || '', st: PR_ST[0], log: []}))};
+        try{ await prSaveReq(req); ok += L.length; }catch(e){ fail.push((req.code || 'بی‌کد') + ': ' + (e && e.message || e)); }
+        prog(n, R.length); }
+      return {ok, fail: R.length - ok, msg: fail.join('\n')}; }, after: () => { try{ prcRender(); }catch(e){} }};
   /* بخش‌هایی که ورود دقیق خودشان را دارند: همین پنجره، همان کار قبلی */
   XL_SPECS.tasks = {title: 'فعالیت‌های اجرایی', sub: 'دانلود همهٔ فعالیت‌ها با راهنما؛ ورود فقط ستون‌های ✎ را اصلاح می‌کند و پیش از ذخیره تغییرات را نشان می‌دهد', custom: {exp: () => txExport(), imp: f => txImport(f)}};
   XL_SPECS.ctr = {title: 'پیمانکاران و تماس‌ها', sub: 'فهرست پیمانکاران با شماره‌ها؛ ورود همان فایل اصلاح‌شده', custom: {exp: () => ctdExport(), imp: f => ctdImport(f)}};
