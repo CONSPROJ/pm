@@ -148,6 +148,27 @@
   .lp-cs{grid-template-columns:repeat(2,minmax(0,1fr));}
   .lp-ci{min-height:44px;}
 }
+
+/* انتخابگر محل نسخهٔ ۳: ردیف فیلترها و کاشی دوخطی */
+.lp3 .lp-fx{display:flex;flex-direction:column;gap:6px;margin:0 16px 10px;}
+.lp3 .lp-fr{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px;} .lp3 .lp-fr::-webkit-scrollbar{display:none;}
+.lp3 .lp-fr > span{flex:none;min-width:34px;font-size:11.5px;font-weight:700;color:var(--muted);}
+.lp3 .lp-tg{flex:none;}
+.lp3 .lp-cs{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));}
+.lp3 .lp-ci{align-items:flex-start;min-height:48px;padding:8px 10px;}
+.lp3 .lp-ci > i{margin-top:2px;}
+.lp3 .lp-ci > span{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.lp3 .lp-ci > span b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lp3 .lp-ci > span small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lp3 .lp-ci.k-u > span b::before{content:'واحد ';font-weight:500;color:var(--muted);display:none;}
+.lp3 .lp-ci.k-f{border-style:dashed;}
+.lp3 .lp-ga.on{color:var(--muted);}
+.lp3 .lp-fl button i[hidden]{display:none !important;}
+.lp3 .lp-l{contain:content;}
+.lp3 .lp-ft .btn[disabled]{opacity:.5;pointer-events:none;}
+@media (max-width:700px){ .lp3 .lp-cs{grid-template-columns:1fr 1fr;} .lp3 .lp-fb{flex-wrap:wrap;justify-content:flex-end;} .lp3 .lp-ft{flex-wrap:wrap;} }
+
+@media (max-width:700px){ .lp3 .lp-ht small{display:none;} .lp3 .lp-fx{gap:4px;margin:0 12px 8px;} .lp3 .lp-tg{height:30px;padding:0 10px;font-size:12px;} .lp3 .lp-sr{margin:0 12px 8px;} .lp3 .lp-sr .lp-q{height:40px !important;} }
 </style>
 </head>
 <body>
@@ -634,67 +655,88 @@ function linkHtml(m, i){
     + (m.qtBusy ? '<small class="lk-ok">در حال افزودن به متره…</small>' : m.qtN ? '<small class="lk-ok">✓ ' + toFa(m.qtN) + ' ردیف در متره</small>' : '')
     + (nDone ? '<small class="lk-ok">✓ ثبت شد برای ' + (nDone === 1 ? escH(locT(L0.find(k => dn[k]))) : toFa(nDone) + ' از ' + toFa(sel) + ' محل') + '</small>' : '');
 }
-/* انتخابگر محل: دو ستون — طبقه‌ها (با شمار انتخاب) و محل‌های همان طبقه به‌صورت کاشی؛
-   جست‌وجو در همه، انتخاب سریع تیپ/فضا با تراشه، سینی انتخاب‌شده‌ها با حذف تکی؛ گوشی: طبقه‌ها نوار افقی */
+/* انتخابگر محل: فیلترها فقط محدود می‌کنند (نوع، تیپ، فضا، طبقه، جست‌وجو)؛ انتخاب با کاربر است
+   (تکی یا «انتخاب همهٔ n مورد نمایش‌داده»). هر کاشی: نام اصلی پررنگ + والدش. کلیک فقط همان کاشی و شمارها را عوض می‌کند. */
 function locPickOpen(i){
   let ov = document.getElementById('locPick'); if(ov) ov.remove();
   ov = document.createElement('div'); ov.id = 'locPick';
   const m0 = S.marks[i] || {}; const picked = new Set(lselOf(m0));
-  const T = Array.from(new Set(S.locs.map(o => o.tp).filter(Boolean))).sort(), P = Array.from(new Set(S.locs.map(o => o.pt).filter(Boolean))).sort((x, y) => x.localeCompare(y, 'fa'));
-  const grpOf = o => String(o.t).split(/ — | › /)[0];
-  const restOf = o => { const g = grpOf(o); return o.t.slice(g.length).replace(/^\s*(—|›)\s*/, '') || 'کل طبقه'; };
-  const FL = []; S.locs.forEach(o => { const g = grpOf(o); if(FL.indexOf(g) === -1) FL.push(g); });
-  const st = {fl: '', tp: '', pt: ''};
-  /* اگر از قبل محلی انتخاب شده، همان طبقه باز شود */
-  { const k0 = Array.from(picked)[0], o0 = k0 && S.locs.find(o => o.k === k0); if(o0) st.fl = grpOf(o0); }
-  ov.innerHTML = '<div class="lp lp2" role="dialog" aria-modal="true" aria-label="محل در سامانه">'
-    + '<div class="lp-h"><span class="lp-ht"><b>محل در سامانه</b><small>یک یا چند محل — مثلاً یک تیپ در چند طبقه</small></span><button type="button" class="lp-x" data-lpx aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>'
-    + '<div class="lp-sr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input type="search" placeholder="جست‌وجو در همهٔ طبقه‌ها: واحد، محل، تیپ… (عدد فارسی یا انگلیسی)" class="lp-q"></div>'
-    + ((T.length || P.length) ? '<div class="lp-qk2"><span>انتخاب سریع</span>'
-        + T.map(t => '<button type="button" class="lp-tg" data-lpt2="' + escH(t) + '">تیپ ' + escH(t) + '</button>').join('')
-        + (P.length ? '<select data-lpp><option value="">فضا / محل جزء…</option>' + P.map(t => '<option>' + escH(t) + '</option>').join('') + '</select>' : '')
-        + '<button type="button" class="btn lp-qgo" data-lpqk disabled>انتخاب <b class="lp-qn"></b></button></div>' : '')
+  const SEP = / — | › /;
+  const kindOf = o => /^U /.test(o.k) ? 'u' : /^F [^/]+$/.test(o.k) ? 'f' : o.tp ? 'p' : 's';
+  const parts = o => String(o.t).split(SEP);
+  const grpOf = o => parts(o)[0];
+  const L = S.locs.map(o => { const P = parts(o), k = kindOf(o);
+    const main = k === 'f' ? 'کل طبقه' : P[P.length - 1];
+    const par = k === 'p' ? P.slice(1, -1).join(' · ') : '';
+    return {o, k, g: P[0], main, sub: [par, o.tp ? 'تیپ ' + o.tp : ''].filter(Boolean).join(' · '), q: null}; });
+  const nz = v => String(v || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, ' ').toLowerCase();
+  L.forEach(x => { x.q = nz(x.o.t + ' ' + (x.o.tp || '') + ' ' + (x.o.pt || '')); });
+  const FL = []; L.forEach(x => { if(FL.indexOf(x.g) === -1) FL.push(x.g); });
+  const T = Array.from(new Set(S.locs.map(o => o.tp).filter(Boolean))).sort();
+  const PT = Array.from(new Set(S.locs.map(o => o.pt).filter(Boolean))).sort((x, y) => x.localeCompare(y, 'fa'));
+  const KN = [['', 'همه'], ['u', 'واحدها'], ['p', 'فضاهای واحد'], ['s', 'فضاهای عمومی'], ['f', 'کل طبقه']].filter(([k]) => !k || L.some(x => x.k === k));
+  const st = {fl: '', kd: '', tp: '', pt: '', q: ''};
+  { const k0 = Array.from(picked)[0], x0 = k0 && L.find(x => x.o.k === k0); if(x0) st.fl = x0.g; }
+  const chip = (attr, v, t, on) => '<button type="button" class="lp-tg' + (on ? ' on' : '') + '" ' + attr + '="' + escH(v) + '">' + escH(t) + '</button>';
+  ov.innerHTML = '<div class="lp lp2 lp3" role="dialog" aria-modal="true" aria-label="محل در سامانه">'
+    + '<div class="lp-h"><span class="lp-ht"><b>محل در سامانه</b><small>با فیلترها محدود کنید، بعد محل‌ها را انتخاب کنید</small></span><button type="button" class="lp-x" data-lpx aria-label="بستن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>'
+    + '<div class="lp-sr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input type="search" placeholder="جست‌وجو: واحد، فضا، تیپ… (عدد فارسی یا انگلیسی)" class="lp-q"></div>'
+    + '<div class="lp-fx">'
+    +   (KN.length > 2 ? '<div class="lp-fr"><span>نوع</span>' + KN.map(([k, t]) => chip('data-lpkd', k, t, st.kd === k)).join('') + '</div>' : '')
+    +   (T.length ? '<div class="lp-fr"><span>تیپ</span>' + chip('data-lptp', '', 'همه', !st.tp) + T.map(t => chip('data-lptp', t, 'تیپ ' + t, false)).join('') + '</div>' : '')
+    +   (PT.length ? '<div class="lp-fr"><span>فضا</span>' + chip('data-lppt', '', 'همه', !st.pt) + PT.map(t => chip('data-lppt', t, t, false)).join('') + '</div>' : '')
+    + '</div>'
     + '<div class="lp-bd"><nav class="lp-fl"></nav><div class="lp-l"></div></div>'
     + '<div class="lp-tray"></div>'
-    + '<div class="lp-ft"><small class="lp-n"></small><span class="lp-fb"><button type="button" class="btn" data-lpclr>پاک کردن</button><button type="button" class="btn pri" data-lpok>تمام</button></span></div></div>';
+    + '<div class="lp-ft"><small class="lp-n"></small><span class="lp-fb"><button type="button" class="btn" data-lpsel>انتخاب همهٔ نمایش‌داده‌ها</button><button type="button" class="btn" data-lpclr>پاک کردن</button><button type="button" class="btn pri" data-lpok>تمام</button></span></div></div>';
   document.body.appendChild(ov);
-  const L = ov.querySelector('.lp-l'), q = ov.querySelector('.lp-q'), FN = ov.querySelector('.lp-fl'), TR = ov.querySelector('.lp-tray');
-  const nz = v => String(v || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, ' ').toLowerCase();
-  const lpQuick = () => S.locs.filter(o => (!st.tp || o.tp === st.tp) && (st.pt ? o.pt === st.pt : !!st.tp && /^U /.test(o.k)));
-  const hits = () => { const t = nz(q.value.trim()); return S.locs.filter(o => !t || t.split(/\s+/).every(w => nz(o.t + ' ' + (o.tp || '') + ' ' + (o.pt || '')).indexOf(w) !== -1)); };
-  const foot = () => { ov.querySelector('.lp-n').textContent = picked.size ? toFa(picked.size) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده';
-    const K = Array.from(picked);
-    TR.hidden = !K.length;
+  const LB = ov.querySelector('.lp-l'), q = ov.querySelector('.lp-q'), FN = ov.querySelector('.lp-fl'), TR = ov.querySelector('.lp-tray');
+  /* همهٔ فیلترها به‌جز طبقه؛ طبقه جدا تا شمار هر طبقه در ستون کنار درست باشد */
+  const base = () => { const t = st.q; const W = t ? t.split(/\s+/) : null;
+    return L.filter(x => (!st.kd || x.k === st.kd) && (!st.tp || x.o.tp === st.tp) && (!st.pt || x.o.pt === st.pt) && (!W || W.every(w => x.q.indexOf(w) !== -1))); };
+  let shown = [];
+  const foot = () => { const n = picked.size;
+    ov.querySelector('.lp-n').textContent = n ? toFa(n) + ' محل انتخاب شده' : 'هنوز محلی انتخاب نشده';
+    const K = Array.from(picked); TR.hidden = !K.length;
     TR.innerHTML = K.slice(0, 40).map(k => '<span class="lp-pk">' + escH(locT(k)) + '<button type="button" data-lprm="' + escH(k) + '" aria-label="برداشتن">×</button></span>').join('') + (K.length > 40 ? '<span class="lp-pk more">+' + toFa(K.length - 40) + '</span>' : '');
-    const qn = ov.querySelector('.lp-qn'), qg = ov.querySelector('[data-lpqk]'); if(qn && qg){ const n = (st.tp || st.pt) ? lpQuick().length : 0; qn.textContent = n ? toFa(n) + ' محل' : ''; qg.disabled = !n; } };
+    const sb = ov.querySelector('[data-lpsel]'); const un = shown.filter(x => !picked.has(x.o.k)).length;
+    sb.textContent = shown.length && !un ? 'برداشتن همهٔ نمایش‌داده‌ها (' + toFa(shown.length) + ')' : 'انتخاب همهٔ نمایش‌داده‌ها (' + toFa(un || shown.length) + ')';
+    sb.disabled = !shown.length;
+    FN.querySelectorAll('[data-lpfl]').forEach(b => { const g = b.dataset.lpfl; const c = (g ? shown0.filter(x => x.g === g) : shown0).filter(x => picked.has(x.o.k)).length; const i = b.querySelector('i'); if(i){ i.textContent = c ? toFa(c) : ''; i.hidden = !c; } });
+    LB.querySelectorAll('[data-lpga]').forEach(b => { const A = shown.filter(x => x.g === b.dataset.lpga); const all = A.length && A.every(x => picked.has(x.o.k)); b.textContent = all ? 'برداشتن همه' : 'همهٔ این طبقه'; b.classList.toggle('on', !!all); }); };
+  let shown0 = [];
   const paint = () => {
-    const H = hits(), srch = !!q.value.trim();
-    const cnt = new Map(), pc = new Map(); H.forEach(o => { const g = grpOf(o); cnt.set(g, (cnt.get(g) || 0) + 1); if(picked.has(o.k)) pc.set(g, (pc.get(g) || 0) + 1); });
-    const FLs = FL.filter(g => cnt.has(g));
+    shown0 = base();
+    const cnt = new Map(); shown0.forEach(x => cnt.set(x.g, (cnt.get(x.g) || 0) + 1));
     if(st.fl && !cnt.has(st.fl)) st.fl = '';
-    FN.innerHTML = '<button type="button" class="' + (!st.fl ? 'on' : '') + '" data-lpfl=""><b>همه</b><em>' + toFa(H.length) + '</em></button>'
-      + FLs.map(g => '<button type="button" class="' + (st.fl === g ? 'on' : '') + '" data-lpfl="' + escH(g) + '"><b>' + escH(g) + '</b>' + (pc.get(g) ? '<i>' + toFa(pc.get(g)) + '</i>' : '') + '<em>' + toFa(cnt.get(g)) + '</em></button>').join('');
-    const show = st.fl ? [st.fl] : FLs;
-    L.innerHTML = show.length ? show.map(g => { const A = H.filter(o => grpOf(o) === g); const all = A.length && A.every(o => picked.has(o.k));
-        return '<section class="lp-g2"><div class="lp-gh"><b>' + escH(g) + '</b><small>' + toFa(A.length) + ' محل</small><button type="button" class="lp-ga' + (all ? ' on' : '') + '" data-lpga="' + escH(g) + '">' + (all ? 'برداشتن همه' : 'همهٔ این طبقه') + '</button></div>'
-          + '<div class="lp-cs">' + A.map(o => '<button type="button" class="lp-ci' + (picked.has(o.k) ? ' on' : '') + '" data-lpk="' + escH(o.k) + '" aria-pressed="' + (picked.has(o.k) ? 'true' : 'false') + '"><i></i><span>' + escH(restOf(o)) + '</span>' + (o.tp ? '<small>' + escH(o.tp) + '</small>' : '') + '</button>').join('') + '</div></section>'; }).join('')
-      : '<p class="lp-0">' + (srch ? 'محلی با این جست‌وجو پیدا نشد.' : 'محلی در سامانه تعریف نشده است.') + '</p>';
+    shown = st.fl ? shown0.filter(x => x.g === st.fl) : shown0;
+    FN.innerHTML = '<button type="button" class="' + (!st.fl ? 'on' : '') + '" data-lpfl=""><b>همه</b><i hidden></i><em>' + toFa(shown0.length) + '</em></button>'
+      + FL.filter(g => cnt.has(g)).map(g => '<button type="button" class="' + (st.fl === g ? 'on' : '') + '" data-lpfl="' + escH(g) + '"><b>' + escH(g) + '</b><i hidden></i><em>' + toFa(cnt.get(g)) + '</em></button>').join('');
+    const G = new Map(); shown.forEach(x => { if(!G.has(x.g)) G.set(x.g, []); G.get(x.g).push(x); });
+    LB.innerHTML = G.size ? Array.from(G.entries()).map(([g, A]) => '<section class="lp-g2"><div class="lp-gh"><b>' + escH(g) + '</b><small>' + toFa(A.length) + ' محل</small><button type="button" class="lp-ga" data-lpga="' + escH(g) + '"></button></div>'
+        + '<div class="lp-cs">' + A.map(x => '<button type="button" class="lp-ci k-' + x.k + (picked.has(x.o.k) ? ' on' : '') + '" data-lpk="' + escH(x.o.k) + '" title="' + escH(x.o.t) + '"><i></i><span><b>' + escH(x.main) + '</b>' + (x.sub ? '<small>' + escH(x.sub) + '</small>' : '') + '</span></button>').join('') + '</div></section>').join('')
+      : '<p class="lp-0">' + (st.q || st.kd || st.tp || st.pt ? 'با این فیلترها محلی نیست.' : 'محلی در سامانه تعریف نشده است.') + '</p>';
     foot(); };
-  paint(); q.oninput = () => { if(q.value.trim()) st.fl = ''; paint(); };
+  const setChip = (attr, v) => ov.querySelectorAll('[' + attr + ']').forEach(x => x.classList.toggle('on', x.getAttribute(attr) === v));
+  paint();
+  let qt = 0; q.oninput = () => { clearTimeout(qt); qt = setTimeout(() => { st.q = nz(q.value.trim()); if(st.q) st.fl = ''; paint(); }, 120); };
   setTimeout(() => { try{ if(matchMedia('(min-width:700px)').matches) q.focus(); }catch(e){} }, 30);
   const commit = () => { const m = S.marks[i]; if(m){ m.lsel = Array.from(picked); m.locSel = m.lsel[0] || ''; m.lkErr = ''; save(); render(); } ov.remove(); };
-  ov.addEventListener('change', e => { if(e.target.matches('[data-lpp]')){ st.pt = e.target.value; foot(); } });
   ov.addEventListener('click', e => { const t = e.target;
     if(t === ov || t.closest('[data-lpx]')){ ov.remove(); return; }
     if(t.closest('[data-lpok]')){ commit(); return; }
-    if(t.closest('[data-lpclr]')){ picked.clear(); paint(); return; }
-    const fl = t.closest('[data-lpfl]'); if(fl){ st.fl = fl.dataset.lpfl; paint(); L.scrollTop = 0; return; }
-    const k = t.closest('[data-lpk]'); if(k){ const v = k.dataset.lpk; if(picked.has(v)) picked.delete(v); else picked.add(v); k.classList.toggle('on', picked.has(v)); k.setAttribute('aria-pressed', picked.has(v) ? 'true' : 'false'); paint(); return; }
-    const ga = t.closest('[data-lpga]'); if(ga){ const A = hits().filter(o => grpOf(o) === ga.dataset.lpga); const all = A.every(o => picked.has(o.k)); A.forEach(o => all ? picked.delete(o.k) : picked.add(o.k)); paint(); return; }
-    const rm = t.closest('[data-lprm]'); if(rm){ picked.delete(rm.dataset.lprm); paint(); return; }
-    const tg = t.closest('[data-lpt2]'); if(tg){ st.tp = st.tp === tg.dataset.lpt2 ? '' : tg.dataset.lpt2; ov.querySelectorAll('[data-lpt2]').forEach(x => x.classList.toggle('on', x.dataset.lpt2 === st.tp)); foot(); return; }
-    if(t.closest('[data-lpqk]')){ lpQuick().forEach(o => picked.add(o.k)); paint(); return; } });
-  ov.addEventListener('keydown', e => { if(e.key === 'Escape'){ ov.remove(); } });
+    if(t.closest('[data-lpclr]')){ picked.clear(); LB.querySelectorAll('.lp-ci.on').forEach(x => x.classList.remove('on')); foot(); return; }
+    const k = t.closest('[data-lpk]'); if(k){ const v = k.dataset.lpk; if(picked.has(v)) picked.delete(v); else picked.add(v); k.classList.toggle('on', picked.has(v)); foot(); return; }
+    if(t.closest('[data-lpsel]')){ const un = shown.filter(x => !picked.has(x.o.k)); if(un.length) un.forEach(x => picked.add(x.o.k)); else shown.forEach(x => picked.delete(x.o.k));
+      LB.querySelectorAll('[data-lpk]').forEach(b => b.classList.toggle('on', picked.has(b.dataset.lpk))); foot(); return; }
+    const ga = t.closest('[data-lpga]'); if(ga){ const A = shown.filter(x => x.g === ga.dataset.lpga); const all = A.every(x => picked.has(x.o.k)); A.forEach(x => all ? picked.delete(x.o.k) : picked.add(x.o.k));
+      LB.querySelectorAll('[data-lpk]').forEach(b => b.classList.toggle('on', picked.has(b.dataset.lpk))); foot(); return; }
+    const rm = t.closest('[data-lprm]'); if(rm){ picked.delete(rm.dataset.lprm); const b = LB.querySelector('[data-lpk="' + (window.CSS && CSS.escape ? CSS.escape(rm.dataset.lprm) : rm.dataset.lprm) + '"]'); if(b) b.classList.remove('on'); foot(); return; }
+    const fl = t.closest('[data-lpfl]'); if(fl){ st.fl = fl.dataset.lpfl; paint(); LB.scrollTop = 0; return; }
+    const kd = t.closest('[data-lpkd]'); if(kd){ st.kd = kd.dataset.lpkd; setChip('data-lpkd', st.kd); paint(); return; }
+    const tp = t.closest('[data-lptp]'); if(tp){ st.tp = tp.dataset.lptp; setChip('data-lptp', st.tp); paint(); return; }
+    const pt = t.closest('[data-lppt]'); if(pt){ st.pt = pt.dataset.lppt; setChip('data-lppt', st.pt); paint(); return; } });
+  ov.addEventListener('keydown', e => { if(e.key === 'Escape') ov.remove(); });
   q.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); commit(); } });
 }
 $('#list').addEventListener('click', async e => {
