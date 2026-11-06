@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261106095328">
+<meta name="pm-build" content="20261106095559">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28501,6 +28501,31 @@
   :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > button svg{width:17px !important;height:17px !important;flex-basis:17px !important;}
   :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot > .sbf-vm > .vm-th{top:3px;bottom:3px;width:36px !important;}
   :is(html,#z0) :is(body,#z1) #tabBar#tabBar .sb-foot{gap:6px;}
+
+  /* ====== حرکت یکدست ======
+     یک منحنی و دو مدت برای کل سایت: --ez (خروج نرم، بی‌فنر) و ۱۸۰/۲۸۰ms */
+  :root{--ez:cubic-bezier(.2,.8,.2,1);--ez-in:cubic-bezier(.4,0,1,1);--d1:.18s;--d2:.28s;}
+  /* نوار پرش: نشانگر یک‌باره و نرم می‌لغزد (پیش‌تر کش می‌آمد و بعد فنری جمع می‌شد) */
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg > .seg-ind, :is(html,#z0) :is(body,#z1) .jump-bar.seg > .seg-ind.ind-str{transition:transform var(--d2) var(--ez), width var(--d2) var(--ez), opacity var(--d1) ease !important;will-change:transform;}
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg > .mini{transition:color var(--d1) ease, background-color var(--d1) ease, transform var(--d1) var(--ez) !important;}
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg .jb-n{transition:background-color var(--d1) ease, color var(--d1) ease;}
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg > .mini.on .jb-n{transform:none;}
+  @keyframes jbIn4{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg > .mini.jb-in{animation:jbIn4 var(--d2) var(--ez) both !important;animation-delay:calc(min(var(--si, 0), 6) * 25ms) !important;}
+  :is(html,#z0) :is(body,#z1) .jump-bar.seg:not(.seg-ready){animation:jbBarIn var(--d2) var(--ez) both;}
+  /* بقیهٔ کنترل‌های تکه‌ای هم همان حرکت */
+  .seg > .seg-ind{transition:transform var(--d2) var(--ez), width var(--d2) var(--ez), height var(--d2) var(--ez), opacity var(--d1) ease !important;}
+
+  /* ورود نماها: یک حرکت برای همه (تب، بخش اسناد، ماژول و فهرست میز کار، گزارش) */
+  @keyframes uiIn{from{opacity:0;transform:translate3d(0,6px,0);}to{opacity:1;transform:none;}}
+  :is(html,#z0) :is(body,#z1) :is(.panel.pane-in, .panel.pane-in.pane-r, .vw-in, #wsHost.wp-in, .wp-in){animation:uiIn var(--d2) var(--ez) both !important;}
+  /* فهرست‌هایی که ردیف‌ها پلکانی می‌آیند، خود ظرف حرکت نمی‌کند */
+  :is(html,#z0) :is(body,#z1) :is(#wsList, #admCats, .ws-cg).wp-in{animation:none !important;}
+  :is(html,#z0) :is(body,#z1) :is(#wsList.wp-in .ws-row, .ws-cg.wp-in .ws-row, #admCats.wp-in > .acat){animation:uiIn var(--d2) var(--ez) both !important;animation-delay:calc(min(var(--i, 0), 8) * 18ms) !important;}
+  :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n){animation-delay:0ms !important;}
+  :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n+2){animation-delay:18ms !important;} :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n+3){animation-delay:36ms !important;} :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n+4){animation-delay:54ms !important;} :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n+5){animation-delay:72ms !important;} :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n+6){animation-delay:90ms !important;}
+  @media (prefers-reduced-motion: reduce){ :is(html,#z0) :is(body,#z1) :is(.panel.pane-in, .vw-in, .wp-in, .wp-in .ws-row, .wp-in > .acat){animation:none !important;} }
+  html.rm :is(.panel.pane-in, .vw-in, .wp-in, .wp-in .ws-row, .wp-in > .acat){animation:none !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -47451,6 +47476,13 @@
 
   /* ورود پنل: خودِ پنل محو می‌آید و کارت‌های سطح اول با فاصلهٔ کوتاه
      از جهتِ حرکت بالا می‌آیند. فقط ۸ کارت اول، تا طول نکشد. */
+  /* ورود یکدست هر نما (بخش اسناد، ماژول میز کار، گزارش): همان منحنی و مدت ورود تب‌ها */
+  function uiIn(el){
+    if(!el || uiReduced()) return;
+    el.classList.remove('vw-in'); void el.offsetWidth; el.classList.add('vw-in');
+    clearTimeout(el.__vwT); el.__vwT = setTimeout(() => el.classList.remove('vw-in'), 360);
+  }
+  window.uiIn = uiIn;
   function uiPaneIn(panel, dir){
     if(!panel || uiReduced()) return;
     /* فقط خودِ پنل با یک حرکت کوتاه می‌آید. تغییر متغیرِ --pdir روی پنل و
@@ -47512,7 +47544,7 @@
       ind.__last = {x: nx, w: nw};
       clearTimeout(ind.__st); ind.__st = 0;
       /* نوار پرش: نشانگر اول کش می‌آید تا هر دو کپسول را بپوشاند، بعد روی کپسول تازه جمع می‌شود */
-      if(!first && L0 && L0.x !== nx && box.classList.contains('jump-bar') && !uiReduced()){
+      if(false){
         const x0 = Math.min(L0.x, nx), x1 = Math.max(L0.x + L0.w, nx + nw);
         ind.classList.add('ind-str');
         ind.style.width = (x1 - x0) + 'px'; ind.style.height = nh + 'px';
@@ -48619,7 +48651,9 @@
     const b = e.target.closest('.jump-bar button');
     if(!b) return;
     const id = b.dataset.jump || b.dataset.jumpadm || b.dataset.jumpw || b.dataset.jumpt;
-    if(id) jumpPin = {bar: b.closest('.jump-bar'), id, t: Date.now(), y: null};
+    if(id){ jumpPin = {bar: b.closest('.jump-bar'), id, t: Date.now(), y: null};
+      /* همان لحظه روشن شود؛ پیش‌تر تا اسکرول‌سنج (۱۴۰ تا ۴۰۰ms) صبر می‌کرد و کند به نظر می‌رسید */
+      b.closest('.jump-bar').querySelectorAll('button').forEach(x => { if(x.classList.contains('on') !== (x === b)) x.classList.toggle('on', x === b); }); }
   }, true);
   (function(){
     let ticking = false;
@@ -55447,6 +55481,11 @@
         + '<button type="button" class="mini go" data-retry="reports">تلاش دوباره</button></div>';
     }finally{ loadBtn.disabled = false; }
   }
+  /* گزارش تازه (نوع، بازه یا تاریخ دیگر) با همان ورود یکدست می‌آید؛ تازه‌سازیِ همان گزارش بی‌حرکت */
+  { const _lr = loadReports; loadReports = async function(){ const r = await _lr.apply(this, arguments);
+      try{ const key = document.getElementById('viewKind').value + '|' + (viewDate.value || '') + '|' + (typeof rangeMode !== 'undefined' ? rangeMode : '');
+        if(key !== loadReports.__k){ loadReports.__k = key; uiIn(document.getElementById('reportView')); } }catch(e){}
+      return r; }; }
   loadBtn.addEventListener('click', loadReports);
   document.getElementById('viewKind').addEventListener('change', () => { if(lastDate) loadReports(); });
 
@@ -68168,7 +68207,8 @@
       if(k === 'chore') try{ loadChoreList(); }catch(e){}
     }
     /* ورود نرم بی‌آنکه بخش اول دیده شود و بعد محو و دوباره ظاهر شود */
-    if(!quiet && sec && !uiReduced() && sec.animate){ try{ sec.animate([{opacity:.35, transform:'translate3d(-8px,0,0)'}, {opacity:1, transform:'none'}], {duration:170, easing:'cubic-bezier(.22,.8,.2,1)'}); }catch(e){} }
+    if(!quiet && sec){ uiIn(sec); }
+    if(false){ try{ sec.animate([{opacity:.35, transform:'translate3d(-8px,0,0)'}, {opacity:1, transform:'none'}], {duration:170, easing:'cubic-bezier(.22,.8,.2,1)'}); }catch(e){} }
     admBarPaint();
   }
   window.admSetCat = admSetCat;
