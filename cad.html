@@ -169,6 +169,7 @@
 @media (max-width:700px){ .lp3 .lp-cs{grid-template-columns:1fr 1fr;} .lp3 .lp-fb{flex-wrap:wrap;justify-content:flex-end;} .lp3 .lp-ft{flex-wrap:wrap;} }
 
 @media (max-width:700px){ .lp3 .lp-ht small{display:none;} .lp3 .lp-fx{gap:4px;margin:0 12px 8px;} .lp3 .lp-tg{height:30px;padding:0 10px;font-size:12px;} .lp3 .lp-sr{margin:0 12px 8px;} .lp3 .lp-sr .lp-q{height:40px !important;} }
+  .lp-tg[hidden], .lp-fr[hidden]{display:none !important;}
 </style>
 </head>
 <body>
@@ -706,10 +707,21 @@ function locPickOpen(i){
     LB.querySelectorAll('[data-lpga]').forEach(b => { const A = shown.filter(x => x.g === b.dataset.lpga); const all = A.length && A.every(x => picked.has(x.o.k)); b.textContent = all ? 'برداشتن همه' : 'همهٔ این طبقه'; b.classList.toggle('on', !!all); }); };
   let shown0 = [];
   const paint = () => {
+    /* فیلترهای تیپ و فضا فقط گزینه‌هایی را نشان می‌دهند که در طبقه و نوع انتخاب‌شده واقعاً هست */
+    { const inF = L.filter(x => (!st.fl || x.g === st.fl) && (!st.kd || x.k === st.kd));
+      const TPs = new Set(inF.filter(x => !st.pt || x.o.pt === st.pt).map(x => x.o.tp).filter(Boolean)), PTs = new Set(inF.filter(x => !st.tp || x.o.tp === st.tp).map(x => x.o.pt).filter(Boolean));
+      const KDs = new Set(L.filter(x => !st.fl || x.g === st.fl).map(x => x.k));
+      let rs = 0; if(st.tp && !TPs.has(st.tp)){ st.tp = ''; rs = 1; } if(st.pt && !PTs.has(st.pt)){ st.pt = ''; rs = 1; } if(st.kd && !KDs.has(st.kd)){ st.kd = ''; rs = 1; }
+      if(rs){ setChip('data-lptp', st.tp); setChip('data-lppt', st.pt); setChip('data-lpkd', st.kd); }
+      ov.querySelectorAll('[data-lptp]').forEach(b => { const v = b.getAttribute('data-lptp'); b.hidden = !!v && !TPs.has(v); });
+      ov.querySelectorAll('[data-lppt]').forEach(b => { const v = b.getAttribute('data-lppt'); b.hidden = !!v && !PTs.has(v); });
+      ov.querySelectorAll('[data-lpkd]').forEach(b => { const v = b.getAttribute('data-lpkd'); b.hidden = !!v && !KDs.has(v); });
+      ov.querySelectorAll('.lp-fr').forEach(r => { const vis = Array.from(r.querySelectorAll('.lp-tg')).filter(b => !b.hidden && b.getAttribute(b.hasAttribute('data-lptp') ? 'data-lptp' : b.hasAttribute('data-lppt') ? 'data-lppt' : 'data-lpkd')); r.hidden = !vis.length; }); }
     shown0 = base();
     const cnt = new Map(); shown0.forEach(x => cnt.set(x.g, (cnt.get(x.g) || 0) + 1));
     if(st.fl && !cnt.has(st.fl)) st.fl = '';
     shown = st.fl ? shown0.filter(x => x.g === st.fl) : shown0;
+
     FN.innerHTML = '<button type="button" class="' + (!st.fl ? 'on' : '') + '" data-lpfl=""><b>همه</b><i hidden></i><em>' + toFa(shown0.length) + '</em></button>'
       + FL.filter(g => cnt.has(g)).map(g => '<button type="button" class="' + (st.fl === g ? 'on' : '') + '" data-lpfl="' + escH(g) + '"><b>' + escH(g) + '</b><i hidden></i><em>' + toFa(cnt.get(g)) + '</em></button>').join('');
     const G = new Map(); shown.forEach(x => { if(!G.has(x.g)) G.set(x.g, []); G.get(x.g).push(x); });
