@@ -160,12 +160,25 @@ async function listPut(kind, id, o){
   const body = [{kind, value: id + '¦' + JSON.stringify(o)}];
   try{ await api('lists?on_conflict=kind,value' + (pjCol() ? '%2Cproject_id' : ''), {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body}); }
   catch(e){ if(/42P10|no unique/i.test(e.message)) await api('lists?on_conflict=kind,value%2Cproject_id', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body}); else throw e; } }
+/* ردیف‌های بزرگ (تنظیم، خط مبنا) تکه‌تکه ذخیره می‌شوند: شاخص یکتای (kind,value) حدود ۲٫۷KB جا دارد */
+async function bigPut(kind, id, o){
+  await api('lists?kind=eq.' + encodeURIComponent(kind) + '&value=like.' + encodeURIComponent(id + '~*'), {method: 'DELETE'}).catch(() => {});
+  await listPut(kind, id, null);
+  const js = JSON.stringify(o), P = []; for(let i = 0; i < js.length; i += 1800) P.push(js.slice(i, i + 1800));
+  const body = P.map((x, i) => ({kind, value: id + '~' + i + '/' + P.length + '¦' + JSON.stringify(x)}));
+  for(let i = 0; i < body.length; i += 50){ const B = body.slice(i, i + 50);
+    try{ await api('lists?on_conflict=kind,value' + (pjCol() ? '%2Cproject_id' : ''), {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: B}); }
+    catch(e){ if(/42P10|no unique/i.test(e.message)) await api('lists?on_conflict=kind,value%2Cproject_id', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: B}); else throw e; } } }
+function bigJoin(rows){ const G = new Map(), out = [];
+  rows.forEach(r => { const m = r.id.match(/^(.*)~(\d+)\/(\d+)$/); if(!m){ out.push(r); return; } if(!G.has(m[1])) G.set(m[1], {n: +m[3], p: []}); G.get(m[1]).p[+m[2]] = r.o; });
+  G.forEach((g, id) => { if(g.p.filter(x => typeof x === 'string').length !== g.n) return; try{ out.push({id, o: JSON.parse(g.p.join(''))}); }catch(e){} });
+  return out; }
 function queueSave(id){ if(S.ro) return; if(id === '__cfg') cfgDirty = true; else dirty.add(id); clearTimeout(saveT); saveT = setTimeout(flush, 700); $('#sts').textContent = 'در حال ذخیره…'; }
 async function flush(){
   const ids = Array.from(dirty); dirty.clear(); const c = cfgDirty; cfgDirty = false;
   try{
     for(const id of ids){ const a = S.acts.find(x => x.id === id); await listPut(K_ACT, id, a ? pack(a) : null); }
-    if(c) await listPut(K_CFG, 'cfg', S.cfg);
+    if(c) await bigPut(K_CFG, 'cfg', S.cfg);
     $('#sts').textContent = 'ذخیره شد ✓ ' + new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
   }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد؛ دوباره تلاش می‌شود'; setTimeout(flush, 5000); }
 }
@@ -402,7 +415,7 @@ function blOpen(){ const L = S.bls.slice().reverse();
   const use = bg.querySelector('[data-use]'); if(use) use.onclick = () => { S.cfg.blSel = bg.querySelector('#bS').value; queueSave('__cfg'); bg.remove(); render(); };
   const sv = bg.querySelector('[data-save]'); if(sv) sv.onclick = async () => { const C = S.calc, d = {}; C.leaves.forEach(a => { const r = C.R.get(a.id); d[a.id] = [wDay(r.es), wDay(Math.max(r.es, r.ef - 1))]; });
     const o = {n: bg.querySelector('#bN').value || 'خط مبنا', at: todayD(), d, by: S.me}, id = 'bl' + uid(); sv.disabled = true;
-    try{ await listPut(K_BL, id, o); S.bls.push({id, o}); S.cfg.blSel = id; queueSave('__cfg'); bg.remove(); render(); }catch(e){ sv.disabled = false; alert('ثبت نشد: ' + e.message); } }; }
+    try{ await bigPut(K_BL, id, o); S.bls.push({id, o}); S.cfg.blSel = id; queueSave('__cfg'); bg.remove(); render(); }catch(e){ sv.disabled = false; alert('ثبت نشد: ' + e.message); } }; }
 function histSnap(){ const E = evm(); const h = (S.cfg.hist || []).filter(x => x.d !== S.cfg.status); h.push({d: S.cfg.status, ev: Math.round(E.EV), pv: Math.round(E.PV), ac: Math.round(E.AC), pc: Math.round(E.BAC ? E.EV / E.BAC * 1000 : 0) / 10}); h.sort((a, b) => a.d - b.d); S.cfg.hist = h.slice(-200); }
 function evmOpen(){ const C = S.calc, E = evm(), bl = E.bl;
   /* منحنی برنامه: درصد تجمعی بودجه در طول زمان (از خط مبنا یا برنامهٔ فعلی) */
@@ -468,8 +481,8 @@ function csvOut(){ const C = S.calc, W = wbsCodes(), num = new Map(ROWS.map((r, 
     S.ro = !(who && (who.admin || (ed && who.name)));
     const [A, C, B] = await Promise.all([listGet(K_ACT), listGet(K_CFG), listGet(K_BL)]);
     S.acts = A.map(x => Object.assign({id: x.id}, x.o));
-    const c = C.find(x => x.id === 'cfg'); if(c) S.cfg = Object.assign(S.cfg, c.o);
-    S.bls = B.sort((a, b) => (a.o.at || 0) - (b.o.at || 0));
+    const c = bigJoin(C).find(x => x.id === 'cfg'); if(c) S.cfg = Object.assign(S.cfg, c.o);
+    S.bls = bigJoin(B).sort((a, b) => (a.o.at || 0) - (b.o.at || 0));
     $('#sts').textContent = 'خوانده شد';
   }catch(e){ $('#sts').textContent = 'خوانده نشد: ' + (e.message || e); if(!tok()){ document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">اول در سامانه وارد شوید و از میز کار ← برنامهٔ زمان‌بندی باز کنید.</div>'); } }
   if(S.ro) document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">فقط خواندنی — ویرایش برنامه برای مدیر پروژه و ادمین است.</div>');
