@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107090758">
+<meta name="pm-build" content="20261107092235">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -61801,6 +61801,8 @@
   };
   const ADM_GRP_DEF = {statement:'notify', contract:'notify', letter:'none', minute:'meet', design:'floor'};
   function admSortOn(k){ return k !== 'minute' && String(admSort || 'new-desc') !== 'new-desc'; }
+  /* مرتب‌سازی دستی فعال است: تکه‌تکه کردن پنهان (پیمانکار، شمارهٔ سند) کنار می‌رود تا ترتیب انتخابی دست‌نخورده دیده شود */
+  const admManual = () => String(admSort || 'new-desc') !== 'new-desc';
   function admGrpOf(k){
     let v = ''; try{ v = localStorage.getItem('admGrp.' + k) || ''; }catch(e){}
     if(!v && k === 'design'){ try{ v = localStorage.getItem('siteLogM.dsGrp2') || ''; }catch(e){} }
@@ -70484,6 +70486,8 @@
         const md = faToDate(meet);
         return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who};
       }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.hot - a.hot) || (b.late - a.late) || (b.md - a.md));
+      /* مرتب‌سازی دستی: جلسه‌ها به همان ترتیب انتخابی (جای اولین بندشان در فهرست مرتب‌شده) */
+      if(admManual()){ const pos = new Map(); rows.forEach((r0, i) => { const k0 = mKey(r0); if(!pos.has(k0)) pos.set(k0, i); }); mtgs.sort((a, b) => pos.get(a.k) - pos.get(b.k)); }
       const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
       return mtgs.map(m => {
         const key = 'minute|m:' + m.k, all = m.l.length, closed = m.done === all;
@@ -70576,8 +70580,8 @@
       if(!byP.has(p)) byP.set(p, []);
       byP.get(p).push(row);
     });
-    /* همیشه به تفکیک پیمانکار؛ فقط اگر هیچ‌کدام طرف قرارداد نداشتند، فهرست ساده */
-    if(byP.size === 1 && byP.has('بدون طرف قرارداد')) return bodyHtml(sorted);
+    /* به تفکیک پیمانکار فقط با ترتیب پیش‌فرض؛ با مرتب‌سازی دستی یک فهرست پیوسته به همان ترتیب */
+    if(admManual() || (byP.size === 1 && byP.has('بدون طرف قرارداد'))) return bodyHtml(sorted);
     return Array.from(byP.entries())
       .sort((a, b) => (a[0] === 'بدون طرف قرارداد') - (b[0] === 'بدون طرف قرارداد') || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'))
       .map(([p, rows]) =>
@@ -70860,7 +70864,7 @@
         if(admView === 'fast')
           return '<div class="adm-fast">'
             + items.map(fastOf).join('') + '</div>';
-        if(k !== 'contract' && k !== 'letter')
+        if((k !== 'contract' && k !== 'letter') || admManual())
           return '<div class="adm-list-grid">'
             + items.map(row => admCard(k, row, true)).join('') + '</div>';
 
