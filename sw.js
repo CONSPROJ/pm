@@ -3,7 +3,7 @@
    و هم‌زمان نسخهٔ تازه از شبکه گرفته و جایگزین می‌شود (برای بار بعد). وقتی نسخهٔ تازه‌ای
    منتشر شده، خود صفحه با «?v=…» دوباره باز می‌شود و آن درخواست همیشه از شبکه می‌آید.
    هیچ داده‌ای (درخواست‌های سرور، فایل‌ها) ذخیره نمی‌شود. */
-const PAGE_CACHE = 'pm-page-v1';
+const PAGE_CACHE = 'pm-page-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil((async () => {
   const ks = await caches.keys();
@@ -49,9 +49,14 @@ self.addEventListener('fetch', e => {
   e.respondWith((async () => {
     /* نسخهٔ مشخص خواسته شده (به‌روزرسانی): از شبکه */
     if(url.searchParams.has('v')){ try{ return await fromNet(); }catch(err){ const hit = await caches.match(key); if(hit) return hit; throw err; } }
+    /* اول شبکه (تا ۳ ثانیه)؛ اگر شبکه کند یا قطع بود، نسخهٔ نگه‌داشته — تا بعد از انتشار، نسخهٔ قدیم دیگر نشان داده نشود */
     const hit = await caches.match(key);
-    if(hit){ e.waitUntil(fromNet().catch(() => {})); return hit; }
-    return fromNet();
+    if(!hit) return fromNet();
+    const net = fromNet();
+    e.waitUntil(net.then(() => {}, () => {}));
+    const timer = new Promise(r => setTimeout(() => r(null), 3000));
+    try{ const res = await Promise.race([net, timer]); if(res && res.ok) return res; }catch(err){}
+    return hit;
   })());
 });
 
