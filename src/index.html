@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107080010">
+<meta name="pm-build" content="20261107085459">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29171,6 +29171,13 @@
   .nf-back{animation-duration:.15s !important;}
 
   .nf-back{z-index:2990 !important;}
+  /* پنجرهٔ ثبت سند: همیشه زمینهٔ کامل (پیش‌تر قاعدهٔ دیگری زمینه را شفاف می‌کرد و صفحهٔ پشت از لای فرم دیده می‌شد) */
+  :is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) .nf[data-persist="1"].open, :is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) .nf[data-persist="1"].open > .nf-body{background:var(--surface) !important;opacity:1 !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+  :is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) .nf[data-persist="1"].open .af-side{background:var(--field, #f3f5f8) !important;}
+  @keyframes nfNudge{0%,100%{transform:none;}30%{transform:scale(1.012);}60%{transform:scale(.996);}}
+  :is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) .nf[data-persist="1"].open.nf-nudge{animation:nfNudge .28s ease both !important;}
+  /* تقویم روی همهٔ پنجره‌ها (پیش‌تر پشت پنجرهٔ ثبت باز می‌شد) */
+  :is(html,#z0) :is(body,#z1) .jcal{z-index:5000 !important;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open{z-index:3000 !important;}
 
   html body #adminView#adminView .nf[data-persist="1"].open > .nf-body > .af{border:0 !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;padding:0 !important;margin:0 !important;}
@@ -32124,7 +32131,7 @@
     cal.className = 'jcal';
     cal.hidden = true;
     document.body.appendChild(cal);
-    let target = null, curY = 0, curM = 0;
+    let target = null, curY = 0, curM = 0, openAt = 0;
 
     const DAYS = ['ش','ی','د','س','چ','پ','ج'];
 
@@ -32203,7 +32210,9 @@
     function place(){
       if(!target) return;
       const r = target.getBoundingClientRect();
-      const top = r.bottom + window.scrollY + 6;
+      /* اگر زیر فیلد جا نیست، بالای آن باز می‌شود (پیش‌تر از پایین صفحه بیرون می‌زد) */
+      const ch = cal.offsetHeight || 340, below = window.innerHeight - r.bottom, up = below < ch + 12 && r.top > below;
+      const top = up ? Math.max(8, r.top - ch - 6) + window.scrollY : r.bottom + window.scrollY + 6;
       cal.style.top = top + 'px';
       const w = Math.min(300, window.innerWidth - 16);
       cal.style.width = w + 'px';
@@ -32216,7 +32225,7 @@
       target = inp;
       const v = parseVal(inp.value) || jToday();
       curY = v.y; curM = v.m; view = 'd'; yPage = 0;
-      draw(); cal.hidden = false; place();
+      draw(); cal.hidden = false; place(); openAt = Date.now();
     }
     function close(){ cal.hidden = true; target = null; }
 
@@ -32231,6 +32240,8 @@
     });
     document.addEventListener('click', e => {
       if(dateInp(e.target) || e.target.closest('.jcal')) return;
+      /* گوشی: با فوکوس، برگهٔ فرم جابه‌جا می‌شود و همان ضربه روی body می‌نشیند؛ تقویم تازه‌باز نباید بسته شود */
+      if(Date.now() - openAt < 500 || e.target === document.body || e.target === document.documentElement) return;
       close();
     });
     window.addEventListener('scroll', () => { if(!cal.hidden) place(); }, {passive:true});
@@ -68533,7 +68544,8 @@
     const sync = () => { raf = 0; const f = openForm(), on = !!(f && f.getClientRects().length);
       document.documentElement.classList.toggle('nf-dr', on);
       if(on && !back){ back = document.createElement('div'); back.className = 'nf-back'; document.body.appendChild(back);
-        back.addEventListener('click', () => { const g = openForm(); const tg = g && g.querySelector(':scope > .nf-toggle'); if(tg) tg.click(); }); }
+        /* زدن بیرون پنجره دیگر آن را نمی‌بندد (فرم نیمه‌کاره با یک کلیک اشتباه بسته می‌شد)؛ فقط × ، «انصراف» یا Esc */
+        back.addEventListener('click', () => { const g = openForm(); if(!g) return; g.classList.remove('nf-nudge'); void g.offsetWidth; g.classList.add('nf-nudge'); try{ shrToast('برای بستن، × یا «انصراف» را بزنید'); }catch(e){} }); }
       if(back) back.hidden = !on;
       if(on && !f.__drIn){ f.__drIn = 1; try{ f.scrollTop = 0; }catch(e){} }
       av.querySelectorAll('.nf[data-persist="1"]:not(.open)').forEach(x => { x.__drIn = 0; }); };
