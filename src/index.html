@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107075222">
+<meta name="pm-build" content="20261107075421">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -70708,9 +70708,8 @@
       /* ترتیب: تازه‌ترین همان ترتیب کامل پیش‌فرض است (تاریخ، زمان ثبت، شماره)؛ بقیه دستی */
       let rows = sortAdmin(k, list.map(x => x.row));
       rows = admSortRows(k, rows);
-      /* با مرتب‌سازی دستی، فهرست یکپارچه و سراسری مرتب می‌شود (داخل گروه‌ها سال‌ها در هم دیده می‌شدند)؛
-         گروه‌بندی انتخابی پاک نمی‌شود و با برگشتن به ترتیب پیش‌فرض خودش برمی‌گردد */
-      const grp = admSortOn(k) ? 'none' : admGrpOf(k);
+      /* گروه‌بندی هرگز با مرتب‌سازی عوض نمی‌شود؛ ترتیب داخل هر گروه (و زیرگروه) اعمال می‌شود. برای ترتیب سراسری، گروه‌بندی را «بدون گروه» کنید */
+      const grp = admGrpOf(k);
       if(k === 'letter'){
         rows = rows.filter(r => ltrDirOf(r) === admLtrDir);
         if(!rows.length){ box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">نامهٔ ' + admLtrDir + ' ثبت نشده است.</div>'; return; }
@@ -71549,7 +71548,6 @@
         gs.value = g;
       }
       bar.classList.toggle('grouped', g !== (ADM_GRP_DEF[k] || 'none'));
-      if(gs){ const off = admSortOn(k); gs.closest('.avb-grp').classList.toggle('grp-off', off); gs.closest('.avb-grp').title = off ? 'با مرتب‌سازی دستی، فهرست بدون گروه و سراسری مرتب می‌شود؛ انتخاب گروه‌بندی، ترتیب را به پیش‌فرض برمی‌گرداند' : 'گروه‌بندی فهرست'; }
       /* زیرگروه: صورت وضعیت، قرارداد و نامه زیر وضعیت ابلاغ ← رسیدگی؛ اسناد طراحی ← طراح */
       let swOn = null, swT = '';
       if(g === 'notify' && ADM_BY_REVIEW.indexOf(k) !== -1){ swOn = admGroupMode === 'nested'; swT = 'تفکیک رسیدگی'; }
@@ -71592,7 +71590,7 @@
     if(so) so.addEventListener('change', () => setSort(so.value + '-' + (ADM_SORT_DEF[so.value] || 'desc')));
     { const db = document.getElementById('admSortDir');
       if(db) db.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const [f, dir] = String(admSort || 'new-desc').split('-'); setSort((so ? so.value : f) + '-' + (dir === 'asc' ? 'desc' : 'asc')); }); }
-    if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); if(admSortOn(curCat())){ admSort = 'new-desc'; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} } redraw(); });
+    if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
         const k = curCat();
