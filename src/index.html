@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107071928">
+<meta name="pm-build" content="20261107073312">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -842,6 +842,7 @@
   .pmv-r > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;} .pmv-r b{font-size:13px;} .pmv-r small{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pmv-r em{font-style:normal;font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--field, rgba(0,0,0,.06));color:var(--muted);margin-inline-start:4px;} .pmv-r em.a{background:#c58a12;color:#fff;}
   .pmv-r span{display:flex;gap:6px;flex:none;}
+  .avb-grp.grp-off{opacity:.55;} .avb-grp.grp-off select{text-decoration:line-through;text-decoration-color:color-mix(in srgb, currentColor 40%, transparent);}
 
 </style>
 <script>
@@ -61676,6 +61677,7 @@
     design:    [['floor','طبقه'], ['hold','مرحلهٔ گردش'], ['designer','طراح'], ['none','بدون گروه']]
   };
   const ADM_GRP_DEF = {statement:'notify', contract:'notify', letter:'none', minute:'meet', design:'floor'};
+  function admSortOn(k){ return k !== 'minute' && String(admSort || 'new-desc') !== 'new-desc'; }
   function admGrpOf(k){
     let v = ''; try{ v = localStorage.getItem('admGrp.' + k) || ''; }catch(e){}
     if(!v && k === 'design'){ try{ v = localStorage.getItem('siteLogM.dsGrp2') || ''; }catch(e){} }
@@ -70651,7 +70653,9 @@
       /* ترتیب: تازه‌ترین همان ترتیب کامل پیش‌فرض است (تاریخ، زمان ثبت، شماره)؛ بقیه دستی */
       let rows = sortAdmin(k, list.map(x => x.row));
       rows = admSortRows(k, rows);
-      const grp = admGrpOf(k);
+      /* با مرتب‌سازی دستی، فهرست یکپارچه و سراسری مرتب می‌شود (داخل گروه‌ها سال‌ها در هم دیده می‌شدند)؛
+         گروه‌بندی انتخابی پاک نمی‌شود و با برگشتن به ترتیب پیش‌فرض خودش برمی‌گردد */
+      const grp = admSortOn(k) ? 'none' : admGrpOf(k);
       if(k === 'letter'){
         rows = rows.filter(r => ltrDirOf(r) === admLtrDir);
         if(!rows.length){ box.innerHTML = '<div class="empty" style="margin:10px 0 14px;">نامهٔ ' + admLtrDir + ' ثبت نشده است.</div>'; return; }
@@ -71490,6 +71494,7 @@
         gs.value = g;
       }
       bar.classList.toggle('grouped', g !== (ADM_GRP_DEF[k] || 'none'));
+      if(gs){ const off = admSortOn(k); gs.closest('.avb-grp').classList.toggle('grp-off', off); gs.closest('.avb-grp').title = off ? 'با مرتب‌سازی دستی، فهرست بدون گروه و سراسری مرتب می‌شود؛ انتخاب گروه‌بندی، ترتیب را به پیش‌فرض برمی‌گرداند' : 'گروه‌بندی فهرست'; }
       /* زیرگروه: صورت وضعیت، قرارداد و نامه زیر وضعیت ابلاغ ← رسیدگی؛ اسناد طراحی ← طراح */
       let swOn = null, swT = '';
       if(g === 'notify' && ADM_BY_REVIEW.indexOf(k) !== -1){ swOn = admGroupMode === 'nested'; swT = 'تفکیک رسیدگی'; }
@@ -71532,7 +71537,7 @@
     if(so) so.addEventListener('change', () => setSort(so.value + '-' + (ADM_SORT_DEF[so.value] || 'desc')));
     { const db = document.getElementById('admSortDir');
       if(db) db.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const [f, dir] = String(admSort || 'new-desc').split('-'); setSort((so ? so.value : f) + '-' + (dir === 'asc' ? 'desc' : 'asc')); }); }
-    if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
+    if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); if(admSortOn(curCat())){ admSort = 'new-desc'; try{ localStorage.setItem('admSort2', admSort); }catch(e2){} } redraw(); });
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
         const k = curCat();
