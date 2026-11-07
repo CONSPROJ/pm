@@ -2,6 +2,23 @@
 <html lang="fa" dir="rtl" class="tabs-pending">
 <head>
 <script>
+/* ====== نسخه‌های قبلی سایت ======
+   هر انتشار یک رونوشت دست‌نخورده در v/<شمارهٔ ساخت>.html دارد. ادمین می‌تواند یک نسخهٔ قبلی را
+   برای خودش (siteLogM.pin) یا برای همه (lists «نسخهٔ سایت» ← رونوشت محلی siteLogM.pinAll) بگذارد.
+   رونوشت‌ها با <base href="../"> همان فایل‌ها و سرویس‌ورکر ریشه را به کار می‌برند. */
+(function(){ try{
+  var m = /\/v\/(\d{8,})\.html$/.exec(location.pathname), own = m ? m[1] : '';
+  window.__pmArch = own;
+  if(own) document.write('<base href="../">');
+  var me = '', all = ''; try{ me = localStorage.getItem('siteLogM.pin') || ''; all = localStorage.getItem('siteLogM.pinAll') || ''; }catch(e){}
+  var want = me === 'latest' ? '' : (me || all);
+  window.__pmPinGo = function(w){ var h = location.hash || '';
+    if(w && w !== own){ location.replace((own ? '' : 'v/') + w + '.html' + h); return true; }
+    if(!w && own){ location.replace('../' + h); return true; } return false; };
+  if(/^\d{8,}$/.test(want) || own) window.__pmPinGo(/^\d{8,}$/.test(want) ? want : '');
+}catch(e){} })();
+</script>
+<script>
 /* ====== نسخهٔ انگلیسی (English UI) ======
    لایهٔ ترجمهٔ رابط: متن‌ها، placeholder، title و aria-label را با واژه‌نامه ترجمه می‌کند (اول تطبیق کامل،
    بعد عبارت‌های شناخته‌شده داخل متن و قاعده‌های شمارشی)، اعداد فارسی را لاتین و صفحه را چپ‌به‌راست می‌کند.
@@ -148,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107071529">
+<meta name="pm-build" content="20261107071928">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -818,6 +835,13 @@
   /* دکمهٔ بستن: آیکون برداری، همیشه دقیقاً وسط */
   svg.xi{display:block;width:1.05em;height:1.05em;min-width:13px;min-height:13px;margin:auto;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;pointer-events:none;flex:none;}
   button:has(> svg.xi:only-child){line-height:1 !important;}
+
+  .pmv-now{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:12px 14px;border-radius:14px;background:var(--field, rgba(0,0,0,.04));margin-bottom:12px;} .pmv-now b{font-size:13.5px;} .pmv-now small{flex:1 1 100%;color:var(--muted);font-size:12px;order:2;} .pmv-now span{display:flex;gap:6px;margin-inline-start:auto;}
+  .pmv-l{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:10px;}
+  .pmv-r{display:flex;align-items:center;gap:10px;padding:10px 14px;} .pmv-r + .pmv-r{border-top:1px solid var(--line);} .pmv-r.on{background:color-mix(in srgb, var(--sky, #2f6f9f) 8%, transparent);}
+  .pmv-r > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;} .pmv-r b{font-size:13px;} .pmv-r small{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pmv-r em{font-style:normal;font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--field, rgba(0,0,0,.06));color:var(--muted);margin-inline-start:4px;} .pmv-r em.a{background:#c58a12;color:#fff;}
+  .pmv-r span{display:flex;gap:6px;flex:none;}
 
 </style>
 <script>
@@ -29278,7 +29302,7 @@
    ساختِ روی سرور خوانده می‌شود؛ اگر تازه‌تر بود و کاربر وسط نوشتن نیست، صفحه تازه می‌شود. */
 (function(){
   const cur = (document.querySelector('meta[name="pm-build"]') || {}).content || '';
-  if(!cur || cur === 'dev') return;
+  if(!cur || cur === 'dev' || window.__pmArch) return;
   let busy = false, pending = false;
   /* انتخاب عکس/فایل صفحه را پنهان می‌کند؛ برگشتن از آن نباید صفحه را تازه کند و کار نیمه‌کاره بپرد */
   document.addEventListener('click', e => { const t = e.target; if(t && t.matches && t.matches('input[type=file]')) window.__pmPickAt = Date.now(); }, true);
@@ -44547,10 +44571,52 @@
     const bTxt = bld.length >= 12 ? toFa(bld.slice(0,4) + '/' + bld.slice(4,6) + '/' + bld.slice(6,8) + ' — ' + bld.slice(8,10) + ':' + bld.slice(10,12)) : '';
     h += sec('دربارهٔ سامانه',
         stLine(ST2_I.info, 'نسخهٔ فعلی', bTxt ? 'ساخت ' + bTxt + ' (UTC)' : '', '')
-      + row('stReload', ST2_I.ref, 'بارگذاری نسخهٔ تازه', 'اگر چیزی درست نمایش داده نمی‌شود'));
+      + row('stReload', ST2_I.ref, 'بارگذاری نسخهٔ تازه', 'اگر چیزی درست نمایش داده نمی‌شود')
+      + ((() => { try{ return isAdminUser(); }catch(e){ return false; } })() ? row('stVer', ST2_I.ref, 'نسخه‌های قبلی سایت', window.__pmArch ? 'اکنون نسخهٔ قبلی باز است' : 'برگشت به نسخهٔ قبل، برای خودتان یا همه') : ''));
     return h + '</div>';
   }
 
+
+  /* ====== نسخه‌های قبلی سایت (فقط ادمین) ====== */
+  const PMV_K = 'نسخهٔ سایت';
+  const pmvTxt = b => { b = String(b || ''); if(b.length < 12) return b; try{ const d = new Date(Date.UTC(+b.slice(0,4), +b.slice(4,6) - 1, +b.slice(6,8), +b.slice(8,10), +b.slice(10,12))); return toFa(isoFa(d.toISOString().slice(0, 10))) + ' · ' + d.toLocaleTimeString('fa-IR', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tehran'}); }catch(e){ return b; } };
+  const pmvLS = (k, v) => { try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} };
+  /* پین سراسری: بعد از ورود یک بار (و هر ۱۰ دقیقه) خوانده و رونوشتش نگه داشته می‌شود */
+  async function pmvSync(){
+    try{ const L = await fxList(PMV_K, true); const x = (L || []).find(r => r.id === 'all'); const b = x && x.o && x.o.b ? String(x.o.b) : '';
+      const old = (function(){ try{ return localStorage.getItem('siteLogM.pinAll') || ''; }catch(e){ return ''; } })();
+      if(b !== old){ pmvLS('siteLogM.pinAll', b || null);
+        let me = ''; try{ me = localStorage.getItem('siteLogM.pin') || ''; }catch(e){}
+        if(!me && window.__pmPinGo) window.__pmPinGo(b); } }catch(e){}
+  }
+  setTimeout(() => { pmvSync(); setInterval(pmvSync, 600000); }, 6000);
+  async function pmVerOpen(){
+    const m = fxModal('pmvM', 'نسخه‌های قبلی سایت', 'اگر نسخهٔ تازه مشکلی داشت، یک نسخهٔ قبلی را باز کنید؛ داده‌ها همان است و فقط ظاهر و رفتار برنامه برمی‌گردد', '<div class="fx-wait">در حال دریافت…</div>', true);
+    const B = m.querySelector('.fx-bd'); let L = [];
+    try{ const r = await fetch(new URL('v/list.json', document.baseURI).href + '?t=' + Date.now(), {cache: 'no-store'}); if(r.ok) L = await r.json(); }catch(e){}
+    let all = ''; try{ const R = await fxList(PMV_K, true); const x = (R || []).find(q => q.id === 'all'); all = x && x.o ? String(x.o.b || '') : ''; }catch(e){}
+    const me = (function(){ try{ return localStorage.getItem('siteLogM.pin') || ''; }catch(e){ return ''; } })();
+    const cur = window.__pmArch || String((document.querySelector('meta[name="pm-build"]') || {}).content || '');
+    const latest = L.length ? String(L[0].b) : '';
+    const paint = () => {
+      B.innerHTML = '<div class="pmv-now"><b>اکنون: ' + (window.__pmArch ? 'نسخهٔ ' + esc(pmvTxt(cur)) : 'آخرین نسخه') + '</b>'
+        + '<small>' + (all ? 'برای همه روی نسخهٔ ' + esc(pmvTxt(all)) + ' گذاشته شده' : 'همه آخرین نسخه را می‌بینند') + (me && me !== 'latest' ? ' · خودتان: ' + esc(pmvTxt(me)) : '') + '</small>'
+        + '<span>' + (me && me !== 'latest' || window.__pmArch ? '<button type="button" class="mini go" data-pmv="me|">برگشت به آخرین نسخه (من)</button>' : '') + (all ? '<button type="button" class="mini" data-pmv="all|">برداشتن برای همه</button>' : '') + '</span></div>'
+        + (L.length ? '<div class="pmv-l">' + L.map((x, i) => { const b = String(x.b), on = b === cur;
+            return '<div class="pmv-r' + (on ? ' on' : '') + '"><div><b>' + esc(pmvTxt(b)) + (i === 0 ? ' <em>آخرین</em>' : '') + (b === all ? ' <em class="a">برای همه</em>' : '') + '</b><small>' + esc(x.m || '') + '</small></div>'
+              + (i === 0 ? '' : '<span><button type="button" class="mini" data-pmv="me|' + esc(b) + '">فقط برای من</button><button type="button" class="mini go" data-pmv="all|' + esc(b) + '">برای همه</button></span>') + '</div>'; }).join('') + '</div>'
+          : '<div class="fx-e">هنوز نسخهٔ بایگانی‌شده‌ای نیست؛ از انتشار بعدی، هر نسخه این‌جا می‌آید.</div>')
+        + '<small class="wx-nt">نسخهٔ قبلی فقط ظاهر و رفتار برنامه را برمی‌گرداند؛ داده‌ها، اسناد و گزارش‌ها همان است. «برای همه» تا وقتی برداشته نشود برای همهٔ کاربران باز می‌شود.</small>';
+      B.querySelectorAll('[data-pmv]').forEach(bt => bt.onclick = async () => { const [who, b] = bt.dataset.pmv.split('|');
+        if(who === 'me'){ pmvLS('siteLogM.pin', b || 'latest'); window.__pmPinGo(b) || location.reload(); return; }
+        if(b && !(await askConfirm('همه به نسخهٔ قبلی بروند؟', 'همهٔ کاربران از باز کردن بعدی، نسخهٔ ' + pmvTxt(b) + ' را می‌بینند تا وقتی آن را بردارید.', 'برای همه'))) return;
+        bt.disabled = true;
+        try{ await fxPut(PMV_K, 'all', {b: b || '', by: activeUserName(), at: Date.now()}); }catch(e){ bt.disabled = false; showDialog('warn', 'ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); return; }
+        all = b || ''; pmvLS('siteLogM.pinAll', all || null); pmvLS('siteLogM.pin', null);
+        if(!window.__pmPinGo(all)) paint(); }); };
+    paint();
+  }
+  window.pmVerOpen = pmVerOpen;
   /* ====== شمارهٔ تماس نیروهای پروژه ======
      هر کس خودش شماره‌اش را ثبت و تأیید می‌کند و خودش تصمیم می‌گیرد همکاران ببینند یا نه.
      مدیر سامانه می‌تواند شماره‌ای پیشنهاد کند، ولی تا خود فرد تأیید نکند جایی نشان داده نمی‌شود.
@@ -44633,6 +44699,7 @@
     const sp = e.target.closest('[data-stp]');
     const st = e.target.closest('[data-stt]');
     const rl = e.target.closest('#stReload');
+    if(e.target.closest('#stVer')){ e.preventDefault(); e.stopPropagation(); try{ pmVerOpen(); }catch(err){} return; }
     if(!sp && !st && !rl) return;
     if(rl){ try{ const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }catch(err){} location.reload(); return; }
     if(sp){

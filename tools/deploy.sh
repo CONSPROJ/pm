@@ -9,6 +9,24 @@ sed -i "s/<meta name=\"pm-build\" content=\"[0-9]*\">/<meta name=\"pm-build\" co
 # ساخت نسخهٔ انتشار از منبع (کوچک‌سازی JS و CSS)
 tools/build.sh
 echo "$B" > build.txt
+# بایگانی نسخه‌ها برای «نسخه‌های قبلی سایت» (ادمین): رونوشت دست‌نخورده (git همان blob را دوباره ذخیره نمی‌کند)، ۱۰ نسخهٔ آخر
+mkdir -p v
+cp index.html "v/$B.html"
+python3 - "$B" "$1" <<'PY'
+import json, os, sys, glob
+b, msg = sys.argv[1], sys.argv[2].split('\n')[0][:140]
+p = 'v/list.json'
+try: L = json.load(open(p))
+except Exception: L = []
+L = [x for x in L if str(x.get('b')) != b]
+L.insert(0, {'b': b, 'm': msg})
+L = L[:10]
+keep = {str(x['b']) for x in L}
+for f in glob.glob('v/*.html'):
+    if os.path.basename(f)[:-5] not in keep: os.remove(f)
+L = [x for x in L if os.path.exists('v/%s.html' % x['b'])]
+json.dump(L, open(p, 'w'), ensure_ascii=False, indent=0)
+PY
 T=$(mktemp -d)
 # بزرگ‌ترین اسکریپت درون‌خطی همان اسکریپت اصلی است (به جایگاهش وابسته نیست)
 python3 -c "import re,sys;s=open('index.html').read();b=re.findall(r'<script>([\s\S]*?)</script>',s);open(sys.argv[1],'w').write(max(b,key=len))" "$T/main.js"
