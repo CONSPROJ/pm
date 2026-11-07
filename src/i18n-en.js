@@ -77,8 +77,11 @@
   var W2 = {'کنید':'','انتخاب':'select','کردن':'','شود':'','چاپ':'print','دانلود':'download','فعلی':'current','نما':'view','ترتیب':'order','اصلی':'main','اصلاح':'edit','جریان':'progress','عقب':'behind','برابر':'against','نگاه':'glance','آیندهٔ':'upcoming','آمادگی':'readiness','هرکدام':'each','شش':'six','اخیر':'recent','کد':'code','ساده':'simple','پیام':'message','بنویسید':'write','داخل':'inside','گروه':'group','موارد':'items','تفکیک':'breakdown','مرحلهٔ':'stage','جهت':'direction','وارونه':'reverse','پیش‌فرض':'default','خودکار':'auto','دیسیپلین':'discipline','به‌روز':'updated','کنترل':'control','شمار':'count','طول':'length','نوار':'bar','راهنما':'guide','برگه':'sheets','کوتاه':'short','لطفاً':'please','مشخص':'specify','وضعیت':'status','کاری':'what','باید':'must','بند':'item','مشکل':'issue','بعدی':'next','شروع':'start','چه':'what','کسی':'who','اسلاید':'slides','عنوان':'title','شماره':'number','مهندس':'Eng.','بزنید':'tap','وارد':'enter','پیمانی':'lump-sum','امانی':'cost-plus','نمونهٔ':'sample','جناب':'','سرکار':'','نفر':'people'};
   for(var k3 in W2) W[k3] = W2[k3];
   var WRE = /[؀-ۿ‌]+/g;
+  /* ترجمهٔ کلمه‌ای فقط وقتی همهٔ کلمه‌های یک تکهٔ فارسی معنا دارند؛ وگرنه آن تکه (اسم شخص، شرکت، قلم…) دست‌نخورده می‌ماند تا «بتن ready تهران» ساخته نشود */
+  var RUN = /[؀-ۿ‌]+(?: +[؀-ۿ‌]+)*/g;
   var MON = {'فروردین':'Farvardin','اردیبهشت':'Ordibehesht','خرداد':'Khordad','تیر':'Tir','مرداد':'Mordad','شهریور':'Shahrivar','مهر':'Mehr','آبان':'Aban','آذر':'Azar','دی':'Dey','بهمن':'Bahman','اسفند':'Esfand'};
   Object.keys(MON).forEach(function(k){ D[k] = MON[k]; W[k] = MON[k]; });
+  var MONV = Object.keys(MON).map(function(k){ return MON[k]; });
   /* عبارت‌های داخل متن (بلندتر اول) */
   var KEYS = Object.keys(D).filter(function(k){ return k.length >= 4 && D[k] && /[؀-ۿ]/.test(k); }).sort(function(a, b){ return b.length - a.length; });
   var esc = function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
@@ -93,6 +96,9 @@
     [/([\d۰-۹]+) بحرانی/g, '$1 critical'], [/([\d۰-۹]+) نزدیک موعد/g, '$1 due soon'], [/([\d۰-۹]+) پروژه/g, '$1 projects'], [/([\d۰-۹.]+) میلیارد/g, '$1 B'], [/([\d۰-۹.,]+) میلیون/g, '$1 M'], [/([\d۰-۹]+) از ([\d۰-۹]+)/g, '$1 of $2'],
     [/^همه \((.+)\)$/, 'All ($1)'], [/ تا /g, ' to '], [/٪/g, '%']
   ];
+  /* افزوده: عبارت‌های رابط که تکه‌تکه ترجمه می‌شدند */
+  (function(X){ Object.keys(X).forEach(function(k){ if(D[k] == null) D[k] = X[k]; if(k.indexOf(' ') === -1 && k !== 'من' && W[k] == null) W[k] = X[k]; }); })({'من':'Me','اختیاری':'Optional','پیام بنویسید…':'Write a message…','فعالیت انجام‌شده در این محل...':'Work done at this location…','شرح بند — چه کاری باید انجام شود؟':'Item description: what needs to be done?','پیام کوتاه — مثلاً: لطفاً وضعیت را تا فردا مشخص کنید.':'Short message, e.g. please confirm the status by tomorrow.','هر مشکل در یک خط — با Enter خط بعدی را شروع کنید':'One issue per line; press Enter for the next','رخدادها و شدت':'Incidents and severity','ترکیب اعلان‌ها':'Notification mix','جناب آقای':'Mr.','موانع':'Obstacles','مانع':'Obstacle','تدارکات':'Procurement','ادعاها':'Claims','تاریخچه':'History','نیرو':'Workforce','پیمانی':'Contract-based','فیلترهای فعلی':'current filters','نمای فعلی':'current view','نوع نما':'view type','موقعیت':'Location','درخواستی':'requested','کارکرد':'work done','متره‌شده':'measured','صورت وضعیت‌شده':'certified','اقلام':'Items','بتن‌ریزی‌ها':'Concrete pours','نزدیکی':'proximity','کارهای':'Tasks','فعالیت‌ها، اسناد، مطالبات و نیروی کارگاه':'Activities, documents, receivables and site workforce','پیش‌بینی و تاریخچهٔ هوا، روزهای توقف و علت تأخیر':'Weather forecast & history, stoppages and delay causes','شهادت حضرت فاطمه':'Martyrdom of Fatima (holiday)'});
+  R.unshift([/^مثلاً:? ?(.+)$/, 'e.g. $1'], [/^نمایش ([\d۰-۹]+) (.+) دیگر از ([\d۰-۹]+)$/, 'Show $1 more of $3'], [/^نمایش ([\d۰-۹]+) مورد دیگر از ([\d۰-۹]+)$/, 'Show $1 more of $2'], [/([\d۰-۹]+) مورد تازه از ([\d۰-۹]+)/g, '$1 new of $2'], [/^([\d۰-۹]+) (فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)$/, function(m, d, mo){ return d + ' ' + MON[mo]; }], [/^جناب (.+)$/, '$1']);
   var FA = '۰۱۲۳۴۵۶۷۸۹', AR = '٠١٢٣٤٥٦٧٨٩';
   var digits = function(s){ return s.replace(/[۰-۹]/g, function(d){ return FA.indexOf(d); }).replace(/[٠-٩]/g, function(d){ return AR.indexOf(d); }); };
   var cache = new Map();
@@ -101,7 +107,7 @@
     var c = cache.get(s); if(c !== undefined) return c;
     var t = s.trim(), lead = s.slice(0, s.indexOf(t)), tail = s.slice(s.indexOf(t) + t.length), out;
     if(D[t] != null) out = D[t];
-    else { out = t; R.forEach(function(r){ out = out.replace(r[0], r[1]); }); out = out.replace(BIG, function(m, p, k){ return p + D[k]; }).replace(BIG, function(m, p, k){ return p + D[k]; }); out = out.replace(/ و /g, ' and ').replace(/، ?/g, ', ').replace(/؛ ?/g, '; ').replace(/؟/g, '?'); out = out.replace(WRE, function(w){ var x = W[w]; if(x == null){ var w2 = w.replace(/\u200c/g, ''); x = W[w2]; } return x == null ? w : x; }).replace(/  +/g, ' ').replace(/ ([,.;:?])/g, '$1').trim(); }
+    else { out = t; R.forEach(function(r){ out = out.replace(r[0], r[1]); }); out = out.replace(BIG, function(m, p, k){ return p + D[k]; }).replace(BIG, function(m, p, k){ return p + D[k]; }); out = out.replace(/، ?/g, ', ').replace(/؛ ?/g, '; ').replace(/؟/g, '?'); out = out.replace(RUN, function(run, off){ var ws = run.split(/ +/), r = [], ok = true; for(var i = 0; i < ws.length; i++){ var w = ws[i], x = w === 'و' ? 'and' : W[w]; if(x == null) x = W[w.replace(/\u200c/g, '')]; if(x == null){ ok = false; break; } if((off > 0 || i > 0) && MONV.indexOf(x) === -1 && /^[A-Z][a-z]+(?: [a-z]+)*$/.test(x) && !/[.!?:]\s*$/.test(out.slice(0, off))) x = x.charAt(0).toLowerCase() + x.slice(1); r.push(x); } if(ok && off === 0 && r[0]) r[0] = r[0].charAt(0).toUpperCase() + r[0].slice(1); return ok ? r.join(' ') : run; }).replace(/  +/g, ' ').replace(/ ([,.;:?])/g, '$1').trim(); }
     out = lead + digits(out) + tail;
     if(cache.size > 20000) cache.clear(); cache.set(s, out); return out;
   }
@@ -129,7 +135,7 @@
     obs.disconnect(); for(var j = 0; j < L.length; j++){ var n = L[j]; if(n.isConnected !== false) walk(n); } start(); });
   function start(){ obs.observe(document.documentElement, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTR}); }
   var de = document.documentElement; de.lang = 'en'; de.dir = 'ltr'; de.classList.add('lang-en', 'i18n-wait');
-  try{ var lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'; document.head.appendChild(lk); }catch(e){}
+  try{ var lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap'; document.head.appendChild(lk); }catch(e){}
   setTimeout(function(){ de.classList.remove('i18n-wait'); }, 2500);
   var t0 = document.title; document.title = tr(t0);
   var go = function(){ var lb = document.querySelector('#langBtn .lang-t'); if(lb) lb.textContent = 'فا'; walk(document.body); start(); de.classList.remove('i18n-wait'); };

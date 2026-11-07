@@ -81,8 +81,11 @@
   var W2 = {'کنید':'','انتخاب':'select','کردن':'','شود':'','چاپ':'print','دانلود':'download','فعلی':'current','نما':'view','ترتیب':'order','اصلی':'main','اصلاح':'edit','جریان':'progress','عقب':'behind','برابر':'against','نگاه':'glance','آیندهٔ':'upcoming','آمادگی':'readiness','هرکدام':'each','شش':'six','اخیر':'recent','کد':'code','ساده':'simple','پیام':'message','بنویسید':'write','داخل':'inside','گروه':'group','موارد':'items','تفکیک':'breakdown','مرحلهٔ':'stage','جهت':'direction','وارونه':'reverse','پیش‌فرض':'default','خودکار':'auto','دیسیپلین':'discipline','به‌روز':'updated','کنترل':'control','شمار':'count','طول':'length','نوار':'bar','راهنما':'guide','برگه':'sheets','کوتاه':'short','لطفاً':'please','مشخص':'specify','وضعیت':'status','کاری':'what','باید':'must','بند':'item','مشکل':'issue','بعدی':'next','شروع':'start','چه':'what','کسی':'who','اسلاید':'slides','عنوان':'title','شماره':'number','مهندس':'Eng.','بزنید':'tap','وارد':'enter','پیمانی':'lump-sum','امانی':'cost-plus','نمونهٔ':'sample','جناب':'','سرکار':'','نفر':'people'};
   for(var k3 in W2) W[k3] = W2[k3];
   var WRE = /[؀-ۿ‌]+/g;
+  /* ترجمهٔ کلمه‌ای فقط وقتی همهٔ کلمه‌های یک تکهٔ فارسی معنا دارند؛ وگرنه آن تکه (اسم شخص، شرکت، قلم…) دست‌نخورده می‌ماند تا «بتن ready تهران» ساخته نشود */
+  var RUN = /[؀-ۿ‌]+(?: +[؀-ۿ‌]+)*/g;
   var MON = {'فروردین':'Farvardin','اردیبهشت':'Ordibehesht','خرداد':'Khordad','تیر':'Tir','مرداد':'Mordad','شهریور':'Shahrivar','مهر':'Mehr','آبان':'Aban','آذر':'Azar','دی':'Dey','بهمن':'Bahman','اسفند':'Esfand'};
   Object.keys(MON).forEach(function(k){ D[k] = MON[k]; W[k] = MON[k]; });
+  var MONV = Object.keys(MON).map(function(k){ return MON[k]; });
   /* عبارت‌های داخل متن (بلندتر اول) */
   var KEYS = Object.keys(D).filter(function(k){ return k.length >= 4 && D[k] && /[؀-ۿ]/.test(k); }).sort(function(a, b){ return b.length - a.length; });
   var esc = function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
@@ -97,6 +100,9 @@
     [/([\d۰-۹]+) بحرانی/g, '$1 critical'], [/([\d۰-۹]+) نزدیک موعد/g, '$1 due soon'], [/([\d۰-۹]+) پروژه/g, '$1 projects'], [/([\d۰-۹.]+) میلیارد/g, '$1 B'], [/([\d۰-۹.,]+) میلیون/g, '$1 M'], [/([\d۰-۹]+) از ([\d۰-۹]+)/g, '$1 of $2'],
     [/^همه \((.+)\)$/, 'All ($1)'], [/ تا /g, ' to '], [/٪/g, '%']
   ];
+  /* افزوده: عبارت‌های رابط که تکه‌تکه ترجمه می‌شدند */
+  (function(X){ Object.keys(X).forEach(function(k){ if(D[k] == null) D[k] = X[k]; if(k.indexOf(' ') === -1 && k !== 'من' && W[k] == null) W[k] = X[k]; }); })({'من':'Me','اختیاری':'Optional','پیام بنویسید…':'Write a message…','فعالیت انجام‌شده در این محل...':'Work done at this location…','شرح بند — چه کاری باید انجام شود؟':'Item description: what needs to be done?','پیام کوتاه — مثلاً: لطفاً وضعیت را تا فردا مشخص کنید.':'Short message, e.g. please confirm the status by tomorrow.','هر مشکل در یک خط — با Enter خط بعدی را شروع کنید':'One issue per line; press Enter for the next','رخدادها و شدت':'Incidents and severity','ترکیب اعلان‌ها':'Notification mix','جناب آقای':'Mr.','موانع':'Obstacles','مانع':'Obstacle','تدارکات':'Procurement','ادعاها':'Claims','تاریخچه':'History','نیرو':'Workforce','پیمانی':'Contract-based','فیلترهای فعلی':'current filters','نمای فعلی':'current view','نوع نما':'view type','موقعیت':'Location','درخواستی':'requested','کارکرد':'work done','متره‌شده':'measured','صورت وضعیت‌شده':'certified','اقلام':'Items','بتن‌ریزی‌ها':'Concrete pours','نزدیکی':'proximity','کارهای':'Tasks','فعالیت‌ها، اسناد، مطالبات و نیروی کارگاه':'Activities, documents, receivables and site workforce','پیش‌بینی و تاریخچهٔ هوا، روزهای توقف و علت تأخیر':'Weather forecast & history, stoppages and delay causes','شهادت حضرت فاطمه':'Martyrdom of Fatima (holiday)'});
+  R.unshift([/^مثلاً:? ?(.+)$/, 'e.g. $1'], [/^نمایش ([\d۰-۹]+) (.+) دیگر از ([\d۰-۹]+)$/, 'Show $1 more of $3'], [/^نمایش ([\d۰-۹]+) مورد دیگر از ([\d۰-۹]+)$/, 'Show $1 more of $2'], [/([\d۰-۹]+) مورد تازه از ([\d۰-۹]+)/g, '$1 new of $2'], [/^([\d۰-۹]+) (فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)$/, function(m, d, mo){ return d + ' ' + MON[mo]; }], [/^جناب (.+)$/, '$1']);
   var FA = '۰۱۲۳۴۵۶۷۸۹', AR = '٠١٢٣٤٥٦٧٨٩';
   var digits = function(s){ return s.replace(/[۰-۹]/g, function(d){ return FA.indexOf(d); }).replace(/[٠-٩]/g, function(d){ return AR.indexOf(d); }); };
   var cache = new Map();
@@ -105,7 +111,7 @@
     var c = cache.get(s); if(c !== undefined) return c;
     var t = s.trim(), lead = s.slice(0, s.indexOf(t)), tail = s.slice(s.indexOf(t) + t.length), out;
     if(D[t] != null) out = D[t];
-    else { out = t; R.forEach(function(r){ out = out.replace(r[0], r[1]); }); out = out.replace(BIG, function(m, p, k){ return p + D[k]; }).replace(BIG, function(m, p, k){ return p + D[k]; }); out = out.replace(/ و /g, ' and ').replace(/، ?/g, ', ').replace(/؛ ?/g, '; ').replace(/؟/g, '?'); out = out.replace(WRE, function(w){ var x = W[w]; if(x == null){ var w2 = w.replace(/\u200c/g, ''); x = W[w2]; } return x == null ? w : x; }).replace(/  +/g, ' ').replace(/ ([,.;:?])/g, '$1').trim(); }
+    else { out = t; R.forEach(function(r){ out = out.replace(r[0], r[1]); }); out = out.replace(BIG, function(m, p, k){ return p + D[k]; }).replace(BIG, function(m, p, k){ return p + D[k]; }); out = out.replace(/، ?/g, ', ').replace(/؛ ?/g, '; ').replace(/؟/g, '?'); out = out.replace(RUN, function(run, off){ var ws = run.split(/ +/), r = [], ok = true; for(var i = 0; i < ws.length; i++){ var w = ws[i], x = w === 'و' ? 'and' : W[w]; if(x == null) x = W[w.replace(/\u200c/g, '')]; if(x == null){ ok = false; break; } if((off > 0 || i > 0) && MONV.indexOf(x) === -1 && /^[A-Z][a-z]+(?: [a-z]+)*$/.test(x) && !/[.!?:]\s*$/.test(out.slice(0, off))) x = x.charAt(0).toLowerCase() + x.slice(1); r.push(x); } if(ok && off === 0 && r[0]) r[0] = r[0].charAt(0).toUpperCase() + r[0].slice(1); return ok ? r.join(' ') : run; }).replace(/  +/g, ' ').replace(/ ([,.;:?])/g, '$1').trim(); }
     out = lead + digits(out) + tail;
     if(cache.size > 20000) cache.clear(); cache.set(s, out); return out;
   }
@@ -133,7 +139,7 @@
     obs.disconnect(); for(var j = 0; j < L.length; j++){ var n = L[j]; if(n.isConnected !== false) walk(n); } start(); });
   function start(){ obs.observe(document.documentElement, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTR}); }
   var de = document.documentElement; de.lang = 'en'; de.dir = 'ltr'; de.classList.add('lang-en', 'i18n-wait');
-  try{ var lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'; document.head.appendChild(lk); }catch(e){}
+  try{ var lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = 'https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap'; document.head.appendChild(lk); }catch(e){}
   setTimeout(function(){ de.classList.remove('i18n-wait'); }, 2500);
   var t0 = document.title; document.title = tr(t0);
   var go = function(){ var lb = document.querySelector('#langBtn .lang-t'); if(lb) lb.textContent = 'فا'; walk(document.body); start(); de.classList.remove('i18n-wait'); };
@@ -142,7 +148,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107064908">
+<meta name="pm-build" content="20261107071032">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -769,7 +775,7 @@
   #homeView .h5-hi small svg{width:13px;height:13px;flex:none;opacity:.8;}
   #homeView .h5-hi h2{margin:4px 0 0;font-size:20px;line-height:1.35;font-weight:800;letter-spacing:-.2px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{flex:none;margin:0;padding:5px 9px;border-radius:999px;font-size:11.5px;background:var(--field, rgba(0,0,0,.04)) !important;border:0 !important;}
-  #homeView .h5 .wx-chip > span{display:none;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{display:inline-flex !important;flex-wrap:nowrap !important;white-space:nowrap;height:28px;align-items:center;gap:5px;} #homeView .h5 .wx-chip em{flex:none;} #homeView .h5-top{flex-direction:column;align-items:flex-start;gap:8px;} #homeView .h5-hi{max-width:100%;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{margin:0 !important;} .wx-chip s.wx-mm .wxn{display:inline;unicode-bidi:isolate;vertical-align:baseline;}
+  #homeView .h5 .wx-chip > span{display:none;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{display:inline-flex !important;flex-wrap:nowrap !important;white-space:nowrap;height:28px;align-items:center;gap:5px;} #homeView .h5 .wx-chip em{flex:none;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip[hidden]{display:none !important;} #homeView .h5-top{flex-direction:column;align-items:flex-start;gap:8px;} #homeView .h5-hi{max-width:100%;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{margin:0 !important;} .wx-chip s.wx-mm .wxn{display:inline;unicode-bidi:isolate;vertical-align:baseline;}
   :is(html,#z0) :is(body,#z1) #homeView .h5-pj{display:flex !important;align-items:center;gap:10px;width:100%;margin:14px 0 0;padding:9px 10px;border-radius:14px;background:var(--field, rgba(0,0,0,.035)) !important;}
   #homeView .h5-pc{width:34px;height:34px;flex:none;border-radius:10px;overflow:hidden;display:grid;place-items:center;}
   #homeView .h5-pc > *{width:100% !important;height:100% !important;border-radius:10px !important;}
@@ -28687,7 +28693,13 @@
   @media (max-width:1179px){ .hd-acts .lang-btn{display:none !important;} }
   .lang-btn .lang-t{font:800 11.5px/1 system-ui, sans-serif;letter-spacing:.02em;}
   html.lang-en .lang-btn .lang-t{font-family:Vazirmatn, Tahoma, sans-serif;}
-  html.lang-en, html.lang-en body{--f:'Inter', 'Vazirmatn', system-ui, -apple-system, sans-serif !important;font-family:var(--f);letter-spacing:-.005em;}
+  html.lang-en, html.lang-en body{--f:'Inter', 'Vazirmatn', system-ui, -apple-system, sans-serif !important;font-family:var(--f);letter-spacing:-.011em;}
+  /* انگلیسی: Inter با اندازهٔ چشمی هم‌تراز اندازه‌های فارسی، وزن‌ها یک پله سبک‌تر، ارقام هم‌عرض و حروف مدرن */
+  html.lang-en body, html.lang-en input, html.lang-en select, html.lang-en textarea, html.lang-en button{font-size-adjust:.5;font-optical-sizing:auto;font-feature-settings:'cv11' 1, 'ss01' 1, 'tnum' 1, 'calt' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
+  html.lang-en :is(h1, h2, h3, .pc-head b, .hd4-sh h3, .h5-hi h2, .fx-hd b){letter-spacing:-.022em;}
+  html.lang-en :is(b, strong, h1, h2, h3, h4){font-synthesis:none;}
+  html.lang-en #homeView .h5-k + .h5-k::before{right:auto;left:0;}
+  @media (min-width:1180px){ html.lang-en #pageTitle.page-title{max-width:calc(100vw - 1075px);min-width:0;overflow:hidden;display:flex;flex-wrap:nowrap;} html.lang-en #pageTitle.page-title > *{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} html.lang-en #pageTitle .pt-tx{flex:0 50 auto;} html.lang-en #pageTitle.page-title > :not(.pt-tx){flex:0 0 auto;max-width:100%;} }
   html.lang-en .app-head #spBtn::after{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .pf-k{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;} .pf-k > div{flex:1 1 140px;padding:10px 12px;border-radius:12px;background:var(--field, rgba(0,0,0,.04));display:flex;flex-direction:column;gap:3px;}
   .pf-k u{text-decoration:none;font-size:11px;font-weight:700;color:var(--muted, #667);} .pf-k b{font-size:17px;font-weight:800;} .pf-k b.bad, table.pf td.bad{color:#c0392b;font-weight:800;}
