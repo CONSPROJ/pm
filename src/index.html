@@ -142,7 +142,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107011342">
+<meta name="pm-build" content="20261107064908">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -769,7 +769,7 @@
   #homeView .h5-hi small svg{width:13px;height:13px;flex:none;opacity:.8;}
   #homeView .h5-hi h2{margin:4px 0 0;font-size:20px;line-height:1.35;font-weight:800;letter-spacing:-.2px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{flex:none;margin:0;padding:5px 9px;border-radius:999px;font-size:11.5px;background:var(--field, rgba(0,0,0,.04)) !important;border:0 !important;}
-  #homeView .h5 .wx-chip span{display:none;}
+  #homeView .h5 .wx-chip > span{display:none;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{display:inline-flex !important;flex-wrap:nowrap !important;white-space:nowrap;height:28px;align-items:center;gap:5px;} #homeView .h5 .wx-chip em{flex:none;} #homeView .h5-top{flex-direction:column;align-items:flex-start;gap:8px;} #homeView .h5-hi{max-width:100%;} :is(html,#z0) :is(body,#z1) #homeView .h5 .wx-chip{margin:0 !important;} .wx-chip s.wx-mm .wxn{display:inline;unicode-bidi:isolate;vertical-align:baseline;}
   :is(html,#z0) :is(body,#z1) #homeView .h5-pj{display:flex !important;align-items:center;gap:10px;width:100%;margin:14px 0 0;padding:9px 10px;border-radius:14px;background:var(--field, rgba(0,0,0,.035)) !important;}
   #homeView .h5-pc{width:34px;height:34px;flex:none;border-radius:10px;overflow:hidden;display:grid;place-items:center;}
   #homeView .h5-pc > *{width:100% !important;height:100% !important;border-radius:10px !important;}
@@ -28636,7 +28636,7 @@
   .wx-nt{display:block;margin-top:8px;color:var(--muted);font-size:11px;line-height:1.8;}
   .wx-chip{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px 0 8px;margin-inline-start:8px;border-radius:999px;background:var(--field, rgba(0,0,0,.05));color:var(--ink);font-size:11.5px;vertical-align:middle;white-space:nowrap;}
   .wx-chip:hover{background:color-mix(in srgb, var(--sky, #2f6f9f) 12%, var(--field, #eee));} .wx-chip i{display:inline-flex;color:#c58a12;} .wx-chip i svg{width:15px;height:15px;} .wx-chip b{font-weight:800;} .wx-chip span{color:var(--muted);font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
-  .wx-chip em{font-style:normal;width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:#d68910;color:#fff;font-size:10px;font-weight:800;} .wx-chip[hidden]{display:none !important;}
+  .wx-chip em{font-style:normal;width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:#d68910;color:#fff;font-size:10px;font-weight:800;} .wx-chip[hidden]{display:none !important;} .wx-chip s.wx-mm{text-decoration:none;color:var(--muted);font-weight:600;font-size:.92em;white-space:nowrap;}
   .hx4-me .wx-chip{margin:6px 0 0;display:inline-flex;}
   .wx-now, .wx-tb, .wx-f{flex:none;}
   .wx-now{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--field, rgba(0,0,0,.04));margin-bottom:12px;} .wx-now i{color:#c58a12;} .wx-now i svg{width:44px;height:44px;}
@@ -62429,6 +62429,7 @@
     });
   }
 
+  window.rvSaveDone = rvSaveDone;
   async function rvSaveDone(kind, id, row, nextArr){
     const who = reviewersOf(row);
     const doneKeys = new Set(nextArr.map(nameKey));
@@ -71430,11 +71431,11 @@
     };
     window.__admBarPaint = paint;
     paint();
-    const redraw = () => { paint(); try{ applyAdminFilters(); }catch(e2){} };
+    const redraw = () => { const y = window.scrollY; paint(); try{ applyAdminFilters(); }catch(e2){} requestAnimationFrame(() => { if(Math.abs(window.scrollY - y) > 2) window.scrollTo({top: y}); }); };
     /* مرتب‌سازی کل فهرست: با گروه‌بندی، ترتیب فقط داخل هر گروه کوچک اعمال می‌شد و به نظر کار نمی‌کرد؛
        پس با انتخاب مرتب‌سازی، گروه‌بندی همین دسته برداشته می‌شود (از «گروه‌بندی» برمی‌گردد) */
     const setSort = v => { admSort = v; try{ localStorage.setItem('admSort2', admSort); }catch(e2){}
-      const k = curCat(); if(v !== 'new-desc' && k && k !== 'minute' && admGrpOf(k) !== 'none'){ admGrpSet(k, 'none'); try{ shrToast('برای مرتب‌سازی کل فهرست، گروه‌بندی برداشته شد'); }catch(e2){} }
+      /* گروه‌بندی دست نمی‌خورد؛ ترتیب داخل هر گروه اعمال می‌شود (پیش‌تر گروه‌بندی خودبه‌خود برداشته می‌شد و فهرست می‌پرید) */
       redraw(); };
     if(so) so.addEventListener('change', () => setSort(so.value + '-' + (ADM_SORT_DEF[so.value] || 'desc')));
     { const db = document.getElementById('admSortDir');
@@ -82341,8 +82342,10 @@
   function wxChipHtml(){ const c = wxCache(); setTimeout(wxFill, 0);
     if(!c || !c.cur) return '<button type="button" class="wx-chip" data-wxopen="1" hidden></button>';
     return '<button type="button" class="wx-chip" data-wxopen="1">' + wxChipIn(c) + '</button>'; }
+  const wxT = n => '<span class="wxn" dir="ltr">' + toFa(n) + '°</span>';
   function wxChipIn(c){ const k = WX_CODE(c.cur.weather_code), d = c.daily, w = d ? wxWarn(d, 0) : [];
-    return '<i>' + (WX_I[k[1]] || '') + '</i><b>' + toFa(Math.round(c.cur.temperature_2m)) + '°</b><span>' + esc(k[0]) + (c.place ? ' · ' + esc(c.place) : '') + '</span>' + (w.length ? '<em title="' + esc(w.join('، ')) + '">!</em>' : ''); }
+    const mm = d && d.temperature_2m_max ? '<s class="wx-mm">بیشینه ' + wxT(Math.round(d.temperature_2m_max[0])) + ' · کمینه ' + wxT(Math.round(d.temperature_2m_min[0])) + ' · باد ' + toFa(Math.round(c.cur.wind_speed_10m)) + '</s>' : '';
+    return '<i>' + (WX_I[k[1]] || '') + '</i><b>' + toFa(Math.round(c.cur.temperature_2m)) + '°</b><span>' + esc(k[0]) + (c.place ? ' · ' + esc(c.place) : '') + '</span>' + mm + (w.length ? '<em title="' + esc(w.join('، ')) + '">!</em>' : ''); }
   async function wxFill(){ const els = document.querySelectorAll('.wx-chip'); if(!els.length) return; const c = await wxGet(); if(!c || !c.cur) return;
     const h = wxChipIn(c); document.querySelectorAll('.wx-chip').forEach(el => { if(el.__h !== h){ el.innerHTML = h; el.__h = h; } el.hidden = false; }); }
   window.wxGet = wxGet; window.wxChipHtml = wxChipHtml;
@@ -82401,7 +82404,6 @@
     const d = j && j.daily; if(!d || !d.time) return null;
     const avg = (base, i) => { const ks = Object.keys(d).filter(k => k === base || k.indexOf(base + '_member') === 0); const v = ks.map(k => d[k][i]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
     return d.time.map((t, i) => ({t, tx: avg('temperature_2m_max', i), tn: avg('temperature_2m_min', i), pr: avg('precipitation_sum', i)})).filter(x => x.tx != null); }catch(e){ return null; } }
-  const wxT = n => '<span class="wxn" dir="ltr">' + toFa(n) + '°</span>';
   async function wxOpen(tab, host){
     const m = host || fxModal('wxM', 'وضع هوای کارگاه', 'امروز، پیش‌بینی هفته و ماه، و تاریخچهٔ ثبت‌شدهٔ هوای پروژه', '<div class="fx-wait">در حال دریافت…</div>', true);
     const c = await wxGet(true), B = host || m.querySelector('.fx-bd'), L = wxLoc(); wxRecord();
@@ -82444,7 +82446,7 @@
           + '<small class="wx-nt">تاریخچه از پایگاه دادهٔ پروژه خوانده می‌شود و هر روز خودکار کامل می‌شود.</small>';
         const sel = B.querySelector('[data-wxm]'); if(sel) sel.onchange = () => { B.__wxm = sel.value; paint(); }; } };
     B.innerHTML = '<div class="wx-now"><i>' + (WX_I[k[1]] || '') + '</i><div><b>' + wxT(Math.round(c.cur.temperature_2m)) + '</b><span>' + esc(k[0]) + ' · ' + esc(c.place || '') + '</span>'
-        + '<small>احساس ' + wxT(Math.round(c.cur.apparent_temperature)) + ' · رطوبت ' + toFa(Math.round(c.cur.relative_humidity_2m)) + '٪ · باد ' + toFa(Math.round(c.cur.wind_speed_10m)) + ' km/h</small></div></div>'
+        + '<small>بیشینه ' + wxT(Math.round(d.temperature_2m_max[0])) + ' · کمینه ' + wxT(Math.round(d.temperature_2m_min[0])) + ' · احساس ' + wxT(Math.round(c.cur.apparent_temperature)) + ' · رطوبت ' + toFa(Math.round(c.cur.relative_humidity_2m)) + '٪ · باد ' + toFa(Math.round(c.cur.wind_speed_10m)) + ' km/h</small></div></div>'
       + '<div class="wx-tabs"><button type="button" data-wxt="pw">۷ روز گذشته</button><button type="button" data-wxt="hist">ماه‌های گذشته</button><button type="button" data-wxt="wk">۷ روز آینده</button><button type="button" data-wxt="d16">۱۶ روز آینده</button><button type="button" data-wxt="mo">ماه آینده</button></div>'
       + '<div class="wx-tb"></div>'
       + '<div class="wx-f"><small>' + (L.lat != null ? 'بر اساس مختصات پروژه' : 'بر اساس شهر «' + esc(L.city || 'تهران') + '»؛ برای دقت بیشتر مختصات پروژه را وارد کنید') + ' · Open-Meteo</small>'
@@ -93547,6 +93549,23 @@
           const chip = tk.closest('.dk-rvn'); if(chip) chip.classList.toggle('ok', !on);
           if(typeof invalidateAdmin === 'function') invalidateAdmin();
         }else showDialog('warn','ثبت نشد', lastServerError || 'اتصال برقرار نشد.');
+        return;
+      }
+      /* «انجام دادم» نوار گردش سند (rfb-did) داخل کارت: پیش‌تر در کارت‌ها هیچ کاری نمی‌کرد */
+      const rfd = e.target.closest('[data-rvdid]');
+      if(rfd){
+        e.stopPropagation();
+        const id = rfd.dataset.rvdid, kind = rfd.dataset.rvkind;
+        const hit = deckIndex.get(String(id)); let row = hit ? hit.row : null;
+        if(!row){ try{ const a0 = (adminAll || []).find(a => a && a.kind === kind && String(a.id) === String(id)); row = a0 ? a0.row : null; }catch(er){} }
+        if(!row || !window.rvSaveDone) return;
+        const me2 = activeUserName();
+        const names = String(row['rvDone'] || pick(row, AD.rvDone) || '').split('|').map(x => x.trim()).filter(Boolean);
+        if(!names.some(n => nameKey(n) === nameKey(me2))) names.push(me2);
+        const html0 = rfd.innerHTML; rfd.disabled = true; rfd.textContent = '…';
+        const ok = await window.rvSaveDone(kind, id, row, names);
+        if(ok){ row['rvDone'] = names.join('|'); deckDone(rfd, 'ثبت شد'); if(typeof invalidateAdmin === 'function') invalidateAdmin(); }
+        else { rfd.disabled = false; rfd.innerHTML = html0; }
         return;
       }
       /* «انجام دادم»: نام من به فهرست تأییدکنندگان اضافه می‌شود */
