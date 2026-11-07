@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107085459">
+<meta name="pm-build" content="20261107090539">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28579,7 +28579,7 @@
   @media (prefers-reduced-motion: reduce){ .vm-card, .vm-ck, .sbf-vm > .vm-th, html.vm-going body{transition:none !important;animation:none !important;} }
 
   /* بدون اجازهٔ اکسل، دکمه‌های اکسل/CSV دیده نمی‌شوند */
-  html.no-xl :is([data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], [data-ctdxl], #wrkHrsXlsM, #wrkHrsXls, #crewXls, .xls-block){display:none !important;}
+  html.no-xl :is([data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], [data-ctdxl], #crewXls, .xls-block){display:none !important;}
 
   /* ====== مرکز گزارش و خروجی ====== */
   .rc-bg{z-index:1200;}
@@ -31956,14 +31956,14 @@
   /* ====== دروازهٔ اکسل: فعلاً فقط مدیر سامانه؛ مدیر می‌تواند «ورود و خروج اکسل» را به سطح، سمت یا شخص بدهد ====== */
   function xlOk(){ try{ return !!currentUser && can('xl.io'); }catch(e){ return false; } }
   window.xlOk = xlOk;
-  const XL_SEL = '[data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], [data-ctdxl], #wrkHrsXlsM, #wrkHrsXls, #crewXls, .xls-block, input[type=file][accept*="xls"], input[type=file][accept*="csv"]';
+  const XL_SEL = '[data-xlhub], .ws-bxl, .adm-export, .adm-xbtn.xls, .ico-btn.xls, [data-wup], [data-wfup], [data-wfdl], [data-wdl], [data-gtexp], [data-ulx="xls"], [data-mqwx], [data-mqmatx], [data-mqbx], #xlsPick, #xlsTpl, [data-whcsv], [data-qccsv], [data-pccsv], [data-mccsv], [data-rpxl], [data-ctdxl], #crewXls, .xls-block, input[type=file][accept*="xls"], input[type=file][accept*="csv"]';
   function xlNo(){ try{ showDialog('warn', 'اکسل فقط با اجازهٔ مدیر', 'دانلود و بارگذاری اکسل فعلاً فقط با مدیر سامانه است. اگر لازم دارید، از مدیر بخواهید «ورود و خروج اکسل» را برایتان باز کند.'); }catch(e){ alert('اکسل فقط با اجازهٔ مدیر سامانه'); } }
   function xlSync(){ const on = xlOk(), de = document.documentElement; if(de.classList.contains('no-xl') === on) de.classList.toggle('no-xl', !on); }
   window.xlSync = xlSync;
   document.addEventListener('click', e => { if(xlOk()) return; const t = e.target && e.target.closest && e.target.closest(XL_SEL); if(!t) return; e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); xlNo(); }, true);
   document.addEventListener('change', e => { if(xlOk()) return; const t = e.target; if(t && t.matches && t.matches('input[type=file][accept*="xls"], input[type=file][accept*="csv"]')){ t.value = ''; e.stopImmediatePropagation(); xlNo(); } }, true);
   /* خود کتابخانه هم: نوشتن و خواندن فایل بدون اجازه انجام نمی‌شود (هر دکمه‌ای که از قلم افتاده باشد) */
-  (function(){ const wrap = X => { if(!X || typeof X !== 'object') return X; ['writeFile', 'writeFileXLSX', 'read', 'readFile'].forEach(f => { const o = X[f]; if(typeof o !== 'function' || o.__xlg) return; const w = function(){ if(!xlOk()){ xlNo(); throw new Error('اکسل فقط با اجازهٔ مدیر سامانه'); } return o.apply(this, arguments); }; w.__xlg = 1; try{ X[f] = w; }catch(e){} }); return X; };
+  (function(){ const wrap = X => { if(!X || typeof X !== 'object') return X; ['writeFile', 'writeFileXLSX', 'read', 'readFile'].forEach(f => { const o = X[f]; if(typeof o !== 'function' || o.__xlg) return; const w = function(){ if(!xlOk() && !(Date.now() - (window.__xlFree || 0) < 120000)){ xlNo(); throw new Error('اکسل فقط با اجازهٔ مدیر سامانه'); } return o.apply(this, arguments); }; w.__xlg = 1; try{ X[f] = w; }catch(e){} }); return X; };
     let cur = window.XLSX;
     try{ Object.defineProperty(window, 'XLSX', {configurable: true, get(){ return wrap(cur); }, set(v){ cur = v; }}); }catch(e){} })();
   setInterval(xlSync, 5000);
@@ -90562,8 +90562,9 @@
       if(up){ xlsFor = up.dataset.wup; fi.click(); return; }
       if(e.target.closest('[data-wfdl]')){ await wfXlsDownload(); return; }
       if(e.target.closest('[data-wfup]')){ xlsFor = 'fin'; fi.click(); return; }
-      if(e.target.closest('#wrkHrsXls')){ wrkHrsExcel(); return; }
-      if(e.target.closest('#wrkHrsXlsM')){ await wrkHrsExcelMonth(); return; }
+      /* اکسل کارکرد کارگران برای همه آزاد است (بیرون از دروازهٔ اکسل) */
+      if(e.target.closest('#wrkHrsXls')){ window.__xlFree = Date.now(); wrkHrsExcel(); return; }
+      if(e.target.closest('#wrkHrsXlsM')){ window.__xlFree = Date.now(); try{ await wrkHrsExcelMonth(); }finally{ window.__xlFree = Date.now(); } return; }
       if(e.target.closest('#matAdd')){
         wrkMat.push({material:'', qty:'', unit:'', src:'', dst:'', party:'', note:'', who: wrkMe()});
         const mr = document.getElementById('matRows');
