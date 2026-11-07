@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261107092235">
+<meta name="pm-build" content="20261107110540">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -60360,7 +60360,7 @@
         if(b0 && (obj.values['وضعیت مدرک'] != null || obj.values['ویرایش'] != null)){
           const v2 = Object.assign({}, obj.values);
           v2['ویرایش‌ها'] = dsApply(b0, v2);
-          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink; delete v2.__dsSide; delete v2.__dsAt; delete v2.__dsEdit; delete v2.__dsUndo; delete v2.__dsFiles; delete v2.__dsFilesRi; delete v2.__dsRevNote; delete v2.__dsPast; delete v2.__dsDel; delete v2.__dsOrder;
+          delete v2.__dsDate; delete v2.__dsNote; delete v2.__dsLink; delete v2.__dsSide; delete v2.__dsAt; delete v2.__dsEdit; delete v2.__dsUndo; delete v2.__dsFiles; delete v2.__dsFilesRi; delete v2.__dsRevNote; delete v2.__dsRevMeta; delete v2.__dsPast; delete v2.__dsDel; delete v2.__dsOrder;
           obj = Object.assign({}, obj, {values: v2});
         }
       }catch(e){}
@@ -72298,7 +72298,15 @@
     /* فایل‌های یک ویرایش (جاری یا قبلی) */
     if(values.__dsFiles != null){
       const ri = parseInt(values.__dsFilesRi, 10), t = revs[isNaN(ri) ? revs.length - 1 : Math.max(0, Math.min(ri, revs.length - 1))];
-      if(t){ t.link = String(values.__dsFiles || ''); if(values.__dsRevNote != null) t.note = String(values.__dsRevNote); }
+      if(t){ t.link = String(values.__dsFiles || ''); if(values.__dsRevNote != null) t.note = String(values.__dsRevNote);
+        /* اصلاح مشخصات خود ویرایش: شماره، تاریخ دریافت، نتیجه و تاریخ نتیجه */
+        if(values.__dsRevMeta){ let M = {}; try{ M = typeof values.__dsRevMeta === 'string' ? JSON.parse(values.__dsRevMeta) : values.__dsRevMeta; }catch(e){}
+          if(M.rev != null && String(M.rev).trim()) t.rev = String(M.rev).trim();
+          const d0 = normDate(M.date || ''); if(d0){ t.date = d0; t.log = t.log || []; const rc = t.log.find(x => x && x.st === 'دریافت'); if(rc) rc.d = d0; else t.log.unshift({st:'دریافت', d: d0, by: me}); }
+          if(M.res != null){ const FIN = ['تأیید شده','تأیید مشروط','نیاز به اصلاح','رد شده']; t.log = (t.log || []);
+            let li = -1; t.log.forEach((x, i) => { if(x && FIN.indexOf(x.st) !== -1) li = i; });
+            if(!M.res){ if(li !== -1) t.log.splice(li, 1); }
+            else { const rd = normDate(M.rd || '') || (li !== -1 ? t.log[li].d : '') || t.date || ''; if(li !== -1){ t.log[li].st = M.res; t.log[li].d = rd; } else t.log.push({st: M.res, d: rd, by: me}); } } } }
       return revs.slice(-40);
     }
     if(newRev && newRev !== curRev){
@@ -72944,10 +72952,17 @@
     if(mode === 'files'){
       const ri = (preset !== '' && preset != null && !isNaN(+preset)) ? Math.max(0, Math.min(+preset, revs.length - 1)) : revs.length - 1;
       dsS.ri = ri; dsS.st = last;
-      const rv = revs[ri], isCur = ri === revs.length - 1;
-      box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + UP_I.clip + '</span><div><b>Rev ' + esc(toFa(rv.rev)) + (isCur ? ' (ویرایش جاری)' : '') + '</b><small>' + esc(title) + '</small></div>'
+      const rv = revs[ri], isCur = ri === revs.length - 1; dsS.isCur = isCur;
+      box.innerHTML = '<div class="rf-head"><span class="rf-hic">' + UP_I.clip + '</span><div><b>اصلاح ویرایش Rev ' + esc(toFa(rv.rev)) + (isCur ? ' (جاری)' : '') + '</b><small>' + esc(title) + '</small></div>'
         + '<button type="button" class="tx-x" data-dsclose="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>'
         + '<div class="rf-body ds-body">'
+        + (function(){ const FIN = ['تأیید شده','تأیید مشروط','نیاز به اصلاح','رد شده']; const L = (rv.log || []).filter(x => x && FIN.indexOf(x.st) !== -1), fe = L[L.length - 1] || null;
+            const rc = (rv.log || []).find(x => x && x.st === 'دریافت'); dsS.res0 = fe ? fe.st : ''; dsS.st = isCur ? last : dsS.res0;
+            return '<div class="te-g2"><label class="te-f"><u>شمارهٔ ویرایش</u><input type="text" class="ds-erev" value="' + esc(String(rv.rev == null ? '' : rv.rev)) + '" dir="ltr"></label>'
+              + '<label class="te-f"><u>تاریخ دریافت</u><input type="text" class="ds-edate date-in" inputmode="numeric" value="' + esc(toFa(rv.date || (rc && rc.d) || '')) + '" placeholder="۱۴۰۵/۰۵/۰۱"></label></div>'
+              + (isCur ? '<p class="rf-hint">نتیجه و مرحلهٔ ویرایش جاری از «اصلاح» مرحلهٔ فعلی عوض می‌شود.</p>'
+                : '<div class="ds-blk"><u>نتیجهٔ بررسی</u><div class="ds-sts"><button type="button" class="ds-st' + (!dsS.res0 ? ' on' : '') + '" data-dsst="">بدون نتیجه</button>' + FIN.map(x => '<button type="button" class="ds-st t-' + dsTone(x) + (x === dsS.res0 ? ' on' : '') + '" data-dsst="' + esc(x) + '"><b>' + DS_CODE[x] + '</b>' + esc(x) + '</button>').join('') + '</div></div>'
+                  + '<label class="te-f"><u>تاریخ نتیجه</u><input type="text" class="ds-erdate date-in" inputmode="numeric" value="' + esc(toFa(fe && fe.d || '')) + '" placeholder="اختیاری"></label>'); })()
         + '<label class="te-f"><u>توضیح این ویرایش</u><textarea class="ds-rnote" rows="3" placeholder="چه چیزی در این ویرایش عوض شده، ملاحظات مشاور، …">' + esc(rv.note || '') + '</textarea></label>'
         + '<div class="ds-blk"><u>فایل‌های این ویرایش</u>' + attachFieldHtml(dsRevFiles(r, revs, ri), 'design') + '</div>'
         + (revs.length > 1 ? '<div class="ds-rvops"><u>جای این ویرایش در فهرست</u><div>'
@@ -73038,8 +73053,15 @@
     if(S.mode === 'files'){
       const r0 = admRowById(S.id); if(!r0) return;
       const revs0 = dsRevsOf(r0), isCur = S.ri === revs0.length - 1;
-      const v0 = {'وضعیت مدرک': S.st || pick(r0,AD.dStatus) || '', __dsFiles: files, __dsFilesRi: String(S.ri), __dsRevNote: String((m.querySelector('.ds-rnote') || {}).value || '').trim()};
-      if(isCur) v0['لینک'] = files;
+      const erev = String((m.querySelector('.ds-erev') || {}).value || '').trim(), edRaw = String((m.querySelector('.ds-edate') || {}).value || '').trim(), ed0 = edRaw ? normDate(edRaw) : '';
+      const erdRaw = String((m.querySelector('.ds-erdate') || {}).value || '').trim(), erd = erdRaw ? normDate(erdRaw) : '';
+      if(!erev){ showDialog('warn', 'شماره لازم است', 'شمارهٔ ویرایش را بنویسید.'); return; }
+      if(edRaw && !ed0){ showDialog('warn', 'تاریخ نادرست', 'تاریخ دریافت را به شکل ۱۴۰۵/۰۵/۰۱ بنویسید.'); return; }
+      if(erdRaw && !erd){ showDialog('warn', 'تاریخ نادرست', 'تاریخ نتیجه را به شکل ۱۴۰۵/۰۵/۰۱ بنویسید.'); return; }
+      if(revs0.some((x, i) => i !== S.ri && toEn(String(x.rev)) === toEn(erev))){ showDialog('warn', 'شماره تکراری', 'ویرایش ' + erev + ' از قبل در این سند هست.'); return; }
+      const meta = {rev: erev, date: ed0}; if(!isCur){ meta.res = S.st || ''; meta.rd = erd; }
+      const v0 = {'وضعیت مدرک': isCur ? (pick(r0,AD.dStatus) || '') : (pick(r0,AD.dStatus) || ''), __dsFiles: files, __dsFilesRi: String(S.ri), __dsRevNote: String((m.querySelector('.ds-rnote') || {}).value || '').trim(), __dsRevMeta: JSON.stringify(meta)};
+      if(isCur){ v0['لینک'] = files; if(toEn(erev) !== toEn(String(revs0[S.ri].rev))) v0['ویرایش'] = erev; }
       S.busy = true;
       const b0 = m.querySelector('[data-dsgo]'); if(b0){ b0.disabled = true; b0.textContent = 'در حال ثبت…'; }
       const ok0 = await sendAction({action:'update', target:'design', id: S.id, values: v0});
