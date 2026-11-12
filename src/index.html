@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112134511">
+<meta name="pm-build" content="20261112134823">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32228,6 +32228,12 @@
     {g:'ایمنی', k:'write.hse', t:'ثبت گزارش HSE', d:'حادثه، عامل حادثه، تصویر و جریمه', def:[1,2,3]},
     {g:'ایمنی', k:'hse.notify', t:'دریافت اعلان HSE', d:'هر گزارش ایمنی و جریمهٔ تازه', def:[1,2]},
     {g:'تدارکات', k:'proc.notify', t:'دریافت اعلان تدارکات', d:'درخواست خرید تازه و اقلامی که بحرانی شده‌اند — برای هر نفر جدا روشن کنید', def:[]},
+    {g:'دسترسی اسناد', k:'doc.statement', t:'دیدن صورت وضعیت‌ها', d:'مبالغ و گردش صورت وضعیت پیمانکاران؛ پیش‌فرض فقط تیم مدیریت (سمت‌های مدیریت پروژه، دفتر فنی، کنترل پروژه هم خودکار دارند)', def:[1,2]},
+    {g:'دسترسی اسناد', k:'doc.contract', t:'دیدن قراردادها', d:'قرارداد و الحاقیه‌ها؛ پیش‌فرض فقط تیم مدیریت', def:[1,2]},
+    {g:'دسترسی اسناد', k:'doc.letter', t:'دیدن نامه‌ها', d:'', def:[1,2,3]},
+    {g:'دسترسی اسناد', k:'doc.minute', t:'دیدن صورتجلسه‌ها', d:'', def:[1,2,3,5]},
+    {g:'دسترسی اسناد', k:'doc.design', t:'دیدن اسناد طراحی', d:'تیم‌های طراحی و مشاور (سمت‌هایی که «طراح» یا «مشاور» دارند) خودکار فقط همین بخش را می‌بینند', def:[1,2,3]},
+    {g:'دسترسی اسناد', k:'doc.design.all', t:'دیدن اسناد طراحی همهٔ رشته‌ها', d:'وگرنه فقط رشته‌ای که در سمت فرد در چارت آمده (مثلاً «طراح سازه» فقط سازه)', def:[1,2,3]},
     {g:'سامانه', k:'xl.io', t:'ورود و خروج اکسل',
      d:'دانلود اکسل/CSV و بارگذاری اکسل در همهٔ بخش‌ها؛ پیش‌فرض فقط مدیر سامانه', def:[1]},
     {g:'سامانه', k:'users.manage', t:'مدیریت کاربران',
@@ -32264,6 +32270,10 @@
   ];
   /* سمت‌هایی که فارغ از سطح، یک اجازه را دارند (قبلاً در کد پنهان بود) */
   const PERM_ROLE_DEF = {
+    'doc.statement': ['مدیریت پروژه', 'مدیر پروژه', 'دفتر فنی', 'کنترل پروژه'],
+    'doc.contract':  ['مدیریت پروژه', 'مدیر پروژه', 'دفتر فنی', 'کنترل پروژه'],
+    'doc.design':    ['طراح', 'مشاور', 'هماهنگی طراحی', 'دفتر فنی'],
+    'doc.design.all':['مدیریت پروژه', 'مدیر پروژه', 'دفتر فنی', 'کنترل پروژه', 'هماهنگی طراحی'],
     'notif.missing': ['مدیریت پروژه', 'سرپرست کارگاه'],
     'fine.approve':  ['سرپرست کارگاه'],
     'notif.fine':    ['سرپرست کارگاه']
@@ -50054,7 +50064,8 @@
   }
   /* «خانه» اجازه نمی‌خواهد؛ همیشه هست و صفحهٔ اول است */
   const TAB_PERM = {write:'tab.write', view:'tab.view', tasks:'tab.tasks', admin:'tab.admin'};
-  const tabOk = k => !TAB_PERM[k] || typeof can !== 'function' || can(TAB_PERM[k]);
+  /* دفتر فنی: با اجازهٔ بخش، یا هر کس اجازهٔ دیدن اسناد طراحی دارد (تیم‌های طراحی و مشاور فقط همان را می‌بینند) */
+  const tabOk = k => !TAB_PERM[k] || typeof can !== 'function' || can(TAB_PERM[k]) || (k === 'admin' && (function(){ try{ return can('doc.design'); }catch(e){ return false; } })());
   /* زبانهٔ «میز کار» فقط فهرست فعالیت نیست: فرم‌های کارگری، HSE، تدارکات، انبار و…
      هم آنجاست. هر کس یکی از این بخش‌ها را دارد، میز کار را هم دارد. */
   const panelOk = k => k === 'tasks' ? (tabOk('tasks') || WS_MODS.some(x => x.k !== 'tasks' && wsOk(x))) : tabOk(k);
@@ -68637,6 +68648,21 @@
   }
 
   let adminAll = [];   // [{kind, row}]
+  /* دسترسی سند به سند: هر نوع سند اجازهٔ خودش را دارد (سطح، سمت چارت، یا فرد — از پنل دسترسی‌ها)؛
+     اسناد طراحی برای کسی که «همهٔ رشته‌ها» ندارد فقط رشته‌های سمت خودش. کاربر صفر همه را می‌بیند. */
+  function docKindOk(kind){ try{ return can('doc.' + kind); }catch(e){ return true; } }
+  function docRowOk(x){
+    if(!x || !docKindOk(x.kind)) return false;
+    if(x.kind !== 'design') return true;
+    try{ if(can('doc.design.all')) return true; }catch(e){ return true; }
+    let rl = ''; try{ rl = String(roleOf(activeUserName()) || ''); }catch(e){}
+    const D = (typeof dsDiscs === 'function') ? dsDiscs(pick(x.row, AD.dDisc)) : [String(pick(x.row, AD.dDisc) || '')];
+    if(!D.length) return true;
+    return D.some(d => d && rl.indexOf(d) !== -1) || (/معمار/.test(rl) && D.some(d => /معمار/.test(d))) || (/سازه/.test(rl) && D.some(d => /سازه/.test(d))) || (/مکانیک|تأسیسات مکانیکی/.test(rl) && D.some(d => /مکانیک/.test(d))) || (/برق/.test(rl) && D.some(d => /برق/.test(d)));
+  }
+  window.docKindOk = docKindOk;
+  setInterval(() => { try{ ['statement', 'contract', 'letter', 'minute', 'design'].forEach(k => { const ok = docKindOk(k);
+    document.querySelectorAll('[data-admcat="' + k + '"], #secAdm' + k + ', .kcap[data-acat="' + k + '"]').forEach(e => { if(e.hidden === ok) e.hidden = !ok; }); }); }catch(e){} }, 1500);
   const pendingAdmin = new Map();   // id → {target, values, del}
   const pendingNewAdmin = [];       // [{kind, item, label}]
 
@@ -71976,7 +72002,7 @@
         .concat(a.contracts.map(r => ({kind:'contract', row:r})))
         .concat(a.minutes.map(r => ({kind:'minute', row:r})))
         .concat(a.letters.map(r => ({kind:'letter', row:r})))
-        .concat((a.designs || []).map(r => ({kind:'design', row:r})));
+        .concat((a.designs || []).map(r => ({kind:'design', row:r}))).filter(docRowOk);
       adminAll.forEach(x => { const id = pick(x.row,AD.id); if(id) rowMap.set(id, x.row); });
       // حالت پنجره‌ها و محل اسکرول بعد از رندر برمی‌گردد
       setTimeout(() => { try{ admRestore(snap); }catch(e){} }, 0);
@@ -93937,7 +93963,7 @@
           try{ const id = pick(row,AD.id); if(id) rowMap.set(id, row); }catch(e){}
         });
       });
-      if(out.length) adminAll = out;
+      if(out.length) adminAll = out.filter(docRowOk);
     }
   }
   async function deckEnsureData(){
