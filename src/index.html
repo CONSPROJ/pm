@@ -19,6 +19,15 @@
 }catch(e){} })();
 </script>
 <script>
+/* ====== قوانین سامانه (مرکز قوانین ادمین) ======
+   هر عدد یا قاعدهٔ ثابتی که قبلاً در کد بود (مهلت‌ها، روزهای هشدار و بحرانی، ساعت گزارش…) از این‌جا خوانده می‌شود.
+   مقدارها برای هر پروژه در lists «قوانین سامانه» شناسهٔ cfg ذخیره می‌شوند و رونوشتشان روی دستگاه، تا پیش از بارگذاری کد در دسترس باشند. */
+(function(){ var R = {}; try{ var pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; R = JSON.parse(localStorage.getItem('siteLogM.rules.' + pj) || '{}') || {}; }catch(e){}
+  window.__pmRules = R;
+  window.pmRule = function(k, d){ var v = R[k]; if(v === undefined || v === null || v === '') return d; if(typeof d === 'number'){ var n = +v; return isFinite(n) ? n : d; } if(typeof d === 'boolean') return v === true || v === 'true' || v === 1; return v; };
+})();
+</script>
+<script>
 /* ====== نسخهٔ انگلیسی (English UI) ======
    لایهٔ ترجمهٔ رابط: متن‌ها، placeholder، title و aria-label را با واژه‌نامه ترجمه می‌کند (اول تطبیق کامل،
    بعد عبارت‌های شناخته‌شده داخل متن و قاعده‌های شمارشی)، اعداد فارسی را لاتین و صفحه را چپ‌به‌راست می‌کند.
@@ -165,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112135453">
+<meta name="pm-build" content="20261112135913">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29719,6 +29728,16 @@
   #mdrM .mdr-pb{display:inline-block;width:48px;height:6px;border-radius:3px;background:var(--field);overflow:hidden;vertical-align:middle;margin-inline-end:6px;} #mdrM .mdr-pb i{display:block;height:100%;background:var(--vz3);}
   #mdrM .mdr-x{all:unset;cursor:pointer;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--muted);} #mdrM .mdr-x:hover{background:color-mix(in srgb, #c4453a 12%, transparent);color:#c4453a;}
   @media (max-width:700px){ #mdrM .mdr-kpi{grid-template-columns:repeat(2, minmax(0,1fr));} }
+  /* مرکز قوانین */
+  #rulesM .rl-g{flex:none;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;} #rulesM .rl-g h4{margin:0;padding:9px 12px;font-size:12.5px;background:color-mix(in srgb, var(--ink) 3%, var(--surface));border-bottom:1px solid var(--line);}
+  #rulesM .rl-r{display:grid;grid-template-columns:minmax(0,1fr) auto 150px;align-items:center;gap:12px;padding:10px 12px;} #rulesM .rl-r + .rl-r{border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);} #rulesM .rl-r.ch{background:color-mix(in srgb, var(--vz1) 5%, transparent);}
+  #rulesM .rl-t{display:flex;flex-direction:column;gap:2px;min-width:0;} #rulesM .rl-t b{font-size:13px;} #rulesM .rl-t small{font-size:11px;color:var(--muted);}
+  #rulesM .rl-v{display:inline-flex;align-items:center;gap:6px;} #rulesM .rl-v input{width:64px;height:32px;text-align:center;border:1px solid var(--line);border-radius:9px;background:var(--surface);font:inherit;font-weight:800;} #rulesM .rl-v u{text-decoration:none;font-size:11.5px;color:var(--muted);}
+  #rulesM .rl-d{font-size:11px;color:var(--muted);text-align:left;} #rulesM .rl-d button{all:unset;cursor:pointer;color:var(--vz1);font-weight:700;}
+  #rulesM .rl-sw input{position:absolute;opacity:0;} #rulesM .rl-sw i{display:block;width:36px;height:20px;border-radius:20px;background:color-mix(in srgb, var(--muted) 35%, transparent);position:relative;cursor:pointer;}
+  #rulesM .rl-sw i::after{content:'';position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:inset-inline-start .15s;} #rulesM .rl-sw input:checked + i{background:#2f8a5f;} #rulesM .rl-sw input:checked + i::after{inset-inline-start:18px;}
+  #rulesM .rl-f{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 2px 2px;background:var(--surface);} #rulesM .rl-f small{color:var(--muted);font-size:11.5px;}
+  @media (max-width:700px){ #rulesM .rl-r{grid-template-columns:1fr auto;} #rulesM .rl-d{grid-column:1 / -1;text-align:start;} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -31563,10 +31582,10 @@
      همهٔ مقایسه‌ها و تغییر رمزها فقط روی سرور انجام می‌شود (bcrypt،
      قفل موقت بعد از ۵ تلاش ناموفق). هیچ هشی به مرورگر نمی‌آید و
      مسیر قدیمیِ خواندن هش از جدول کاربران حذف شده است. */
-  const PW_MIN = 8;
+  const PW_MIN = pmRule('pwMin', 8);
   const USER_EPOCH_KEY = 'siteLogM.userEpoch.v1';
   const USER_SEEN_KEY  = 'siteLogM.userSeen.v1';
-  const IDLE_LOGOUT_DAYS = 60;
+  const IDLE_LOGOUT_DAYS = pmRule('idleDays', 60);
   async function supaRpc(fn, args){
     return await supaFetch('rpc/' + fn, {
       method:'POST', prefer:'return=representation', body: args || {}
@@ -32725,7 +32744,7 @@
   /* یک مورد اداری بعد از این تعداد روز «بحرانی» می‌شود. زیر این عدد
      هشدار عادی است. اگر برای پروژه کم یا زیاد بود، همین یک عدد را
      عوض کنید. */
-  const ADM_HOT_DAYS = 15;
+  const ADM_HOT_DAYS = pmRule('admHotDays', 15);
 
   // ساخت فهرست هشدارها از داده‌های اداری
   function buildAlerts(A){
@@ -33133,7 +33152,7 @@
       localStorage.setItem(alertKey(), JSON.stringify(Array.from(set)));
     }catch(e){}
   }
-  const NEAR_DUE_DAYS = 3;    // چند روز مانده به موعد، هشدار بدهد
+  const NEAR_DUE_DAYS = pmRule('nearDueDays', 3);    // چند روز مانده به موعد، هشدار بدهد
   const STALE_DAYS    = 30;   // چند روز از ابلاغ گذشته و هنوز باز مانده
 
   /* رفتن به هر مرحلهٔ «بررسی» یعنی کار در موعد تحویل داده شده؛
@@ -33209,7 +33228,7 @@
   }
 
   /* چند روز است نزد کارفرما مانده (مرحلهٔ «بررسی کارفرما») */
-  const EMP_HOT_DAYS = 7;           // بیش از این، بحرانی — به حساب کارفرما (پیش‌تر ۱۴)
+  const EMP_HOT_DAYS = pmRule('empHotDays', 7);           // بیش از این، بحرانی — به حساب کارفرما (پیش‌تر ۱۴)
   function rvEmployerDays(r){
     /* فقط زمانِ خودِ مرحلهٔ کارفرما: از روزی که سند به کارفرما رفت.
        پیش‌تر اگر این تاریخ نبود، مدت کل رسیدگی (با بررسی داخلی) جایش
@@ -33247,7 +33266,7 @@
     if(d == null){ try{ d = reviewStageDays(r); }catch(e){} }
     return (d == null || d < 0) ? null : d;
   }
-  const RV_HOT_DAYS = 4;    // بعد از این، ماندن در بررسی داخلی بحرانی است (پیش‌تر ۷)
+  const RV_HOT_DAYS = pmRule('rvHotDays', 4);    // بعد از این، ماندن در بررسی داخلی بحرانی است (پیش‌تر ۷)
   /* سقف روزهای هر مرحلهٔ گردش: [هشدار، بحرانی]. بررسی داخلی و کارفرما
      قاعدهٔ خودشان را دارند (RV_HOT_DAYS و EMP_HOT_DAYS). */
   const ADM_STAGE_LIM = {
@@ -36413,7 +36432,7 @@
       prev: String(prevText || '')
     }]).slice(-20);
   }
-  const MSG_EDIT_WINDOW_H = 24;
+  const MSG_EDIT_WINDOW_H = pmRule('msgEditH', 24);
 
   function msgAgeHours(r){
     const p = (typeof stampParts === 'function') ? stampParts(pick(r,N.time)) : null;
@@ -49622,7 +49641,7 @@
     {k:'etc', t:'سایر بخش‌ها', d:'', c:'#7c828c', ic: WS_GI('<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>')}];
   /* مدیریت سامانه هم در سه دسته */
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
-    {t:'داده و تطبیق', d:'بخش‌های فعال، نام‌ها، محل و طبقه، تخصص‌ها و جدول‌ها', c:'#b07512', ks:['mods','data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
+    {t:'داده و تطبیق', d:'بخش‌های فعال، قوانین و مهلت‌ها، نام‌ها، محل و طبقه و جدول‌ها', c:'#b07512', ks:['mods','rules','data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود، زنجیرهٔ تأیید و نسخه‌ها', c:'#c4553f', ks:['sec','up','chain','ver'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
   const WS_GOF = {mdr:'eng', dly:'fld', apv:'fld', tasks:'fld', crew:'fld', wrk:'fld', gl:'fld', sch:'pln', la:'pln', fc:'pln', rsk:'pln', mtg:'pln', qc:'qhs', itp:'qhs', con:'qhs', hse:'qhs', ptw:'qhs', rfi:'eng', smt:'eng', cad:'eng', cut:'eng', prc:'res', mrc:'res', wh:'res', rcn:'res', mc:'res', mnt:'res', qt:'fin', co:'fin', cc:'fin', ib:'fin', vnd:'fin', rc:'ana', wkr:'ana', kpi:'ana', pf:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj'};
   const WS_GOK = Object.keys(WS_GOF), wsGofOrd = (a, b) => { const i = WS_GOK.indexOf(a.k), j = WS_GOK.indexOf(b.k); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); };
@@ -49640,6 +49659,36 @@
       if(ch){ try{ window.wsRefresh && window.wsRefresh(); }catch(e){} try{ window.sbBuild && window.sbBuild(); }catch(e){} } }catch(e){}
   }
   setTimeout(() => { modLoad(); setInterval(modLoad, 600000); }, 3000);
+  /* ====== مرکز قوانین ادمین ====== */
+  const RULES_K = 'قوانین سامانه';
+  const RULE_DEFS = [
+    ['گزارش روزانه', [['reportHour', 'ساعت مهلت گزارش روزانه', 17, 'بعد از این ساعت، گزارش ثبت‌نشده «دیر» حساب می‌شود و یادآور می‌رود', 'ساعت'], ['missBackDays', 'اعلان نقص گزارش تا چند روز قبل', 3, 'گزارش‌های ثبت‌نشدهٔ قدیمی‌تر از این دیگر اعلان نمی‌دهند', 'روز'], ['balanceHour', 'ساعت قطعی شدن تراز نیروی روز قبل', 14, 'تراز نیروی هر روز، این ساعتِ روز بعد قطعی و به گزارش اضافه می‌شود', 'ساعت']]],
+    ['کارگری و مصالح', [['matSameDay', 'انتقال مصالح فقط تا پایان همان روز', true, 'خاموش: ثبت و ویرایش انتقال مصالح روزهای قبل هم آزاد است', '']]],
+    ['اسناد و هشدارها', [['nearDueDays', 'هشدار «نزدیک موعد» چند روز مانده', 3, '', 'روز'], ['admHotDays', 'سند دفتر فنی بعد از چند روز بحرانی است', 15, '', 'روز'], ['rvHotDays', 'ماندن در «بررسی داخلی» بحرانی بعد از', 4, '', 'روز'], ['empHotDays', 'ماندن نزد کارفرما بحرانی بعد از', 7, '', 'روز'], ['deckDays', 'اسناد قدیمی‌تر از این در کارت‌ها نمی‌آیند', 45, '', 'روز']]],
+    ['خرید', [['prWarn', 'درخواست خرید «هشدار» بعد از', 4, '', 'روز'], ['prHot', 'درخواست خرید «بحرانی» بعد از', 7, '', 'روز']]],
+    ['پیام و جلسات', [['msgEditH', 'مهلت ویرایش پیام', 24, '', 'ساعت'], ['mgDays', 'بازهٔ نمایش جلسات و یادداشت‌ها', 14, '', 'روز']]],
+    ['امنیت', [['pwMin', 'کمترین طول رمز عبور', 8, '', 'نویسه'], ['idleDays', 'خروج خودکار پس از چند روز بی‌استفاده', 60, '', 'روز']]]];
+  async function rulesLoad(){ try{ const L = await fxList(RULES_K, true); const x = (L || []).find(r => r.id === 'cfg'); const o = (x && x.o && x.o.v) || {};
+      const pj = (function(){ try{ return pjHdrId(); }catch(e){ return 'p1'; } })(); try{ localStorage.setItem('siteLogM.rules.' + pj, JSON.stringify(o)); }catch(e){} return o; }catch(e){ return null; } }
+  setTimeout(rulesLoad, 4000);
+  window.rulesOpen = async function(){
+    let isA = false; try{ isA = isAdminUser(); }catch(e){} if(!isA) return;
+    const m = fxModal('rulesM', 'قوانین و مهلت‌های سامانه', 'هر قاعدهٔ ثابت سامانه این‌جا قابل تغییر است؛ برای همهٔ کاربران این پروژه اعمال می‌شود. «پیش‌فرض» مقدار اولیهٔ سامانه است.', '<div class="fx-wait">در حال دریافت…</div>', true);
+    const cur = Object.assign({}, (await rulesLoad()) || window.__pmRules || {});
+    const B = m.querySelector('.fx-bd');
+    const paint = () => { B.innerHTML = RULE_DEFS.map(([g, L]) => '<section class="rl-g"><h4>' + g + '</h4>' + L.map(([k, t, d, h, u]) => { const v = cur[k], ch = v !== undefined && v !== '' && String(v) !== String(d);
+        return '<div class="rl-r' + (ch ? ' ch' : '') + '"><span class="rl-t"><b>' + t + '</b>' + (h ? '<small>' + h + '</small>' : '') + '</span>'
+          + (typeof d === 'boolean' ? '<label class="rl-sw"><input type="checkbox" data-rlk="' + k + '"' + ((v === undefined ? d : (v === true || v === 'true')) ? ' checked' : '') + '><i></i></label>'
+             : '<span class="rl-v"><input type="text" inputmode="numeric" data-rlk="' + k + '" value="' + esc(toFa(v === undefined || v === '' ? d : v)) + '">' + (u ? '<u>' + u + '</u>' : '') + '</span>')
+          + '<span class="rl-d">پیش‌فرض ' + (typeof d === 'boolean' ? (d ? 'روشن' : 'خاموش') : toFa(d)) + (ch ? ' · <button type="button" data-rlreset="' + k + '">بازگشت</button>' : '') + '</span></div>'; }).join('') + '</section>').join('')
+      + '<div class="rl-f"><small>تغییرها پس از ذخیره با تازه شدن صفحه برای همه اعمال می‌شود.</small><button type="button" class="mini go" data-rlsave="1">ذخیره</button></div>'; };
+    paint();
+    B.onchange = e => { const i = e.target.closest('[data-rlk]'); if(!i) return; const k = i.dataset.rlk; cur[k] = i.type === 'checkbox' ? i.checked : (+toEn(i.value) || 0); paint(); };
+    B.onclick = async e => { const r = e.target.closest('[data-rlreset]'); if(r){ delete cur[r.dataset.rlreset]; paint(); return; }
+      const sv = e.target.closest('[data-rlsave]'); if(!sv) return; sv.disabled = true;
+      try{ await fxPut(RULES_K, 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); }catch(er){ sv.disabled = false; showDialog('warn', 'ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); return; }
+      try{ localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(er){} m.remove(); try{ shrToast('قوانین ذخیره شد؛ صفحه تازه می‌شود'); }catch(er){} setTimeout(() => location.reload(), 900); };
+  };
   window.modOpen = async function(){
     let isA = false; try{ isA = isAdminUser(); }catch(e){} if(!isA) return;
     const m = fxModal('modM', 'بخش‌های فعال پروژه', 'بخش‌هایی را که این پروژه به کار نمی‌برد خاموش کنید؛ از میز کار، منوی کناری، «ثبت تازه» و جست‌وجو برای همه برداشته می‌شوند. داده‌ها پاک نمی‌شوند و با روشن کردن دوباره برمی‌گردند.', '<div class="fx-wait">در حال دریافت…</div>', true);
@@ -50027,6 +50076,7 @@
     if(tl){ const [g, i] = tl.dataset.wst.split(':'); const x = ws.tools && ws.tools[g] && ws.tools[g][+i];
       if(x && x.k === 'ver'){ try{ window.pmVerOpen(); }catch(e2){} return; }
       if(x && x.k === 'mods'){ try{ window.modOpen(); }catch(e2){} return; }
+      if(x && x.k === 'rules'){ try{ window.rulesOpen(); }catch(e2){} return; }
       if(x){ const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>'; try{ window.h3Dispatch(t.firstChild); }catch(e2){} } return; }
     const ah = e.target.closest('#wsList [data-wsadm]');
     if(ah){ const k = ah.dataset.wsadm; if(k === 'ver'){ try{ window.pmVerOpen(); }catch(e2){} return; } const x = (ws.tools && ws.tools.adm || []).find(y => y.k === k); if(x){ const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>'; try{ window.h3Dispatch(t.firstChild); }catch(e2){} } return; }
@@ -52636,7 +52686,7 @@
     try{ if(staffOut(who, dateFa)) return true; }catch(e){}
     return (rptCfg.ex || []).some(x => { const p = String(x).split('|'); return dayKey(p[0]) === dk && nameKey(p[1]) === nk; });
   }
-  const REPORT_DEADLINE_HOUR = 17;
+  const REPORT_DEADLINE_HOUR = pmRule('reportHour', 17);
 
   /* ====== نام مستعار ======
      ادمین می‌تواند بگوید «نام الف همان نام ب است» بی‌آنکه رکوردی عوض
@@ -52709,7 +52759,7 @@
      یک اعلان برای خود گزارش‌دهنده و برای سطح ۱ و ۲ فرستاده می‌شود.
      تا وقتی گزارش ثبت نشود، هر روز تکرار می‌شود. */
   const MISS_KIND = 'missing';
-  const MISS_BACK_DAYS = 3;          // اعلان نقص گزارش فقط تا سه روز قبل
+  const MISS_BACK_DAYS = pmRule('missBackDays', 3);          // اعلان نقص گزارش فقط تا سه روز قبل
   /* اعلان‌های «گزارش ثبت‌نشده» که صاحبشان بعداً گزارش داده است */
   const missResolved = new Set();
   /* «روز|نام» هرکسی که واقعاً گزارش داده — برای اینکه اعلانِ اشتباه دیده نشود */
@@ -56798,7 +56848,7 @@
      مهندس‌ها تا پایان روز بعد فرصت دارند گزارششان را کامل کنند. پس
      تراز نیروی هر روز، ساعت ۱۴:۰۰ روزِ بعد قطعی می‌شود و از همان
      لحظه به گزارش همان روز اضافه می‌گردد — نه زودتر. */
-  const BALANCE_HOUR = 14;
+  const BALANCE_HOUR = pmRule('balanceHour', 14);
   function balanceDue(dateFa){
     try{
       const today = todayShamsi();
@@ -73799,7 +73849,7 @@
   const PR_KIND = 'درخواست خرید', PRC_NOTE_KIND = 'تدارکات';
   const PR_ST = ['در انتظار تأیید','تأیید شد','در حال خرید','خریداری شد','تحویل انبار','لغو شد'];
   const PR_CLOSED = ['تحویل انبار','لغو شد'];
-  const PR_HOT = 7, PR_WARN = 4;
+  const PR_HOT = pmRule('prHot', 7), PR_WARN = pmRule('prWarn', 4);
   const PR_UNITS = ['عدد','شاخه','کیلوگرم','تن','متر','مترمربع','مترمکعب','کیسه','بسته','دستگاه','لیتر','رول','سرویس'];
   const prcState = {tab: 'new', q: '', f: 'open', list: [], t: 0, open: new Set(), draft: null, busy: false};
   const prIsOpen = it => PR_CLOSED.indexOf(it.st) === -1;
@@ -90189,7 +90239,7 @@
     if(!rows.length && !mine.some(r => r.id) && !wrkMatGone.size){ showDialog('warn','چیزی برای ثبت نیست','دست‌کم نوع یک مصالح را بنویسید.'); return; }
     /* انتقال مصالح فقط تا پایان همان روز ثبت یا ویرایش می‌شود (ادمین و دارندهٔ «ویرایش همه» مستثنا) */
     { let ex = false; try{ ex = isAdminUser() || can('crew.editAny'); }catch(e){}
-      if(!ex && normDate(d) !== normDate(todayShamsi())){ showDialog('warn','مهلت ثبت گذشته', 'انتقال مصالح فقط تا پایان همان روز ثبت می‌شود. برای ' + toFa(d) + ' دیگر نمی‌توانید ثبت یا ویرایش کنید؛ از مدیر بخواهید.'); return; } }
+      if(pmRule('matSameDay', true) && !ex && normDate(d) !== normDate(todayShamsi())){ showDialog('warn','مهلت ثبت گذشته', 'انتقال مصالح فقط تا پایان همان روز ثبت می‌شود. برای ' + toFa(d) + ' دیگر نمی‌توانید ثبت یا ویرایش کنید؛ از مدیر بخواهید.'); return; } }
     wrkBusy = true;
     try{
       /* اول ردیف‌های تازه ثبت می‌شوند، بعد ردیف‌های قبلی همین فرم پاک
@@ -92205,7 +92255,7 @@
     if(d != null && d >= -NEAR_DUE_DAYS) return 'warm';
     return 'calm';
   }
-  const ADM_DECK_DAYS = 45;      // قدیمی‌تر از این، در کارت‌ها نمی‌آید
+  const ADM_DECK_DAYS = pmRule('deckDays', 45);      // قدیمی‌تر از این، در کارت‌ها نمی‌آید
   const ADM_DECK_MAX  = 40;      // سقف تعداد، تا فهرست تلنبار نشود
   function deckAdminList(skip){
     const me = activeUserName();
@@ -93019,7 +93069,7 @@
        • تسویه (تاریخ پرداخت)
        • یادداشت‌های خودکار «ابلاغ شد»
      و از تازه به قدیم مرتب می‌شود. */
-  const MG_WINDOW_DAYS = 14;
+  const MG_WINDOW_DAYS = pmRule('mgDays', 14);
   function mgChangeList(){
     const out = [];
     const docTitle = (kind, r) => (KIND_LABEL[kind] || '') + ' '
@@ -96066,7 +96116,8 @@
              add('adm', 'up', 'محل آپلود', 'جای ذخیرهٔ پیوست‌ها', UP_I.up, 'hc-sky', null, false, so('up', 'محل آپلود'));
              add('adm', 'chain', 'زنجیرهٔ تأیید', 'ترتیب بررسی داخلی', RVC_I, 'hc-grn', null, false, so('chain', 'زنجیرهٔ تأیید'));
              add('adm', 'ver', 'نسخه‌های سایت', 'برگشت به نسخهٔ قبل، برای خودتان یا همه', ST2_I.ref, 'hc-ind', null, false, 'data-pmverbtn="1"');
-             add('adm', 'mods', 'بخش‌های فعال پروژه', 'خاموش کردن بخش‌های بی‌استفاده برای همه', HM_I.doc, 'hc-amb', null, false, 'data-modbtn="1"'); }
+             add('adm', 'mods', 'بخش‌های فعال پروژه', 'خاموش کردن بخش‌های بی‌استفاده برای همه', HM_I.doc, 'hc-amb', null, false, 'data-modbtn="1"');
+             add('adm', 'rules', 'قوانین و مهلت‌ها', 'هر قاعدهٔ ثابت سامانه: مهلت‌ها، روزهای هشدار، ساعت گزارش', HM_I.clock || HM_I.doc, 'hc-vio', null, false, 'data-rulesbtn="1"'); }
     if(admU && hmCan('msg.broadcast')) add('adm', 'bc', 'پیام گروهی', 'یک پیام برای همه', PF_I.mega, 'hc-vio', null, false, so('bc', 'پیام گروهی'));
     if(admU) add('adm', 'log', 'سابقهٔ فعالیت کاربران', 'ورودها و کارها', PF_I.log, 'hc-teal', null, false, so('log', 'سابقهٔ فعالیت کاربران'));
     /* فهرست‌های بلند فقط چند ردیف اول را نشان می‌دهند؛ بقیه با «همه» باز می‌شود */
