@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112091909">
+<meta name="pm-build" content="20261112095408">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -1109,6 +1109,13 @@
   #dashM .dsh-sw::after{content:'';position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:inset-inline-start .15s;}
   #dashM .dsh-r.on .dsh-sw{background:#2f8a5f;} #dashM .dsh-r.on .dsh-sw::after{inset-inline-start:16px;}
   #dashM .dsh-f{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;} #dashM .dsh-f small{font-size:11.5px;color:var(--muted);} #dashM .dsh-f span{display:flex;gap:6px;}
+
+  /* محل جزء چندتایی */
+  .sl-2box{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:40px;padding:4px 6px;border:1px solid var(--line);border-radius:10px;background:var(--field, var(--surface));cursor:text;}
+  .sl-2box:focus-within{border-color:color-mix(in srgb, var(--vz1, #2a6fa0) 60%, var(--line));box-shadow:0 0 0 3px color-mix(in srgb, var(--vz1, #2a6fa0) 14%, transparent);}
+  .sl-2box .sl-2in{flex:1;min-width:90px;border:0 !important;background:none !important;box-shadow:none !important;padding:4px !important;height:auto !important;outline:none;}
+  .sl-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 9px;border-radius:999px;background:color-mix(in srgb, var(--vz1, #2a6fa0) 11%, transparent);color:var(--ink);font-size:12px;font-weight:600;}
+  .sl-chip button{all:unset;cursor:pointer;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:12px;line-height:1;color:var(--muted);} .sl-chip button:hover{background:color-mix(in srgb, var(--ink) 10%, transparent);color:var(--ink);}
 
 </style>
 <script>
@@ -84213,15 +84220,46 @@
     return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '" data-fls="' + esc(P.fs.join(',')) + '"' + (P.per ? ' data-flz="' + esc(JSON.stringify(P.per)) + '"' : '') + '>'
       + '<div class="field sl-fw"><label>طبقه <small>یک یا چند</small></label><button type="button" class="flp-btn sl-fb">' + SL_FI + '<span>' + slFloorBtnText(P.fs) + '</span><i>▾</i></button></div>'
       + '<div class="field sl-1w"><label for="' + idz + '">محل</label><input type="text" id="' + idz + '" class="sl-1" value="' + esc(l1v) + '" data-list="' + slL1List(P.fs) + '" placeholder="' + (P.fs.length ? 'همهٔ فضاها، واحد یا فضای عمومی' : 'اول طبقه را انتخاب کنید') + '" autocomplete="off"></div>'
-      + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء</label><input type="text" id="' + idp + '" class="' + subCls + '" value="' + esc(sub || '') + '" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : slDL('slL2f_' + toEn(P.fs.join('_')), (P.fs.length === 1 ? spZonesOf(P.fs[0]) : []).map(v => ({v})))) + '" placeholder="اجزای واحد" autocomplete="off"></div>')
+      + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء <small>یک یا چند</small></label><div class="sl-2box">' + slChips(sub) + '<input type="text" id="' + idp + '" class="sl-2in" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : slDL('slL2f_' + toEn(P.fs.join('_')), (P.fs.length === 1 ? spZonesOf(P.fs[0]) : []).map(v => ({v})))) + '" placeholder="' + (sub ? '+ جزء دیگر' : 'اجزای واحد') + '" autocomplete="off"></div><input type="hidden" class="' + subCls + ' sl-2v" value="' + esc(sub || '') + '"></div>')
       + '<input type="hidden" class="' + zoneCls + '" value="' + esc(zone || '') + '">'
       + '</div>';
   }
   window.slHtml = slHtml;
+  /* محل جزء چندتایی: هر جزء یک برچسب؛ مقدار ذخیره‌شده «الف، ب» در همان خانهٔ پنهان قبلی */
+  const slSubSplit = v => String(v || '').split(/\s*[،,؛]\s*/).map(x => x.trim()).filter(Boolean);
+  function slChips(v){ return slSubSplit(v).map(x => '<span class="sl-chip" data-v="' + esc(x) + '">' + esc(x) + '<button type="button" data-slchipx="1" aria-label="حذف">×</button></span>').join(''); }
+  function slSubSet(w2, arr){
+    const hv = w2.querySelector('.sl-2v'), box = w2.querySelector('.sl-2box'), inp = w2.querySelector('.sl-2in'); if(!hv || !box) return;
+    const U = Array.from(new Set(arr)); const nv = U.join('، ');
+    box.querySelectorAll('.sl-chip').forEach(c => c.remove()); inp.insertAdjacentHTML('beforebegin', slChips(nv));
+    inp.placeholder = U.length ? '+ جزء دیگر' : 'اجزای واحد';
+    if(hv.value !== nv){ hv.value = nv; hv.dispatchEvent(new Event('input', {bubbles: true})); hv.dispatchEvent(new Event('change', {bubbles: true})); }
+  }
+  function slSubAdd(inp){
+    const w2 = inp.closest('.sl-2w'); if(!w2) return; const v = inp.value.trim().replace(/[،,؛]+$/, '').trim(); if(!v) return;
+    inp.value = ''; slSubSet(w2, slSubSplit(w2.querySelector('.sl-2v').value).concat(slSubSplit(v)));
+  }
+  document.addEventListener('keydown', e => { const t = e.target; if(!t || !t.classList || !t.classList.contains('sl-2in')) return;
+    if(e.key === 'Enter' || e.key === ',' || e.key === '،'){ if(t.value.trim()){ e.preventDefault(); slSubAdd(t); } }
+    else if(e.key === 'Backspace' && !t.value){ const w2 = t.closest('.sl-2w'); const a = slSubSplit(w2.querySelector('.sl-2v').value); if(a.length){ a.pop(); slSubSet(w2, a); } } });
+  document.addEventListener('change', e => { const t = e.target; if(t && t.classList && t.classList.contains('sl-2in')) slSubAdd(t); });
+  document.addEventListener('input', e => { const t = e.target; if(!t || !t.classList || !t.classList.contains('sl-2in')) return;
+    /* انتخاب از فهرست پیشنهاد: مقدار دقیقاً یکی از گزینه‌هاست */
+    const dl = document.getElementById(t.getAttribute('data-list') || ''); const v = t.value.trim();
+    if(/[،,؛]$/.test(t.value)) slSubAdd(t); else if(dl && v && Array.from(dl.options).some(o => o.value === v) && e.inputType !== 'insertText' && e.inputType !== 'deleteContentBackward') slSubAdd(t); });
+  /* مقداری که از بیرون (انتخابگر طبقه/واحد) در خانهٔ پنهان گذاشته شود، برچسب‌ها را هم به‌روز می‌کند */
+  const slChipSync = hv => { const w2 = hv.closest('.sl-2w'); if(!w2) return; const cur = Array.from(w2.querySelectorAll('.sl-chip')).map(c => c.dataset.v).join('، ');
+    if(cur !== slSubSplit(hv.value).join('، ')){ w2.querySelectorAll('.sl-chip').forEach(c => c.remove()); const inp = w2.querySelector('.sl-2in'); if(inp) inp.insertAdjacentHTML('beforebegin', slChips(hv.value)); } };
+  document.addEventListener('input', e => { const t = e.target; if(t && t.classList && t.classList.contains('sl-2v')) slChipSync(t); });
+  document.addEventListener('change', e => { const t = e.target; if(t && t.classList && t.classList.contains('sl-2v')) slChipSync(t); });
+  setInterval(() => { document.querySelectorAll('.sl-2v').forEach(hv => { if(hv.__lv !== hv.value){ hv.__lv = hv.value; slChipSync(hv); } }); }, 800);
+  document.addEventListener('focusout', e => { const t = e.target; if(t && t.classList && t.classList.contains('sl-2in') && t.value.trim()) setTimeout(() => { if(document.activeElement !== t) slSubAdd(t); }, 180); });
+  document.addEventListener('click', e => { const x = e.target.closest && e.target.closest('[data-slchipx]'); if(!x) return; e.preventDefault(); e.stopPropagation();
+    const w2 = x.closest('.sl-2w'), c = x.closest('.sl-chip'); slSubSet(w2, slSubSplit(w2.querySelector('.sl-2v').value).filter(v => v !== c.dataset.v)); }, true);
   window.slParse = slParse; window.slCompose = slCompose; window.slFloorLb = k => (slFloorByLabel(k) || {label: k}).label;
   function slSync(row, fromFloor){
     const fs = slFsOf(row), l1 = row.querySelector('.sl-1'), hz = row.querySelector('.' + row.dataset.slzc);
-    const w2 = row.querySelector('.sl-2w'), s2 = w2 && w2.querySelector('input');
+    const w2 = row.querySelector('.sl-2w'), s2 = w2 && (w2.querySelector('.sl-2in') || w2.querySelector('input'));
     const fb = row.querySelector('.sl-fb span'); if(fb) fb.innerHTML = slFloorBtnText(fs);
     if(fromFloor){
       /* محلی که در طبقه(های) تازه نیست پاک می‌شود */
@@ -84237,7 +84275,7 @@
     if(w2){
       w2.hidden = !unit;
       if(unit) s2.setAttribute('data-list', slDL('slL2_' + toEn(l1.value.trim()), spPartsOf(toEn(l1.value.trim())).map(v => ({v}))));
-      else if(s2.value){ s2.value = ''; s2.dispatchEvent(new Event('input', {bubbles: true})); }
+      else if(w2.querySelector('.sl-2v') && w2.querySelector('.sl-2v').value){ s2.value = ''; slSubSet(w2, []); }
     }
     const perOn = fs.length > 1 && fs[0] !== 'ALL' && Object.keys(slPerOf(row)).some(k => fs.indexOf(k) !== -1 && String(slPerOf(row)[k] || '').trim());
     l1.readOnly = perOn; l1.classList.toggle('sl-per', perOn); if(perOn){ l1.placeholder = 'محل هر طبقه جدا تعیین شده'; if(l1.value) l1.value = ''; }
