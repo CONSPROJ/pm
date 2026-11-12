@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112133653">
+<meta name="pm-build" content="20261112133942">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29686,6 +29686,17 @@
   #arcBody .arx-b{all:unset;box-sizing:border-box;cursor:pointer;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--muted);}
   #arcBody .arx-b:hover{background:color-mix(in srgb, var(--ink) 7%, transparent);color:var(--ink);} #arcBody .arx-b.dl:hover{color:#287a52;background:color-mix(in srgb, #2f8a5f 12%, transparent);} #arcBody .arx-b svg{width:15px;height:15px;}
   @media (max-width:700px){ #arcBody .arx-kpi{grid-template-columns:repeat(3, minmax(0,1fr));} #arcBody .arx-kpi span:nth-child(n+4){display:none;} #arcBody .up-it.arx-r{grid-template-columns:34px minmax(0,1fr) auto;} #arcBody .arx-d{display:none;} #arcBody .arx-acts{opacity:1;} #arcBody .arx-acts .arx-b:first-child{display:none;} }
+
+  /* داشبورد: جابه‌جایی پنل‌ها و تیم پروژه */
+  #homeView [data-dk]{cursor:grab;} #homeView [data-dk].dk-drag{opacity:.45;outline:2px dashed color-mix(in srgb, var(--vz1) 50%, transparent);outline-offset:2px;}
+  #homeView [data-dk]::after{content:'⋮⋮';position:absolute;top:8px;inset-inline-end:10px;font-size:11px;letter-spacing:-2px;color:var(--muted);opacity:0;transition:opacity .15s;} #homeView [data-dk]:hover::after{opacity:.7;}
+  #homeView .hdb-team{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));column-gap:16px;align-content:start;} #homeView .hdb-team > .hdb-h{grid-column:1 / -1;} #homeView .hdb-team .hdb-tg{margin-top:0;} #homeView .hdb-team .hdb-tl{grid-template-columns:1fr;}
+  #homeView .hdb-tg{margin-top:8px;} #homeView .hdb-tg > u{display:block;text-decoration:none;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:6px;} #homeView .hdb-tg > u em{font-style:normal;font-weight:600;}
+  #homeView .hdb-tl{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px;}
+  #homeView .hdb-tp{display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:6px 8px;border-radius:12px;background:color-mix(in srgb, var(--ink) 3%, transparent);min-width:0;}
+  #homeView .hdb-tp .ava, #homeView .hdb-tp img{grid-row:1 / 3;width:32px !important;height:32px !important;border-radius:50% !important;object-fit:cover;}
+  #homeView .hdb-tp b{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} #homeView .hdb-tp small{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #homeView .hdb-tp.more{display:grid;place-items:center;grid-template-columns:1fr;} #homeView .hdb-tp.more b{color:var(--muted);}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -96177,7 +96188,7 @@
      هر مدیر خودش انتخاب می‌کند چه ببیند (روی همین دستگاه/کاربر)؛ ادمین پیش‌فرض پروژه را برای همه تعیین می‌کند
      (lists «ماژول‌های پروژه» شناسهٔ dash). انتخاب شخصی بر پیش‌فرض ادمین مقدم است و «بازگشت به پیش‌فرض» دارد. */
   const DASH_W = [['pg', 'پیشرفت فیزیکی', 'کاشی'], ['tk', 'فعالیت‌ها', 'کاشی'], ['dc', 'اسناد در جریان', 'کاشی'], ['pr', 'خرید باز', 'کاشی'],
-                  ['hr', 'نیروی کارگاه · روند ۳۰ روز', 'نمودار'], ['fn', 'مطالبات پیمانکاران', 'نمودار'], ['fl', 'گردش صورت وضعیت‌ها', 'نمودار']];
+                  ['hr', 'نیروی کارگاه · روند ۳۰ روز', 'نمودار'], ['fn', 'مطالبات پیمانکاران', 'نمودار'], ['fl', 'گردش صورت وضعیت‌ها', 'نمودار'], ['pp', 'تیم پروژه و ذی‌نفعان', 'نمودار']];
   const dashPk = () => { let id = ''; try{ id = pjHdrId(); }catch(e){} return id || 'x'; };
   const dashUk = () => 'siteLogM.dashOff.' + dashPk() + '.' + (activeUserName() || '');
   const DASH = {def: null, at: 0, busy: false};
@@ -96482,15 +96493,44 @@
       + cnt.map(([t, n], i) => '<div class="hdb-fr" style="--i:' + i + '" data-tip="' + hdbTip(t, [['تعداد', toFa(n), 'a'], ['سهم', toFa(Math.round(n / A.length * 100)) + '٪', '']]) + '"><span>' + t + '</span><span class="hdb-ft2"><i style="width:' + Math.max(n ? 3 : 0, n / max * 100).toFixed(1) + '%"></i></span><b>' + toFa(n) + '</b></div>').join('')
       + '</div></div>';
   }
+  /* تیم پروژه: افراد فعال با عکس و سمت، دسته‌بندی‌شده (مدیریت، دفتر فنی و طراحی، اجرا، بیرون از پروژه) */
+  function hdbTeam(){
+    let P = []; try{ P = (peopleRows || []).filter(p => p && p.name && p.active !== false && !p.pending); }catch(e){ return ''; }
+    if(!P.length) return '';
+    const rl = n => { try{ return String(roleOf(n) || ''); }catch(e){ return ''; } }, lv = n => { try{ return levelOf(n); }catch(e){ return 9; } };
+    const G = [['مدیریت', p => lv(p.name) <= 2 || /مدیر|سرپرست کارگاه/.test(rl(p.name))], ['دفتر فنی و طراحی', p => /فنی|طراح|مشاور|کنترل پروژه|متره|نقشه/.test(rl(p.name))],
+               ['اجرا و کارگاه', p => /سرپرست|مهندس|ناظر|اجرا|ایمنی|HSE|کیفیت|انبار|تدارکات/.test(rl(p.name))], ['دیگران', () => true]];
+    const used = new Set(), groups = G.map(([t, f]) => { const L = P.filter(p => !used.has(p.name) && f(p)); L.forEach(p => used.add(p.name)); return [t, L]; }).filter(g => g[1].length);
+    return '<div class="hdb-p hdb-team"><div class="hdb-h"><div><u>تیم پروژه</u><b>' + toFa(P.length) + '<small>نفر فعال</small></b></div></div>'
+      + groups.map(([t, L]) => '<div class="hdb-tg"><u>' + t + ' <em>' + toFa(L.length) + '</em></u><div class="hdb-tl">' + L.slice(0, 8).map(p => '<span class="hdb-tp">' + avatarHtml(p.name, 'sm', true) + '<b>' + esc(String(p.name).replace(/^(آقای|خانم|جناب)\s+/, '')) + '</b><small>' + esc(rl(p.name) || '—') + '</small></span>').join('')
+        + (L.length > 8 ? '<span class="hdb-tp more"><b>+' + toFa(L.length - 8) + '</b></span>' : '') + '</div></div>').join('') + '</div>';
+  }
+  /* ترتیب پنل‌ها: هر کاربر با کشیدن جابه‌جا می‌کند (روی همین دستگاه) */
+  const dashOrdK = () => 'siteLogM.dashOrd.' + dashPk() + '.' + (activeUserName() || '');
+  const dashOrd = () => { try{ return JSON.parse(localStorage.getItem(dashOrdK()) || '[]') || []; }catch(e){ return []; } };
+  const dashTag = (k, h) => h ? h.replace('<div class="hdb-p', '<div draggable="true" data-dk="' + k + '" class="hdb-p') : '';
   function hdbHtml(){
     let ok = false; try{ ok = hmDashOk(); }catch(e){} if(!ok) return '';
-    const D = hdbMonth(), P = [];
     const OFF = dashOffSet();
-    try{ if(tabOk('view') && !OFF.has('hr')) P.push(D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>'); }catch(e){}
-    try{ if(tabOk('admin')){ if(!OFF.has('fn')) P.push(hdbDebt()); if(!OFF.has('fl')) P.push(hdbFunnel()); } }catch(e){}
-    const body = P.filter(Boolean).join(''); if(!body) return '';
-    return '<div class="hdb hdb-in"><div class="hdb-g n' + P.filter(Boolean).length + '">' + body + '</div><div class="hdb-tt" hidden></div></div>';
+    const D = hdbMonth(), P = [];
+    try{ if(tabOk('view') && !OFF.has('hr')) P.push(['hr', D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>']); }catch(e){}
+    try{ if(tabOk('admin')){ if(!OFF.has('fn')) P.push(['fn', hdbDebt()]); if(!OFF.has('fl')) P.push(['fl', hdbFunnel()]); } }catch(e){}
+    try{ if(!OFF.has('pp')) P.push(['pp', hdbTeam()]); }catch(e){}
+    const ord = dashOrd(); const pos = k => { const i = ord.indexOf(k); return i === -1 ? 99 : i; };
+    const L = P.filter(x => x[1]).map((x, i) => [x[0], x[1], i]).sort((a, b) => (pos(a[0]) - pos(b[0])) || (a[2] - b[2]));
+    if(!L.length) return '';
+    return '<div class="hdb hdb-in"><div class="hdb-g n' + L.length + '" data-dkbox="1">' + L.map(x => dashTag(x[0], x[1])).join('') + '</div><div class="hdb-tt" hidden></div></div>';
   }
+  /* کشیدن و رها کردن پنل‌ها برای جابه‌جایی */
+  (function(){
+    let drag = null;
+    document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-dk]'); if(!c) return; drag = c; c.classList.add('dk-drag'); try{ e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.dataset.dk); }catch(er){} });
+    document.addEventListener('dragover', e => { if(!drag) return; const c = e.target.closest && e.target.closest('[data-dk]'); if(!c || c === drag || c.parentElement !== drag.parentElement) return; e.preventDefault();
+      const r = c.getBoundingClientRect(), after = (e.clientY - r.top) > r.height / 2 || ((e.clientY - r.top) > r.height * .25 && (getComputedStyle(c).direction === 'rtl' ? e.clientX < r.left + r.width / 2 : e.clientX > r.left + r.width / 2));
+      c.parentElement.insertBefore(drag, after ? c.nextSibling : c); });
+    document.addEventListener('dragend', () => { if(!drag) return; const box = drag.parentElement; drag.classList.remove('dk-drag'); drag = null;
+      try{ localStorage.setItem(dashOrdK(), JSON.stringify(Array.from(box.querySelectorAll(':scope > [data-dk]')).map(x => x.dataset.dk))); }catch(e){} });
+  })();
   /* راهنمای شناور نمودارها */
   document.addEventListener('mousemove', e => {
     const box = e.target.closest && e.target.closest('.hdb, .hzk'); if(!box) return;
