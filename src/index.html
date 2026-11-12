@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112090026">
+<meta name="pm-build" content="20261112090320">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -1016,6 +1016,13 @@
   #homeView .hzk-t.sd .hzk-z{width:64px;} #homeView .hzk-ring{width:60px;height:60px;} #homeView .hzk-ring span{font-size:12.5px;}
   #homeView .hzk-two{height:8px;} #homeView .hzk-l i{width:22px;height:22px;}
   @media (max-width:1400px){ #homeView .hdb-in .hdb-g{grid-template-columns:repeat(2, minmax(0,1fr));} #homeView .hdb-in .hdb-wide{grid-column:1 / -1;} }
+
+  /* کارت بالای خانهٔ دسکتاپ: یک زمینهٔ یکپارچه (مثل گوشی)، بی‌خط جداکننده و بی‌دو‌رنگی */
+  :is(html,#z0) :is(body,#z1) #homeView > .h3.hdx > .hz{background:radial-gradient(70% 60% at 100% 0%, hsl(var(--h, 205) 60% 50% / .10), transparent 70%), radial-gradient(60% 50% at 0% 100%, hsl(calc(var(--h, 205) + 40) 55% 50% / .06), transparent 70%), var(--surface) !important;border-color:color-mix(in srgb, var(--line) 80%, transparent) !important;box-shadow:0 1px 2px rgba(0,0,0,.04), 0 14px 36px -24px rgba(0,0,0,.28) !important;}
+  :is(html,#z0) :is(body,#z1) #homeView .hz-band{border-top:0 !important;background:none !important;}
+  :is(html,#z0) :is(body,#z1) #homeView .hz-band .hz-bh{padding-top:6px;}
+  #homeView .hz :is(.hzk-t, .hdb-p){background:color-mix(in srgb, var(--surface) 72%, transparent);backdrop-filter:none;}
+  #homeView .hz .hz-qk-b{border-top:0 !important;}
 
 </style>
 <script>
@@ -84605,11 +84612,14 @@
     if(!force && gl.t && Date.now() - gl.t < 30000) return gl;
     try{ gl.list = await ndLoadKinds([GL_KIND]); gl.t = Date.now(); }catch(e){}
     try{ await qcLoad(); qcLists(); }catch(e){}
+    /* عکس‌های گزارش روزانه: طبقه (محل کارکرد)، محل جزء و تاریخ از همان ردیف گزارش */
+    try{ if(await photoColOk()) gl.rep = await supaFetch('activities?select=id,date_fa,zone,subzone,activity,contractor,photos&photos=not.is.null&order=id.desc&limit=1500', {prefer:'return=representation'}) || []; }catch(e){ gl.rep = gl.rep || []; }
     return gl;
   }
   function glPhotos(){
     const out = [], img = a => a && ATT_KIND(a.ext) === 'img';
     gl.list.forEach(g => { let L = []; try{ L = attachList(g.files); }catch(e){} L.filter(img).forEach(a => out.push({a, d: g.date || '', fl: g.fl || '', z: g.zone || '', t: [g.act, g.note].filter(Boolean).join(' — '), src: 'pg', by: g.by, ty: g.ty || ''})); });
+    (gl.rep || []).forEach(r => { let L = []; try{ L = attachList(r.photos || ''); }catch(e){} L.filter(img).forEach(a => out.push({a, d: normDate(r.date_fa) || r.date_fa || '', fl: String(r.zone || '').trim(), z: String(r.subzone || '').trim(), t: [r.contractor, r.activity].filter(Boolean).join(' — '), src: 'rep'})); });
     /* تصاویر اطلاعات پروژه (نما، رندر، طبقات) هم در گالری */
     try{ const pj = pjCur() || {}; (pj.images || []).forEach((u, i) => { let a = null; try{ a = attachList(u)[0]; }catch(e){} if(!img(a)) return; const tg = (pj.imgTags || [])[i] || {};
       if(tg.ty === 'نقشه') return; out.push({a, d: '', fl: tg.fl || '', z: tg.z || '', t: 'تصویر پروژه', src: 'pj', ty: tg.ty || ''}); }); }catch(e){}
@@ -84653,7 +84663,7 @@
       +   '<div class="gx-seg">' + [['grid', 'شبکه'], ['floor', 'طبقه‌ها'], ['time', 'زمان']].map(([k, t]) => '<button type="button" data-glview="' + k + '" class="' + (view === k ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div>'
       + '<div class="gx-chips">' + chip('data-glsrc', '', gl.src, 'همه', P.length)
       +   (P.some(p => p.ty === 'رندر') ? '<span class="gx-sep"></span>' + chip('data-glty', 'واقعی', gl.ty, 'عکس واقعی', P.filter(p => p.ty !== 'رندر').length) + chip('data-glty', 'رندر', gl.ty, 'رندر', P.filter(p => p.ty === 'رندر').length) + '<span class="gx-sep"></span>' : '')
-      +   [['pg','عکس پیشرفت'],['pj','تصاویر پروژه'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => chip('data-glsrc', k, gl.src, t, P.filter(p => p.src === k).length)).join('')
+      +   [['pg','عکس پیشرفت'],['rep','گزارش روزانه'],['pj','تصاویر پروژه'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => chip('data-glsrc', k, gl.src, t, P.filter(p => p.src === k).length)).join('')
       +   (fls.length ? '<span class="gx-sep"></span>' + chip('data-glfl', '', gl.fl, 'همهٔ طبقات') + fls.map(f => chip('data-glfl', f, gl.fl, esc(f))).join('') : '') + '</div>'
       + '<div class="gx-body" data-fvl="' + esc(shown.map(p => p.a.full).join('\n')) + '" data-fvtitle="گالری پیشرفت">' + body + '</div>'
       + (L.length > gl.n ? '<button type="button" class="arc-more gx-more" data-glmore="1">نمایش عکس‌های بیشتر · ' + toFa(L.length - gl.n) + ' مانده</button>' : '')
@@ -89697,6 +89707,9 @@
     });
     let rows = mk(matMethodCol !== false);
     if(!rows.length && !mine.some(r => r.id) && !wrkMatGone.size){ showDialog('warn','چیزی برای ثبت نیست','دست‌کم نوع یک مصالح را بنویسید.'); return; }
+    /* انتقال مصالح فقط تا پایان همان روز ثبت یا ویرایش می‌شود (ادمین و دارندهٔ «ویرایش همه» مستثنا) */
+    { let ex = false; try{ ex = isAdminUser() || can('crew.editAny'); }catch(e){}
+      if(!ex && normDate(d) !== normDate(todayShamsi())){ showDialog('warn','مهلت ثبت گذشته', 'انتقال مصالح فقط تا پایان همان روز ثبت می‌شود. برای ' + toFa(d) + ' دیگر نمی‌توانید ثبت یا ویرایش کنید؛ از مدیر بخواهید.'); return; } }
     wrkBusy = true;
     try{
       /* اول ردیف‌های تازه ثبت می‌شوند، بعد ردیف‌های قبلی همین فرم پاک
