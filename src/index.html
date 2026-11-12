@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112171243">
+<meta name="pm-build" content="20261112172345">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29738,6 +29738,15 @@
   #rulesM .rl-sw i::after{content:'';position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:inset-inline-start .15s;} #rulesM .rl-sw input:checked + i{background:#2f8a5f;} #rulesM .rl-sw input:checked + i::after{inset-inline-start:18px;}
   #rulesM .rl-f{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 2px 2px;background:var(--surface);} #rulesM .rl-f small{color:var(--muted);font-size:11.5px;}
   @media (max-width:700px){ #rulesM .rl-r{grid-template-columns:1fr auto;} #rulesM .rl-d{grid-column:1 / -1;text-align:start;} }
+
+  /* جادوگر پروژهٔ تازه: تیم و طرف‌ها */
+  #pjModal .pj-q small{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;}
+  #pjModal .pjw-rows{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px;}
+  #pjModal .pjw-r{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 30px;gap:6px;align-items:center;} #pjModal .pjw-r.three{grid-template-columns:minmax(0,1.2fr) 150px minmax(0,1fr) 30px;}
+  #pjModal .pjw-r input, #pjModal .pjw-r select{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--surface);font:inherit;min-width:0;}
+  #pjModal .pjw-x{all:unset;cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted);} #pjModal .pjw-x:hover{color:#c4453a;background:color-mix(in srgb, #c4453a 10%, transparent);}
+  #pjModal .pjw-add{all:unset;cursor:pointer;align-self:flex-start;font-size:12px;font-weight:800;color:var(--vz1);padding:4px 2px;}
+  @media (max-width:600px){ #pjModal .pjw-r, #pjModal .pjw-r.three{grid-template-columns:1fr 30px;} #pjModal .pjw-r > :nth-child(2), #pjModal .pjw-r.three > :nth-child(3){grid-column:1;} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -97904,12 +97913,13 @@
   const PJ_PRESET = {
     'کامل': PJ_MODS.map(m => m.k),
     'پایه': ['daily','tasks','admin','leave'],
-    'کارگاه کوچک': ['daily','tasks','admin','crew','prc','hse','leave']
+    'کارگاه کوچک': ['daily','tasks','admin','crew','prc','hse','leave'],
+    'طراحی (فاز ۱ و ۲)': ['tasks','admin','leave']
   };
   function pjNewHtml(){
     const d = pjSt.draft && pjSt.draft.__new ? pjSt.draft : (pjSt.draft = {__new:1, id:'', name:'', type:PJ_TYPES[0], status:PJ_STATUS[2], mods:{}, floorsUp:'', floorsDown:'', unitsPer:'', start:'', city:''});
     const st = pjSt.step;
-    const dots = '<div class="pj-steps">' + ['نوع پروژه','بخش‌ها','اطلاعات پایه'].map((t, i) => '<span class="' + (i + 1 === st ? 'on' : i + 1 < st ? 'done' : '') + '"><i>' + toFa(i + 1) + '</i>' + t + '</span>').join('') + '</div>';
+    const dots = '<div class="pj-steps">' + ['نوع پروژه','بخش‌ها','اطلاعات پایه','تیم و طرف‌ها'].map((t, i) => '<span class="' + (i + 1 === st ? 'on' : i + 1 < st ? 'done' : '') + '"><i>' + toFa(i + 1) + '</i>' + t + '</span>').join('') + '</div>';
     let h = dots;
     if(st === 1){
       h += '<div class="pj-q">این پروژه چیست؟</div><div class="pj-gr">' + pjFieldHtml({k:'name', t:'نام پروژه', req:1, w:2}, d.name) + '</div>'
@@ -97918,6 +97928,18 @@
       const on = k => d.mods[k] !== false;
       h += '<div class="pj-q">چه بخش‌هایی در سایت این پروژه باشد؟</div><div class="pj-chips sm">' + Object.keys(PJ_PRESET).map(k => '<button type="button" data-pjpre="' + k + '">' + k + '</button>').join('') + '</div>'
         + '<div class="pj-mods">' + PJ_MODS.map(m => '<label class="pj-md"><input type="checkbox" data-pjnmod="' + m.k + '"' + (on(m.k) ? ' checked' : '') + '><span class="pj-sw"></span><span class="pj-mx"><b>' + m.t + (m.core ? '<em>پایه</em>' : '') + '</b><small>' + m.d + '</small></span></label>').join('') + '</div>';
+    }else if(st === 4){
+      /* پروژه از صفر: افراد (با سمت در چارت) و طرف‌ها (پیمانکار، تیم طراحی/مشاور، کارفرما، تأمین‌کننده) همین‌جا تعریف می‌شوند */
+      d.ppl = d.ppl || [{n: '', r: ''}]; d.pty = d.pty || [{n: '', t: 'cons', d: ''}];
+      const TY = [['ctr', 'پیمانکار'], ['cons', 'تیم طراحی / مشاور'], ['emp', 'کارفرما'], ['sup', 'تأمین‌کننده']];
+      const ROLES = ['مدیر پروژه', 'مدیریت پروژه', 'هماهنگی طراحی', 'دفتر فنی', 'کنترل پروژه', 'طراح معماری', 'طراح سازه', 'طراح مکانیک', 'طراح برق', 'سرپرست کارگاه', 'مهندس اجرا', 'امور قراردادی'];
+      h += '<div class="pj-q">چه کسانی در این پروژه‌اند؟ <small>هر نفر با سمتش دعوت می‌شود و دسترسی‌اش از همین سمت تعیین می‌شود.</small></div>'
+        + '<datalist id="pjRoleDL">' + ROLES.map(r => '<option value="' + r + '">').join('') + '</datalist>'
+        + '<div class="pjw-rows">' + d.ppl.map((x, i) => '<div class="pjw-r"><input type="text" data-pjw="ppl|' + i + '|n" value="' + esc(x.n) + '" placeholder="نام و نام خانوادگی" data-list="pjPartyNames" autocomplete="off"><input type="text" data-pjw="ppl|' + i + '|r" value="' + esc(x.r) + '" placeholder="سمت (مثلاً طراح سازه)" list="pjRoleDL" autocomplete="off"><button type="button" class="pjw-x" data-pjwdel="ppl|' + i + '">×</button></div>').join('')
+        + '<button type="button" class="pjw-add" data-pjwadd="ppl">+ نفر دیگر</button></div>'
+        + '<div class="pj-q">طرف‌های پروژه <small>تیم‌های طراحی و مشاوران، پیمانکاران، کارفرما — هر کدام کارت خودش را می‌گیرد.</small></div>'
+        + '<div class="pjw-rows">' + d.pty.map((x, i) => '<div class="pjw-r three"><input type="text" data-pjw="pty|' + i + '|n" value="' + esc(x.n) + '" placeholder="نام شرکت یا تیم" autocomplete="off"><select data-pjw="pty|' + i + '|t">' + TY.map(([k, t]) => '<option value="' + k + '"' + (x.t === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select><input type="text" data-pjw="pty|' + i + '|d" value="' + esc(x.d) + '" placeholder="رشته یا تخصص (مثلاً سازه)" autocomplete="off"><button type="button" class="pjw-x" data-pjwdel="pty|' + i + '">×</button></div>').join('')
+        + '<button type="button" class="pjw-add" data-pjwadd="pty">+ طرف دیگر</button></div>' + pjPartyDL();
     }else{
       h += '<div class="pj-q">چند اطلاعات پایه — بقیه را بعداً از «اطلاعات پروژه» کامل کنید.</div><div class="pj-gr">'
         + pjFieldHtml({k:'status', t:'وضعیت فعلی', opt:PJ_STATUS}, d.status) + pjFieldHtml({k:'start', t:'تاریخ شروع', ph:'از تقویم انتخاب کنید', date:1}, d.start)
@@ -97925,11 +97947,12 @@
         + pjFieldHtml({k:'floorsUp', t:'طبقات روی زمین', num:1}, d.floorsUp) + pjFieldHtml({k:'floorsDown', t:'طبقات زیرزمین', num:1}, d.floorsDown)
         + pjFieldHtml({k:'unitsPer', t:'واحد در هر طبقه', num:1}, d.unitsPer) + pjFieldHtml({k:'units', t:'تعداد کل واحد', num:1}, d.units) + '</div>';
     }
-    h += '<div class="pj-save">' + (st < 3 ? '<button type="button" class="pj-pri" data-pjstep="' + (st + 1) + '">ادامه</button>' : '<button type="button" class="pj-pri" data-pjcreate="1">ساختن پروژه</button>')
+    h += '<div class="pj-save">' + (st < 4 ? '<button type="button" class="pj-pri" data-pjstep="' + (st + 1) + '">ادامه</button>' : '<button type="button" class="pj-pri" data-pjcreate="1">ساختن پروژه</button>')
       + (st > 1 ? '<button type="button" class="pj-sec" data-pjstep="' + (st - 1) + '">قبلی</button>' : '<button type="button" class="pj-sec" data-pjv="list">انصراف</button>') + '</div>';
     return h;
   }
   function pjReadForm(d){
+    document.querySelectorAll('#pjBody [data-pjw]').forEach(el => { const [g, i, f] = el.dataset.pjw.split('|'); if(!d[g] || !d[g][+i]) return; d[g][+i][f] = String(el.value || '').trim(); });
     /* برچسب تصاویر: نوع (واقعی، رندر، نقشه)، محل (نما، طبقه…) و فضا */
     document.querySelectorAll('#pjBody [data-pjimty]').forEach(el => { const i = +el.dataset.pjimty, T = d.imgTags = Array.isArray(d.imgTags) ? d.imgTags : [];
       const fl = (document.querySelector('#pjBody [data-pjimfl="' + i + '"]') || {}).value || '', z = String((document.querySelector('#pjBody [data-pjimz="' + i + '"]') || {}).value || '').trim();
@@ -98065,6 +98088,8 @@
     /* پروژهٔ تازه */
     const ty = t.closest('[data-pjtype]'); if(ty){ pjReadForm(pjSt.draft); pjSt.draft.type = ty.dataset.pjtype; pjPaint(); return; }
     const pre = t.closest('[data-pjpre]'); if(pre){ const on = new Set(PJ_PRESET[pre.dataset.pjpre]); PJ_MODS.forEach(m => { pjSt.draft.mods[m.k] = on.has(m.k) ? true : false; }); pjPaint(); return; }
+    const wa = t.closest('[data-pjwadd]'); if(wa){ const d = pjSt.draft; pjReadForm(d); d[wa.dataset.pjwadd].push(wa.dataset.pjwadd === 'ppl' ? {n: '', r: ''} : {n: '', t: 'cons', d: ''}); pjPaint(); return; }
+    const wd = t.closest('[data-pjwdel]'); if(wd){ const d = pjSt.draft; pjReadForm(d); const [g, i] = wd.dataset.pjwdel.split('|'); d[g].splice(+i, 1); if(!d[g].length) d[g].push(g === 'ppl' ? {n: '', r: ''} : {n: '', t: 'cons', d: ''}); pjPaint(); return; }
     const stp = t.closest('[data-pjstep]'); if(stp){ const d = pjSt.draft; pjReadForm(d);
       document.querySelectorAll('#pjBody [data-pjnmod]').forEach(c => { d.mods[c.dataset.pjnmod] = c.checked; });
       if(pjSt.step === 1 && +stp.dataset.pjstep > 1 && !d.name){ showDialog('warn', 'نام پروژه', 'نام پروژه را بنویسید.'); return; }
@@ -98077,7 +98102,10 @@
       const p = {id, name: d.name, type: d.type, status: d.status, start: d.start || '', city: d.city || '', employer: d.employer || '', floorsUp: d.floorsUp || '', floorsDown: d.floorsDown || '', unitsPer: per || '', units: d.units || '',
         mods: M, floors: up ? pjFloorsGen(up, dn, per, true) : null, created: todayShamsi(), by: activeUserName()};
       Object.keys(p).forEach(k => { if(p[k] === '') delete p[k]; });
-      const ok = await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(p); await pjSaveMem({pid: id, name: activeUserName(), role: 'مدیر سامانه', level: 1, state: PJ_ST_ON, by: activeUserName()}, null); }, 'پروژهٔ «' + p.name + '» ساخته شد');
+      const ok = await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(p); await pjSaveMem({pid: id, name: activeUserName(), role: 'مدیر سامانه', level: 1, state: PJ_ST_ON, by: activeUserName()}, null);
+        /* تیم: هر نفر با سمتش دعوت می‌شود؛ طرف‌ها پرونده (کارت) می‌گیرند */
+        for(const x of (d.ppl || []).filter(x => x.n && nameKey(x.n) !== nameKey(activeUserName()))){ try{ await pjSaveMem({pid: id, name: x.n, role: x.r || '', state: PJ_ST_INV, by: activeUserName()}, null); }catch(e){} }
+        for(const x of (d.pty || []).filter(x => x.n)){ try{ await ctrContactSave(x.n, Object.assign({}, ctrContactOf(x.n) || {}, {t: x.t, d: x.d || undefined, ro: x.t === 'cons' ? (/طراح/.test(x.d || '') || !x.d ? 'طراح' + (x.d ? ' ' + x.d.replace(/^طراح(ی)?\s*/, '') : '') : 'مشاور ' + x.d) : undefined})); }catch(e){} } }, 'پروژهٔ «' + p.name + '» ساخته شد');
       if(ok){ pjSt.draft = null; pjSt.v = 'mem'; pjSt.pid = id; pjPaint(); }
       return;
     }
