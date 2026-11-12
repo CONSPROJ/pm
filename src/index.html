@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112091547">
+<meta name="pm-build" content="20261112091909">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -59123,8 +59123,21 @@
     ['دفتر فنی', [['statements','صورت وضعیت‌ها'],['contracts','قراردادها'],['minutes','صورتجلسه‌ها'],['letters','نامه‌ها'],['designs','اسناد طراحی']]],
     ['فعالیت و پیام', [['tasks','لیست فعالیت‌ها'],['nudges','تلنگرها و نظرات'],['feed_reads','خوانده‌شده‌ها']]],
     ['نیروی کارگری', [['workers','کارگران'],['worker_daily','حضور روزانه'],['worker_ot','اضافه‌کاری'],['worker_changes','تغییرات کارگران']]],
-    ['پایه', [['people','کاربران'],['lists','فهرست‌های پایه']]]
+    ['پایه', [['people','کاربران'],['lists','فهرست‌های پایه (همه)'],['audit_log','گزارش کار کاربران']]]
   ];
+  /* بخش‌های تازه (انبار، کیفیت، RFI، خرید، …) داده‌شان را در lists با «kind» جدا نگه می‌دارند؛
+     هر kind این‌جا یک جدول مجازی «lists:<kind>» است — خواندن/نوشتن همان lists با فیلتر kind */
+  async function dbxKinds(){
+    if(dbx.kindsAt && Date.now() - dbx.kindsAt < 300000) return;
+    try{
+      const C = new Map();
+      for(let o = 0; o < 200000; o += 1000){ const a = await supaFetch('lists?select=kind&order=id.asc&limit=1000&offset=' + o, {prefer:'return=representation'}) || []; a.forEach(r => { const k = String(r.kind || ''); if(k) C.set(k, (C.get(k) || 0) + 1); }); if(a.length < 1000) break; }
+      const L = Array.from(C.entries()).sort((a, b) => a[0].localeCompare(b[0], 'fa')).map(([k, n]) => { DBX_NAME['lists:' + k] = k; dbx.counts['lists:' + k] = n; return ['lists:' + k, k]; });
+      const i = DBX_TABLES.findIndex(g => g[0] === 'بخش‌ها و فهرست‌ها'); if(i !== -1) DBX_TABLES.splice(i, 1);
+      if(L.length) DBX_TABLES.push(['بخش‌ها و فهرست‌ها', L]);
+      dbx.kindsAt = Date.now(); dbxPaint('side');
+    }catch(e){}
+  }
   const DBX_NAME = {};
   DBX_TABLES.forEach(g => g[1].forEach(([t, lb]) => { DBX_NAME[t] = lb; }));
   const DBX_SECRET = /(hash|pass|pwd|secret|token|salt)/i;
@@ -59176,6 +59189,9 @@
 
   async function dbxReq(path, o){
     o = o || {};
+    { const mm = /^lists:([^?]*)(?:\?(.*))?$/.exec(path);
+      if(mm){ const k = mm[1]; path = 'lists?kind=eq.' + encodeURIComponent(k) + (mm[2] ? '&' + mm[2] : '');
+        if(o.body && (o.method || 'GET') === 'POST'){ const add = x => Object.assign({}, x, {kind: k}); o = Object.assign({}, o, {body: Array.isArray(o.body) ? o.body.map(add) : add(o.body)}); } } }
     netBusy(1);
     try{
       const res = await fetch(SUPA_URL + '/rest/v1/' + path, {
@@ -59220,7 +59236,7 @@
     return 'text';
   }
   function dbxSetCols(){
-    const def = (dbx.schema || {})[dbx.t];
+    const def = (dbx.schema || {})[String(dbx.t).indexOf('lists:') === 0 ? 'lists' : dbx.t];
     const kinds = {};
     let cols = [], pk = '';
     if(def && def.properties){
@@ -59304,7 +59320,8 @@
   }
   async function dbxCounts(){
     const all = [];
-    DBX_TABLES.forEach(g => g[1].forEach(([t]) => all.push(t)));
+    DBX_TABLES.forEach(g => g[1].forEach(([t]) => { if(t.indexOf('lists:') !== 0) all.push(t); }));
+    dbxKinds();
     await Promise.all(all.map(async t => {
       try{
         const r = await dbxReq(t + '?select=' + (t === 'people' ? 'name' : '*') + '&limit=1', {headers:{'Prefer':'count=exact'}});
