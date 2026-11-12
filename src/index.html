@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112081531">
+<meta name="pm-build" content="20261112082012">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -23763,6 +23763,7 @@
   .cf-tx2 span::before{content:"";position:absolute;left:50%;top:-6px;width:1px;height:4px;background:var(--line);}
   .cf-tx2 span.now{transform:translateX(-100%);font-weight:800;color:var(--ink);} .cf-tx2 span.now::before{left:auto;right:0;}
   .cf-tx2 span.st{transform:none;font-weight:700;color:var(--ink);} .cf-tx2 span.st::before{left:0;}
+  :is(html,#z0) :is(body,#z1) .cf-tx2 span{background:none !important;border:0 !important;padding:0 !important;box-shadow:none !important;border-radius:0 !important;}
   .cf-gx{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed color-mix(in srgb, var(--line) 70%, transparent);}
   .cf-bh .cf-rng{font-size:10.5px;font-weight:600;color:var(--muted);margin-inline-start:8px;}
   @media (min-width:1180px){ .cf-plot{height:170px;} }
@@ -29186,6 +29187,8 @@
   :is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) .nf[data-persist="1"].open.nf-nudge{animation:nfNudge .28s ease both !important;}
   /* تقویم روی همهٔ پنجره‌ها (پیش‌تر پشت پنجرهٔ ثبت باز می‌شد) */
   :is(html,#z0) :is(body,#z1) .jcal{z-index:5000 !important;}
+  /* انتخاب طبقه، فهرست‌های بازشو و انتخاب نفر روی پنجرهٔ ثبت (پیش‌تر پشت پنجره می‌رفت) */
+  :is(html,#z0) :is(body,#z1) :is(#slPop, .sl-pop, .flp-pop, .combo-pop, .pk-pop, .dl-pop, .ac-pop){z-index:5000 !important;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open{z-index:3000 !important;}
 
   html body #adminView#adminView .nf[data-persist="1"].open > .nf-body > .af{border:0 !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;padding:0 !important;margin:0 !important;}
@@ -55613,7 +55616,7 @@
     const dots = pts.map(q => '<i class="cf-dot ' + q.k + '" style="left:' + pct(X(q.t)) + ';top:' + pctY(Y(q.k === 'a' ? q.A : q.P)) + '" title="' + esc((q.k === 'a' ? 'صورت وضعیت ' : 'پرداخت ') + lbl(q.t, true) + ' — جمع ' + arToman(q.k === 'a' ? q.A : q.P) + ' تومان') + '"></i>').join('');
     /* محور تاریخ: برچسب‌های هم‌فاصله با روز و نام ماه («۸ خرداد»)، سال وقتی بازه از یک سال بگذرد؛
        آغاز و پایان بازه همیشه نوشته می‌شود. */
-    const N = Math.max(2, Math.min((window.innerWidth || 1000) < 640 ? 3 : 5, Math.round((t1 - t0) / DAY / 10)));
+    const N = Math.max(2, Math.min(3, Math.round((t1 - t0) / DAY / 10)));   /* نمودار در کارت باریک است؛ بیش از ۴ برچسب روی هم می‌افتاد */
     const ticks = [];
     for(let i = 0; i <= N; i++){ const t = t0 + (t1 - t0) * i / N; ticks.push('<span class="' + (i === 0 ? 'st' : i === N ? 'now' : '') + '" style="left:' + pct(X(t)) + '">' + (i === N ? (Math.abs(t1 - Date.now()) < DAY ? 'امروز · ' : '') + lbl(t) : lbl(t)) + '</span>'); }
     const gridX = Array.from({length: N - 1}, (_, i) => '<span class="cf-gx" style="left:' + pct(X(t0 + (t1 - t0) * (i + 1) / N)) + '"></span>').join('');
@@ -65529,10 +65532,9 @@
       ? f(cls, lbl, '').replace('class="' + cls + '"', 'class="' + cls + ' date-in" placeholder="اختیاری"')
       : fd(cls, lbl, val);
     const flowSec = (nCls, nVal, rCls) => isNewItem
-      ? sec('flow', 'ابلاغ و رسیدگی', '<div class="field af-newst"><select class="' + nCls + '" hidden><option value="درون‌سازمانی" selected>درون‌سازمانی</option></select>'
-          + '<select class="' + rCls + '" hidden><option value="در حال تنظیم" selected>در حال تنظیم</option></select>'
-          + '<input type="hidden" class="a-rvWho" value="">'
-          + '<span class="af-nf">در حال تنظیم</span><small>سند با وضعیت «در حال تنظیم» ثبت می‌شود؛ بعد از ثبت، با «ویرایش» گردش بررسی و مسئولین را تعیین کنید.</small></div>', 'one')
+      /* ثبت تازه: وضعیت ابلاغ و رسیدگی هم قابل انتخاب (تأییدشده، ردشده، پرداخت‌شده… برای سندهای قدیمی یا بسته)؛ پیش‌فرض «در حال تنظیم» */
+      ? sec('flow', 'ابلاغ و رسیدگی', chips(notifySel(nCls, 'درون‌سازمانی')) + chips(reviewSel(rCls, 'در حال تنظیم'))
+          + '<input type="hidden" class="a-rvWho" value=""><small class="af-hint">مسئولین بررسی بعد از ثبت، با «ویرایش» تعیین می‌شوند.</small>', 'one')
       : sec('flow', 'ابلاغ و رسیدگی', chips(notifySel(nCls, nVal)) + chips(reviewSel(rCls, pick(r,AD.review))) + reviewersField(reviewersOf(r)), 'one');
 
     if(kind === 'statement'){
@@ -83877,7 +83879,7 @@
     return '<div class="sl-row' + (subCls ? '' : ' sl-two') + '" data-slzc="' + zoneCls + '" data-fls="' + esc(P.fs.join(',')) + '"' + (P.per ? ' data-flz="' + esc(JSON.stringify(P.per)) + '"' : '') + '>'
       + '<div class="field sl-fw"><label>طبقه <small>یک یا چند</small></label><button type="button" class="flp-btn sl-fb">' + SL_FI + '<span>' + slFloorBtnText(P.fs) + '</span><i>▾</i></button></div>'
       + '<div class="field sl-1w"><label for="' + idz + '">محل</label><input type="text" id="' + idz + '" class="sl-1" value="' + esc(l1v) + '" data-list="' + slL1List(P.fs) + '" placeholder="' + (P.fs.length ? 'همهٔ فضاها، واحد یا فضای عمومی' : 'اول طبقه را انتخاب کنید') + '" autocomplete="off"></div>'
-      + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء</label><input type="text" id="' + idp + '" class="' + subCls + '" value="' + esc(sub || '') + '" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : 'subList') + '" placeholder="اجزای واحد" autocomplete="off"></div>')
+      + (!subCls ? '' : '<div class="field sl-2w"' + (unit || sub ? '' : ' hidden') + '><label for="' + idp + '">محل جزء</label><input type="text" id="' + idp + '" class="' + subCls + '" value="' + esc(sub || '') + '" data-list="' + (unit ? slDL('slL2_' + toEn(P.l1), spPartsOf(toEn(P.l1)).map(v => ({v}))) : slDL('slL2f_' + toEn(P.fs.join('_')), (P.fs.length === 1 ? spZonesOf(P.fs[0]) : []).map(v => ({v})))) + '" placeholder="اجزای واحد" autocomplete="off"></div>')
       + '<input type="hidden" class="' + zoneCls + '" value="' + esc(zone || '') + '">'
       + '</div>';
   }
