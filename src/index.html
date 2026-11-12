@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112082012">
+<meta name="pm-build" content="20261112082635">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -878,6 +878,14 @@
   #modM .mod-sw::after{content:'';position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:inset-inline-start .15s;}
   #modM .mod-r.on .mod-sw{background:#2f8a5f;} #modM .mod-r.on .mod-sw::after{inset-inline-start:16px;}
   #modM .mod-f{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 2px 2px;background:var(--surface);} #modM .mod-f small{color:var(--muted);font-size:11.5px;}
+
+  /* رویدادهای گردش در رشتهٔ نظرات */
+  .cm-ev{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:6px 0;padding:6px 10px;border-radius:10px;background:color-mix(in srgb, var(--sky, #2f6f9f) 6%, transparent);font-size:12px;color:var(--muted);}
+  .cm-ev-d{width:6px;height:6px;border-radius:50%;background:var(--sky, #2f6f9f);flex:none;}
+  .cm-ev-t b{color:var(--ink);font-weight:700;} .cm-ev-n{display:inline-flex;flex-wrap:wrap;gap:4px;} .cm-ev-n .cm-as{display:inline-flex;align-items:center;gap:3px;} .cm-ev-n u{text-decoration:none;color:var(--ink);font-weight:600;}
+  .cm-ev-q{flex:1 1 100%;margin:2px 14px 0;color:var(--ink);quotes:'«' '»';} .cm-ev-w{margin-inline-start:auto;font-style:normal;font-size:11px;}
+
+  .cm-tagrole .cm-trl{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:10px;background:color-mix(in srgb, var(--sky, #2f6f9f) 12%, transparent);color:var(--sky, #2f6f9f);font-weight:800;font-size:11.5px;white-space:nowrap;}
 
 </style>
 <script>
@@ -5107,7 +5115,8 @@
   .sf-out span{font-size:12px;color:var(--muted);font-weight:700;} .sf-out b{font-family:var(--m);font-size:14px;font-weight:800;text-align:left;direction:ltr;} .sf-out small{grid-column:1 / -1;font-size:10px;color:var(--muted);text-align:left;}
   .sf-out .neg b{color:#c0392b;} .sf-out .neg b::before{content:"− ";} .sf-out .net{background:color-mix(in srgb, #2f7d5b 8%, var(--surface));} .sf-out .net span{color:#2f7d5b;} .sf-out .net b{color:#2f7d5b;font-size:16px;font-weight:900;}
   .sf-hint{margin:0;padding:10px 12px;font-size:11px;color:var(--muted);}
-  @media (max-width:640px){ .sf-g{grid-template-columns:1fr;} }
+  .sf-g.sf-adv{grid-template-columns:repeat(2, minmax(0,1fr));margin-top:8px;} .sf-g2{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:10px;margin-bottom:8px;} .sf-adv-rem{color:var(--sky, #2f6f9f) !important;}
+  @media (max-width:640px){ .sf-g, .sf-g.sf-adv, .sf-g2{grid-template-columns:1fr;} }
   /* بررسی نام‌های محل */
   .mr-pt{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;} .mr-pt i{font-style:normal;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:99px;color:#a26a12;background:color-mix(in srgb, #d59a2a 16%, transparent);} .mr-pt small{font-size:11px;color:var(--muted);}
   .mr-p.c-floor{border-color:color-mix(in srgb, var(--sky) 35%, var(--line));background:color-mix(in srgb, var(--sky) 5%, var(--surface));} .mr-p.c-floor .mr-pt i{color:var(--sky);background:color-mix(in srgb, var(--sky) 13%, transparent);}
@@ -34884,6 +34893,18 @@
     const who = pick(r,N.from) || 'نامشخص';
     const t = pick(r,N.time);
     const id2 = esc(pick(r,N.id) || '');
+    /* پیام‌های خودکار گردش (ابلاغ، واگذاری بررسی، نیاز به اصلاح): یک ردیف رویداد کوتاه، نه حباب نظر با جملهٔ ماشینی */
+    { const msg = String(pick(r,N.msg) || ''), ap = assignParts(msg);
+      let verb = '', names = [], why = '';
+      if(ap){ verb = 'برای بررسی داخلی ابلاغ کرد'; names = ap.names || []; }
+      else { let m = msg.match(/^بررسی داخلی به (.+?) واگذار شد/); if(m){ verb = 'بررسی را سپرد به'; names = m[1].split(/[،,]\s*/).map(x => x.trim()).filter(Boolean); }
+        else if((m = msg.match(/^نیاز به اصلاح دارد[:.]?\s*([^()]*)/))){ verb = 'برای اصلاح برگرداند'; why = (m[1] || '').trim(); } }
+      if(verb){
+        return '<div class="cm-ev" data-cmid="' + id2 + '"><span class="cm-ev-d"></span><span class="cm-ev-t"><b>' + esc(mine ? 'شما' : cmShort(who)) + '</b> ' + verb + '</span>'
+          + (names.length ? '<span class="cm-ev-n">' + names.map(n => '<span class="cm-as">' + avatarHtml(n, 'xs', true) + '<u>' + esc(cmShort(n)) + '</u></span>').join('') + '</span>' : '')
+          + (why ? '<q class="cm-ev-q">' + esc(why) + '</q>' : '')
+          + '<em class="cm-ev-w" title="' + esc(stampFa(t) || '') + '">' + esc(cmWhen(t)) + '</em></div>';
+      } }
     const canEd = canEditComment(r);
     const canDel = canDeleteComment(r);
     const dots = (canEd || canDel)
@@ -34916,7 +34937,7 @@
                       + '</div>' : '');
             })()
       +     ((r.__tagTo && r.__tagTo.length)
-              ? '<div class="cm3-tags">' + r.__tagTo.map(n => '<i>@' + esc(cmShort(n)) + '</i>').join('') + '</div>' : '')
+              ? '<div class="cm3-tags">' + r.__tagTo.map(n => '<i>@' + esc(n) + (roleOf(n) ? ' · ' + esc(roleOf(n)) : '') + '</i>').join('') + '</div>' : '')
       +   '</div>'
       +   '<div class="cm-ops">'
       +     reactOpsHtml(pick(r,N.id) || '')
@@ -35018,7 +35039,7 @@
     if(!w) return;
     const set = cmTagSet(box);
     w.innerHTML = Array.from(set).map(n => '<button type="button" class="cm3-chip" data-cm-tagp="' + esc(n) + '" title="برداشتن">'
-      + avatarHtml(n, 'xs', true) + '<span>' + esc(cmShort(n)) + '</span><i>✕</i></button>').join('');
+      + avatarHtml(n, 'xs', true) + '<span>' + esc(n) + (roleOf(n) ? ' <small>' + esc(roleOf(n)) + '</small>' : '') + '</span><i>✕</i></button>').join('');
     const tg = box.querySelector('.cm-tag');
     if(tg) tg.classList.toggle('has', set.size > 0);
   }
@@ -35038,12 +35059,16 @@
     const shown = f ? all.filter(n => n.indexOf(f) !== -1 || (roleOf(n) || '').indexOf(f) !== -1) : all;
     // انتخاب‌شده‌ها اول می‌آیند
     shown.sort((a, b) => (set.has(b) ? 1 : 0) - (set.has(a) ? 1 : 0));
-    wrap.innerHTML = shown.length
+    /* سمت‌های کلیدی بالای فهرست: با یک زدن همهٔ افراد آن سمت تگ می‌شوند */
+    const ROLES = ['مدیر پروژه', 'سرپرست کارگاه', 'دفتر فنی'];
+    const roleBtns = f ? '' : ROLES.map(rl => { const P = all.filter(n => String(roleOf(n) || '').indexOf(rl) !== -1); if(!P.length) return ''; const on = P.every(n => set.has(n));
+      return '<button type="button" class="nd-p cm-tagrole' + (on ? ' on' : '') + '" data-cm-tagrole="' + esc(rl) + '"><span class="cm-trl">' + esc(rl) + '</span><span><small>' + esc(P.join('، ')) + '</small></span><i class="cm-tagx" aria-hidden="true">' + (on ? '✓' : '') + '</i></button>'; }).join('');
+    wrap.innerHTML = roleBtns + (shown.length
       ? shown.map(n => '<button type="button" class="nd-p' + (set.has(n) ? ' on' : '') + '" data-cm-tagp="'
           + esc(n) + '">' + avatarHtml(n, '', true)
           + '<span>' + esc(n) + (roleOf(n) ? '<small>' + esc(roleOf(n)) + '</small>' : '') + '</span>'
           + '<i class="cm-tagx" aria-hidden="true">' + (set.has(n) ? '✓' : '') + '</i></button>').join('')
-      : '<div class="cm-tagnone">نامی با «' + esc(f) + '» پیدا نشد.</div>';
+      : '<div class="cm-tagnone">نامی با «' + esc(f) + '» پیدا نشد.</div>');
     const cnt = bar.querySelector('.cm-tagn');
     if(cnt) cnt.textContent = set.size ? toFa(set.size) + ' نفر' : '';
   }
@@ -35337,6 +35362,12 @@
       const t0 = box && box.querySelector('.cm-tag'); if(t0) t0.classList.remove('on');
       return;
     }
+    /* تگ سمت (مدیر پروژه، سرپرست کارگاه…): همهٔ افراد آن سمت با هم */
+    const trl = e.target.closest('[data-cm-tagrole]');
+    if(trl){ e.preventDefault(); e.stopPropagation(); const box = trl.closest('.cm-panel'), rl = trl.dataset.cmTagrole, set = cmTagSet(box), ta3 = box.querySelector('.cm-input');
+      const P = listNames().filter(n => nameKey(n) !== nameKey(activeUserName()) && String(roleOf(n) || '').indexOf(rl) !== -1), allOn = P.every(n => set.has(n));
+      P.forEach(n => { const mention = '@' + n; if(allOn){ set.delete(n); if(ta3) ta3.value = ta3.value.split(mention + ' ').join('').split(mention).join(''); } else if(!set.has(n)){ set.add(n); if(ta3 && ta3.value.indexOf(mention) === -1) ta3.value = (ta3.value ? ta3.value.replace(/\s*$/, ' ') : '') + mention + ' '; } });
+      box.dataset.tags = Array.from(set).join('|'); const qi = box.querySelector('.cm-tagq'); cmPaintTagPeople(box, qi ? qi.value : ''); cmPaintChips(box); return; }
     const tp = e.target.closest('[data-cm-tagp]');
     if(tp){
       e.preventDefault(); e.stopPropagation();
@@ -39756,6 +39787,14 @@
     return {own, base, end, by, n: grp.filter(x => cctAddV(x)).length};
   }
   window.cctEndOf = cctEndOf;
+  /* مبلغ مؤثر قرارداد: مبلغ اصلی + مبلغ افزایشی همهٔ الحاقیه‌ها (مبلغِ ردیف الحاقیه = افزایش) */
+  function ctTotalAmt(r, all){
+    const k = cctNoK(r); const grp = k ? (all || cctRows()).filter(x => cctNoK(x) === k) : [r];
+    const main = grp.find(x => !cctAddV(x)) || r;
+    const base = moneyNum2(pick(main, AD.cAmount)) || 0, add = grp.filter(x => cctAddV(x)).reduce((t, x) => t + (moneyNum2(pick(x, AD.cAmount)) || 0), 0);
+    return {base, add, total: base + add, n: grp.filter(x => cctAddV(x)).length};
+  }
+  window.ctTotalAmt = ctTotalAmt;
   /* ====== اتمام قرارداد و جریمهٔ تأخیر ======
      ۳۰ روز مانده به اتمام مؤثر (با احتساب الحاقیه‌ها) هشدار، ۱۵ روز مانده و بعد از آن بحرانی.
      بعد از اتمام، اگر الحاقیهٔ تمدید ثبت نشده و کار «تکمیل‌شده» زده نشده، به ازای هر روز جریمه حساب می‌شود.
@@ -62080,6 +62119,7 @@
             /* نشان‌های فهرست: ویرایش جاری سند طراحی، الحاقیهٔ قرارداد، قرارداد منقضی */
             if(kind === 'design'){ const R = dsRevsOf(r), c = R[R.length - 1]; return '<em class="afr-tg rvn" title="ویرایش جاری">Rev ' + esc(toFa(String((c && c.rev) || pick(r,AD.dRev) || '0'))) + (R.length > 1 ? '<small>/' + toFa(R.length) + '</small>' : '') + '</em>'; }
             if(kind === 'contract' && pick(r,AD.cAdd)) return '<em class="afr-tg ad">الحاقیه ' + esc(toFa(pick(r,AD.cAdd))) + '</em>';
+            if(kind === 'contract'){ try{ const T = window.ctTotalAmt(r), E = window.cctEndOf(r); const bits = []; if(T.n && T.add) bits.push('مبلغ با الحاقیه‌ها ' + arToman(T.total) + ' تومان'); if(E && E.by && E.end) bits.push('اتمام ' + toFa(E.end)); if(bits.length) return '<em class="afr-tg ad" title="' + toFa(T.n) + ' الحاقیه">' + esc(bits.join(' · ')) + '</em>'; }catch(e){} }
             if(kind === 'statement' && !isPaid(r)){ try{ stqEnsure(); }catch(e){} const q = stqOf(r); if(q && q.over) return '<em class="afr-tg stq" title="مبلغ درخواستی ' + esc(rcMoney(q.claim)) + ' تومان؛ متره‌شده ' + esc(rcMoney(q.meas)) + ' تومان">بیش از متره ' + esc(toFa(q.pct)) + '٪</em>'; }
             /* «منقضی» در عنوان حذف شد؛ فقط ستون وضعیت آن را نشان می‌دهد */
 
@@ -65581,7 +65621,7 @@
                 + '</div>';
             })())
         + sec('money', 'مبالغ',
-            fm('a-cAmount','مبلغ قرارداد (ریال)', pick(r,AD.cAmount))
+            fm('a-cAmount','مبلغ قرارداد (ریال) <small style="color:var(--muted);font-weight:500">در الحاقیه: مبلغ افزایش</small>', pick(r,AD.cAmount))
           + sfRetFieldHtml(r)
           + fm('a-cPaid','مبلغ پرداختی (ریال)', pick(r,AD.cPaid)), 'two')
         + sec('cal', 'زمان‌بندی و مسئول',
@@ -67901,7 +67941,7 @@
     ((lists && lists[SF_C_KIND]) || []).forEach(v => { const s0 = String(v), i = s0.indexOf('¦'); if(i < 1) return; try{ SF_C.set(s0.slice(0, i), JSON.parse(s0.slice(i + 1)) || {}); }catch(e){} });
     ((lists && lists[SF_S_KIND]) || []).forEach(v => { const p = String(v).split('¦'); if(p.length < 3) return; try{ SF_S.set(p[0] + '¦' + p[1], JSON.parse(p.slice(2).join('¦')) || {}); }catch(e){} });
   }
-  window.sfLoad = sfLoad;
+  window.sfLoad = sfLoad; window.sfCKey = sfCKey;
   window.SF_Sget = k => SF_S.get(k);
   async function sfSaveRow(kind, key, obj){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(kind) + '&value=like.' + encodeURIComponent(key.replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
@@ -67909,6 +67949,9 @@
     try{ clearNetCache(); }catch(e){}
   }
   const sfRetOf = ck => { const o = SF_C.get(ck); return o && o.ret != null ? +o.ret : null; };
+  /* پیش‌پرداخت قرارداد: مبلغ و درصد استهلاک از ناخالص هر صورت وضعیت تا تسویهٔ کامل */
+  const sfAdvOf = ck => { const o = SF_C.get(ck) || {}; return {adv: +o.adv || 0, p: o.advP != null ? +o.advP : null}; };
+  function sfAdvUsed(ck, no){ let t = 0; SF_S.forEach((o, k) => { const i = k.lastIndexOf('¦'); if(k.slice(0, i) !== ck) return; const n = +k.slice(i + 1); if(isFinite(no) && n >= no) return; t += +o.advD || 0; }); return t; }
   /* صورت وضعیت قبلیِ همان قرارداد: بزرگ‌ترین شمارهٔ کمتر از این شماره */
   function sfPrev(ck, no, selfId){
     if(!ck || !isFinite(no)) return null;
@@ -67923,13 +67966,18 @@
     const period = Math.max(0, (+o.cum || 0) - (+o.prev || 0));
     const ret = Math.round(period * (+o.ret || 0) / 100);
     const ded = (o.ded || []).reduce((t, d) => t + (+d.a || 0), 0);
-    return {period, ret, ded, net: Math.max(0, period - ret - ded)};
+    /* استهلاک پیش‌پرداخت: درصد از ناخالص این دوره، حداکثر تا ماندهٔ پیش‌پرداخت */
+    const advRem = Math.max(0, (+o.adv || 0) - (+o.advUsed || 0));
+    const adv = (+o.adv > 0 && +o.advP > 0) ? Math.min(Math.round(period * (+o.advP) / 100), advRem) : 0;
+    return {period, ret, ded, adv, advRem: advRem - adv, net: Math.max(0, period - ret - ded - adv)};
   }
   window.sfCalc = sfCalc;
   function sfRetFieldHtml(r){
     const ck = sfCKey(pick(r,AD.cNo), pick(r,AD.cTitle)), v = sfRetOf(ck);
     return '<div class="field" style="margin-bottom:8px;"><label>حسن انجام کار (٪) <small style="color:var(--muted);font-weight:500">از ناخالص هر صورت وضعیت کم می‌شود</small></label>'
-      + '<input type="text" inputmode="decimal" class="a-cRet" value="' + esc(v != null ? toFa(v) : '') + '" placeholder="مثلاً ۱۰"></div>';
+      + '<input type="text" inputmode="decimal" class="a-cRet" value="' + esc(v != null ? toFa(v) : '') + '" placeholder="مثلاً ۱۰"></div>'
+      + (function(){ const A = sfAdvOf(ck); return '<div class="sf-g2"><div class="field"><label>مبلغ پیش‌پرداخت (ریال) <small style="color:var(--muted);font-weight:500">اختیاری</small></label><input type="text" inputmode="numeric" class="a-cAdv money-in" value="' + esc(A.adv ? moneyView(String(A.adv)) : '') + '" placeholder="ریال"></div>'
+        + '<div class="field"><label>استهلاک پیش‌پرداخت (٪) <small style="color:var(--muted);font-weight:500">از ناخالص هر صورت وضعیت</small></label><input type="text" inputmode="decimal" class="a-cAdvP" value="' + esc(A.p != null ? toFa(A.p) : '') + '" placeholder="مثلاً ۲۵"></div></div>'; })();
   }
   function sfFormHtml(r){
     const ck = sfCKey(pick(r,AD.sCno), pick(r,AD.sName)), no = sfNo(pick(r,AD.sNo)), f = (ck && isFinite(no) && SF_S.get(ck + '¦' + no)) || {};
@@ -67943,19 +67991,28 @@
       +   '<label><u>ناخالص تجمعی صورت وضعیت قبلی <em class="sf-pv">' + (pv ? 'شمارهٔ ' + toFa(pv.n) + (pv.cum == null ? ' (تجمعی ثبت نشده)' : '') : 'اولین صورت وضعیت') + '</em></u><input type="text" inputmode="numeric" class="a-sfPrev money-in" value="' + esc(mv(f.prev != null ? f.prev : (pv && pv.cum != null ? pv.cum : (pv ? '' : 0)))) + '" placeholder="ریال"></label>'
       +   '<label><u>حسن انجام کار (٪) <em>' + (sfRetOf(ck) != null ? 'طبق قرارداد' : 'در قرارداد ثبت نشده') + '</em></u><input type="text" inputmode="decimal" class="a-sfRet" value="' + esc(ret !== '' ? toFa(ret) : '') + '" placeholder="۰"></label>'
       + '</div>'
+      + (function(){ const A = sfAdvOf(ck), adv = f.adv != null ? f.adv : A.adv, ap = f.advP != null ? f.advP : A.p;
+          return '<div class="sf-g sf-adv">'
+            + '<label><u>مبلغ پیش‌پرداخت <em class="sf-adv-src">' + (A.adv ? 'طبق قرارداد' : 'در قرارداد ثبت نشده') + '</em></u><input type="text" inputmode="numeric" class="a-sfAdv money-in" value="' + esc(adv ? moneyView(String(adv)) : '') + '" placeholder="ریال"></label>'
+            + '<label><u>استهلاک پیش‌پرداخت (٪) <em class="sf-adv-rem"></em></u><input type="text" inputmode="decimal" class="a-sfAdvP" value="' + esc(ap != null && ap !== '' ? toFa(ap) : '') + '" placeholder="مثلاً ۷۰"></label></div>'; })()
       + '<div class="sf-ds"><u>کسورات خاص</u><div class="sf-dl">' + ded.map(d => '<div class="sf-d"><input type="text" class="sf-dt" value="' + esc(d.t || '') + '" placeholder="عنوان، مثلاً بیمه"><input type="text" inputmode="numeric" class="sf-da money-in" value="' + esc(mv(d.a)) + '" placeholder="ریال"><button type="button" class="sp-x" data-sfdrm="1" aria-label="حذف">×</button></div>').join('') + '</div>'
       +   '<button type="button" class="pg-lk" data-sfdadd="1">+ کسر تازه</button></div>'
       + '<div class="sf-out"></div></div>';
   }
   function sfRead(box){
     const n = c => moneyNum((box.querySelector(c) || {}).value || '');
-    return {cum: n('.a-sfCum'), prev: n('.a-sfPrev'), ret: parseFloat(toEn((box.querySelector('.a-sfRet') || {}).value || '').replace(/[^\d.]/g, '')) || 0,
+    const pct = c => parseFloat(toEn((box.querySelector(c) || {}).value || '').replace(/[^\d.]/g, '')) || 0;
+    const af = box.closest('.af') || box.parentElement || document; let advUsed = 0;
+    try{ const ck = sfCKey((af.querySelector('.a-sCno') || {}).value, (af.querySelector('.a-sName') || {}).value), no = sfNo((af.querySelector('.a-sNo') || {}).value); if(ck) advUsed = sfAdvUsed(ck, no); }catch(e){}
+    return {adv: n('.a-sfAdv'), advP: pct('.a-sfAdvP'), advUsed,
+      cum: n('.a-sfCum'), prev: n('.a-sfPrev'), ret: parseFloat(toEn((box.querySelector('.a-sfRet') || {}).value || '').replace(/[^\d.]/g, '')) || 0,
       ded: Array.from(box.querySelectorAll('.sf-d')).map(d => ({t: d.querySelector('.sf-dt').value.trim(), a: moneyNum(d.querySelector('.sf-da').value)})).filter(d => d.t || d.a)};
   }
   function sfPaint(box){
     const o = sfRead(box), c = sfCalc(o), af = box.closest('.af') || box.parentElement, out = box.querySelector('.sf-out');
     const row = (t, v, cls) => '<div class="' + (cls || '') + '"><span>' + t + '</span><b>' + (v ? moneyView(String(v)) : '۰') + '</b><small>' + (v ? arToman(v) + ' تومان' : '') + '</small></div>';
-    if(out) out.innerHTML = o.cum ? row('ناخالص این دوره', c.period) + row('حسن انجام کار (' + toFa(o.ret || 0) + '٪)', c.ret, 'neg') + (c.ded ? row('کسورات', c.ded, 'neg') : '') + row('خالص قابل پرداخت', c.net, 'net') : '<p class="sf-hint">با وارد کردن ناخالص تجمعی، خالص قابل پرداخت حساب و در «مبلغ قابل پرداخت» گذاشته می‌شود.</p>';
+    if(out) out.innerHTML = o.cum ? row('ناخالص این دوره', c.period) + row('حسن انجام کار (' + toFa(o.ret || 0) + '٪)', c.ret, 'neg') + (c.adv ? row('استهلاک پیش‌پرداخت (' + toFa(o.advP || 0) + '٪)', c.adv, 'neg') : '') + (c.ded ? row('کسورات', c.ded, 'neg') : '') + row('خالص قابل پرداخت', c.net, 'net') : '<p class="sf-hint">با وارد کردن ناخالص تجمعی، خالص قابل پرداخت حساب و در «مبلغ قابل پرداخت» گذاشته می‌شود.</p>';
+    { const em = box.querySelector('.sf-adv-rem'); if(em) em.textContent = o.adv ? 'ماندهٔ پیش‌پرداخت ' + arToman(Math.max(0, o.adv - o.advUsed)) + ' تومان' + (o.cum ? ' · بعد از این ' + arToman(c.advRem) : '') : ''; }
     if(o.cum && af){ const a = af.querySelector('.a-sAmount'); if(a && !a.__userEdit){ a.value = moneyView(String(c.net)); a.__sf = true; a.dispatchEvent(new Event('input', {bubbles: true})); a.__sf = false; } }
   }
   document.addEventListener('input', e => {
@@ -67964,7 +68021,7 @@
     if(t.matches && t.matches('.a-sAmount') && !t.__sf) t.__userEdit = !!t.value;
     if(t.matches && t.matches('.a-sCno, .a-sName, .a-sNo')){ const af = t.closest('.af'), bx = af && af.querySelector('.sf'); if(bx){ const ck = sfCKey((af.querySelector('.a-sCno') || {}).value, (af.querySelector('.a-sName') || {}).value), no = sfNo((af.querySelector('.a-sNo') || {}).value);
       const pv = sfPrev(ck, no, ''); const pi = bx.querySelector('.a-sfPrev'), em = bx.querySelector('.sf-pv'); if(em) em.textContent = pv ? 'شمارهٔ ' + toFa(pv.n) + (pv.cum == null ? ' (تجمعی ثبت نشده)' : '') : 'اولین صورت وضعیت';
-      if(pi && !pi.__user) pi.value = pv && pv.cum != null ? moneyView(String(pv.cum)) : (pv ? '' : '۰'); const ri = bx.querySelector('.a-sfRet'); if(ri && !ri.value && sfRetOf(ck) != null) ri.value = toFa(sfRetOf(ck)); const rl = ri && ri.parentElement.querySelector('u em'); if(rl) rl.textContent = sfRetOf(ck) != null ? 'طبق قرارداد' : 'در قرارداد ثبت نشده'; sfPaint(bx); } }
+      if(pi && !pi.__user) pi.value = pv && pv.cum != null ? moneyView(String(pv.cum)) : (pv ? '' : '۰'); const ri = bx.querySelector('.a-sfRet'); if(ri && !ri.value && sfRetOf(ck) != null) ri.value = toFa(sfRetOf(ck)); { const A = sfAdvOf(ck), ai = bx.querySelector('.a-sfAdv'), pi2 = bx.querySelector('.a-sfAdvP'), se = bx.querySelector('.sf-adv-src'); if(ai && !ai.value && A.adv) ai.value = moneyView(String(A.adv)); if(pi2 && !pi2.value && A.p != null) pi2.value = toFa(A.p); if(se) se.textContent = A.adv ? 'طبق قرارداد' : 'در قرارداد ثبت نشده'; sfPaint(bx); } const rl = ri && ri.parentElement.querySelector('u em'); if(rl) rl.textContent = sfRetOf(ck) != null ? 'طبق قرارداد' : 'در قرارداد ثبت نشده'; sfPaint(bx); } }
     if(t.matches && t.matches('.a-sfPrev')) t.__user = true;
   });
   document.addEventListener('click', e => {
@@ -67975,10 +68032,12 @@
     const af = sv.closest('.af'); if(!af) return;
     const bx = af.querySelector('.sf');
     if(bx){ const ck = sfCKey((af.querySelector('.a-sCno') || {}).value, (af.querySelector('.a-sName') || {}).value), no = sfNo((af.querySelector('.a-sNo') || {}).value);
-      if(ck && isFinite(no)){ const o = sfRead(bx); const has = o.cum || o.ded.length; const k = ck + '¦' + no; if(has) SF_S.set(k, o); else SF_S.delete(k); sfSaveRow(SF_S_KIND, k, has ? o : null).catch(() => {}); } }
+      if(ck && isFinite(no)){ const o = sfRead(bx); try{ o.advD = sfCalc(o).adv; delete o.advUsed; }catch(e2){} const has = o.cum || o.ded.length || o.adv; const k = ck + '¦' + no; if(has) SF_S.set(k, o); else SF_S.delete(k); sfSaveRow(SF_S_KIND, k, has ? o : null).catch(() => {}); } }
     const ri = af.querySelector('.a-cRet');
     if(ri){ const ck = sfCKey((af.querySelector('.a-cNo') || {}).value, (af.querySelector('.a-cTitle') || {}).value); const v = parseFloat(toEn(ri.value).replace(/[^\d.]/g, ''));
-      if(ck){ const o = isFinite(v) ? Object.assign({}, SF_C.get(ck) || {}, {ret: v}) : null; if(o) SF_C.set(ck, o); else SF_C.delete(ck); sfSaveRow(SF_C_KIND, ck, o).catch(() => {}); } }
+      const av = moneyNum((af.querySelector('.a-cAdv') || {}).value || ''), apv = parseFloat(toEn((af.querySelector('.a-cAdvP') || {}).value || '').replace(/[^\d.]/g, ''));
+      if(ck){ const base = Object.assign({}, SF_C.get(ck) || {}); if(isFinite(v)) base.ret = v; else delete base.ret; if(av) base.adv = av; else delete base.adv; if(isFinite(apv)) base.advP = apv; else delete base.advP;
+        const o = Object.keys(base).length ? base : null; if(o) SF_C.set(ck, o); else SF_C.delete(ck); sfSaveRow(SF_C_KIND, ck, o).catch(() => {}); } }
   }, true);
   /* فرم که باز شد، خلاصهٔ محاسبه نقاشی شود */
   let sfpT = 0;
@@ -68429,9 +68488,8 @@
 
     // مورد تازه بی‌درنگ ثبت می‌شود؛ دیگر لازم نیست جداگانه
     // «ثبت تغییرات» را هم بزنید. ویرایش‌های درجا مثل قبل در صف می‌مانند.
-    if(!pendingAdmin.size) {
-      try{ await commitAdmin(); }catch(e){}
-    }
+    /* همیشه همین حالا ثبت می‌شود (پیش‌تر اگر ویرایشی در صف مانده بود، مورد تازه هم ثبت نمی‌شد؛ مثلاً قرارداد ثبت‌شده از کارت پیمانکار به اسناد نمی‌رسید) */
+    try{ await commitAdmin(); }catch(e){}
   }
 
   // ثبت پرداخت صورت وضعیت
@@ -97453,11 +97511,11 @@
       tables: [{t: 'فهرست صورت وضعیت‌ها', head: ['پیمانکار', 'قرارداد', 'شماره', 'نوع', 'تاریخ ارسال', 'رسیدگی', 'پرداخت', 'مبلغ', 'پرداختی', 'مانده'], rows, money: [7, 8, 9], sum: true}]};
   }
   function rcCt(){
-    const cts = rcRows('contract').filter(r => !ctIsInvoice(r) && rcPerOk(pick(r,AD.cDate) || pick(r,AD.cStart) || pick(r,AD.date)));
+    const cts = rcRows('contract').filter(r => !ctIsInvoice(r) && !String(pick(r,AD.cAdd) || '').trim() && rcPerOk(pick(r,AD.cDate) || pick(r,AD.cStart) || pick(r,AD.date)));
     const st = stLive(rcRows('statement'));
     const key = v => toEn(String(v || '')).replace(/\s+/g, '');
     const byNo = new Map(); st.forEach(r => { const k = key(pick(r,AD.sCno)); if(!k) return; const o = byNo.get(k) || {a: 0, p: 0}; o.a += moneyNum(pick(r,AD.sAmount)); o.p += paidOf(r); byNo.set(k, o); });
-    const rows = cts.map(r => { const c = moneyNum(pick(r,AD.cAmount)), s = byNo.get(key(pick(r,AD.cNo))) || {a: 0, p: 0}; const end = rcDk(pick(r,AD.cEnd));
+    const rows = cts.map(r => { let c = moneyNum(pick(r,AD.cAmount)); try{ c = window.ctTotalAmt(r).total || c; }catch(e){} const s = byNo.get(key(pick(r,AD.cNo))) || {a: 0, p: 0}; let end = rcDk(pick(r,AD.cEnd)); try{ const E = window.cctEndOf(r); if(E && E.end) end = rcDk(E.end); }catch(e){}
       const left = end ? -daysSince(end) : null;
       return [String(pick(r,AD.cParty) || ''), String(pick(r,AD.cTitle) || ''), toFa(String(pick(r,AD.cNo) || '')), String(pick(r,AD.cType) || ''), toFa(rcDk(pick(r,AD.cStart))), end ? toFa(end) : '', left == null ? '' : (left < 0 ? 'منقضی ' + toFa(-left) + ' روز' : toFa(left) + ' روز مانده'), c, s.a, s.p, c ? toFa(Math.round(s.a / c * 100)) + '٪' : '']; });
     const S = i => rows.reduce((t, r) => t + (+r[i] || 0), 0);
