@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112083856">
+<meta name="pm-build" content="20261112084049">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -82717,7 +82717,9 @@
     wxBusy = (async () => { const L = wxLoc(); let lat = L.lat, lng = L.lng, place = L.city;
       try{
         if(lat == null || lng == null){ const q = L.city || L.prov || 'تهران';
-          const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fa&name=' + encodeURIComponent(q))).json();
+          /* اول فقط شهرهای ایران (پیش‌تر نام فارسی گاهی به شهری هم‌نام در کشور دیگر می‌خورد و هوا اشتباه می‌آمد) */
+          let g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fa&countryCode=IR&name=' + encodeURIComponent(q))).json();
+          if(!(g && g.results && g.results[0])) g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fa&name=' + encodeURIComponent(q))).json();
           const r = g && g.results && g.results[0]; if(!r) throw new Error('شهر پیدا نشد'); lat = r.latitude; lng = r.longitude; place = place || r.name; }
         const u = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng + '&timezone=auto&forecast_days=16'
           + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation'
