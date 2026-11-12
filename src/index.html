@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112083050">
+<meta name="pm-build" content="20261112083856">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -909,6 +909,13 @@
   :is(html,#z0) :is(body,#z1) .pe-modal .pe-rn{grid-column:1 / -1;font-weight:800;font-size:12.5px;} :is(html,#z0) :is(body,#z1) .pe-modal .pe-rn i{font-style:normal;font-size:10.5px;padding:1px 7px;border-radius:999px;background:#3b7fc0;color:#fff;margin-inline-start:6px;}
   :is(html,#z0) :is(body,#z1) .pe-modal .pe-acts{position:sticky;bottom:0;display:flex;gap:8px;padding:12px 0 2px;background:var(--surface);}
   @media (max-width:640px){ :is(html,#z0) :is(body,#z1) .pe-tl .pe-row{grid-template-columns:1fr 1fr auto;} :is(html,#z0) :is(body,#z1) .pe-tl .pe-st{grid-column:1 / -1;} :is(html,#z0) :is(body,#z1) .pe-modal .pe-g{grid-template-columns:1fr;} }
+
+  .cwk-q{display:block;margin:0 0 8px;} .cwk-q input{width:100%;box-sizing:border-box;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:0 12px;font:inherit;font-size:12.5px;color:var(--ink);}
+
+  .rdl{margin:8px 0 18px;} .rdl-f{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;} .rdl-f select, .rdl-f input{height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;padding:0 10px;} .rdl-f input{flex:1;min-width:160px;}
+  .rdl-l{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:12px;} .rdl-r{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1fr) 60px;gap:4px 10px;align-items:center;padding:8px 12px;font-size:12.5px;} .rdl-r + .rdl-r{border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
+  .rdl-d{color:var(--muted);font-size:11.5px;} .rdl-z{color:var(--muted);} .rdl-n{font-weight:700;text-align:left;} .rdl-r p{grid-column:2 / -1;margin:0;color:var(--ink);font-size:12px;}
+  @media (max-width:640px){ .rdl-r{grid-template-columns:1fr auto;} .rdl-r .rdl-z, .rdl-r p{grid-column:1 / -1;} }
 
 </style>
 <script>
@@ -53848,10 +53855,11 @@
                     if(!byD.size && !rel.length) return '';
                     const issN = new Map(); rel.forEach(r => { const dk = dayKey(pick(r,F.date)); if(dk) issN.set(dk, (issN.get(dk) || 0) + 1); });
                     const D = Array.from(byD.keys()).sort().reverse();
-                    const daily = D.length ? '<div class="ctd-log cwk-l">' + D.map((dk, i) => {
+                    const daily = D.length ? '<label class="cwk-q">' + '<input type="search" data-cwkq="1" placeholder="جست‌وجو در گزارش‌ها: طبقه، محل، تخصص، شرح کار یا تاریخ…" autocomplete="off"></label><div class="ctd-log cwk-l">' + D.map((dk, i) => {
                         const L = byD.get(dk), men = L.reduce((t, r) => t + menOf(r), 0), ni = issN.get(dk) || 0;
                         const sk = Array.from(new Set(L.map(r => String(pick(r,F.skill) || '').trim()).filter(Boolean)));
-                        return '<details class="cdl-d' + (i >= 7 ? ' more' : '') + '"' + (i < 1 ? ' open' : '') + '><summary>'
+                        const qq = [dk, dayLabel2(dk)].concat(L.map(r => [pick(r,F.skill), pick(r,F.zone), pick(r,F.sub), pick(r,F.activity), (F.floor ? pick(r,F.floor) : '')].join(' '))).join(' ');
+                        return '<details class="cdl-d' + (i >= 7 ? ' more' : '') + '"' + (i < 1 ? ' open' : '') + ' data-q="' + esc(toEn(qq)) + '"><summary>'
                           + '<span class="cdl-dt"><b>' + esc(dayLabel2(dk)) + '</b><small>' + esc(sk.slice(0, 3).join('، ') + (sk.length > 3 ? ' +' + toFa(sk.length - 3) : '') || 'بدون تخصص') + '</small></span>'
                           + '<span class="cdl-n"><b>' + toFa(men) + '</b><u>نفر</u></span>'
                           + (ni ? '<em class="cdl-ni" title="مانع ثبت‌شده در این روز">' + toFa(ni) + ' مانع</em>' : '')
@@ -54685,6 +54693,17 @@
   /* ====== خلاصهٔ بازهٔ زمانی ====== */
   let lastRange = null;   // برای بازسازی خلاصه هنگام تغییر فیلتر پیمانکار
 
+    /* گزارش بازه (هفته، ماه…): گزارش‌های روزانه با انتخاب پیمانکار — کجا، کی، چه کاری، چند نفر */
+  function rangeDailyListHtml(rows){ let h = ''; if(!rows || !rows.length) return ''; try{
+      const ctrs = Array.from(new Set(rows.map(r => String(pick(r,F.contractor) || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'fa'));
+      const R2 = rows.slice().sort((a, b) => String(pick(b,F.date) || '').localeCompare(String(pick(a,F.date) || '')));
+      h += '<div class="td-sh" id="secRangeDaily"><span class="ic">' + (TD_I.mach ? TD_I.mach : '') + '</span><h3>گزارش‌های روزانه</h3><span class="n">' + toFa(R2.length) + '</span></div>'
+        + '<div class="rdl"><div class="rdl-f"><select data-rdlctr="1"><option value="">همهٔ پیمانکاران</option>' + ctrs.map(c => '<option>' + esc(c) + '</option>').join('') + '</select>'
+        + '<input type="search" data-rdlq="1" placeholder="جست‌وجو: طبقه، محل، شرح کار…" autocomplete="off"></div>'
+        + '<div class="rdl-l">' + R2.map(r => { const c = String(pick(r,F.contractor) || '').trim(), os = +toEn(String(pick(r,F.ostad) || 0)) || 0, sh = +toEn(String(pick(r,F.shagerd) || 0)) || 0, z = [pick(r,F.zone), pick(r,F.sub)].filter(Boolean).join(' › ');
+            return '<div class="rdl-r" data-c="' + esc(c) + '" data-q="' + esc(toEn([pick(r,F.date), c, z, pick(r,F.skill), pick(r,F.activity)].join(' '))) + '"><span class="rdl-d">' + esc(toFa(normDate(pick(r,F.date)) || pick(r,F.date) || '')) + '</span><b>' + esc(c || '—') + '</b>'
+              + '<span class="rdl-z">' + esc(z || '—') + '</span><span class="rdl-n">' + toFa(os + sh) + ' نفر</span>' + (pick(r,F.activity) ? '<p>' + esc(pick(r,F.activity)) + '</p>' : '') + '</div>'; }).join('') + '</div></div>';
+    }catch(e){} return h; }
   function rangeSummaryHtml(rowsAll, issuesAll, machines, dates, dateLabel){
     lastRange = {rows: rowsAll, issues: issuesAll, machines, dates, dateLabel};
     const days = dates || [];
@@ -54850,7 +54869,7 @@
           + arr.slice(0, 4).map(r => '<div class="rxi-r"><i></i><span>' + esc(pick(r,I.text) || '') + '<small>' + esc([pick(r,F.date) ? taskDate(pick(r,F.date)) : '', r.__issN > 1 ? toFa(r.__issN) + ' بار گزارش شده' : '', pick(r,I.who)].filter(Boolean).join(' · ')) + '</small></span></div>').join('')
           + (arr.length > 4 ? '<div class="rxi-more">و ' + toFa(arr.length - 4) + ' مورد دیگر</div>' : '') + '</div>').join('') + '</div>' : '')
       + '</section>';
-    return head + rangeChartsHtml(rowsAll, days) + buildingHtml(rows) + issCard;
+    return head + rangeChartsHtml(rowsAll, days) + buildingHtml(rows) + issCard + rangeDailyListHtml(rows);
   }
 
   function buildingHtml(rows){
@@ -97638,6 +97657,7 @@
     try{
       if(isAdminUser()) return true;
       if(k === 'bud' || k === 'vnd') return can('rep.cf') || can('rep.adm');
+      if(k === 'ctm') return can('tab.view') || can('tab.write') || can('rep.adm');
       if(['rsk', 'rfi', 'smt', 'itp', 'dly', 'mnt'].indexOf(k) !== -1){ const R = REGS[{rsk: 'rsk', rfi: 'rfi', smt: 'smt', itp: 'itp', dly: 'dly', mnt: 'mnt'}[k]]; try{ return !!(R && (R.canNew() || regCanQc() || can('rep.adm'))); }catch(e){ return false; } }
       if(k === 'debt' || k === 'st' || k === 'ct') return can('rep.cf') || can('rep.adm') || can('tab.admin');
       if(k === 'cf') return can('rep.cf');
@@ -97852,9 +97872,41 @@
     {k: 'dly', t: 'تأخیرات و وضع هوا', d: 'روز تأخیر بر اساس علت، تمدید، و هوای ماهانه از تاریخچه', ic: 'task', c: '#4f7fa3', reg: ['dly'], wx: 1, f: rcDly},
     {k: 'bud', t: 'بودجه و هزینه', d: 'بودجه، تعهد و واقعی هر سرفصل و کد هزینه', ic: 'debt', c: '#8a6a1f', reg: ['cc'], f: rcBud},
     {k: 'mnt', t: 'تعمیر و نگهداری', d: 'وضعیت هر دستگاه، سررسیدها و هزینهٔ تعمیرات', ic: 'mc', c: '#6b5b3e', reg: ['mnt'], f: rcMnt},
-    {k: 'vnd', t: 'ارزیابی پیمانکاران', d: 'رتبه‌بندی بر اساس کیفیت، زمان، ایمنی و همکاری', ic: 'all', c: '#7a5bc4', reg: ['vnd'], f: rcVnd}
+    {k: 'vnd', t: 'ارزیابی پیمانکاران', d: 'رتبه‌بندی بر اساس کیفیت، زمان، ایمنی و همکاری', ic: 'all', c: '#7a5bc4', reg: ['vnd'], f: rcVnd},
+    {k: 'ctm', t: 'پیمانکاران حاضر', d: 'روزهای حضور، نفر-روز و بیشترین نفرات هر پیمانکار در بازه (پیش‌فرض این ماه) + جدول روزبه‌روز', ic: 'all', c: '#2f7d6b', pre: rcCtmLoad, f: rcCtm}
   ];
   window.rcCanAny = () => RC_LIST.some(x => rcCan(x.k));
+  /* فیلتر گزارش‌های روزانهٔ بازه با پیمانکار و جست‌وجو */
+  const rdlFilter = el => { const box = el.closest('.rdl'); if(!box) return; const c = (box.querySelector('[data-rdlctr]') || {}).value || '', q = toEn(String((box.querySelector('[data-rdlq]') || {}).value || '').trim()).toLowerCase();
+    box.querySelectorAll('.rdl-r').forEach(r => { r.hidden = (c && r.dataset.c !== c) || (q && String(r.dataset.q || '').toLowerCase().indexOf(q) === -1); }); };
+  document.addEventListener('input', e => { if(e.target && e.target.matches && e.target.matches('[data-rdlq]')) rdlFilter(e.target); });
+  document.addEventListener('change', e => { if(e.target && e.target.matches && e.target.matches('[data-rdlctr]')) rdlFilter(e.target); });
+  /* جست‌وجو در گزارش‌های روزانهٔ کارت پیمانکار */
+  document.addEventListener('input', e => { const i = e.target; if(!i || !i.matches || !i.matches('[data-cwkq]')) return; const q = toEn(String(i.value || '').trim()).toLowerCase(), L = i.closest('.cwk-p');
+    if(!L) return; let n = 0; L.querySelectorAll('details.cdl-d').forEach(d => { const hit = !q || String(d.dataset.q || '').toLowerCase().indexOf(q) !== -1; d.hidden = !hit; if(q){ d.classList.remove('more'); if(hit && n < 3) d.open = true; } if(hit) n++; });
+    const all = L.querySelector('[data-cdlall]'); if(all) all.hidden = !!q; });
+  /* پیمانکاران حاضر: از گزارش روزانه (activities). بازهٔ «همه» = همین ماه؛ امسال/سه ماه اخیر همان بازه */
+  const RC_CTM = {rows: null, from: '', to: ''};
+  function rcCtmRange(){ const t = toEn(todayShamsi()), y = t.slice(0, 4), m = t.slice(5, 7);
+    if(RC.per === 'y') return [y + '/01/01', t]; if(RC.per === 'q'){ let d = t; for(let i = 0; i < 92; i++) d = faMinusDay(d) || d; return [toEn(d), t]; }
+    return [y + '/' + m + '/01', t]; }
+  async function rcCtmLoad(){ const [a, b] = rcCtmRange(); RC_CTM.from = a; RC_CTM.to = b;
+    const rg = '&date_fa=gte.' + encodeURIComponent(toFa(a)) + '&date_fa=lte.' + encodeURIComponent(toFa(b));
+    let R = []; try{ R = await supaFetch('activities?select=date_fa,contractor,ostad,shagerd' + rg + '&limit=20000', {prefer: 'return=representation'}) || []; }catch(e){ R = []; }
+    if(!R.length){ try{ const rg2 = '&date_fa=gte.' + encodeURIComponent(a) + '&date_fa=lte.' + encodeURIComponent(b); R = await supaFetch('activities?select=date_fa,contractor,ostad,shagerd' + rg2 + '&limit=20000', {prefer: 'return=representation'}) || []; }catch(e){} }
+    RC_CTM.rows = R; }
+  function rcCtm(){ const R = RC_CTM.rows || []; if(!R.length) return null;
+    const M = new Map(), days = new Set();
+    R.forEach(r => { const c = String(r.contractor || '').trim(); if(!c) return; const d = toEn(normDate(r.date_fa) || r.date_fa || ''); if(!d || d < RC_CTM.from || d > RC_CTM.to) return; days.add(d);
+      const n = (num(r.ostad) || 0) + (num(r.shagerd) || 0); const o = M.get(c) || {c, d: new Map()}; o.d.set(d, (o.d.get(d) || 0) + n); M.set(c, o); });
+    const D = Array.from(days).sort();
+    const rows = Array.from(M.values()).map(o => { const v = Array.from(o.d.values()), ks = Array.from(o.d.keys()).sort(); return [o.c, toFa(o.d.size), toFa(v.reduce((t, x) => t + x, 0)), toFa(Math.max(...v)), toFa((v.reduce((t, x) => t + x, 0) / o.d.size).toFixed(1)), toFa(ks[0]), toFa(ks[ks.length - 1])]; })
+      .sort((a, b) => +toEn(b[2]) - +toEn(a[2]));
+    const matrix = Array.from(M.values()).sort((a, b) => b.d.size - a.d.size).map(o => [o.c].concat(D.map(d => o.d.get(d) ? toFa(o.d.get(d)) : '')));
+    return {title: 'پیمانکاران حاضر', sub: toFa(RC_CTM.from) + ' تا ' + toFa(RC_CTM.to) + ' · ' + toFa(rows.length) + ' پیمانکار · ' + toFa(D.length) + ' روز کاری',
+      kpi: [['پیمانکار حاضر', toFa(rows.length)], ['روز کاری ثبت‌شده', toFa(D.length)], ['جمع نفر-روز', toFa(rows.reduce((t, r) => t + +toEn(r[2]), 0))]],
+      tables: [{t: 'خلاصهٔ هر پیمانکار', head: ['پیمانکار', 'روز حضور', 'نفر-روز', 'بیشترین نفرات', 'میانگین نفر در روز', 'اولین روز', 'آخرین روز'], rows},
+               {t: 'حضور روزبه‌روز (نفر)', head: ['پیمانکار'].concat(D.map(d => toFa(d.slice(5)))), rows: matrix}]}; }
   /* ---------- خروجی ---------- */
   function rcXlsxReady(){
     if(window.XLSX) return Promise.resolve();
@@ -97914,7 +97966,7 @@
   async function rcRun(k, how, btn){
     const R = RC_LIST.find(x => x.k === k); if(!R || RC.busy) return;
     RC.busy = true; const lab = btn ? btn.innerHTML : ''; if(btn){ btn.disabled = true; btn.innerHTML = '<i class="rc-sp"></i>در حال آماده‌سازی'; }
-    try{ await rcEnsure(R.need || {}); if(R.reg) await Promise.all(R.reg.map(k => fxList(REGS[k].kind, true))); if(R.wx) await fxList(WXD_K, true).catch(() => null); const m = R.f(); if(!m) throw new Error('هنوز موردی در این بخش ثبت نشده است');
+    try{ await rcEnsure(R.need || {}); if(R.pre) await R.pre(); if(R.reg) await Promise.all(R.reg.map(k => fxList(REGS[k].kind, true))); if(R.wx) await fxList(WXD_K, true).catch(() => null); const m = R.f(); if(!m) throw new Error('هنوز موردی در این بخش ثبت نشده است');
       if(how === 'xls') await rcXls(m); else rcPdf(m); }
     catch(e){ showDialog('err', 'گزارش ساخته نشد', friendlyErr ? friendlyErr(e) : String(e && e.message || e)); }
     finally{ RC.busy = false; if(btn){ btn.disabled = false; btn.innerHTML = lab; } }
