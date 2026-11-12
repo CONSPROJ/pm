@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112132801">
+<meta name="pm-build" content="20261112133238">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29648,6 +29648,17 @@
     :is(html[data-theme="dark"],#z0) :is(body,#z1) #tabBar#tabBar.nav5 .sb-find{background:hsl(var(--sbH) 20% 16% / .8) !important;}
     :is(html[data-theme="dark"],#z0) :is(body,#z1) #tabBar#tabBar.nav5 > .seg-ind{background:hsl(var(--sbH) 22% 20%) !important;}
   }
+
+  /* گردش سند طراحی: فاصلهٔ بین ویرایش‌ها و جمع‌بندی زمان‌ها */
+  .df2-kpi{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;} .df2-kpi > span{flex:1 1 120px;display:flex;flex-direction:column;gap:1px;padding:8px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);}
+  .df2-kpi u{text-decoration:none;font-size:11px;color:var(--muted);font-weight:700;} .df2-kpi b{font-size:16px;font-weight:800;color:var(--ink);} .df2-kpi small{font-size:10.5px;color:var(--muted);}
+  .df2-kpi > span.g{border-color:color-mix(in srgb, #c0842a 40%, var(--line));background:color-mix(in srgb, #c0842a 6%, var(--surface));} .df2-kpi > span.g b{color:#a8701e;}
+  .df2-gap{display:flex;align-items:center;gap:8px;padding:4px 0;padding-inline-start:28px;font-size:11.5px;color:var(--muted);}
+  .df2-gap i{width:2px;height:22px;border-radius:2px;background:repeating-linear-gradient(180deg, #c0842a 0 4px, transparent 4px 7px);}
+  .df2-gap b{color:var(--ink);font-weight:800;} .df2-gap.warn b{color:#b0700f;} .df2-gap.bad b{color:#c4453a;}
+  .dsc-bar i.t-gap{background:repeating-linear-gradient(135deg, color-mix(in srgb, #c0842a 55%, transparent) 0 4px, color-mix(in srgb, #c0842a 25%, transparent) 4px 8px) !important;}
+  .dsc-leg i.t-gap{background:repeating-linear-gradient(135deg, #c0842a 0 3px, color-mix(in srgb, #c0842a 35%, transparent) 3px 6px) !important;}
+  .dsc-v small{display:block;font-size:10px;color:#a8701e;font-weight:700;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -31740,6 +31751,8 @@
   }, true);
 
   async function savePerson(name, patch){
+    /* کاربر صفر را فقط خودش تغییر می‌دهد (سطح، فعال/غیرفعال، نقش) */
+    try{ if(isRootName(name) && !isRootUser()) throw new Error('ادمین اصلی سامانه را فقط خودش می‌تواند تغییر دهد.'); if(isRootName(name) && patch && (patch.active === false || (patch.level != null && +patch.level !== 1))) throw new Error('ادمین اصلی سامانه غیرفعال یا کم‌سطح نمی‌شود.'); }catch(e){ if(e && e.message && /ادمین اصلی/.test(e.message)) throw e; }
     await supaFetch('people?on_conflict=name', {
       method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
       body:[Object.assign({name}, patch)]
@@ -32263,6 +32276,8 @@
   /* آیا سطحِ فعلی این اجازه را دارد؟ */
   var PJ_OFF = new Set();   // اجازه‌های بخش‌های خاموشِ پروژهٔ فعلی
   function can(k, lvl){
+    /* کاربر صفر (ادمین اصلی سامانه): به همه‌چیز در همهٔ پروژه‌ها دسترسی دارد — هیچ خاموشی، نقش یا محدودیتی جلویش را نمی‌گیرد */
+    if(lvl == null){ try{ if(isRootUser()) return true; }catch(e){} }
     if(PJ_OFF && PJ_OFF.has(k)) return false;
     let v = lvl;
     if(v == null){
@@ -32623,6 +32638,11 @@
   const ADMIN_USERS = ['آقای مهدی نعیمی'];
   const isAdminName = n => ADMIN_USERS.some(x => nameKey(x) === nameKey(n));
   const isAdminUser = () => isAdminName(activeUserName());
+  /* کاربر صفر: اولین نام فهرست ادمین‌ها (آقای مهدی نعیمی) — بالاتر از هر ادمین دیگر؛ کسی جز خودش نمی‌تواند سطح یا اجازه‌هایش را عوض کند */
+  const ROOT_USER = ADMIN_USERS[0];
+  const isRootName = n => !!n && nameKey(n) === nameKey(ROOT_USER);
+  function isRootUser(){ try{ return isRootName(activeUserName()); }catch(e){ return false; } }
+  window.isRootUser = isRootUser; window.isRootName = isRootName;
 
   const N = {
     id:['شناسه'], time:['زمان ثبت'], date:['تاریخ'], from:['از'], to:['به'],
@@ -72800,6 +72820,20 @@
   }
   const dsTone = st => DS_CODE[st] === 'A' || DS_CODE[st] === 'IFC' ? 'ok' : DS_CODE[st] === 'B' ? 'warn'
                      : (DS_CODE[st] === 'C' || DS_CODE[st] === 'D') ? 'bad' : st === 'نزد مشاور/کارفرما' ? 'ext' : 'info';
+  /* فاصلهٔ ارسال مجدد: از آخرین پاسخِ ویرایش قبل تا دریافت این ویرایش (زمانی که طراح صرف اصلاح کرده) */
+  function dsGapDays(revs, i){
+    if(!i || !revs[i - 1]) return null;
+    const pv = (revs[i - 1].log || []).filter(x => x && x.d), cu = (revs[i].log || []).filter(x => x && x.d);
+    if(!pv.length || !cu.length) return null;
+    const g = faDiff(pv[pv.length - 1].d, cu[0].d);
+    return g != null && g >= 0 ? g : null;
+  }
+  /* جمع‌بندی زمان‌ها: بررسی (نزد ما/مشاور/کارفرما) در برابر اصلاح و ارسال مجدد (نزد طراح) */
+  function dsTimeSummary(revs){
+    let rv = 0, gp = 0, nR = 0, nG = 0, mxG = 0;
+    revs.forEach((r, i) => { const c = dsCycleDays(r, i === revs.length - 1); if(c != null){ rv += c; nR++; } const g = dsGapDays(revs, i); if(g != null){ gp += g; nG++; if(g > mxG) mxG = g; } });
+    return {rv, gp, nR, nG, avgR: nR ? Math.round(rv / nR) : null, avgG: nG ? Math.round(gp / nG) : null, mxG};
+  }
   function dsCycleDays(rev, isCur){
     const L = rev.log.filter(x => x && x.d);
     if(!L.length) return null;
@@ -73087,28 +73121,37 @@
         return card + link;
       }).join('') + (segs.length && segs[segs.length - 1].open ? '<div class="df2-st now"><b>امروز</b><small>' + esc(toFa(todayShamsi())) + '</small></div>' : '');
       const cyc = (function(){ try{ return dsCycleDays(rv, isCur); }catch(e){ return null; } })();
-      return '<div class="df2-r' + (isCur ? ' cur' : '') + (rv.sup ? ' sup' : '') + '"><div class="df2-k"><b>Rev ' + esc(toFa(rv.rev)) + '</b><small>' + (cyc != null ? toFa(cyc) + ' روز' : '') + (isCur ? ' · جاری' : rv.sup ? ' · جایگزین' : '') + '</small></div><div class="df2-tr">' + steps + '</div></div>';
+      const gap = dsGapDays(revs, ri);
+      return (gap != null ? '<div class="df2-gap' + (gap > 30 ? ' bad' : gap > 14 ? ' warn' : '') + '"><i></i><span>اصلاح و ارسال مجدد Rev ' + esc(toFa(rv.rev)) + ' پس از <b>' + toFa(gap) + ' روز</b></span></div>' : '')
+        + '<div class="df2-r' + (isCur ? ' cur' : '') + (rv.sup ? ' sup' : '') + '"><div class="df2-k"><b>Rev ' + esc(toFa(rv.rev)) + '</b><small>' + (cyc != null ? 'بررسی ' + toFa(cyc) + ' روز' : '') + (isCur ? ' · جاری' : rv.sup ? ' · جایگزین' : '') + '</small></div><div class="df2-tr">' + steps + '</div></div>';
     }).filter(Boolean);
     if(!rows.length) return '';
-    const first = ((revs[0].log || []).find(x => x && x.d) || {}).d, tot = first ? faDiff(first, todayShamsi()) : null;
-    return '<div class="df2"><div class="df2-h"><b>گردش سند</b>' + (tot != null && tot >= 0 ? '<span>' + toFa(tot) + ' روز از دریافت اول · ' + toFa(revs.length) + ' ویرایش</span>' : '') + legend + '</div>'
+    /* کل گردش: از دریافت اول تا پاسخ نهایی آخرین ویرایش (اگر بسته شده)، وگرنه تا امروز */
+    const lastRv = revs[revs.length - 1], fin = ((lastRv.log || []).slice().reverse().find(x => x && x.d && dsIsFinal(x.st)) || {}).d;
+    const first = ((revs[0].log || []).find(x => x && x.d) || {}).d, tot = first ? faDiff(first, fin || todayShamsi()) : null;
+    const S = dsTimeSummary(revs);
+    const kpi = '<div class="df2-kpi"><span><u>کل گردش</u><b>' + (tot != null && tot >= 0 ? toFa(tot) + ' روز' : '—') + '</b></span>'
+      + '<span><u>در بررسی</u><b>' + toFa(S.rv) + ' روز</b><small>' + (S.avgR != null ? 'میانگین ' + toFa(S.avgR) + ' در هر ویرایش' : '') + '</small></span>'
+      + (S.nG ? '<span class="g"><u>اصلاح و ارسال مجدد</u><b>' + toFa(S.gp) + ' روز</b><small>میانگین ' + toFa(S.avgG) + ' · بیشترین ' + toFa(S.mxG) + '</small></span>' : '')
+      + '<span><u>ویرایش‌ها</u><b>' + toFa(revs.length) + '</b></span></div>';
+    return '<div class="df2"><div class="df2-h"><b>گردش سند</b>' + legend + '</div>' + kpi
       + rows.slice().reverse().join('') + '</div>';
   }
   /* نمودار چرخش همهٔ ویرایش‌ها: هر ویرایش یک نوار، تکه‌ها به نسبت روزهای هر مرحله */
   function dsCycleChartHtml(revs){
-    const rows = revs.map((rv, i) => ({rv, cur: i === revs.length - 1, segs: dsSegs(rv, i === revs.length - 1), tot: dsCycleDays(rv, i === revs.length - 1)}));
-    const max = Math.max(1, ...rows.map(x => x.tot || 0));
+    const rows = revs.map((rv, i) => ({rv, cur: i === revs.length - 1, segs: dsSegs(rv, i === revs.length - 1), tot: dsCycleDays(rv, i === revs.length - 1), gap: dsGapDays(revs, i)}));
+    const max = Math.max(1, ...rows.map(x => (x.tot || 0) + (x.gap || 0)));
     return '<div class="dsc">' + rows.slice().reverse().map(x => {
       const fin = x.rv.log.slice().reverse().find(y => dsIsFinal(y.st));
       const segs = x.segs.filter(s => s.days != null && s.days > 0 && !dsIsFinal(s.st));
       return '<div class="dsc-r' + (x.cur ? ' cur' : '') + (x.rv.sup ? ' sup' : '') + '">'
         + '<span class="dsc-k">Rev ' + esc(toFa(x.rv.rev)) + '</span>'
-        + '<span class="dsc-bar">' + (segs.length ? segs.map(s => '<i class="t-' + dsTone(s.st) + (s.open ? ' live' : '') + '" style="width:' + (s.days / max * 100).toFixed(1) + '%" title="' + esc(s.st + ': ' + toFa(s.days) + ' روز') + '"></i>').join('') : '<i class="t-none" style="width:2%"></i>') + '</span>'
-        + '<span class="dsc-v">' + (x.tot != null ? toFa(x.tot) + ' روز' : '—') + '</span>'
+        + '<span class="dsc-bar">' + (x.gap ? '<i class="t-gap" style="width:' + (x.gap / max * 100).toFixed(1) + '%" title="' + esc('اصلاح و ارسال مجدد: ' + toFa(x.gap) + ' روز') + '"></i>' : '') + (segs.length ? segs.map(s => '<i class="t-' + dsTone(s.st) + (s.open ? ' live' : '') + '" style="width:' + (s.days / max * 100).toFixed(1) + '%" title="' + esc(s.st + ': ' + toFa(s.days) + ' روز') + '"></i>').join('') : '<i class="t-none" style="width:2%"></i>') + '</span>'
+        + '<span class="dsc-v">' + (x.tot != null ? toFa(x.tot) + ' روز' : '—') + (x.gap ? '<small>+' + toFa(x.gap) + ' اصلاح</small>' : '') + '</span>'
         + '<span class="dsc-c ' + (fin ? 't-' + dsTone(fin.st) : 'open') + '">' + (fin ? DS_CODE[fin.st] : (x.rv.sup ? '—' : 'در گردش')) + '</span>'
         + '</div>';
     }).join('')
-      + '<div class="dsc-leg"><span><i class="t-info"></i>بررسی داخلی</span><span><i class="t-ext"></i>نزد مشاور/کارفرما</span><span><i class="t-bad"></i>اصلاح</span></div>'
+      + '<div class="dsc-leg"><span><i class="t-gap"></i>اصلاح و ارسال مجدد (نزد طراح)</span><span><i class="t-info"></i>بررسی داخلی</span><span><i class="t-ext"></i>نزد مشاور/کارفرما</span><span><i class="t-bad"></i>اصلاح</span></div>'
       + '</div>';
   }
   const DS_DISC_C = {'معماری':'#6d5bb5', 'سازه':'#b0632f', 'تأسیسات مکانیکی':'#2a8a86', 'تأسیسات برقی':'#b8860b', 'محوطه':'#3f7a52', 'نما':'#2f6f8f'};
