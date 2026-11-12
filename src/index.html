@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112172345">
+<meta name="pm-build" content="20261112172529">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -54865,6 +54865,15 @@
       + (avg != null ? hs('میانگین هر بررسی', toFa(avg) + ' روز') : '')
       + (okPct != null ? hs('تأیید یا مشروط', toFa(okPct) + '٪', okPct >= 70 ? 'ok' : '') : '')
       + hs('اسناد و مکاتبات', toFa(nDocs))
+      /* تیم طراحی / مشاور: کارنامهٔ طراحی — میانگین زمان اصلاح و ارسال مجدد، ویرایش در هر مدرک، تأیید بار اول */
+      + (function(){ if(t !== 'cons') return ''; try{
+          const nk = nameKey(ctrCanon(name)); const R = (adminAll || []).filter(a => a.kind === 'design' && a.row && nameKey(ctrCanon(pick(a.row, AD.dParty) || '')) === nk);
+          if(!R.length) return ''; let gs = 0, gn = 0, rv = 0, ftr = 0, fin = 0;
+          R.forEach(a => { let V = []; try{ V = dsRevsOf(a.row) || []; }catch(e){} rv += V.length; for(let i = 1; i < V.length; i++){ const g = dsGapDays(V, i); if(g != null){ gs += g; gn++; } }
+            const f0 = V[0] && (V[0].log || []).find(x => x && dsIsFinal(x.st)); if(f0){ fin++; if(['A','B','IFC'].indexOf(DS_CODE[f0.st]) !== -1) ftr++; } });
+          return hs('مدارک طراحی', toFa(R.length)) + hs('ویرایش در هر مدرک', toFa(Math.round(rv / R.length * 10) / 10))
+            + (gn ? hs('میانگین اصلاح و ارسال مجدد', toFa(Math.round(gs / gn)) + ' روز', gs / gn > 21 ? 'bad' : '') : '')
+            + (fin ? hs('تأیید در ارسال اول', toFa(Math.round(ftr / fin * 100)) + '٪', ftr / fin >= .6 ? 'ok' : '') : ''); }catch(e){ return ''; } })()
       + '</div>';
     /* خلاصه: آنچه الان نزد اوست + نتیجهٔ بررسی‌ها */
     const nowH = now.length
