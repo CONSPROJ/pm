@@ -165,7 +165,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261112134823">
+<meta name="pm-build" content="20261112135102">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29697,6 +29697,9 @@
   #homeView .hdb-tp .ava, #homeView .hdb-tp img{grid-row:1 / 3;width:32px !important;height:32px !important;border-radius:50% !important;object-fit:cover;}
   #homeView .hdb-tp b{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} #homeView .hdb-tp small{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #homeView .hdb-tp.more{display:grid;place-items:center;grid-template-columns:1fr;} #homeView .hdb-tp.more b{color:var(--muted);}
+
+  #modM .mod-ph{display:flex;flex-direction:column;gap:8px;padding:12px;margin:0 0 12px;border-radius:14px;background:color-mix(in srgb, var(--vz1) 6%, var(--surface));border:1px solid color-mix(in srgb, var(--vz1) 22%, var(--line));}
+  #modM .mod-ph > div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} #modM .mod-ph u{text-decoration:none;font-size:12px;font-weight:800;min-width:78px;} #modM .mod-ph span{display:flex;gap:6px;flex-wrap:wrap;} #modM .mod-ph small{font-size:11px;color:var(--muted);}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -39661,7 +39664,7 @@
     }catch(err){ showDialog('err','ثبت نشد', friendlyErr(err)); ctxRefresh(box); return false; }
   }
   /* ====== نوع طرف: پیمانکار، مشاور، تیم کارفرما ====== */
-  const CTR_TYPES = [['ctr', 'پیمانکار'], ['sup', 'تأمین‌کننده'], ['cons', 'مشاور'], ['emp', 'کارفرما'], ['own', 'مالک / سرمایه‌گذار']];
+  const CTR_TYPES = [['ctr', 'پیمانکار'], ['sup', 'تأمین‌کننده'], ['cons', 'مشاور / تیم طراحی'], ['emp', 'کارفرما'], ['own', 'مالک / سرمایه‌گذار']];
   const ctrTypeLabel = t => (CTR_TYPES.find(x => x[0] === t) || CTR_TYPES[0])[1];
   function ctrTypeOf(n){ const c = ctrContactOf(n);
     /* کارفرما/مشاوری که در اطلاعات پروژه تعیین شده، حتی اگر پرونده‌اش با نوع پیش‌فرض «پیمانکار» ساخته شده باشد */
@@ -49623,8 +49626,18 @@
     await modLoad();
     const B = m.querySelector('.fx-bd'), off = new Set(modOff);
     const all = WS_MODS.filter(x => { try{ return !!x.ok(); }catch(e){ return false; } });
+    /* کاربری و مرحلهٔ پروژه: هر مرحله پیشنهاد آماده‌ای از بخش‌ها دارد؛ ادمین بعدش هر بخش را دستی هم تغییر می‌دهد */
+    let cfg0 = {}; try{ const L0 = await fxList(MOD_K); const x0 = (L0 || []).find(r => r.id === 'cfg'); cfg0 = (x0 && x0.o) || {}; }catch(e){}
+    const st = {phase: cfg0.phase || '', use: cfg0.use || ''};
+    const PH = [['design1', 'طراحی فاز ۱', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','sp','qt','cc','co','leave']],
+                ['design2', 'طراحی فاز ۲', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','leave']],
+                ['build', 'اجرا', ['hov']], ['finish', 'نازک‌کاری و تأسیسات', []], ['handover', 'تحویل و بهره‌برداری', ['cut','con','mrc','rcn','la','ptw']]];
+    const USES = ['مسکونی', 'تجاری', 'اداری', 'مختلط', 'هتل', 'درمانی', 'آموزشی', 'صنعتی', 'زیرساخت'];
     const paint = () => {
-      B.innerHTML = '<div class="mod-top"><b>' + toFa(all.length - all.filter(x => off.has(x.k)).length) + ' از ' + toFa(all.length) + ' بخش روشن</b><span><button type="button" class="mini" data-modall="1">همه روشن</button></span></div>'
+      B.innerHTML = '<div class="mod-ph"><div><u>مرحلهٔ پروژه</u><span>' + PH.map(([k, t]) => '<button type="button" class="mini' + (st.phase === k ? ' go' : '') + '" data-modph="' + k + '">' + t + '</button>').join('') + '</span></div>'
+        + '<div><u>کاربری</u><span>' + USES.map(u => '<button type="button" class="mini' + (st.use === u ? ' go' : '') + '" data-moduse="' + u + '">' + u + '</button>').join('') + '</span></div>'
+        + '<small>با انتخاب مرحله، بخش‌های مناسب همان مرحله روشن و بقیه خاموش پیشنهاد می‌شوند؛ پیش از ذخیره هر کدام را می‌توانید عوض کنید.</small></div>'
+        + '<div class="mod-top"><b>' + toFa(all.length - all.filter(x => off.has(x.k)).length) + ' از ' + toFa(all.length) + ' بخش روشن</b><span><button type="button" class="mini" data-modall="1">همه روشن</button></span></div>'
         + WS_GRP.map(g => { const G = all.filter(x => (WS_GOF[x.k] || 'etc') === g.k).sort(wsGofOrd); if(!G.length) return '';
           return '<section class="mod-g" style="--gc:' + g.c + '"><div class="mod-gh"><span class="mod-gi">' + (g.ic || '') + '</span><b>' + esc(g.t) + '</b><small>' + toFa(G.filter(x => !off.has(x.k)).length) + '/' + toFa(G.length) + '</small></div>'
             + G.map(x => { const fx = MOD_FIXED.indexOf(x.k) !== -1, on = !off.has(x.k);
@@ -49635,10 +49648,12 @@
     paint();
     B.onchange = e => { const c = e.target.closest('[data-modk]'); if(!c) return; c.checked ? off.delete(c.dataset.modk) : off.add(c.dataset.modk); paint(); };
     B.onclick = async e => {
+      const ph = e.target.closest('[data-modph]'); if(ph){ st.phase = ph.dataset.modph; const P0 = PH.find(x => x[0] === st.phase); off.clear(); (P0 ? P0[2] : []).forEach(k => { if(MOD_FIXED.indexOf(k) === -1) off.add(k); }); paint(); return; }
+      const us = e.target.closest('[data-moduse]'); if(us){ st.use = st.use === us.dataset.moduse ? '' : us.dataset.moduse; paint(); return; }
       if(e.target.closest('[data-modall]')){ off.clear(); paint(); return; }
       const sv = e.target.closest('[data-modsave]'); if(!sv) return;
       sv.disabled = true;
-      try{ await fxPut(MOD_K, 'cfg', {off: Array.from(off), by: activeUserName(), at: Date.now()}); }catch(er){ sv.disabled = false; showDialog('warn', 'ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); return; }
+      try{ await fxPut(MOD_K, 'cfg', {off: Array.from(off), phase: st.phase, use: st.use, by: activeUserName(), at: Date.now()}); try{ window.__pjPhase = st.phase; }catch(er){} }catch(er){ sv.disabled = false; showDialog('warn', 'ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); return; }
       modOff = new Set(off); try{ localStorage.setItem(modLS(), JSON.stringify(Array.from(off))); }catch(er){}
       m.remove(); try{ window.wsRefresh && window.wsRefresh(); }catch(er){} try{ window.sbBuild && window.sbBuild(); }catch(er){} try{ shrToast('بخش‌های فعال پروژه ذخیره شد'); }catch(er){}
     };
