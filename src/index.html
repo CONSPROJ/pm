@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113151239">
+<meta name="pm-build" content="20261113152105">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29908,6 +29908,20 @@
   @media (max-width:1179px){ :is(html,#z0) :is(body,#z1) #panelTasks .tkl-tiles{display:none !important;} }
 
   .gt-open{all:unset;cursor:pointer;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;background:var(--field);white-space:nowrap;}
+
+  /* ====== آرشیو: ساده و یکسان ====== */
+  :is(html,#z0) :is(body,#z1) #adminView[data-cat="archive"] > :is(.adm-srch, .adm-xwrap){display:none !important;}
+  :is(html,#z0) :is(body,#z1) #arcBody .arc-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%;width:max-content;gap:3px;padding:3px;border-radius:12px;background:var(--field);margin:2px 0 14px;}
+  #arcBody .arc-tabs::-webkit-scrollbar{display:none;} #arcBody .arc-tabs button{flex:none;white-space:nowrap;height:34px;padding:0 14px;}
+  @media (max-width:700px){ :is(html,#z0) :is(body,#z1) #arcBody .arc-tabs{width:100%;} #arcBody .arc-tabs button{flex:1 0 auto;padding:0 12px;} }
+  :is(html,#z0) :is(body,#z1) #arcBody .arc-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;margin:10px 0 8px;padding-bottom:2px;} #arcBody .arc-chips::-webkit-scrollbar{display:none;} #arcBody .arc-chips button{flex:none;white-space:nowrap;}
+  #arcBody .arc-sub{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 2px 10px;font-size:12px;color:var(--muted);}
+  #arcBody .arc-sub label{display:inline-flex;align-items:center;gap:6px;} #arcBody .arc-sub select{height:32px;border-radius:9px;padding:0 10px;font:inherit;font-size:12px;}
+  #arcBody .arc-sum{font-weight:700;color:var(--ink);opacity:.85;}
+
+  :is(html,#z0) :is(body,#z1) #arcBody .gx-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:10px 0 8px;} #arcBody .gx-chips::-webkit-scrollbar{display:none;} #arcBody .gx-chips button{flex:none;white-space:nowrap;}
+
+  #arcBody .arc-sub label{white-space:nowrap;} #arcBody .arc-ctl{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -70539,10 +70553,11 @@
     const cnt = k => F.filter(f => !k || f.kind === k).length;
     if(!F.length) return '<div class="arc-none"><b>هنوز فایلی پیوست نشده</b><small>فایل‌هایی که روی صورت وضعیت، قرارداد، نامه، صورتجلسه یا سند طراحی پیوست شوند، این‌جا جمع می‌شوند.</small></div>';
     const tc = t => F.filter(f => ATT_KIND(f.a.ext) === t).length, ym = toEn(todayShamsi()).slice(0, 7);
-    const kp = '<div class="arx-kpi"><span><b>' + toFa(F.length) + '</b><u>فایل در آرشیو</u></span><span><b>' + toFa(tc('pdf')) + '</b><u>PDF</u></span><span><b>' + toFa(tc('img')) + '</b><u>تصویر</u></span><span><b>' + toFa(F.filter(f => /dwg|dxf/i.test(f.a.ext || '')).length) + '</b><u>نقشه</u></span><span><b>' + toFa(F.filter(f => toEn(normDate(f.date) || '').slice(0, 7) === ym).length) + '</b><u>این ماه</u></span></div>';
-    return kp + '<div class="arc-bar"><label class="arc-q">' + CTX_I.search + '<input type="search" data-arcq placeholder="جست‌وجوی نام فایل، شماره، طرف قرارداد…" value="' + esc(arc.q) + '"></label></div>'
+    /* یک خط خلاصه، یک جست‌وجو، یک ردیف نوع سند و یک ردیف «نوع فایل + ترتیب» — ساده و یکسان روی گوشی و دسکتاپ */
+    const sum = [toFa(F.length) + ' فایل', tc('pdf') ? toFa(tc('pdf')) + ' PDF' : '', tc('img') ? toFa(tc('img')) + ' تصویر' : '', F.filter(f => /dwg|dxf/i.test(f.a.ext || '')).length ? toFa(F.filter(f => /dwg|dxf/i.test(f.a.ext || '')).length) + ' نقشه' : ''].filter(Boolean).join(' · ');
+    const tyOpts = ARC_TYPES.filter(([t]) => !t || F.some(f => ATT_KIND(f.a.ext) === t));
+    return '<div class="arc-bar"><label class="arc-q">' + CTX_I.search + '<input type="search" data-arcq placeholder="جست‌وجوی نام فایل، شماره، طرف…" value="' + esc(arc.q) + '"></label></div>'
       + '<div class="arc-chips">' + kinds.map(([k, t]) => '<button type="button" data-arck="' + k + '" class="' + (arc.k === k ? 'on' : '') + '">' + t + ' <em>' + toFa(cnt(k)) + '</em></button>').join('') + '</div>'
-      + '<div class="arc-chips sm">' + ARC_TYPES.filter(([t]) => !t || F.some(f => ATT_KIND(f.a.ext) === t)).map(([t, l]) => '<button type="button" data-arct="' + t + '" class="' + (arc.t === t ? 'on' : '') + '">' + l + '</button>').join('') + '</div>'
       + (function(){
           /* آرشیو فایل‌ها: هر فایل یک ردیف فشرده (نوع، نام تمیز، سند مادر، تاریخ، باز/دانلود)، گروه‌بندی بر اساس ماه */
           if(!L.length) return '';
@@ -70566,7 +70581,8 @@
           if(S === 'name') body = '<div class="arx-l">' + shown.map(row).join('') + '</div>';
           else { const G = new Map(); shown.forEach(f => { const k = toEn(normDate(f.date) || '').slice(0, 7) || '—'; if(!G.has(k)) G.set(k, []); G.get(k).push(f); });
             body = Array.from(G.entries()).map(([k, arr]) => '<section class="arx-g"><h5><b>' + (k === '—' ? 'بدون تاریخ' : esc(faMonName(k.replace(/-/g, '/')))) + '</b><em>' + toFa(arr.length) + ' فایل</em></h5><div class="arx-l">' + arr.map(row).join('') + '</div></section>').join(''); }
-          return '<div class="arx-tb"><span>' + toFa(L.length) + ' فایل</span><label>ترتیب<select data-arcso="1" data-nons="1">' + [['new', 'تازه‌ترین'], ['old', 'قدیمی‌ترین'], ['name', 'نام فایل']].map(([v, t]) => '<option value="' + v + '"' + (S === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label></div>'
+          return '<div class="arx-tb arc-sub"><span class="arc-sum">' + esc(L.length === F.length ? sum : toFa(L.length) + ' از ' + toFa(F.length) + ' فایل') + '</span><span class="arc-ctl">'
+            + (tyOpts.length > 2 ? '<label>نوع<select data-arcty="1" data-nons="1">' + tyOpts.map(([t, l]) => '<option value="' + t + '"' + ((arc.t || '') === t ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' : '') + '<label>ترتیب<select data-arcso="1" data-nons="1">' + [['new', 'تازه‌ترین'], ['old', 'قدیمی‌ترین'], ['name', 'نام فایل']].map(([v, t]) => '<option value="' + v + '"' + (S === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label></span></div>'
             + body + (L.length > arc.n ? '<button type="button" class="arc-more" data-arcmore="1">نمایش ' + toFa(Math.min(60, L.length - arc.n)) + ' فایل دیگر · ' + toFa(L.length - arc.n) + ' مانده</button>' : '');
         })() + (L.length ? '' 
         : '<div class="arc-none"><b>فایلی با این فیلتر پیدا نشد</b></div>');
@@ -70604,7 +70620,7 @@
     arcCount();
   }
   window.arcRender = arcRender;
-  document.addEventListener('change', e => { const t = e.target; if(t && t.matches && t.matches('#arcBody [data-arcso]')){ arc.so = t.value; arc.n = 60; arcRender(); } });
+  document.addEventListener('change', e => { const t = e.target; if(t && t.matches && t.matches('#arcBody [data-arcso]')){ arc.so = t.value; arc.n = 60; arcRender(); } if(t && t.matches && t.matches('#arcBody [data-arcty]')){ arc.t = t.value; arc.n = 60; arcRender(); } });
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest || !t.closest('#arcBody')) return;
     const tb = t.closest('[data-arctab]'); if(tb){ arc.tab = tb.dataset.arctab; arc.q = ''; arc.n = 60; arcRender(); return; }
@@ -85892,21 +85908,21 @@
     }else body = '<div class="gx-grid">' + shown.map((p, i) => tile(p, i % 9 === 0 ? 'big' : (i % 9 === 5 ? 'wide' : ''))).join('') + '</div>';
     const chip = (attr, v, cur, t, n) => '<button type="button" ' + attr + '="' + esc(v) + '" class="' + (cur === v ? 'on' : '') + '">' + t + (n != null ? ' <em>' + toFa(n) + '</em>' : '') + '</button>';
     return '<div class="gx">'
-      + '<div class="gx-hero">' + (cover ? '<span class="gx-hbg">' + attThumb(cover.a) + '</span>' : '') + '<div class="gx-hx"><small>گالری پیشرفت پروژه</small><b>' + toFa(P.length) + ' عکس</b>'
-      +   '<span class="gx-hs"><i>' + toFa(fls.length) + ' طبقه</i><i>' + toFa(thisM) + ' عکس این ماه</i>' + (cover && cover.d ? '<i>آخرین: ' + esc(toFa(cover.d)) + '</i>' : '') + '</span></div>'
-      +   (glCanAdd() ? '<button type="button" class="gx-add" data-gladd="' + (gl.add ? '0' : '1') + '">' + (gl.add ? 'بستن' : '<span>+</span> افزودن عکس') + '</button>' : '') + '</div>'
+      /* همان الگوی بقیهٔ زبانه‌های آرشیو: جست‌وجو و افزودن، یک ردیف فیلتر، یک خط خلاصه و نوع نما */
+      + '<div class="arc-bar"><label class="arc-q">' + CTX_I.search + '<input type="search" data-glq value="' + esc(gl.q || '') + '" placeholder="جست‌وجو: فضا، فعالیت، شرح…"></label>'
+      +   (glCanAdd() ? '<button type="button" class="arc-addb" data-gladd="' + (gl.add ? '0' : '1') + '">' + (gl.add ? 'بستن' : '+ عکس تازه') + '</button>' : '') + '</div>'
       + (gl.add ? '<div class="arc-new gx-new"><div class="gx-nh"><b>عکس تازه</b><small>هر عکس با تاریخ، طبقه، فضا و شرح ثبت می‌شود و در گزارش‌ها و کارت طبقه هم دیده می‌شود</small></div><div class="arc-ng"><label class="ctc-f"><span>تاریخ عکس</span><input type="text" data-glf="date" class="date-in" inputmode="numeric" readonly value="' + esc(toFa(todayShamsi())) + '"></label>'
           + '<label class="ctc-f"><span>طبقه</span><select data-glf="fl" data-nons="1"><option value="">—</option>' + spFloors().map(f => '<option value="' + esc(f.label) + '">' + esc(f.label) + '</option>').join('') + '<option value="نما">نما</option><option value="کل ساختمان">کل ساختمان</option><option value="محوطه">محوطه</option></select></label>'
           + '<label class="ctc-f"><span>نوع تصویر</span><select data-glf="ty" data-nons="1"><option value="">عکس واقعی</option><option value="رندر">رندر</option></select></label>'
           + '<label class="ctc-f"><span>فضا / محل</span><input type="text" data-glf="zone" data-list="zoneList" autocomplete="off" placeholder="مثلاً لابی یا واحد ۵۰۲"></label><label class="ctc-f"><span>فعالیت</span><input type="text" data-glf="act" placeholder="مثلاً نصب سنگ نما"></label>'
           + '<label class="ctc-f"><span>شرح <small>اختیاری</small></span><input type="text" data-glf="note"></label>' + attachFieldHtml('', 'gallery')
           + '<div class="arc-nacts"><button type="button" class="dz-b pri" data-glsave="1">ذخیره در گالری</button><button type="button" class="dz-b" data-gladd="0">انصراف</button></div></div></div>' : '')
-      + '<div class="gx-bar"><label class="gx-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" data-glq value="' + esc(gl.q || '') + '" placeholder="جست‌وجو: فضا، فعالیت، شرح…" autocomplete="off"></label>'
-      +   '<div class="gx-seg">' + [['grid', 'شبکه'], ['floor', 'طبقه‌ها'], ['time', 'زمان']].map(([k, t]) => '<button type="button" data-glview="' + k + '" class="' + (view === k ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div>'
       + '<div class="gx-chips">' + chip('data-glsrc', '', gl.src, 'همه', P.length)
       +   (P.some(p => p.ty === 'رندر') ? '<span class="gx-sep"></span>' + chip('data-glty', 'واقعی', gl.ty, 'عکس واقعی', P.filter(p => p.ty !== 'رندر').length) + chip('data-glty', 'رندر', gl.ty, 'رندر', P.filter(p => p.ty === 'رندر').length) + '<span class="gx-sep"></span>' : '')
       +   [['pg','عکس پیشرفت'],['rep','گزارش روزانه'],['pj','تصاویر پروژه'],['qc','بازرسی و NCR'],['doc','پیوست اسناد']].filter(([k]) => P.some(p => p.src === k)).map(([k, t]) => chip('data-glsrc', k, gl.src, t, P.filter(p => p.src === k).length)).join('')
       +   (fls.length ? '<span class="gx-sep"></span>' + chip('data-glfl', '', gl.fl, 'همهٔ طبقات') + fls.map(f => chip('data-glfl', f, gl.fl, esc(f))).join('') : '') + '</div>'
+      + '<div class="arc-sub"><span class="arc-sum">' + esc([toFa(P.length) + ' عکس', fls.length ? toFa(fls.length) + ' طبقه' : '', thisM ? toFa(thisM) + ' عکس این ماه' : ''].filter(Boolean).join(' · ')) + '</span>'
+      +   '<div class="gx-seg">' + [['grid', 'شبکه'], ['floor', 'طبقه‌ها'], ['time', 'زمان']].map(([k, t]) => '<button type="button" data-glview="' + k + '" class="' + (view === k ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div>'
       + '<div class="gx-body" data-fvl="' + esc(shown.map(p => p.a.full).join('\n')) + '" data-fvtitle="گالری پیشرفت">' + body + '</div>'
       + (L.length > gl.n ? '<button type="button" class="arc-more gx-more" data-glmore="1">نمایش عکس‌های بیشتر · ' + toFa(L.length - gl.n) + ' مانده</button>' : '')
       + '</div>';
