@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113152850">
+<meta name="pm-build" content="20261113153833">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -50595,7 +50595,7 @@
     const anim = !k ? document.getElementById('wsList') : mod ? host : null;
     if(anim){ anim.classList.remove('wp-in'); void anim.offsetWidth; anim.classList.add('wp-in'); }
   }
-  window.wsSet = wsSet;
+  window.wsSet = wsSet; window.wsCur = () => ws.cur;
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-ctrretry]')){ const b = document.getElementById('wsCtd'); if(b) b.innerHTML = ''; try{ ctcRepaint(); }catch(er){ showDialog('err', 'نیروی انسانی', friendlyErr(er)); } } });
   /* بعد از هر wpickSetMode: اگر میز کار باز است، ماژول همین‌جا بماند */
   window.wsAfterMode = m => {
@@ -98194,6 +98194,43 @@
       if(skip){ skip--; return; }
       const o = OV.pop(); if(o && o.el.isConnected) closeEl(o.el);
     });
+  })();
+
+
+  /* ====== تاریخچهٔ ناوبری (دکمهٔ برگشت گوشی و مرورگر) ======
+     پنجره‌ها از قبل با «برگشت» بسته می‌شدند؛ ولی جابه‌جایی بین بخش‌ها (خانه ← میز کار ← HSE، اسناد ← قرارداد) در تاریخچه نبود
+     و «برگشت» یک‌باره از سایت بیرون می‌رفت. حالا هر جابه‌جایی بخش یک قدم تاریخچه است و «برگشت» به بخش قبلی برمی‌گردد. */
+  (function(){
+    const key = () => { try{
+      const tab = (document.getElementById('tabBar') || {dataset: {}}).dataset.cur || 'home';
+      let sub = '';
+      if(tab === 'tasks') sub = (window.wsCur && window.wsCur()) || '';
+      else if(tab === 'admin'){ const av = document.getElementById('adminView'); sub = !av ? '' : av.classList.contains('adm-home') ? 'home' : (av.dataset.cat || ''); }
+      return tab + '|' + sub; }catch(e){ return ''; } };
+    let last = '', restoring = false, ready = false;
+    const ovOpen = () => !!document.querySelector('body > .modal-bg:not([hidden])');
+    function tick(){
+      if(!ready || restoring) return; const k = key(); if(!k || k === last) return;
+      try{ if(!last || ovOpen()) history.replaceState(Object.assign({}, history.state || {}, {nav: k}), ''); else history.pushState({nav: k}, ''); }catch(e){}
+      last = k;
+    }
+    function apply(k){
+      const [tab, sub] = String(k).split('|'); restoring = true;
+      try{
+        if(tab === 'tasks'){ switchTab('tasks'); try{ window.wsSet(sub || ''); }catch(e){} }
+        else if(tab === 'admin'){ switchTab('admin'); try{ if(sub === 'home') window.admHomeSet(true); else if(sub) window.admSetCat(sub); }catch(e){} }
+        else switchTab(tab || 'home');
+      }catch(e){}
+      setTimeout(() => { last = key(); restoring = false; }, 120);
+    }
+    window.addEventListener('popstate', e => {
+      const st = e.state || {};
+      if(st.ov != null) return;
+      setTimeout(() => { if(ovOpen()) return; const k = st.nav || 'home|'; if(k !== key()) apply(k); else last = k; }, 0);
+    });
+    document.addEventListener('click', () => setTimeout(tick, 60), true);
+    setInterval(tick, 700);
+    setTimeout(() => { ready = true; tick(); }, 2500);
   })();
 
   /* ====== چند پروژه ======
