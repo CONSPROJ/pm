@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113143700">
+<meta name="pm-build" content="20261113143952">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -59796,8 +59796,10 @@
     if(pjColOn() && /[?&]on_conflict=/.test(path) && !/^(people|feed_reads)\b/.test(path) && !/on_conflict=[^&]*project_id/.test(path))
       path = path.replace(/([?&]on_conflict=)([^&]*)/, (m, a, b) => a + b + (b ? '%2C' : '') + 'project_id');
     /* خواندن‌های هم‌زمانِ یکسان یک درخواست می‌شوند (هر کدام نسخهٔ خودش را می‌گیرد)؛ و خواندن بیش از ۳۰ ثانیه رها می‌شود */
-    const isGet = !o.method || o.method === 'GET';
-    const dk = isGet ? path + '|' + pjHdrId() + '|' + (o.prefer || '') + '|' + JSON.stringify(o.headers || {}) : '';
+    /* تابع‌های فقط‌خواندنی سرور (بستهٔ روز، داشبورد، هویت) هم مثل GET یکی می‌شوند: چند بخش صفحه که هم‌زمان همان روز را می‌خواهند، یک درخواست می‌فرستند */
+    const isReadRpc = o.method === 'POST' && /^rpc\/(bundle\d?|day3|day_only|pm_whoami|session_epoch|pm_portfolio)\b/.test(path);
+    const isGet = !o.method || o.method === 'GET' || isReadRpc;
+    const dk = isGet ? path + '|' + pjHdrId() + '|' + (o.prefer || '') + '|' + JSON.stringify(o.headers || {}) + (isReadRpc ? '|' + JSON.stringify(o.body || {}) : '') : '';
     if(!isGet) SUPA_RC.clear();
     if(isGet && !o.__noDedupe){ const c = SUPA_RC.get(dk); if(c && Date.now() - c.t < 3000) return c.v ? JSON.parse(c.v) : null; }
     if(isGet && !o.__noDedupe && SUPA_INFL.has(dk)){ const t0 = await SUPA_INFL.get(dk); return t0 ? JSON.parse(t0) : null; }
