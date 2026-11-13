@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113073119">
+<meta name="pm-build" content="20261113073616">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29825,6 +29825,8 @@
   }
 
   :is(html,#z0) .wh-bar{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;} :is(html,#z0) .wh-bar > .arc-q{flex:1 1 auto;min-width:0;width:auto;} :is(html,#z0) .wh-bar > .wh-pb{flex:none;white-space:nowrap;}
+
+  .rg-f.rg-miss > u{color:#c4453a !important;} .rg-f.rg-miss :is(input, select, textarea){border-color:#c4453a !important;box-shadow:0 0 0 3px color-mix(in srgb, #c4453a 14%, transparent) !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -49699,7 +49701,7 @@
     {k:'rsk', t:'ریسک‌ها', s:'شناسایی، امتیاز احتمال × اثر و اقدام کاهشی', c:'#b5523b', ic:() => REG_I.rsk, ok:() => regCan('reg.rsk'), go:() => regOpen('rsk')},
     {k:'dly', t:'هوا و تأخیرات', s:'پیش‌بینی و تاریخچهٔ هوا، روزهای توقف و علت تأخیر', c:'#4f7fa3', ic:() => REG_I.dly, ok:() => regCan('reg.dly') || regCan('reg.dly.ok'), go:() => regOpen('dly')},
     {k:'cc', t:'بودجه', s:'بودجهٔ هر کد، تعهدات و هزینهٔ واقعی', c:'#8a6a1f', ic:() => REG_I.cc, ok:() => regCan('reg.cc'), go:() => regOpen('cc')},
-    {k:'mnt', t:'تعمیرات ماشین‌آلات', s:'سرویس دوره‌ای، تعمیر، بازرسی و سررسید', c:'#6b5b3e', ic:() => REG_I.mnt, ok:() => regCan('reg.mnt'), go:() => regOpen('mnt')},
+    {k:'mnt', inside:'mc', t:'تعمیرات ماشین‌آلات', s:'سرویس دوره‌ای، تعمیر، بازرسی و سررسید', c:'#6b5b3e', ic:() => REG_I.mnt, ok:() => regCan('reg.mnt'), go:() => regOpen('mnt')},
     {k:'vnd', t:'ارزیابی پیمانکاران', s:'امتیاز کیفیت، زمان، ایمنی و همکاری', c:'#7a5bc4', ic:() => REG_I.vnd, ok:() => regCan('reg.vnd'), go:() => regOpen('vnd')},
     {k:'rcn', t:'مصرف مصالح', s:'مصرف واقعی در برابر متره و درصد پرت', c:'#9a6b12', ic:() => REG_I.mrc, ok:() => regCan('reg.rcn'), go:() => rcnOpen()},
     {k:'pf', t:'همهٔ پروژه‌ها', s:'همهٔ پروژه‌ها در یک نگاه: پیشرفت، ریسک، تأخیر و بودجه', c:'#24577a', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17.5h7M17.5 14v7"/></svg>', ok:() => regCan('reg.pf'), go:() => pfOpen()},
@@ -49843,7 +49845,8 @@
     };
   };
   const wsOk = x => { if(modOff.has(x.k) && MOD_FIXED.indexOf(x.k) === -1) return false; try{ return !!x.ok(); }catch(e){ return false; } };
-  const wsAll = () => WS_MODS.filter(wsOk);
+  /* بخشی که داخل بخش دیگری باز می‌شود (inside) در فهرست‌ها تکرار نمی‌شود — مثل «تعمیرات» درون «ماشین‌آلات» */
+  const wsAll = () => WS_MODS.filter(x => wsOk(x) && !(x.inside && wsOk(wsMod(x.inside) || {ok: () => false})));
   /* بخشی که صفحهٔ خودش را دارد (go، مثل گزارش پیمانکاری) در میز کار نیست */
   window.wsHas = k => { const x = wsMod(k); return !!(x && x.k !== 'tasks' && !x.go && wsOk(x)); };
   /* ماژول از جای اصلی‌اش (زبانهٔ ثبت) به میز کار می‌آید؛ جای اصلی با یک
@@ -83233,6 +83236,7 @@
   const regCanW = () => ['reg.rfi', 'reg.smt', 'reg.itp', 'reg.ptw', 'reg.mrc', 'reg.rsk', 'reg.dly', 'reg.mnt'].some(regCan);
   const regCanSp = () => regCan('reg.hov');
   window.regCan = regCan;
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-mcmnt]'); if(!b) return; e.preventDefault(); try{ window.fxPageWatch && window.fxPageWatch('mc'); }catch(er){} regOpen('mnt'); }, true);
   const PTW_CHK = {
     'کار در ارتفاع': ['هارنس و طناب نجات بازدید شد', 'داربست برچسب سبز دارد', 'نرده و پاخور محیط کار نصب است', 'زیر محدودهٔ کار بسته و علامت‌گذاری شد'],
     'جوشکاری و برش گرم': ['کپسول آتش‌نشانی در دسترس است', 'مواد قابل اشتعال تا ۱۰ متر جمع شد', 'نگهبان آتش تعیین شد', 'پرده یا حفاظ جرقه نصب است'],
@@ -83412,8 +83416,15 @@
   }); }
   async function regSave(m){
     const R = REGS[RG.k], o = regRead(m, Object.assign({}, RG.draft));
-    const miss = R.f.filter(F => F.req && !String(o[F.k] == null ? '' : o[F.k]).trim()).map(F => F.t);
-    if(miss.length){ showDialog('warn', 'اطلاعات ناقص', 'این‌ها را پر کنید: ' + miss.join('، ')); return; }
+    const missF = R.f.filter(F => F.req && !String(o[F.k] == null ? '' : o[F.k]).trim()), miss = missF.map(F => F.t);
+    m.querySelectorAll('.rg-f.rg-miss').forEach(x => x.classList.remove('rg-miss'));
+    if(miss.length){
+      /* خانه‌های خالی در خود فرم قرمز می‌شوند و فرم به اولی می‌رود؛ با پر کردن، قرمزی می‌رود */
+      let first = null; missF.forEach(F => { const el = m.querySelector('[data-rgf="' + F.k + '"]'); const f = el && el.closest('.rg-f'); if(f){ f.classList.add('rg-miss'); first = first || f;
+        const off = () => { f.classList.remove('rg-miss'); }; el.addEventListener('input', off, {once: true}); el.addEventListener('change', off, {once: true}); } });
+      if(first){ try{ first.scrollIntoView({block: 'center', behavior: 'smooth'}); const i = first.querySelector('input, select, textarea'); i && i.focus({preventScroll: true}); }catch(e){} }
+      try{ shrToast('این‌ها را پر کنید: ' + miss.join('، ')); }catch(e){ showDialog('warn', 'اطلاعات ناقص', 'این‌ها را پر کنید: ' + miss.join('، ')); }
+      return; }
     /* امضاها به عکس */
     for(const cv of m.querySelectorAll('canvas.rg-pad')){ if(!cv.__ink) continue; const blob = await new Promise(r => cv.toBlob(r, 'image/png')); if(!blob) continue;
       const f = new File([blob], 'sign-' + cv.dataset.rgsg + '.png', {type: 'image/png'}); try{ o[cv.dataset.rgsg] = await uploadS3Any(f, null, 'sign'); }catch(e){ showDialog('err', 'امضا ذخیره نشد', friendlyErr(e)); return; } }
@@ -85314,7 +85325,7 @@
     try{ qcLists(); }catch(e){}
     const side = document.getElementById('mcSide'); if(side){ const n = mc.items.filter(i => !i.off).length, bad = mc.items.filter(i => !i.off).map(i => mcStat(i)).filter(s => s.openDown || s.due === 'late').length; side.innerHTML = toFa(n) + ' دستگاه' + (bad ? ' · <b class="prc-hotlbl">' + toFa(bad) + ' نیاز به توجه</b>' : ''); }
     const tabs = document.getElementById('mcTabs');
-    if(tabs) tabs.innerHTML = '<button type="button" class="kcap sm' + (mc.tab === 'list' ? ' on' : '') + '" data-mctab="list">دستگاه‌ها</button><button type="button" class="kcap sm' + (mc.tab === 'hist' ? ' on' : '') + '" data-mctab="hist">همهٔ سوابق</button>';
+    if(tabs) tabs.innerHTML = '<button type="button" class="kcap sm' + (mc.tab === 'list' ? ' on' : '') + '" data-mctab="list">دستگاه‌ها</button><button type="button" class="kcap sm' + (mc.tab === 'hist' ? ' on' : '') + '" data-mctab="hist">همهٔ سوابق</button>' + ((function(){ try{ return regCan('reg.mnt'); }catch(e){ return false; } })() ? '<button type="button" class="kcap sm" data-mcmnt="1">سرویس و تعمیرات</button>' : '');
     body.innerHTML = '<div class="wh-in">' + (mc.draft && mc.draft.kind === 'log' ? mcLogFormHtml() : mc.tab === 'hist' ? mcHistHtml('') : mcListHtml()) + '</div>';
   }
   window.mcRender = mcRender;
@@ -97510,7 +97521,7 @@
       /* میز کار */
       let h = '';
       try{
-        const L = WS_MODS.filter(x => wsOk(x)), S = sbgGet(); let sbOne;
+        const L = WS_MODS.filter(x => wsOk(x) && !(x.inside && wsOk(wsMod(x.inside) || {ok: () => false}))), S = sbgGet(); let sbOne;
         let wk = ''; try{ wk = cur === 'tasks' ? (ws.cur || '') : ''; }catch(e){}
         const ag = wk ? (WS_GOF[wk] || 'etc') : '';
         WS_GRP.forEach(g => { const G = L.filter(x => (WS_GOF[x.k] || 'etc') === g.k).sort(wsGofOrd); if(!G.length) return;
