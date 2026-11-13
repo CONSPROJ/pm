@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113143952">
+<meta name="pm-build" content="20261113144350">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29871,6 +29871,8 @@
   .oglib .pp-sh{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .oglib-r{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid color-mix(in srgb, var(--line) 60%, transparent);}
   .oglib-r span{display:flex;flex-direction:column;gap:2px;min-width:0;} .oglib-r b{font-size:12.5px;font-weight:800;} .oglib-r small{font-size:11px;color:var(--muted);} .oglib-r em{font-style:normal;font-size:11px;color:#2f7a52;font-weight:700;white-space:nowrap;}
+
+  .fld-miss > label, .fld-miss > u, .fld-miss > span:first-child{color:#c4453a !important;} input.fld-miss, select.fld-miss, textarea.fld-miss, .fld-miss > input, .fld-miss > select, .fld-miss > textarea{border-color:#c4453a !important;box-shadow:0 0 0 3px color-mix(in srgb, #c4453a 14%, transparent) !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -36374,6 +36376,15 @@
   }
   window.openShare = openShare;
   function shareSyncUI(){ shareRender(); }
+  /* خانهٔ اجباری خالی: همان‌جا قرمز، فوکوس و پیام کوتاه — یک الگو در همهٔ فرم‌ها (به‌جای پنجرهٔ هشدار) */
+  function needField(el, msg){
+    if(!el){ showDialog('warn', 'اطلاعات ناقص', msg); return; }
+    const f = el.closest('.field, label, .fld, .rg-f') || el; f.classList.add('fld-miss'); el.classList.add('fld-miss');
+    const off = () => { f.classList.remove('fld-miss'); el.classList.remove('fld-miss'); }; el.addEventListener('input', off, {once: true}); el.addEventListener('change', off, {once: true});
+    try{ el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.focus({preventScroll: true}); }catch(e){}
+    try{ shrToast(msg); }catch(e){ showDialog('warn', 'اطلاعات ناقص', msg); }
+  }
+  window.needField = needField;
   function shrToast(t){
     let el = document.getElementById('shrToast');
     if(!el){ el = document.createElement('div'); el.id = 'shrToast'; el.className = 'shr-toast'; document.body.appendChild(el); }
@@ -47287,7 +47298,7 @@
   async function abSendTask(){
     const v = id => String((document.getElementById(id) || {}).value || '').trim();
     const title = v('abTitle'), ex = abState.type === 'exec', who = abState.picked.slice();
-    if(!title){ showDialog('warn','عنوان لازم است','بنویسید چه کاری باید انجام شود.'); const t = document.getElementById('abTitle'); if(t) t.focus(); return; }
+    if(!title){ needField(document.getElementById('abTitle'), 'بنویسید چه کاری باید انجام شود'); return; }
     if(!who.length){ showDialog('warn', ex ? 'مسئول انتخاب نشده' : 'گیرنده‌ای انتخاب نشده', ex ? 'مسئول این فعالیت را انتخاب کنید.' : 'دست‌کم یک نفر را انتخاب کنید.'); return; }
     const start = normDate(v('abStart')) || todayShamsi(), due = normDate(v('abDue')) || null, note = v('abNote') || null, pos = v('abPos') || null;
     if(due && faToDate(due) < faToDate(start)){ showDialog('warn','موعد نادرست','موعد اتمام پیش از تاریخ ابلاغ است.'); return; }
@@ -69797,7 +69808,7 @@
       const title = val('.g-title');
       const picked = Array.from(people.querySelectorAll('.pchip.on')).map(b => b.dataset.gp);
 
-      if(!title) return showDialog('err','عنوان لازم است','عنوان فعالیت را بنویسید.');
+      if(!title) return needField(q('.g-title'), 'عنوان فعالیت را بنویسید');
       if(!picked.length) return showDialog('err','گیرنده‌ای انتخاب نشده','دست‌کم یک نفر را انتخاب کنید.');
 
       const btn = q('.g-send');
@@ -69919,7 +69930,7 @@
       const val = sel => String((q(sel) || {}).value || '').trim();
       const title = val('.ch-title');
       const who = val('.ch-owner') || activeUserName();
-      if(!title) return showDialog('err','عنوان لازم است','عنوان کار را بنویسید.');
+      if(!title) return needField(q('.ch-title'), 'عنوان کار را بنویسید');
       if(!who)   return showDialog('err','مسئول لازم است','مسئول این کار را انتخاب کنید.');
 
       const btn = q('.ch-save');
@@ -71097,7 +71108,7 @@
       const title = grp.querySelector('.ge-title').value.trim();
       const due = normDate(grp.querySelector('.ge-due').value) || null;
       const note = grp.querySelector('.ge-note').value.trim() || null;
-      if(!title){ showDialog('err','عنوان لازم است','عنوان فعالیت را خالی نگذارید.'); return true; }
+      if(!title){ needField(grp.querySelector('.ge-title'), 'عنوان فعالیت را خالی نگذارید'); return true; }
       const btn = e.target.closest('[data-gsave]');
       btn.disabled = true; btn.textContent = 'در حال ثبت…';
       try{
@@ -77709,7 +77720,7 @@
     const q = c => m.querySelector('.' + c);
     const r = S.isNew ? {} : taskById(S.id); if(!r) return;
     const title = String(q('te-title').value || '').trim();
-    if(!title){ showDialog('warn','عنوان لازم است','عنوان فعالیت را بنویسید.'); return; }
+    if(!title){ needField(q('te-title'), 'عنوان فعالیت را بنویسید'); return; }
     const start = normDate(q('te-start').value || ''), dueRaw = String(q('te-due').value || '').trim(), due = dueRaw ? normDate(dueRaw) : '';
     if(!start){ showDialog('warn','تاریخ نادرست','تاریخ ابلاغ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
     if(dueRaw && !due){ showDialog('warn','تاریخ نادرست','موعد اتمام را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
