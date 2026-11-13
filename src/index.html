@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113155854">
+<meta name="pm-build" content="20261113160351">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29934,6 +29934,11 @@
   :is(html,#z0) :is(body,#z1) .as-back:hover{background:color-mix(in srgb, var(--ink) 7%, var(--field));}
 
   .prc-by{font-style:normal;font-size:10.5px;font-weight:600;margin-inline-start:6px;padding:1px 7px;border-radius:99px;background:var(--field);color:var(--muted);}
+
+  /* زبانه‌های بخش‌های میز کار (انبار، کنترل کیفیت، فضاها، متره…): همیشه یک ردیف، روی گوشی پیمایشی — مثل همهٔ سایت */
+  :is(html,#z0) :is(body,#z1) #wsHost .kind-caps.wrk-caps{display:flex !important;flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none;grid-template-columns:none !important;}
+  #wsHost .kind-caps.wrk-caps::-webkit-scrollbar{display:none;}
+  :is(html,#z0) :is(body,#z1) #wsHost .kind-caps.wrk-caps > .kcap{flex:1 0 auto !important;white-space:nowrap;min-width:max-content;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -30336,8 +30341,8 @@
         <div class="block-head"><span class="tag">۱</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8l8 4.4v9.6L12 21.2l-8-4.4V7.2z"/><path d="M4 7.2l8 4.5 8-4.5M12 11.7v9.5"/><path d="M8 5l8 4.5"/></svg></span><h2>تدارکات</h2>
           <span class="side" id="prcSide"></span></div>
         <div class="kind-caps wrk-caps" id="prcTabs">
-          <button type="button" class="kcap sm on" data-prtab="new">درخواست خرید تازه</button>
-          <button type="button" class="kcap sm" data-prtab="list">پیگیری خریدها</button>
+          <button type="button" class="kcap sm on" data-prtab="list">درخواست‌های خرید</button>
+          <button type="button" class="kcap sm" data-prtab="new">درخواست تازه</button>
         </div>
       </div>
       <div class="block" id="prcBody"><div class="empty">در حال آماده‌سازی…</div></div>
@@ -30405,8 +30410,8 @@
         <div class="block-head"><span class="tag">۱</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.6c0 4.4-3.1 8.3-7.5 9.4-4.4-1.1-7.5-5-7.5-9.4V6z"/><path d="M12 8.2v4.6"/><path d="M12 15.9v.4"/></svg></span><h2>ایمنی و HSE</h2>
           <span class="side" id="hseSide"></span></div>
         <div class="kind-caps wrk-caps" id="hseTabs">
-          <button type="button" class="kcap sm on" data-hstab="new">ثبت گزارش</button>
-          <button type="button" class="kcap sm" data-hstab="list">گزارش‌ها و جریمه‌ها</button>
+          <button type="button" class="kcap sm on" data-hstab="list">گزارش‌ها و جریمه‌ها</button>
+          <button type="button" class="kcap sm" data-hstab="new">گزارش تازه</button>
         </div>
       </div>
       <div class="block" id="hseBody"><div class="empty">در حال آماده‌سازی…</div></div>
@@ -74567,7 +74572,7 @@
   const PR_CLOSED = ['تحویل انبار','لغو شد'];
   const PR_HOT = pmRule('prHot', 7), PR_WARN = pmRule('prWarn', 4);
   const PR_UNITS = ['عدد','شاخه','کیلوگرم','تن','متر','مترمربع','مترمکعب','کیسه','بسته','دستگاه','لیتر','رول','سرویس'];
-  const prcState = {tab: 'new', q: '', f: 'open', list: [], t: 0, open: new Set(), draft: null, busy: false};
+  const prcState = {tab: 'list', q: '', f: 'open', list: [], t: 0, open: new Set(), draft: null, busy: false};
   const prIsOpen = it => PR_CLOSED.indexOf(it.st) === -1;
   const prBought = it => it.st === 'خریداری شد' || it.st === 'تحویل انبار';
   function prEnd(it){ if(prIsOpen(it)) return todayShamsi(); const l = (it.log || []).slice().reverse().find(x => PR_CLOSED.indexOf(x.st) !== -1 && x.d); return l ? l.d : todayShamsi(); }
@@ -74796,7 +74801,7 @@
   const HSE_KIND = 'گزارش HSE', HSE_NOTE_KIND = 'ایمنی';
   const HSE_TYPES = [['inc','حادثه'],['near','شبه‌حادثه'],['act','رفتار ناایمن'],['cond','شرایط ناایمن']];
   const HSE_SEV = [['low','جزئی'],['mid','متوسط'],['high','شدید']];
-  const hseState = {tab:'new', list:[], t:0, draft:null, busy:false, f:'all', q:''};
+  const hseState = {tab:'list', list:[], t:0, draft:null, busy:false, f:'all', q:''};
   window.hseSetTab = t => { hseState.tab = t === 'list' ? 'list' : 'new'; if(t === 'list') hseState.q = ''; };
   const hseTypeT = k => (HSE_TYPES.find(x => x[0] === k) || [0, 'گزارش'])[1];
   const hseSevT = k => (HSE_SEV.find(x => x[0] === k) || [0, ''])[1];
