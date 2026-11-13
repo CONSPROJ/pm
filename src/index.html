@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113152105">
+<meta name="pm-build" content="20261113152850">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29922,6 +29922,11 @@
   :is(html,#z0) :is(body,#z1) #arcBody .gx-chips{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:10px 0 8px;} #arcBody .gx-chips::-webkit-scrollbar{display:none;} #arcBody .gx-chips button{flex:none;white-space:nowrap;}
 
   #arcBody .arc-sub label{white-space:nowrap;} #arcBody .arc-ctl{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+  .crs-me{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:6px;} .crs-me b{color:var(--ink);}
+  .crs-note{margin:8px 2px 0;font-size:12px;color:var(--muted);}
+  .crs-ab{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;} .crs-ab textarea{width:100%;min-height:64px;} .crs-ab span{display:flex;gap:6px;}
+  .crs-act .dng{color:#c4453a !important;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -59273,6 +59278,9 @@
   function liveWrote(path, o){
     const tb = String(path || '').split('?')[0];
     if(!tb || LIVE_SKIP.test(tb)) return;
+    /* جدول lists (نظرات CRS، دفترها، قوانین، دسترسی‌ها…): هر بخش حافظهٔ خودش را تازه می‌کند و خودش را دوباره می‌کشد؛
+       بازخوانی کل صفحه کارت باز (مثلاً سند طراحی که رویش نظر می‌گذارید) را می‌بست. فقط نشان‌ها تازه می‌شوند. */
+    if(tb === 'lists'){ clearTimeout(live.bt); live.bt = setTimeout(() => { try{ refreshBadges(true); }catch(e){} try{ if(window.wsRefresh) window.wsRefresh(); }catch(e){} }, 900); return; }
     if(tb === 'nudges'){
       /* پیام چت و واکنش‌ها صفحه را از نو نمی‌سازند؛ خودِ گفت‌وگو تازه می‌شود */
       const b = Array.isArray(o.body) ? o.body : [o.body || {}];
@@ -73912,9 +73920,20 @@
   const CRS_K = 'نظرات بررسی طراحی';
   const CRS_SIDES = [['cons', 'مشاور'], ['emp', 'کارفرما'], ['pm', 'مدیریت پروژه'], ['des', 'طراح']];
   const CRS_ST = {open: 'باز', ans: 'پاسخ داده', closed: 'بسته'};
-  let crsLoaded = false, crsBusy = false;
+  let crsLoaded = false, crsBusy = false, crsAnsOpen = '';
   const crsGet = id => (((fxC.get(CRS_K) || []).find(x => x.id === id) || {}).o || {items: []});
   const crsCanClose = () => { try{ return isAdminUser() || can('write.adm') || can('doc.design.all'); }catch(e){ return false; } };
+  /* طرفِ ثبت‌کننده خودکار از جایگاه همان نفر در چارت سازمانی — کسی نمی‌تواند به نام طرف یا شخص دیگری نظر بگذارد.
+     طراح (سمت در واحد «طراحی» یا نام سمت شامل «طراح») پاسخ می‌دهد و نظر بررسی نمی‌گذارد؛ پیمانکار هیچ‌کدام. */
+  function crsMySide(){
+    const me = activeUserName(); let I = {}; try{ I = ogPersonInfo(me) || {}; }catch(e){}
+    const rl = String(I.rl || ''), dept = String((I.pos && I.pos.dept) || '');
+    if(/طراح/.test(rl) && !/مدیر طراحی|مسئول طراحی/.test(rl) || (dept === 'طراحی' && !/مدیر|مسئول/.test(rl))) return 'des';
+    let side = I.side || 'pm'; try{ if(isAdminUser()) side = 'pm'; }catch(e){}
+    return side === 'emp' || side === 'own' ? 'emp' : side === 'cons' ? 'cons' : side === 'pm' ? 'pm' : '';
+  }
+  const crsCanReview = () => { const s = crsMySide(); return s === 'cons' || s === 'emp' || s === 'pm'; };
+  const crsCanAnswer = () => { try{ return crsMySide() === 'des' || isAdminUser() || can('doc.design.all'); }catch(e){ return false; } };
   function crsHtml(id, rev){
     const D = crsGet(id), L = D.items || [], open = L.filter(x => x.st !== 'closed').length;
     const lb = s => (CRS_SIDES.find(x => x[0] === s) || [s, s])[1];
@@ -73925,11 +73944,15 @@
           + '<div class="crs-b"><div class="crs-m"><em>Rev ' + esc(toFa(x.rev)) + '</em>' + (String(x.rev) !== String(rev) && x.st !== 'closed' ? '<em class="carry">مانده از ویرایش قبل</em>' : '') + '<u>' + esc(lb(x.side)) + (x.by ? ' · ' + esc(x.by) : '') + (x.d ? ' · ' + esc(toFa(x.d)) : '') + '</u><i class="crs-s">' + CRS_ST[x.st] + '</i></div>'
           +   '<p>' + esc(x.t) + '</p>'
           +   (x.r ? '<div class="crs-a"><u>پاسخ طراح' + (x.rb ? ' · ' + esc(x.rb) : '') + (x.rd ? ' · ' + esc(toFa(x.rd)) : '') + '</u><p>' + esc(x.r) + '</p></div>' : '')
-          +   '<div class="crs-act">' + (x.st !== 'closed' ? '<button type="button" data-crsans="' + i + '">' + (x.r ? 'اصلاح پاسخ' : 'پاسخ طراح') + '</button>' : '')
-          +     (crsCanClose() ? (x.st !== 'closed' ? '<button type="button" data-crsclose="' + i + '">بستن' + (x.r ? '' : ' بی‌پاسخ') + '</button>' : '<button type="button" data-crsopen="' + i + '">بازگشایی</button>') : '') + '</div>'
+          +   (crsAnsOpen === id + ':' + i ? '<div class="crs-ab"><textarea data-crsanstx="' + i + '" rows="2" placeholder="پاسخ طراح…">' + esc(x.r || '') + '</textarea><span><button type="button" class="mini go" data-crsanssave="' + i + '">ثبت پاسخ</button><button type="button" class="mini" data-crsanscancel="1">انصراف</button></span></div>' : '')
+          +   '<div class="crs-act">' + (x.st !== 'closed' && crsCanAnswer() && crsAnsOpen !== id + ':' + i ? '<button type="button" data-crsans="' + i + '">' + (x.r ? 'اصلاح پاسخ' : 'پاسخ') + '</button>' : '')
+          +     ((crsCanClose() || (x.by && nameKey(x.by) === nameKey(activeUserName()))) ? (x.st !== 'closed' ? '<button type="button" data-crsclose="' + i + '">بستن' + (x.r ? '' : ' بی‌پاسخ') + '</button>' : '<button type="button" data-crsopen="' + i + '">بازگشایی</button>') : '')
+          +     (x.st === 'open' && !x.r && x.by && nameKey(x.by) === nameKey(activeUserName()) ? '<button type="button" class="dng" data-crsdel="' + i + '">حذف</button>' : '') + '</div>'
           + '</div></div>').join('') + '</div>' : '')
-      + '<div class="crs-add"><select data-crsside="1">' + CRS_SIDES.slice(0, 3).map(([k, t]) => '<option value="' + k + '">' + t + '</option>').join('') + '</select>'
-      + '<textarea data-crstxt="1" rows="2" placeholder="نظر تازه برای Rev ' + esc(toFa(rev)) + ' — هر نظر جدا (Enter + Shift برای خط تازه)"></textarea><button type="button" class="mini go" data-crsadd="1">افزودن نظر</button></div>';
+      + (crsCanReview()
+        ? '<div class="crs-add"><div class="crs-me">' + avatarHtml(activeUserName(), 'xs', true) + '<span>نظر شما به‌عنوان <b>' + esc(lb(crsMySide())) + '</b> · ' + esc(activeUserName()) + '</span></div>'
+          + '<textarea data-crstxt="1" rows="2" placeholder="نظر تازه برای Rev ' + esc(toFa(rev)) + ' — هر نظر جدا (Enter + Shift برای خط تازه)"></textarea><button type="button" class="mini go" data-crsadd="1">افزودن نظر</button></div>'
+        : '<p class="crs-note">' + (crsMySide() === 'des' ? 'شما طراح این سند هستید: به نظرها پاسخ دهید.' : 'نظر بررسی را مشاور، کارفرما و مدیریت پروژه ثبت می‌کنند.') + '</p>');
   }
   function crsPaintAll(){
     const B = document.querySelectorAll('.crs[data-crs]'); if(!B.length) return;
@@ -73943,13 +73966,15 @@
     const id = box.dataset.crs, rev = box.dataset.crsrev, D = JSON.parse(JSON.stringify(crsGet(id))); D.items = D.items || [];
     const me = activeUserName(), t0 = todayShamsi();
     if(e.target.closest('[data-crsadd]')){ const ta = box.querySelector('[data-crstxt]'), tx = String(ta.value || '').trim(); if(!tx) return;
-      const side = (box.querySelector('[data-crsside]') || {}).value || 'cons';
+      if(!crsCanReview()) return; const side = crsMySide();
       tx.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean).forEach(t => D.items.push({rev, side, by: me, d: t0, t, st: 'open'}));
       ta.value = ''; box.__h = ''; await crsSave(id, D, box); return; }
-    const an = e.target.closest('[data-crsans]'); if(an){ const x = D.items[+an.dataset.crsans]; if(!x) return;
-      const v = prompt('پاسخ طراح به نظر ' + toFa(+an.dataset.crsans + 1) + ':', x.r || ''); if(v == null) return;
-      x.r = v.trim(); x.rb = me; x.rd = t0; x.st = x.r ? 'ans' : 'open'; await crsSave(id, D, box); return; }
-    const cl = e.target.closest('[data-crsclose]'); if(cl){ const x = D.items[+cl.dataset.crsclose]; if(!x) return; x.st = 'closed'; x.cr = rev; x.cb = me; x.cd = t0; await crsSave(id, D, box); return; }
+    const an = e.target.closest('[data-crsans]'); if(an){ if(!crsCanAnswer()) return; crsAnsOpen = id + ':' + an.dataset.crsans; box.__h = ''; crsPaintAll(); setTimeout(() => { const t = box.querySelector('[data-crsanstx]'); if(t) t.focus(); }, 30); return; }
+    if(e.target.closest('[data-crsanscancel]')){ crsAnsOpen = ''; box.__h = ''; crsPaintAll(); return; }
+    const as = e.target.closest('[data-crsanssave]'); if(as){ if(!crsCanAnswer()) return; const i = +as.dataset.crsanssave, x = D.items[i]; if(!x) return; const t = box.querySelector('[data-crsanstx]'), v = String((t && t.value) || '').trim();
+      if(!v){ needField(t, 'متن پاسخ را بنویسید'); return; } x.r = v; x.rb = me; x.rd = t0; x.st = 'ans'; crsAnsOpen = ''; await crsSave(id, D, box); return; }
+    const dl = e.target.closest('[data-crsdel]'); if(dl){ const i = +dl.dataset.crsdel, x = D.items[i]; if(!x || nameKey(x.by || '') !== nameKey(me) || x.r) return; D.items.splice(i, 1); await crsSave(id, D, box); return; }
+    const cl = e.target.closest('[data-crsclose]'); if(cl){ const x = D.items[+cl.dataset.crsclose]; if(!x || !(crsCanClose() || nameKey(x.by || '') === nameKey(me))) return; x.st = 'closed'; x.cr = rev; x.cb = me; x.cd = t0; await crsSave(id, D, box); return; }
     const op = e.target.closest('[data-crsopen]'); if(op){ const x = D.items[+op.dataset.crsopen]; if(!x) return; x.st = x.r ? 'ans' : 'open'; delete x.cr; await crsSave(id, D, box); return; }
     const cv = e.target.closest('[data-crscsv]'); if(cv){ const lb = s => (CRS_SIDES.find(x => x[0] === s) || [s, s])[1];
       const rows = [['#', 'Rev', 'از', 'ثبت‌کننده', 'تاریخ', 'نظر', 'پاسخ طراح', 'وضعیت']].concat(D.items.map((x, i) => [i + 1, x.rev, lb(x.side), x.by || '', x.d || '', x.t, x.r || '', CRS_ST[x.st]]));

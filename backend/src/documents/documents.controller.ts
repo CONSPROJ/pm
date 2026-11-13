@@ -219,13 +219,16 @@ export class DocumentsController {
 
   @Post('documents/:id/comments') @Require('doc.comment')
   async addComment(@Param('pid') pid: string, @Param('id') id: string, @Body() body: unknown, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {
-    const b = parse(z.object({ body: z.string().min(1), party_kind: z.string().nullable().optional() }), body);
+    /* طرف نظر از عضویت خود کاربر در پروژه خوانده می‌شود، نه از درخواست — کسی نمی‌تواند به نام طرف دیگری نظر بگذارد */
+    const b = parse(z.object({ body: z.string().min(1) }), body);
     await this.visible(pid, id, u.id, g);
+    const pk = await this.db.one<{ kind: string }>(`select p.kind from memberships m join parties p on p.id = m.party_id
+        where m.project_id = $1 and m.user_id = $2 and m.status = 'active' order by m.created_at limit 1`, [pid, u.id]);
     const r = await this.db.tx(async (c) => {
       const rv = (await c.query('select id from revisions where document_id = $1 order by seq desc limit 1', [id])).rows[0];
       const seq = (await c.query('select coalesce(max(seq), 0) + 1 as n from review_comments where document_id = $1', [id])).rows[0].n;
       return (await c.query(`insert into review_comments (document_id, revision_id, seq, party_kind, author_id, author_name, body) values ($1,$2,$3,$4,$5,$6,$7) returning *`,
-        [id, rv?.id ?? null, seq, b.party_kind ?? null, u.id, u.displayName, b.body])).rows[0];
+        [id, rv?.id ?? null, seq, pk?.kind ?? null, u.id, u.displayName, b.body])).rows[0];
     });
     await this.audit.log(u.id, pid, 'create', 'review_comment', r.id, b);
     return r;

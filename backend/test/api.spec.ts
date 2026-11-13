@@ -140,3 +140,12 @@ test('CRS: ثبت نظر، پاسخ فقط طراحِ همان مدرک، بست
   const L = (await call('GET', `/projects/${pid}/documents/${ids.str}/comments`, ali)).body;
   expect(L).toHaveLength(1); expect(L[0]).toMatchObject({ status: 'closed', rev: '1', closed_rev: '1' });   // نظر روی ویرایش جاری (Rev 1) ثبت شد
 });
+
+test('CRS: طرف نظر از عضویت خود کاربر است، نه از درخواست', async () => {
+  const aliId = (await call('GET', '/auth/me', ali)).body.id;
+  await call('PUT', `/projects/${pid}/access/grants`, root, { subject_type: 'user', subject_id: aliId, capability_key: 'doc.comment', effect: 'allow' });
+  const fake = await call('POST', `/projects/${pid}/documents/${ids.str}/comments`, ali, { body: 'نظر با ادعای مشاور', party_kind: 'consultant' });
+  expect(fake.status).toBe(201);
+  expect(fake.body.party_kind).toBe('design_team');   // «consultant» درخواست نادیده گرفته شد
+  expect(fake.body.author_name).toBe('علی طراح');
+});
