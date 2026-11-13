@@ -42,7 +42,7 @@ export class AccessController {
   async upsert(@Param('pid') pid: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
     const b = parse(z.object({
       subject_type: z.enum(['level', 'position', 'group', 'party_kind', 'party', 'user']), subject_id: z.string().min(1),
-      capability_key: z.string().min(1), effect: z.enum(['allow', 'deny']), constraints: z.record(z.union([z.array(z.string()), z.boolean()])).optional(),
+      capability_key: z.string().min(1), effect: z.enum(['allow', 'deny']), constraints: z.record(z.string(), z.union([z.array(z.string()), z.boolean()])).optional(),
       all_projects: z.boolean().optional(),
     }), body);
     if (b.all_projects && !u.isRoot) throw new ForbiddenException('اعطای سراسری فقط با ادمین اصلی');

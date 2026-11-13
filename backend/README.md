@@ -24,12 +24,17 @@ DATABASE_URL=postgres://... npm run dev
 ```
 آزمون‌ها: `TEST_DATABASE_URL=postgres://... npm test` (پایگاه دادهٔ آزمون پاک و از نو ساخته می‌شود).
 
+## استقرار
+راهنمای کامل و امن: [DEPLOY.md](DEPLOY.md). خلاصه:
+
 ## روی سرور
 `.env` روی خود سرور (نه در مخزن): `DB_PASSWORD`، `CORS_ORIGINS` (دامنهٔ سایت). سپس `docker compose up -d`؛ migrationها خودکار اجرا می‌شوند.
 کاربر صفر یک بار با `bootstrap` ساخته می‌شود؛ رمزش فقط از متغیر محیطی خوانده می‌شود.
 
 ## API (نسخهٔ ۱، پیشوند `/api/v1`)
-- `POST /auth/login` · `GET /auth/me` · `POST /auth/logout`
+- `POST /auth/login` · `POST /auth/activate` (لینک یک‌بارمصرف) · `POST /auth/password` · `GET /auth/me` · `POST /auth/logout`
+- لینک فعال‌سازی عضو: `POST /projects/:pid/members/:id/invite`
+- CRS: `GET|POST /projects/:pid/documents/:id/comments` · `POST /projects/:pid/documents/:id/comments/:cid` (reply/close/reopen)
 - `GET|POST /projects` · `GET|PATCH /projects/:pid`
 - طرف‌ها، سمت‌ها، اعضا، گروه‌ها: `/projects/:pid/{parties,positions,members,groups}`
 - دسترسی: `/projects/:pid/access/{me,catalog,matrix,grants,explain}`

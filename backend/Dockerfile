@@ -15,4 +15,6 @@ COPY db ./db
 COPY package.json ./
 USER node
 EXPOSE 3100
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e "fetch('http://127.0.0.1:3100/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# اول migrationها (اگر شکست بخورد، نسخهٔ تازه بالا نمی‌آید و نسخهٔ قبلی سر کار می‌ماند)
 CMD ["sh", "-c", "node dist/db/migrate.js && node dist/main.js"]

@@ -1,21 +1,56 @@
-# سرور اختصاصی: Postgres + API. رمزها فقط در فایل .env روی خود سرور (در مخزن نیست).
+# سرور اختصاصی: Postgres + API + Caddy (HTTPS خودکار) + پشتیبان روزانه.
+# همهٔ رمزها فقط در فایل .env روی خود سرور است (در مخزن نیست؛ نمونه: deploy/env.example).
 services:
   db:
     image: postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_USER: pm
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD لازم است}
       POSTGRES_DB: pm
     volumes: [ "pgdata:/var/lib/postgresql/data" ]
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "pm"], interval: 10s, timeout: 5s, retries: 10 }
+    networks: [ internal ]            # پایگاه داده هیچ پورتی بیرون ندارد
+
   api:
+    image: pm-backend:${API_TAG:-latest}
     build: .
     restart: unless-stopped
-    depends_on: [ db ]
+    depends_on: { db: { condition: service_healthy } }
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgres://pm:${DB_PASSWORD}@db:5432/pm
-      CORS_ORIGINS: ${CORS_ORIGINS}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS لازم است}
       PORT: 3100
-    ports: [ "127.0.0.1:3100:3100" ]
+    read_only: true
+    tmpfs: [ "/tmp" ]
+    security_opt: [ "no-new-privileges:true" ]
+    networks: [ internal, edge ]
+
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    depends_on: [ api ]
+    ports: [ "80:80", "443:443" ]
+    environment: { API_DOMAIN: "${API_DOMAIN:?API_DOMAIN لازم است}" }
+    volumes: [ "./deploy/Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data", "caddy_config:/config" ]
+    networks: [ edge ]
+
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes: [ "./backups:/backups", "./deploy/backup.sh:/backup.sh:ro" ]
+    entrypoint: [ "sh", "/backup.sh" ]
+    networks: [ internal ]
+
+networks:
+  internal: { internal: true }
+  edge: {}
 volumes:
   pgdata: {}
+  caddy_data: {}
+  caddy_config: {}

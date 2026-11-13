@@ -3,13 +3,14 @@ import { z } from 'zod';
 import { Db } from '../db/db.service';
 import { AuthUser, CurrentUser, parse, Require } from '../common/http';
 import { AuditService } from '../audit/audit.service';
+import { AuthService } from '../auth/auth.service';
 
 const uuid = z.string().uuid();
 
 /** پروژه، طرف‌ها، چارت (سمت‌ها)، عضویت‌ها و گروه‌ها */
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly db: Db, private readonly audit: AuditService) {}
+  constructor(private readonly db: Db, private readonly audit: AuditService, private readonly auth: AuthService) {}
 
   /** پروژه‌های من (کاربر صفر: همه) */
   @Get()
@@ -22,7 +23,7 @@ export class ProjectsController {
   @Post()
   async create(@Body() body: unknown, @CurrentUser() u: AuthUser) {
     if (!u.isRoot) throw new ForbiddenException('ساختن پروژه فقط با ادمین اصلی');
-    const b = parse(z.object({ name: z.string().min(1), code: z.string().optional(), use_type: z.string().optional(), phase: z.string().optional(), info: z.record(z.unknown()).optional() }), body);
+    const b = parse(z.object({ name: z.string().min(1), code: z.string().optional(), use_type: z.string().optional(), phase: z.string().optional(), info: z.record(z.string(), z.unknown()).optional() }), body);
     const p = await this.db.one(`insert into projects (name, code, use_type, phase, info, created_by) values ($1,$2,$3,$4,$5,$6) returning *`,
       [b.name, b.code ?? null, b.use_type ?? null, b.phase ?? null, JSON.stringify(b.info ?? {}), u.id]);
     await this.db.q(`insert into memberships (project_id, user_id, level, status) values ($1,$2,1,'active')`, [p.id, u.id]);
@@ -39,7 +40,7 @@ export class ProjectsController {
 
   @Patch(':pid') @Require('project.manage')
   async update(@Param('pid') pid: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
-    const b = parse(z.object({ name: z.string().min(1).optional(), code: z.string().nullable().optional(), use_type: z.string().nullable().optional(), phase: z.string().nullable().optional(), status: z.string().optional(), info: z.record(z.unknown()).optional() }), body);
+    const b = parse(z.object({ name: z.string().min(1).optional(), code: z.string().nullable().optional(), use_type: z.string().nullable().optional(), phase: z.string().nullable().optional(), status: z.string().optional(), info: z.record(z.string(), z.unknown()).optional() }), body);
     const p = await this.db.one(`update projects set name = coalesce($2, name), code = coalesce($3, code), use_type = coalesce($4, use_type), phase = coalesce($5, phase), status = coalesce($6, status), info = coalesce($7, info) where id = $1 returning *`,
       [pid, b.name ?? null, b.code ?? null, b.use_type ?? null, b.phase ?? null, b.status ?? null, b.info ? JSON.stringify(b.info) : null]);
     await this.audit.log(u.id, pid, 'update', 'project', pid, b);
@@ -55,7 +56,7 @@ export class ProjectsController {
 
   @Post(':pid/parties') @Require('parties.manage')
   async addParty(@Param('pid') pid: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
-    const b = parse(z.object({ kind: z.string(), name: z.string().min(1), disciplines: z.array(z.string()).optional(), info: z.record(z.unknown()).optional() }), body);
+    const b = parse(z.object({ kind: z.string(), name: z.string().min(1), disciplines: z.array(z.string()).optional(), info: z.record(z.string(), z.unknown()).optional() }), body);
     const r = await this.db.one('insert into parties (project_id, kind, name, disciplines, info) values ($1,$2,$3,$4,$5) returning *', [pid, b.kind, b.name, b.disciplines ?? [], JSON.stringify(b.info ?? {})]);
     await this.audit.log(u.id, pid, 'create', 'party', r.id, b);
     return r;
@@ -63,7 +64,7 @@ export class ProjectsController {
 
   @Patch(':pid/parties/:id') @Require('parties.manage')
   async editParty(@Param('pid') pid: string, @Param('id') id: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
-    const b = parse(z.object({ kind: z.string().optional(), name: z.string().min(1).optional(), disciplines: z.array(z.string()).optional(), info: z.record(z.unknown()).optional() }), body);
+    const b = parse(z.object({ kind: z.string().optional(), name: z.string().min(1).optional(), disciplines: z.array(z.string()).optional(), info: z.record(z.string(), z.unknown()).optional() }), body);
     const r = await this.db.one(`update parties set kind = coalesce($3, kind), name = coalesce($4, name), disciplines = coalesce($5, disciplines), info = coalesce($6, info) where id = $2 and project_id = $1 returning *`,
       [pid, id, b.kind ?? null, b.name ?? null, b.disciplines ?? null, b.info ? JSON.stringify(b.info) : null]);
     await this.audit.log(u.id, pid, 'update', 'party', id, b);
@@ -144,6 +145,17 @@ export class ProjectsController {
       [id, pid, 'position_id' in b, b.position_id ?? null, 'party_id' in b, b.party_id ?? null, 'level' in b, b.level ?? null, b.status ?? null]);
     await this.audit.log(u.id, pid, 'update', 'membership', id, b);
     return r;
+  }
+
+  /** لینک فعال‌سازی یک‌بارمصرف برای یک عضو (ادمین می‌فرستد؛ خود توکن جایی ذخیره نمی‌شود) */
+  @Post(':pid/members/:id/invite') @Require('people.manage')
+  async invite(@Param('pid') pid: string, @Param('id') id: string, @CurrentUser() u: AuthUser) {
+    const m = await this.db.one<{ user_id: string; is_root: boolean }>('select m.user_id, us.is_root from memberships m join users us on us.id = m.user_id where m.id = $1 and m.project_id = $2', [id, pid]);
+    if (!m) throw new NotFoundException();
+    if (m.is_root && !u.isRoot) throw new ForbiddenException('ادمین اصلی را فقط خودش تغییر می‌دهد');
+    const token = await this.auth.createInvite(m.user_id, u.id);
+    await this.audit.log(u.id, pid, 'invite', 'user', m.user_id);
+    return { token };
   }
 
   // ---------- گروه‌ها ----------

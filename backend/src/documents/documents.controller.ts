@@ -117,7 +117,7 @@ export class DocumentsController {
   @Post('documents') @Require('doc.create')
   async create(@Param('pid') pid: string, @Body() body: unknown, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {
     const b = parse(z.object({ type: z.string(), number: z.string().min(1), title: z.string().min(1), discipline: z.string().nullable().optional(), originator_id: uuid.nullable().optional(),
-      planned_issue: z.string().nullable().optional(), planned_approval: z.string().nullable().optional(), weight: z.number().positive().optional(), info: z.record(z.unknown()).optional() }), body);
+      planned_issue: z.string().nullable().optional(), planned_approval: z.string().nullable().optional(), weight: z.number().positive().optional(), info: z.record(z.string(), z.unknown()).optional() }), body);
     if (Array.isArray(g.doc_types) && !g.doc_types.includes(b.type)) throw new ForbiddenException('ثبت این نوع سند برای شما مجاز نیست');
     if (Array.isArray(g.disciplines) && b.discipline && !g.disciplines.includes(b.discipline)) throw new ForbiddenException('ثبت سند این رشته برای شما مجاز نیست');
     const t = await this.db.one<{ id: string }>('select id from doc_types where project_id = $1 and code = $2', [pid, b.type]);

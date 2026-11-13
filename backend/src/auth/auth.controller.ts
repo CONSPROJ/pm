@@ -10,7 +10,7 @@ export class AuthController {
 
   @Public() @Post('login')
   async login(@Body() body: unknown, @Req() req: any) {
-    const b = parse(z.object({ username: z.string().min(1), password: z.string().min(1) }), body);
+    const b = parse(z.object({ username: z.string().min(1).max(100), password: z.string().min(1).max(200) }), body);
     try {
       const r = await this.auth.login(b.username, b.password, req.headers['user-agent'], req.ip);
       await this.audit.log(r.userId, null, 'login', 'session', null, {}, req.ip);
@@ -21,8 +21,25 @@ export class AuthController {
     }
   }
 
+  /** فعال‌سازی حساب با لینک یک‌بارمصرف و گذاشتن رمز */
+  @Public() @Post('activate')
+  async activate(@Body() body: unknown, @Req() req: any) {
+    const b = parse(z.object({ token: z.string().min(20).max(100), password: z.string().min(1).max(200) }), body);
+    const r = await this.auth.activate(b.token, b.password, req.headers['user-agent'], req.ip);
+    await this.audit.log(r.userId, null, 'activate', 'user', r.userId, {}, req.ip);
+    return { token: r.token };
+  }
+
   @Get('me')
   me(@CurrentUser() u: AuthUser) { return { id: u.id, username: u.username, displayName: u.displayName, isRoot: u.isRoot }; }
+
+  @Post('password')
+  async password(@Body() body: unknown, @CurrentUser() u: AuthUser, @Req() req: any) {
+    const b = parse(z.object({ current: z.string().min(1).max(200), next: z.string().min(1).max(200) }), body);
+    await this.auth.changePassword(u, b.current, b.next);
+    await this.audit.log(u.id, null, 'password_change', 'user', u.id, {}, req.ip);
+    return { ok: true };
+  }
 
   @Post('logout')
   async logout(@CurrentUser() u: AuthUser) { await this.auth.logout(u.sessionId); return { ok: true }; }

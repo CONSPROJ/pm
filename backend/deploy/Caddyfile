@@ -1,0 +1,22 @@
+# HTTPS خودکار (Let's Encrypt) و سرآیندهای امنیتی؛ فقط مسیر API به سرور برنامه می‌رود
+{$API_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	handle /api/* {
+		reverse_proxy api:3100 {
+			health_uri /api/v1/health
+		}
+	}
+	handle {
+		respond 404
+	}
+	log {
+		output file /data/access.log {
+			roll_size 20MiB
+			roll_keep 10
+		}
+	}
+}
