@@ -81,12 +81,12 @@ drop policy if exists "pm lists write" on public.lists;
 drop policy if exists "pm lists update" on public.lists;
 drop policy if exists "pm lists delete" on public.lists;
 create policy "pm lists write" on public.lists for insert
-  with check ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت') or (select public.pm_is_admin())));
+  with check ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت', 'حالت نگهداری') or (select public.pm_is_admin())));
 create policy "pm lists update" on public.lists for update
-  using ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت') or (select public.pm_is_admin())))
-  with check ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت') or (select public.pm_is_admin())));
+  using ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت', 'حالت نگهداری') or (select public.pm_is_admin())))
+  with check ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت', 'حالت نگهداری') or (select public.pm_is_admin())));
 create policy "pm lists delete" on public.lists for delete
-  using ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت') or (select public.pm_is_admin())));
+  using ((select public.pm_me()) is not null and (kind not in ('دسترسی سطح', 'دسترسی فرد', 'دسترسی نقش', 'تنظیم آپلود', 'زنجیرهٔ تأیید داخلی', 'قوانین سامانه', 'ماژول‌های پروژه', 'نسخهٔ سایت', 'حالت نگهداری') or (select public.pm_is_admin())));
 
 -- تابع‌های بسته (bundle2/bundle3/day_only) با دسترسی خود کاربر اجرا شوند تا همین قانون‌ها در آن‌ها هم اعمال شود
 do $$

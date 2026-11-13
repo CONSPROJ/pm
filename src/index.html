@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113054313">
+<meta name="pm-build" content="20261113062926">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29762,6 +29762,14 @@
   .crs-act{display:flex;gap:6px;margin-top:6px;} .crs-act button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--vz1, #2a6fa0);padding:2px 6px;border-radius:6px;} .crs-act button:hover{background:color-mix(in srgb, var(--vz1, #2a6fa0) 10%, transparent);}
   .crs-add{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:6px;align-items:start;} .crs-add select, .crs-add textarea{border:1px solid var(--line);border-radius:10px;padding:6px 8px;font:inherit;font-size:12.5px;background:var(--surface);min-width:0;} .crs-add select{height:36px;}
   @media (max-width:600px){ .crs-add{grid-template-columns:1fr;} }
+
+  /* حالت نگهداری */
+  #maintBar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 24px);padding:8px 10px 8px 14px;border-radius:14px;background:#7a4a0c;color:#fff;font-size:12.5px;text-align:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);}
+  @media (max-width:1179px){ #maintBar{bottom:96px;} }
+  #maintBar b{font-weight:800;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.18);} #maintBar button{all:unset;cursor:pointer;font-weight:800;padding:3px 10px;border-radius:8px;background:rgba(255,255,255,.2);} #maintBar button:hover{background:rgba(255,255,255,.3);}
+
+  /* منوی «ابزارهای بیشتر» میز کار در گوشی از لبهٔ صفحه بیرون می‌زد: از سمت درست دکمه باز شود و هرگز پهن‌تر از صفحه نباشد */
+  @media (max-width:700px){ .tk-more-m{inset-inline-end:auto !important;inset-inline-start:0 !important;max-width:calc(100vw - 24px);} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -49666,7 +49674,7 @@
   /* مدیریت سامانه هم در سه دسته */
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
     {t:'داده و تطبیق', d:'بخش‌های فعال، قوانین و مهلت‌ها، نام‌ها، محل و طبقه و جدول‌ها', c:'#b07512', ks:['mods','rules','data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
-    {t:'سامانه و امنیت', d:'سرور، پشتیبان، محل آپلود، زنجیرهٔ تأیید و نسخه‌ها', c:'#c4553f', ks:['sec','up','chain','ver'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
+    {t:'سامانه و امنیت', d:'سرور، پشتیبان، حالت نگهداری، محل آپلود، زنجیرهٔ تأیید و نسخه‌ها', c:'#c4553f', ks:['sec','maint','up','chain','ver'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
   const WS_GOF = {mdr:'eng', dly:'fld', apv:'fld', tasks:'fld', crew:'fld', wrk:'fld', gl:'fld', sch:'pln', la:'pln', fc:'pln', rsk:'pln', mtg:'pln', qc:'qhs', itp:'qhs', con:'qhs', hse:'qhs', ptw:'qhs', rfi:'eng', smt:'eng', cad:'eng', cut:'eng', prc:'res', mrc:'res', wh:'res', rcn:'res', mc:'res', mnt:'res', qt:'fin', co:'fin', cc:'fin', ib:'fin', vnd:'fin', rc:'ana', wkr:'ana', kpi:'ana', pf:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj'};
   const WS_GOK = Object.keys(WS_GOF), wsGofOrd = (a, b) => { const i = WS_GOK.indexOf(a.k), j = WS_GOK.indexOf(b.k); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); };
   const wsMod = k => WS_MODS.find(x => x.k === k);
@@ -50101,6 +50109,10 @@
       if(x && x.k === 'ver'){ try{ window.pmVerOpen(); }catch(e2){} return; }
       if(x && x.k === 'mods'){ try{ window.modOpen(); }catch(e2){} return; }
       if(x && x.k === 'rules'){ try{ window.rulesOpen(); }catch(e2){} return; }
+      if(x && x.k === 'maint'){ const fail = e2 => showDialog('err', 'ثبت نشد', friendlyErr(e2));
+        if(window.maintIsOn && window.maintIsOn()){ if(confirm('حالت نگهداری خاموش شود و ثبت برای همه باز شود؟')) window.maintSet(false).catch(fail); }
+        else { const m = prompt('حالت نگهداری: سایت برای غیرادمین‌ها فقط‌خواندنی می‌شود. پیام برای کاربران:', 'در حال انتقال سایت به سرور تازه؛ ثبت و ویرایش تا پایان امروز بسته است.'); if(m != null) window.maintSet(true, m).catch(fail); }
+        return; }
       if(x){ const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>'; try{ window.h3Dispatch(t.firstChild); }catch(e2){} } return; }
     const ah = e.target.closest('#wsList [data-wsadm]');
     if(ah){ const k = ah.dataset.wsadm; if(k === 'ver'){ try{ window.pmVerOpen(); }catch(e2){} return; } const x = (ws.tools && ws.tools.adm || []).find(y => y.k === k); if(x){ const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>'; try{ window.h3Dispatch(t.firstChild); }catch(e2){} } return; }
@@ -59315,7 +59327,31 @@
       }
     }
   }
+  /* ====== حالت نگهداری ======
+     ادمین سایت را برای همه «فقط‌خواندنی» می‌کند (مثلاً روز انتقال به سرور تازه یا پشتیبان‌گیری بزرگ):
+     نوار هشدار برای همه، و ثبت/ویرایش/حذف برای غیرادمین‌ها پیش از رسیدن به سرور متوقف می‌شود.
+     lists «حالت نگهداری» شناسهٔ cfg: {on, msg, by, at}. خواندن هر ۶۰ ثانیه. */
+  const MAINT_K = 'حالت نگهداری';
+  let maint = (function(){ try{ return JSON.parse(localStorage.getItem('siteLogM.maint') || 'null'); }catch(e){ return null; } })();
+  const maintOn = () => !!(maint && maint.on);
+  const maintBlocks = (path, o) => { if(!maintOn() || !o || !o.method || o.method === 'GET') return false; try{ if(isAdminUser()) return false; }catch(e){}
+    return !/^(rpc\/(pm_whoami|session_epoch|pm_login|pm_logout)|feed_reads|nudges)/.test(String(path)); };
+  function maintBanner(){
+    let b = document.getElementById('maintBar');
+    if(!maintOn()){ if(b) b.remove(); document.documentElement.classList.remove('maint'); return; }
+    if(!b){ b = document.createElement('div'); b.id = 'maintBar'; b.setAttribute('role', 'status'); document.body.prepend(b); }
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    b.innerHTML = '<b>حالت نگهداری</b><span>' + esc(maint.msg || 'سایت موقتاً فقط‌خواندنی است؛ ثبت و ویرایش به‌زودی باز می‌شود.') + '</span>' + (adm ? '<button type="button" data-maintoff="1">پایان نگهداری</button>' : '');
+    document.documentElement.classList.add('maint');
+  }
+  async function maintLoad(){ try{ const L = await fxList(MAINT_K, true); const x = (L || []).find(r => r.id === 'cfg'); maint = x && x.o ? x.o : null; try{ localStorage.setItem('siteLogM.maint', JSON.stringify(maint)); }catch(e){} }catch(e){} maintBanner(); }
+  setTimeout(() => { maintBanner(); maintLoad(); setInterval(maintLoad, 60000); }, 2500);
+  window.maintIsOn = maintOn;
+  window.maintSet = async function(on, msg){ let a = false; try{ a = isAdminUser(); }catch(e){} if(!a) return;
+    await fxPut(MAINT_K, 'cfg', on ? {on: true, msg: msg || '', by: activeUserName(), at: Date.now()} : {on: false, by: activeUserName(), at: Date.now()}); await maintLoad(); };
+  document.addEventListener('click', async e => { if(e.target.closest && e.target.closest('[data-maintoff]')){ try{ await window.maintSet(false); shrToast('حالت نگهداری خاموش شد'); }catch(er){ showDialog('err', 'ثبت نشد', friendlyErr(er)); } } });
   async function supaFetch(path, opts){
+    if(maintBlocks(path, opts)) throw new Error('سایت در حالت نگهداری است و فعلاً ثبت و ویرایش ممکن نیست. ' + ((maint && maint.msg) || ''));
     netBusy(1);
     try{
       const r = await supaFetchRaw(path, opts);
@@ -66541,6 +66577,22 @@
         : bkRow(false, 'مرحلهٔ ۲ هنوز اجرا نشده؛ جدول‌ها برای همه بازند',
             (w.name && nameKey(w.name) === nameKey(me)) ? 'آماده است: اول «دانلود پشتیبان» بزنید، بعد security_phase2.sql را اجرا کنید.' : 'اول باید «نشست امن» سبز شود.');
     }
+
+      /* بررسی‌های بعدی: گزارش کار سرور، دسترسی سند به سند، پشتیبان، تعداد ادمین‌ها و ورودهای ناموفق */
+      const probe = async (fn) => { try{ await fn(); return true; }catch(e){ return /404|PGRST20[12]|does not exist|Could not find/i.test(String(e && e.message || e)) ? false : null; } };
+      const audOk = await probe(() => supaFetch('audit_log?select=id&limit=1', {prefer: 'return=representation'}));
+      h += audOk ? bkRow(true, 'گزارش کار سرور فعال است', 'هر تغییر با نام انجام‌دهنده در سرور ثبت می‌شود.' + ' برای پوشش همهٔ جدول‌ها audit_all.sql هم باید اجرا شده باشد.')
+        : bkRow(false, 'گزارش کار سرور فعال نیست', 'security_phase4.sql و سپس audit_all.sql را اجرا کنید.');
+      const docOk = await probe(() => supaFetch('rpc/pm_can', {method: 'POST', body: {k: 'doc.read', def_lv: [1], def_roles: []}}));
+      h += docOk ? bkRow(true, 'دسترسی سند به سند در سرور اعمال می‌شود', 'صورت وضعیت و قرارداد فقط برای کسانی که اجازه دارند از سرور فرستاده می‌شود.')
+        : bkRow(false, 'دسترسی سند به سند فقط در مرورگر است', 'security_docs.sql را اجرا کنید تا سرور هم آن را اعمال کند (پیش از آن پشتیبان بگیرید).');
+      try{ const S = (window.pmSecState && window.pmSecState()) || {}; const ago = S.bk && S.bk.d ? daysSince(S.bk.d) : null;
+        h += ago == null ? bkRow(false, 'هنوز پشتیبانی ثبت نشده', 'از همین صفحه «دانلود پشتیبان» بزنید و فایل را بیرون از سرور نگه دارید.')
+          : bkRow(ago <= 1, 'آخرین پشتیبان ' + (ago === 0 ? 'امروز' : toFa(ago) + ' روز پیش'), ago > 1 ? 'دست‌کم هر روز یک پشتیبان بگیرید.' : '');
+        if(S.fail) h += bkRow(S.fail < 5, toFa(S.fail) + ' ورود ناموفق در ۲۴ ساعت اخیر', S.lock ? toFa(S.lock) + ' حساب قفل شد' : ''); }catch(e){}
+      try{ const A = Array.from(new Set((ADMIN_USERS || []).concat((peopleRows || []).filter(p => p && p.active !== false && +p.level === 1).map(p => p.name))));
+        h += bkRow(A.length <= 2, toFa(A.length) + ' کاربر با سطح ادمین', A.length > 2 ? 'تعداد ادمین‌ها را کم نگه دارید: ' + esc(A.join('، ')) : esc(A.join('، '))); }catch(e){}
+      try{ const P = (peopleRows || []).filter(p => p && p.active !== false && p.must_change); if(P.length) h += bkRow(null, toFa(P.length) + ' نفر هنوز رمز اولیه را عوض نکرده‌اند', esc(P.map(p => p.name).slice(0, 8).join('، '))); }catch(e){}
     box.innerHTML = h;
   }
   /* همهٔ ردیف‌های یک جدول، صفحه‌به‌صفحه و با ترتیب ثابت */
@@ -96203,6 +96255,7 @@
              add('adm', 'chain', 'زنجیرهٔ تأیید', 'ترتیب بررسی داخلی', RVC_I, 'hc-grn', null, false, so('chain', 'زنجیرهٔ تأیید'));
              add('adm', 'ver', 'نسخه‌های سایت', 'برگشت به نسخهٔ قبل، برای خودتان یا همه', ST2_I.ref, 'hc-ind', null, false, 'data-pmverbtn="1"');
              add('adm', 'mods', 'بخش‌های فعال پروژه', 'خاموش کردن بخش‌های بی‌استفاده برای همه', HM_I.doc, 'hc-amb', null, false, 'data-modbtn="1"');
+             add('adm', 'maint', 'حالت نگهداری', 'سایت برای همه فقط‌خواندنی (روز انتقال یا تعمیرات)', ST2_I.ref, 'hc-amb', null, false, 'data-maintbtn="1"');
              add('adm', 'rules', 'قوانین و مهلت‌ها', 'هر قاعدهٔ ثابت سامانه: مهلت‌ها، روزهای هشدار، ساعت گزارش', HM_I.clock || HM_I.doc, 'hc-vio', null, false, 'data-rulesbtn="1"'); }
     if(admU && hmCan('msg.broadcast')) add('adm', 'bc', 'پیام گروهی', 'یک پیام برای همه', PF_I.mega, 'hc-vio', null, false, so('bc', 'پیام گروهی'));
     if(admU) add('adm', 'log', 'سابقهٔ فعالیت کاربران', 'ورودها و کارها', PF_I.log, 'hc-teal', null, false, so('log', 'سابقهٔ فعالیت کاربران'));
