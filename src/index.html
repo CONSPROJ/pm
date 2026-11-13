@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113155259">
+<meta name="pm-build" content="20261113155520">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -73923,7 +73923,7 @@
      هر نظر مشاور/کارفرما/مدیریت پروژه یک ردیف: ویرایشی که در آن داده شد، متن، پاسخ طراح و وضعیت (باز، پاسخ داده، بسته).
      نظرهای باز ویرایش‌های قبل در ویرایش جاری می‌مانند تا بسته شوند. خروجی CSV برای ارسال به طراح. lists «نظرات بررسی طراحی» شناسه = شناسهٔ سند. */
   const CRS_K = 'نظرات بررسی طراحی';
-  const CRS_SIDES = [['cons', 'مشاور'], ['emp', 'کارفرما'], ['pm', 'مدیریت پروژه'], ['des', 'طراح']];
+  const CRS_SIDES = [['cons', 'مشاور'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پروژه'], ['des', 'طراح']];
   const CRS_ST = {open: 'باز', ans: 'پاسخ داده', closed: 'بسته'};
   let crsLoaded = false, crsBusy = false, crsAnsOpen = '';
   const crsGet = id => (((fxC.get(CRS_K) || []).find(x => x.id === id) || {}).o || {items: []});
@@ -73937,6 +73937,7 @@
     let side = I.side || 'pm'; try{ if(isAdminUser()) side = 'pm'; }catch(e){}
     return side === 'emp' || side === 'own' ? 'emp' : side === 'cons' ? 'cons' : side === 'pm' ? 'pm' : '';
   }
+  const crsMyPos = () => { try{ return String(roleOf(activeUserName()) || '').trim(); }catch(e){ return ''; } };
   const crsCanReview = () => { const s = crsMySide(); return s === 'cons' || s === 'emp' || s === 'pm'; };
   const crsCanAnswer = () => { try{ return crsMySide() === 'des' || isAdminUser() || can('doc.design.all'); }catch(e){ return false; } };
   function crsHtml(id, rev){
@@ -73946,7 +73947,7 @@
       + (L.length ? '<button type="button" class="mini" data-crscsv="' + esc(id) + '">خروجی CSV</button>' : '') + '</div>'
       + (L.length ? '<div class="crs-l">' + L.map((x, i) => '<div class="crs-r st-' + x.st + '">'
           + '<span class="crs-i">' + toFa(i + 1) + '</span>'
-          + '<div class="crs-b"><div class="crs-m"><em>Rev ' + esc(toFa(x.rev)) + '</em>' + (String(x.rev) !== String(rev) && x.st !== 'closed' ? '<em class="carry">مانده از ویرایش قبل</em>' : '') + '<u>' + esc(lb(x.side)) + (x.by ? ' · ' + esc(x.by) : '') + (x.d ? ' · ' + esc(toFa(x.d)) : '') + '</u><i class="crs-s">' + CRS_ST[x.st] + '</i></div>'
+          + '<div class="crs-b"><div class="crs-m"><em>Rev ' + esc(toFa(x.rev)) + '</em>' + (String(x.rev) !== String(rev) && x.st !== 'closed' ? '<em class="carry">مانده از ویرایش قبل</em>' : '') + '<u>' + esc(lb(x.side)) + (x.pos ? ' (' + esc(x.pos) + ')' : '') + (x.by ? ' · ' + esc(x.by) : '') + (x.d ? ' · ' + esc(toFa(x.d)) : '') + '</u><i class="crs-s">' + CRS_ST[x.st] + '</i></div>'
           +   '<p>' + esc(x.t) + '</p>'
           +   (x.r ? '<div class="crs-a"><u>پاسخ طراح' + (x.rb ? ' · ' + esc(x.rb) : '') + (x.rd ? ' · ' + esc(toFa(x.rd)) : '') + '</u><p>' + esc(x.r) + '</p></div>' : '')
           +   (crsAnsOpen === id + ':' + i ? '<div class="crs-ab"><textarea data-crsanstx="' + i + '" rows="2" placeholder="پاسخ طراح…">' + esc(x.r || '') + '</textarea><span><button type="button" class="mini go" data-crsanssave="' + i + '">ثبت پاسخ</button><button type="button" class="mini" data-crsanscancel="1">انصراف</button></span></div>' : '')
@@ -73955,7 +73956,7 @@
           +     (x.st === 'open' && !x.r && x.by && nameKey(x.by) === nameKey(activeUserName()) ? '<button type="button" class="dng" data-crsdel="' + i + '">حذف</button>' : '') + '</div>'
           + '</div></div>').join('') + '</div>' : '')
       + (crsCanReview()
-        ? '<div class="crs-add"><div class="crs-me">' + avatarHtml(activeUserName(), 'xs', true) + '<span>نظر شما به‌عنوان <b>' + esc(lb(crsMySide())) + '</b> · ' + esc(activeUserName()) + '</span></div>'
+        ? '<div class="crs-add"><div class="crs-me">' + avatarHtml(activeUserName(), 'xs', true) + '<span>نظر شما به‌عنوان <b>' + esc(lb(crsMySide())) + '</b>' + (crsMyPos() ? ' (' + esc(crsMyPos()) + ')' : '') + ' · ' + esc(activeUserName()) + '</span></div>'
           + '<textarea data-crstxt="1" rows="2" placeholder="نظر تازه برای Rev ' + esc(toFa(rev)) + ' — هر نظر جدا (Enter + Shift برای خط تازه)"></textarea><button type="button" class="mini go" data-crsadd="1">افزودن نظر</button></div>'
         : '<p class="crs-note">' + (crsMySide() === 'des' ? 'شما طراح این سند هستید: به نظرها پاسخ دهید.' : 'نظر بررسی را مشاور، کارفرما و مدیریت پروژه ثبت می‌کنند.') + '</p>');
   }
@@ -73972,7 +73973,7 @@
     const me = activeUserName(), t0 = todayShamsi();
     if(e.target.closest('[data-crsadd]')){ const ta = box.querySelector('[data-crstxt]'), tx = String(ta.value || '').trim(); if(!tx) return;
       if(!crsCanReview()) return; const side = crsMySide();
-      tx.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean).forEach(t => D.items.push({rev, side, by: me, d: t0, t, st: 'open'}));
+      tx.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean).forEach(t => D.items.push({rev, side, pos: crsMyPos(), by: me, d: t0, t, st: 'open'}));
       ta.value = ''; box.__h = ''; await crsSave(id, D, box); return; }
     const an = e.target.closest('[data-crsans]'); if(an){ if(!crsCanAnswer()) return; crsAnsOpen = id + ':' + an.dataset.crsans; box.__h = ''; crsPaintAll(); setTimeout(() => { const t = box.querySelector('[data-crsanstx]'); if(t) t.focus(); }, 30); return; }
     if(e.target.closest('[data-crsanscancel]')){ crsAnsOpen = ''; box.__h = ''; crsPaintAll(); return; }
