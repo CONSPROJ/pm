@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113142718">
+<meta name="pm-build" content="20261113143016">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29860,6 +29860,13 @@
   .um-orgk{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:6px;margin-bottom:10px;} .um-orgk span{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:10px;background:var(--surface);} .um-orgk b{font-size:15px;font-weight:800;} .um-orgk u{text-decoration:none;font-size:10.5px;color:var(--muted);} .um-orgk .w b{color:#b0700f;}
   .um-orga{display:flex;flex-wrap:wrap;gap:6px;}
   @media (max-width:700px){ .um-orgg{grid-template-columns:1fr;} .um-orgk{grid-template-columns:repeat(3, minmax(0,1fr));} }
+
+  .pmode{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid color-mix(in srgb, var(--line) 85%, transparent);}
+  .pmode > div:first-child{display:flex;flex-direction:column;gap:3px;flex:1 1 320px;min-width:0;} .pmode b{font-size:13px;font-weight:800;} .pmode small{font-size:11.5px;color:var(--muted);line-height:1.7;}
+  .pmode.on{background:color-mix(in srgb, #2f8a5f 7%, var(--surface));border-color:color-mix(in srgb, #2f8a5f 30%, transparent);}
+  .pmode-pv{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px dashed var(--line);} .pmode-pv p{margin:0;font-size:12px;}
+  .pmode-pv details{padding:6px 10px;border-radius:10px;background:var(--field);font-size:12px;} .pmode-pv details div{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;} .pmode-pv details span{padding:2px 8px;border-radius:99px;background:var(--surface);font-size:11px;}
+  .pmode-pv .pri{align-self:flex-start;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -32490,6 +32497,7 @@
     if(rl){ try{ if(permInhFrom(rl, k)) return true; }catch(e){} }
     let L = 3; try{ L = levelOf(name); }catch(e){}
     if(L === 1) return true;
+    if(permLvBlocked(name, k)) return false;
     return permLevelsOf(k).indexOf(L) !== -1;
   }
   const PERM_LEVELS = [2, 7, 5, 3, 4, 6, 8, 9];      // سطح ۱ قابل تغییر نیست
@@ -32515,6 +32523,16 @@
   }
   /* آیا سطحِ فعلی این اجازه را دارد؟ */
   var PJ_OFF = new Set();   // اجازه‌های بخش‌های خاموشِ پروژهٔ فعلی
+  /* ====== حالت «سمت‌محور» ======
+     در این حالت برای کسی که سمتش در کاتالوگ چارت است، اجازه‌ها فقط از سمت (و زیرمجموعه و استثنای فردی) می‌آید؛
+     سطح فقط پایهٔ مشترک (دیدن فعالیت‌ها و گزارش‌های روزانه/هفتگی، یادآور، اصلاح کار خود) و اعلان‌ها را می‌دهد.
+     روش رایج سامانه‌های بزرگ؛ با قانون accMode=pos در «قوانین سامانه» روشن می‌شود. */
+  const PERM_BASE = new Set(['tab.tasks', 'tab.view', 'rep.time', 'rep.week', 'remind.use', 'write.editOwn']);
+  const permPosMode = () => { try{ return window.pmRule && pmRule('accMode', '') === 'pos'; }catch(e){ return false; } };
+  const permIsBase = k => PERM_BASE.has(k) || (function(){ const c = PERM_CAPS.find(x => x.k === k); return !!(c && c.g === 'اعلان‌ها'); })();
+  function permHasCatPos(name){ try{ const rl = String(roleOf(name) || ''); return !!rl && ogPositions().some(x => x.n && rl.indexOf(x.n) !== -1); }catch(e){ return false; } }
+  /* آیا در حالت سمت‌محور، سطحِ این نفر برای اجازهٔ k نادیده گرفته می‌شود؟ */
+  const permLvBlocked = (name, k) => permPosMode() && !permIsBase(k) && permHasCatPos(name);
   function can(k, lvl){
     /* کاربر صفر (ادمین اصلی سامانه): به همه‌چیز در همهٔ پروژه‌ها دسترسی دارد — هیچ خاموشی، نقش یا محدودیتی جلویش را نمی‌گیرد */
     if(lvl == null){ try{ if(isRootUser()) return true; }catch(e){} }
@@ -32531,6 +32549,7 @@
         if(rl && permRolesOf(k).some(r => r && rl.indexOf(r) !== -1)) return true;
         /* سمت مافوق، اجازه‌های سمت‌های زیرمجموعه‌اش را هم دارد (مگر برای آن سمت خاموش شده باشد) */
         if(rl){ try{ if(permInhFrom(rl, k)) return true; }catch(e){} }
+        if(permLvBlocked(me, k)) return false;
       }
     }
     if(v === 1) return true;                       // ادمین سامانه
@@ -42576,6 +42595,7 @@
     { let ih = null; try{ ih = rl ? permInhFrom(rl, k) : null; }catch(e){} if(ih) return {on: true, t: 'از زیرمجموعه: سمت «' + ih + '»'}; }
     let L = 3; try{ L = levelOf(name); }catch(e){}
     if(L === 1) return {on: true, t: 'از سطح ' + (LEVEL_SHORT[L] || '')};
+    if(permLvBlocked(name, k)) return {on: false, t: 'حالت سمت‌محور: سمتش این اجازه را ندارد'};
     return permLevelsOf(k).indexOf(L) !== -1 ? {on: true, t: 'از سطح «' + (LEVEL_SHORT[L] || L) + '»'} : {on: false, t: 'سطح و سمتش این اجازه را ندارند'};
   }
   /* قالب پیشنهادی: اجازه‌هایی از قالب هر سمت که هنوز روشن نشده؛ روشن کردن گروهی با ذخیرهٔ موازی (هر بار ۶ تا) */
@@ -43066,6 +43086,7 @@
     return '<div class="pc pc2" id="permCenter">'
       + '<div class="pc2-hd"><div class="pc2-ht"><b>نقش‌ها و دسترسی</b><small>چه کسی چه کاری می‌کند و چه اعلانی می‌گیرد. ترتیب تصمیم: استثنای فردی ← سمت ← سطح؛ ادمین سامانه همیشه همه‌چیز را دارد.</small></div>'
       +   '<div class="pc2-kp">' + kp(nPosN, 'سمت') + kp(people.length, 'نفر') + kp(PERM_CAPS.length, 'اجازه') + kp(nOv, 'استثنای فردی') + '</div></div>'
+      + permModeHtml(people)
       + '<nav class="pc2-tabs" role="tablist">' + T.map(([k, ic, t]) => '<button type="button" role="tab" class="' + (pcState.tab === k ? 'on' : '') + '" data-pctab="' + k + '">' + ic + '<span>' + t + '</span></button>').join('') + '</nav>'
       + (pcState.tab === 'lv' ? '<details class="pc-guide"><summary>راهنمای سطح‌ها<span>' + PERM_LEVELS.map(L => esc(PM_LV[L] || '') + ' ' + toFa(cntL[L] || 0)).join(' · ') + '</span></summary>'
       +   '<div class="pc-lvls2">' + PERM_LEVELS.map(L => '<div class="pc-lv2"><b>' + esc(LEVEL_SHORT[L] || '') + '<i>' + toFa(cntL[L] || 0) + ' نفر</i></b><small>' + esc(LV_DESC[L] || '') + '</small></div>').join('') + '</div></details>'
@@ -43078,6 +43099,37 @@
       + '<div class="pc-body">' + body + '</div>'
       + '</div>';
   }
+  /* کارت «منبع اصلی دسترسی» با پیش‌نمایش اثر تغییر حالت روی تک‌تک افراد */
+  function permModeImpact(people){
+    if(permPosMode()) return [];
+    const out = [];
+    people.forEach(n => { if(!permHasCatPos(n)) return; let L = 3; try{ L = levelOf(n); }catch(e){} if(L === 1) return;
+      const lost = PERM_CAPS.filter(c => { if(permIsBase(c.k)) return false; const w = permWhy(n, c.k); return w.on && !w.x && !/^از سمت|زیرمجموعه/.test(w.t); });
+      if(lost.length) out.push({n, lost}); });
+    return out;
+  }
+  function permModeHtml(people){
+    const on = permPosMode(), noPos = people.filter(n => !permHasCatPos(n));
+    if(on) return '<div class="pmode on"><div><b>منبع اصلی دسترسی: سمت (سمت‌محور)</b><small>اجازه‌ها از سمت هر نفر، زیرمجموعهٔ آن و استثنای فردی می‌آید؛ سطح فقط پایهٔ مشترک و اعلان‌ها را می‌دهد.' + (noPos.length ? ' ' + toFa(noPos.length) + ' نفر سمتِ کاتالوگ ندارند و هنوز با سطح کار می‌کنند.' : '') + '</small></div><button type="button" class="pp-btn" data-pmode="">برگشت به «سطح + سمت»</button></div>';
+    const I = pcState.mpv ? permModeImpact(people) : null;
+    return '<div class="pmode"><div><b>منبع اصلی دسترسی: سطح + سمت</b><small>الان بیشتر اجازه‌ها از «سطح» می‌آید. در سامانه‌های حرفه‌ای منبع اصلی «سمت» است: هر سمت قالب اجازهٔ خودش را دارد و مافوق کار زیرمجموعه را هم می‌تواند.</small></div>'
+      + '<button type="button" class="pp-btn" data-pmpv="1">' + (I ? 'بستن پیش‌نمایش' : 'پیش‌نمایش حالت سمت‌محور') + '</button>'
+      + (I ? '<div class="pmode-pv">' + (I.length ? '<p>با روشن کردن، این افراد اجازه‌هایی را که فقط از «سطح» داشتند از دست می‌دهند. اگر لازم است، اول به سمتشان اضافه کنید:</p>'
+          + I.map(x => '<details><summary><b>' + esc(x.n) + '</b> · ' + esc(roleOf(x.n) || '') + ' — ' + toFa(x.lost.length) + ' اجازه</summary><div>' + x.lost.map(c => '<span>' + esc(c.t) + '</span>').join('') + '</div></details>').join('')
+          : '<p>هیچ‌کس اجازه‌ای از دست نمی‌دهد.</p>')
+        + '<button type="button" class="pp-btn pri" data-pmode="pos">روشن کردن حالت سمت‌محور</button></div>' : '') + '</div>';
+  }
+  document.addEventListener('click', async e => { const t = e.target; if(!t.closest) return;
+    const pv = t.closest('[data-pmpv]'); if(pv){ pcState.mpv = !pcState.mpv; try{ permRepaint(); }catch(er){} return; }
+    const md = t.closest('[data-pmode]'); if(!md) return; let a = false; try{ a = isAdminUser(); }catch(er){} if(!a) return;
+    const v = md.dataset.pmode; md.disabled = true;
+    try{ const L = await fxList(RULES_K, true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {});
+      if(v) cur.accMode = v; else delete cur.accMode;
+      await fxPut(RULES_K, 'cfg', {v: cur, by: activeUserName(), at: Date.now()});
+      Object.keys(window.__pmRules).forEach(k => delete window.__pmRules[k]); Object.assign(window.__pmRules, cur);
+      try{ localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(er){}
+      pcState.mpv = false; shrToast(v ? 'حالت سمت‌محور روشن شد' : 'برگشت به «سطح + سمت»'); permRepaint();
+    }catch(er){ md.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); } }, true);
   function permRepaint(){
     const pane = document.querySelector('[data-umpane="perm"]');
     if(!pane) return;
