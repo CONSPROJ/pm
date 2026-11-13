@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113073854">
+<meta name="pm-build" content="20261113075145">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29830,6 +29830,19 @@
 
   /* ورودی «مدیریت» فقط در ستون کناری دسکتاپ؛ در نوار پایین گوشی و تبلت نه (کارت «کنسول مدیریت» در میز کار هست) */
   @media (max-width:1179px){ :is(html,#z0) #tabBar #tabAc{display:none !important;} }
+
+  /* پروندهٔ اشخاص: بخش‌های پایین‌تر فرم تا دیده نشوند چیده و رنگ نمی‌شوند (باز شدن سریع روی گوشی) */
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="names"]) [data-ctxsec="names"]{display:none !important;}
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="share"]) [data-ctxsec="share"]{display:none !important;}
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="docs"]) [data-ctxsec="docs"]{display:none !important;}
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="skill"]) [data-ctxsec="skill"]{display:none !important;}
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="pf"]) [data-ctxsec="pf"]{display:none !important;}
+  #ctcModal .ctc-ed.ctx-tabbed:not([data-tab="contact"]) [data-ctxsec="contact"]{display:none !important;}
+  /* اندازهٔ پنجره با عوض شدن زبانه نمی‌پرد */
+  #ctcModal > .ctc-modal{height:min(880px, calc(100dvh - 48px)) !important;max-height:none !important;}
+  @media (max-width:700px){ #ctcModal > .ctc-modal{height:calc(100dvh - 56px) !important;} }
+  #ctcModal > .ctc-modal{display:flex !important;flex-direction:column;} #ctcModal > .ctc-modal > .modal-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+  #ctcModal .ctc-ed.ctx-tabbed{flex:1 0 auto;display:flex;flex-direction:column;} #ctcModal .ctc-ed.ctx-tabbed > .ctc-eact{margin-top:auto;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -39502,7 +39515,7 @@
     const ph = (c.p || []).concat(['']).slice(0, Math.max(2, (c.p || []).length + 1));
     const man = ctrTagsOf(c.ct), D = ctrDocsCalc(name, man);
     const pty = c.t || 'ctr';
-    return '<div class="ctc-ed" data-ctced="' + esc(name) + '" data-pty="' + esc(pty) + '" data-pow="' + (c.ow ? '1' : '') + '" data-pem="' + (c.em ? '1' : '') + '">'
+    return '<div class="ctc-ed ctx-tabbed" data-tab="names" data-ctced="' + esc(name) + '" data-pty="' + esc(pty) + '" data-pow="' + (c.ow ? '1' : '') + '" data-pem="' + (c.em ? '1' : '') + '">'
       + '<div class="ctc-edh"><span class="ctc-av">' + (window.ctrAvaIn ? ctrAvaIn(ctrCanon(name)) : esc(initialsOf(ctrCanon(name)))) + '</span><span><b>' + esc(ctrCanon(name)) + '</b><small class="ctx-sub">' + esc(ctxSubTxt(D)) + '</small></span><button type="button" class="ctc-pf" data-ctcprof="1" title="کارت پیمانکار، گزارش‌ها و یادداشت‌ها">' + CDX_I.prof + '<span>' + ({ctr:'کارت پیمانکار', cons:'کارت مشاور', emp:'کارت کارفرما', own:'کارت مالک'}[pty] || 'کارت') + '</span></button><button type="button" class="ctc-x" data-ctcx="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>'
       +   '<nav class="ctx-nav"><button type="button" data-ctxjump="names" class="on">مشخصات</button><button type="button" class="nx-sh" data-ctxjump="share">سهام</button><button type="button" data-ctxjump="docs">قراردادها</button><button type="button" class="nx-ctr" data-ctxjump="skill">تخصص</button><button type="button" class="nx-ctr" data-ctxjump="pf">راندمان</button><button type="button" data-ctxjump="contact">تماس</button></nav></div>'
       + '<section class="ctx-s" data-ctxsec="names">' + cnmHtml(name, c) + ctmHtml(name) + ctcnHtml(name, c, D) + '</section>'
@@ -40013,6 +40026,9 @@
     const nav = t.closest('[data-ctxjump]');
     if(nav){
       const box = nav.closest('.ctc-ed'), sec = box.querySelector('[data-ctxsec="' + nav.dataset.ctxjump + '"]'), body = box.closest('.modal-body'), hd = box.querySelector('.ctc-edh');
+      /* در پنجرهٔ پرونده، زبانه‌ها واقعی‌اند: هر بار فقط یک بخش (نه یک صفحهٔ بلند که باید از روی قراردادها رد شد) */
+      if(box.classList.contains('ctx-tabbed') && box.closest('#ctcModal')){ box.dataset.tab = nav.dataset.ctxjump; if(body) body.scrollTop = 0;
+        box.querySelectorAll('[data-ctxjump]').forEach(b => b.classList.toggle('on', b === nav)); return; }
       if(sec && body){ body.scrollTo({top: body.scrollTop + sec.getBoundingClientRect().top - body.getBoundingClientRect().top - (hd ? hd.offsetHeight : 0) - 6, behavior:'smooth'}); }
       box.querySelectorAll('[data-ctxjump]').forEach(b => b.classList.toggle('on', b === nav));
       return;
@@ -40162,7 +40178,7 @@
       /* نوار بخش‌ها با اسکرول همراه می‌شود */
       const mb = m.querySelector('.modal-body');
       mb.addEventListener('scroll', () => { cancelAnimationFrame(mb.__raf); mb.__raf = requestAnimationFrame(() => {
-        const hd = mb.querySelector('.ctc-edh'); if(!hd) return;
+        const hd = mb.querySelector('.ctc-edh'); if(!hd || hd.closest('.ctx-tabbed')) return;
         const lim = hd.getBoundingClientRect().bottom + 24; let cur = 'names';
         mb.querySelectorAll('[data-ctxsec]').forEach(x => { if(x.getBoundingClientRect().top <= lim) cur = x.dataset.ctxsec; });
         if(mb.scrollTop + mb.clientHeight >= mb.scrollHeight - 4) cur = 'contact';
@@ -40298,10 +40314,12 @@
       try{ const k = await ctrSyncRoles(ctrCanon(box.dataset.ctced), o); if(k) try{ shrToast(toFa(k) + ' سمت در دسترسی‌ها هم عوض شد'); }catch(er){} }catch(er2){}
       /* حساب کاربری نمایندهٔ قدیمی (اگر ثبت شده بود) به «حساب طرف» منتقل می‌شود؛ تعیین حساب فقط با ادمین و در «کاربران» است */
       try{ const u = svU0; if(u && isAdminUser() && window.extSaveParty && !window.extPartyOf(u)) await window.extSaveParty(u, ctrCanon(box.dataset.ctced)); }catch(er2){}
-      const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); } if(typeof ctcRepaint === 'function') ctcRepaint();
-      showDialog('ok', dl ? 'پاک شد' : 'ذخیره شد', dl ? 'اطلاعات تماس برداشته شد.' : 'اطلاعات تماس «' + ctrCanon(box.dataset.ctced) + '» ذخیره شد.'); }
+      /* پنجره همان لحظه بسته می‌شود؛ فهرست پشت آن بعد از بسته شدن (یک بار) تازه می‌شود؛ تأیید با پیام کوتاه، نه پنجرهٔ دیگری که باید بست */
+      const m = box.closest('.modal-bg'); if(m && m.id === 'ctcModal'){ m.hidden = true; ctcUnlock(); }
+      const okMsg = dl ? 'اطلاعات تماس برداشته شد' : '«' + ctrCanon(box.dataset.ctced) + '» ذخیره شد';
+      try{ shrToast(okMsg); }catch(er){ showDialog('ok', 'ذخیره شد', okMsg); }
+      setTimeout(() => { try{ if(typeof ctcRepaint === 'function') ctcRepaint(); }catch(e2){} }, 80); }
     catch(err){ showDialog('err','ذخیره نشد', friendlyErr(err)); (sv || dl).disabled = false; }
-    try{ ctcRepaint(); }catch(e2){}
   }, true);
   /* ====== قراردادها در اطلاعات پیمانکاران ======
      همهٔ قراردادهای دفتر فنی در یک فهرست: شماره، عنوان، طرف‌ها (یک یا چند نفر)، مبلغ و
@@ -58531,9 +58549,10 @@
     /* فهرست پیمانکاران و طرف‌ها از همهٔ گزارش‌ها ساخته می‌شود و سنگین است؛ با هر حرف
        و هر فوکوس از نو ساخته می‌شد و روی گوشی زدن روی خانه‌ها دیر جواب می‌داد */
     const popHeavy = !!dl && /^(contractorList|contractPartyList|letterPartyList|mtNameList)$/.test(dl.id);
-    const popKey = popHeavy ? dl.id + '|' + (popInput.closest && popInput.closest('#panelWrite') ? 'w' : '') + '|' + dl.options.length : '';
+    /* هر فهرست یک بار ساخته و تا چند ثانیه نگه داشته می‌شود؛ با هر حرف فقط فیلتر می‌شود (نه ساختن دوباره) */
+    const popKey = dl ? dl.id + '|' + (popInput.closest && popInput.closest('#panelWrite') ? 'w' : '') + '|' + dl.options.length : '';
     let opts;
-    if(popHeavy && POPC.k === popKey && Date.now() - POPC.t < 20000) opts = POPC.o.map(o => Object.assign({}, o));
+    if(dl && POPC.k === popKey && Date.now() - POPC.t < (popHeavy ? 20000 : 6000)) opts = POPC.o.map(o => Object.assign({}, o));
     else{
     opts = dl ? Array.from(dl.options).map(o => ({v: o.value, g: o.getAttribute('data-g') || '', s: o.getAttribute('data-s') || ''})) : [];
     /* فهرست نام پیمانکار و طرف قرارداد: فقط نام اصلی هر پرونده، بی تکرار */
@@ -58581,7 +58600,7 @@
         opts = opts.filter(o => { try{ const t = ctrTypeOf(o.v); if(t === 'cons' || t === 'emp' || t === 'own') return false; }catch(e){} return !cnK.has(normName(o.v)); });
       }
     }
-    if(popHeavy) POPC = {k: popKey, t: Date.now(), o: opts.map(o => Object.assign({}, o))};
+    if(dl) POPC = {k: popKey, t: Date.now(), o: opts.map(o => Object.assign({}, o))};
     }
     if(dl && dl.id === 'skillList'){
       /* تخصص‌های اطلاعات پیمانکاران هم در فهرست؛ برای ردیف گزارشی که نام پیمانکار دارد، تخصص‌های خودش بالای فهرست */
@@ -58704,7 +58723,10 @@
     else if(!pop.contains(e.target)) closePop();
   });
   document.addEventListener('input', e => {
-    if(popInput && e.target === popInput && e.isTrusted !== false){ popInput.__pkTyped = true; drawPop(popInput.value); placePop(); }
+    /* تایپ پشت‌سرهم: فهرست یک بار در هر فریم کشیده می‌شود، نه با هر حرف */
+    if(popInput && e.target === popInput && e.isTrusted !== false){ popInput.__pkTyped = true; const el = popInput;
+      if(drawPop.__raf) cancelAnimationFrame(drawPop.__raf);
+      drawPop.__raf = requestAnimationFrame(() => { drawPop.__raf = 0; if(popInput !== el) return; drawPop(el.value); placePop(); }); }
   });
   // انتخاب با click انجام می‌شود تا کشیدن انگشت برای اسکرول، گزینه را انتخاب نکند
   pop.addEventListener('click', e => {
