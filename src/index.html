@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113075145">
+<meta name="pm-build" content="20261113141743">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29843,6 +29843,13 @@
   @media (max-width:700px){ #ctcModal > .ctc-modal{height:calc(100dvh - 56px) !important;} }
   #ctcModal > .ctc-modal{display:flex !important;flex-direction:column;} #ctcModal > .ctc-modal > .modal-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
   #ctcModal .ctc-ed.ctx-tabbed{flex:1 0 auto;display:flex;flex-direction:column;} #ctcModal .ctc-ed.ctx-tabbed > .ctc-eact{margin-top:auto;}
+
+  /* وراثت اجازه از زیرمجموعه */
+  .pp-r.ih .pp-rt b{color:var(--ink);} .pp-rt em.ih{background:color-mix(in srgb, #2f8a5f 12%, transparent) !important;color:#2f7a52 !important;}
+  .pp-sw.ih{background:color-mix(in srgb, #2f8a5f 35%, var(--field)) !important;} .pp-sw.ih i{transform:translateX(-7px);opacity:.85;}
+  .pp-ban{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb, #c58a12 9%, var(--surface));border:1px solid color-mix(in srgb, #c58a12 28%, transparent);font-size:12.5px;}
+  .ogp-ck{display:flex !important;flex-direction:row !important;align-items:flex-start;gap:8px;grid-column:1 / -1;} .ogp-ck input{margin-top:3px;} .ogp-ck span{display:flex;flex-direction:column;gap:2px;} .ogp-ck small{font-size:11px;color:var(--muted);}
+  @media (max-width:700px){ .pp-ban{flex-direction:column;align-items:stretch;} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -32470,6 +32477,7 @@
     if(ov != null) return ov;
     let rl = ''; try{ rl = String(roleOf(name) || ''); }catch(e){}
     if(rl && permRolesOf(k).some(r => r && rl.indexOf(r) !== -1)) return true;
+    if(rl){ try{ if(permInhFrom(rl, k)) return true; }catch(e){} }
     let L = 3; try{ L = levelOf(name); }catch(e){}
     if(L === 1) return true;
     return permLevelsOf(k).indexOf(L) !== -1;
@@ -32511,6 +32519,8 @@
         if(ov != null) return ov;
         let rl = ''; try{ rl = String(roleOf(me) || ''); }catch(e){}
         if(rl && permRolesOf(k).some(r => r && rl.indexOf(r) !== -1)) return true;
+        /* سمت مافوق، اجازه‌های سمت‌های زیرمجموعه‌اش را هم دارد (مگر برای آن سمت خاموش شده باشد) */
+        if(rl){ try{ if(permInhFrom(rl, k)) return true; }catch(e){} }
       }
     }
     if(v === 1) return true;                       // ادمین سامانه
@@ -42322,7 +42332,7 @@
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   function ogLoad(lists){
-    og.pos.clear(); og.per.clear();
+    og.pos.clear(); og.per.clear(); ogDescC = null;
     const kv = v => { const x = String(v), i = x.indexOf('¦'); return i < 1 ? null : [x.slice(0, i), x.slice(i + 1)]; };
     if(lists && lists[OG_NODE_KIND]){ og.nodes.clear(); lists[OG_NODE_KIND].forEach(v => { const p = kv(v); if(!p) return; try{ og.nodes.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} }); }
     ((lists && lists[OG_POS_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ og.pos.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} });
@@ -42338,6 +42348,26 @@
     return out;
   }
   const ogPos = n => ogPositions().find(x => x.n === n) || null;
+  /* ====== وراثت از زیرمجموعه ======
+     مثل سامانه‌های بزرگ مدیریت پروژه: سمت بالادست هر کاری را که زیردستانش مجازند، خودش هم می‌تواند (نظارت و جایگزینی).
+     برای هر سمت با «inh: false» خاموش می‌شود. زیرمجموعه = همهٔ سمت‌هایی که با «زیر نظر سمت» به این سمت می‌رسند. */
+  let ogDescC = null;
+  function ogDescOf(n){
+    if(!ogDescC){ ogDescC = new Map(); const L = ogPositions(), kids = new Map();
+      L.forEach(x => { if(x.up){ if(!kids.has(x.up)) kids.set(x.up, []); kids.get(x.up).push(x.n); } });
+      const walk = (r, out, seen) => (kids.get(r) || []).forEach(c => { if(seen.has(c)) return; seen.add(c); out.push(c); walk(c, out, seen); });
+      L.forEach(x => { const out = []; walk(x.n, out, new Set([x.n])); ogDescC.set(x.n, out); }); }
+    return ogDescC.get(n) || [];
+  }
+  const ogInhOn = x => !!x && x.inh !== false;
+  /* اگر یکی از سمت‌های زیرمجموعهٔ سمتِ این نفر اجازهٔ k را دارد، نام آن سمت؛ وگرنه null */
+  function permInhFrom(rl, k){
+    const R = permRolesOf(k); if(!R.length) return null;
+    for(const x of ogPositions()){ if(!x.n || rl.indexOf(x.n) === -1 || !ogInhOn(x)) continue;
+      const d = ogDescOf(x.n).find(c => R.indexOf(c) !== -1); if(d) return d; }
+    return null;
+  }
+  window.permInhFrom = permInhFrom;
   /* ترتیب سمت‌ها (تعیین‌شده در «دسترسی‌ها ← سمت‌ها»)؛ بی‌ترتیب‌ها به همان ترتیب فهرست */
   const ogOrd = x => { if(!x) return 9999; if(x.o != null && !isNaN(x.o)) return +x.o; const i = OG_DEF.findIndex(d => d.n === x.n); return 500 + (i < 0 ? 400 : i); };
   const ogPeople = () => { try{ return (peopleRows || []).filter(p => p.name && p.active !== false && !p.pending).map(p => p.name); }catch(e){ return []; } };
@@ -42533,9 +42563,19 @@
     const ov = permUserOf(name, k); if(ov != null) return {on: ov, t: ov ? 'استثنای فردی: مجاز' : 'استثنای فردی: ممنوع', x: 1};
     let rl = ''; try{ rl = String(roleOf(name) || ''); }catch(e){}
     const hit = rl && permRolesOf(k).find(r => r && rl.indexOf(r) !== -1); if(hit) return {on: true, t: 'از سمت «' + hit + '»'};
+    { let ih = null; try{ ih = rl ? permInhFrom(rl, k) : null; }catch(e){} if(ih) return {on: true, t: 'از زیرمجموعه: سمت «' + ih + '»'}; }
     let L = 3; try{ L = levelOf(name); }catch(e){}
     if(L === 1) return {on: true, t: 'از سطح ' + (LEVEL_SHORT[L] || '')};
     return permLevelsOf(k).indexOf(L) !== -1 ? {on: true, t: 'از سطح «' + (LEVEL_SHORT[L] || L) + '»'} : {on: false, t: 'سطح و سمتش این اجازه را ندارند'};
+  }
+  /* قالب پیشنهادی: اجازه‌هایی از قالب هر سمت که هنوز روشن نشده؛ روشن کردن گروهی با ذخیرهٔ موازی (هر بار ۶ تا) */
+  function ogTplMissing(){ return ogPositions().filter(x => (x.tpl || []).some(k => PERM_CAPS.some(c => c.k === k) && permRolesOf(k).indexOf(x.n) === -1)); }
+  async function ogApplyTpl(L){
+    const add = new Map();
+    L.forEach(x => (x.tpl || []).forEach(k => { if(!PERM_CAPS.some(c => c.k === k) || permRolesOf(k).indexOf(x.n) !== -1) return; if(!add.has(k)) add.set(k, []); add.get(k).push(x.n); }));
+    const ks = Array.from(add.keys());
+    for(let i = 0; i < ks.length; i += 6) await Promise.all(ks.slice(i, i + 6).map(k => permRoleSave(k, permRolesOf(k).concat(add.get(k)))));
+    return Array.from(add.values()).reduce((t, a) => t + a.length, 0);
   }
   /* ---- پنل سمت‌ها: فهرست سمت‌ها کنار جزئیات، اجازه‌ها با کلید روشن/خاموش ---- */
   function ogPosPanelHtml(capOk){
@@ -42548,13 +42588,15 @@
     if(cur){
       const ppl = P.filter(x => ogRoleOf(x) === cur.n);
       const caps = PERM_CAPS.filter(c => capOk(c)), has = c => permRolesOf(c.k).indexOf(cur.n) !== -1;
+      const desc = ogDescOf(cur.n), inhOn = ogInhOn(cur), inhOf = c => { if(!inhOn || has(c)) return ''; const R = permRolesOf(c.k); return desc.find(d => R.indexOf(d) !== -1) || ''; };
+      const nInh = inhOn ? PERM_CAPS.filter(c => inhOf(c)).length : 0;
       const nOn = PERM_CAPS.filter(has).length, tplMiss = (cur.tpl || []).filter(k => permRolesOf(k).indexOf(cur.n) === -1 && PERM_CAPS.some(c => c.k === k)).length;
       const f = pcState.pf || 'all', shown = caps.filter(c => f === 'all' || (f === 'on' ? has(c) : !has(c)));
       const sc = OG_SC[cur.side || 'pm'];
       det = '<div class="pp-h" style="--sc:' + sc + '"><span class="pp-ic">' + esc(String(cur.n).trim().slice(0, 1)) + '</span><div class="pp-ht"><b>' + esc(cur.n) + '</b><span class="pp-ch"><i class="sd">' + esc(OG_SIDE_T(cur.side)) + '</i>' + (cur.dept ? '<i>' + esc(cur.dept) + '</i>' : '') + (cur.up ? '<i>زیر نظر «' + esc(cur.up) + '»</i>' : '<i>رأس چارت</i>') + '</span></div>'
         + '<button type="button" class="pp-btn" data-ogedit="' + esc(cur.n) + '">' + (og.ed === cur.n ? 'بستن' : 'ویرایش سمت') + '</button></div>'
         + (og.ed === cur.n ? ogPosFormHtml(cur) : '')
-        + '<div class="pp-ks"><div><b>' + toFa(ppl.length) + '</b><u>عضو</u></div><div><b>' + toFa(nOn) + '</b><u>اجازهٔ این سمت</u></div><div' + (tplMiss ? ' class="w"' : '') + '><b>' + toFa(tplMiss) + '</b><u>پیشنهادیِ روشن‌نشده</u></div></div>'
+        + '<div class="pp-ks"><div><b>' + toFa(ppl.length) + '</b><u>عضو</u></div><div><b>' + toFa(nOn) + '</b><u>اجازهٔ این سمت</u></div>' + (desc.length ? '<div><b>' + toFa(nInh) + '</b><u>' + (inhOn ? 'از ' + toFa(desc.length) + ' سمت زیرمجموعه' : 'وراثت خاموش') + '</u></div>' : '') + '<div' + (tplMiss ? ' class="w"' : '') + '><b>' + toFa(tplMiss) + '</b><u>پیشنهادیِ روشن‌نشده</u></div></div>'
         + '<div class="pp-sec"><div class="pp-sh"><b>اعضا</b><small>سمت هر نفر در «کاربران» و برای هر پروژه جدا تعیین می‌شود</small></div>'
         +   (ppl.length ? '<div class="pp-mem">' + ppl.map(n => '<button type="button" class="pp-m' + (og.pm === n ? ' on' : '') + '" data-ogpm="' + esc(n) + '" title="سرپرست، طرف و طبقات این نفر">' + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(LEVEL_SHORT[levelOf(n)] || '') + '</small></button>').join('') + '</div>'
               + (og.pm && ppl.some(x => x === og.pm) ? '<div class="pp-pmf"><small>جایگاه «' + esc(og.pm) + '» در چارت سازمانی</small>' + ogPerFormHtml(og.pm, P) + '</div>' : '<p class="pp-mu">برای تعیین سرپرست مستقیم، طرف و طبقات هر نفر رویش بزنید.</p>') : '<p class="pp-mu">هنوز کسی این سمت را ندارد.</p>') + '</div>'
@@ -42563,11 +42605,13 @@
         +   (tplMiss ? '<button type="button" class="pp-btn pri" data-ogtpl="' + esc(cur.n) + '">روشن کردن قالب پیشنهادی (+' + toFa(tplMiss) + ')</button>' : '') + '</div>'
         +   (shown.length ? '<div class="pp-gs">' + pcGroups(shown).map(g => { const all = caps.filter(c => c.g === g.g), n0 = all.filter(has).length;
               return '<section class="pp-pg"><div class="pp-pgh"><b>' + esc(g.g) + '</b><span>' + toFa(n0) + ' از ' + toFa(all.length) + '</span><button type="button" data-pcga="' + esc(g.g) + '" data-role="' + esc(cur.n) + '" data-v="' + (n0 === all.length ? '0' : '1') + '">' + (n0 === all.length ? 'خاموش کردن همه' : 'روشن کردن همه') + '</button></div>'
-                + g.items.map(c => '<div class="pp-r' + (has(c) ? ' on' : '') + '"><span class="pp-rt"><b>' + esc(c.t) + ((cur.tpl || []).indexOf(c.k) !== -1 ? '<em>پیشنهادی</em>' : '') + '</b>' + (c.d ? '<small>' + esc(c.d) + '</small>' : '') + '</span>'
-                  + '<button type="button" class="pp-sw' + (has(c) ? ' on' : '') + '" role="switch" aria-checked="' + has(c) + '" aria-label="' + esc(c.t) + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(cur.n) + '"><i></i></button></div>').join('') + '</section>'; }).join('') + '</div>'
+                + g.items.map(c => { const ih = inhOf(c); return '<div class="pp-r' + (has(c) ? ' on' : ih ? ' ih' : '') + '"><span class="pp-rt"><b>' + esc(c.t) + ((cur.tpl || []).indexOf(c.k) !== -1 ? '<em>پیشنهادی</em>' : '') + (ih ? '<em class="ih">از «' + esc(ih) + '»</em>' : '') + '</b>' + (c.d ? '<small>' + esc(c.d) + '</small>' : '') + '</span>'
+                  + '<button type="button" class="pp-sw' + (has(c) ? ' on' : ih ? ' ih' : '') + '" role="switch" aria-checked="' + has(c) + '" aria-label="' + esc(c.t) + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(cur.n) + '"' + (ih ? ' title="از زیرمجموعه دارد؛ روشن کردن یعنی مستقیم هم داشته باشد"' : '') + '><i></i></button></div>'; }).join('') + '</section>'; }).join('') + '</div>'
             : '<div class="pc-none">موردی نیست.</div>') + '</div>';
     }
-    return '<div class="pp"><aside class="pp-l"><div class="pp-lh"><b>سمت‌ها</b><em>' + toFa(L.length) + '</em><button type="button" class="pp-btn" data-ognew="1">+ سمت تازه</button></div>'
+    const miss = ogTplMissing();
+    return (miss.length ? '<div class="pp-ban"><span><b>' + toFa(miss.length) + ' سمت</b> هنوز همهٔ اجازه‌های قالب پیشنهادی‌شان روشن نیست (قالب‌ها بر اساس عرف کار هر سمت آماده شده‌اند).</span><button type="button" class="pp-btn pri" data-ogtplall="1">روشن کردن قالب همهٔ سمت‌ها</button></div>' : '')
+      + '<div class="pp"><aside class="pp-l"><div class="pp-lh"><b>سمت‌ها</b><em>' + toFa(L.length) + '</em><button type="button" class="pp-btn" data-ognew="1">+ سمت تازه</button></div>'
       + '<label class="pp-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" data-ppq placeholder="فیلتر سمت‌ها…" autocomplete="off"></label>'
       + '<div class="pp-ls">' + list + '</div></aside><section class="pp-d">' + det + '</section></div>';
   }
@@ -42583,6 +42627,8 @@
       + '<label><u>زیر نظرِ بخش <em>برای سمت‌های مشاور و ناظر</em></u><select data-ogf="us" data-nons="1">' + [['', 'مستقل'], ['emp', 'کارفرما'], ['pm', 'تیم مدیریت پیمان']].map(([k, t]) => '<option value="' + k + '"' + ((x.us || '') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<label><u>ترتیب در چارت <em>عدد کوچک‌تر جلوتر؛ بین سمت‌های هم‌سطح</em></u><input type="text" inputmode="numeric" data-ogf="o" value="' + esc(x.o != null ? toFa(x.o) : '') + '" placeholder="مثلاً ۱"></label>'
       + '<label><u>زیر نظر سمت</u><select data-ogf="up" data-nons="1"><option value="">— (رأس)</option>' + L.map(y => '<option value="' + esc(y.n) + '"' + (x.up === y.n ? ' selected' : '') + '>' + esc(y.n) + '</option>').join('') + '</select></label>'
+      + '<label class="ogp-ck"><input type="checkbox" data-ogf="inh"' + (x.inh !== false ? ' checked' : '') + '><span><b>اجازه‌های زیرمجموعه را هم داشته باشد</b><small>هر کاری که سمت‌های زیر نظر این سمت مجازند، این سمت هم می‌تواند (روش معمول سامانه‌های بزرگ)</small></span></label>'
+      + (!x.n ? '<label><u>رونوشت اجازه‌ها از سمت <em>اختیاری؛ برای شروع سریع</em></u><select data-ogf="cp" data-nons="1"><option value="">— بدون رونوشت</option>' + L.map(y => '<option value="' + esc(y.n) + '">' + esc(y.n) + '</option>').join('') + '</select></label>' : '')
       + '<div class="ogp-fa"><button type="button" class="mini go" data-ogsave="1">ذخیره</button>' + (!x.def && x.n ? '<button type="button" class="mini" data-ogdel="' + esc(x.n) + '">حذف سمت</button>' : '') + '<button type="button" class="mini" data-ogcancel="1">انصراف</button></div></div>';
   }
   /* ---- چارت سازمانی (گزارش) ---- */
@@ -42904,18 +42950,24 @@
     if(t.closest('[data-ognew]')){ og.sel = ''; og.ed = '__new'; const det = document.querySelector('.pp-d'); if(det) det.innerHTML = '<div class="pp-h" style="--sc:' + OG_SC.pm + '"><span class="pp-ic">+</span><div class="pp-ht"><b>سمت تازه</b><span class="pp-ch"><i>نام، طرف، واحد و سمت بالادست را تعیین کنید</i></span></div></div>' + ogPosFormHtml({n: '', side: 'pm'}); return; }
     if(t.closest('[data-ogcancel]')){ og.ed = ''; og.pm = ''; try{ permRepaint(); }catch(err){} ogRepaintChart(); return; }
     const tp = t.closest('[data-ogtpl]'); if(tp){ const x = ogPos(tp.dataset.ogtpl); if(!x) return; tp.disabled = true;
-      try{ for(const k of (x.tpl || [])){ if(!PERM_CAPS.some(c => c.k === k)) continue; const cur = permRolesOf(k).slice(); if(cur.indexOf(x.n) === -1){ cur.push(x.n); await permRoleSave(k, cur); } } permRepaint(); }catch(err){ tp.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
+      try{ await ogApplyTpl([x]); permRepaint(); }catch(err){ tp.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
+    const tpa = t.closest('[data-ogtplall]'); if(tpa){ tpa.disabled = true; try{ const n = await ogApplyTpl(ogTplMissing()); shrToast(toFa(n) + ' اجازه از قالب‌های پیشنهادی روشن شد'); permRepaint(); }catch(err){ tpa.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const sv = t.closest('[data-ogsave]'); if(sv){ const f = sv.closest('[data-ogform]'), v = k => String((f.querySelector('[data-ogf="' + k + '"]') || {}).value || '').trim();
       const n = v('n'); if(!n){ showDialog('warn', 'نام سمت', 'نام سمت را بنویسید.'); return; }
-      const old = f.dataset.ogform, o = {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
+      const old = f.dataset.ogform, prev = og.pos.get(old) || {}, o = Object.assign({}, prev, {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}); delete o.us; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
+      { const ih = f.querySelector('[data-ogf="inh"]'); if(ih) o.inh = !!ih.checked; }
+      const cpFrom = v('cp');
       { const on = parseInt(toEn(v('o')), 10); if(!isNaN(on)) o.o = on; }
       const base = OG_DEF.find(d => d.n === n); if(!base) o.tpl = (og.pos.get(old) || {}).tpl || [];
       sv.disabled = true;
       try{ if(old && old !== n && !OG_DEF.some(d => d.n === old)){ await ogSaveRow(OG_POS_KIND, old, null); og.pos.delete(old); }
-        await ogSaveRow(OG_POS_KIND, n, o); og.pos.set(n, o); og.sel = n; og.ed = ''; ogLoad({[OG_POS_KIND]: Array.from(og.pos.entries()).map(([k, x]) => k + '¦' + JSON.stringify(x)), [OG_PER_KIND]: Array.from(og.per.values()).map(x => x.n + '¦' + JSON.stringify({side: x.side, up: x.up, fl: x.fl}))}); permRepaint(); }
+        await ogSaveRow(OG_POS_KIND, n, o); og.pos.set(n, o); og.sel = n; og.ed = ''; ogDescC = null;
+        /* سمت تازه: اجازه‌ها از سمت مشابه رونوشت می‌شود */
+        if(cpFrom && cpFrom !== n){ const ks = PERM_CAPS.map(c => c.k).filter(k => permRolesOf(k).indexOf(cpFrom) !== -1 && permRolesOf(k).indexOf(n) === -1);
+          for(let i = 0; i < ks.length; i += 6) await Promise.all(ks.slice(i, i + 6).map(k => permRoleSave(k, permRolesOf(k).concat([n])))); } ogLoad({[OG_POS_KIND]: Array.from(og.pos.entries()).map(([k, x]) => k + '¦' + JSON.stringify(x)), [OG_PER_KIND]: Array.from(og.per.values()).map(x => x.n + '¦' + JSON.stringify({side: x.side, up: x.up, fl: x.fl}))}); permRepaint(); }
       catch(err){ sv.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const dl = t.closest('[data-ogdel]'); if(dl){ if(!(await askConfirm('حذف سمت', '«' + dl.dataset.ogdel + '» از فهرست سمت‌ها برداشته می‌شود. سمت افرادی که این سمت را دارند دست نمی‌خورد.', 'حذف'))) return;
-      try{ await ogSaveRow(OG_POS_KIND, dl.dataset.ogdel, null); og.pos.delete(dl.dataset.ogdel); og.sel = ''; og.ed = ''; permRepaint(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
+      try{ await ogSaveRow(OG_POS_KIND, dl.dataset.ogdel, null); og.pos.delete(dl.dataset.ogdel); ogDescC = null; og.sel = ''; og.ed = ''; permRepaint(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     /* چارت: ویرایش سرپرست، طرف و محدودهٔ هر نفر */
     const pr = null; if(pr){ const n = pr.dataset.ogper; og.ed = og.ed === 'p:' + n ? '' : 'p:' + n; ogRepaintChart(); const eb = document.querySelector('#reportView .ogc-ed'); if(eb) eb.scrollIntoView({block: 'nearest', behavior: 'smooth'}); return; }
     const fl = t.closest('[data-ogfl]'); if(fl){ fl.classList.toggle('on'); return; }
