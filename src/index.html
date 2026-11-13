@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113141743">
+<meta name="pm-build" content="20261113142718">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29850,6 +29850,16 @@
   .pp-ban{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb, #c58a12 9%, var(--surface));border:1px solid color-mix(in srgb, #c58a12 28%, transparent);font-size:12.5px;}
   .ogp-ck{display:flex !important;flex-direction:row !important;align-items:flex-start;gap:8px;grid-column:1 / -1;} .ogp-ck input{margin-top:3px;} .ogp-ck span{display:flex;flex-direction:column;gap:2px;} .ogp-ck small{font-size:11px;color:var(--muted);}
   @media (max-width:700px){ .pp-ban{flex-direction:column;align-items:stretch;} }
+
+  /* کارت کاربر: جایگاه سازمانی */
+  .um-org{grid-column:1 / -1;margin:10px 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb, var(--ink) 3%, var(--surface));border:1px solid color-mix(in srgb, var(--line) 80%, transparent);}
+  .um-orgh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;} .um-orgh b{font-size:13px;font-weight:800;} .um-side{font-size:11.5px;color:var(--muted);}
+  .um-orgg{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:10px;} .um-orgg > div{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;} .um-orgg u{text-decoration:none;flex-basis:100%;font-size:11px;color:var(--muted);font-weight:700;}
+  .um-op{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 4px;border-radius:99px;background:var(--surface);border:1px solid color-mix(in srgb, var(--line) 80%, transparent);max-width:100%;} .um-op b{font-size:11.5px;font-weight:700;white-space:nowrap;} .um-op small{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .um-oe{font-style:normal;font-size:11.5px;color:var(--muted);}
+  .um-orgk{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:6px;margin-bottom:10px;} .um-orgk span{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:10px;background:var(--surface);} .um-orgk b{font-size:15px;font-weight:800;} .um-orgk u{text-decoration:none;font-size:10.5px;color:var(--muted);} .um-orgk .w b{color:#b0700f;}
+  .um-orga{display:flex;flex-wrap:wrap;gap:6px;}
+  @media (max-width:700px){ .um-orgg{grid-template-columns:1fr;} .um-orgk{grid-template-columns:repeat(3, minmax(0,1fr));} }
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -44109,10 +44119,27 @@
       const img = avatarOf(n);
       return '<span class="ava um-ava">' + (img ? '<img src="' + esc(img) + '" alt="">' : esc(initialsOf(n))) + '</span>';
     };
-    const roleSel = (cur, id) => '<select class="u-role"' + (id ? ' id="' + id + '"' : '') + '>'
-      + ROLE_LIST.map(r => '<option value="' + esc(r === '—' ? '' : r) + '"'
-          + (((cur || '') === (r === '—' ? '' : r)) ? ' selected' : '')
-          + '>' + esc(r) + '</option>').join('') + '</select>';
+    /* سمت از همان کاتالوگ چارت سازمانی، دسته‌بندی‌شده بر اساس طرف (تیم پیمان، کارفرما، مشاور، …) */
+    /* جایگاه سازمانی هر کاربر: طرف، مافوق، زیردستان و اینکه اجازه‌هایش از کجا می‌آید */
+    const umOrgHtml = n => { try{
+      const P = ogPeople(), I = ogPersonInfo(n), up = ogParentOf(n, P), subs = P.filter(x => nameKey(x) !== nameKey(n) && (function(){ try{ const q = ogParentOf(x, P); return q && nameKey(q) === nameKey(n); }catch(e){ return false; } })());
+      let cPos = 0, cInh = 0, cLv = 0, cOv = 0, cAll = 0; const rl = String(I.rl || '');
+      if(!isAdminName(n)) PERM_CAPS.forEach(c => { const w = permWhy(n, c.k); if(!w.on) return; cAll++; if(w.x) cOv++; else if(/^از سمت/.test(w.t)) cPos++; else if(/زیرمجموعه/.test(w.t)) cInh++; else cLv++; });
+      const ppl = (L, emp) => L.length ? L.slice(0, 6).map(x => '<span class="um-op">' + avatarHtml(x, 'xs', true) + '<b>' + esc(x) + '</b><small>' + esc(ogRoleOf(x) || '') + '</small></span>').join('') + (L.length > 6 ? '<em>+' + toFa(L.length - 6) + '</em>' : '') : '<i class="um-oe">' + emp + '</i>';
+      return '<div class="um-org"><div class="um-orgh"><b>جایگاه سازمانی و دسترسی</b><span class="um-side">' + esc(OG_SIDE_T(I.side)) + (rl ? ' · ' + esc(rl) : '') + '</span></div>'
+        + '<div class="um-orgg"><div><u>مافوق مستقیم</u>' + ppl(up ? [up] : [], 'رأس چارت') + '</div><div><u>زیردستان (' + toFa(subs.length) + ')</u>' + ppl(subs, 'زیردستی ندارد') + '</div></div>'
+        + (isAdminName(n) ? '<div class="um-orgk"><span><b>همه</b><u>ادمین سامانه</u></span></div>'
+          : '<div class="um-orgk"><span><b>' + toFa(cAll) + '</b><u>اجازهٔ فعال</u></span><span><b>' + toFa(cPos) + '</b><u>از سمت</u></span><span><b>' + toFa(cInh) + '</b><u>از زیرمجموعه</u></span><span><b>' + toFa(cLv) + '</b><u>از سطح</u></span><span' + (cOv ? ' class="w"' : '') + '><b>' + toFa(cOv) + '</b><u>استثنای فردی</u></span></div>')
+        + '<div class="um-orga"><button type="button" class="mini" data-umperm="' + esc(n) + '">دیدن و تنظیم دسترسی‌های این نفر</button>' + (rl ? '<button type="button" class="mini" data-umpos="' + esc(rl) + '">اجازه‌های سمت «' + esc(rl) + '»</button>' : '') + '</div></div>';
+    }catch(e){ return ''; } };
+    const roleSel = (cur, id) => { cur = cur || '';
+      let L = []; try{ L = ogPositions().filter(x => !x.off).sort((a, b) => ogOrd(a) - ogOrd(b)); }catch(e){}
+      const opt = (v, t) => '<option value="' + esc(v) + '"' + (cur === v ? ' selected' : '') + '>' + esc(t) + '</option>';
+      const inCat = new Set(L.map(x => x.n)), rest = ROLE_LIST.filter(r => r && r !== '—' && !inCat.has(r));
+      if(cur && !inCat.has(cur) && rest.indexOf(cur) === -1) rest.push(cur);
+      return '<select class="u-role"' + (id ? ' id="' + id + '"' : '') + '>' + opt('', '— بدون سمت')
+        + OG_SIDES.map(([k, t]) => { const G = L.filter(x => (x.side || 'pm') === k); return G.length ? '<optgroup label="' + esc(t) + '">' + G.map(x => opt(x.n, x.n)).join('') + '</optgroup>' : ''; }).join('')
+        + (rest.length ? '<optgroup label="سایر">' + rest.map(r => opt(r, r)).join('') + '</optgroup>' : '') + '</select>'; };
     const lvlSel = (cur, id, lock) => '<select class="u-level"' + (id ? ' id="' + id + '"' : '') + (lock ? ' disabled title="ادمین سامانه همیشه سطح ۱ است"' : '') + '>'
       + LEVEL_ORDER.map(L => lvlOpt(L, cur)).join('') + '</select>';
     const UM_I = {
@@ -44263,6 +44290,7 @@
         +   '</div>'
         +   (u.ct ? '<div class="um-ctnote">این نام پیمانکار است و فقط برای عکس/پرونده در فهرست آمده. اگر باید کاربر سامانه شود، سمت و سطح بدهید و ذخیره کنید.'
               + ' <button type="button" class="mini" data-hrprof="' + esc(n) + '">کارت پیمانکار</button></div>' : '')
+        +   (u.ct ? '' : umOrgHtml(n))
         +   '<div class="um-lvnote lvl-now">' + esc(LEVEL_LABEL[u.L] || LEVEL_LABEL[3]) + '</div>'
         +   '<div class="um-meta"><span>' + UM_I.key + PASS_T[u.pass] + '</span>'
         +     '<span class="' + (u.active ? 'ok' : 'bad') + '"><i></i>' + (u.active ? 'حساب فعال' : 'حساب غیرفعال') + '</span></div>'
@@ -44371,6 +44399,10 @@
     const umClick = async e => {
       const ls = e.target.closest('[data-ulvsug]');
       if(ls){ const row = ls.closest('.um-row'), lv = row && row.querySelector('.u-level'); if(lv){ lv.value = ls.dataset.ulvsug; lv.dispatchEvent(new Event('change', {bubbles: true})); } ls.parentElement.innerHTML = ''; return; }
+      /* از کارت کاربر به دسترسی‌های همان نفر یا همان سمت */
+      const upm = e.target.closest('[data-umperm], [data-umpos]');
+      if(upm){ try{ if(upm.dataset.umperm){ pcState.tab = 'us'; pcState.who = upm.dataset.umperm; pcState.q = ''; } else { pcState.tab = 'rl'; pcState.rlv = ''; og.sel = upm.dataset.umpos; } }catch(er){}
+        const tb = box.querySelector('[data-umtab="perm"]'); if(tb){ tb.click(); try{ permRepaint(); }catch(er){} const pn = box.querySelector('[data-umpane="perm"]'); if(pn) pn.scrollIntoView({block: 'start'}); } return; }
       const ut = e.target.closest('[data-umtab]');
       if(ut){
         umState.tab = ut.dataset.umtab;
