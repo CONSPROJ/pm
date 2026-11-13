@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113160351">
+<meta name="pm-build" content="20261113161759">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29939,6 +29939,13 @@
   :is(html,#z0) :is(body,#z1) #wsHost .kind-caps.wrk-caps{display:flex !important;flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none;grid-template-columns:none !important;}
   #wsHost .kind-caps.wrk-caps::-webkit-scrollbar{display:none;}
   :is(html,#z0) :is(body,#z1) #wsHost .kind-caps.wrk-caps > .kcap{flex:1 0 auto !important;white-space:nowrap;min-width:max-content;}
+
+  .prf-more{margin:2px 0 12px;border-radius:12px;background:var(--field);padding:0 12px;} .prf-more > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;min-height:40px;font-size:12.5px;font-weight:700;}
+  .prf-more > summary::-webkit-details-marker{display:none;} .prf-more > summary::after{content:'▾';margin-inline-start:auto;color:var(--muted);} .prf-more[open] > summary::after{content:'▴';}
+  .prf-more > summary em{font-style:normal;font-weight:500;color:var(--muted);} .prf-more[open]{padding-bottom:10px;}
+
+/* ۳۰۹: وقتی فرم تازهٔ همان بخش باز است، دکمهٔ «+ ثبت» بالای صفحه تکراری است */
+:is(html,#z0) :is(body,#z1) #panelTasks:has(#wsHost [data-prtab="new"].on, #wsHost [data-hstab="new"].on, #wsHost [data-cotab="new"].on) #wsBar .ws-badd{display:none!important}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -48736,6 +48743,10 @@
 
   /* ====== پنجرهٔ پیام (موفقیت / خطا) ====== */
   function showDialog(type, title, text){
+    /* «انجام شد» کوتاه = پیام کوتاه پایین صفحه، نه پنجره‌ای که باید بست (یک الگو در کل سایت).
+       استثنا: متن بلند، یا هر چیزی دربارهٔ رمز، لینک، کلید یا کد که کاربر باید با دقت بخواند یا کپی کند. */
+    if(type === 'ok'){ const tx = String(text || ''), all = String(title || '') + ' ' + tx;
+      if(tx.length <= 160 && !/رمز|لینک|کلید|توکن|کپی/.test(all)){ try{ shrToast(tx || title || 'انجام شد'); return; }catch(e){} } }
     const bg = document.getElementById('msgModal');
     if(!bg){ alert(text); return; }
     document.getElementById('msgModalTitle').textContent = title || (type === 'ok' ? 'انجام شد' : 'خطا');
@@ -74656,7 +74667,7 @@
     return '<div class="prf-it" data-pri="' + i + '">'
       + '<span class="prf-n">' + toFa(i + 1) + '</span>'
       + '<div class="prf-fl">'
-      +   '<input type="text" class="pr-d" placeholder="چه چیزی لازم است؟ مثلاً میلگرد A3 سایز ۱۲" value="' + esc(it.d || '') + '">'
+      +   '<input type="text" class="pr-d" aria-required="true" placeholder="چه چیزی لازم است؟ * مثلاً میلگرد A3 سایز ۱۲" value="' + esc(it.d || '') + '">'
       +   '<div class="prf-sub">'
       +     '<label><u>مقدار</u><input type="text" class="pr-q" inputmode="decimal" placeholder="۰" value="' + esc(it.q || '') + '"></label>'
       +     '<label><u>واحد</u><input type="text" class="pr-u" data-list="prUnitList" autocomplete="off" placeholder="عدد" value="' + esc(it.u || '') + '"></label>'
@@ -74684,10 +74695,13 @@
       + '<div class="prf-g">'
       +   '<label class="te-f"><u>درخواست‌کننده</u><input type="text" class="pr-req" data-list="prReqList" autocomplete="off" placeholder="کارکنان یا پیمانکار" value="' + esc(D.requester) + '"></label>'
       +   '<label class="te-f"><u>واحد</u><input type="text" class="pr-unit" data-list="prUnitReqList" autocomplete="off" value="' + esc(D.unit) + '" placeholder="اجرا، تأسیسات، دفتر فنی…"></label>'
+      + '</div>'
+      /* تاریخ (امروز) و کد (خودکار) معمولاً دست نمی‌خورند؛ زیر «تاریخ و کد» جمع‌اند */
+      + '<details class="prf-more"' + (ed || D.code || (D.date && D.date !== todayShamsi()) ? ' open' : '') + '><summary>تاریخ و کد <em>' + esc(toFa(D.date === todayShamsi() ? 'امروز' : D.date)) + ' · ' + esc(D.code ? toFa(D.code) : 'کد خودکار ' + toFa(prNextCode())) + '</em></summary><div class="prf-g">'
       +   '<label class="te-f"><u>تاریخ</u><input type="text" class="pr-date date-in" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
       +   '<label class="te-f"><u>کد درخواست</u><input type="text" class="pr-code" dir="ltr" autocomplete="off" value="' + esc(D.code || '') + '" placeholder="' + esc(prNextCode()) + '"></label>'
-      + '</div>'
-      + '<div class="prf-items"><div class="prf-ih"><b>اقلام</b><em>' + (ed ? '' : 'اگر کد را خالی بگذارید، ' + esc(toFa(prNextCode())) + ' داده می‌شود') + '</em></div>'
+      + '</div></details>'
+      + '<div class="prf-items"><div class="prf-ih"><b>اقلام</b></div>'
       +   D.items.map(prItemRowHtml).join('')
       +   '<button type="button" class="prf-add" data-pradd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>قلم دیگر</button>'
       + '</div>'
@@ -75044,8 +75058,8 @@
       prReadDraft();
       const D = prcState.draft;
       const items = D.items.filter(it => it.d).map(it => Object.assign({}, it, {st: PR_ST[0], log: []}));
-      if(!items.length){ showDialog('warn','ردیفی نیست','دست‌کم یک قلم کالا یا خدمت بنویسید.'); return; }
-      if(!D.date){ showDialog('warn','تاریخ نادرست','تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید.'); return; }
+      if(!items.length){ needField(host.querySelector('.prf-it .pr-d'), 'دست‌کم یک قلم کالا یا خدمت بنویسید'); return; }
+      if(!D.date){ const mo = host.querySelector('.prf-more'); if(mo) mo.open = true; needField(host.querySelector('.pr-date'), 'تاریخ را به شکل ۱۴۰۵/۰۷/۰۱ بنویسید'); return; }
       if(host.querySelector('.prf-ph .up-field.up-busy')){ showDialog('warn','آپلود تمام نشده','تا پایان آپلود عکس‌ها صبر کنید.'); return; }
       if(D.editId){
         const req = prcState.list.find(r => r.id === D.editId); if(!req){ prcState.draft = null; prcRender(); return; }
@@ -96085,8 +96099,9 @@
     if(m === 'qc'){ try{ window.qcSetTab && window.qcSetTab(sub || ''); }catch(e){} }
     if(m === 'co'){ try{ co.tab = sub || 'list'; co.f = 'open'; co.q = ''; }catch(e){} }
     if(m === 'mc'){ try{ window.mcSetTab && window.mcSetTab(sub || 'list'); }catch(e){} }
-    switchTab(window.wsHas && window.wsHas(m) ? 'tasks' : 'write');
-    try{ window.wpickSetMode && window.wpickSetMode(m); }catch(e){}
+    /* یک مسیر: همان بازکردن بخش از میز کار (صفحهٔ کامل روی دسکتاپ و گوشی) */
+    if(window.wsHas && window.wsHas(m)){ switchTab('tasks'); try{ window.wsSet(m); }catch(e){} }
+    else { switchTab('write'); try{ window.wpickSetMode && window.wpickSetMode(m); }catch(e){} }
     try{ window.scrollTo({top:0}); }catch(e){}
   }
   function homeNewDoc(k){
