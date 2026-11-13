@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113072654">
+<meta name="pm-build" content="20261113073119">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32396,6 +32396,12 @@
     {g:'ارتباط', k:'remind.use', t:'یادآور', d:'ثبت یادآور و دیدن زبانهٔ «یادآورها»', def:[1,2,3,4,5]},
     {g:'ارتباط', k:'remind.others', t:'یادآور برای دیگران', d:'وگرنه فقط برای خودش یادآور می‌گذارد', def:[1,2]},
     /* دفترهای پروژه: هر دفتر یک اجازهٔ «دیدن و ثبت» و هرجا تصمیم فنی لازم است یک اجازهٔ جدا برای «تأیید» */
+    {g:'فعالیت', k:'task.bulk', t:'تغییر گروهی فعالیت‌ها', d:'انتخاب چند فعالیت و تغییر مسئول، موعد یا وضعیت با هم', def:[1,2]},
+    {g:'فعالیت', k:'task.export', t:'خروجی PDF فهرست فعالیت‌ها', d:'چاپ همان فهرست با فیلترهای فعلی', def:[1,2,3]},
+    {g:'فعالیت', k:'team.progress', t:'حلقهٔ پیشرفت تیم در خانه', d:'پیشرفت کارهای خودش و زیرمجموعه‌اش در چارت', def:[1,2,7]},
+    {g:'فعالیت', k:'team.all', t:'پیشرفت کل پروژه به‌جای فقط زیرمجموعه', d:'', def:[1,2]},
+    {g:'ارتباط', k:'sug.decide', t:'تصمیم دربارهٔ پیشنهادها', d:'پذیرش یا رد پیشنهادهای کاربران', def:[1,2,7]},
+    {g:'گزارش‌ها', k:'fc.edit', t:'تنظیم پیش‌بینی پایان کار', d:'تاریخ شروع، پایان برنامه و بودجهٔ مصوب', def:[1,2]},
     {g:'دفترهای پروژه', k:'reg.rfi', t:'RFI — ثبت سؤال فنی', d:'دیدن، ثبت و بستن RFI', def:[1,2,3,5]},
     {g:'دفترهای پروژه', k:'reg.rfi.ok', t:'RFI — پاسخ دادن', d:'پاسخ فنی به RFI (معمولاً مشاور، طراح یا دفتر فنی)', def:[1,2]},
     {g:'دفترهای پروژه', k:'reg.smt', t:'ارسال مدارک (Submittal)', d:'ثبت نقشهٔ کارگاهی، نمونه و کاتالوگ برای تأیید', def:[1,2,3,5]},
@@ -37722,7 +37728,7 @@
     warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>'
   };
   /* دانلود و بارگذاری اکسل فقط برای ادمین سامانه */
-  const txCanBulk = () => { try{ return isAdminUser(); }catch(e){ return false; } };
+  const txCanBulk = () => { try{ return can('task.bulk'); }catch(e){ return false; } };
   /* ستون‌های فایل؛ ro یعنی فقط برای دیدن */
   const TX_DEF = [
     {k:'id',     h:'شناسه (تغییر ندهید)', w:12, al:['شناسه']},
@@ -52348,7 +52354,7 @@
     await kxListAdd(SUG_KIND, key + '¦' + JSON.stringify(n));
     Object.assign(o, n, {raw: key + '¦' + JSON.stringify(n)});
   }
-  const sugCanDecide = () => { try{ return isAdminUser() || rawLevel() <= 2 || rawLevel() === 7; }catch(e){ return false; } };
+  const sugCanDecide = () => { try{ return can('sug.decide'); }catch(e){ return false; } };
   /* فهرست پیشنهادهای باز برای مدیر (در «کارهای من») */
   window.sugHtml = function(){
     if(!sugCanDecide()) return '';
@@ -83870,7 +83876,7 @@
     return {cfg, P, H, rate, rsrc, left, fin, late, ct, st, paid, bac, eac, var: eac != null && bac ? eac - bac : null};
   }
   function fxFcPaint(){
-    const m = document.getElementById('fxFcM'); if(!m) return; const C = fxFcCalc(), B = m.querySelector('.fx-bd'); const ed = isAdminUser() || hmDashOk();
+    const m = document.getElementById('fxFcM'); if(!m) return; const C = fxFcCalc(), B = m.querySelector('.fx-bd'); const ed = (function(){ try{ return can('fc.edit'); }catch(e){ return false; } })();
     const K = (v, l, cls, sub) => '<div class="fxf-k ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>';
     const pts = C.H.slice(-40), W = 560, Hh = 120, mx = 100;
     const spark = pts.length > 1 ? '<svg viewBox="0 0 ' + W + ' ' + Hh + '" class="fxf-sp" preserveAspectRatio="none"><polyline fill="none" stroke="var(--sky)" stroke-width="2.5" points="' + pts.map((h, i) => (i / (pts.length - 1) * W).toFixed(1) + ',' + (Hh - h.p / mx * Hh).toFixed(1)).join(' ') + '"/></svg>' : '<div class="fx-empty sm"><small>روند پیشرفت از امروز ثبت می‌شود؛ هر بار باز کردن این صفحه (روزی یک بار) یک نقطه اضافه می‌کند. با ثبت «تاریخ شروع» همین الان هم برآورد داریم.</small></div>';
@@ -86434,10 +86440,10 @@
         +     '</div>'
         +     '<button type="button" class="tk-la" data-laopen="1" title="کارهای سه هفتهٔ آینده و آمادگی هرکدام"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg>سه هفتهٔ آینده</button>'
         +     (canAddTask() ? '<button type="button" class="tk-addbtn" data-tkadd="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>فعالیت</button>' : '')
-        +     ((txCanBulk() || isAdminUser()) ? '<details class="tk-more"><summary title="ابزارهای بیشتر" aria-label="ابزارهای بیشتر"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary>'
+        +     ((txCanBulk() || isAdminUser() || can('task.export')) ? '<details class="tk-more"><summary title="ابزارهای بیشتر" aria-label="ابزارهای بیشتر"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></summary>'
         +       '<div class="tk-more-m">'
         +       (isAdminUser() ? '<u>نما</u><button type="button" data-vdsave="1" title="نمای فعلی فعالیت‌ها، برنامهٔ اجرا و اسناد برای همه پیش‌فرض شود">' + VD_PIN + 'پیش‌فرض همه</button>' : '')
-        +       (isAdminUser() ? '<u>خروجی</u><button type="button" data-tkpdf="1" title="چاپ یا PDF همین فهرست با فیلترهای فعلی">' + TX_I.down + 'PDF فهرست فعلی</button>' : '')
+        +       (can('task.export') ? '<u>خروجی</u><button type="button" data-tkpdf="1" title="چاپ یا PDF همین فهرست با فیلترهای فعلی">' + TX_I.down + 'PDF فهرست فعلی</button>' : '')
         +       (txCanBulk() ? '<u>' + TX_I.xls + 'اکسل فعالیت‌های اجرایی</u>'
         +       '<button type="button" data-txxl="out" title="دانلود فعالیت‌های اجرایی برای اصلاح طبقه و محل">' + TX_I.down + 'دانلود فایل</button>'
         +       '<button type="button" data-txxl="in" title="بارگذاری فایل اصلاح‌شده">' + TX_I.up + 'بارگذاری فایل اصلاح‌شده</button>' : '')
@@ -96180,10 +96186,10 @@
   /* درصد انجام کارها (اسناد + فعالیت‌های اجرایی) برای مدیران: خودِ شخص و زیرمجموعه‌اش در چارت؛ مدیر پروژه و ادمین کل پروژه */
   function h3PctRing(me){
     try{
-      const L = levelOf(me); if(!(L <= 2 || L === 7 || isAdminUser())) return '';
+      const cp = k => { try{ return !!can(k); }catch(e){ return false; } }; if(!cp('team.progress')) return '';
       const all = (tasksAll || []).filter(r => r && (pick(r,T.id) || r.__admId));
       let team = null;
-      if(!(L <= 2 || isAdminUser())){
+      if(!cp('team.all')){
         const P = ogPeople(), sub = new Set([nameKey(me)]); let grow = true, g = 0;
         while(grow && g++ < 8){ grow = false; P.forEach(n => { const k = nameKey(n); if(sub.has(k)) return; const up = ogParentOf(n, P); if(up && sub.has(nameKey(up))){ sub.add(k); grow = true; } }); }
         team = sub;
@@ -96260,7 +96266,7 @@
         C.push(card('sky', HM_I.msg, 'پیام‌ها', toFa(U.length) + ' خوانده‌نشده از ' + esc(W.slice(0, 2).join('، ')) + (W.length > 2 ? ' و ' + toFa(W.length - 2) + ' نفر دیگر' : ''), 'خواندن', 'data-h3msg="' + esc(W.length === 1 ? W[0] : '') + '"')); } }catch(e){}
     /* نبض کارگاه برای مدیران: نفرات امروز و گزارش‌دهنده‌هایی که هنوز نفرستاده‌اند */
     try{ const L = (typeof levelOf === 'function') ? levelOf(me) : 3;
-      if((L <= 2 || isAdminUser()) && X.day && X.day.has){
+      if((function(){ try{ return can('home.dash'); }catch(e){ return false; } })() && X.day && X.day.has){
         const miss = (X.day.req || []).filter(x => !x.ok);
         const dlt = X.day.prevTot ? X.day.tot - X.day.prevTot : 0;
         if(!tabOk('view')) C.push(card('grn', HM_I.people, 'نفرات کارگاه', toFa(X.day.tot) + ' نفر' + (X.dDate && X.dDate !== todayShamsi() ? ' (دیروز)' : '') + ' · ' + toFa(X.day.ctrN) + ' پیمانکار' + (dlt ? ' · ' + (dlt > 0 ? '+' : '−') + toFa(Math.abs(dlt)) : '') + (X.day.issues ? ' · ' + toFa(X.day.issues) + ' مانع' : ''), 'گزارش', 'data-h3rep="daily"'));
