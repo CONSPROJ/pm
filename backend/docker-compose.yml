@@ -1,0 +1,21 @@
+# سرور اختصاصی: Postgres + API. رمزها فقط در فایل .env روی خود سرور (در مخزن نیست).
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pm
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: pm
+    volumes: [ "pgdata:/var/lib/postgresql/data" ]
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on: [ db ]
+    environment:
+      DATABASE_URL: postgres://pm:${DB_PASSWORD}@db:5432/pm
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      PORT: 3100
+    ports: [ "127.0.0.1:3100:3100" ]
+volumes:
+  pgdata: {}
