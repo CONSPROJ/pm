@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113153833">
+<meta name="pm-build" content="20261113155259">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29927,6 +29927,11 @@
   .crs-note{margin:8px 2px 0;font-size:12px;color:var(--muted);}
   .crs-ab{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;} .crs-ab textarea{width:100%;min-height:64px;} .crs-ab span{display:flex;gap:6px;}
   .crs-act .dng{color:#c4453a !important;}
+
+  /* دکمهٔ «‹ بازگشت» یکسان در صفحه‌های کامل */
+  :is(html,#z0) :is(body,#z1) .as-back{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex !important;align-items:center;gap:4px;height:34px;padding:0 12px 0 10px !important;border-radius:99px;flex:none;font-size:13px;font-weight:700;color:var(--ink);background:var(--field);border:1px solid color-mix(in srgb, var(--line) 80%, transparent);width:auto !important;min-width:0 !important;position:static !important;}
+  :is(html,#z0) :is(body,#z1) .as-back svg{width:15px !important;height:15px !important;stroke:currentColor;fill:none;}
+  :is(html,#z0) :is(body,#z1) .as-back:hover{background:color-mix(in srgb, var(--ink) 7%, var(--field));}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -83498,6 +83503,14 @@
     m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-fxx]')){ m.remove(); } });
     return m;
   }
+
+  /* صفحهٔ کامل = یک الگوی برگشت: دکمهٔ بستنِ سربرگ به «‹ بازگشت» در ابتدای سربرگ تبدیل می‌شود (همان کار را می‌کند) و در حالت پنجره‌ای برمی‌گردد */
+  const PG_X = '[data-fxx], [data-ogdx], #profileX, [data-lax], [data-rcx], [data-mtgx], [data-wkrx], .modal-head > .x, .modal-head > button.x, .fx-hd > .ico-btn, button[aria-label="بستن"]';
+  const PG_BACK_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  window.pgBackOn = m => { try{ const hd = m.querySelector('.fx-hd, .modal-head, .rc-h, .la-h, .og-desk-h'); const x = hd && hd.querySelector(PG_X); if(!x || x.classList.contains('as-back')) return;
+      x.__pgHtml = x.innerHTML; x.__pgNext = x.nextSibling; x.__pgPar = x.parentNode; x.classList.add('as-back'); x.innerHTML = PG_BACK_I + '<span>بازگشت</span>';
+      const par = x.parentNode, rev = /reverse/.test(getComputedStyle(par).flexDirection); if(rev) par.appendChild(x); else par.insertBefore(x, par.firstChild); }catch(e){} };
+  window.pgBackOff = m => { try{ m.querySelectorAll('.as-back').forEach(x => { x.classList.remove('as-back'); if(x.__pgHtml != null) x.innerHTML = x.__pgHtml; try{ if(x.__pgPar) x.__pgPar.insertBefore(x, x.__pgNext && x.__pgNext.parentNode === x.__pgPar ? x.__pgNext : null); }catch(e){} }); }catch(e){} };
   function fxPagePos(m){ try{ const W = window.innerWidth, H = window.innerHeight, h = document.querySelector('.app-head'), t = document.getElementById('tabBar');
     let top = h && h.offsetHeight ? Math.max(0, h.getBoundingClientRect().bottom) : 0, r = 0, l = 0, b = 0;
     const tr = t && t.offsetWidth ? t.getBoundingClientRect() : null;
@@ -83507,12 +83520,12 @@
   function fxPageSync(){ try{ window.dispatchEvent(new Event('pm:navsync')); }catch(e){} }
   /* بخشی که از میز کار باز می‌شود و خودش پنجره است: روی دسکتاپ به‌جای پنجرهٔ کوچک روی «فعالیت‌ها»، صفحهٔ کامل در جای محتوا */
   const fxVis = el => !el.hidden && el.isConnected && getComputedStyle(el).display !== 'none';
-  function fxPageUnset(m){ m.classList.remove('fx-page'); m.style.inset = ''; delete m.dataset.wsk; if(m.__pgObs){ m.__pgObs.disconnect(); m.__pgObs = null; } fxPageSync(); }
+  function fxPageUnset(m){ try{ window.pgBackOff(m); }catch(e){} m.classList.remove('fx-page'); m.style.inset = ''; delete m.dataset.wsk; if(m.__pgObs){ m.__pgObs.disconnect(); m.__pgObs = null; } fxPageSync(); }
   window.fxPageWatch = k => { const before = new Set(Array.from(document.querySelectorAll('.modal-bg')).filter(fxVis)); const t0 = Date.now();
     const tick = () => { const m = Array.from(document.querySelectorAll('.modal-bg')).reverse().find(x => fxVis(x) && !before.has(x) && x.id !== 'profileModal' && x.id !== 'confirmModal');
       if(!m){ if(Date.now() - t0 < 1500) setTimeout(tick, 40); return; }
       document.querySelectorAll('.modal-bg.fx-page').forEach(x => { if(x !== m) window.fxPageClose(x); });
-      m.classList.add('fx-page'); m.dataset.wsk = k; fxPagePos(m); fxPageSync();
+      m.classList.add('fx-page'); m.dataset.wsk = k; fxPagePos(m); fxPageSync(); try{ window.pgBackOn(m); }catch(e){}
       const o = new MutationObserver(() => { if(!fxVis(m)) fxPageUnset(m); }); o.observe(m, {attributes: true, attributeFilter: ['hidden', 'style', 'class']}); m.__pgObs = o;
       const o2 = new MutationObserver(() => { if(!m.isConnected){ o2.disconnect(); fxPageSync(); } }); o2.observe(document.body, {childList: true}); };
     tick(); };
@@ -96508,6 +96521,8 @@
   (function(){
     const pm = document.getElementById('profileModal');
     if(pm) new MutationObserver(() => { if(pm.hidden) pm.classList.remove('pg-mode'); }).observe(pm, {attributes:true, attributeFilter:['hidden']});
+    /* صفحهٔ پروفایل: دکمهٔ «‹ بازگشت» (بررسی سبک دوره‌ای؛ ناظر روی class با کدهای قدیمی حلقه می‌ساخت) */
+    if(pm) setInterval(() => { try{ const on = !pm.hidden && pm.classList.contains('pg-mode'); if(on && !pm.querySelector('.as-back')) window.pgBackOn(pm); else if(!on && pm.querySelector('.as-back')) window.pgBackOff(pm); }catch(e){} }, 300);
   })();
   function h3Hero(work, tk){
     const AP = (function(){ try{ return window.apvHome ? window.apvHome(3) : {n: 0, sub: '', html: ''}; }catch(e){ return {n: 0, sub: '', html: ''}; } })();
