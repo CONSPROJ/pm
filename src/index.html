@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113143237">
+<meta name="pm-build" content="20261113143700">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29867,6 +29867,10 @@
   .pmode-pv{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px dashed var(--line);} .pmode-pv p{margin:0;font-size:12px;}
   .pmode-pv details{padding:6px 10px;border-radius:10px;background:var(--field);font-size:12px;} .pmode-pv details div{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;} .pmode-pv details span{padding:2px 8px;border-radius:99px;background:var(--surface);font-size:11px;}
   .pmode-pv .pri{align-self:flex-start;}
+
+  .oglib .pp-sh{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .oglib-r{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px solid color-mix(in srgb, var(--line) 60%, transparent);}
+  .oglib-r span{display:flex;flex-direction:column;gap:2px;min-width:0;} .oglib-r b{font-size:12.5px;font-weight:800;} .oglib-r small{font-size:11px;color:var(--muted);} .oglib-r em{font-style:normal;font-size:11px;color:#2f7a52;font-weight:700;white-space:nowrap;}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -42621,15 +42625,78 @@
     for(let i = 0; i < ks.length; i += 6) await Promise.all(ks.slice(i, i + 6).map(k => permRoleSave(k, permRolesOf(k).concat(add.get(k)))));
     return Array.from(add.values()).reduce((t, a) => t + a.length, 0);
   }
+
+  /* ====== کتابخانهٔ سمت‌ها ======
+     سمت‌های رایج پروژه‌های ساختمانی که هنوز در کاتالوگ پروژه نیستند (تیم‌های طراحی، انبار، کارفرما، مشاور، پیمانکار…)،
+     هرکدام با قالب اجازهٔ عرفِ همان کار. ادمین با یک کلیک به پروژه اضافه می‌کند؛ بعد مثل هر سمت دیگری قابل ویرایش است. */
+  const OG_LIB = [
+    ['طراحی', [
+      ['مدیر طراحی / هماهنگ‌کنندهٔ طراحی', 'cons', 'طراحی', '', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'doc.design.all', 'reg.rfi.ok', 'reg.qc.ok', 'reg.smt', 'inbox.review']],
+      ['طراح معماری', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح سازه', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح داخلی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح محوطه و منظر', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['کنترل مدارک طراحی (DCC)', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', ['tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'doc.design', 'doc.design.all', 'doc.letter', 'doc.minute', 'inbox.review']]]],
+    ['مهندسی و برنامه‌ریزی', [
+      ['مدیر مهندسی', 'pm', 'دفتر فنی', 'مدیریت پروژه', ['tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'qt.edit', 'doc.design', 'doc.design.all', 'reg.rfi', 'reg.smt', 'reg.qc.ok', 'inbox.review']],
+      ['برنامه‌ریز و کنترل زمان', 'pm', 'کنترل پروژه', 'کنترل پروژه', ['task.add', 'task.edit', 'task.general', 'task.export', 'rep.pc', 'rep.show', 'mgr.critical', 'deck.all']],
+      ['متره و برآورد', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', ['qt.edit', 'qt.view', 'rep.adm', 'co.view', 'reg.rcn']],
+      ['نقشه‌بردار', 'pm', 'اجرا', 'سرپرست اجرا', ['write.daily', 'sp.prog', 'rep.time']]]],
+    ['انبار، تدارکات و ماشین‌آلات', [
+      ['کمک انباردار', 'pm', 'انبار', 'انباردار', ['wh.manage', 'rep.wh', 'reg.mrc']],
+      ['کارپرداز / مسئول خرید', 'pm', 'تدارکات', 'مسئول تدارکات', ['write.prc', 'rep.prc', 'proc.notify', 'wh.request']],
+      ['مسئول ماشین‌آلات', 'pm', 'ماشین‌آلات', 'سرپرست کارگاه', ['mc.manage', 'mc.log', 'rep.mc', 'reg.mnt']]]],
+    ['مالی، اداری و ایمنی', [
+      ['حسابدار کارگاه', 'pm', 'مالی', 'امور مالی', ['tab.admin', 'rep.adm', 'rep.cf', 'doc.statement']],
+      ['امور اداری و منابع انسانی', 'pm', 'اداری', 'مدیریت پروژه', ['rep.hr', 'crew.manage', 'leave.approve', 'ctr.contact']],
+      ['مسئول ایمنی شیفت', 'pm', 'HSE', 'مدیر HSE', ['write.hse', 'reg.ptw.ok']]]],
+    ['کارفرما', [
+      ['مدیر پروژهٔ کارفرما', 'emp', 'کارفرما', 'نمایندهٔ کارفرما', ['rep.show', 'rep.adm', 'rep.pc', 'rep.cf', 'co.view', 'co.approve', 'reg.dly.ok', 'task.approve']],
+      ['ناظر مقیم کارفرما', 'emp', 'کارفرما', 'نمایندهٔ کارفرما', ['qc.inspect', 'rep.qc', 'reg.qc.ok', 'reg.itp']],
+      ['قراردادهای کارفرما', 'emp', 'قراردادها', 'نمایندهٔ کارفرما', ['tab.admin', 'rep.adm', 'doc.contract', 'co.view']]]],
+    ['مشاور و نظارت', [
+      ['ناظر مقیم مشاور', 'cons', 'نظارت', 'مشاور / ناظر', ['tab.admin', 'qc.inspect', 'rep.qc', 'reg.qc.ok', 'reg.rfi.ok']],
+      ['ناظر سازه', 'cons', 'نظارت', 'ناظر مقیم مشاور', ['qc.inspect', 'rep.qc', 'reg.qc.ok']],
+      ['ناظر تأسیسات', 'cons', 'نظارت', 'ناظر مقیم مشاور', ['qc.inspect', 'rep.qc', 'reg.qc.ok']]]],
+    ['پیمانکار و مالک', [
+      ['مدیر پروژهٔ پیمانکار', 'ctr', 'پیمانکار', 'نمایندهٔ پیمانکار', ['qc.request', 'reg.rfi', 'reg.smt', 'reg.itp', 'co.write']],
+      ['سرپرست پیمانکار', 'ctr', 'پیمانکار', 'مدیر پروژهٔ پیمانکار', ['write.daily', 'qc.request', 'reg.ptw']],
+      ['ایمنی پیمانکار', 'ctr', 'HSE', 'مدیر پروژهٔ پیمانکار', ['write.hse', 'reg.ptw']],
+      ['نمایندهٔ مالک', 'own', 'مالکیت', 'مالک / سرمایه‌گذار', ['rep.show', 'rep.pc', 'sp.view', 'sp.sale']]]]];
+  function ogLibHtml(){
+    const have = new Set(ogPositions().map(x => x.n));
+    return '<div class="pp-h" style="--sc:' + OG_SC.pm + '"><span class="pp-ic">+</span><div class="pp-ht"><b>کتابخانهٔ سمت‌ها</b><span class="pp-ch"><i>سمت‌های رایج پروژه با قالب اجازهٔ آماده؛ هر کدام را لازم دارید اضافه کنید</i></span></div></div>'
+      + OG_LIB.map(([g, L]) => { const nNew = L.filter(x => !have.has(x[0])).length;
+        return '<section class="pp-sec oglib"><div class="pp-sh"><b>' + esc(g) + '</b>' + (nNew ? '<button type="button" class="pp-btn" data-oglibg="' + esc(g) + '">افزودن همه (' + toFa(nNew) + ')</button>' : '<small>همه اضافه شده</small>') + '</div>'
+          + L.map(([n, side, dept, up, tpl]) => '<div class="oglib-r"><span><b>' + esc(n) + '</b><small>' + esc(OG_SIDE_T(side)) + ' · ' + esc(dept) + (up ? ' · زیر نظر ' + esc(up) : '') + ' · ' + toFa(tpl.length) + ' اجازهٔ خاص</small></span>'
+            + (have.has(n) ? '<em>در پروژه</em>' : '<button type="button" class="pp-btn pri" data-oglibadd="' + esc(n) + '">افزودن</button>') + '</div>').join('') + '</section>'; }).join('');
+  }
+  async function ogLibAdd(names){
+    const all = OG_LIB.flatMap(([, L]) => L), have = new Set(ogPositions().map(x => x.n)), added = [];
+    for(const n of names){ const d = all.find(x => x[0] === n); if(!d || have.has(n)) continue;
+      const [, side, dept, up0, tpl] = d; const up = up0 && (have.has(up0) || names.indexOf(up0) !== -1) ? up0 : '';
+      const o = {side, dept, up, tpl: tpl.slice()}; await ogSaveRow(OG_POS_KIND, n, o); og.pos.set(n, o); have.add(n); added.push(n); }
+    ogDescC = null;
+    if(added.length) await ogApplyTpl(added.map(n => ogPos(n)).filter(Boolean));
+    try{ ogLoad({[OG_POS_KIND]: Array.from(og.pos.entries()).map(([k, x]) => k + '¦' + JSON.stringify(x)), [OG_PER_KIND]: Array.from(og.per.values()).map(x => x.n + '¦' + JSON.stringify({side: x.side, up: x.up, fl: x.fl}))}); }catch(e){}
+    return added.length;
+  }
+  document.addEventListener('click', async e => { const t = e.target; if(!t.closest) return;
+    if(t.closest('[data-oglib]')){ og.sel = ''; og.ed = ''; og.lib = true; try{ permRepaint(); }catch(er){} return; }
+    const a = t.closest('[data-oglibadd], [data-oglibg]'); if(!a) return; let ad = false; try{ ad = isAdminUser(); }catch(er){} if(!ad) return;
+    const names = a.dataset.oglibadd ? [a.dataset.oglibadd] : ((OG_LIB.find(x => x[0] === a.dataset.oglibg) || [0, []])[1]).map(x => x[0]);
+    a.disabled = true; try{ const n = await ogLibAdd(names); shrToast(toFa(n) + ' سمت با قالب اجازه اضافه شد'); og.lib = true; permRepaint(); }catch(er){ a.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); } }, true);
   /* ---- پنل سمت‌ها: فهرست سمت‌ها کنار جزئیات، اجازه‌ها با کلید روشن/خاموش ---- */
   function ogPosPanelHtml(capOk){
     const L = ogPositions(), P = ogPeople(), cnt = n => P.filter(x => ogRoleOf(x) === n).length;
-    if(!og.sel || !L.some(x => x.n === og.sel)) og.sel = (L[0] || {}).n || '';
+    if(!og.lib && (!og.sel || !L.some(x => x.n === og.sel))) og.sel = (L[0] || {}).n || '';
     const cur = L.find(x => x.n === og.sel);
     const list = OG_SIDES.map(([k, t]) => { const G = L.filter(x => (x.side || 'pm') === k).sort((a, b) => ogOrd(a) - ogOrd(b)); if(!G.length) return '';
       return '<div class="pp-g" style="--sc:' + OG_SC[k] + '"><u><i></i>' + esc(t) + '<em>' + toFa(G.length) + '</em></u>' + G.map(x => '<button type="button" class="pp-it' + (x.n === og.sel ? ' on' : '') + '" data-ogpos="' + esc(x.n) + '" data-ppn="' + esc(x.n + ' ' + (x.dept || '')) + '"><span class="pp-in"><b>' + esc(x.n) + '</b>' + (x.dept ? '<small>' + esc(x.dept) + '</small>' : '') + '</span>' + (cnt(x.n) ? '<em>' + toFa(cnt(x.n)) + '</em>' : '') + '</button>').join('') + '</div>'; }).join('');
-    let det = '<div class="pc-none">یک سمت را انتخاب کنید.</div>';
-    if(cur){
+    let det = og.lib ? ogLibHtml() : '<div class="pc-none">یک سمت را انتخاب کنید.</div>';
+    if(cur && !og.lib){
       const ppl = P.filter(x => ogRoleOf(x) === cur.n);
       const caps = PERM_CAPS.filter(c => capOk(c)), has = c => permRolesOf(c.k).indexOf(cur.n) !== -1;
       const desc = ogDescOf(cur.n), inhOn = ogInhOn(cur), inhOf = c => { if(!inhOn || has(c)) return ''; const R = permRolesOf(c.k); return desc.find(d => R.indexOf(d) !== -1) || ''; };
@@ -42655,7 +42722,7 @@
     }
     const miss = ogTplMissing();
     return (miss.length ? '<div class="pp-ban"><span><b>' + toFa(miss.length) + ' سمت</b> هنوز همهٔ اجازه‌های قالب پیشنهادی‌شان روشن نیست. قالب هر سمت = کارهای خاص آن سمت + آنچه اعضایش امروز از سطحشان دارند؛ پس با روشن کردن، کسی چیزی از دست نمی‌دهد.</span><button type="button" class="pp-btn pri" data-ogtplall="1">روشن کردن قالب همهٔ سمت‌ها</button></div>' : '')
-      + '<div class="pp"><aside class="pp-l"><div class="pp-lh"><b>سمت‌ها</b><em>' + toFa(L.length) + '</em><button type="button" class="pp-btn" data-ognew="1">+ سمت تازه</button></div>'
+      + '<div class="pp"><aside class="pp-l"><div class="pp-lh"><b>سمت‌ها</b><em>' + toFa(L.length) + '</em><button type="button" class="pp-btn" data-oglib="1">کتابخانه</button><button type="button" class="pp-btn" data-ognew="1">+ سمت تازه</button></div>'
       + '<label class="pp-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" data-ppq placeholder="فیلتر سمت‌ها…" autocomplete="off"></label>'
       + '<div class="pp-ls">' + list + '</div></aside><section class="pp-d">' + det + '</section></div>';
   }
@@ -42988,7 +43055,7 @@
   window.ogPersonInfo = ogPersonInfo;
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest) return;
-    const ps = t.closest('[data-ogpos]'); if(ps){ og.sel = ps.dataset.ogpos; og.ed = ''; og.pm = ''; try{ permRepaint(); }catch(err){} return; }
+    const ps = t.closest('[data-ogpos]'); if(ps){ og.lib = false; og.sel = ps.dataset.ogpos; og.ed = ''; og.pm = ''; try{ permRepaint(); }catch(err){} return; }
     const pmb = t.closest('[data-ogpm]'); if(pmb){ og.pm = og.pm === pmb.dataset.ogpm ? '' : pmb.dataset.ogpm; try{ permRepaint(); }catch(err){} return; }
     const ed = t.closest('[data-ogedit]'); if(ed){ og.ed = og.ed === ed.dataset.ogedit ? '' : ed.dataset.ogedit; try{ permRepaint(); }catch(err){} return; }
     if(t.closest('[data-ognew]')){ og.sel = ''; og.ed = '__new'; const det = document.querySelector('.pp-d'); if(det) det.innerHTML = '<div class="pp-h" style="--sc:' + OG_SC.pm + '"><span class="pp-ic">+</span><div class="pp-ht"><b>سمت تازه</b><span class="pp-ch"><i>نام، طرف، واحد و سمت بالادست را تعیین کنید</i></span></div></div>' + ogPosFormHtml({n: '', side: 'pm'}); return; }
