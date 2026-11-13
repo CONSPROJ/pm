@@ -161,6 +161,21 @@ export async function importLegacy(url: string, data: { tables: Record<string, R
           lastState = curSt;
         }
         await c.query('update documents set current_state_id = $2 where id = $1', [doc, lastState]);
+        // CRS سایت فعلی: lists «نظرات بررسی طراحی» با شناسهٔ سند قدیمی
+        const crs = (T.lists || []).find((x) => x.kind === 'نظرات بررسی طراحی' && String(x.value || '').startsWith(String(r.id) + '\u00a6'));
+        if (crs) {
+          await c.query('delete from review_comments where document_id = $1', [doc]);
+          let items: Row[] = []; try { items = (JSON.parse(String(crs.value).slice(String(r.id).length + 1)) || {}).items || []; } catch { rep.skipped.push(number + ': CRS نامعتبر'); }
+          const SIDE: Record<string, string> = { cons: 'consultant', emp: 'employer', pm: 'pm', des: 'design_team' };
+          let k = 0;
+          for (const it of items) {
+            const rv = (await c.query('select id from revisions where document_id = $1 and rev = $2 order by seq desc limit 1', [doc, String(it.rev ?? '')])).rows[0];
+            const cr = it.cr != null ? (await c.query('select id from revisions where document_id = $1 and rev = $2 order by seq desc limit 1', [doc, String(it.cr)])).rows[0] : null;
+            await c.query(`insert into review_comments (document_id, revision_id, seq, party_kind, author_name, body, response, responded_at, status, closed_in_rev, closed_at, created_at)
+                values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, coalesce($12::timestamptz, now()))`,
+              [doc, rv?.id ?? null, ++k, SIDE[it.side] ?? null, it.by ?? null, String(it.t || ''), it.r || null, jalaliToIso(it.rd), it.st === 'closed' ? 'closed' : it.st === 'ans' ? 'answered' : 'open', cr?.id ?? null, it.st === 'closed' ? jalaliToIso(it.cd) : null, jalaliToIso(it.d)]);
+          }
+        }
         rep.documents++;
       }
     }

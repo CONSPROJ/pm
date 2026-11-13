@@ -209,6 +209,53 @@ export class DocumentsController {
     return { ok: true };
   }
 
+
+  // ================= CRS =================
+  @Get('documents/:id/comments') @Require('doc.read')
+  async comments(@Param('pid') pid: string, @Param('id') id: string, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {
+    await this.visible(pid, id, u.id, g);
+    return this.db.q(`select c.*, r.rev, cr.rev as closed_rev from review_comments c left join revisions r on r.id = c.revision_id left join revisions cr on cr.id = c.closed_in_rev where c.document_id = $1 order by c.seq`, [id]);
+  }
+
+  @Post('documents/:id/comments') @Require('doc.comment')
+  async addComment(@Param('pid') pid: string, @Param('id') id: string, @Body() body: unknown, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {
+    const b = parse(z.object({ body: z.string().min(1), party_kind: z.string().nullable().optional() }), body);
+    await this.visible(pid, id, u.id, g);
+    const r = await this.db.tx(async (c) => {
+      const rv = (await c.query('select id from revisions where document_id = $1 order by seq desc limit 1', [id])).rows[0];
+      const seq = (await c.query('select coalesce(max(seq), 0) + 1 as n from review_comments where document_id = $1', [id])).rows[0].n;
+      return (await c.query(`insert into review_comments (document_id, revision_id, seq, party_kind, author_id, author_name, body) values ($1,$2,$3,$4,$5,$6,$7) returning *`,
+        [id, rv?.id ?? null, seq, b.party_kind ?? null, u.id, u.displayName, b.body])).rows[0];
+    });
+    await this.audit.log(u.id, pid, 'create', 'review_comment', r.id, b);
+    return r;
+  }
+
+  /** پاسخ (doc.comment.reply)، بستن یا بازگشایی (doc.comment.close) */
+  @Post('documents/:id/comments/:cid') @Require('doc.read')
+  async updateComment(@Param('pid') pid: string, @Param('id') id: string, @Param('cid') cid: string, @Body() body: unknown, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {
+    const b = parse(z.object({ action: z.enum(['reply', 'close', 'reopen']), response: z.string().optional() }), body);
+    await this.visible(pid, id, u.id, g);
+    const need = b.action === 'reply' ? 'doc.comment.reply' : 'doc.comment.close';
+    const dec = await this.authz.decide(u.id, pid, need);
+    if (!dec.allowed) throw new ForbiddenException({ message: 'اجازهٔ این کار را ندارید', capability: need });
+    if (b.action === 'reply' && dec.constraints.own_party === true) {
+      const own = await this.db.one('select 1 from documents d join memberships m on m.party_id = d.originator_id where d.id = $1 and m.project_id = $2 and m.user_id = $3', [id, pid, u.id]);
+      if (!own) throw new ForbiddenException('فقط طراحِ همین مدرک می‌تواند پاسخ دهد');
+    }
+    const r = b.action === 'reply'
+      ? await this.db.one(`update review_comments set response = $3, responder_id = $4, responded_at = now(), status = case when coalesce($3, '') = '' then 'open' else 'answered' end
+          where id = $1 and document_id = $2 and status <> 'closed' returning *`, [cid, id, b.response ?? null, u.id])
+      : b.action === 'close'
+      ? await this.db.one(`update review_comments set status = 'closed', closed_by = $3, closed_at = now(), closed_in_rev = (select id from revisions where document_id = $2 order by seq desc limit 1)
+          where id = $1 and document_id = $2 returning *`, [cid, id, u.id])
+      : await this.db.one(`update review_comments set status = case when coalesce(response, '') = '' then 'open' else 'answered' end, closed_by = null, closed_at = null, closed_in_rev = null
+          where id = $1 and document_id = $2 returning *`, [cid, id]);
+    if (!r) throw new BadRequestException('نظر پیدا نشد یا بسته است');
+    await this.audit.log(u.id, pid, b.action, 'review_comment', cid, b);
+    return r;
+  }
+
   // ================= ترنسمیتال =================
   @Get('transmittals') @Require('transmittal.read')
   async transmittals(@Param('pid') pid: string, @CurrentUser() u: AuthUser, @Grant() g: Constraints) {

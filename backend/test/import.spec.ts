@@ -9,7 +9,8 @@ const URL = process.env.TEST_DATABASE_URL || 'postgres://pm@127.0.0.1:55432/pmte
 const backup = { tables: {
   people: [{ name: 'آقای مهدی نعیمی', role: 'کنترل پروژه', level: 1 }, { name: 'خانم سارا رضایی', role: 'طراح سازه', level: 4 }, { name: 'قدیمی', role: '', level: 3, active: false }],
   lists: [{ kind: 'پیمانکار — تماس', value: 'مهندسین مشاور نقش¦' + JSON.stringify({ t: 'cons', ro: 'طراح سازه', d: 'سازه' }) },
-          { kind: 'پیمانکار — تماس', value: 'کارفرما¦' + JSON.stringify({ t: 'emp' }) }, { kind: 'دیگر', value: 'x' }],
+          { kind: 'پیمانکار — تماس', value: 'کارفرما¦' + JSON.stringify({ t: 'emp' }) }, { kind: 'دیگر', value: 'x' },
+          { kind: 'نظرات بررسی طراحی', value: 'd1\u00a6' + JSON.stringify({ items: [{ rev: '0', side: 'cons', by: 'مشاور', d: '1404/01/20', t: 'نظر اول', r: 'اصلاح شد', rd: '1404/02/01', st: 'closed', cr: '1', cd: '1404/03/10' }, { rev: '1', side: 'emp', t: 'نظر دوم', st: 'open' }] }) }],
   designs: [
     { id: 'd1', number: 'STR-001', title: 'پلان سازه', discipline: 'سازه', party: 'مهندسین مشاور نقش', revs: [
       { rev: '0', log: [{ st: 'دریافت', d: '۱۴۰۴/۰۱/۰۵' }, { st: 'نزد مشاور/کارفرما', d: '1404/01/12', side: 'cons' }, { st: 'نیاز به اصلاح', d: '1404/01/30' }] },
@@ -48,5 +49,7 @@ test('انتقال تکرارپذیر: افراد، طرف‌ها، اسناد �
   const m = await q(`select u.display_name, m.level, m.status, p.title from memberships m join users u on u.id = m.user_id left join positions p on p.id = m.position_id where m.project_id = $1 order by u.display_name`, [r1.project]);
   expect(m.find((x: any) => x.display_name === 'خانم سارا رضایی')).toMatchObject({ level: 4, status: 'active', title: 'طراح سازه' });
   expect(m.find((x: any) => x.display_name === 'قدیمی')).toMatchObject({ status: 'left' });
+  const cm = await q(`select c.seq, c.status, c.party_kind, r.rev, cr.rev as closed_rev from review_comments c left join revisions r on r.id = c.revision_id left join revisions cr on cr.id = c.closed_in_rev order by c.seq`);
+  expect(cm).toEqual([{ seq: 1, status: 'closed', party_kind: 'consultant', rev: '0', closed_rev: '1' }, { seq: 2, status: 'open', party_kind: 'employer', rev: '1', closed_rev: null }]);
   await c.end();
 });

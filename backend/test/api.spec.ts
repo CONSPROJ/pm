@@ -126,3 +126,17 @@ test('ادمین اصلی را کسی جز خودش تغییر نمی‌دهد',
   expect((await call('PATCH', `/projects/${pid}/members/${mem.id}`, ali, { status: 'left' })).status).toBe(403);
   expect((await call('PUT', `/projects/${pid}/access/grants`, root, { subject_type: 'user', subject_id: mem.user_id, capability_key: 'doc.read', effect: 'deny' })).status).toBe(403);
 });
+
+test('CRS: ثبت نظر، پاسخ فقط طراحِ همان مدرک، بستن فقط با اجازه', async () => {
+  const c1 = await call('POST', `/projects/${pid}/documents/${ids.str}/comments`, root, { body: 'آرماتور تیر B3 کافی نیست', party_kind: 'consultant' });
+  expect(c1.status).toBe(201); expect(c1.body.seq).toBe(1);
+  // پاسخ فقط طرف طراح همین مدرک (محدودیت own_party روی اجازهٔ پاسخ)
+  await call('PUT', `/projects/${pid}/access/grants`, root, { subject_type: 'party_kind', subject_id: 'design_team', capability_key: 'doc.comment.reply', effect: 'allow', constraints: { own_party: true } });
+  const r = await call('POST', `/projects/${pid}/documents/${ids.str}/comments/${c1.body.id}`, ali, { action: 'reply', response: 'در ویرایش ۱ اصلاح شد' });
+  expect(r.status).toBe(201); expect(r.body.status).toBe('answered');
+  expect((await call('POST', `/projects/${pid}/documents/${ids.str}/comments/${c1.body.id}`, ali, { action: 'close' })).status).toBe(403);   // سطح ۴ پیش‌فرض بستن ندارد
+  const cl = await call('POST', `/projects/${pid}/documents/${ids.str}/comments/${c1.body.id}`, root, { action: 'close' });
+  expect(cl.body.status).toBe('closed');
+  const L = (await call('GET', `/projects/${pid}/documents/${ids.str}/comments`, ali)).body;
+  expect(L).toHaveLength(1); expect(L[0]).toMatchObject({ status: 'closed', rev: '1', closed_rev: '1' });   // نظر روی ویرایش جاری (Rev 1) ثبت شد
+});
