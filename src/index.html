@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114133403">
+<meta name="pm-build" content="20261114133651">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30115,6 +30115,11 @@ body.adm-selon #adminView .afr[data-afrkind]::before{top:50% !important;margin-t
 .ogc-rootdrop{margin:8px 0;padding:12px;border:2px dashed var(--line);border-radius:14px;text-align:center;font-size:12px;color:var(--muted)}.ogc-rootdrop.og-over{border-color:var(--sky,#2f6f9f);background:color-mix(in srgb,var(--sky,#2f6f9f) 8%,transparent);color:var(--sky,#2f6f9f)}
 body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .ogc-g.ogc-team{min-width:130px;padding:9px 18px !important;border-radius:14px !important;white-space:nowrap;cursor:pointer;border-width:1.5px}:is(html,#z0) :is(body,#z1) .ogc-g.ogc-team b{font-size:13px}.og-edit .ogc-team{cursor:grab}
+:is(html,#z0) :is(body,#z1) .wrow .w-f-sl{grid-column:1/-1}
+:is(html,#z0) :is(body,#z1) .wrow .w-f-sl .sl-row{display:grid;grid-template-columns:minmax(150px,1fr) 1.4fr;gap:8px;margin:0}
+:is(html,#z0) :is(body,#z1) .wrow .w-f-sl .sl-row .field{margin:0}
+:is(html,#z0) :is(body,#z1) .wrow .w-f-sl label{font-size:11px}
+@media (max-width:640px){:is(html,#z0) :is(body,#z1) .wrow .w-f-sl .sl-row{grid-template-columns:1fr}}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -91126,7 +91131,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(!row) return;
       if(!!c.engineer !== row.classList.contains('on') || !row.querySelector('.w-fields')){ need = true; return; }
       const set = (sel, v) => { const el = row.querySelector(sel); if(el && document.activeElement !== el) el.value = v; };
-      set('[data-wact]', c.activity || ''); set('[data-wzone]', c.zone || '');
+      set('[data-wact]', c.activity || '');
+      { const z = row.querySelector('[data-wzone]'); if(z && z.type === 'hidden'){ if(z.value !== (c.zone || '') && !row.contains(document.activeElement)) need = true; } else set('[data-wzone]', c.zone || ''); }
       set('[data-wt1]', wrkFaTime(c.t1)); set('[data-wt2]', wrkFaTime(c.t2));
       const dur = row.querySelector('[data-wdur]'); const h = kind === 'ot' ? wrkHours(c.t1, c.t2) : wrkDayHours(c.t1, c.t2);
       if(dur) dur.textContent = (h != null) ? toFa(h) + ' ساعت' : '';
@@ -91317,10 +91323,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             +   '</span><input type="text" class="w-act" data-wact="' + esc(key) + '"' + ro + ' '
             +   'placeholder="' + (kind === 'ot' ? 'مثلاً بتن‌ریزی شبانهٔ سقف' : 'مثلاً آرماتوربندی سقف')
             +   '" value="' + esc(cur.activity || '') + '"></label>'
-            + '<label class="w-f w-f-zone"><span>محل کارکرد</span>'
-            +   '<input type="text" class="w-zone" data-wzone="' + esc(key) + '"' + ro + ' '
-            +   (canEdit ? 'data-list="zoneList" ' : '') + 'autocomplete="off" placeholder="بلوک / طبقه" '
-            +   'value="' + esc(cur.zone || '') + '"></label>'
+            /* محل کارکرد مثل گزارش روزانه: طبقه (بلوک‌دار، یک یا چند) + محل؛ مقدار همان متن قبلی در خانهٔ پنهان data-wzone */
+            + (canEdit && window.slHtml
+                ? '<div class="w-f w-f-zone w-f-sl">' + window.slHtml('w-zh', '', cur.zone || '', '', 'wz_' + String(key).replace(/[^\w-]/g, '_'), 'wzp_' + String(key).replace(/[^\w-]/g, '_')).replace('<input type="hidden" class="w-zh"', '<input type="hidden" class="w-zh" data-wzone="' + esc(key) + '"') + '</div>'
+                : '<label class="w-f w-f-zone"><span>محل کارکرد</span>'
+                  + '<input type="text" class="w-zone" data-wzone="' + esc(key) + '"' + ro + ' autocomplete="off" placeholder="طبقه / محل" value="' + esc(cur.zone || '') + '"></label>')
             + '<div class="w-f w-f-time"><span>ساعت</span><div class="w-range">'
             +   '<input type="text" class="w-t" data-wt1="' + esc(key) + '"' + ro + ' inputmode="numeric" '
             +     (canEdit ? 'data-list="timeList" ' : '') + 'autocomplete="off" aria-label="از ساعت" '
