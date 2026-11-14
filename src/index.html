@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114032531">
+<meta name="pm-build" content="20261114033128">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29980,6 +29980,12 @@
 #tmM .tm-l{grid-area:l;font-size:11px;color:var(--muted)} #tmM .tm-l:empty{display:none}
 @media (max-width:560px){ #tmM .tm-sum b{font-size:16px} }
 @media (min-width:1180px){ #tmM .tm-l2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+/* ۳۱۳: آوردن طرف از پروژهٔ دیگر */
+.pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
+.pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
+.pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
+.pjw-impl label{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 8px;border-radius:9px;background:var(--field,#f4f6f9)} .pjw-impl label small{color:var(--muted);margin-inline-start:auto;font-size:11px}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -42482,6 +42488,7 @@
     ['نمایندهٔ پیمانکار', 'ctr', 'پیمانکار', '', ['qc.request']]
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
+  window.OG_DEF_NAMES = () => OG_DEF.map(x => x.n);
   function ogLoad(lists){
     og.pos.clear(); og.per.clear(); ogDescC = null;
     const kv = v => { const x = String(v), i = x.indexOf('¦'); return i < 1 ? null : [x.slice(0, i), x.slice(i + 1)]; };
@@ -42496,6 +42503,9 @@
   function ogPositions(){
     const out = OG_DEF.map(d => Object.assign({}, d, og.pos.get(d.n) || {}, {def: true}));
     og.pos.forEach((v, n) => { if(!OG_DEF.some(d => d.n === n)) out.push(Object.assign({n, side: 'pm', dept: '', up: '', tpl: []}, v)); });
+    /* پروژه‌های تازه با کاتالوگ کامل سمت‌ها شروع می‌شوند (کتابخانه + پایه)؛ هر سمت همچنان قابل ویرایش یا حذف است */
+    try{ const pj = window.pjCur && window.pjCur(); if(pj && pj.posLib){ const del = new Set(pj.posDel || []);
+      OG_LIB.forEach(([g, L]) => L.forEach(([n, side, dept, up, tpl]) => { if(del.has(n) || out.some(x => x.n === n)) return; out.push({n, side, dept, up, tpl, def: true, lib: true}); })); } }catch(e){}
     return out;
   }
   const ogPos = n => ogPositions().find(x => x.n === n) || null;
@@ -42748,6 +42758,13 @@
      سمت‌های رایج پروژه‌های ساختمانی که هنوز در کاتالوگ پروژه نیستند (تیم‌های طراحی، انبار، کارفرما، مشاور، پیمانکار…)،
      هرکدام با قالب اجازهٔ عرفِ همان کار. ادمین با یک کلیک به پروژه اضافه می‌کند؛ بعد مثل هر سمت دیگری قابل ویرایش است. */
   const OG_LIB = [
+    ['مدیریت و هماهنگی', [
+      ['هماهنگ‌کنندهٔ پروژه', 'pm', 'مدیریت', 'مدیریت پروژه', ['task.general', 'task.add', 'task.edit', 'rep.show', 'rep.pc', 'deck.all', 'mgr.critical', 'inbox.review', 'tab.admin', 'rep.adm', 'doc.letter', 'doc.minute', 'team.progress']],
+      ['جانشین مدیر پروژه', 'pm', 'مدیریت', 'مدیریت پروژه', ['deck.all', 'deck.manager', 'mgr.critical', 'alert.all', 'task.general', 'task.approve', 'task.add', 'task.edit', 'leave.approve', 'co.view', 'rep.show', 'rep.pc', 'rep.adm', 'tab.admin', 'team.progress', 'team.all']],
+      ['هماهنگ‌کنندهٔ اجرا', 'pm', 'اجرا', 'سرپرست کارگاه', ['write.daily', 'write.crew', 'task.add', 'task.edit', 'rep.time', 'rep.hr', 'qc.request', 'wh.request', 'team.progress']],
+      ['هماهنگ‌کنندهٔ پیمانکاران', 'pm', 'اجرا', 'سرپرست کارگاه', ['write.daily', 'ctr.contact', 'rep.hr', 'rep.time', 'task.add', 'co.view']],
+      ['هماهنگ‌کنندهٔ BIM و تداخلات', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'doc.design.all', 'reg.rfi', 'reg.smt']],
+      ['دبیرخانه و کنترل مکاتبات', 'pm', 'اداری', 'مسئول دفتر فنی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.letter', 'doc.minute', 'inbox.review']]]],
     ['طراحی', [
       ['مدیر طراحی / هماهنگ‌کنندهٔ طراحی', 'cons', 'طراحی', '', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'doc.design.all', 'reg.rfi.ok', 'reg.qc.ok', 'reg.smt', 'inbox.review']],
       ['طراح معماری', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
@@ -42756,6 +42773,8 @@
       ['طراح تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح داخلی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح محوطه و منظر', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح نما', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['مدل‌ساز BIM', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design']],
       ['کنترل مدارک طراحی (DCC)', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', ['tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'doc.design', 'doc.design.all', 'doc.letter', 'doc.minute', 'inbox.review']]]],
     ['مهندسی و برنامه‌ریزی', [
       ['مدیر مهندسی', 'pm', 'دفتر فنی', 'مدیریت پروژه', ['tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'qt.edit', 'doc.design', 'doc.design.all', 'reg.rfi', 'reg.smt', 'reg.qc.ok', 'inbox.review']],
@@ -42783,6 +42802,7 @@
       ['سرپرست پیمانکار', 'ctr', 'پیمانکار', 'مدیر پروژهٔ پیمانکار', ['write.daily', 'qc.request', 'reg.ptw']],
       ['ایمنی پیمانکار', 'ctr', 'HSE', 'مدیر پروژهٔ پیمانکار', ['write.hse', 'reg.ptw']],
       ['نمایندهٔ مالک', 'own', 'مالکیت', 'مالک / سرمایه‌گذار', ['rep.show', 'rep.pc', 'sp.view', 'sp.sale']]]]];
+  window.ogLibAll = () => OG_LIB.reduce((a, [g, L]) => a.concat(L.map(x => x[0])), []);
   function ogLibHtml(){
     const have = new Set(ogPositions().map(x => x.n));
     return '<div class="pp-h" style="--sc:' + OG_SC.pm + '"><span class="pp-ic">+</span><div class="pp-ht"><b>کتابخانهٔ سمت‌ها</b><span class="pp-ch"><i>سمت‌های رایج پروژه با قالب اجازهٔ آماده؛ هر کدام را لازم دارید اضافه کنید</i></span></div></div>'
@@ -61177,6 +61197,7 @@
       try{ window.mnAttLoad && window.mnAttLoad(lists); }catch(e2){}
       try{ window.dtLoad && window.dtLoad(lists); }catch(e2){}
       try{ window.ogLoad && window.ogLoad(lists); }catch(e2){}
+      try{ window.pjAfterLoad && window.pjAfterLoad(); }catch(e2){}
       try{ spLoad(lists); }catch(e2){}
       try{ tkCatLoad(lists); }catch(e2){}
       try{ vdLoad(lists); }catch(e2){}
@@ -98703,7 +98724,7 @@
     }
     if(f.opt) inp = '<select id="' + id + '" data-pjf="' + f.k + '"><option value="">—</option>' + f.opt.concat(val && f.opt.indexOf(val) === -1 ? [val] : []).map(o => '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
     else if(f.area) inp = '<textarea id="' + id + '" data-pjf="' + f.k + '" rows="3">' + esc(val) + '</textarea>';
-    else inp = '<input id="' + id + '" type="text" data-pjf="' + f.k + '"' + (f.dl ? ' list="' + f.dl + '" autocomplete="off"' : '') + (f.date ? ' class="date-in" inputmode="numeric" readonly' : '') + (f.num ? ' inputmode="decimal" dir="ltr"' : '') + ' value="' + esc(f.money && val ? toFa(Number(toEn(val)).toLocaleString('en')) : (f.num ? toFa(val) : val)) + '"' + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : '') + '>';
+    else inp = '<input id="' + id + '" type="text" data-pjf="' + f.k + '"' + (f.dl ? ' list="' + f.dl + '" autocomplete="off"' : '') + (f.date ? ' class="date-in" inputmode="none" autocomplete="off"' : '') + (f.num ? ' inputmode="decimal" dir="ltr"' : '') + ' value="' + esc(f.money && val ? toFa(Number(toEn(val)).toLocaleString('en')) : (f.num ? toFa(val) : val)) + '"' + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : '') + '>';
     return '<label class="pj-fl' + (f.w === 2 ? ' w2' : '') + '"><span>' + f.t + (f.req ? ' <i>*</i>' : '') + '</span>' + inp + '</label>';
   }
   /* فهرست نام‌ها: رشتهٔ قدیمی («الف، ب») یا آرایه */
@@ -98731,6 +98752,12 @@
   window.pjPartyPeople = pjPartyPeople;
   /* طراحی بر عهدهٔ کیست (اطلاعات پروژه): موانع «طراحی» روی کارت همان طرف می‌آید */
   window.pjDesignSide = () => { try{ const v = String((PJ.all.get(PJ.cur) || {}).designBy || ''); return v === 'کارفرما' ? 'emp' : v === 'مشاور طراح' ? 'cons' : v === 'تیم پروژه' ? 'pm' : ''; }catch(e){ return ''; } };
+  /* فهرست پیشنهادی ساختن پروژهٔ تازه: فقط کاربران سامانه (مشترک بین پروژه‌ها)، نه پیمانکاران و طرف‌های پروژهٔ فعلی */
+  function pjNewDL(){
+    const seen = new Set(), out = [];
+    try{ listNames().forEach(n => { n = String(n || '').trim(); if(!n || seen.has(nameKey(n))) return; seen.add(nameKey(n)); out.push('<option value="' + esc(n) + '" label="کاربر سامانه">'); }); }catch(e){}
+    return '<datalist id="pjPartyNames">' + out.join('') + '</datalist><datalist id="pjCities">' + PJ_CITIES.map(c => '<option value="' + c + '">').join('') + '</datalist>';
+  }
   function pjPartyDL(){
     const seen = new Set(), out = [];
     const add = (n, lb) => { n = String(n || '').trim(); if(!n || seen.has(nameKey(n))) return; seen.add(nameKey(n)); out.push('<option value="' + esc(n) + '"' + (lb ? ' label="' + esc(lb) + '"' : '') + '>'); };
@@ -98843,18 +98870,27 @@
       /* پروژه از صفر: افراد (با سمت در چارت) و طرف‌ها (پیمانکار، تیم طراحی/مشاور، کارفرما، تأمین‌کننده) همین‌جا تعریف می‌شوند */
       d.ppl = d.ppl || [{n: '', r: ''}]; d.pty = d.pty || [{n: '', t: 'cons', d: ''}];
       const TY = [['ctr', 'پیمانکار'], ['cons', 'تیم طراحی / مشاور'], ['emp', 'کارفرما'], ['sup', 'تأمین‌کننده']];
-      const ROLES = ['مدیر پروژه', 'مدیریت پروژه', 'هماهنگی طراحی', 'دفتر فنی', 'کنترل پروژه', 'طراح معماری', 'طراح سازه', 'طراح مکانیک', 'طراح برق', 'سرپرست کارگاه', 'مهندس اجرا', 'امور قراردادی'];
+      /* همهٔ سمت‌های کاتالوگ (پایه + کتابخانه)؛ پروژهٔ تازه همین کاتالوگ کامل را دارد */
+      const ROLES = [...new Set(window.OG_DEF_NAMES().concat(window.ogLibAll ? window.ogLibAll() : []))];
+      /* طرف‌های پروژهٔ فعلی خودکار پیشنهاد نمی‌شوند؛ فقط اگر خودتان انتخاب کنید از پروژهٔ دیگر می‌آیند */
+      const cur = pjCur(), imp = [], seenI = new Set(d.pty.map(x => nameKey(x.n)));
+      const addI = o => { if(!o || !o.name || seenI.has(nameKey(o.name))) return; seenI.add(nameKey(o.name)); imp.push(o); };
+      try{ ctrContacts.forEach(addI); }catch(e){}
+      try{ const dl = document.getElementById('contractorList'); if(dl) Array.from(dl.options).forEach(o => addI({name: o.value, t: 'ctr'})); }catch(e){}
       h += '<div class="pj-q">چه کسانی در این پروژه‌اند؟ <small>هر نفر با سمتش دعوت می‌شود و دسترسی‌اش از همین سمت تعیین می‌شود.</small></div>'
         + '<datalist id="pjRoleDL">' + ROLES.map(r => '<option value="' + r + '">').join('') + '</datalist>'
         + '<div class="pjw-rows">' + d.ppl.map((x, i) => '<div class="pjw-r"><input type="text" data-pjw="ppl|' + i + '|n" value="' + esc(x.n) + '" placeholder="نام و نام خانوادگی" data-list="pjPartyNames" autocomplete="off"><input type="text" data-pjw="ppl|' + i + '|r" value="' + esc(x.r) + '" placeholder="سمت (مثلاً طراح سازه)" list="pjRoleDL" autocomplete="off"><button type="button" class="pjw-x" data-pjwdel="ppl|' + i + '">×</button></div>').join('')
         + '<button type="button" class="pjw-add" data-pjwadd="ppl">+ نفر دیگر</button></div>'
         + '<div class="pj-q">طرف‌های پروژه <small>تیم‌های طراحی و مشاوران، پیمانکاران، کارفرما — هر کدام کارت خودش را می‌گیرد.</small></div>'
         + '<div class="pjw-rows">' + d.pty.map((x, i) => '<div class="pjw-r three"><input type="text" data-pjw="pty|' + i + '|n" value="' + esc(x.n) + '" placeholder="نام شرکت یا تیم" autocomplete="off"><select data-pjw="pty|' + i + '|t">' + TY.map(([k, t]) => '<option value="' + k + '"' + (x.t === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select><input type="text" data-pjw="pty|' + i + '|d" value="' + esc(x.d) + '" placeholder="رشته یا تخصص (مثلاً سازه)" autocomplete="off"><button type="button" class="pjw-x" data-pjwdel="pty|' + i + '">×</button></div>').join('')
-        + '<button type="button" class="pjw-add" data-pjwadd="pty">+ طرف دیگر</button></div>' + pjPartyDL();
+        + '<button type="button" class="pjw-add" data-pjwadd="pty">+ طرف دیگر</button></div>'
+        + (imp.length ? '<details class="pjw-imp"><summary>آوردن طرف از پروژهٔ «' + esc(cur.name || 'فعلی') + '» <small>' + toFa(imp.length) + ' مورد · فقط آنچه انتخاب کنید</small></summary><div class="pjw-impl">'
+          + imp.slice(0, 80).map(o => '<label><input type="checkbox" data-pjimp="' + esc(o.name) + '" data-pjimpt="' + esc(o.t || 'ctr') + '"><span>' + esc(o.name) + '</span><small>' + esc(({emp:'کارفرما', cons:'مشاور / طراح', own:'مالک', sup:'تأمین‌کننده'})[o.t] || 'پیمانکار') + '</small></label>').join('')
+          + '</div><button type="button" class="pjw-add" data-pjimpgo="1">افزودن انتخاب‌شده‌ها</button></details>' : '') + pjNewDL();
     }else{
       h += '<div class="pj-q">چند اطلاعات پایه — بقیه را بعداً از «اطلاعات پروژه» کامل کنید.</div><div class="pj-gr">'
         + pjFieldHtml({k:'status', t:'وضعیت فعلی', opt:PJ_STATUS}, d.status) + pjFieldHtml({k:'start', t:'تاریخ شروع', ph:'از تقویم انتخاب کنید', date:1}, d.start)
-        + pjFieldHtml({k:'city', t:'شهر', dl:'pjCities'}, d.city) + pjFieldHtml({k:'employer', t:'کارفرما', multi:1}, d.employer) + pjPartyDL()
+        + pjFieldHtml({k:'city', t:'شهر', dl:'pjCities'}, d.city) + pjFieldHtml({k:'employer', t:'کارفرما', multi:1}, d.employer) + pjNewDL()
         + pjFieldHtml({k:'floorsUp', t:'طبقات روی زمین', num:1}, d.floorsUp) + pjFieldHtml({k:'floorsDown', t:'طبقات زیرزمین', num:1}, d.floorsDown)
         + pjFieldHtml({k:'unitsPer', t:'واحد در هر طبقه', num:1}, d.unitsPer) + pjFieldHtml({k:'units', t:'تعداد کل واحد', num:1}, d.units) + '</div>';
     }
@@ -98999,6 +99035,9 @@
     /* پروژهٔ تازه */
     const ty = t.closest('[data-pjtype]'); if(ty){ pjReadForm(pjSt.draft); pjSt.draft.type = ty.dataset.pjtype; pjPaint(); return; }
     const pre = t.closest('[data-pjpre]'); if(pre){ const on = new Set(PJ_PRESET[pre.dataset.pjpre]); PJ_MODS.forEach(m => { pjSt.draft.mods[m.k] = on.has(m.k) ? true : false; }); pjPaint(); return; }
+    const ig = t.closest('[data-pjimpgo]'); if(ig){ const d = pjSt.draft; pjReadForm(d); d.pty = (d.pty || []).filter(x => x.n);
+      document.querySelectorAll('#pjBody [data-pjimp]:checked').forEach(c => { if(!d.pty.some(x => nameKey(x.n) === nameKey(c.dataset.pjimp))) d.pty.push({n: c.dataset.pjimp, t: c.dataset.pjimpt === 'own' ? 'emp' : (c.dataset.pjimpt || 'ctr'), d: ''}); });
+      if(!d.pty.length) d.pty.push({n: '', t: 'cons', d: ''}); pjPaint(); return; }
     const wa = t.closest('[data-pjwadd]'); if(wa){ const d = pjSt.draft; pjReadForm(d); d[wa.dataset.pjwadd].push(wa.dataset.pjwadd === 'ppl' ? {n: '', r: ''} : {n: '', t: 'cons', d: ''}); pjPaint(); return; }
     const wd = t.closest('[data-pjwdel]'); if(wd){ const d = pjSt.draft; pjReadForm(d); const [g, i] = wd.dataset.pjwdel.split('|'); d[g].splice(+i, 1); if(!d[g].length) d[g].push(g === 'ppl' ? {n: '', r: ''} : {n: '', t: 'cons', d: ''}); pjPaint(); return; }
     const stp = t.closest('[data-pjstep]'); if(stp){ const d = pjSt.draft; pjReadForm(d);
@@ -99011,16 +99050,46 @@
       const M = {}; PJ_MODS.forEach(m => { if(d.mods[m.k] === false) M[m.k] = false; });
       const up = parseInt(d.floorsUp, 10) || 0, dn = parseInt(d.floorsDown, 10) || 0, per = parseInt(d.unitsPer, 10) || 0;
       const p = {id, name: d.name, type: d.type, status: d.status, start: d.start || '', city: d.city || '', employer: d.employer || '', floorsUp: d.floorsUp || '', floorsDown: d.floorsDown || '', unitsPer: per || '', units: d.units || '',
-        mods: M, floors: up ? pjFloorsGen(up, dn, per, true) : null, created: todayShamsi(), by: activeUserName()};
+        mods: M, floors: up ? pjFloorsGen(up, dn, per, true) : null, created: todayShamsi(), by: activeUserName(), posLib: true,
+        /* طرف‌ها همین‌جا ذخیره نمی‌شوند (آن موقع پروژهٔ فعلی پروژهٔ دیگری است)؛ با اولین ورود به پروژهٔ تازه در همان پروژه ثبت می‌شوند */
+        seed: (d.pty || []).filter(x => x.n).length ? {pty: (d.pty || []).filter(x => x.n)} : undefined};
+      if(!p.seed) delete p.seed;
       Object.keys(p).forEach(k => { if(p[k] === '') delete p[k]; });
       const ok = await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(p); await pjSaveMem({pid: id, name: activeUserName(), role: 'مدیر سامانه', level: 1, state: PJ_ST_ON, by: activeUserName()}, null);
         /* تیم: هر نفر با سمتش دعوت می‌شود؛ طرف‌ها پرونده (کارت) می‌گیرند */
         for(const x of (d.ppl || []).filter(x => x.n && nameKey(x.n) !== nameKey(activeUserName()))){ try{ await pjSaveMem({pid: id, name: x.n, role: x.r || '', state: PJ_ST_INV, by: activeUserName()}, null); }catch(e){} }
-        for(const x of (d.pty || []).filter(x => x.n)){ try{ await ctrContactSave(x.n, Object.assign({}, ctrContactOf(x.n) || {}, {t: x.t, d: x.d || undefined, ro: x.t === 'cons' ? (/طراح/.test(x.d || '') || !x.d ? 'طراح' + (x.d ? ' ' + x.d.replace(/^طراح(ی)?\s*/, '') : '') : 'مشاور ' + x.d) : undefined})); }catch(e){} } }, 'پروژهٔ «' + p.name + '» ساخته شد');
+      }, 'پروژهٔ «' + p.name + '» ساخته شد');
       if(ok){ pjSt.draft = null; pjSt.v = 'mem'; pjSt.pid = id; pjPaint(); }
       return;
     }
   }
+  const pjPtyRole = x => x.t === 'cons' ? (/طراح/.test(x.d || '') || !x.d ? 'طراح' + (x.d ? ' ' + x.d.replace(/^طراح(ی)?\s*/, '') : '') : 'مشاور ' + x.d) : undefined;
+  /* ۳۱۳: بعد از بارگذاری داده‌های هر پروژه (یک بار در هر نشست) —
+     ۱) پروژهٔ تازه: طرف‌هایی که هنگام ساختن تعریف شدند، حالا در خود همین پروژه ثبت می‌شوند؛
+     ۲) به‌روزرسانی دسترسی‌ها با قالب تازهٔ سمت‌ها (فقط افزودنی) و روشن شدن حالت سمت‌محور اگر کسی اجازه‌ای از دست ندهد. */
+  const OG_TPL_VER = '2';
+  window.pjAfterLoad = function(){
+    if(window.pjAfterLoad.done) return; window.pjAfterLoad.done = true;
+    setTimeout(async () => {
+      let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm) return;
+      const p = pjCur();
+      if(p && p.id && p.id !== 'p1' && p.seed && PJ.cur === p.id){
+        try{ for(const x of (p.seed.pty || [])){ if(!x || !x.n) continue; await ctrContactSave(x.n, Object.assign({}, ctrContactOf(x.n) || {}, {t: x.t, d: x.d || undefined, ro: pjPtyRole(x)})); }
+          const q = Object.assign({}, p); delete q.seed; await pjSaveReg(q); }catch(e){ console.warn('seed', e); }
+      }
+      try{
+        const L = await fxList(RULES_K, true), x = (L || []).find(r => r.id === 'cfg'), cur = Object.assign({}, (x && x.o && x.o.v) || {});
+        if(String(cur.tplVer || '') === OG_TPL_VER) return;
+        const n = await ogApplyTpl(ogTplMissing());
+        let posOn = cur.accMode === 'pos';
+        if(!posOn){ let I = []; try{ I = permModeImpact(ogPeople()); }catch(e){ I = [{}]; } if(!I.length){ cur.accMode = 'pos'; posOn = true; } }
+        cur.tplVer = OG_TPL_VER;
+        await fxPut(RULES_K, 'cfg', {v: cur, by: activeUserName(), at: Date.now()});
+        try{ Object.keys(window.__pmRules).forEach(k => delete window.__pmRules[k]); Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){}
+        if(n || posOn) shrToast('دسترسی‌ها با قالب تازهٔ سمت‌ها به‌روز شد' + (n ? ' (' + toFa(n) + ' اجازه)' : ''));
+      }catch(e){ console.warn('tpl migrate', e); }
+    }, 4000);
+  };
   async function pjSaveBtn(b, fn, okMsg){
     if(pjSt.busy) return false; pjSt.busy = true; const t0 = b ? b.innerHTML : ''; if(b){ b.disabled = true; b.textContent = 'در حال ذخیره…'; }
     try{ await fn(); try{ if(typeof toast === 'function') toast(okMsg); }catch(e){} if(b){ b.innerHTML = PJ_I.ok + 'ذخیره شد'; setTimeout(() => { if(b.isConnected){ b.disabled = false; b.innerHTML = t0; } }, 1400); } return true; }
