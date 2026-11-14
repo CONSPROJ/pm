@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114054809">
+<meta name="pm-build" content="20261114081239">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -97651,8 +97651,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const days = []; let d0 = todayShamsi(); for(let i = 0; i < 7; i++){ days.unshift(d0); d0 = faMinusDay(d0) || d0; }
     const rg = '&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(days[6]);
     /* کارگران حاضر (حضور روزانهٔ نیروی کارگری) هم در شمار نفرات هر روز می‌آیند */
-    Promise.all([supaFetch('activities?select=date_fa,contractor,ostad,shagerd' + rg + '&limit=20000', {prefer: 'return=representation'}),
-                 supaFetch('worker_daily?select=date_fa,worker_code,state' + rg + '&limit=20000', {prefer: 'return=representation'}).catch(() => [])])
+    Promise.all([window.supaAllPages('activities?select=id,date_fa,contractor,ostad,shagerd' + rg),
+                 window.supaAllPages('worker_daily?select=id,date_fa,worker_code,state' + rg).catch(() => [])])
       .then(([rows, wr]) => { const M = new Map(days.map(d => [d, {d, t: 0, w: 0, c: new Map()}]));
         (rows || []).forEach(r => { const o = M.get(normDate(r.date_fa) || r.date_fa); if(!o) return; const n = (num(r.ostad) || 0) + (num(r.shagerd) || 0); o.t += n;
           const c = String(r.contractor || '').trim(); if(c && !isAmani(c)) o.c.set(c, (o.c.get(c) || 0) + n); });
@@ -97932,6 +97932,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ====== داشبورد پروژه (خانهٔ دسکتاپ) ======
      چهار پنل: روند نیروی ۳۰ روز (امانی/پیمانی، ناحیهٔ انباشته با خط‌کش و راهنما)، پیمانکاران پرکار (نفر-روز)،
      مطالبات هر پیمانکار (پرداخت‌شده/مانده) و قیف گردش صورت وضعیت‌ها. هر نشانه راهنمای شناور دارد. */
+  /* ۳۳۲: خواندن همهٔ ردیف‌ها صفحه‌به‌صفحه (سرور حداکثر ۱۰۰۰ ردیف در هر درخواست می‌دهد)، تازه‌ترین اول */
+  async function supaAllPages(q){ const out = []; for(let off = 0, pg = 0; pg < 60; pg++, off += 1000){ const L = await supaFetch(q + '&order=date_fa.desc,id.desc&limit=1000&offset=' + off, {prefer: 'return=representation'}) || []; out.push(...L); if(L.length < 1000) break; } return out; }
+  window.supaAllPages = supaAllPages;
   const HDB = {at: 0, busy: false, d: null};
   function hdbMonth(){
     if(HDB.busy || (HDB.d && Date.now() - HDB.at < 600000)) return HDB.d;
@@ -97939,8 +97942,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const days = []; let d0 = todayShamsi(); for(let i = 0; i < 30; i++){ days.unshift(d0); d0 = faMinusDay(d0) || d0; }
     const rg = '&date_fa=gte.' + encodeURIComponent(days[0]) + '&date_fa=lte.' + encodeURIComponent(days[days.length - 1]);
     /* امانی = کارگران حاضر (حضور روزانهٔ نیروی کارگری) + ردیف‌های امانی گزارش؛ پیمانی = بقیهٔ پیمانکاران */
-    Promise.all([supaFetch('activities?select=date_fa,contractor,ostad,shagerd' + rg + '&limit=20000', {prefer: 'return=representation'}),
-                 supaFetch('worker_daily?select=date_fa,worker_code,state' + rg + '&limit=40000', {prefer: 'return=representation'}).catch(() => [])]).then(([rows, wr]) => {
+    /* ۳۳۲: سرور در هر درخواست حداکثر ۱۰۰۰ ردیف می‌دهد؛ بی‌ترتیب، قدیمی‌ترها می‌آمد و امانی روزهای اخیر صفر می‌شد. صفحه‌به‌صفحه، تازه‌ترین اول */
+    const all = supaAllPages;
+    Promise.all([all('activities?select=id,date_fa,contractor,ostad,shagerd' + rg),
+                 all('worker_daily?select=id,date_fa,worker_code,state' + rg).catch(() => [])]).then(([rows, wr]) => {
       const M = new Map(days.map(d => [d, {d, am: 0, pe: 0}])), C = new Map();
       { const seen = new Set(); (wr || []).forEach(r => { if(r.state === 'off') return; const d = normDate(r.date_fa) || r.date_fa, o = M.get(d); if(!o) return; const k = d + '|' + (r.worker_code || ''); if(seen.has(k)) return; seen.add(k); o.am++; }); }
       (rows || []).forEach(r => { const o = M.get(normDate(r.date_fa) || r.date_fa); if(!o) return; const n = (num(r.ostad) || 0) + (num(r.shagerd) || 0); const c = String(r.contractor || '').trim();
@@ -97955,15 +97960,19 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
        گزارش امانی معمولاً عصر ثبت می‌شود و پیش‌تر امروز «۰» و نسبت به هفتهٔ قبل «−۱۰۰٪» نشان داده می‌شد */
     const L = (D.days || []).slice(), today = todayShamsi(), hadAm = L.some(x => x.am > 0); let cut = 0;
     while(L.length > 2){ const z = L[L.length - 1]; if(z.am + z.pe === 0 || (z.d === today && hadAm && z.am === 0)){ L.pop(); cut++; } else break; }
+    /* روز بی‌گزارش (جمعه، تعطیل) نقطهٔ صفر نیست؛ از نمودار کنار گذاشته می‌شود و دو روز کناری به هم وصل می‌شوند */
+    for(let i = L.length - 1; i >= 0; i--) if(L[i].am + L[i].pe === 0) L.splice(i, 1);
     const W = 600, H = 110, P = 4, n = L.length; if(n < 2) return '';
     const lastD = L[n - 1].d, partial = lastD !== today;
     const tot = L.map(x => x.am + x.pe), max = Math.max(1, ...tot) * 1.1;
     const X = i => P + i * (W - 2 * P) / (n - 1), Y = v => H - (v / max) * (H - 8);
     /* منحنی نرم (Catmull-Rom → Bézier با کشش کم) به‌جای خط شکسته */
-    const curve = (pts, mv) => { let d = (mv ? 'M' : 'L') + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1); const k = 0.18;
-      for(let i = 0; i < pts.length - 1; i++){ const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-        const c1x = p1[0] + (p2[0] - p0[0]) * k, c1y = Math.min(H, p1[1] + (p2[1] - p0[1]) * k), c2x = p2[0] - (p3[0] - p1[0]) * k, c2y = Math.min(H, p2[1] - (p3[1] - p1[1]) * k);
-        d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1); } return d; };
+    /* منحنی یکنوا (Fritsch–Carlson): از نقطه‌ها بیرون نمی‌زند؛ دو روز برابر یعنی خط صاف، نه فرورفتگی */
+    const curve = (pts, mv) => { const m = pts.length; let d = (mv ? 'M' : 'L') + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1); if(m < 2) return d;
+      const dx = [], sl = [], t = []; for(let i = 0; i < m - 1; i++){ dx[i] = pts[i + 1][0] - pts[i][0]; sl[i] = (pts[i + 1][1] - pts[i][1]) / (dx[i] || 1); }
+      t[0] = sl[0]; t[m - 1] = sl[m - 2]; for(let i = 1; i < m - 1; i++) t[i] = sl[i - 1] * sl[i] <= 0 ? 0 : 3 * (dx[i - 1] + dx[i]) / ((2 * dx[i] + dx[i - 1]) / sl[i - 1] + (dx[i] + 2 * dx[i - 1]) / sl[i]);
+      for(let i = 0; i < m - 1; i++){ const h = dx[i] / 3, p1 = pts[i], p2 = pts[i + 1];
+        d += ' C' + (p1[0] + h).toFixed(1) + ' ' + (p1[1] + t[i] * h).toFixed(1) + ' ' + (p2[0] - h).toFixed(1) + ' ' + (p2[1] - t[i + 1] * h).toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1); } return d; };
     const line = arr => curve(arr.map((v, i) => [X(i), Y(v)]), true);
     const area = (top, bot) => line(top) + ' ' + curve(bot.map((v, i) => [X(n - 1 - i), Y(v)]), false) + ' Z';
     const am = L.map(x => x.am), all = tot, zero = L.map(() => 0);
@@ -100266,7 +100275,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return [y + '/' + m + '/01', t]; }
   async function rcCtmLoad(){ const [a, b] = rcCtmRange(); RC_CTM.from = a; RC_CTM.to = b;
     const rg = '&date_fa=gte.' + encodeURIComponent(toFa(a)) + '&date_fa=lte.' + encodeURIComponent(toFa(b));
-    let R = []; try{ R = await supaFetch('activities?select=date_fa,contractor,skill,ostad,shagerd' + rg + '&limit=20000', {prefer: 'return=representation'}) || []; }catch(e){ R = []; }
+    let R = []; try{ R = await window.supaAllPages('activities?select=id,date_fa,contractor,skill,ostad,shagerd' + rg) || []; }catch(e){ R = []; }
     if(!R.length){ try{ const rg2 = '&date_fa=gte.' + encodeURIComponent(a) + '&date_fa=lte.' + encodeURIComponent(b); R = await supaFetch('activities?select=date_fa,contractor,skill,ostad,shagerd' + rg2 + '&limit=20000', {prefer: 'return=representation'}) || []; }catch(e){} }
     RC_CTM.rows = R; }
   function rcCtm(){ const R = RC_CTM.rows || []; if(!R.length) return null;
