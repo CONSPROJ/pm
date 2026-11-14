@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114041823">
+<meta name="pm-build" content="20261114042353">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -66195,6 +66195,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<div class="dsp-ms">' + tree.map(card).join('') + '</div>' + tree.map(subRow).join('') + '</div>';
   }
   window.dspTypeHtml = dspTypeHtml; window.dspDiscHtml = dspDiscHtml;
+  /* تراشهٔ یک‌انتخابی با کد، روی select مخفی (برای فیلدهای ساده مثل نوع صورت وضعیت) */
+  function dspSelChips(cls, label, opts, cur, tk){
+    return '<div class="field dsp dsp-1"><label>' + label + '</label><select class="' + cls + '" hidden><option value=""></option>' + opts.map(v => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(v) + '</option>').join('') + '</select>'
+      + '<div class="dsp-cs">' + opts.map(v => { const c = tk ? dspCode(tk, v) : ''; return '<button type="button" class="dsp-c' + (v === cur ? ' on' : '') + '" data-dsp1="' + esc(v) + '">' + esc(v) + (c ? '<i dir="ltr">' + esc(c) + '</i>' : '') + '</button>'; }).join('') + '</div></div>';
+  }
+  window.dspSelChips = dspSelChips;
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-dsp1]'); if(!t) return; e.preventDefault(); const box = t.closest('.dsp-1'), sel = box.querySelector('select'), v = t.classList.contains('on') ? '' : t.dataset.dsp1;
+    box.querySelectorAll('[data-dsp1]').forEach(b => b.classList.toggle('on', b === t && !!v)); sel.value = v; sel.dispatchEvent(new Event('change', {bubbles: true})); });
   function dspSetDisc(box, list){
     const sel = box.querySelector('.a-dDisc'), v = list.join('، ');
     sel.innerHTML = '<option value=""></option>' + (v ? '<option selected>' + esc(v) + '</option>' : ''); sel.value = v;
@@ -66228,14 +66236,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      ـ الگوی دوم («نمونهٔ پروژه») همان کدینگ نمونهٔ ISATIS است. هر دو کاملاً قابل ویرایش‌اند (قالب، جدول‌ها، نشانهٔ خالی). */
   const DC_K = 'کدینگ اسناد', DC_REC_K = 'کد سند';
   const DC_KINDS = [['design', 'سند طراحی'], ['contract', 'قرارداد'], ['statement', 'صورت وضعیت'], ['letter', 'نامه'], ['minute', 'صورتجلسه'], ['trn', 'ترنسمیتال'], ['sub', 'سابمیتال'], ['rfi', 'استعلام فنی (RFI)']];
-  const DC_TOK = {P: 'پروژه', ORG: 'پدیدآورنده', Z: 'حجم / زون', LVL: 'تراز', TYP: 'نوع اطلاعات', DSC: 'نقش / دیسیپلین', SH: 'شماره', STG: 'مرحله', L: 'زیرشیت', SUIT: 'وضعیت', REV: 'ویرایش', NO: 'شمارهٔ سند', CNO: 'شمارهٔ قرارداد', ADD: 'الحاقیه', DATE: 'تاریخ'};
+  const DC_TOK = {STY: 'نوع صورت وضعیت', P: 'پروژه', ORG: 'پدیدآورنده', Z: 'حجم / زون', LVL: 'تراز', TYP: 'نوع اطلاعات', DSC: 'نقش / دیسیپلین', SH: 'شماره', STG: 'مرحله', L: 'زیرشیت', SUIT: 'وضعیت', REV: 'ویرایش', NO: 'شمارهٔ سند', CNO: 'شمارهٔ قرارداد', ADD: 'الحاقیه', DATE: 'تاریخ'};
   const DC_PRESETS = {
     iso: {nm: 'ISO 19650 (استاندارد جهانی)', prj: '', org: '', sep: '-', na: 'XX', multi: 'ZZ', multiDsc: 'Z', rev: 'ISO', shW: 4,
-      pat: {design: '{P}-{ORG}-{Z}-{LVL}-{TYP}-{DSC}-{SH}', contract: '{P}-{ORG}-ZZ-XX-CT-K-{NO}', statement: '{P}-{ORG}-ZZ-XX-VA-Q-{NO}', letter: '{P}-{ORG}-ZZ-XX-CO-Z-{NO}',
+      pat: {design: '{P}-{ORG}-{Z}-{LVL}-{TYP}-{DSC}-{SH}', contract: '{P}-{ORG}-ZZ-XX-CT-K-{NO}', statement: '{P}-{ORG}-ZZ-XX-VA-Q-{CNO}.{STY}{NO}-{REV}', letter: '{P}-{ORG}-ZZ-XX-CO-Z-{NO}',
         minute: '{P}-{ORG}-ZZ-XX-MI-Z-{NO}', trn: '{P}-{ORG}-ZZ-XX-IE-Z-{NO}', sub: '{P}-{ORG}-ZZ-XX-SU-{DSC}-{NO}', rfi: '{P}-{ORG}-ZZ-XX-RI-{DSC}-{NO}'},
       tail: '{SUIT}-{REV}',
       t: {
         org: [],
+        sty: [['IP', 'موقت'], ['IN', 'مستقل'], ['FA', 'قطعی']],
         zn: [['ZZ', 'همهٔ بخش‌ها']],
         lvl: [],
         dsc: [['A', 'معماری'], ['S', 'سازه'], ['M', 'تأسیسات مکانیکی'], ['E', 'تأسیسات برقی'], ['P', 'لوله‌کشی و بهداشتی'], ['H', 'تهویهٔ مطبوع (HVAC)'], ['Y', 'اطفای حریق'], ['I', 'طراحی داخلی'],
@@ -66249,11 +66258,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         sh: ''
       }},
     isatis: {nm: 'نمونهٔ پروژه (ISATIS)', prj: '', org: '', sep: '-', na: 'NA', multi: 'TFL', multiDsc: 'GEN', rev: 'R00', shW: 4,
-      pat: {design: '{P}-{STG}-{Z}-{LVL}-{DSC}-{TYP}-{SH}-{L}-{REV}', contract: '{P}-CTR-{NO}-{ADD}', statement: '{P}-STM-{CNO}-{NO}-{REV}', letter: '{P}-LTR-{NO}',
+      pat: {design: '{P}-{STG}-{Z}-{LVL}-{DSC}-{TYP}-{SH}-{L}-{REV}', contract: '{P}-CTR-{NO}-{ADD}', statement: '{P}-STM-{CNO}-{STY}-{NO}-{REV}', letter: '{P}-LTR-{NO}',
         minute: '{P}-MOM-{DATE}-{NO}', trn: '{P}-TRN-{NO}', sub: '{P}-SUB-{DSC}-{NO}-{REV}', rfi: '{P}-RFI-{DSC}-{NO}'},
       tail: '',
       t: {
-        org: [], zn: [], lvl: [],
+        org: [], zn: [], lvl: [], sty: [['TMP', 'موقت'], ['IND', 'مستقل'], ['FIN', 'قطعی']],
         stg: [['R1', 'Riba 1'], ['R2', 'Riba 2'], ['R3', 'Riba 3'], ['R4', 'Riba 4'], ['R5', 'Riba 5']],
         dsc: [['ARC', 'معماری'], ['STR', 'سازه'], ['MEC', 'تأسیسات مکانیکی'], ['ELE', 'تأسیسات برقی'], ['PLM', 'لوله‌کشی و بهداشتی'], ['MEP', 'تأسیسات (هماهنگی MEP)'], ['ID', 'طراحی داخلی'], ['PMO', 'مدیریت پروژه'], ['FAC', 'نما'], ['LAN', 'محوطه'], ['GEN', 'سایر']],
         typ: [['DRW', 'نقشه'], ['RD', 'رندر'], ['SCH', 'برنامهٔ زمانی'], ['RPT', 'گزارش فنی'], ['CNT', 'محاسبات'], ['SPC', 'مشخصات فنی'], ['CD', 'کدینگ'], ['COV', 'جلد'], ['DLST', 'فهرست نقشه‌ها'], ['GEN', 'یادداشت‌های عمومی'], ['SIG', 'علائم'], ['LAN', 'محوطه'], ['LAY', 'لی‌آوت'], ['DT', 'دیتیل اجرایی']],
@@ -66280,9 +66289,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(c.rev === 'ISO') return (/^(A|B|CR)/.test(String(suit || '')) ? 'C' : 'P') + String(n + 1).padStart(2, '0');
     const m = /^(\D*)(0+)$/.exec(c.rev) || ['', 'R', '00']; return m[1] + String(n).padStart(m[2].length, '0'); }
   function dcTokVal(k, V){ const c = dcCfg();
-    if(k === 'P') return dcSan(c.prj); if(k === 'ORG') return dcSan(V.ORG || c.org); if(k === 'REV') return dcRev(V.REV, V.SUIT);
+    if(k === 'P') return dcSan(c.prj); if(k === 'ORG') return dcSan(V.ORG || c.org); if(k === 'REV') return V.__revR ? (function(){ const n = parseInt(toEn(String(V.REV == null ? '' : V.REV)).replace(/[^0-9]/g, ''), 10); return isNaN(n) ? '' : 'R' + String(n).padStart(2, '0'); })() : dcRev(V.REV, V.SUIT);
     if(k === 'SH') return V.SH ? String(dcSan(V.SH)).padStart(c.shW, '0') : '';
-    if(k === 'NO'){ const v = dcSan(V.NO); return /^\d+$/.test(v) && c.preset === 'iso' ? v.padStart(4, '0') : v; }
+    if(k === 'NO'){ const v = dcSan(V.NO); return /^\d+$/.test(v) && c.preset === 'iso' ? v.padStart(V.__noW || 4, '0') : v; }
     return dcSan(V[k] || ''); }
   /* ساختن کد از الگو. بخش خالی = نشانهٔ «خالی» (ISO: XX). stop: فقط بخش‌های پیش از آن توکن */
   function dcBuild(kind, V, stop, patOverride){
@@ -66297,7 +66306,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function dcFull(kind, V, id){ const c = dcCfg(), base = id || dcBuild(kind, V); if(!c.tail || kind !== 'design') return base; const t = dcBuild(kind, V, null, c.tail); return t ? base + c.sep + t : base; }
   window.dcFull = dcFull;
   window.dcPieces = function(kind, V){ const c = dcCfg(), L = [], pat = String(c.pat[kind] || '') + (kind === 'design' && c.tail ? c.sep + c.tail : '');
-    pat.split(c.sep).filter(Boolean).forEach(seg => { const m = /\{([A-Z]+)\}/.exec(seg); const k = m ? m[1] : ''; const v = dcBuild(kind, V, null, seg); L.push({k, t: k ? DC_TOK[k] : 'ثابت', v, tail: kind === 'design' && c.tail && c.tail.indexOf(seg) !== -1}); }); return L; };
+    pat.split(c.sep).filter(Boolean).forEach(seg => { const ks = Array.from(seg.matchAll(/\{([A-Z]+)\}/g)).map(m => m[1]); const k = ks[0] || ''; const v = dcBuild(kind, V, null, seg); const ISO_POS = ['پروژه', 'پدیدآورنده', 'حجم / زون', 'تراز', 'نوع اطلاعات', 'نقش', 'شماره']; L.push({k, t: ks.length ? ks.map(x => DC_TOK[x] || x).join(' · ') : (c.preset === 'iso' && ISO_POS[L.length] ? ISO_POS[L.length] : 'ثابت'), v, tail: kind === 'design' && c.tail && c.tail.indexOf(seg) !== -1}); }); return L; };
   const dcTab = k => (dcCfg().t[k] || []);
   /* کد هر عنوان فارسی (دیسیپلین، نوع، وضعیت…) */
   function dcCodeOf(tk, label){ const L = dcTab(tk), s = String(label || '').trim(); if(!s) return ''; const hit = L.find(x => x[1] === s || x[0] === s.toUpperCase()) || L.find(x => s && (x[1].indexOf(s) === 0 || s.indexOf(x[1]) === 0)); return hit ? hit[0] : (/^[A-Za-z0-9]+$/.test(s) ? s.toUpperCase() : ''); }
@@ -66315,7 +66324,23 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function dcLvlOfFloor(fv){ const c = dcCfg(), s = String(fv || '').trim(); if(!s) return ''; const ks = s === 'ALL' ? ['', ''] : s.split(/[,،]/).map(x => x.trim()).filter(Boolean); if(ks.length > 1) return c.multi; const L = dcLvlList(); const hit = L.find(x => x[2] === ks[0] || x[1] === ks[0] || x[0] === ks[0]); return hit ? hit[0] : ''; }
   function dcShIdx(dsc){ const out = []; String(dcCfg().t.sh || '').split('\n').forEach(l => { const m = /^\s*([A-Za-z]+)\s+(\d{2,6})\s*=\s*(.+)$/.exec(l); if(m && (!dsc || m[1].toUpperCase() === dsc)) out.push([m[2], m[3].trim(), m[1].toUpperCase()]); }); return out; }
   /* کد اسناد غیرطراحی: مستقیم از فیلدهای خود سند */
+  function dcVals(kind, r){
+    const d = String(toEn(pick(r, AD.date) || pick(r, AD.lDate) || pick(r, AD.mMeet) || pick(r, AD.sDate) || pick(r, AD.cDate) || '')).replace(/[^0-9]/g, '').slice(2, 8);
+    if(kind === 'contract') return {NO: pick(r, AD.cNo), ADD: pick(r, AD.cAdd) ? 'A' + dcSan(pick(r, AD.cAdd)) : '', DATE: d};
+    if(kind === 'statement') return {NO: pick(r, AD.sNo), CNO: pick(r, AD.sCno), STY: dcCodeOf('sty', pick(r, AD.sType)), REV: pick(r, AD.sRev) || '0', DATE: d, __noW: 2, __revR: dcCfg().rev === 'ISO'};
+    if(kind === 'letter') return {NO: pick(r, AD.lNo) || d, DATE: d};
+    if(kind === 'minute') return {NO: pick(r, AD.mId) || pick(r, AD.mIdx), DATE: d};
+    return {};
+  }
+  /* بخش «کد سند» در فرم اسناد غیرطراحی: فقط نمایش، خودکار از فیلدهای همان فرم */
+  function dcLiveHtml(kind){ return '<div class="field dc-f dc-live" data-dckind="' + kind + '"><div class="dc-h"><code class="dc-code" dir="ltr">—</code></div><div class="dc-pcs" aria-label="بخش‌های کد"></div>'
+    + '<small class="dc-hint">کد خودکار از ' + ({statement: 'شمارهٔ قرارداد، نوع، شماره و ویرایش صورت وضعیت', contract: 'شمارهٔ قرارداد و الحاقیه', letter: 'شمارهٔ نامه', minute: 'شمارهٔ جلسه و تاریخ'}[kind] || 'فیلدهای سند') + ' ساخته می‌شود؛ نام فایل‌های پیوست هم همین کد می‌شود.</small></div>'; }
+  window.dcLiveHtml = dcLiveHtml;
+  function dcLiveSync(box){ try{ const kind = box.dataset.dckind, host = box.closest('.nf-body, .modal, .af, form'); if(!host) return; const V = dcVals(kind, admValues(kind, host)), code = dcBuild(kind, V), na = dcCfg().na;
+    box.querySelector('.dc-code').textContent = code || '—';
+    box.querySelector('.dc-pcs').innerHTML = window.dcPieces(kind, V).map(x => '<span class="' + (x.v === na ? 'na' : '') + '"><u>' + esc(x.t) + '</u><b dir="ltr">' + esc(x.v) + '</b></span>').join(''); }catch(e){} }
   function dcOfRow(kind, r){
+    if(kind !== 'design'){ try{ const V = dcVals(kind, r); return Object.keys(V).length ? dcBuild(kind, V) : ''; }catch(e){ return ''; } }
     try{
       const d = String(toEn(pick(r, AD.date) || pick(r, AD.lDate) || pick(r, AD.mMeet) || '')).replace(/[^0-9]/g, '').slice(2, 8);
       if(kind === 'design'){ const no = String(pick(r, AD.dNo) || '').trim(); return dcSan(no) ? no : ''; }
@@ -66353,6 +66378,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.dcDesignFieldHtml = dcDesignFieldHtml;
   /* مقدارهای خودکار از خود فرم (نوع، رشته، طبقه، وضعیت، ویرایش، طراح) وقتی کاربر دستی انتخاب نکرده */
   function dcSync(box){
+    if(box && box.classList.contains('dc-live')){ dcLiveSync(box); return; }
     if(!box || box.classList.contains('man')) return;
     const c = dcCfg(), host = box.closest('.nf-body, .modal, .af, form') || document;
     const q = s => host.querySelector(s), setAuto = (k, v) => { const e = box.querySelector('[data-dcp="' + k + '"]'); if(e && !e.dataset.dcman && v != null && e.value !== v){ if(e.tagName === 'SELECT' && v && !Array.from(e.options).some(o => o.value === v)) return; e.value = v; } };
@@ -66385,7 +66411,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   document.addEventListener('change', e => { const t = e.target; if(!t.closest) return; const b = t.closest('.dc-f'); if(b && t.matches('[data-dcp]')){ if(t.tagName === 'SELECT') t.dataset.dcman = t.value ? '1' : ''; dcSync(b); return; }
     const host = t.closest('.nf-body, .modal, .af, form'); const box = host && host.querySelector('.dc-f'); if(box) dcSync(box); }, true);
-  document.addEventListener('input', e => { const t = e.target; if(!t.closest) return; const host = t.closest('.nf-body, .modal, .af, form'); const box = host && host.querySelector('.dc-f'); if(box && (t.matches('[data-dcp], .a-dRev, .a-dType, .a-dParty, .a-dStatus'))) dcSync(box); }, true);
+  document.addEventListener('input', e => { const t = e.target; if(!t.closest) return; const host = t.closest('.nf-body, .modal, .af, form'); const box = host && host.querySelector('.dc-f'); if(box && (box.classList.contains('dc-live') || t.matches('[data-dcp], .a-dRev, .a-dType, .a-dParty, .a-dStatus'))) dcSync(box); }, true);
   document.addEventListener('click', e => { const t = e.target; if(!t.closest) return;
     const af = t.closest('.af-c, [data-afv], .sl-chip, [data-slk], .af-chips button'); if(af){ setTimeout(() => { const host = af.closest('.nf-body, .modal, .af, form'); const box = host && host.querySelector('.dc-f'); if(box) dcSync(box); }, 30); }
     const mb = t.closest('[data-dcman]'); if(mb && mb.tagName === 'BUTTON'){ const b = mb.closest('.dc-f'); b.classList.toggle('man'); mb.textContent = b.classList.contains('man') ? 'ساختن با کدینگ' : 'نوشتن دستی'; if(!b.classList.contains('man')) dcSync(b); return; }
@@ -67159,9 +67185,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           + f('a-sCno','شماره قرارداد', pick(r,AD.sCno), false, 'contractNoList')
           + f('a-sNo','شماره صورت وضعیت', pick(r,AD.sNo))
           + f('a-sRev','ویرایش (Rev) — برای نسخهٔ اصلاحی همین صورت وضعیت', sRevRaw(r)).replace('class="a-sRev"', 'class="a-sRev" inputmode="numeric" placeholder="۰" data-orig="' + esc(sRevRaw(r)) + '"')
-          + chips('<div class="field"><label>نوع صورت وضعیت</label><select class="a-sType"><option value="">—</option>'
-              + ST_TYPES.map(v => '<option value="' + v + '"' + (pick(r,AD.sType) === v ? ' selected' : '') + '>' + v + '</option>').join('')
-              + '</select></div>'))
+          + dspSelChips('a-sType', 'نوع صورت وضعیت', ST_TYPES, String(pick(r,AD.sType) || ''), 'sty'))
         + sec('money', 'مبالغ', sfFormHtml(r)
           + fm('a-sAmount','مبلغ قابل پرداخت صورت وضعیت (ریال)', pick(r,AD.sAmount))
           + fm('a-sPaid','مبلغ پرداختی (ریال)', pick(r,AD.sPaid)), 'two')
@@ -67170,6 +67194,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           + fdue('a-due','موعد اتمام', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.statement)), 'three')
         + flowSec('a-sNotify', pick(r,AD.sNotify), 'a-sReview')
+        + sec('doc', 'کد سند', dcLiveHtml('statement'), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'توضیحات', f('a-sNote','توضیحات', pick(r,AD.sNote), true), 'one'));
     }
@@ -67205,6 +67230,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           + fdue('a-due','موعد پیگیری', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.contract)))
         + flowSec('a-cNotify', pick(r,AD.cNotify), 'a-cReview')
+        + sec('doc', 'کد سند', dcLiveHtml('contract'), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'موضوع قرارداد', f('a-cSubject','موضوع قرارداد', pick(r,AD.cSubject), true), 'one'));
     }
@@ -67229,6 +67255,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
               + '<div class="a-bands">' + bandBlock() + '</div>'
               + '<button type="button" class="add a-addband">+ افزودن بند</button></section>'
             : sec('list', 'شرح بند', f('a-mText','شرح بند', pick(r,AD.mText), true), 'one'))
+        + sec('doc', 'کد سند', dcLiveHtml('minute'), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one'));
     }
     if(kind === 'design'){
@@ -67298,6 +67325,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + fd('a-due','موعد اتمام', pick(r,AD.due))
         + fo('a-owner','مسئول', pick(r,AD_OWNER.letter)), 'three')
       + sec('flow', 'ابلاغ', chips(notifySel('a-lNotify', pick(r,AD.lNotify))), 'one')
+      + sec('doc', 'کد سند', dcLiveHtml('letter'), 'one')
       + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one'));
   }
 
