@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261113161759">
+<meta name="pm-build" content="20261114032036">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29946,6 +29946,23 @@
 
 /* ۳۰۹: وقتی فرم تازهٔ همان بخش باز است، دکمهٔ «+ ثبت» بالای صفحه تکراری است */
 :is(html,#z0) :is(body,#z1) #panelTasks:has(#wsHost [data-prtab="new"].on, #wsHost [data-hstab="new"].on, #wsHost [data-cotab="new"].on) #wsBar .ws-badd{display:none!important}
+
+/* ۳۱۰: کارت‌های انتخاب نوع گزارش (طرح قدیمی) دیگر دیده نمی‌شوند؛ «+» برگهٔ ثبت تازه را باز می‌کند و زبانهٔ ثبت فقط گزارش پیمانکاری است */
+:is(html,#z0) :is(body,#z1) #panelWrite #wModeCaps{display:none!important}
+
+/* ۳۱۱: نمای مدیریتی گوشی — به‌جای نمودارهای دسکتاپ در کشوی افقی، کاشی‌های فشردهٔ دو ستونی: عنوان، عدد اصلی، یک خط وضعیت و نوار نازک.
+   جزئیات هر کاشی با لمس در گزارش مربوط باز می‌شود. */
+@media (max-width:1179px){
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;overflow:visible!important;scroll-snap-type:none!important;padding:0!important;margin:0!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c{width:auto!important;min-width:0!important;max-width:none!important;flex:none!important;padding:12px 13px!important;min-height:0!important;scroll-snap-align:none!important;display:flex!important;flex-direction:column!important;gap:8px!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c > :not(.hd4-h):not(.hd4-st){display:none!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c .hd4-h{margin:0!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c .hd4-h u{font-size:12px!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c .hd4-h b{font-size:20px!important;line-height:1.25!important}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c .hd4-h small{font-size:11.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  :is(html,#z0) :is(body,#z1) #homeView .h3.h5m > .hd4.open > .hd4-g > .hd4-c .hd4-st{margin-top:auto!important;height:5px!important}
+  :is(html,#z0) :is(body,#z1) #homeView .hd4 .hd4-dots{display:none!important}
+}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -30102,7 +30119,7 @@
       <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2.2" fill="currentColor" fill-opacity=".28"/><rect x="3.5" y="13.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2.2"/></svg></span>
       <span class="lb">میز کار</span>
     </button>
-    <button class="tab tab-add" id="tabWrite" role="tab" aria-selected="false" aria-controls="panelWrite" data-title="ثبت گزارش" title="ثبت تازه">
+    <button class="tab tab-add" id="tabWrite" role="tab" aria-selected="false" aria-controls="panelWrite" data-title="گزارش روزانهٔ پیمانکاری" title="ثبت تازه">
       <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
       <span class="lb">ثبت</span>
     </button>
@@ -50224,6 +50241,7 @@
   const wsAll = () => WS_MODS.filter(x => wsOk(x) && !(x.inside && wsOk(wsMod(x.inside) || {ok: () => false})));
   /* بخشی که صفحهٔ خودش را دارد (go، مثل گزارش پیمانکاری) در میز کار نیست */
   window.wsHas = k => { const x = wsMod(k); return !!(x && x.k !== 'tasks' && !x.go && wsOk(x)); };
+  window.wsCan = k => { const x = wsMod(k); return !!(x && x.k !== 'tasks' && wsOk(x)); };
   /* ماژول از جای اصلی‌اش (زبانهٔ ثبت) به میز کار می‌آید؛ جای اصلی با یک
      نشانه نگه داشته می‌شود تا با رفتن به «ثبت» دقیقاً همان‌جا برگردد */
   function wsAdopt(id){
@@ -50634,7 +50652,7 @@
   /* زدن زبانهٔ میز کار: آخرین بخش (یا فهرست)؛ زدن دوباره روی همان زبانه: فهرست.
      باز شدن از جای دیگر (اعلان، خانه، رفتن به یک فعالیت): خودِ فعالیت‌ها */
   function wsOnTab(name, changed){
-    if(name === 'write'){ if(ws.home.size){ const had = ws.cur && ws.cur !== 'tasks'; wsRestore(); if(had){ try{ window.wpickSetMode(''); }catch(e){} } } return; }
+    if(name === 'write'){ /* زبانهٔ «ثبت» فقط گزارش روزانهٔ پیمانکاری است؛ بقیهٔ فرم‌ها در میز کار */ setTimeout(() => { try{ const on = document.querySelector('#wModeCaps [data-wmode].on'); if(!on || on.dataset.wmode !== 'crew'){ const m = on && on.dataset.wmode; if(m && window.wsCan && window.wsCan(m)){ switchTab('tasks'); window.wsSet(m); } else window.wpickSetMode('crew'); } }catch(e){} }, 0); if(ws.home.size){ const had = ws.cur && ws.cur !== 'tasks'; wsRestore(); if(had){ try{ window.wpickSetMode(''); }catch(e){} } } return; }
     if(name !== 'tasks') return;
     const tap = ws.tap; ws.tap = false;
     let tk = true; try{ tk = can('tab.tasks'); }catch(e){}
@@ -50719,7 +50737,8 @@
     const ic = btn.querySelector('.ic');
     const lb = btn.querySelector('.lb');
     const paint = () => {
-      host.querySelector('.pt-ic').innerHTML = ic ? ic.innerHTML : '';
+      const wic = name === 'write' && document.querySelector('#wModeCaps .c-crew .wp-ic');
+      host.querySelector('.pt-ic').innerHTML = wic ? wic.innerHTML : ic ? ic.innerHTML : '';
       host.querySelector('.pt-tx').textContent = btn.dataset.title || (lb ? lb.textContent.trim() : '');
     };
     if(!animate || uiReduced()){ paint(); return; }
@@ -96100,7 +96119,8 @@
     if(m === 'co'){ try{ co.tab = sub || 'list'; co.f = 'open'; co.q = ''; }catch(e){} }
     if(m === 'mc'){ try{ window.mcSetTab && window.mcSetTab(sub || 'list'); }catch(e){} }
     /* یک مسیر: همان بازکردن بخش از میز کار (صفحهٔ کامل روی دسکتاپ و گوشی) */
-    if(window.wsHas && window.wsHas(m)){ switchTab('tasks'); try{ window.wsSet(m); }catch(e){} }
+    if(m === 'crew'){ switchTab('write'); try{ window.wpickSetMode('crew'); }catch(e){} }
+    else if(window.wsCan && window.wsCan(m)){ switchTab('tasks'); try{ window.wsSet(m); }catch(e){} }
     else { switchTab('write'); try{ window.wpickSetMode && window.wpickSetMode(m); }catch(e){} }
     try{ window.scrollTo({top:0}); }catch(e){}
   }
@@ -98229,7 +98249,8 @@
       if(!t) t = requestAnimationFrame(() => { t = 0; sync(); });
     }).observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']});
     window.addEventListener('popstate', () => {
-      if(skip){ skip--; return; }
+      /* این «برگشت» را خود بستن پنجره ساخته؛ ناوبری بخش‌ها نباید آن را برگشت کاربر حساب کند */
+      if(skip){ skip--; window.__ovSelfPop = Date.now(); return; }
       const o = OV.pop(); if(o && o.el.isConnected) closeEl(o.el);
     });
   })();
@@ -98263,6 +98284,8 @@
     }
     window.addEventListener('popstate', e => {
       const st = e.state || {};
+      /* بستن پنجره (مثلاً انتخاب از «ثبت تازه») یک history.back() می‌زند؛ آن برگشتِ کاربر نیست و نباید بخش تازه را به بخش قبلی برگرداند */
+      if(window.__ovSelfPop && Date.now() - window.__ovSelfPop < 1500){ window.__ovSelfPop = 0; last = st.nav || ''; setTimeout(tick, 80); return; }
       if(st.ov != null) return;
       setTimeout(() => { if(ovOpen()) return; const k = st.nav || 'home|'; if(k !== key()) apply(k); else last = k; }, 0);
     });
