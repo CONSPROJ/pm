@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114054054">
+<meta name="pm-build" content="20261114054316">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -98022,7 +98022,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   const hdbTip = (t, rows) => esc(JSON.stringify({t, r: rows}));
   function hdbArea(D){
-    const L = D.days, W = 600, H = 110, P = 4, n = L.length; if(n < 2) return '';
+    /* ۳۲۹: روز ناقص آخر (امروزی که گزارش امانی‌اش هنوز نیامده، یا روزهای آخر بی‌هیچ گزارش) از نمودار و مقایسه بیرون می‌ماند؛
+       گزارش امانی معمولاً عصر ثبت می‌شود و پیش‌تر امروز «۰» و نسبت به هفتهٔ قبل «−۱۰۰٪» نشان داده می‌شد */
+    const L = (D.days || []).slice(), today = todayShamsi(), hadAm = L.some(x => x.am > 0); let cut = 0;
+    while(L.length > 2){ const z = L[L.length - 1]; if(z.am + z.pe === 0 || (z.d === today && hadAm && z.am === 0)){ L.pop(); cut++; } else break; }
+    const W = 600, H = 110, P = 4, n = L.length; if(n < 2) return '';
+    const lastD = L[n - 1].d, partial = lastD !== today;
     const tot = L.map(x => x.am + x.pe), max = Math.max(1, ...tot) * 1.1;
     const X = i => P + i * (W - 2 * P) / (n - 1), Y = v => H - (v / max) * (H - 8);
     /* منحنی نرم (Catmull-Rom → Bézier با کشش کم) به‌جای خط شکسته */
@@ -98033,12 +98038,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const line = arr => curve(arr.map((v, i) => [X(i), Y(v)]), true);
     const area = (top, bot) => line(top) + ' ' + curve(bot.map((v, i) => [X(n - 1 - i), Y(v)]), false) + ' Z';
     const am = L.map(x => x.am), all = tot, zero = L.map(() => 0);
-    const avg = Math.round(tot.reduce((a, b) => a + b, 0) / n), last = tot[n - 1], prev = tot.slice(-8, -1).reduce((a, b) => a + b, 0) / 7 || 0;
+    /* میانگین‌ها فقط روی روزهایی که گزارش دارند (جمعه و تعطیل صفر حساب نمی‌شوند) */
+    const nz = tot.filter(v => v > 0), avg = nz.length ? Math.round(nz.reduce((a, b) => a + b, 0) / nz.length) : 0, last = tot[n - 1];
+    const pw = tot.slice(-8, -1).filter(v => v > 0), prev = pw.length ? pw.reduce((a, b) => a + b, 0) / pw.length : 0;
     const dv = prev ? Math.round((last - prev) / prev * 100) : 0;
     const zones = L.map((x, i) => '<i class="hdb-hz" style="left:' + ((X(i) - (W - 2 * P) / (n - 1) / 2) / W * 100).toFixed(2) + '%;width:' + (100 / (n - 1)).toFixed(2) + '%" data-x="' + (X(i) / W * 100).toFixed(2) + '" data-tip="'
       + hdbTip(toFa(x.d), [['امانی', toFa(x.am), 'a'], ['پیمانی', toFa(x.pe), 'p'], ['جمع', toFa(x.am + x.pe) + ' نفر', '']]) + '"></i>').join('');
     const ticks = [0, Math.floor((n - 1) / 2), n - 1].map(i => '<span style="left:' + (X(i) / W * 100).toFixed(2) + '%">' + esc(toFa(String(L[i].d).slice(5))) + '</span>').join('');
-    return '<div class="hdb-p hdb-wide" data-hmv="daily|week" role="button"><div class="hdb-h"><div><u>نیروی کارگاه · امروز و ۳۰ روز اخیر</u><b>' + toFa(last) + '<small>نفر امروز · امانی ' + toFa(L[n - 1].am) + ' · پیمانی ' + toFa(L[n - 1].pe) + '</small></b></div>'
+    return '<div class="hdb-p hdb-wide" data-hmv="daily|week" role="button"><div class="hdb-h"><div><u>نیروی کارگاه · ' + (partial ? 'آخرین روز کامل و ۳۰ روز اخیر' : 'امروز و ۳۰ روز اخیر') + '</u><b>' + toFa(last) + '<small>' + (partial ? 'نفر ' + esc(toFa(String(lastD).slice(5))) + (cut && D.days[D.days.length - 1].d === today ? ' (امروز هنوز کامل نشده)' : '') : 'نفر امروز') + ' · امانی ' + toFa(L[n - 1].am) + ' · پیمانی ' + toFa(L[n - 1].pe) + '</small></b></div>'
       + '<div class="hdb-kv"><span><u>میانگین ۳۰ روز</u><b>' + toFa(avg) + '</b></span><span><u>نسبت به هفتهٔ قبل</u><b class="' + (dv >= 0 ? 'up' : 'dn') + '">' + (dv >= 0 ? '▲ ' : '▼ ') + toFa(Math.abs(dv)) + '٪</b></span></div>'
       + '<div class="hdb-lg"><span><i class="a"></i>امانی</span><span><i class="p"></i>پیمانی</span></div></div>'
       + '<div class="hdb-plot"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">'
