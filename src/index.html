@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114145212">
+<meta name="pm-build" content="20261114145453">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30238,6 +30238,8 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .tm2 .tm-nums{font-size:12.5px;gap:12px}
 :is(html,#z0) :is(body,#z1) .tm2 .tm-nums em small{font-size:11px}
 :is(html,#z0) :is(body,#z1) .tm2 .tm-st{font-size:10.5px;padding:2px 9px}
+:is(html,#z0) :is(body,#z1) .ogc-out{margin-inline-start:6px;height:22px;padding:0 8px;border-radius:99px;border:1px solid var(--sc,#2f6f9f);background:var(--surface,#fff);color:var(--sc,#2f6f9f);font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+:is(html,#z0) :is(body,#z1) .ogc-out:hover{background:var(--sc,#2f6f9f);color:#fff}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -43847,6 +43849,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const OV = k => og.nodes.get('o:' + k) || {};
     const xKids = key => Array.from(og.nodes.entries()).filter(([id, x]) => id.indexOf('o:') !== 0 && id.indexOf('gp:') !== 0 && id.indexOf('cfg:') !== 0 && x.up === key).sort((a, b) => (+(a[1].o || 0) - +(b[1].o || 0)) || String(a[0]).localeCompare(String(b[0])));
     const addB = key => og.edit ? '<button type="button" class="ogc-add" data-ogadd="' + esc(key) + '" title="افزودن زیرمجموعه" aria-label="افزودن زیرمجموعه">+</button>' : '';
+    /* گروهی که داخل گروه دیگر گذاشته شده: دکمهٔ «بیرون» (کشیدن به نوار سطح اول هم کار می‌کند) */
+    const outB = k => og.edit && (og.nodes.get('gp:' + k) || {}).up && (og.nodes.get('gp:' + k) || {}).up !== 'g:emp' ? '<button type="button" class="ogc-out" data-oggout="' + esc(k) + '" title="بیرون آوردن از گروه بالادست">↥ بیرون</button>' : '';
     const kup = n => { const u = (og.per.get(nameKey(n)) || {}).up || ''; return /^[exg]:/.test(u) ? u : ''; };
     let cardFn = null;
     const EXTALL = new Map(); EXT.forEach((arr, t) => arr.forEach(e => { EXTALL.set(normName(e.n), {n: e.n, d: e.d, sc: OG_SC[t] || OG_SC.emp}); (e.ppl || []).forEach(q => EXTALL.set(normName(q.n), {n: q.n, d: q.r || '', sc: OG_SC[t] || OG_SC.emp})); }));
@@ -43871,11 +43875,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           + (K.length ? '<button type="button" class="ogc-tg' + (shut ? ' shut' : '') + '" data-ogtg="' + esc(n) + '" aria-label="' + (shut ? 'باز کردن' : 'جمع کردن') + ' زیرمجموعه">' + (shut ? '+' + toFa(cnt(n)) : '−') + '</button>' : '')
           + addB('p:' + nameKey(n)) + '</div>' + ul(K.length && !shut ? K.slice().reverse().map(k => card(k, d + 1)).join('') : '', 'p:' + nameKey(n), OG_SC[dsd(n)] || '#777') + '</li>'; };
       cardFn = card;
-      const grp = (x, inner) => '<li><div class="ogc-g" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + '</div>'
+      const grp = (x, inner) => '<li><div class="ogc-g" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + outB(x.k) + '</div>'
         + ul(inner, 'g:' + x.k, OG_SC[x.k]) + '</li>';
       /* تیم مدیریت پیمان: قابی که مدیریت پروژه و زیرمجموعه‌اش داخل آن است (نه گرهی بالای آن) */
       const frame = (x, inner) => { const u2 = ul(inner, 'g:' + x.k, OG_SC[x.k]);
-        return '<li><div class="ogc-fr" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><span class="ogc-frl"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + '</span>'
+        return '<li><div class="ogc-fr" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><span class="ogc-frl"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + outB(x.k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div></li>'; };
       /* سرفصل خودکار رشته‌ها: کسانی که سمتشان یک رشته است (مدیر طراحی سازه، طراح معماری…) و زیر سرفصل دستی نیستند، زیر سرفصل رشتهٔ خودشان */
       const DISC_AUTO = ['تأسیسات مکانیکی', 'تأسیسات برقی', 'طراحی داخلی', 'معماری داخلی', 'معماری', 'سازه', 'تأسیسات', 'مکانیک', 'برق', 'محوطه', 'منظر', 'نما', 'ژئوتکنیک', 'ترافیک', 'شهرسازی', 'نقشه‌برداری', 'متره و برآورد', 'BIM'];
@@ -43895,7 +43899,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const frDiv = (k, t, inner, n, cls) => { const u2 = ul(inner, 'g:' + k, OG_SC[k] || '#777');
         t = ogGT(k, t); const gh = k !== 'emp' && ogGHid(k); if(gh && !og.edit) return ''; if(gh) cls = (cls ? cls + ' ' : '') + 'og-hid';
         if(!u2 && !og.edit) return '';
-        return '<div class="ogc-fr' + (cls ? ' ' + cls : '') + (u2 ? '' : ' ogc-fr-e') + '" data-ogk="g:' + k + '" style="--sc:' + (OG_SC[k] || '#777') + '"><span class="ogc-frl"><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</span>'
+        return '<div class="ogc-fr' + (cls ? ' ' + cls : '') + (u2 ? '' : ' ogc-fr-e') + '" data-ogk="g:' + k + '" style="--sc:' + (OG_SC[k] || '#777') + '"><span class="ogc-frl"><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + outB(k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div>'; };
       /* هر گروه اصلی می‌تواند زیر گروه، شخص یا طرف دیگری برود (og.nodes «gp:کلید» → up)؛ پیش‌فرض: شاخهٔ زیر کارفرما */
       const GF = new Map(), gpUp = k => { const u = (og.nodes.get('gp:' + k) || {}).up || ''; return u === 'g:emp' || u === 'g:root' ? '' : u; };
@@ -44056,6 +44060,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       else{ const n = su.dataset.ogsupn, cur = og.per.get(nameKey(n)) || {}, o = {side: cur.side || '', up: 'x:' + id, fl: cur.fl || []}; await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); }
       const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart();
       setTimeout(() => { const c = document.querySelector('.og2 [data-ogx="' + CSS.escape(id) + '"]'); if(c) ogXPop(c, {id}); }, 60); return; }
+    const go = t.closest('[data-oggout]'); if(go){ const id = 'gp:' + go.dataset.oggout; await ogSaveRow(OG_NODE_KIND, id, null); og.nodes.delete(id); ogRepaintChart(); try{ shrToast('گروه بیرون آمد؛ برای ثبت «ذخیرهٔ چارت» را بزنید'); }catch(er){} return; }
     const ph = t.closest('[data-ogphide]'); if(ph){ const n = ph.dataset.ogphide, cur = og.per.get(nameKey(n)) || {}, o = Object.assign({side: cur.side || '', up: cur.up || '', fl: cur.fl || []}, ph.dataset.v === '1' ? {hide: 1} : {});
       await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); return; }
     const sg = t.closest('[data-ogsubgo]'); if(sg){ const up = sg.dataset.ogsubgo, box = sg.closest('.og-subt'), D = Array.from(box.querySelectorAll('[data-ogsubd]:checked')).map(c => c.dataset.ogsubd); if(!D.length){ shrToast('رشته‌ها را تیک بزنید'); return; }
