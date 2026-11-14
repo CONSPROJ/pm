@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114081239">
+<meta name="pm-build" content="20261114081621">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -50560,7 +50560,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(k === 'ver'){ try{ window.pmVerOpen(); }catch(e){} return; }
     if(k === 'mods'){ try{ window.modOpen(); }catch(e){} return; }
     if(k === 'rules'){ try{ window.rulesOpen(); }catch(e){} return; }
-    if(k === 'dc'){ try{ window.dcLoad(true).then(() => window.dcOpen()); }catch(e){} return; }
+    if(k === 'dc'){ try{ window.dcgLoad(true).then(() => window.dcgOpen()); }catch(e){} return; }
     if(k === 'maint'){ const fail = e2 => showDialog('err', 'ثبت نشد', friendlyErr(e2));
       if(window.maintIsOn && window.maintIsOn()){ if(confirm('حالت نگهداری خاموش شود و ثبت برای همه باز شود؟')) window.maintSet(false).then(acPaint).catch(fail); }
       else { const m = prompt('حالت نگهداری: سایت برای غیرادمین‌ها فقط‌خواندنی می‌شود. پیام برای کاربران:', 'در حال انتقال سایت به سرور تازه؛ ثبت و ویرایش تا پایان امروز بسته است.'); if(m != null) window.maintSet(true, m).then(acPaint).catch(fail); }
@@ -50748,7 +50748,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(tl){ const [g, i] = tl.dataset.wst.split(':'); const x = ws.tools && ws.tools[g] && ws.tools[g][+i];
       if(x && x.k === 'ver'){ try{ window.pmVerOpen(); }catch(e2){} return; }
       if(x && x.k === 'mods'){ try{ window.modOpen(); }catch(e2){} return; }
-      if(x && x.k === 'dc'){ try{ window.dcLoad(true).then(() => window.dcOpen()); }catch(e2){} return; }
+      if(x && x.k === 'dc'){ try{ window.dcgLoad(true).then(() => window.dcgOpen()); }catch(e2){} return; }
       if(x && x.k === 'rules'){ try{ window.rulesOpen(); }catch(e2){} return; }
       if(x && x.k === 'maint'){ const fail = e2 => showDialog('err', 'ثبت نشد', friendlyErr(e2));
         if(window.maintIsOn && window.maintIsOn()){ if(confirm('حالت نگهداری خاموش شود و ثبت برای همه باز شود؟')) window.maintSet(false).catch(fail); }
@@ -66244,9 +66244,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       rev: c.rev || d.rev, shW: +c.shW || d.shW, pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
-  async function dcLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} return dcCfg(); }
-  window.dcLoad = dcLoad;
-  setTimeout(() => { try{ dcLoad(); }catch(e){} }, 3500);
+  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} return dcCfg(); }
+  window.dcgLoad = dcgLoad;
+  setTimeout(() => { try{ dcgLoad(); }catch(e){} }, 3500);
   const dcSan = v => toEn(String(v == null ? '' : v)).trim().replace(/[\/\\\s]+/g, '.').replace(/[^A-Za-z0-9._()]/g, '').replace(/^\.+|\.+$/g, '').toUpperCase();
   /* ویرایش: ISO → P01… پیش از تأیید و C01… پس از تأیید (وضعیت A، B یا CR)؛ بقیه طبق قالب (R00، REV00…) */
   function dcRev(v, suit){ const c = dcCfg(), n = parseInt(toEn(String(v == null ? '' : v)).replace(/[^0-9]/g, ''), 10); if(isNaN(n)) return '';
@@ -66397,7 +66397,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const dcTxt = L => (L || []).map(x => x[0] + ' = ' + x[1]).join('\n');
   const dcParse = s => String(s || '').split('\n').map(l => { const i = l.indexOf('='); if(i < 1) return null; const k = dcSan(l.slice(0, i)), v = l.slice(i + 1).trim(); return k && v ? [k, v] : null; }).filter(Boolean);
   const DC_EX = {design: {ORG: 'ISA', STG: '4', Z: 'ZZ', LVL: '03', DSC: 'S', TYP: 'DR', SH: '0100', SUIT: 'S3', REV: 1}, contract: {NO: '1403/12'}, statement: {NO: '1403.12.4', CNO: '1403/12', REV: 0}, letter: {NO: '1250'}, minute: {NO: '18', DATE: '050822'}, trn: {NO: '31'}, sub: {DSC: 'A', NO: '12', REV: 0}, rfi: {DSC: 'M', NO: '7'}};
-  window.dcOpen = function(){
+  window.dcgOpen = function(){
     let adm = false; try{ adm = isAdminUser(); }catch(e){}
     const ro = adm ? '' : ' readonly', dis = adm ? '' : ' disabled';
     const paint = c => {
@@ -66436,7 +66436,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
       try{ const o = read(); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
   };
-  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-dcopen]'); if(!t) return; e.preventDefault(); e.stopPropagation(); dcLoad(true).then(() => window.dcOpen()); }, true);
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-dcopen]'); if(!t) return; e.preventDefault(); e.stopPropagation(); dcgLoad(true).then(() => window.dcgOpen()); }, true);
   /* «جزئیات بیشتر» کارت دفتر فنی */
   function admMoreHtml(kind, r, head, o){
     const out = [];
