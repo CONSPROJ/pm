@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114133047">
+<meta name="pm-build" content="20261114133403">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30114,6 +30114,7 @@ body.adm-selon #adminView .afr[data-afrkind]::before{top:50% !important;margin-t
 .ogc-save{background:#2f8a5f !important;color:#fff !important;border-color:#2f8a5f !important}.ogc-save u{text-decoration:none;font-size:11px;padding:0 6px;border-radius:99px;background:rgba(255,255,255,.25);margin-inline-start:4px}
 .ogc-rootdrop{margin:8px 0;padding:12px;border:2px dashed var(--line);border-radius:14px;text-align:center;font-size:12px;color:var(--muted)}.ogc-rootdrop.og-over{border-color:var(--sky,#2f6f9f);background:color-mix(in srgb,var(--sky,#2f6f9f) 8%,transparent);color:var(--sky,#2f6f9f)}
 body:not(.og-dragging) .ogc-rootdrop{display:none}
+:is(html,#z0) :is(body,#z1) .ogc-g.ogc-team{min-width:130px;padding:9px 18px !important;border-radius:14px !important;white-space:nowrap;cursor:pointer;border-width:1.5px}:is(html,#z0) :is(body,#z1) .ogc-g.ogc-team b{font-size:13px}.og-edit .ogc-team{cursor:grab}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -43698,6 +43699,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const moved = (key, sc) => grpMoved(key) + (cardFn ? P.filter(n => kup(n) === key).map(n => cardFn(n, 1)).join('') : '')
       + Array.from(EXTALL.entries()).filter(([k]) => OV(k).up === key).map(([k, e]) => extLi({n: e.n, d: e.d, ppl: []}, e.sc || sc, '', true)).join('');
     const xLis = (key, sc, d) => (d || 0) > 10 ? '' : moved(key, sc) + xKids(key).reverse().map(([id, x]) => { const c2 = x.sd ? OG_SC[x.sd] : sc;
+      /* تیم/رشته: سرفصل (مثل قاب گروه) نه کارت شخص */
+      if(x.team){ const inn = xLis('x:' + id, c2, (d || 0) + 1), nIn = (inn.match(/class="ogc-n/g) || []).length;
+        return '<li><div class="ogc-g sm ogc-team" data-ogx="' + esc(id) + '" data-ogk="x:' + esc(id) + '" style="--sc:' + c2 + '"><b>' + esc(x.disc || x.n || '—') + '</b><small>' + (nIn ? toFa(nIn) + ' نفر' : 'رشته') + '</small>' + addB('x:' + id) + '</div>' + (inn ? '<ul>' + inn + '</ul>' : '') + '</li>'; }
       return '<li><div class="ogc-n x" data-ogx="' + esc(id) + '" data-ogk="x:' + esc(id) + '" style="--sc:' + c2 + '">' + avatarHtml(x.n || '؟', '', true) + '<b>' + esc(x.n || '—') + '</b><small>' + esc(x.r || '') + '</small>' + addB('x:' + id) + '</div>'
         + (function(){ const inn = xLis('x:' + id, c2, (d || 0) + 1); return inn ? '<ul>' + inn + '</ul>' : ''; })() + '</li>'; }).join('');
     const ul = (inner, key, sc) => { const xs = xLis(key, sc); return (inner || xs) ? '<ul>' + xs + (inner || '') + '</ul>' : ''; };
@@ -43850,7 +43854,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + (o.id ? '<button type="button" class="mini" data-ogxadd="' + esc(o.id) + '">+ زیرمجموعه</button><button type="button" class="mini" data-ogsup="x:' + esc(o.id) + '">+ بالادست</button><button type="button" class="mini bad" data-ogxdel="' + esc(o.id) + '">حذف</button>' : '')
         + '<button type="button" class="mini" data-ogxclose="1">انصراف</button></div>'
         + (function(){ const up = o.id ? 'x:' + o.id : (o.up || ''); if(!up) return ''; let D = []; try{ D = (typeof DS_TREE !== 'undefined' ? DS_TREE : []).map(x => x[0]); }catch(e){} if(!D.length) return '';
-            return '<div class="og-subt"><u>زیرتیم‌ها بر اساس رشته <small>برای تیم طراحی یا مشاور: هر رشته یک تیم جدا زیر همین‌جا (بعد افراد را روی تیم خودشان بکشید)</small></u><span>' + D.map(d => '<label><input type="checkbox" data-ogsubd="' + esc(d) + '">' + esc(d) + '</label>').join('') + '</span><button type="button" class="mini go" data-ogsubgo="' + esc(up) + '">ساختن زیرتیم‌ها</button></div>'; })()
+            return '<div class="og-subt"><u>سرفصل رشته‌ها <small>هر رشته یک سرفصل جدا زیر همین‌جا؛ کسانی که سمتشان همان رشته است خودکار زیرش می‌روند و بقیه را می‌شود رویش کشید</small></u><span>' + D.map(d => '<label><input type="checkbox" data-ogsubd="' + esc(d) + '">' + esc(d) + '</label>').join('') + '</span><button type="button" class="mini go" data-ogsubgo="' + esc(up) + '">ساختن سرفصل‌ها</button></div>'; })()
         + (o.id ? (function(){ let A = []; try{ A = window.listNamesAll ? window.listNamesAll() : []; }catch(e){}
             let AP = []; try{ AP = listNames(); }catch(e){}
             const M = x.n ? AP.map(a => ({a, sc: window.idScore ? window.idScore(x.n, a) : 0})).filter(m => m.sc >= 60).sort((p, q) => q.sc - p.sc).slice(0, 3) : [];
@@ -43894,8 +43898,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const ph = t.closest('[data-ogphide]'); if(ph){ const n = ph.dataset.ogphide, cur = og.per.get(nameKey(n)) || {}, o = Object.assign({side: cur.side || '', up: cur.up || '', fl: cur.fl || []}, ph.dataset.v === '1' ? {hide: 1} : {});
       await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); return; }
     const sg = t.closest('[data-ogsubgo]'); if(sg){ const up = sg.dataset.ogsubgo, box = sg.closest('.og-subt'), D = Array.from(box.querySelectorAll('[data-ogsubd]:checked')).map(c => c.dataset.ogsubd); if(!D.length){ shrToast('رشته‌ها را تیک بزنید'); return; }
-      let i = 0; for(const d of D){ const id = 'n' + Date.now().toString(36) + (i++), nd = {n: 'تیم طراحی ' + d, r: 'رشتهٔ ' + d, up, team: 1, disc: d}; await ogSaveRow(OG_NODE_KIND, id, nd); og.nodes.set(id, nd); }
-      const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); try{ shrToast(toFa(D.length) + ' زیرتیم ساخته شد؛ افراد هر رشته را روی تیم خودش بکشید'); }catch(er){} return; }
+      let i = 0, moved = 0; const P0 = ogPeople();
+      for(const d of D){ const id = 'n' + Date.now().toString(36) + (i++), nd = {n: d, r: '', up, team: 1, disc: d}; await ogSaveRow(OG_NODE_KIND, id, nd); og.nodes.set(id, nd);
+        /* افرادی که سمتشان همین رشته است (مدیر طراحی سازه، طراح سازه…) و سرپرست تعیین‌شده ندارند، زیر سرفصل خودشان */
+        for(const n of P0){ const rl = String(ogRoleOf(n) || ''), cur = og.per.get(nameKey(n)) || {}; if(!rl || rl.indexOf(d) === -1 || (cur.up && !/^g:/.test(cur.up))) continue;
+          const o = {side: cur.side || '', up: 'x:' + id, fl: cur.fl || []}; await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); moved++; } }
+      const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); try{ shrToast(toFa(D.length) + ' رشته به‌عنوان سرفصل ساخته شد' + (moved ? '؛ ' + toFa(moved) + ' نفر از روی سمتشان زیر رشتهٔ خود رفتند' : '') + ' — برای ثبت «ذخیرهٔ چارت»'); }catch(er){} return; }
     const lk = t.closest('[data-ogxlink]'); if(lk){ const id = lk.dataset.ogxlink, pop = lk.closest('.ogc-pop'); let n = lk.dataset.ogxacc || String((pop.querySelector('[data-ogxaccin]') || {}).value || '').trim();
       const A = window.listNamesAll ? window.listNamesAll() : []; const hit = A.find(a => nameKey(a) === nameKey(n)); if(!hit){ showDialog('warn', 'حساب پیدا نشد', 'نام را از فهرست حساب‌ها انتخاب کنید. اگر هنوز حساب ندارد، اول در «کاربران» حساب بسازید یا از فرم تکمیل اطلاعات پیشنهادش دهید.'); return; }
       const x = og.nodes.get(id) || {}; if(!(await askConfirm('اتصال به حساب', 'جایگاه «' + (x.r || x.n || '') + '» در چارت به حساب «' + hit + '» داده شود؟' + (x.n && nameKey(x.n) !== nameKey(hit) ? '\n«' + x.n + '» نام دیگرِ همین شخص ثبت می‌شود تا سوابقش به حسابش وصل شود.' : ''), 'اتصال'))) return;
@@ -43934,7 +43942,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const fl = e.target.closest && e.target.closest('.og-edit .ogc-frl');
       const fr = fl && fl.closest('.ogc-fr[data-ogk^="g:"]');
       if(fr && fr.dataset.ogk !== 'g:root' && !e.target.closest('button')){ st = {n: '', k: fr.dataset.ogk, card: fr, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null, grp: true}; return; }
-      const c = e.target.closest && e.target.closest('.og-edit .ogc-n[data-ogk]'); if(!c || e.target.closest('button')) return;
+      const c = e.target.closest && e.target.closest('.og-edit .ogc-n[data-ogk], .og-edit .ogc-team[data-ogk]'); if(!c || e.target.closest('button')) return;
       if(ogTeamLead() && !ogInMine(c.dataset.ogk)) return;
       st = {n: c.dataset.ogn || '', k: c.dataset.ogk, card: c, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null}; });
     document.addEventListener('pointermove', e => { if(!st) return;
