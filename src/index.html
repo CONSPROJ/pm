@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114133651">
+<meta name="pm-build" content="20261114134055">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -67179,6 +67179,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      ـ الگوی دوم («نمونهٔ پروژه») همان کدینگ نمونهٔ ISATIS است. هر دو کاملاً قابل ویرایش‌اند (قالب، جدول‌ها، نشانهٔ خالی). */
   const DC_K = 'کدینگ اسناد', DC_REC_K = 'کد سند';
   const DC_KINDS = [['design', 'سند طراحی'], ['contract', 'قرارداد'], ['statement', 'صورت وضعیت'], ['letter', 'نامه'], ['minute', 'صورتجلسه'], ['trn', 'ترنسمیتال'], ['sub', 'سابمیتال'], ['rfi', 'استعلام فنی (RFI)']];
+  /* نظام مراحل: RIBA یا فازهای رایج ایران؛ مرحلهٔ هر سند از مرحلهٔ پروژه (طراحی فاز ۱/۲) پیشنهاد می‌شود */
+  const DC_STG_SETS = {
+    riba: [['0', 'راهبرد (RIBA 0)'], ['1', 'آماده‌سازی و بریف (RIBA 1)'], ['2', 'طراحی مفهومی (RIBA 2)'], ['3', 'هماهنگی فضایی (RIBA 3)'], ['4', 'طراحی فنی (RIBA 4)'], ['5', 'ساخت (RIBA 5)'], ['6', 'تحویل (RIBA 6)'], ['7', 'بهره‌برداری (RIBA 7)']],
+    iran: [['F0', 'فاز صفر — مطالعات و امکان‌سنجی'], ['F1', 'فاز یک — طراحی مقدماتی'], ['F2', 'فاز دو — طراحی تفصیلی و اجرایی'], ['F3', 'فاز سه — نظارت و اجرا'], ['AB', 'چون‌ساخت (ازبیلت)']]
+  };
+  window.DC_STG_SETS = DC_STG_SETS;
+  /* مرحلهٔ پیش‌فرض سند از مرحلهٔ پروژه: طراحی فاز ۱ ← F1 / RIBA 2، طراحی فاز ۲ ← F2 / RIBA 4، اجرا ← F3 / RIBA 5 */
+  function dcStgOfProject(){ let ph = ''; try{ ph = window.__pjPhase || ''; }catch(e){} const L = dcTab('stg').map(x => String(x[0]));
+    const iran = L.some(c => /^F\d$/.test(c)), want = ph === 'design1' ? (iran ? 'F1' : '2') : ph === 'design2' ? (iran ? 'F2' : '4') : (ph === 'build' || ph === 'finish') ? (iran ? 'F3' : '5') : ph === 'handover' ? (iran ? 'AB' : '6') : '';
+    return want && L.indexOf(want) !== -1 ? want : ''; }
   const DC_TOK = {STY: 'نوع صورت وضعیت', P: 'پروژه', ORG: 'پدیدآورنده', Z: 'حجم / زون', LVL: 'تراز', TYP: 'نوع اطلاعات', DSC: 'نقش / دیسیپلین', SH: 'شماره', STG: 'مرحله', L: 'زیرشیت', SUIT: 'وضعیت', REV: 'ویرایش', NO: 'شمارهٔ سند', CNO: 'شمارهٔ قرارداد', ADD: 'الحاقیه', DATE: 'تاریخ'};
   const DC_PRESETS = {
     iso: {nm: 'ISO 19650 (استاندارد جهانی)', prj: '', org: '', sep: '-', na: 'XX', multi: 'ZZ', multiDsc: 'Z', rev: 'ISO', shW: 4,
@@ -67328,6 +67338,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const c = dcCfg(), host = box.closest('.nf-body, .modal, .af, form') || document;
     const q = s => host.querySelector(s), setAuto = (k, v) => { const e = box.querySelector('[data-dcp="' + k + '"]'); if(e && !e.dataset.dcman && v != null && e.value !== v){ if(e.tagName === 'SELECT' && v && !Array.from(e.options).some(o => o.value === v)) return; e.value = v; } };
     setAuto('TYP', dcCodeOf('typ', (q('.a-dType') || {}).value));
+    { const sg = dcStgOfProject(); if(sg) setAuto('STG', sg); }
     const disc = String((q('.a-dDisc') || {}).value || '').split(/[،,]/).map(x => x.trim()).filter(Boolean);
     const par = new Set(disc.map(x => window.dsDiscParent ? window.dsDiscParent(x) : '').filter(Boolean)), disc2 = disc.filter(x => !par.has(x));
     const dcs = Array.from(new Set(disc2.map(x => dcCodeOf('dsc', x) || dcCodeOf('dsc', window.dsDiscParent ? window.dsDiscParent(x) : '')).filter(Boolean)));
@@ -67405,7 +67416,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<section><h4>جدول کدها</h4><p class="dc-tk">هر خط: <code>کد = عنوان</code>. عنوان‌ها همان گزینه‌های فرم‌اند (نوع سند، رشته، وضعیت، طراح) و با انتخاب هرکدام کد همان بخش عوض می‌شود. چند عنوان می‌توانند یک کد داشته باشند.</p><div class="dc-tbs">'
       + tb('typ', 'نوع اطلاعات', 'ISO: DR نقشه، M3 مدل، SP مشخصات…') + tb('dsc', 'نقش / دیسیپلین', 'ISO: A معماری، S سازه، M مکانیک، E برق…') + tb('suit', 'وضعیت (Suitability)', 'عنوان = وضعیت سند در سامانه')
       + tb('org', 'پدیدآورنده‌ها', 'کد = نام شرکت یا تیم طراح (همان نام «طراح» در فرم)') + tb('zn', 'حجم / زون / بلوک', 'ZZ = همه') + tb('lvl', 'تراز', 'خالی = خودکار از طبقات پروژه')
-      + tb('stg', 'مرحله', 'RIBA Plan of Work 2020') + tb('sh', 'فهرست شیت‌ها (اختیاری)', 'هر خط: <code>A 0100 = عنوان</code>')
+      + tb('stg', 'مرحله', 'RIBA یا فازهای رایج ایران (فاز ۰، ۱، ۲) — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>') + tb('sh', 'فهرست شیت‌ها (اختیاری)', 'هر خط: <code>A 0100 = عنوان</code>')
       + '</div></section>'
       + (adm ? '<div class="dc-save"><button type="button" class="pj-pri" data-dcsave>ذخیرهٔ کدینگ</button><button type="button" class="pj-sec" data-dclvl>ساختن تراز از طبقات پروژه</button></div>' : '<p class="dc-tk">فقط مدیر سامانه کدینگ را تغییر می‌دهد.</p>')
       + '</div>'; };
@@ -67416,6 +67427,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     m.addEventListener('input', exUpd); m.addEventListener('change', exUpd);
     m.addEventListener('click', async e => {
       const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; return; }
+      const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = m.querySelector('[data-dct="stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); ta.dispatchEvent(new Event('input', {bubbles: true})); } return; }
       if(e.target.closest('[data-dclvl]')){ const ta = m.querySelector('[data-dct="lvl"]'); const keep = window.__dcCfg; const r = read(); r.t.lvl = []; window.__dcCfg = r; ta.value = dcTxt(dcLvlList()); window.__dcCfg = keep; return; }
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
       try{ const o = read(); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
@@ -100236,8 +100248,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const T = {list:'پروژه‌ها', info:'اطلاعات پروژه', mem:'اعضا و دعوت', mods:'بخش‌های پروژه', 'new':'پروژهٔ تازه'};
     document.getElementById('pjTitle').textContent = T[pjSt.v] || 'پروژه‌ها';
     const bk = document.querySelector('#pjModal .pj-bk'); if(bk) bk.hidden = pjSt.v === 'list';
+    /* همان صفحه دوباره کشیده شد (افزودن بلوک، طبقه، تصویر…): جای اسکرول حفظ شود؛ صفحهٔ تازه از بالا */
+    const same = body.dataset.pv === pjSt.v + '|' + pjSt.pid, sc = [body.scrollTop, (body.closest('.pj-sh') || {}).scrollTop || 0];
     body.innerHTML = pjSt.v === 'info' ? pjInfoHtml() : pjSt.v === 'mem' ? pjMemHtml() : pjSt.v === 'mods' ? pjModsHtml() : pjSt.v === 'new' ? pjNewHtml() : pjListHtml();
-    body.scrollTop = 0;
+    body.dataset.pv = pjSt.v + '|' + pjSt.pid;
+    if(same){ body.scrollTop = sc[0]; const sh = body.closest('.pj-sh'); if(sh) sh.scrollTop = sc[1]; } else body.scrollTop = 0;
   }
   /* انتخاب سریع پروژه از کارت خانه */
   document.addEventListener('click', e => {
@@ -100689,13 +100704,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       /* بلوک‌ها: کد یکتا و خالی‌نبودن؛ با داشتن بلوک، طبقه‌ها از خود بلوک‌ها ساخته می‌شود */
       if(Array.isArray(d.blocks)){ const seen = new Set(); for(const b of d.blocks){ if(!b.c){ showDialog('warn', 'کد بلوک', 'برای «' + (b.n || 'بلوک') + '» کد کوتاه بنویسید (مثلاً A).'); return; } if(seen.has(b.c)){ showDialog('warn', 'کد تکراری', 'کد «' + b.c + '» دو بار آمده؛ هر بلوک کد یکتا می‌خواهد.'); return; } seen.add(b.c); if(!b.n) b.n = 'بلوک ' + b.c; }
         if(!d.blocks.length) delete d.blocks; }
-      if(pjBlks(d).length){ d.floors = null; delete d.__fl; d.updated = todayShamsi(); d.updatedBy = activeUserName(); await pjSaveBtn(t.closest('button'), () => pjSaveReg(d), 'اطلاعات پروژه ذخیره شد'); return; }
+      /* عوامل پروژه ← پرونده‌ها و چارت: هر طرف با نوع خودش (کارفرما، مشاور/ناظر، پیمانکار) ثبت می‌شود تا در گروه درست چارت بیاید */
+      const pjPtySync = async () => { if(d.id !== PJ.cur) return; for(const [k, ty] of [['employer', 'emp'], ['consultant', 'cons'], ['supervisor', 'cons'], ['contractor', 'ctr']]){ for(const n0 of pjArr(d[k])){ const n = String(n0 || '').trim(); if(!n) continue;
+          try{ const c = ctrContactOf(n) || {}; if(c.t === ty || (c.t && ty === 'ctr')) continue; await ctrContactSave(n, Object.assign({}, c, {t: ty})); }catch(e){} } }
+        try{ ogRepaintChart(); }catch(e){} };
+      if(pjBlks(d).length){ d.floors = null; delete d.__fl; d.updated = todayShamsi(); d.updatedBy = activeUserName(); await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(d); await pjPtySync(); }, 'اطلاعات پروژه ذخیره شد'); return; }
       const fl = (d.__fl || []).filter(f => f.key);
       d.floors = fl.length ? fl.map(f => { const o = {key: f.key, label: f.label || f.key, units: f.units}; if(f.kind) o.kind = f.kind; return o; }) : null;
       delete d.__fl;
       const per = parseInt(toEn((document.getElementById('pjGenPer') || {}).value || ''), 10); if(per) d.unitsPer = per;
       d.updated = todayShamsi(); d.updatedBy = activeUserName();
-      await pjSaveBtn(t.closest('button'), () => pjSaveReg(d), 'اطلاعات پروژه ذخیره شد');
+      await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(d); await pjPtySync(); }, 'اطلاعات پروژه ذخیره شد');
       return;
     }
     if(t.closest('[data-pjsave="mods"]')){
