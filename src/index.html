@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114043145">
+<meta name="pm-build" content="20261114043439">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -58338,8 +58338,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     document.querySelectorAll('#crewRows .crew').forEach((el, i) => el.classList.toggle('invalid', badRows.some(b => b.i === i)));
     if(badRows.length){
       msg('err', 'چند ردیف ناقص است.');
-      showDialog('warn', 'ردیف ناقص', badRows.slice(0, 6).map(b => 'ردیف ' + toFa(b.i + 1) + ': ' + b.miss.join('، ')).join('\n') + '\nبرای هر ردیف پیمانکار، تخصص و طبقه و محل لازم است.');
-      const f = document.querySelectorAll('#crewRows .crew')[badRows[0].i]; if(f) try{ f.scrollIntoView({behavior:'smooth', block:'center'}); }catch(err){}
+      /* اولین خانهٔ خالیِ اولین ردیف ناقص قرمز و فوکوس می‌شود؛ بقیهٔ ردیف‌های ناقص قاب قرمز دارند */
+      const f = document.querySelectorAll('#crewRows .crew')[badRows[0].i], b0 = badRows[0];
+      const el = f && f.querySelector(b0.miss[0] === 'پیمانکار' ? '.c-name' : b0.miss[0] === 'تخصص' ? '.c-skill' : '.c-zone');
+      needField(el || f, 'ردیف ' + toFa(b0.i + 1) + ': ' + b0.miss.join('، ') + ' لازم است' + (badRows.length > 1 ? ' (' + toFa(badRows.length) + ' ردیف ناقص)' : ''));
       return;
     }
     const contractors = [];
@@ -58365,16 +58367,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!d){
       dateInput.classList.add('invalid'); dateNote.classList.add('show');
       msg('err','تاریخ نامعتبر است.');
-      showDialog('warn','تاریخ نامعتبر','تاریخ گزارش را به شکل ۱۴۰۵/۰۶/۰۸ وارد کنید.');
-      scrollToSection(document.getElementById('secW1'));
+      needField(dateInput, 'تاریخ گزارش را به شکل ۱۴۰۵/۰۶/۰۸ وارد کنید');
       return;
     }
     dateInput.classList.remove('invalid'); dateNote.classList.remove('show'); dateInput.value = d;
     if(!raw.project || !raw.engineer){
       const miss = [!raw.project ? 'نام پروژه' : '', !raw.engineer ? 'تهیه‌کنندهٔ گزارش' : ''].filter(Boolean);
       msg('err','مشخصات ناقص است.');
-      showDialog('warn','مشخصات ناقص', miss.join(' و ') + ' را تکمیل کنید.');
-      scrollToSection(document.getElementById('secW1'));
+      needField(document.getElementById(!raw.project ? 'projectName' : 'engineerName') || document.getElementById('secW1'), miss.join(' و ') + ' را تکمیل کنید');
       return;
     }
     const isAdmin = raw.type === 'admin';
