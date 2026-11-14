@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114045501">
+<meta name="pm-build" content="20261114053532">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30045,6 +30045,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 .trn-o:hover{background:var(--field,#f3f5f8)} .trn-o b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px} .trn-o span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trn-o small{color:var(--muted);font-size:11px}
 @media (max-width:640px){ .rg-docs .trn-t th:nth-child(5),.rg-docs .trn-t td:nth-child(5){display:none} .trn-o{grid-template-columns:1fr} }
 
+
+/* ۳۲۷: پنل تیم پروژه با گزارش هر نفر */
+.hdb-team .hdb-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hdb-team .hdb-tk{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)} .hdb-team .hdb-tk b{color:var(--ink);font-size:13px} .hdb-team .hdb-tk .bad b{color:#c0392b} .hdb-team .hdb-tk .ok b{color:#2e8b57}
+:is(html,#z0) :is(body,#z1) .hdb-team .hdb-tp{cursor:pointer;display:grid!important;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"av b" "av sm" "av ts";column-gap:10px;row-gap:1px;align-items:center}
+:is(html,#z0) :is(body,#z1) .hdb-team .hdb-tp > .ava{grid-area:av} :is(html,#z0) :is(body,#z1) .hdb-team .hdb-tp > b{grid-area:b} :is(html,#z0) :is(body,#z1) .hdb-team .hdb-tp > small{grid-area:sm}
+.hdb-team .hdb-ts{grid-area:ts;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;margin-top:3px}
+.hdb-team .hdb-ts i{font-style:normal;padding:1px 7px;border-radius:999px;background:var(--field,#f3f5f8);color:var(--muted)}
+.hdb-team .hdb-ts i.ok{background:color-mix(in srgb,#2e8b57 13%,transparent);color:#2e8b57} .hdb-team .hdb-ts i.bad{background:color-mix(in srgb,#c0392b 12%,transparent);color:#c0392b} .hdb-team .hdb-ts i.vio{background:color-mix(in srgb,#7a5cc0 13%,transparent);color:#7a5cc0}
+.hdb-team .hdb-ts em{font-style:normal;color:var(--muted)} .hdb-team .hdb-ts s{text-decoration:none;color:#c0392b}
+.hdb-team .hdb-tp:hover{border-color:color-mix(in srgb,var(--sky,#3d7fb0) 40%,var(--line,#e3e7ed))}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -97170,8 +97181,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     while(grow && g++ < 8){ grow = false; P.forEach(n => { const k = nameKey(n); if(sub.has(k)) return; const up = ogParentOf(n, P); if(up && sub.has(nameKey(up))){ sub.add(k); grow = true; } }); }
     return P.filter(n => sub.has(nameKey(n)) && nameKey(n) !== nameKey(me));
   }
-  function teamRows(me){
-    const L = teamPeople(me), today = todayShamsi(), now0 = new Date(); now0.setHours(0, 0, 0, 0);
+  function teamRows(me){ return teamStatsOf(teamPeople(me)); }
+  /* وضعیت گزارش و کار هر نفر (برای «تیم من» و پنل «تیم پروژه»)؛ ۲ ثانیه کش */
+  function teamStatsOf(L){
+    const today = todayShamsi(), now0 = new Date(); now0.setHours(0, 0, 0, 0);
     const days = Object.keys(homeDays || {}).sort((a, b) => dayKey(b) > dayKey(a) ? 1 : -1).slice(0, 14);
     const subs = days.map(d => { try{ const st = homeDayStats(homeDays[d]); return {d, sub: st ? st.sub : new Set()}; }catch(e){ return {d, sub: new Set()}; } });
     const tasks = (tasksAll || []).filter(r => r && (pick(r,T.id) || r.__admId));
@@ -97190,6 +97203,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       return {n, rl: I.rl || '', side: I.side || '', open: open.length, late, done: done.length, all: mine.length, last: last ? last.d : '', rep};
     }).sort((a, b) => (b.rep === 'no') - (a.rep === 'no') || b.late - a.late || b.open - a.open || String(a.n).localeCompare(String(b.n), 'fa'));
   }
+  document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('.hdb-team [data-tmp]'); if(!t) return; e.preventDefault(); try{ openProfile(t.dataset.tmp); }catch(er){} });
   document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-tmopen]'); if(!t) return; e.preventDefault(); e.stopPropagation(); window.teamOpen(t.dataset.tmopen || ''); }, true);
   window.teamOpen = function(f){
     const me = activeUserName(), R = teamRows(me);
@@ -98067,8 +98081,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const G = [['مدیریت', p => lv(p.name) <= 2 || /مدیر|سرپرست کارگاه/.test(rl(p.name))], ['دفتر فنی و طراحی', p => /فنی|طراح|مشاور|کنترل پروژه|متره|نقشه/.test(rl(p.name))],
                ['اجرا و کارگاه', p => /سرپرست|مهندس|ناظر|اجرا|ایمنی|HSE|کیفیت|انبار|تدارکات/.test(rl(p.name))], ['دیگران', () => true]];
     const used = new Set(), groups = G.map(([t, f]) => { const L = P.filter(p => !used.has(p.name) && f(p)); L.forEach(p => used.add(p.name)); return [t, L]; }).filter(g => g[1].length);
-    return '<div class="hdb-p hdb-team"><div class="hdb-h"><div><u>تیم پروژه</u><b>' + toFa(P.length) + '<small>نفر فعال</small></b></div></div>'
-      + groups.map(([t, L]) => '<div class="hdb-tg"><u>' + t + ' <em>' + toFa(L.length) + '</em></u><div class="hdb-tl">' + L.slice(0, 8).map(p => '<span class="hdb-tp">' + avatarHtml(p.name, 'sm', true) + '<b>' + esc(String(p.name).replace(/^(آقای|خانم|جناب)\s+/, '')) + '</b><small>' + esc(rl(p.name) || '—') + '</small></span>').join('')
+    /* هر نفر با وضعیت گزارش امروز و کارهای باز و دیرکرد (همان داده‌های «تیم من») */
+    let S = new Map(); try{ teamStatsOf(P.map(p => p.name)).forEach(x => S.set(nameKey(x.n), x)); }catch(e){}
+    const REP = {ok: ['ok', 'گزارش امروز ✓'], no: ['bad', 'گزارش امروز ثبت نشده'], lv: ['vio', 'مرخصی'], ex: ['mut', 'معاف امروز'], na: ['', '']};
+    const st = n => { const x = S.get(nameKey(n)); if(!x) return ''; const r = REP[x.rep] || REP.na;
+      return '<span class="hdb-ts">' + (r[1] ? '<i class="' + r[0] + '">' + r[1] + '</i>' : '') + '<em>' + (x.open ? toFa(x.open) + ' کار باز' : 'کار بازی ندارد') + (x.late ? ' · <s>' + toFa(x.late) + ' دیرکرد</s>' : '') + (x.all ? ' · ' + toFa(Math.round(x.done / x.all * 100)) + '٪ انجام' : '') + (x.rep !== 'ok' && x.last ? ' · آخرین گزارش ' + esc(toFa(String(x.last).slice(5))) : '') + '</em></span>'; };
+    const sent = Array.from(S.values()).filter(x => x.rep === 'ok').length, need = Array.from(S.values()).filter(x => x.rep === 'ok' || x.rep === 'no').length, lateT = Array.from(S.values()).reduce((a, x) => a + x.late, 0);
+    return '<div class="hdb-p hdb-team"><div class="hdb-h"><div><u>تیم پروژه</u><b>' + toFa(P.length) + '<small>نفر فعال</small></b></div>'
+      + '<div class="hdb-tk"><span class="' + (need - sent ? 'bad' : 'ok') + '">گزارش امروز <b>' + toFa(sent) + ' از ' + toFa(need) + '</b></span><span class="' + (lateT ? 'bad' : '') + '">دیرکرد <b>' + toFa(lateT) + '</b></span><button type="button" class="mini" data-tmopen="">گزارش کامل تیم</button></div></div>'
+      + groups.map(([t, L]) => '<div class="hdb-tg"><u>' + t + ' <em>' + toFa(L.length) + '</em></u><div class="hdb-tl">' + L.slice(0, 8).map(p => '<span class="hdb-tp" data-tmp="' + esc(p.name) + '" role="button" tabindex="0">' + avatarHtml(p.name, 'sm', true) + st(p.name) + '<b>' + esc(String(p.name).replace(/^(آقای|خانم|جناب)\s+/, '')) + '</b><small>' + esc(rl(p.name) || '—') + '</small></span>').join('')
         + (L.length > 8 ? '<span class="hdb-tp more"><b>+' + toFa(L.length - 8) + '</b></span>' : '') + '</div></div>').join('') + '</div>';
   }
   /* ترتیب پنل‌ها: هر کاربر با کشیدن جابه‌جا می‌کند (روی همین دستگاه) */
