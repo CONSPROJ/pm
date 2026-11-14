@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114054316">
+<meta name="pm-build" content="20261114054528">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -42529,6 +42529,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      یک نفر می‌تواند چند گره داشته باشد (چند جای چارت). شناسهٔ «o:…» = اصلاح عنوان یا پنهان کردن یک طرف بیرونی */
   const OG_NODE_KIND = 'چارت گره';
   const OG_SIDES = [['pm', 'تیم مدیریت پیمان'], ['emp', 'کارفرما'], ['own', 'مالک و سرمایه‌گذار'], ['cons', 'مشاور و ناظر'], ['ctr', 'پیمانکاران']];
+  window.OG_SIDES_T = OG_SIDES;
   const OG_SC = {pm:'#2f6f9f', emp:'#c07a24', own:'#7a5bc4', cons:'#2f8a5f', ctr:'#8a6a4a'};
   const OG_SIDE_T = k => (OG_SIDES.find(x => x[0] === k) || ['', 'سایر'])[1];
   const OG_R = ['rep.time', 'rep.week', 'rep.month'];
@@ -42606,6 +42607,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   window.permInhFrom = permInhFrom;
   /* ترتیب سمت‌ها (تعیین‌شده در «دسترسی‌ها ← سمت‌ها»)؛ بی‌ترتیب‌ها به همان ترتیب فهرست */
+  window.ogOrdOf = x => ogOrd(x);
   const ogOrd = x => { if(!x) return 9999; if(x.o != null && !isNaN(x.o)) return +x.o; const i = OG_DEF.findIndex(d => d.n === x.n); return 500 + (i < 0 ? 400 : i); };
   const ogPeople = () => { try{ return (peopleRows || []).filter(p => p.name && p.active !== false && !p.pending).map(p => p.name); }catch(e){ return []; } };
   const ogRoleOf = n => { try{ return String(roleOf(n) || '').trim(); }catch(e){ return ''; } };
@@ -98090,9 +98092,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let P = []; try{ P = (peopleRows || []).filter(p => p && p.name && p.active !== false && !p.pending); }catch(e){ return ''; }
     if(!P.length) return '';
     const rl = n => { try{ return String(roleOf(n) || ''); }catch(e){ return ''; } }, lv = n => { try{ return levelOf(n); }catch(e){ return 9; } };
-    const G = [['مدیریت', p => lv(p.name) <= 2 || /مدیر|سرپرست کارگاه/.test(rl(p.name))], ['دفتر فنی و طراحی', p => /فنی|طراح|مشاور|کنترل پروژه|متره|نقشه/.test(rl(p.name))],
-               ['اجرا و کارگاه', p => /سرپرست|مهندس|ناظر|اجرا|ایمنی|HSE|کیفیت|انبار|تدارکات/.test(rl(p.name))], ['دیگران', () => true]];
-    const used = new Set(), groups = G.map(([t, f]) => { const L = P.filter(p => !used.has(p.name) && f(p)); L.forEach(p => used.add(p.name)); return [t, L]; }).filter(g => g[1].length);
+    /* ۳۳۰: دسته‌بندی بر اساس چارت سازمانی: واحدِ سمت هر نفر (طرف‌های بیرونی با نام طرف)؛ ترتیب واحدها و افراد از ترتیب سمت‌ها در چارت */
+    const side = {}; (window.OG_SIDES_T || []).forEach(([k, t]) => { side[k] = t; });
+    const info = n => { try{ return window.ogPersonInfo ? window.ogPersonInfo(n) : null; }catch(e){ return null; } };
+    const ordOf = I => { try{ return I && I.pos ? (window.ogOrdOf ? window.ogOrdOf(I.pos) : 0) : 99999; }catch(e){ return 99999; } };
+    const gm = new Map();
+    P.forEach(p => { const I = info(p.name); let g = 'بدون جایگاه در چارت', o = 99999;
+      if(I && I.pos){ g = I.side && I.side !== 'pm' ? (side[I.side] || 'طرف بیرونی') : (I.pos.dept || I.pos.n); o = ordOf(I) + (I.side && I.side !== 'pm' ? 5000 : 0); }
+      if(!gm.has(g)) gm.set(g, {o, L: []}); const e = gm.get(g); e.o = Math.min(e.o, o); e.L.push({p, o}); });
+    const groups = Array.from(gm.entries()).sort((a, b2) => a[1].o - b2[1].o).map(([t, e]) => [t, e.L.sort((x, y) => x.o - y.o).map(x => x.p)]);
     /* هر نفر با وضعیت گزارش امروز و کارهای باز و دیرکرد (همان داده‌های «تیم من») */
     let S = new Map(); try{ teamStatsOf(P.map(p => p.name)).forEach(x => S.set(nameKey(x.n), x)); }catch(e){}
     const REP = {ok: ['ok', 'گزارش امروز ✓'], no: ['bad', 'گزارش امروز ثبت نشده'], lv: ['vio', 'مرخصی'], ex: ['mut', 'معاف امروز'], na: ['', '']};
