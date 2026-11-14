@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114150443">
+<meta name="pm-build" content="20261114181449">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30247,6 +30247,7 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .ogc-n.og-rel-sub{box-shadow:0 4px 0 0 #b07a2a,0 0 0 2px color-mix(in srgb,#b07a2a 30%,transparent) !important}
 :is(html,#z0) :is(body,#z1) .ogc-n.og-rel-sup::after,:is(html,#z0) :is(body,#z1) .ogc-n.og-rel-peer::after,:is(html,#z0) :is(body,#z1) .ogc-n.og-rel-sub::after{position:absolute;inset-inline:0;bottom:-26px;text-align:center;font-size:11px;font-weight:800;color:#fff;background:#1f2937;border-radius:8px;padding:3px 6px;width:max-content;margin:auto;z-index:5}
 :is(html,#z0) :is(body,#z1) .ogc-n.og-rel-sup::after{content:"بالادستِ این نفر"} :is(html,#z0) :is(body,#z1) .ogc-n.og-rel-peer::after{content:"هم‌ترازِ این نفر"} :is(html,#z0) :is(body,#z1) .ogc-n.og-rel-sub::after{content:"زیردستِ این نفر"}
+:is(html,#z0) :is(body,#z1) .ogc-pop .og-hint{margin:2px 0 8px;font-size:11.5px;line-height:1.7;color:var(--muted)}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -42945,6 +42946,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   window.OG_DEF_NAMES = () => OG_DEF.map(x => x.n);
+  window.__ogDbg = () => og;
   function ogLoad(lists){
     og.pos.clear(); og.per.clear(); ogDescC = null;
     const kv = v => { const x = String(v), i = x.indexOf('¦'); return i < 1 ? null : [x.slice(0, i), x.slice(i + 1)]; };
@@ -43896,7 +43898,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const discOf = n => { const r = String(ogRoleOf(n) || ''); return DISC_AUTO.find(d => r.indexOf(d) !== -1) || ''; };
       const sideInner = x => { const R = x.roots.filter(n => !kup(n)), G = new Map(), plain = [];
         R.forEach(n => { const d = discOf(n); if(d){ if(!G.has(d)) G.set(d, []); G.get(d).push(n); } else plain.push(n); });
-        const heads = Array.from(G.entries()).map(([d, L]) => '<li><div class="ogc-g sm ogc-team ogc-auto" style="--sc:' + OG_SC[x.k] + '" title="سرفصل خودکار از روی سمت افراد"><b>' + esc(d) + '</b><small>' + toFa(L.length) + ' نفر</small></div><ul>' + L.slice().reverse().map(n => card(n, 1)).join('') + '</ul></li>').reverse().join('');
+        const heads = Array.from(G.entries()).map(([d, L]) => '<li><div class="ogc-g sm ogc-team ogc-auto" data-ogk="a:' + x.k + ':' + esc(d) + '" data-ogan="' + esc(L.join('|')) + '" style="--sc:' + OG_SC[x.k] + '" title="سرفصل خودکار از روی سمت افراد؛ با کشیدن جابه‌جا می‌شود"><b>' + esc(d) + '</b><small>' + toFa(L.length) + ' نفر</small></div><ul>' + L.slice().reverse().map(n => card(n, 1)).join('') + '</ul></li>').reverse().join('');
         return x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + heads + plain.slice().reverse().map(n => card(n, 0)).join(''); };
       /* طرح نواری: هر طرف یک نوار جدا با عنوان خودش (کارفرما، تیم مدیریت پیمان، طراح و مشاور، مالک، پیمانکاران)؛
          درخت هر طرف داخل نوار خودش. کارفرمایان اصلی ردیف بالای نوار کارفرما و نیروی هر کدام زیر خودش. */
@@ -44019,6 +44021,24 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + '<label><u>عنوان / سمت</u><input type="text" data-ogxv="d" list="ogxPos" value="' + esc(ov.d || '') + '" placeholder="مثلاً مشاور ناظر سازه"></label>'
         + '<label class="og-chk"><input type="checkbox" data-ogxv="hide"' + (ov.hide ? ' checked' : '') + '> از چارت پنهان شود</label>'
         + '<div class="ogp-fa"><button type="button" class="mini go" data-ogxsave="1">ذخیره</button><button type="button" class="mini" data-ogxclose="1">انصراف</button></div></div>';
+    }else if(o.id && (og.nodes.get(o.id) || {}).team){
+      /* سرفصل (رشته/واحد): ویرایشگر جدا — عنوان، زیرمجموعهٔ چه کسی/کدام گروه، رنگ؛ بدون نام شخص و اتصال حساب */
+      const x = og.nodes.get(o.id) || {}, me = 'x:' + o.id;
+      const upK = k => { if(/^x:/.test(k)) return (og.nodes.get(k.slice(2)) || {}).up || ''; if(/^p:/.test(k)){ const n = P.find(z => 'p:' + nameKey(z) === k); if(!n) return ''; const u = (og.per.get(nameKey(n)) || {}).up || ''; if(u) return u; const pp = ogParentOf(n, P); return pp ? 'p:' + nameKey(pp) : ''; } return ''; };
+      const below = k => { let c = k, g = 0; while(c && g++ < 40){ if(c === me) return true; c = upK(c); } return false; };
+      const opt = (k, t) => below(k) ? '' : '<option value="' + esc(k) + '"' + (x.up === k ? ' selected' : '') + '>' + esc(t) + '</option>';
+      const nIn = P.filter(n => below('p:' + nameKey(n)) ).length;
+      pop.innerHTML = '<div class="ogc-poph"><b>ویرایش سرفصل</b><small>' + esc(x.disc || x.n || '') + ' · ' + toFa(nIn) + ' نفر زیر این سرفصل</small></div><div class="ogp-f" data-ogxf="' + esc(o.id) + '" data-ogxteam="1">'
+        + '<label><u>عنوان سرفصل</u><input type="text" data-ogxv="n" value="' + esc(x.n || x.disc || '') + '" placeholder="مثلاً سازه، معماری، هماهنگی طراحی" autocomplete="off"></label>'
+        + '<label><u>زیرمجموعهٔ</u><select data-ogxv="up" data-nons="1">'
+        +   '<optgroup label="گروه‌های چارت">' + OG_SIDES.map(([k, t]) => opt('g:' + k, t)).join('') + '</optgroup>'
+        +   '<optgroup label="افراد">' + P.map(n => opt('p:' + nameKey(n), n + (ogRoleOf(n) ? ' — ' + ogRoleOf(n) : ''))).join('') + '</optgroup>'
+        +   (function(){ const H = Array.from(og.nodes.entries()).filter(([id, y]) => y && y.team && id !== o.id); return H.length ? '<optgroup label="سرفصل‌های دیگر">' + H.map(([id, y]) => opt('x:' + id, y.disc || y.n || '—')).join('') + '</optgroup>' : ''; })()
+        +   (x.up && !/^[gpx]:/.test(x.up) ? '<option value="' + esc(x.up) + '" selected>(جای فعلی)</option>' : '')
+        + '</select></label>'
+        + '<label><u>رنگ</u><select data-ogxv="sd" data-nons="1"><option value="">مثل بالادست</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + (x.sd === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
+        + '<p class="og-hint">برای گذاشتن افراد زیر این سرفصل، کارتشان را روی سرفصل بکشید. خود سرفصل را هم می‌شود روی کارت یک نفر کشید تا زیرمجموعهٔ او شود.</p>'
+        + '<div class="ogp-fa"><button type="button" class="mini go" data-ogxsave="1">ذخیره</button><button type="button" class="mini" data-ogxadd="' + esc(o.id) + '">+ زیرمجموعه</button><button type="button" class="mini bad" data-ogxdel="' + esc(o.id) + '">حذف سرفصل</button><button type="button" class="mini" data-ogxclose="1">انصراف</button></div></div>';
     }else{
       const x = o.id ? (og.nodes.get(o.id) || {}) : {};
       pop.innerHTML = '<div class="ogc-poph"><b>' + (o.id ? 'ویرایش کارت' : 'زیرمجموعهٔ تازه') + '</b><small>نام از فهرست افراد یا هر نام دیگر</small></div><div class="ogp-f" data-ogxf="' + esc(o.id || '') + '" data-ogxup="' + esc(o.id ? (x.up || '') : o.up) + '">' + dl
@@ -44048,6 +44068,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const v = k => { const el = f.querySelector('[data-ogxv="' + k + '"]'); return !el ? '' : el.type === 'checkbox' ? el.checked : String(el.value || '').trim(); };
     let id = f.dataset.ogxf, obj;
     if(f.dataset.ogxext){ obj = {d: v('d')}; if(v('hide')) obj.hide = 1; if(!obj.d && !obj.hide) obj = null; }
+    else if(f.dataset.ogxteam){ if(!v('n')){ showDialog('warn', 'عنوان', 'عنوان سرفصل را بنویسید.'); return; } const cur = og.nodes.get(id) || {};
+      obj = Object.assign({}, cur, {n: v('n'), disc: v('n'), up: v('up') || cur.up, sd: v('sd'), team: 1}); if(!obj.sd) delete obj.sd; }
     else{ if(!v('n')){ showDialog('warn', 'نام', 'نام را بنویسید.'); return; }
       const cur = id ? (og.nodes.get(id) || {}) : {};
       if(!id) id = 'n' + Date.now().toString(36);
@@ -44110,7 +44132,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   (function(){
     let st = null;
     const isUnder = (a, b, P) => { let x = b, g = 0; while(x && g++ < 30){ if(nameKey(x) === nameKey(a)) return true; x = ogParentOf(x, P); } return false; };
-    const tgAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.og-edit [data-ogk]') : null; };
+    const tgAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('.og-edit [data-ogk]:not([data-ogk^="a:"])') : null; };
     /* زنجیرهٔ بالادستِ یک کلید (برای جلوگیری از گذاشتن کسی زیر زیرمجموعهٔ خودش) */
     const upOf = key => { if(/^g:/.test(key)){ const k = key.slice(2), u = (og.nodes.get('gp:' + k) || {}).up || ''; return u || (k === 'emp' || k === 'root' ? '' : 'g:emp'); }
       if(/^x:/.test(key)) return (og.nodes.get(key.slice(2)) || {}).up || ''; if(/^e:/.test(key)) return (og.nodes.get('o:' + key.slice(2)) || {}).up || '';
@@ -44136,8 +44158,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         const rel = fy < 0.3 ? 'sup' : (fx < 0.2 || fx > 0.8) ? 'peer' : 'sub'; if(rel !== st.rel){ st.rel = rel; st.tg.classList.remove('og-rel-sup', 'og-rel-peer', 'og-rel-sub'); st.tg.classList.add('og-rel-' + rel); } }
       else st.rel = ''; }, {passive: false});
     const end = async e => { if(!st) return; const S = st; st = null;
-      if(S.ghost) S.ghost.remove(); S.card.classList.remove('og-drag'); document.body.classList.remove('og-dragging'); if(S.tg) S.tg.classList.remove('og-over', 'og-rel-sup', 'og-rel-peer', 'og-rel-sub');
+      /* هدف رها کردن پیش از برداشتن حالت کشیدن خوانده می‌شود؛ با پنهان شدن نوار «سطح اول» صفحه جابه‌جا می‌شد و کارت زیر نفر دیگری می‌رفت */
+      if(S.ghost) S.ghost.style.display = 'none';
       { const t2 = tgAt(e.clientX, e.clientY); if(t2 && t2.dataset.ogk !== S.k && !under(S.k, t2.dataset.ogk) && !(S.grp && S.card.contains(t2))) S.tg = t2; }
+      if(S.ghost) S.ghost.remove(); S.card.classList.remove('og-drag'); document.body.classList.remove('og-dragging'); if(S.tg) S.tg.classList.remove('og-over', 'og-rel-sup', 'og-rel-peer', 'og-rel-sub');
       if(S.tg && !S.tg.isConnected) S.tg = document.querySelector('.og-edit [data-ogk="' + CSS.escape(S.tg.dataset.ogk) + '"]');
       if(!S.on || !S.tg) return;
       S.card.__noClick = Date.now();
@@ -44155,6 +44179,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             ogRepaintChart(); try{ shrToast(back ? 'گروه به جای پیش‌فرض برگشت' : 'گروه جابه‌جا شد'); }catch(er){}
             return;
           }
+          /* سرفصل خودکار رشته: با رها کردن، سرفصل واقعی ساخته می‌شود و افرادش زیر آن می‌روند */
+          if(/^a:/.test(S.k)){ const d = S.k.split(':').slice(2).join(':'), id = 'n' + Date.now().toString(36), nd = {n: d, r: '', up: root ? 'g:' + S.k.split(':')[1] : tk, team: 1, disc: d};
+            await ogSaveRow(OG_NODE_KIND, id, nd); og.nodes.set(id, nd);
+            for(const n of String(S.card.dataset.ogan || '').split('|').filter(Boolean)){ const cur = og.per.get(nameKey(n)) || {}, o = {side: cur.side || '', up: 'x:' + id, fl: cur.fl || []}; await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); }
+            ogRepaintChart(); try{ shrToast('سرفصل «' + d + '» جابه‌جا شد'); }catch(er){} return; }
           if(/^x:/.test(S.k)){ const id = S.k.slice(2), x = Object.assign({}, og.nodes.get(id) || {}, {up: tk}); await ogSaveRow(OG_NODE_KIND, id, x); og.nodes.set(id, x); }
           else{ const id = 'o:' + S.k.slice(2), o = Object.assign({}, og.nodes.get(id) || {}); if(root) delete o.up; else o.up = tk; const has = o.d || o.hide || o.up;
             await ogSaveRow(OG_NODE_KIND, id, has ? o : null); if(has) og.nodes.set(id, o); else og.nodes.delete(id); }
