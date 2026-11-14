@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114043439">
+<meta name="pm-build" content="20261114043701">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -50214,7 +50214,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ابزاری که با یک data-* در جای دیگر باز می‌شود: یک دکمهٔ موقت می‌سازد و می‌زند */
   function wsFire(k, v){ const b = document.createElement('button'); b.type = 'button'; b.hidden = true; b.dataset[k] = v == null ? '1' : v; document.body.appendChild(b); try{ b.click(); }finally{ setTimeout(() => b.remove(), 0); } }
   window.wsFire = wsFire;
-  window.__wsMods = () => WS_MODS.filter(x => { try{ return !!x.ok(); }catch(e){ return false; } });
+  /* جست‌وجوی سراسری: فقط بخش‌های روشن پروژه که این نفر اجازه‌اش را دارد (مثل میز کار) */
+  window.__wsMods = () => WS_MODS.filter(x => { try{ return wsOk(x); }catch(e){ return false; } });
   const WS_GI = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
   /* دسته‌بندی میز کار بر اساس نوع کار (مثل نرم‌افزارهای مدیریت پروژهٔ ساخت):
      اجرا ← کیفیت و ایمنی ← تدارکات و انبار ← قرارداد و هزینه ← پایش پروژه ← نیروی انسانی ← فضا و نقشه */
@@ -96562,6 +96563,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     }
     try{ if(tabW && window.coVisible && window.coVisible()) L.push({g:'تغییرات و ادعاها', k:'coNew', t:'تغییر کار یا ادعا', s:'ثبت با اثر مالی و زمانی', ic:'co', c:'hc-amb', run: () => homeWrite('co', (function(){ try{ return coCanW() ? 'new' : 'list'; }catch(e){ return 'list'; } })())}); }catch(e){}
     try{ if(tabW && window.mcVisible && window.mcVisible()) L.push({g:'ماشین‌آلات', k:'mcLog', t:'کارکرد ماشین‌آلات', s:'ساعت کار، خرابی و سرویس', ic:'mc', c:'hc-ind', run: () => homeWrite('mc', 'list')}); }catch(e){}
+    /* بخش خاموش پروژه (بخش‌های فعال) در «ثبت تازه» هم نمی‌آید */
+    { const MK = {crew: 'crew', wrk: 'wrk', hse: 'hse', hseList: 'hse', prc: 'prc', prcList: 'prc', whIn: 'wh', whOut: 'wh', whAsk: 'wh', qcNew: 'qc', qcIr: 'qc', coNew: 'co', mcLog: 'mc'};
+      for(let i = L.length - 1; i >= 0; i--){ const m = MK[L[i].k]; if(m && window.wsCan && !window.wsCan(m)) L.splice(i, 1); } }
     if(tabOk('admin') && hmCan('write.adm')) HM_KINDS.forEach(x =>
       L.push({g:'اسناد دفتر فنی', k:'doc-' + x.k, t:x.t, s:'', ic:x.ic, c:'hc-vio', small:true, run: () => homeNewDoc(x.k)}));
     let addT = false; try{ addT = tabOk('tasks') && canAddTask(); }catch(e){}
