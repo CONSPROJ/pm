@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114082018">
+<meta name="pm-build" content="20261114085441">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29969,6 +29969,9 @@
 @media (min-width:1180px){ #tmM .tm-l2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))} }
 
 /* ۳۱۳: آوردن طرف از پروژهٔ دیگر */
+.ctdi-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px} .ctdi-top select,.ctdi-top input{height:38px;border-radius:10px;border:1px solid var(--line);background:var(--field);padding:0 10px;font:inherit} .ctdi-top input{flex:1;min-width:160px} .pjw-impl label.has{opacity:.55}
+.og-rel{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)} .og-rel u{text-decoration:none;font-size:12px;font-weight:700} .og-rel u small{font-weight:400;color:var(--muted);margin-inline-start:4px} .og-rel select{height:36px;border-radius:10px;border:1px solid var(--line);background:var(--field);font:inherit;padding:0 8px} .og-rel span{display:flex;gap:6px;flex-wrap:wrap}
+.ogg-l{display:flex;flex-direction:column;gap:8px} .ogg-r{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--field)} .ogg-r i{width:10px;height:10px;border-radius:50%;background:var(--sc);flex:none} .ogg-r input[type=text]{flex:1;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font:inherit;padding:0 10px} .ogg-r span,.ogg-r small{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -30987,6 +30990,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 
 <datalist id="contractNoList"></datalist>
 <datalist id="contractPartyList"></datalist>
+<script>
+/* نام‌های ثابتِ پیمانکاران و مهندسان مال پروژهٔ اصلی است؛ پروژهٔ دیگر فقط افراد خودش (یا آن‌هایی که صریحاً وارد شده‌اند) را می‌بیند */
+(function(){ try{ var pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; if(pj === 'p1') return;
+  ['contractorList', 'engineerList'].forEach(function(id){ var dl = document.getElementById(id); if(!dl) return; if(id === 'contractorList') window.__ctrSeed = Array.prototype.map.call(dl.options, function(o){ return o.value; }); dl.innerHTML = ''; }); }catch(e){} })();
+</script>
 <datalist id="contractSubjectList"></datalist>
 
 <datalist id="machineList">
@@ -32489,6 +32497,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      d:'روزانه و اضافه کاری؛ تغییر با نام ویرایش‌کننده روی سطر دیده می‌شود', def:[1,2,5]},
     {g:'کارگری', k:'crew.instant', t:'تغییر کارگری بدون تأیید ادمین',
      d:'وگرنه تغییر در صف تأیید می‌نشیند', def:[1,2,5]},
+    {g:'چارت سازمانی', k:'org.edit', t:'ویرایش کل چارت سازمانی', d:'ساخت گروه‌ها، جایگاه همه و تأیید درخواست‌های جایگاه', def:[1]},
+    {g:'چارت سازمانی', k:'org.team', t:'چیدن تیم خود در چارت', d:'سرپرست تیم (مثل مدیر طراحی یا مدیر مشاور) نفرات ذی‌صلاح تیمش را زیر خودش اضافه و جابه‌جا می‌کند', def:[]},
     {g:'گزارش‌ها', k:'rep.intro', t:'معرفی پروژه و چارت سازمانی', d:'مشخصات، عوامل، موقعیت و سمت‌ها', def:[1,2,3,4,5,6,7,8,9]},
     {g:'گزارش‌ها', k:'rep.hr', t:'گزارش نیروی انسانی', d:'', def:[1,2,3,5]},
     {g:'گزارش‌ها', k:'rep.crew', t:'گزارش نیروی کارگری', d:'', def:[1,2,5]},
@@ -32659,8 +32669,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const permLvBlocked = (name, k) => permPosMode() && !permIsBase(k) && permHasCatPos(name);
   function can(k, lvl){
     /* کاربر صفر (ادمین اصلی سامانه): به همه‌چیز در همهٔ پروژه‌ها دسترسی دارد — هیچ خاموشی، نقش یا محدودیتی جلویش را نمی‌گیرد */
-    if(lvl == null){ try{ if(isRootUser()) return true; }catch(e){} }
+    /* بخشی که در این پروژه (یا مرحلهٔ پروژه) خاموش است برای همه بسته است، حتی ادمین اصلی؛ با روشن کردن بخش برمی‌گردد */
     if(PJ_OFF && PJ_OFF.has(k)) return false;
+    if(lvl == null){ try{ if(isRootUser()) return true; }catch(e){} }
     let v = lvl;
     if(v == null){
       try{ v = rawLevel(); }catch(e){ v = 3; }
@@ -32694,11 +32705,18 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ Object.defineProperty(window, 'XLSX', {configurable: true, get(){ return wrap(cur); }, set(v){ cur = v; }}); }catch(e){} })();
   setInterval(xlSync, 5000);
   const PERM_CACHE_KEY = 'siteLogM.permLists.v1';
+  /* ۳۳۵: دسترسی‌ها برای هر پروژه جدا. کلید اجازه در پروژهٔ غیر اصلی با «@شناسهٔ پروژه» ذخیره می‌شود (k@px).
+     پروژهٔ اصلی همان ردیف‌های قبلی (بی‌@) را می‌خواند و ردیف‌های پروژه‌های دیگر به هم نمی‌رسند. بی‌تغییر پایگاه‌داده. */
+  const permPid = () => { try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } };
+  const permKeyW = k => { const p = permPid(); return p === 'p1' ? k : k + '@' + p; };
+  /* حذف گروهی فقط در همین پروژه: اصلی = ردیف‌های بی‌@؛ بقیه = ردیف‌های @پروژه */
+  const permScopeQ = () => { const p = permPid(); return p === 'p1' ? '&value=not.like.' + encodeURIComponent('*@*') : '&value=like.' + encodeURIComponent('*@' + p + '=*'); };
+  const permKeyR = raw => { const i = raw.indexOf('@'), p = permPid(); if(i < 0) return p === 'p1' ? raw : null; return raw.slice(i + 1) === p ? raw.slice(0, i) : null; };
   function permLoad(lists){
     try{
       const rr = (lists && lists[PERM_ROLE_KIND]) || [];
       const m2 = {};
-      rr.forEach(v => { const i = String(v).indexOf('='); if(i < 1) return; m2[String(v).slice(0, i)] = String(v).slice(i + 1).split('|').map(x => x.trim()).filter(Boolean); });
+      rr.forEach(v => { const i = String(v).indexOf('='); if(i < 1) return; const k = permKeyR(String(v).slice(0, i)); if(!k) return; m2[k] = String(v).slice(i + 1).split('|').map(x => x.trim()).filter(Boolean); });
       permRoleMap = Object.keys(m2).length ? m2 : null;
       const ur = (lists && lists[PERM_USER_KIND]) || [];
       const m3 = {};
@@ -32706,8 +32724,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         const [nm, rest] = String(v).split('¦');
         if(!nm || !rest) return;
         const i = rest.indexOf('='); if(i < 1) return;
-        const nk = nameKey(nm);
-        (m3[nk] = m3[nk] || {})[rest.slice(0, i)] = rest.slice(i + 1) === '1';
+        const nk = nameKey(nm), k = permKeyR(rest.slice(0, i)); if(!k) return;
+        (m3[nk] = m3[nk] || {})[k] = rest.slice(i + 1) === '1';
       });
       permUserMap = m3;
     }catch(e){}
@@ -32718,7 +32736,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       raw.forEach(v => {
         const i = String(v).indexOf('=');
         if(i < 1) return;
-        const k = String(v).slice(0, i);
+        const k = permKeyR(String(v).slice(0, i)); if(!k) return;
         m[k] = String(v).slice(i + 1).split(',').map(x => parseInt(x, 10))
           .filter(x => (x >= 1 && x <= 9) || (x <= -7 && x >= -9));
       });
@@ -32730,10 +32748,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* سطوح تازه همیشه صریح ذخیره می‌شوند (روشن: عدد، خاموش: منفی) */
     const pos = levels.filter(L => L > 0);
     permMap[k] = pos.concat(PERM_NEW.filter(L => pos.indexOf(L) === -1).map(L => -L)).sort((a, b) => a - b);
-    const v = k + '=' + permMap[k].join(',');
+    const v = permKeyW(k) + '=' + permMap[k].join(',');
     try{
       await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND)
-        + '&value=like.' + encodeURIComponent(k + '=*'), {method:'DELETE'});
+        + '&value=like.' + encodeURIComponent(permKeyW(k) + '=*'), {method:'DELETE'});
     }catch(e){}
     await supaFetch('lists?on_conflict=kind,value', {
       method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
@@ -32743,21 +32761,21 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   async function permRoleSave(k, roles){
     permRoleMap = permRoleMap || {};
     permRoleMap[k] = roles.slice();
-    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_ROLE_KIND) + '&value=like.' + encodeURIComponent(k + '=*'), {method:'DELETE'}); }catch(e){}
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_ROLE_KIND) + '&value=like.' + encodeURIComponent(permKeyW(k) + '=*'), {method:'DELETE'}); }catch(e){}
     await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
-      body:[{kind: PERM_ROLE_KIND, value: k + '=' + roles.join('|')}]});
+      body:[{kind: PERM_ROLE_KIND, value: permKeyW(k) + '=' + roles.join('|')}]});
     clearNetCache();
   }
   /* استثنای فردی: true مجاز، false ممنوع، null برداشتن استثنا */
   async function permUserSave(name, k, val){
     const nk = nameKey(name);
     permUserMap[nk] = permUserMap[nk] || {};
-    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_USER_KIND) + '&value=like.' + encodeURIComponent(name + '¦' + k + '=*'), {method:'DELETE'}); }catch(e){}
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_USER_KIND) + '&value=like.' + encodeURIComponent(name + '¦' + permKeyW(k) + '=*'), {method:'DELETE'}); }catch(e){}
     if(val == null){ delete permUserMap[nk][k]; }
     else{
       permUserMap[nk][k] = !!val;
       await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
-        body:[{kind: PERM_USER_KIND, value: name + '¦' + k + '=' + (val ? '1' : '0')}]});
+        body:[{kind: PERM_USER_KIND, value: name + '¦' + permKeyW(k) + '=' + (val ? '1' : '0')}]});
     }
     clearNetCache();
   }
@@ -32776,15 +32794,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     'users.manage':[1], 'db.edit':[1], 'ctr.contact':[1,2], 'leave.approve':[1,2], 'rep.show':[1,2,3], 'home.dash':[1,2]
   };
   async function permApplyPreset(){
-    const rows = Object.keys(PERM_PRESET).map(k => ({kind: PERM_KIND, value: k + '=' + PERM_PRESET[k].slice().sort().join(',')}));
-    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND), {method:'DELETE'}); }catch(e){}
+    const rows = Object.keys(PERM_PRESET).map(k => ({kind: PERM_KIND, value: permKeyW(k) + '=' + PERM_PRESET[k].slice().sort().join(',')}));
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND) + permScopeQ(), {method:'DELETE'}); }catch(e){}
     await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: rows});
     permMap = {}; Object.keys(PERM_PRESET).forEach(k => { permMap[k] = PERM_PRESET[k].slice().sort(); });
     clearNetCache();
   }
   async function permReset(){
     try{
-      await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND), {method:'DELETE'});
+      await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND) + permScopeQ(), {method:'DELETE'});
     }catch(e){}
     permMap = null;
     clearNetCache();
@@ -32803,6 +32821,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      کردن عکس، سمت قدیمی دوباره روی پایگاه‌داده نوشته می‌شد. */
   function roleOf(name){
     try{ const pr = pjRoleOf(name); if(pr) return pr; }catch(e){}
+    /* پروژهٔ غیر اصلی: سمت فقط از عضویت همین پروژه؛ سمتِ پروژهٔ دیگر (مثلاً «مدیر سامانه») به این پروژه نمی‌آید */
+    try{ if(window.__pjScoped && window.__pjScoped()) return ''; }catch(e){}
     try{
       const row = (typeof personRow === 'function') ? personRow(name) : null;
       const r = row && String(row.role || '').trim();
@@ -34148,7 +34168,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     });
 
     // ---- ۴) نقص گزارش ----
-    const isRequired = n => REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(n));
+    const siteOn = (() => { try{ return !window.pjSiteOn || window.pjSiteOn(); }catch(e){ return true; } })();
+    const isRequired = n => siteOn && REQUIRED_REPORTERS.some(x => nameKey(x) === nameKey(n)) && (() => { try{ return !window.__pjPeopleOk || window.__pjPeopleOk(n); }catch(e){ return true; } })();
     let missRows = ((typeof nudgeCache !== 'undefined' ? nudgeCache.rows : []) || [])
       .filter(r => pick(r,N.kind) === MISS_KIND
         && !(typeof missResolved !== 'undefined'
@@ -39297,6 +39318,38 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ const mem = ctrBuild().members.get(normName(ctrCanon(name))) || []; for(const n of mem){ const k = normName(n); if(ctrContacts.has(k)) return ctrContacts.get(k); } }catch(e){}
     return null;
   }
+  /* آوردن طرف‌ها از پروژهٔ دیگر — فقط با انتخاب صریح؛ هیچ نامی خودکار به پروژه نمی‌آید */
+  window.ctdImport = async function(){
+    let cur = 'p1'; try{ cur = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){}
+    const P = (window.pjAllList ? window.pjAllList() : []).filter(p => p && p.id && p.id !== cur);
+    if(!P.length){ showDialog('ok', 'پروژهٔ دیگری نیست'); return; }
+    const m = fxModal('ctdImpM', 'آوردن از پروژهٔ دیگر', 'پروژهٔ مبدأ را انتخاب کنید و فقط افراد و شرکت‌هایی را که در این پروژه هم کار می‌کنند تیک بزنید. اطلاعات تماسشان هم کپی می‌شود.', '<div class="fx-wait">…</div>', true);
+    const B = m.querySelector('.fx-bd'); let src = P[0].id, rows = [], pick = new Set(), q = '';
+    const load = async () => { B.innerHTML = '<div class="fx-wait">در حال دریافت…</div>'; rows = []; pick = new Set();
+      let R = []; try{ R = await supaFetch('lists?select=value&kind=eq.' + encodeURIComponent(CTR_CONTACT_KIND) + '&limit=3000', {headers: {'x-pm-project': src}}) || []; }catch(e){}
+      const have = new Set(Array.from(ctrContacts.keys())), seen = new Set();
+      R.forEach(r => { const v = String(r.value || ''), i = v.indexOf('\u00a6'); if(i < 1) return; const n = v.slice(0, i).trim(), k = normName(n); if(!k || seen.has(k)) return; seen.add(k); let o = {}; try{ o = JSON.parse(v.slice(i + 1)) || {}; }catch(e){} rows.push({n, k, v, t: o.t || 'ctr', has: have.has(k)}); });
+      if(src === 'p1') (window.__ctrSeed || []).forEach(n => { const k = normName(n); if(!k || seen.has(k)) return; seen.add(k); rows.push({n, k, v: n + '\u00a6{}', t: 'ctr', has: have.has(k)}); });
+      rows.sort((a, b) => a.n.localeCompare(b.n, 'fa')); paint(); };
+    const TY = {}; try{ CTR_TYPES.forEach(([k, lb]) => { TY[k] = lb; }); }catch(e){}
+    const paint = () => { const L = rows.filter(r => !q || r.n.indexOf(q) !== -1);
+      B.innerHTML = '<div class="ctdi-top"><label>از پروژه <select data-ctdisrc="1">' + P.map(p => '<option value="' + esc(p.id) + '"' + (p.id === src ? ' selected' : '') + '>' + esc(p.name || p.id) + '</option>').join('') + '</select></label>'
+        + '<input type="search" data-ctdiq="1" placeholder="جست‌وجوی نام…" value="' + esc(q) + '"></div>'
+        + (L.length ? '<div class="pjw-impl">' + L.map(r => '<label' + (r.has ? ' class="has"' : '') + '><input type="checkbox" data-ctdik="' + esc(r.k) + '"' + (pick.has(r.k) ? ' checked' : '') + (r.has ? ' disabled' : '') + '>' + esc(r.n) + '<small>' + (r.has ? 'در این پروژه هست' : esc(TY[r.t] || 'پیمانکار')) + '</small></label>').join('') + '</div>' : '<div class="fx-wait">موردی نیست</div>')
+        + '<div class="mod-f"><small>' + toFa(pick.size) + ' مورد انتخاب شده</small><button type="button" class="mini go" data-ctdigo="1"' + (pick.size ? '' : ' disabled') + '>آوردن به این پروژه</button></div>'; };
+    B.onchange = e => { const s0 = e.target.closest('[data-ctdisrc]'); if(s0){ src = s0.value; load(); return; } const c = e.target.closest('[data-ctdik]'); if(c){ c.checked ? pick.add(c.dataset.ctdik) : pick.delete(c.dataset.ctdik); paint(); } };
+    B.oninput = e => { const i = e.target.closest('[data-ctdiq]'); if(!i) return; q = i.value.trim(); const pos = i.selectionStart; paint(); const j = B.querySelector('[data-ctdiq]'); if(j){ j.focus(); try{ j.setSelectionRange(pos, pos); }catch(er){} } };
+    B.onclick = async e => { const g = e.target.closest('[data-ctdigo]'); if(!g) return; g.disabled = true;
+      const body = rows.filter(r => pick.has(r.k)).map(r => ({kind: CTR_CONTACT_KIND, value: r.v}));
+      try{ await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body}); }catch(er){ g.disabled = false; showDialog('warn', 'ثبت نشد', lastServerError || 'دوباره تلاش کنید.'); return; }
+      body.forEach(x => { const i = x.value.indexOf('\u00a6'); const n = x.value.slice(0, i).trim(); let o = {}; try{ o = JSON.parse(x.value.slice(i + 1)) || {}; }catch(er){} o.name = n; ctrContacts.set(normName(n), o);
+        try{ const dl = document.getElementById('contractorList'); if(dl && !Array.from(dl.options).some(op => op.value === n)){ const op = document.createElement('option'); op.value = n; dl.appendChild(op); } }catch(er){} });
+      try{ localStorage.setItem('siteLogM.ctrContacts.v1', JSON.stringify(Array.from(ctrContacts.values()))); }catch(er){}
+      try{ clearNetCache(); }catch(er){}
+      m.remove(); try{ shrToast(toFa(body.length) + ' مورد به این پروژه آمد'); }catch(er){} try{ ctcRepaint(); }catch(er){} };
+    load();
+  };
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-ctdimp]')) window.ctdImport(); });
   async function ctrContactSave(name, o){
     try{ hrCardMemo.clear(); }catch(e){}
     let canon = name; try{ canon = ctrCanon(canonicalName(name)); }catch(e){}
@@ -41449,6 +41502,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       body = ''
         + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="ctdQ" placeholder="نام، املای دیگر، قرارداد، تلفن یا تخصص…" value="' + esc(q) + '" autocomplete="off"></label>'
         + '<button type="button" class="cdx-sort" data-cdxsort="1" title="ترتیب">' + (ctdState.sort === 'az' ? 'الفبایی' : 'پرکارتر اول') + '</button>'
+        + (ed && (function(){ try{ return localStorage.getItem('siteLogM.project.v1') && localStorage.getItem('siteLogM.project.v1') !== 'p1'; }catch(e){ return false; } })() ? '<button type="button" class="cdx-sort" data-ctdimp="1" title="فقط افرادی که انتخاب کنید به این پروژه می‌آیند">آوردن از پروژهٔ دیگر</button>' : '')
         + '<span class="cdx-xl"><button type="button" class="cdx-b" data-ctdxl="out" title="دانلود اکسل همهٔ پرونده‌ها">' + CTD_XI.down + '</button>'
         + (ed ? '<button type="button" class="cdx-b" data-ctdxl="in" title="بارگذاری اکسل">' + CTD_XI.up + '</button><input type="file" id="ctdFile" accept=".xlsx,.xls,.csv" hidden>' : '') + '</span></div>'
         + tyBar
@@ -42461,6 +42515,28 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.OG_SIDES_T = OG_SIDES;
   const OG_SC = {pm:'#2f6f9f', emp:'#c07a24', own:'#7a5bc4', cons:'#2f8a5f', ctr:'#8a6a4a'};
   const OG_SIDE_T = k => (OG_SIDES.find(x => x[0] === k) || ['', 'سایر'])[1];
+  /* گروه‌های اصلی چارت برای هر پروژه: نام و نمایش از og.nodes «cfg:sides»؛ پروژهٔ طراحی پیش‌فرض خودش را دارد */
+  const OG_SIDES0 = OG_SIDES.map(x => x.slice());
+  const OG_DZ_T = {pm: 'مدیریت طرح', cons: 'تیم طراحی و مشاور'}, OG_DZ_HID = ['ctr'];
+  const ogGCfg = () => { const c = og.nodes.get('cfg:sides'); if(c && (c.t || c.hide)) return {t: c.t || {}, hide: c.hide || []}; let dz = false; try{ dz = window.pjIsDesign(); }catch(e){} return dz ? {t: OG_DZ_T, hide: OG_DZ_HID} : {t: {}, hide: []}; };
+  const ogGT = (k, t) => { const c = ogGCfg(); return (c.t && c.t[k]) || t; };
+  const ogGHid = k => ogGCfg().hide.indexOf(k) !== -1;
+  function ogSidesApply(){ const c = ogGCfg(); OG_SIDES.forEach((x, i) => { x[1] = (c.t && c.t[x[0]]) || OG_SIDES0[i][1]; }); }
+  window.ogGroupsOpen = function(){
+    const c = ogGCfg(), st = {t: Object.assign({}, c.t), hide: c.hide.slice()};
+    const m = fxModal('ogGrpM', 'گروه‌های اصلی چارت', 'نام هر گروه را مطابق ساختار همین پروژه بنویسید (مثلاً «مدیریت طرح» در پروژهٔ طراحی) و گروهی را که این پروژه ندارد پنهان کنید. فقط همین پروژه عوض می‌شود.', '', true);
+    const B = m.querySelector('.fx-bd');
+    B.innerHTML = '<div class="ogg-l">' + OG_SIDES0.map(([k, t]) => '<label class="ogg-r" style="--sc:' + (OG_SC[k] || '#777') + '"><i></i><input type="text" data-oggt="' + k + '" value="' + esc(st.t[k] || t) + '" placeholder="' + esc(t) + '">'
+      + (k === 'emp' ? '<small>همیشه</small>' : '<span><input type="checkbox" data-ogghid="' + k + '"' + (st.hide.indexOf(k) === -1 ? ' checked' : '') + '> نمایش</span>') + '</label>').join('') + '</div>'
+      + '<div class="mod-f"><button type="button" class="mini" data-oggdef="1">پیش‌فرض</button><button type="button" class="mini go" data-oggsave="1">ذخیره</button></div>';
+    B.onclick = async e => {
+      if(e.target.closest('[data-oggdef]')){ og.nodes.delete('cfg:sides'); try{ await ogSaveRow(OG_NODE_KIND, 'cfg:sides', null); }catch(er){} ogSidesApply(); m.remove(); ogRepaintChart(); return; }
+      const sv = e.target.closest('[data-oggsave]'); if(!sv) return; sv.disabled = true;
+      const o = {t: {}, hide: []}; B.querySelectorAll('[data-oggt]').forEach(i => { const k = i.dataset.oggt, v = i.value.trim(), d = (OG_SIDES0.find(x => x[0] === k) || [])[1]; if(v && v !== d) o.t[k] = v; });
+      B.querySelectorAll('[data-ogghid]').forEach(i => { if(!i.checked) o.hide.push(i.dataset.ogghid); });
+      try{ await ogSaveRow(OG_NODE_KIND, 'cfg:sides', o); og.nodes.set('cfg:sides', o); }catch(er){ sv.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); return; }
+      ogSidesApply(); m.remove(); ogRepaintChart(); try{ shrToast('گروه‌های چارت ذخیره شد'); }catch(er){} };
+  };
   const OG_R = ['rep.time', 'rep.week', 'rep.month'];
   const OG_DEF = [
     ['مدیریت پروژه', 'pm', 'مدیریت', '', ['deck.all', 'deck.manager', 'mgr.critical', 'alert.all', 'task.general', 'task.approve', 'leave.approve', 'co.approve', 'co.view', 'rep.show', 'rep.adm', 'rep.pc', 'rep.cf', 'rep.hr', 'rep.crew', 'rep.prc', 'rep.qc', 'rep.wh', 'rep.mc'].concat(OG_R)],
@@ -42501,6 +42577,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(lists && lists[OG_NODE_KIND]){ og.nodes.clear(); lists[OG_NODE_KIND].forEach(v => { const p = kv(v); if(!p) return; try{ og.nodes.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} }); }
     ((lists && lists[OG_POS_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ og.pos.set(p[0], JSON.parse(p[1]) || {}); }catch(e){} });
     ((lists && lists[OG_PER_KIND]) || []).forEach(v => { const p = kv(v); if(!p) return; try{ og.per.set(nameKey(p[0]), Object.assign({n: p[0]}, JSON.parse(p[1]) || {})); }catch(e){} });
+    try{ ogSidesApply(); }catch(e){}
     /* فهرست سمت‌های فرم کاربران هم از همین کاتالوگ */
     try{ const names = ogPositions().filter(x => !x.off).map(x => x.n); const keep = ROLE_LIST.filter(r => r !== '—' && names.indexOf(r) === -1); ROLE_LIST.length = 0; names.concat(keep).forEach(r => ROLE_LIST.push(r)); ROLE_LIST.push('—'); }catch(e){}
   }
@@ -42598,10 +42675,23 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ویرایش چارت و تأیید جایگاه‌ها: ادمین، مدیریت پروژه و کنترل پروژه — در میز کار؛ گزارش چارت فقط نمایش */
   function ogCanEdit(){ try{ if(isAdminUser()) return true; const r = String(roleOf(activeUserName()) || ''); return /مدیریت پروژه|کنترل پروژه|مدیر پروژه/.test(r) || can('org.edit'); }catch(e){ return false; } }
   window.ogCanEdit = ogCanEdit;
+  /* سرپرست تیم (مثل مدیر طراحی یا مدیر مشاور): فقط تیم زیر خودش را در چارت می‌چیند و نفرات ذی‌صلاحش را اضافه می‌کند */
+  function ogTeamLead(){ try{ if(ogCanEdit()) return false; if(can('org.team')) return true; const r = String(roleOf(activeUserName()) || ''); return /مدیر طراحی|مدیر طرح|سرپرست طراحی|مدیر مشاور|طراح ارشد|سرپرست تیم|مدیر فنی/.test(r); }catch(e){ return false; } }
+  window.ogTeamLead = ogTeamLead;
+  function ogUpKey(key){
+    if(/^g:/.test(key)){ const k = key.slice(2), u = (og.nodes.get('gp:' + k) || {}).up || ''; return u || (k === 'emp' || k === 'root' ? '' : 'g:emp'); }
+    if(/^x:/.test(key)) return (og.nodes.get(key.slice(2)) || {}).up || '';
+    if(/^e:/.test(key)) return (og.nodes.get('o:' + key.slice(2)) || {}).up || '';
+    if(/^p:/.test(key)){ const P = ogPeople(), n = P.find(z => 'p:' + nameKey(z) === key); if(!n) return ''; const u = (og.per.get(nameKey(n)) || {}).up || ''; if(/^[exg]:/.test(u)) return u; if(u) return 'p:' + nameKey(u); const pp = ogParentOf(n, P); return pp ? 'p:' + nameKey(pp) : ''; }
+    return '';
+  }
+  /* کلید داخل تیم من است (خودم یا زیرمجموعه‌ام)؟ */
+  function ogInMine(key, self){ const me = 'p:' + nameKey(activeUserName() || ''); let k = key, g = 0; if(!self && k === me) return false; while(k && g++ < 40){ if(k === me) return true; k = ogUpKey(k); } return false; }
+  window.ogInMine = ogInMine;
   const ogSetupOn = () => !!(og.nodes.get('cfg:setup') || {}).on;
   window.ogSetupOn = ogSetupOn;
   function ogDeskOpen(){
-    if(!ogCanEdit()) return;
+    if(!ogCanEdit() && !ogTeamLead()) return;
     let bg = document.getElementById('ogDeskModal'); if(bg) bg.remove();
     bg = document.createElement('div'); bg.id = 'ogDeskModal'; bg.className = 'modal-bg og-desk';
     bg.innerHTML = '<div class="og-desk-card"><div class="og-desk-h"><b>چارت سازمانی</b><small>ساخت و ویرایش چارت، جایگاه افراد و تأیید درخواست‌ها</small><button type="button" class="ico-btn" data-ogdx="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div><div id="ogDeskBody"></div></div>';
@@ -42976,6 +43066,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       /* طرح درختی (به‌جای نوارهای زیر هم): کارفرما بالا — کارفرمایان و تیم کارفرما در یک قاب —
          و زیرش، کنار هم: تیم مدیریت پیمان (همیشه زیر نظر کارفرما)، طراح و مشاور، مالک، پیمانکاران و بقیهٔ طرف‌ها؛ هر طرف قاب خودش */
       const frDiv = (k, t, inner, n, cls) => { const u2 = ul(inner, 'g:' + k, OG_SC[k] || '#777');
+        t = ogGT(k, t); const gh = k !== 'emp' && ogGHid(k); if(gh && !og.edit) return ''; if(gh) cls = (cls ? cls + ' ' : '') + 'og-hid';
         if(!u2 && !og.edit) return '';
         return '<div class="ogc-fr' + (cls ? ' ' + cls : '') + (u2 ? '' : ' ogc-fr-e') + '" data-ogk="g:' + k + '" style="--sc:' + (OG_SC[k] || '#777') + '"><span class="ogc-frl"><b>' + esc(t) + '</b>' + (n ? '<small>' + toFa(n) + ' نفر</small>' : '') + addB('g:' + k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div>'; };
@@ -43039,6 +43130,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + (og.view === 'chart' ? '<span class="ogc-zm"><button type="button" data-ogz="-1" aria-label="کوچک‌تر">−</button><i>' + toFa(Math.round(og.z * 100)) + '٪</i><button type="button" data-ogz="1" aria-label="بزرگ‌تر">+</button></span>' : '')
       + (og.ctx === 'desk' && og.view === 'chart' ? '<button type="button" class="ogc-pr' + (og.edit ? ' on' : '') + '" data-ogedit="1">' + (og.edit ? 'پایان ویرایش' : 'ویرایش چارت') + '</button>'
           + '<label class="ogc-setup" title="اعضای بی‌جایگاه در خانه کارت «جایگاه شما در چارت» را می‌بینند و درخواست می‌دهند"><input type="checkbox" data-ogsetup="1"' + (ogSetupOn() ? ' checked' : '') + '> شروع پروژه: اعضا جایگاه انتخاب کنند</label>' : '')
+      + (og.edit && ogCanEdit() ? '<button type="button" class="ogc-pr" data-oggrp="1">گروه‌های چارت</button>' : '')
       + '<button type="button" class="ogc-pr" data-ogfs="1">' + (og.fs ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه') + '</button>'
       + '<button type="button" class="ogc-pr" data-ogprint="1">چاپ / PDF</button></div></div>'
       + (og.edit ? '<div class="ogc-edh">«+» روی هر کارت یا قاب، زیرمجموعهٔ تازه می‌سازد (نیروی هر کارفرما، مشاور، ناظر یا هر واحد)؛ یک نفر می‌تواند چند جای چارت بیاید. با زدن هر کارت، همان کارت ویرایش می‌شود. برای تعیین سرپرست کاربران، کارتشان را بکشید و روی سرپرست رها کنید.</div>' : '')
@@ -43055,7 +43147,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const vw = t.closest('[data-ogview]'); if(vw){ og.view = vw.dataset.ogview; ogRepaintChart(); ogCenter(); return; }
     const z = t.closest('[data-ogz]'); if(z){ og.zUser = true; og.z = Math.max(.4, Math.min(1.6, Math.round((og.z + (+z.dataset.ogz) * .1) * 10) / 10)); ogRepaintChart(); return; }
     if(t.closest('[data-ogedit]')){ e.preventDefault(); e.stopPropagation(); og.edit = !og.edit; og.ed = ''; ogRepaintChart(); return; }
+    if(t.closest('[data-oggrp]')){ e.preventDefault(); e.stopPropagation(); window.ogGroupsOpen(); return; }
     if(t.closest('[data-ogfs]')){ e.preventDefault(); e.stopPropagation(); og.fs = !og.fs; og.zUser = false; document.body.classList.toggle('og-fs-on', og.fs); ogRepaintChart(); ogCenter(); return; }
+    if(og.edit && !t.closest('.ogc-pop') && ogTeamLead()){
+      const ae = t.closest('[data-ogadd]'), ce = ae ? null : t.closest('[data-ogx], [data-ogext], .ogc-n[data-ogn]');
+      const lk = ae ? ae.dataset.ogadd : (ce ? (ce.dataset.ogk || '') : '');
+      if((ae || ce) && !ogInMine(lk, !!ae)){ e.preventDefault(); e.stopPropagation(); try{ shrToast('فقط تیم زیر خودتان را می‌توانید تغییر دهید'); }catch(er){} return; }
+    }
     if(og.edit && !t.closest('.ogc-pop')){
       const ad = t.closest('[data-ogadd]'); if(ad){ e.preventDefault(); e.stopPropagation(); ogXPop(ad.closest('.ogc-n, .ogc-g, .ogc-own, .ogc-root, .ogc-o') || ad, {up: ad.dataset.ogadd}); return; }
       const xn = t.closest('[data-ogx]'); if(xn && !t.closest('button')){ e.preventDefault(); e.stopPropagation(); ogXPop(xn, {id: xn.dataset.ogx}); return; }
@@ -43145,6 +43243,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const fr = fl && fl.closest('.ogc-fr[data-ogk^="g:"]');
       if(fr && fr.dataset.ogk !== 'g:root' && !e.target.closest('button')){ st = {n: '', k: fr.dataset.ogk, card: fr, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null, grp: true}; return; }
       const c = e.target.closest && e.target.closest('.og-edit .ogc-n[data-ogk]'); if(!c || e.target.closest('button')) return;
+      if(ogTeamLead() && !ogInMine(c.dataset.ogk)) return;
       st = {n: c.dataset.ogn || '', k: c.dataset.ogk, card: c, x: e.clientX, y: e.clientY, on: false, ghost: null, tg: null}; });
     document.addEventListener('pointermove', e => { if(!st) return;
       if(!st.on){ if(Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return; st.on = true; st.card.classList.add('og-drag');
@@ -43159,6 +43258,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(S.tg && !S.tg.isConnected) S.tg = document.querySelector('.og-edit [data-ogk="' + CSS.escape(S.tg.dataset.ogk) + '"]');
       if(!S.on || !S.tg) return;
       S.card.__noClick = Date.now();
+      if(ogTeamLead() && (S.grp || !ogInMine(S.tg.dataset.ogk, true))){ try{ shrToast('فقط داخل تیم خودتان جابه‌جا کنید'); }catch(er){} return; }
       const tk = S.tg.dataset.ogk, root = tk === 'g:root';
       /* گرهٔ آزاد یا فرد بیرونی (کارفرما، مشاور…): زیر هر کارت یا قاب */
       if(!S.n){
@@ -43197,7 +43297,21 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<label><u>سرپرست مستقیم</u><select data-ogpf="up" data-nons="1"><option value="">خودکار از سمت</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '"' + (nameKey(I.up) === nameKey(x) ? ' selected' : '') + '>' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select></label>'
       + '<label><u>طرف</u><select data-ogpf="side" data-nons="1"><option value="">از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<div class="og-fl"><u>محدودهٔ طبقات <small>برای سرپرست طبقات؛ خالی = کل پروژه</small></u><div>' + F.map(f => '<button type="button" data-ogfl="' + esc(f.key) + '" class="' + (I.fl.indexOf(f.key) !== -1 ? 'on' : '') + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div></div>'
+      + '<div class="og-rel"><u>رابطه با دیگری <small>یک نفر را انتخاب کنید و رابطه را بزنید؛ همان لحظه در چارت اعمال می‌شود</small></u>'
+      +   '<select data-ogrelx="1" data-nons="1"><option value="">انتخاب شخص…</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '">' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select>'
+      +   '<span><button type="button" class="mini" data-ogrel="sub">زیردستِ او</button><button type="button" class="mini" data-ogrel="peer">هم‌ترازِ او</button><button type="button" class="mini" data-ogrel="sup">بالادستِ او</button></span></div>'
       + '<div class="ogp-fa"><button type="button" class="mini go" data-ogpsave="1">ذخیره</button><button type="button" class="mini" data-ogcancel="1">انصراف</button></div></div>';
+  }
+  /* تغییر رابطهٔ دو نفر در چارت: زیردست، هم‌تراز (همان سرپرست) یا بالادست (اگر او قبلاً بالای این شخص بود، جابه‌جا می‌شوند) */
+  async function ogRelSet(n, x, rel){
+    const P = ogPeople();
+    const upKey = m => { const u = (og.per.get(nameKey(m)) || {}).up || ''; if(u) return u; return ogParentOf(m, P) || ''; };
+    const setUp = async (m, up) => { const cur = og.per.get(nameKey(m)) || {}; const o = {side: cur.side || '', up: up || '', fl: cur.fl || []}; const has = o.side || o.up || (o.fl && o.fl.length);
+      await ogSaveRow(OG_PER_KIND, m, has ? o : null); if(has) og.per.set(nameKey(m), Object.assign({n: m}, o)); else og.per.delete(nameKey(m)); };
+    const isAnc = (a, b) => { let k = b, g = 0; while(k && g++ < 30){ const u = upKey(k); if(!u || /^[exg]:/.test(u)) return false; if(nameKey(u) === nameKey(a)) return true; k = u; } return false; };
+    if(rel === 'sub'){ if(isAnc(n, x)) await setUp(x, upKey(n)); await setUp(n, x); }
+    else if(rel === 'peer'){ const u = upKey(x); if(u && !/^[exg]:/.test(u) && nameKey(u) === nameKey(n)) await setUp(x, upKey(n)); await setUp(n, nameKey(upKey(x)) === nameKey(n) ? upKey(n) : upKey(x)); }
+    else if(rel === 'sup'){ if(isAnc(x, n)) await setUp(n, upKey(x)); await setUp(x, n); }
   }
   window.ogChartHtml = ogChartHtml;
   window.ogPersonInfo = ogPersonInfo;
@@ -43230,6 +43344,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* چارت: ویرایش سرپرست، طرف و محدودهٔ هر نفر */
     const pr = null; if(pr){ const n = pr.dataset.ogper; og.ed = og.ed === 'p:' + n ? '' : 'p:' + n; ogRepaintChart(); const eb = document.querySelector('#reportView .ogc-ed'); if(eb) eb.scrollIntoView({block: 'nearest', behavior: 'smooth'}); return; }
     const fl = t.closest('[data-ogfl]'); if(fl){ fl.classList.toggle('on'); return; }
+    const rb = t.closest('[data-ogrel]'); if(rb){ const f = rb.closest('[data-ogpform]'), n = f.dataset.ogpform, x = (f.querySelector('[data-ogrelx]') || {}).value || '';
+      if(!x){ try{ shrToast('اول شخص را انتخاب کنید'); }catch(er){} return; }
+      rb.disabled = true;
+      try{ await ogRelSet(n, x, rb.dataset.ogrel); og.ed = ''; og.pm = ''; ogRepaintChart(); try{ permRepaint(); }catch(e2){} try{ shrToast(n + ' ' + ({sub: 'زیردستِ', peer: 'هم‌ترازِ', sup: 'بالادستِ'})[rb.dataset.ogrel] + ' ' + x + ' شد'); }catch(e2){} try{ const pp = document.querySelector('.ogc-pop'); if(pp) pp.remove(); }catch(e2){} }
+      catch(err){ rb.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const pv = t.closest('[data-ogpsave]'); if(pv){ const f = pv.closest('[data-ogpform]'), n = f.dataset.ogpform;
       const o = {side: f.querySelector('[data-ogpf="side"]').value, up: f.querySelector('[data-ogpf="up"]').value, fl: Array.from(f.querySelectorAll('[data-ogfl].on')).map(b => b.dataset.ogfl)};
       const has = o.side || o.up || o.fl.length; pv.disabled = true;
@@ -50163,7 +50282,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       ok:() => { try{ return can('tab.admin') || glCanAdd(); }catch(e){ return false; } },
       go:() => { try{ switchTab('admin'); }catch(e){} setTimeout(() => { try{ window.admSetCat('archive'); window.arcSetTab && window.arcSetTab('gallery'); const el = document.getElementById('secAdmarchive'); if(el) el.scrollIntoView({block: 'start'}); }catch(e){} }, 120); }},
     {k:'org', t:'چارت سازمانی', s:'ساختار تیم پروژه و جایگاه افراد', c:'#2f6f9f', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.5"/><rect x="3" y="16" width="6" height="5" rx="1.5"/><rect x="15" y="16" width="6" height="5" rx="1.5"/><path d="M12 8v4M6 16v-2h12v2"/></svg>',
-      ok:() => !!(window.ogCanEdit && window.ogCanEdit()), go:() => { try{ window.ogDeskOpen(); }catch(e){} }},
+      ok:() => !!(window.ogCanEdit && (window.ogCanEdit() || window.ogTeamLead())), go:() => { try{ window.ogDeskOpen(); }catch(e){} }},
     {k:'qt', t:'متره و برآورد', s:'مقادیر کار، کارکرد صورت وضعیت و مصالح', c:'#8a5a2f', area:'qtArea', ic:() => HM_I.qt, ok:() => !!(window.qtVisible && window.qtVisible())},
     {k:'apv', t:'کارتابل تأیید', s:'هر چه منتظر تأیید شماست', c:'#c0392b', ic:() => WS_GI('<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>'), ok:() => true, go:() => wsFire('apvopen')},
     /* ابزارهای گزارش و تحلیل (پیش‌تر فقط میان‌برهای خانه بودند) */
@@ -50227,13 +50346,19 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const modLS = () => { let id = ''; try{ id = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return 'siteLogM.modOff.' + id; };
   let modOff = new Set(); try{ modOff = new Set(JSON.parse(localStorage.getItem(modLS()) || '[]')); }catch(e){}
   window.modIsOff = k => modOff.has(k);
+  /* خاموشیِ «قطعی» (ادمین ذخیره کرده یا مرحلهٔ طراحی)، نه پیش‌فرضِ «بخش تخصصی بی‌داده» — برای گزارش‌ها */
+  window.modHardOff = k => { if(!modOff.has(k)) return false; try{ return !!window.__modCfgSaved || !!(window.pjIsDesign && window.pjIsDesign() && MOD_PH[0][2].indexOf(k) !== -1); }catch(e){ return false; } };
   async function modLoad(){
     try{ const L = await fxList(MOD_K, true); const x = (L || []).find(r => r.id === 'cfg');
       let a = x && x.o && Array.isArray(x.o.off) ? x.o.off.filter(k => MOD_FIXED.indexOf(k) === -1) : [];
       /* هنوز تنظیم نشده: بخش‌های تخصصیِ بی‌داده خاموش (فقط پیش‌فرض نمایش؛ ذخیره نمی‌شود) */
       if(!x){ try{ a = await window.modOptUnused(); }catch(e){ a = []; } }
+      /* مرحله: اگر ادمین مرحله را صریحاً تعیین نکرده، از وضعیت پروژه (طراحی) پیشنهاد مرحله اعمال می‌شود */
+      const ph0 = x && x.o && x.o.phase; try{ window.__pjPhase = ph0 || ''; window.__modCfgSaved = !!x; }catch(e){}
+      if(!ph0){ let dz = false; try{ dz = window.pjIsDesign(); }catch(e){} if(dz){ const P0 = MOD_PH.find(z => z[0] === 'design1'); a = Array.from(new Set(a.concat(P0[2]))).filter(k => MOD_FIXED.indexOf(k) === -1); } }
+      try{ window.pjReapply && window.pjReapply(); }catch(e){}
       const ch = a.join() !== Array.from(modOff).join(); modOff = new Set(a); try{ localStorage.setItem(modLS(), JSON.stringify(a)); }catch(e){}
-      if(ch){ try{ window.wsRefresh && window.wsRefresh(); }catch(e){} try{ window.sbBuild && window.sbBuild(); }catch(e){} } }catch(e){}
+      if(ch){ try{ window.wsRefresh && window.wsRefresh(); }catch(e){} try{ window.sbBuild && window.sbBuild(); }catch(e){} try{ window.syncKindCaps && window.syncKindCaps(); }catch(e){} try{ window.homeRefresh && window.homeRefresh(); }catch(e){} } }catch(e){}
   }
   window.modLoad = modLoad;
   setTimeout(() => { modLoad(); setInterval(modLoad, 600000); }, 3000);
@@ -53340,14 +53465,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 
   // گزارش‌دهندگان اصلی که هر روز باید گزارش بدهند. ادمین در پنل مدیریت
   // فهرست را عوض می‌کند و برای روزهای خاص «رفع ایراد» می‌زند.
-  const REQUIRED_REPORTERS = ['آقای مهدی اسلامی','آقای سامین خواجه‌زاده','آقای عرفان حیدری'];
+  /* فهرست پیش‌فرض فقط مال پروژهٔ اصلی است؛ پروژهٔ تازه تا ادمین گزارش‌دهنده تعیین نکند، هیچ‌کس را موظف نمی‌داند
+     (پیش‌تر همین سه نام در هر پروژهٔ تازه «نقص گزارش» می‌ساختند و اعلان‌ها بین پروژه‌ها قاطی می‌شد) */
+  const REQUIRED_REPORTERS = (function(){ let p = 'p1'; try{ p = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return p === 'p1' ? ['آقای مهدی اسلامی','آقای سامین خواجه‌زاده','آقای عرفان حیدری'] : []; })();
   const RPT_KIND = 'گزارش‌دهندگان';
   let rptCfg = {req: null, ex: []};            // ex: «روز|نام|ثبت‌کننده|تاریخ ثبت»
   function rptCfgLoad(lists){
     const raw = (lists && lists[RPT_KIND]) || [];
     if(!raw.length) return;
     try{ rptCfg = Object.assign({req:null, ex:[]}, JSON.parse(raw[0]) || {}); }catch(e){ return; }
-    if(Array.isArray(rptCfg.req)) REQUIRED_REPORTERS.splice(0, REQUIRED_REPORTERS.length, ...rptCfg.req);
+    if(Array.isArray(rptCfg.req)) REQUIRED_REPORTERS.splice(0, REQUIRED_REPORTERS.length, ...rptCfg.req.filter(n => { try{ return !window.__pjPeopleOk || window.__pjPeopleOk(n); }catch(e){ return true; } }));
   }
   async function rptCfgSave(){
     rptCfg.req = REQUIRED_REPORTERS.slice();
@@ -53479,6 +53606,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     finally{ try{ settleBell(); }catch(e){} }
   }
   async function checkMissingReports0(){
+    /* پروژه‌ای که گزارش روزانهٔ کارگاه ندارد (مرحلهٔ طراحی یا بخش خاموش) اعلان نقص گزارش نمی‌سازد */
+    try{ if(window.pjSiteOn && !window.pjSiteOn()) return; }catch(e){}
     try{
       const today = todayShamsi();
       const end = faToDate(today);
@@ -57939,17 +58068,26 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         if(d0) d0.click();
       }
     });
+    /* گزارش‌هایی که به بخشی از پروژه بسته‌اند: با خاموش بودن آن بخش (مثلاً در مرحلهٔ طراحی) دیده نمی‌شوند */
+    const modOf = {site:'crew', daily:'crew', hr:'wrk', crew:'wrk', rcn:'rcn', vnd:'vnd', dly:'dly', mnt:'mc', mc:'mc', wh:'wh', qc:'qc', prc:'prc'};
+    const mOff = k => { try{ return !!(k && window.modHardOff && window.modHardOff(k)); }catch(e){ return false; } };
+    let lost = false;
     document.querySelectorAll('#viewKindCaps .kcap').forEach(b3 => {
-      const k = map[b3.dataset.kind];
-      if(!k) return;
-      const ok = (typeof can === 'function') ? can(k) : true;
-      b3.hidden = !ok;
-      if(!ok && b3.classList.contains('on')){
-        const d0 = document.querySelector('#viewKindCaps .kcap[data-kind="daily"]');
-        if(d0) d0.click();
-      }
+      const kd = b3.dataset.kind, k = map[kd];
+      if(!k && !modOf[kd]) return;
+      if(b3.dataset.pjhid === '1' && !mOff(modOf[kd])){ b3.hidden = false; delete b3.dataset.pjhid; }
+      if(b3.hidden && b3.dataset.pjhid !== '1' && !k) return;
+      const ok = (k ? ((typeof can === 'function') ? can(k) : true) : true) && !mOff(modOf[kd]);
+      if(!ok && !b3.hidden) b3.dataset.pjhid = '1';
+      if(k || !ok) b3.hidden = !ok;
+      if(!ok && b3.classList.contains('on')) lost = true;
     });
+    if(lost){
+      const d0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap[data-kind]')).find(b => !b.hidden && b.style.display !== 'none');
+      if(d0) d0.click();
+    }
   }
+  window.syncKindCaps = syncKindCaps;
   /* انتخاب نوع گزارش: به‌جای شبکهٔ کاشی‌ها یک ردیفِ «گزارش فعلی»؛ با لمسش
      فهرست باریکِ همهٔ گزارش‌ها باز می‌شود و با انتخاب، دوباره جمع می‌شود.
      کلیک‌های برنامه‌ای (از خانه و دسترسی سریع) دست نمی‌خورند. */
@@ -63669,15 +63807,19 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const RVC_KIND = 'زنجیرهٔ تأیید داخلی';
   let rvChain = {steps: []};     // [{name, label}]
   function rvChainLoad(lists){
-    const raw = (lists && lists[RVC_KIND]) || [];
-    if(!raw.length){ rvChain = {steps: []}; return; }
-    try{ const c = JSON.parse(raw[0]) || {}; rvChain = {steps: (c.steps || []).filter(s => s && s.name)}; }catch(e){}
+    /* زنجیره برای هر پروژه جداست: ردیفِ پروژهٔ غیر اصلی فیلد pj دارد؛ پروژهٔ اصلی ردیف بی‌pj را می‌خواند */
+    const raw = (lists && lists[RVC_KIND]) || [], pid = rvPid();
+    const mine = raw.map(v => { try{ return JSON.parse(v) || null; }catch(e){ return null; } }).filter(c => c && (c.pj || 'p1') === pid);
+    if(!mine.length){ rvChain = {steps: []}; return; }
+    rvChain = {steps: (mine[0].steps || []).filter(s => s && s.name)};
   }
+  function rvPid(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } }
   async function rvChainSave(steps){
     const clean = (steps || []).filter(s => s && String(s.name || '').trim()).map(s => ({name: String(s.name).trim(), label: String(s.label || '').trim()}));
-    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(RVC_KIND), {method:'DELETE'}); }catch(e){}
+    const pid = rvPid(), scope = pid === 'p1' ? '&value=not.like.' + encodeURIComponent('*"pj":*') : '&value=like.' + encodeURIComponent('*"pj":"' + pid + '"*');
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(RVC_KIND) + scope, {method:'DELETE'}); }catch(e){}
     if(clean.length) await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
-      body:[{kind: RVC_KIND, value: JSON.stringify({steps: clean})}]});
+      body:[{kind: RVC_KIND, value: JSON.stringify(pid === 'p1' ? {steps: clean} : {steps: clean, pj: pid})}]});
     rvChain = {steps: clean};
     try{ clearNetCache(); }catch(e){}
   }
@@ -96850,7 +96992,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<span class="hk-ic">' + HM_I[ic] + '</span>'
       + '<span class="hk-v">' + v + '</span><span class="hk-l">' + l + '</span>'
       + (sub ? '<span class="hk-s">' + sub + '</span>' : '') + '</button>';
-    if(tabOk('view')){
+    if(tabOk('view') && hmSite()){
       if(day && day.has){
         const dv = day.prevTot != null ? day.tot - day.prevTot : null;
         const sub = dv == null ? (day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '')
@@ -96935,7 +97077,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return hmCard('hm-work', hmHead('flag', title, sub), body, foot);
   }
   function hmDayCard(day, dDate){
-    if(!tabOk('view')) return '';
+    if(!tabOk('view') || !hmSite()) return '';
     const isT = dDate === todayShamsi();
     const head = hmHead('chart', 'گزارش روزانهٔ کارگاه', dDate ? esc(faDateLong(dDate) || dDate) + (isT ? ' · امروز' : '') : 'در حال دریافت…',
       hmMore('باز کردن', 'data-hmday="' + esc(dDate || '') + '"'));
@@ -97086,7 +97228,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const k = (v, l, cls, attr) => K.push('<button type="button" class="h5-k' + (cls ? ' ' + cls : '') + '" ' + attr + '>' + (typeof v === 'number' ? '<b data-cnt="' + v + '">' + toFa(v) + '</b>' : '<b>' + v + '</b>') + '<span>' + l + '</span></button>');
     k(tk ? tk.mine : dots, 'کار باز من', '', 'data-h3k="mine"');
     k(tk ? tk.mineLate : dots, 'عقب از موعد', tk && tk.mineLate ? 'bad' : '', 'data-h3k="mine"');
-    if(tabOk('view')) k(day && day.has ? day.tot : (day ? '—' : dots), 'نفر ' + (dDate && dDate !== todayShamsi() ? 'دیروز' : 'امروز'), '', 'data-hmday="' + esc(dDate || '') + '"');
+    if(tabOk('view') && hmSite()) k(day && day.has ? day.tot : (day ? '—' : dots), 'نفر ' + (dDate && dDate !== todayShamsi() ? 'دیروز' : 'امروز'), '', 'data-hmday="' + esc(dDate || '') + '"');
     if(AP.n) k(AP.n, 'منتظر تأیید', 'warn', 'data-apvopen="1"');
     else if(tabOk('tasks')) k(tk ? tk.open : dots, 'فعالیت باز', tk && tk.late ? 'bad' : '', 'data-hm="tasks"');
     return '<section class="h5 h3-a" style="--i:0;--h:' + pjHue(PJ.cur) + '">'
@@ -97478,6 +97620,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* کارتابل من: یک کارت با نوار سه‌قسمتی — امروز، کارهای من، پیگیری.
      قسمتی که کار فوری دارد عدد قرمز می‌گیرد؛ بار اول همان قسمت فوری باز است. */
   let homeKt = '', homeKtUser = false, homeMineList = [];
+  /* کارگاه و بخش‌های پروژه: در مرحلهٔ طراحی یا با خاموش بودن بخش، نشانه‌های اجرایی خانه نمی‌آیند */
+  const hmSite = () => { try{ return window.pjSiteOn ? window.pjSiteOn() : true; }catch(e){ return true; } };
+  const hmMod = k => { try{ return !(window.modIsOff && window.modIsOff(k)); }catch(e){ return true; } };
   const H3_RKP = {daily:'rep.time', admin:'rep.adm', dcc:'rep.adm', hr:'rep.hr', crew:'rep.crew', prc:'rep.prc', pc:'rep.pc', wh:'rep.wh', qc:'rep.qc', mc:'rep.mc', cf:'rep.cf', intro:'rep.intro', org:'rep.intro'};
   function h3KartBox(G){
     h3Today();
@@ -97553,7 +97698,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     })()});
     /* گزارش‌ها: همان نوع‌هایی که این شخص در زبانهٔ گزارش‌ها می‌بیند */
     try{ if(tabOk('view')){
-      const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
+      const R0 = Array.from(document.querySelectorAll('#viewKindCaps .kcap.rk[data-kind]')).filter(b => { const k = H3_RKP[b.dataset.kind]; return k && !b.hidden && b.style.display !== 'none' && (typeof can !== 'function' || can(k)); });
       const ic = HM_I.chart;
       const rows = R0.map(b => { const t = (b.querySelector('.rk-tx b') || {}).textContent || '', sm = (b.querySelector('.rk-tx small') || {}).textContent || '';
         return '<button type="button" class="h3-td rk-r" data-h3rep="' + esc(b.dataset.kind) + '"><span class="h3-tdi">' + ((b.querySelector('.rk-ic') || {}).innerHTML || ic) + '</span><span class="h3-tdx"><b>' + esc(t) + '</b><small>' + esc(sm) + '</small></span><span class="h3-tdb">باز کردن</span></button>'; });
@@ -97845,7 +97990,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       }
     }
     /* ۴) نیروی کارگاه: امانی و پیمانی، و گزارش‌دهندگان */
-    if(tabOk('view') && day && day.has){
+    if(tabOk('view') && hmSite() && day && day.has){
       const dv = day.prevTot != null ? day.tot - day.prevTot : null, okN = day.req.filter(x => x.ok).length;
       card('hd4-hr', 'نیروی کارگاه · ' + (dDate === todayShamsi() ? 'امروز' : 'دیروز'), '<span data-cnt="' + day.tot + '">' + toFa(day.tot) + '</span><i>نفر</i>',
         dv == null ? toFa(day.ctrN) + ' پیمانکار' : (dv ? '<em class="' + (dv > 0 ? 'up' : 'dn') + '">' + (dv > 0 ? '▲ ' : '▼ ') + toFa(Math.abs(dv)) + '</em> نسبت به روز قبل' : 'بی‌تغییر نسبت به روز قبل'),
@@ -97866,7 +98011,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<span class="pj4-ki">' + HM_I[ic] + '</span><span class="pj4-kv"' + (typeof v === 'number' ? ' data-cnt="' + v + '"' : '') + '>' + (typeof v === 'number' ? toFa(v) : v) + '</span>'
       + '<span class="pj4-kl">' + l + '</span>' + (sub ? '<span class="pj4-ks">' + sub + '</span>' : '') + '</button>');
     const dots = '<i class="hm-dots"></i>';
-    if(tabOk('view')){
+    if(tabOk('view') && hmSite()){
       if(day && day.has){
         const dv = day.prevTot != null ? day.tot - day.prevTot : null;
         kpi('hc-sky', 'people', day.tot, 'نفر ' + (dDate === todayShamsi() ? 'امروز' : 'دیروز'),
@@ -97885,7 +98030,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!K.length) return '';
     /* گزارش‌دهندگان روز، زیر شاخص‌ها */
     let ppl = '';
-    if(tabOk('view') && day && day.has && day.req.length){
+    if(tabOk('view') && hmSite() && day && day.has && day.req.length){
       const okN = day.req.filter(x => x.ok).length;
       ppl = '<button type="button" class="hx-ppl" data-hmday="' + esc(dDate) + '"><span class="hx-pl"><b>گزارش‌دهندگان امروز</b><small>' + toFa(okN) + ' از ' + toFa(day.req.length) + ' نفر ثبت کرده‌اند</small></span>'
         + '<span class="hx-pbar"><i style="width:' + Math.round(okN / day.req.length * 100) + '%"></i></span>'
@@ -98068,7 +98213,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let ok = false; try{ ok = hmDashOk(); }catch(e){} if(!ok) return '';
     const OFF = dashOffSet();
     const D = hdbMonth(), P = [];
-    try{ if(tabOk('view') && !OFF.has('hr')) P.push(['hr', D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>']); }catch(e){}
+    try{ if(tabOk('view') && hmSite() && !OFF.has('hr')) P.push(['hr', D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>']); }catch(e){}
     try{ if(tabOk('admin')){ if(!OFF.has('fn')) P.push(['fn', hdbDebt()]); if(!OFF.has('fl')) P.push(['fl', hdbFunnel()]); } }catch(e){}
     try{ if(!OFF.has('pp')) P.push(['pp', hdbTeam()]); }catch(e){}
     const ord = dashOrd(); const pos = k => { const i = ord.indexOf(k); return i === -1 ? 99 : i; };
@@ -98139,12 +98284,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let band = '';
     if(hmDashOk()){
       const P = [];
-      if(tabOk('view')) P.push(day && day.has ? st(day.tot, 'نفرات ' + (dDate === t0 ? 'امروز' : 'دیروز'), day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '', 'data-hmday="' + esc(dDate) + '"')
+      if(tabOk('view') && hmSite()) P.push(day && day.has ? st(day.tot, 'نفرات ' + (dDate === t0 ? 'امروز' : 'دیروز'), day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '', 'data-hmday="' + esc(dDate) + '"')
         : st(day ? '—' : dots, 'نفرات کارگاه', day ? 'گزارشی نیست' : '', 'data-hmday="' + esc(dDate || '') + '"'));
       if(tabOk('tasks')) P.push(st(tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب از موعد</i>' : 'همه در موعد') : '', 'data-hm="tasks"', tk && tk.late));
       if(tabOk('admin') && adm){ let n = 0, hot = 0; Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; }); const ld = (adminAll || []).length;
         P.push(st(ld ? n : dots, 'سند در جریان', ld ? (hot ? '<i class="dn">' + toFa(hot) + ' بحرانی</i>' : 'بدون مورد بحرانی') : '', 'data-hm="admin"', hot)); }
-      if(hmCan('write.prc')){ const ph = prc && prc.hot; P.push(st(prc ? prc.open : dots, 'خرید باز', ph ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : 'درخواست‌های جاری', 'data-hm="prcList"', ph)); }
+      if(hmCan('write.prc') && hmMod('prc')){ const ph = prc && prc.hot; P.push(st(prc ? prc.open : dots, 'خرید باز', ph ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : 'درخواست‌های جاری', 'data-hm="prcList"', ph)); }
       const ch = h3Dash(day, dDate, adm, tk, true, prc);
       band = '<div class="hz-band"><div class="hz-bh"><b>نمای پروژه</b><small>' + esc(pj.name || '') + '</small><button type="button" class="hz-dsh" data-dshpick="1" title="انتخاب نمودارها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>سفارشی‌سازی</span></button></div>'
         /* شاخص‌هایی که نمودار خودشان را دارند تکرار نمی‌شوند */
@@ -98156,14 +98301,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             try{ if(canSendGeneral()) q('', PF_I.mega, 'ابلاغ فعالیت', '#2f8a5f', 'data-h3k="gen"'); }catch(e){}
             try{ if(canRemind()) q('', PF_I.log, 'یادآور', '#c48a1a', 'data-h3k="rem"'); }catch(e){}
             try{ if(wrkFineApprover()){ const nf = (wrkPending || []).filter(isFineAny).length; q('', TD_I.warn, 'جریمه' + (nf ? ' <em class="hz-qn">' + toFa(nf) + '</em>' : ''), '#c0392b', 'data-h3k="fine"'); } }catch(e){}
-            try{ if(window.rcCanAny && rcCanAny()) q('', 'money', 'بدهکاری‌ها و خروجی‌ها', '#c0392b', 'data-rcopen="1"'); }catch(e){}
-            if(tabOk('tasks')) q('', 'task', 'برنامهٔ سه‌هفته‌ای', '#1f7a6a', 'data-laopen="1"');
-            if(tabOk('view')) q('', 'week', 'گزارش هفتگی کارفرما', '#1f7a4a', 'data-wkrep="1"');
+            try{ if(hmSite() && window.rcCanAny && rcCanAny()) q('', 'money', 'بدهکاری‌ها و خروجی‌ها', '#c0392b', 'data-rcopen="1"'); }catch(e){}
+            if(tabOk('tasks') && hmMod('la')) q('', 'task', 'برنامهٔ سه‌هفته‌ای', '#1f7a6a', 'data-laopen="1"');
+            if(tabOk('view') && hmSite()) q('', 'week', 'گزارش هفتگی کارفرما', '#1f7a4a', 'data-wkrep="1"');
             if(tabOk('admin') || tabOk('tasks')) q('', 'task', 'جلسهٔ هماهنگی', '#6d5bb5', 'data-mtg="1"');
             q('', 'chart', 'پیش‌بینی پروژه', '#2f6f9f', 'data-fxgo="fc"');
-            if(tabOk('view')) q('', 'people', 'KPI پیمانکاران', '#b0631c', 'data-fxgo="sc"');
-            q('', 'task', 'بتن و آزمایش', '#5a6577', 'data-fxgo="con"');
-            if(tabOk('view')){ q('view:daily', 'week', 'گزارش روزانه', '#2f6f9f'); q('view:pc', 'chart', 'کنترل پروژه', '#6d5bb5'); q('view:cf', 'money', 'گزارش مالی', '#2a8a6a'); q('view:hr', 'people', 'نیروی انسانی', '#b07512'); q('view:org', 'compass', 'چارت سازمانی', '#5b6b7d'); }
+            if(tabOk('view') && hmSite()) q('', 'people', 'KPI پیمانکاران', '#b0631c', 'data-fxgo="sc"');
+            if(hmMod('con')) q('', 'task', 'بتن و آزمایش', '#5a6577', 'data-fxgo="con"');
+            if(tabOk('view')){ if(hmSite()) q('view:daily', 'week', 'گزارش روزانه', '#2f6f9f'); q('view:pc', 'chart', 'کنترل پروژه', '#6d5bb5'); q('view:cf', 'money', 'گزارش مالی', '#2a8a6a'); if(hmSite()) q('view:hr', 'people', 'نیروی انسانی', '#b07512'); q('view:org', 'compass', 'چارت سازمانی', '#5b6b7d'); }
             if(tabOk('admin')){ q('adm:statement', 'st', 'صورت وضعیت‌ها', '#2f6f8f'); q('adm:contract', 'ct', 'قراردادها', '#b0631c'); }
             if(tabOk('tasks')) q('ws:tasks', 'task', 'فعالیت‌ها', '#3d7fb0');
             /* فقط چند میان‌بر اول؛ بقیه با «بیشتر» */
@@ -98395,8 +98540,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const hasData = !!(homeAt || (tasksAll || []).length || (adminAll || []).length);
     /* تا دادهٔ تازه برسد، آخرین صفحهٔ خانهٔ همین کاربر بی‌درنگ نشان داده می‌شود */
     if(first && !hasData){ homeWho = ''; box.__skel = true; box.classList.add('hm-still');
-      try{ const c = JSON.parse(localStorage.getItem('siteLogM.homeCache.v1') || 'null'); if(c && c.u === nameKey(me) && c.h){ box.innerHTML = c.h; box.__h = ''; } }catch(e){} return; }
-    if(hasData){ clearTimeout(homeRender.__cs); homeRender.__cs = setTimeout(() => { try{ if(h.length < 400000) localStorage.setItem('siteLogM.homeCache.v1', JSON.stringify({u: nameKey(me), h, at: Date.now()})); }catch(e){} }, 1500); }
+      try{ const c = JSON.parse(localStorage.getItem('siteLogM.homeCache.v1') || 'null'); if(c && c.u === nameKey(me) && c.h && (c.pj || 'p1') === (localStorage.getItem('siteLogM.project.v1') || 'p1')){ box.innerHTML = c.h; box.__h = ''; } }catch(e){} return; }
+    if(hasData){ clearTimeout(homeRender.__cs); homeRender.__cs = setTimeout(() => { try{ if(h.length < 400000) localStorage.setItem('siteLogM.homeCache.v1', JSON.stringify({u: nameKey(me), pj: localStorage.getItem('siteLogM.project.v1') || 'p1', h, at: Date.now()})); }catch(e){} }, 1500); }
     /* اسکلت از قبل دیده شده: صفحه دوباره محو و ظاهر نمی‌شود؛ فقط عددها بالا می‌روند */
     if(first && box.__skel){ box.__skel = false; box.classList.add('hm-still'); h3Count(box); return; }
     if(first){ box.classList.remove('hm-in', 'hm-still'); void box.offsetWidth; box.classList.add('hm-in'); box.__inAt = Date.now(); h3Count(box);
@@ -98890,11 +99035,23 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.pjCitiesOf = pjCitiesOf;
   document.addEventListener('change', e => { const t = e.target; if(!t.matches || !t.matches('[data-pjf="province"]')) return; const dl = document.getElementById('pjCities'); if(dl) dl.innerHTML = pjCitiesOf(t.value).map(c => '<option value="' + c + '">').join('');
     const box = t.closest('#pjBody, .modal'), ci = box && box.querySelector('[data-pjf="city"]'); if(ci && ci.value && pjCitiesOf(t.value).indexOf(ci.value) === -1 && PJ_ALL_CITIES.indexOf(ci.value) !== -1) ci.value = ''; });
+  /* مرحلهٔ پروژه: طراحی (از ساخت پروژه، «بخش‌های فعال پروژه» یا وضعیت «مطالعات و طراحی/اخذ مجوز»).
+     در مرحلهٔ طراحی بخش‌های اجرایی خاموش‌اند مگر صریحاً روشن شده باشند. */
+  const PJ_DZ_ST = ['مطالعات و طراحی', 'اخذ مجوز'];
+  const PJ_DZ_OFF = ['daily', 'crew', 'prc', 'wh', 'qc', 'hse', 'mc', 'sp', 'leave'];
+  function pjDzOf(p){ p = p || (typeof pjCur === 'function' ? pjCur() : {}); if(!p) return false;
+    let ph = ''; try{ ph = window.__pjPhase || ''; }catch(e){}
+    if(!ph && p.seed && p.seed.phase) ph = p.seed.phase;
+    if(ph) return /^design/.test(ph);
+    return PJ_DZ_ST.indexOf(String(p.status || '').trim()) !== -1; }
+  window.pjIsDesign = () => { try{ return pjDzOf(); }catch(e){ return false; } };
+  /* کارگاه (گزارش روزانه و نیرو) در این پروژه روشن است؟ */
+  window.pjSiteOn = () => { try{ return !(PJ_OFF && PJ_OFF.has('rep.time')); }catch(e){ return true; } };
   const PJ_MODS = [
-    {k:'daily', t:'گزارش روزانهٔ پیمانکاران', d:'نفرات، فعالیت، موانع و ماشین‌آلات روز', p:['write.daily','rep.time','rep.week','rep.month','rep.hr'], core:1},
+    {k:'daily', t:'گزارش روزانهٔ پیمانکاران', d:'نفرات، فعالیت، موانع و ماشین‌آلات روز', p:['write.daily','rep.time','rep.week','rep.month','rep.hr','notif.missing'], core:1},
     {k:'tasks', t:'لیست فعالیت‌ها و برنامه', d:'ابلاغ، پیشرفت، موانع و کنترل پروژه', p:['tab.tasks','task.general','task.approve','task.add','task.edit','rep.pc'], core:1},
     {k:'admin', t:'دفتر فنی و اسناد', d:'صورت وضعیت، قرارداد، نامه، صورتجلسه و اسناد طراحی', p:['tab.admin','write.adm','rep.adm','adm.editAny','adm.path'], core:1},
-    {k:'crew', t:'نیروی کارگری', d:'حضور، کارکرد، اضافه‌کاری و انتقال مصالح', p:['write.crew','crew.manage','crew.editAny','crew.instant','rep.crew']},
+    {k:'crew', t:'نیروی کارگری', d:'حضور، کارکرد، اضافه‌کاری و انتقال مصالح', p:['write.crew','crew.manage','crew.editAny','crew.instant','rep.crew','fine.approve','notif.fine']},
     {k:'prc', t:'تدارکات', d:'درخواست خرید و پیگیری', p:['write.prc','rep.prc','proc.notify']},
     {k:'wh', t:'انبار', d:'رسید، حواله، امانت و موجودی', p:['wh.manage','wh.request','wh.approve','rep.wh']},
     {k:'qc', t:'کنترل کیفیت', d:'درخواست بازرسی، چک‌لیست و NCR', p:['qc.request','qc.inspect','qc.manage','rep.qc']},
@@ -98986,6 +99143,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     pjApply();
   }
   const pjCur = () => PJ.all.get(PJ.cur) || PJ.all.get('p1') || pjDefault();
+  window.pjReapply = () => { try{ const b = Array.from(PJ_OFF || []).join(); pjOffCalc(pjCur()); if(b !== Array.from(PJ_OFF).join()){ try{ window.syncKindCaps && window.syncKindCaps(); }catch(e){} try{ window.homeRefresh && window.homeRefresh(); }catch(e){} } }catch(e){} };
   window.pjCur = pjCur; window.pjAllList = () => Array.from(PJ.all.values());
   const pjMeK = () => nameKey(activeUserName() || '');
   function pjMemOf(pid, name){ const k = nameKey(name || ''); return PJ.mem.find(m => m.pid === pid && nameKey(m.name) === k) || null; }
@@ -98998,6 +99156,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const pjCanNew = () => { try{ return isAdminUser(); }catch(e){ return false; } };
   /* سمت و سطح هر کس در پروژه‌ای غیر از پروژهٔ اصلی، از دعوتش می‌آید */
   /* عضو پروژهٔ فعلی؟ (پروژهٔ اصلی یا تا وقتی فهرست اعضا نرسیده: همه) */
+  window.__pjScoped = () => { try{ return !!(PJ && PJ.cur !== 'p1' && PJ.mem.length); }catch(e){ return false; } };
   window.__pjPeopleOk = name => { try{ if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return true; const m = pjMemOf(PJ.cur, name); return !!(m && (m.state === PJ_ST_ON || m.state === PJ_ST_INV)); }catch(e){ return true; } };
   function pjRoleOf(name){
     if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return '';
@@ -99007,12 +99166,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return 0;
     const m = pjMemOf(PJ.cur, name); return m && m.state === PJ_ST_ON && m.level >= 1 && m.level <= 6 ? m.level : 0;
   }
+  function pjOffCalc(p){
+    const off = new Set();
+    const dz = pjDzOf(p), M0 = (p.mods && typeof p.mods === 'object') ? p.mods : {};
+    PJ_MODS.forEach(m => { if(M0[m.k] === false || (dz && M0[m.k] !== true && PJ_DZ_OFF.indexOf(m.k) !== -1)) m.p.forEach(k => off.add(k)); });
+    PJ_OFF = off;
+    try{ document.documentElement.classList.toggle('pj-dz', dz); }catch(e){}
+  }
   function pjApply(){
     const p = pjCur();
     /* بخش‌های خاموش این پروژه: همهٔ اجازه‌هایشان بسته می‌شود (حتی برای ادمین) */
-    const off = new Set();
-    if(p.mods && typeof p.mods === 'object') PJ_MODS.forEach(m => { if(p.mods[m.k] === false) m.p.forEach(k => off.add(k)); });
-    PJ_OFF = off;
+    pjOffCalc(p);
     /* طبقات پروژه */
     const F = Array.isArray(p.floors) && p.floors.length ? p.floors : (p.id === 'p1' || !p.id ? PJ_B0 : []);
     setTimeout(() => { try{ window.slRefreshAll && window.slRefreshAll(); }catch(e){} }, 0);
@@ -99041,7 +99205,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return PJ.col;
   }
   /* داده‌های محلیِ مخصوص یک پروژه که با عوض شدن پروژه باید از نو خوانده شوند */
-  const PJ_DROP = /^siteLogM\.(contractors|engineers|zones|skills|machines|ctrContacts|partyLinks|ctrSplits|ctrReg|contractSubjects|contractParties|contractNos|allTbl|mx|kx|cend|cbh|subs|admPlace|digest\.|skReg|feedSeen|deckSeen|notifSeen|people)/;
+  const PJ_DROP = /^siteLogM\.(contractors|engineers|zones|skills|machines|ctrContacts|partyLinks|ctrSplits|ctrReg|contractSubjects|contractParties|contractNos|allTbl|mx|kx|cend|cbh|subs|admPlace|digest\.|skReg|feedSeen|deckSeen|notifSeen|people|recentAct|spRecent|sdRecent|feedCleared|genHidden|ibSeen|ibRead|homeCache)/;
   async function pjSwitch(id, silent){
     if(id === PJ.cur && !silent) return;
     if(id !== 'p1' && !silent){
@@ -99588,7 +99752,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ۳۱۳: بعد از بارگذاری داده‌های هر پروژه (یک بار در هر نشست) —
      ۱) پروژهٔ تازه: طرف‌هایی که هنگام ساختن تعریف شدند، حالا در خود همین پروژه ثبت می‌شوند؛
      ۲) به‌روزرسانی دسترسی‌ها با قالب تازهٔ سمت‌ها (فقط افزودنی) و روشن شدن حالت سمت‌محور اگر کسی اجازه‌ای از دست ندهد. */
-  const OG_TPL_VER = '3';
+  const OG_TPL_VER = '4';
   window.pjAfterLoad = function(){
     if(window.pjAfterLoad.done) return; window.pjAfterLoad.done = true;
     setTimeout(async () => {
@@ -100256,7 +100420,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-rcrun]'); if(b){ e.preventDefault(); const [k, how] = b.dataset.rcrun.split('|'); rcRun(k, how, b); return; }
     const o = e.target.closest && e.target.closest('[data-rropen]'); if(o){ e.preventDefault(); if(o.dataset.rropen === 'sch'){ const t = document.querySelector('[data-tkplango]'); try{ window.open('plan.html?theme=' + (document.documentElement.dataset.theme || '') + '&ed=1', '_blank', 'noopener'); }catch(er){} return; } if(o.dataset.rropen === 'rcn'){ rcnOpen(); return; } regOpen(o.dataset.rropen); } });
   /* کارت‌های گزارش تازه فقط برای کسی که اجازه دارد */
-  setInterval(() => { try{ RR_KINDS.forEach(k => { const b = document.querySelector('#viewKindCaps [data-kind="' + k + '"]'); if(!b) return; const ok = k === 'pf' ? regCan('reg.pf') : k === 'rcn' ? regCan('reg.rcn') : k === 'site' ? (regCanW() || regCanQc()) : rcCan(k === 'eng' ? 'rfi' : k === 'sch' ? 'task' : k === 'cst' ? 'bud' : k); if(b.hidden === ok) b.hidden = !ok; }); }catch(e){} }, 3000);
+  setInterval(() => { try{ RR_KINDS.forEach(k => { const b = document.querySelector('#viewKindCaps [data-kind="' + k + '"]'); if(!b) return; const ok = k === 'pf' ? regCan('reg.pf') : k === 'rcn' ? regCan('reg.rcn') : k === 'site' ? (regCanW() || regCanQc()) : rcCan(k === 'eng' ? 'rfi' : k === 'sch' ? 'task' : k === 'cst' ? 'bud' : k); const mk = {site:'mrc', mnt:'mc', eng:'rfi', cst:'cc'}[k] || k; let mOff = false; try{ mOff = !!(window.modHardOff && (window.modHardOff(mk) || (k === 'site' && window.modHardOff('ptw') && window.modHardOff('mrc')))); if(k === 'site' && !window.modHardOff('ptw')) mOff = false; }catch(e){} const ok2 = ok && !mOff; if(b.hidden === ok2) b.hidden = !ok2; }); }catch(e){} }, 3000);
   const RC_LIST = [
     {k: 'debt', t: 'بدهکاری‌ها', d: 'مانده مطالبات هر پیمانکار، تأییدشده و در بررسی', ic: 'debt', c: '#c0392b', need: {adm: 1}, f: rcDebt},
     {k: 'all', t: 'گزارش جامع پروژه', d: 'همهٔ بخش‌ها در یک فایل: مالی، فعالیت، ایمنی، کیفیت، تدارکات…', ic: 'all', c: '#2f6f9f', need: {adm: 1, hse: 1, qc: 1, prc: 1, wh: 1, co: 1, mc: 1}, f: rcAll},
