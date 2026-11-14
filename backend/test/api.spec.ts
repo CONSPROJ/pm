@@ -149,3 +149,52 @@ test('CRS: طرف نظر از عضویت خود کاربر است، نه از د
   expect(fake.body.party_kind).toBe('design_team');   // «consultant» درخواست نادیده گرفته شد
   expect(fake.body.author_name).toBe('علی طراح');
 });
+
+test('وراثت سمت: مافوق اجازهٔ سمت زیردست را دارد، با inherit=false نه؛ حالت سمت‌محور سطح را جز پایه کنار می‌گذارد', async () => {
+  const P = (await call('GET', `/projects/${pid}/positions`, root)).body;
+  const child = P.find((x: any) => x.title === 'طراح سازه');
+  const boss = (await call('POST', `/projects/${pid}/positions`, root, { title: 'مدیر طراحی', approved: true })).body;
+  expect((await call('PATCH', `/projects/${pid}/positions/${child.id}`, root, { parent_id: boss.id })).status).toBe(200);
+  const m = await call('POST', `/projects/${pid}/members`, root, { username: 'reza', display_name: 'رضا مدیر طراحی', position_id: boss.id, level: 4, status: 'active' });
+  expect(m.status).toBe(201);
+  const c = new Client({ connectionString: URL }); await c.connect();
+  await c.query(`update users set password_hash = $1, status = 'active' where username = 'reza'`, [await bcrypt.hash('reza-pass-123', 4)]); await c.end();
+  const reza = (await call('POST', '/auth/login', undefined, { username: 'reza', password: 'reza-pass-123' })).body.token;
+  expect((await call('GET', `/projects/${pid}/access/me`, reza)).body['statement.read'].allowed).toBe(false);
+  await call('PUT', `/projects/${pid}/access/grants`, root, { subject_type: 'position', subject_id: child.id, capability_key: 'statement.read', effect: 'allow' });
+  let me = (await call('GET', `/projects/${pid}/access/me`, reza)).body;
+  expect(me['statement.read'].allowed).toBe(true);
+  expect(me['statement.read'].source).toBe('inherit');
+  expect((await call('GET', `/projects/${pid}/access/me`, ali)).body['statement.read'].source).toBe('group');
+  /* منع روی زیردست به مافوق نمی‌رسد */
+  await call('PUT', `/projects/${pid}/access/grants`, root, { subject_type: 'position', subject_id: child.id, capability_key: 'doc.read', effect: 'deny' });
+  expect((await call('GET', `/projects/${pid}/access/me`, reza)).body['doc.read'].allowed).toBe(true);
+  /* وراثت خاموش */
+  expect((await call('PATCH', `/projects/${pid}/positions/${boss.id}`, root, { inherit: false })).status).toBe(200);
+  expect((await call('GET', `/projects/${pid}/access/me`, reza)).body['statement.read'].allowed).toBe(false);
+  await call('PATCH', `/projects/${pid}/positions/${boss.id}`, root, { inherit: true });
+  /* حالت سمت‌محور: doc.read پیش‌تر از سطح ۴ بود، حالا نه؛ project.read پایه است و می‌ماند */
+  expect((await call('PUT', `/projects/${pid}/settings/access.mode`, root, { value: 'position' })).status).toBe(200);
+  me = (await call('GET', `/projects/${pid}/access/me`, reza)).body;
+  expect(me['doc.read'].allowed).toBe(false);
+  expect(me['doc.read'].source).toBe('position_mode');
+  expect(me['project.read'].allowed).toBe(true);
+  expect(me['statement.read'].allowed).toBe(true);
+  expect((await call('PUT', `/projects/${pid}/settings/access.mode`, root, { value: 'هر چیزی' })).status).toBe(400);
+  await call('DELETE', `/projects/${pid}/settings/access.mode`, root);
+  expect((await call('GET', `/projects/${pid}/access/me`, reza)).body['doc.read'].allowed).toBe(true);
+});
+
+test('مقایسهٔ دسترسی سایت فعلی با سرور تازه: از دست رفته‌ها و نفرات ناموجود گزارش می‌شوند', async () => {
+  const { compareAccess } = await import('../src/db/compare-access');
+  const name = (await call('GET', `/projects/${pid}`, root)).body.name;
+  const r = await compareAccess(URL, { people: [
+    { name: 'علی طراح', caps: { 'doc.statement': true, 'reg.trn': true, 'doc.minute': false } },
+    { name: 'کسی که نیست', caps: { 'doc.design': true } }] }, name);
+  const ali2 = r.people.find((p) => p.name === 'علی طراح')!;
+  expect(ali2.found).toBe(true);
+  expect(ali2.lost.some((x) => x.startsWith('reg.trn'))).toBe(true);
+  expect(ali2.lost.some((x) => x.startsWith('doc.statement'))).toBe(false);
+  expect(r.people.find((p) => p.name === 'کسی که نیست')!.found).toBe(false);
+  expect(r.lostTotal).toBeGreaterThan(0);
+});

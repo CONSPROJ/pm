@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114044713">
+<meta name="pm-build" content="20261114045210">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29975,6 +29975,7 @@
 .pjw-impl label{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 8px;border-radius:9px;background:var(--field,#f4f6f9)} .pjw-impl label small{color:var(--muted);margin-inline-start:auto;font-size:11px}
 
 /* ۳۱۴: کدینگ اسناد */
+.psu-exp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 2px} .psu-exp small{color:var(--muted);font-size:11.5px}
 .te-f u i.req{color:#c0392b;font-style:normal}
 #dcM .dc-pre{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px} #dcM .dc-pb{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line,#e3e7ed);background:var(--surface,#fff);cursor:pointer;font:inherit;color:inherit;text-align:start} #dcM .dc-pb.on{border-color:var(--sky,#3d7fb0);background:color-mix(in srgb,var(--sky,#3d7fb0) 8%,transparent)} #dcM .dc-pb small{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--muted);font-size:11.5px}
 .dc-f .dc-tail{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);background:var(--field,#f3f5f8);padding:3px 8px;border-radius:7px} .dc-pcs span.tl{border:1px dashed var(--line,#d9dee5);background:transparent}
@@ -43389,7 +43390,20 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '</div>';
   }
   /* کارت «راه‌اندازی دسترسی»: دو قدم به ترتیب — قالب سمت‌ها، بعد حالت سمت‌محور. وقتی هر دو انجام شد یک خط وضعیت. */
-  function permSetupHtml(people){
+  /* ۳۲۵: خروجی دسترسی مؤثر هر نفر برای مقایسه با سرور تازه (backend/src/db/compare-access.ts) */
+  window.permExport = function(){
+    try{ const P = ogPeople(), caps = PERM_CAPS.map(c => c.k);
+      const people = P.map(n => { const o = {}; caps.forEach(k => { try{ o[k] = !!canUser(n, k); }catch(e){ o[k] = false; } });
+        let lv = null, rl = ''; try{ lv = levelOf(n); }catch(e){} try{ rl = String(roleOf(n) || ''); }catch(e){} return {name: n, level: lv, role: rl, caps: o}; });
+      const data = {project: (window.pjCur && window.pjCur().name) || '', at: new Date().toISOString(), mode: permPosMode() ? 'position' : 'level', people};
+      const b = new Blob([JSON.stringify(data, null, 1)], {type: 'application/json'}), a = document.createElement('a');
+      a.href = URL.createObjectURL(b); a.download = 'access-' + toEn(todayShamsi()).replace(/\//g, '-') + '.json'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      shrToast('خروجی دسترسی ' + toFa(people.length) + ' نفر ساخته شد');
+    }catch(e){ showDialog('err', 'ساخته نشد', friendlyErr(e)); }
+  };
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-permexp]'); if(!b) return; e.preventDefault(); window.permExport(); });
+  function permSetupHtml(people){ return permSetupHtml0(people) + '<div class="psu-exp"><button type="button" class="pp-btn" data-permexp>خروجی دسترسی‌ها برای انتقال</button><small>فایل دسترسی مؤثر هر نفر، برای مقایسه با سرور تازه پیش از روز انتقال</small></div>'; }
+  function permSetupHtml0(people){
     const miss = ogTplMissing(), pos = permPosMode();
     if(!miss.length && pos) return '<div class="psu done"><span class="psu-ok">✓</span><b>دسترسی‌ها سمت‌محورند</b><small>هر نفر اجازه‌هایش را از سمتش (و زیرمجموعه) می‌گیرد.</small><button type="button" class="pp-btn" data-pmode="">برگشت به «سطح + سمت»</button></div>';
     const st = (n, done, t, d, act) => '<div class="psu-s' + (done ? ' ok' : '') + '"><span class="psu-n">' + (done ? '✓' : toFa(n)) + '</span><div><b>' + t + '</b><small>' + d + '</small></div>' + (done ? '' : act) + '</div>';

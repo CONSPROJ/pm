@@ -84,21 +84,21 @@ export class ProjectsController {
 
   @Post(':pid/positions') @Require('chart.manage')
   async addPosition(@Param('pid') pid: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
-    const b = parse(z.object({ title: z.string().min(1), parent_id: uuid.nullable().optional(), party_id: uuid.nullable().optional(), disciplines: z.array(z.string()).optional(), sort: z.number().int().optional(), approved: z.boolean().optional() }), body);
-    const r = await this.db.one('insert into positions (project_id, title, parent_id, party_id, disciplines, sort, approved) values ($1,$2,$3,$4,$5,$6,$7) returning *',
-      [pid, b.title, b.parent_id ?? null, b.party_id ?? null, b.disciplines ?? [], b.sort ?? 0, b.approved ?? false]);
+    const b = parse(z.object({ title: z.string().min(1), parent_id: uuid.nullable().optional(), party_id: uuid.nullable().optional(), disciplines: z.array(z.string()).optional(), sort: z.number().int().optional(), approved: z.boolean().optional(), inherit: z.boolean().optional() }), body);
+    const r = await this.db.one('insert into positions (project_id, title, parent_id, party_id, disciplines, sort, approved, inherit) values ($1,$2,$3,$4,$5,$6,$7,$8) returning *',
+      [pid, b.title, b.parent_id ?? null, b.party_id ?? null, b.disciplines ?? [], b.sort ?? 0, b.approved ?? false, b.inherit ?? true]);
     await this.audit.log(u.id, pid, 'create', 'position', r.id, b);
     return r;
   }
 
   @Patch(':pid/positions/:id') @Require('chart.manage')
   async editPosition(@Param('pid') pid: string, @Param('id') id: string, @Body() body: unknown, @CurrentUser() u: AuthUser) {
-    const b = parse(z.object({ title: z.string().min(1).optional(), parent_id: uuid.nullable().optional(), party_id: uuid.nullable().optional(), disciplines: z.array(z.string()).optional(), sort: z.number().int().optional(), approved: z.boolean().optional() }), body);
+    const b = parse(z.object({ title: z.string().min(1).optional(), parent_id: uuid.nullable().optional(), party_id: uuid.nullable().optional(), disciplines: z.array(z.string()).optional(), sort: z.number().int().optional(), approved: z.boolean().optional(), inherit: z.boolean().optional() }), body);
     if (b.parent_id === id) throw new ForbiddenException('سمت نمی‌تواند زیر خودش باشد');
     const r = await this.db.one(`update positions set title = coalesce($3, title), parent_id = case when $4::boolean then $5::uuid else parent_id end,
-        party_id = case when $6::boolean then $7::uuid else party_id end, disciplines = coalesce($8, disciplines), sort = coalesce($9, sort), approved = coalesce($10, approved)
+        party_id = case when $6::boolean then $7::uuid else party_id end, disciplines = coalesce($8, disciplines), sort = coalesce($9, sort), approved = coalesce($10, approved), inherit = coalesce($11, inherit)
         where id = $2 and project_id = $1 returning *`,
-      [pid, id, b.title ?? null, 'parent_id' in b, b.parent_id ?? null, 'party_id' in b, b.party_id ?? null, b.disciplines ?? null, b.sort ?? null, b.approved ?? null]);
+      [pid, id, b.title ?? null, 'parent_id' in b, b.parent_id ?? null, 'party_id' in b, b.party_id ?? null, b.disciplines ?? null, b.sort ?? null, b.approved ?? null, b.inherit ?? null]);
     await this.audit.log(u.id, pid, 'update', 'position', id, b);
     return r;
   }
