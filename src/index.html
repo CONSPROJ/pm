@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114143903">
+<meta name="pm-build" content="20261114144227">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32707,10 +32707,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function lvForRole(rl){
     rl = String(rl || '').trim(); if(!rl) return 0;
     let side = ''; try{ const P = ogPos(rl); side = (P && P.side) || ''; }catch(e){}
-    if(side === 'emp' || side === 'cons') return 6; if(side === 'ctr') return 8; if(side === 'own') return 9;
-    if(/مدیر(یت)?\s*پروژه/.test(rl)) return 2;
+    /* پروژهٔ در مرحلهٔ طراحی: تیم طراحی و مشاور تیم اصلی پروژه است، نه طرف بیرونی (مدیر طرح = سطح مدیریت پروژه) */
+    let dz = false; try{ dz = !!(window.pjIsDesign && window.pjIsDesign()); }catch(e){}
+    if(side === 'emp' || (side === 'cons' && !dz)) return 6; if(side === 'ctr') return 8; if(side === 'own') return 9;
+    if(/مدیر(یت)?\s*(پروژه|طرح(?![\u0600-\u06FF])|طراحی\s*($|\/|،|و\s))|هماهنگ[\u200c\s]*کنند[هة]ٔ?\s*(طراحی|طرح)/.test(rl)) return 2;
     if(/کارگر/.test(rl)) return 5;
-    if(/مسئول|سرپرست|مدیر|کنترل پروژه|امور/.test(rl)) return 7;
+    if(/مسئول|سرپرست|مدیر|هماهنگ|کنترل پروژه|امور|سرگروه|ارشد/.test(rl)) return 7;
     return 3;
   }
   window.lvForRole = lvForRole;
@@ -43854,7 +43856,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const frame = (x, inner) => { const u2 = ul(inner, 'g:' + x.k, OG_SC[x.k]);
         return '<li><div class="ogc-fr" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><span class="ogc-frl"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div></li>'; };
-      const sideInner = x => x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + x.roots.filter(n => !kup(n)).slice().reverse().map(n => card(n, 0)).join('');
+      /* سرفصل خودکار رشته‌ها: کسانی که سمتشان یک رشته است (مدیر طراحی سازه، طراح معماری…) و زیر سرفصل دستی نیستند، زیر سرفصل رشتهٔ خودشان */
+      const DISC_AUTO = ['تأسیسات مکانیکی', 'تأسیسات برقی', 'طراحی داخلی', 'معماری داخلی', 'معماری', 'سازه', 'تأسیسات', 'مکانیک', 'برق', 'محوطه', 'منظر', 'نما', 'ژئوتکنیک', 'ترافیک', 'شهرسازی', 'نقشه‌برداری', 'متره و برآورد', 'BIM'];
+      const discOf = n => { const r = String(ogRoleOf(n) || ''); return DISC_AUTO.find(d => r.indexOf(d) !== -1) || ''; };
+      const sideInner = x => { const R = x.roots.filter(n => !kup(n)), G = new Map(), plain = [];
+        R.forEach(n => { const d = discOf(n); if(d){ if(!G.has(d)) G.set(d, []); G.get(d).push(n); } else plain.push(n); });
+        const heads = Array.from(G.entries()).map(([d, L]) => '<li><div class="ogc-g sm ogc-team ogc-auto" style="--sc:' + OG_SC[x.k] + '" title="سرفصل خودکار از روی سمت افراد"><b>' + esc(d) + '</b><small>' + toFa(L.length) + ' نفر</small></div><ul>' + L.slice().reverse().map(n => card(n, 1)).join('') + '</ul></li>').reverse().join('');
+        return x.ext.slice().reverse().map(e => extLi(e, OG_SC[x.k])).join('') + heads + plain.slice().reverse().map(n => card(n, 0)).join(''); };
       /* طرح نواری: هر طرف یک نوار جدا با عنوان خودش (کارفرما، تیم مدیریت پیمان، طراح و مشاور، مالک، پیمانکاران)؛
          درخت هر طرف داخل نوار خودش. کارفرمایان اصلی ردیف بالای نوار کارفرما و نیروی هر کدام زیر خودش. */
       const rev = a => a.slice().reverse();
