@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114145453">
+<meta name="pm-build" content="20261114145807">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30240,6 +30240,8 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .tm2 .tm-st{font-size:10.5px;padding:2px 9px}
 :is(html,#z0) :is(body,#z1) .ogc-out{margin-inline-start:6px;height:22px;padding:0 8px;border-radius:99px;border:1px solid var(--sc,#2f6f9f);background:var(--surface,#fff);color:var(--sc,#2f6f9f);font:inherit;font-size:11px;font-weight:700;cursor:pointer}
 :is(html,#z0) :is(body,#z1) .ogc-out:hover{background:var(--sc,#2f6f9f);color:#fff}
+:is(html,#z0) :is(body,#z1) .ogc-ed{position:absolute;top:8px;inset-inline-end:8px;width:24px;height:24px;border-radius:8px;border:1px solid var(--line);background:var(--surface,#fff);color:var(--muted);font-size:12px;cursor:pointer;display:grid;place-items:center;padding:0}
+:is(html,#z0) :is(body,#z1) .ogc-ed:hover{color:var(--sky,#2f6f9f);border-color:var(--sky,#2f6f9f)}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -43813,7 +43815,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const par = new Map(); P.forEach(n => par.set(n, ogParentOf(n, P)));
     /* هم‌سطح‌ها به ترتیبِ سمت (از «دسترسی‌ها ← سمت‌ها») و بعد نام */
     const byOrd = (a, b) => (ogOrd(ogPos(ogRoleOf(a))) - ogOrd(ogPos(ogRoleOf(b)))) || String(a).localeCompare(String(b), 'fa');
-    const kids = n => P.filter(x => par.get(x) && nameKey(par.get(x)) === nameKey(n)).sort(byOrd);
+    /* زیردستی که در گروه دیگری است، فقط در گروه خودش می‌آید (پیش‌تر هم زیر بالادست و هم در گروه خودش — دو بار — دیده می‌شد) */
+    const sameSide = (a, b) => { try{ return dsd(a) === dsd(b); }catch(e){ return true; } };
+    const kids = n => P.filter(x => par.get(x) && nameKey(par.get(x)) === nameKey(n) && sameSide(x, n)).sort(byOrd);
     void 0;
     const flTx = I => I.fl.length ? I.fl.map(k => { const f = spFloors().find(z => z.key === k); return f ? f.label.replace(/^طبقهٔ\s*/, '') : k; }).join('، ') : '';
     const cnt = n => { let c = 0; kids(n).forEach(k => { c += 1 + cnt(k); }); return c; };
@@ -43873,7 +43877,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         return '<li><div class="ogc-n' + ((og.per.get(nameKey(n)) || {}).hide ? ' og-hid' : '') + '" data-ogn="' + esc(n) + '" data-ogk="p:' + esc(nameKey(n)) + '" style="--sc:' + (OG_SC[dsd(n)] || OG_SC[I.side] || '#777') + '">'
           + avatarHtml(n, '', true) + '<b>' + esc(n) + '</b><small>' + esc(I.rl || 'بدون سمت') + '</small>' + (fl ? '<em>طبقه ' + esc(fl) + '</em>' : '')
           + (K.length ? '<button type="button" class="ogc-tg' + (shut ? ' shut' : '') + '" data-ogtg="' + esc(n) + '" aria-label="' + (shut ? 'باز کردن' : 'جمع کردن') + ' زیرمجموعه">' + (shut ? '+' + toFa(cnt(n)) : '−') + '</button>' : '')
-          + addB('p:' + nameKey(n)) + '</div>' + ul(K.length && !shut ? K.slice().reverse().map(k => card(k, d + 1)).join('') : '', 'p:' + nameKey(n), OG_SC[dsd(n)] || '#777') + '</li>'; };
+          + addB('p:' + nameKey(n)) + (og.edit ? '<button type="button" class="ogc-ed" data-ogpedit="1" title="ویرایش سمت، تیم و جایگاه">✎</button>' : '') + '</div>' + ul(K.length && !shut ? K.slice().reverse().map(k => card(k, d + 1)).join('') : '', 'p:' + nameKey(n), OG_SC[dsd(n)] || '#777') + '</li>'; };
       cardFn = card;
       const grp = (x, inner) => '<li><div class="ogc-g" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + outB(x.k) + '</div>'
         + ul(inner, 'g:' + x.k, OG_SC[x.k]) + '</li>';
@@ -44082,6 +44086,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         await ogSaveRow(OG_NODE_KIND, id, null); og.nodes.delete(id); const pp = document.querySelector('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
   });
   document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.closest && e.target.closest('.ogc-pop [data-ogxf] input[type="text"]')){ e.preventDefault(); ogXSave(e.target.closest('[data-ogxf]')); } });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ogpedit]'); if(!b) return; e.preventDefault(); e.stopPropagation(); const c = b.closest('.ogc-n[data-ogn]'); if(c) ogPop(c); }, true);
   function ogPop(card){
     const old = document.querySelector('.ogc-pop'); if(old){ old.remove(); if(old.__n === card.dataset.ogn) return; }
     const n = card.dataset.ogn, P = ogPeople(); const box = card.closest('.og2'); if(!box) return;
@@ -44160,8 +44165,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function ogPerFormHtml(n, P){
     const I = ogPersonInfo(n), F = spFloors();
     return '<div class="ogp-f og-pf" data-ogpform="' + esc(n) + '">'
+      + (function(){ let h = ''; try{ h = window.roleSelHtml(ogRoleOf(n) || ''); }catch(e){} return h ? '<label><u>سمت در این پروژه</u>' + h.replace('<select class="u-role"', '<select class="u-role" data-ogpf="role" data-nons="1" data-was="' + esc(ogRoleOf(n) || '') + '"') + '</label>' : ''; })()
       + '<label><u>سرپرست مستقیم</u><select data-ogpf="up" data-nons="1"><option value="">خودکار از سمت</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '"' + (nameKey(I.up) === nameKey(x) ? ' selected' : '') + '>' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select></label>'
-      + '<label><u>طرف</u><select data-ogpf="side" data-nons="1"><option value="">از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
+      + '<label><u>تیم / گروه در چارت</u><select data-ogpf="side" data-nons="1"><option value="">خودکار از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<div class="og-fl"><u>محدودهٔ طبقات <small>برای سرپرست طبقات؛ خالی = کل پروژه</small></u><div>' + F.map(f => '<button type="button" data-ogfl="' + esc(f.key) + '" class="' + (I.fl.indexOf(f.key) !== -1 ? 'on' : '') + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div></div>'
       + '<div class="og-rel"><u>رابطه با دیگری <small>یک نفر را انتخاب کنید و رابطه را بزنید؛ همان لحظه در چارت اعمال می‌شود</small></u>'
       +   '<select data-ogrelx="1" data-nons="1"><option value="">انتخاب شخص…</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '">' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select>'
@@ -44220,7 +44226,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const pv = t.closest('[data-ogpsave]'); if(pv){ const f = pv.closest('[data-ogpform]'), n = f.dataset.ogpform;
       const o = {side: f.querySelector('[data-ogpf="side"]').value, up: f.querySelector('[data-ogpf="up"]').value, fl: Array.from(f.querySelectorAll('[data-ogfl].on')).map(b => b.dataset.ogfl)};
       const has = o.side || o.up || o.fl.length; pv.disabled = true;
-      try{ await ogSaveRow(OG_PER_KIND, n, has ? o : null); if(has) og.per.set(nameKey(n), Object.assign({n}, o)); else og.per.delete(nameKey(n)); og.ed = ''; og.pm = ''; ogRepaintChart(); try{ permRepaint(); }catch(e2){} try{ shrToast('جایگاه ' + n + ' ذخیره شد'); }catch(e2){} }
+      try{ const rs = f.querySelector('[data-ogpf="role"]'); if(rs && rs.value !== (rs.dataset.was || '')){ await savePerson(n, {role: rs.value || null}); try{ await loadPeople(true); }catch(e3){} }
+        await ogSaveRow(OG_PER_KIND, n, has ? o : null); if(has) og.per.set(nameKey(n), Object.assign({n}, o)); else og.per.delete(nameKey(n)); og.ed = ''; og.pm = ''; ogRepaintChart(); try{ permRepaint(); }catch(e2){} try{ shrToast('جایگاه ' + n + ' ذخیره شد'); }catch(e2){} }
       catch(err){ pv.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     if(t.closest('[data-ogprint]')){ try{ window.print(); }catch(err){} return; }
   });
