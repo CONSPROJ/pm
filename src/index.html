@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114043859">
+<meta name="pm-build" content="20261114044713">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30043,6 +30043,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 .trn-o{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:start;padding:8px 10px;border-radius:9px;border:0;background:transparent;font:inherit;color:inherit;cursor:pointer}
 .trn-o:hover{background:var(--field,#f3f5f8)} .trn-o b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px} .trn-o span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trn-o small{color:var(--muted);font-size:11px}
 @media (max-width:640px){ .rg-docs .trn-t th:nth-child(5),.rg-docs .trn-t td:nth-child(5){display:none} .trn-o{grid-template-columns:1fr} }
+
+/* ۳۲۴: انتخاب سریع بازه در صفحهٔ خالی گزارش‌ها */
+:is(html,#z0) :is(body,#z1) .empty.rq-empty::before,:is(html,#z0) :is(body,#z1) .empty.rq-empty::after{display:none!important;content:none!important}
+:is(html,#z0) :is(body,#z1) .empty.rq-empty{padding:18px 14px!important;background-image:none!important}
+.rq-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.rq-empty b{font-size:14px;color:var(--ink)} .rq-empty small{color:var(--muted);font-size:12px}
+.rq-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.rq-chips button{height:38px;padding:0 16px;border-radius:12px;border:1px solid var(--line,#e3e7ed);background:var(--surface,#fff);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.rq-chips button:hover{border-color:var(--sky,#3d7fb0);background:color-mix(in srgb,var(--sky,#3d7fb0) 8%,var(--surface,#fff))}
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -30696,7 +30705,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       </div>
     </div>
     <div id="reportView">
-      <div class="empty">تاریخ را وارد کنید و «نمایش گزارش» را بزنید.</div>
+      <div class="empty rq-empty"><b>کدام بازه را می‌خواهید ببینید؟</b><div class="rq-chips"><button type="button" data-rqk="today">امروز</button><button type="button" data-rqk="yday">دیروز</button><button type="button" data-rqk="week">هفتهٔ اخیر</button><button type="button" data-rqk="month">این ماه</button></div><small>یا نوع، بازه و تاریخ را بالا انتخاب کنید و «نمایش گزارش» را بزنید.</small></div>
     </div>
   </div>
 
@@ -57938,6 +57947,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   });
 
   // کپسول‌های بازهٔ زمانی: روزانه / هفتگی / ماهانه
+  /* انتخاب سریع بازه در صفحهٔ خالی گزارش‌ها: یک لمس = گزارش همان بازه */
+  document.addEventListener('click', e => { const q = e.target.closest && e.target.closest('[data-rqk]'); if(!q) return; e.preventDefault();
+    const k = q.dataset.rqk, rg = k === 'week' ? 'week' : k === 'month' ? 'month' : 'day';
+    viewDate.value = k === 'yday' ? yesterdayShamsi() : todayShamsi(); viewDate.__user = Date.now();
+    const cap = document.querySelector('#rangeCaps [data-range="' + rg + '"]');
+    if(cap && !cap.hidden && !cap.classList.contains('on')) cap.click(); else document.getElementById('loadBtn').click(); });
   document.getElementById('rangeCaps').addEventListener('click', e => {
     const b = e.target.closest('[data-range]');
     if(!b || rangeMode === b.dataset.range) return;
