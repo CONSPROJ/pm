@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114034205">
+<meta name="pm-build" content="20261114034627">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29988,6 +29988,11 @@
 .pjw-impl label{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 8px;border-radius:9px;background:var(--field,#f4f6f9)} .pjw-impl label small{color:var(--muted);margin-inline-start:auto;font-size:11px}
 
 /* ۳۱۴: کدینگ اسناد */
+#dccSum .dcc-ds{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))!important}
+#dccSum button.dcc-d{grid-template-columns:minmax(0,1fr) 70px 34px!important;padding:6px 8px!important;font-size:12px!important}
+button.dcc-d{font:inherit;color:inherit;text-align:start;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:10px;transition:border-color .15s,background .15s}
+button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-color:var(--sky,#3d7fb0);background:color-mix(in srgb,var(--sky,#3d7fb0) 9%,transparent)} button.dcc-all b{color:var(--muted)}
+.rg-no[dir=ltr]{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px!important;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :is(html,#z0) :is(body,#z1) .field.dc-f{grid-column:1 / -1!important;width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;display:flex!important;flex-direction:column!important;padding:0!important;background:none!important;border:0!important}
 :is(html,#z0) :is(body,#z1) .dc-f .dc-s,:is(html,#z0) :is(body,#z1) .dc-f .dc-s > *{height:auto!important;min-height:0!important}
 :is(html,#z0) :is(body,#z1) .dc-f .dc-g{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
@@ -62694,7 +62699,12 @@
   function dsPct(r){ const st = dsStOf(r); return DS_PCT[st] != null ? DS_PCT[st] : 10; }
   window.dsPct = dsPct;
   /* خلاصهٔ DCC: پیشرفت وزنیِ کل و هر رشته، و شمار کدهای نتیجه */
-  function dccSummaryHtml(rows){
+  function dsDiscSel(){ try{ return sessionStorage.getItem('siteLogM.dsDisc') || ''; }catch(e){ return ''; } }
+  window.dsDiscSel = dsDiscSel;
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-dsdisc]'); if(!b) return; e.preventDefault(); e.stopPropagation();
+    const v = b.dataset.dsdisc, cur = dsDiscSel(); try{ if(!v || v === cur) sessionStorage.removeItem('siteLogM.dsDisc'); else sessionStorage.setItem('siteLogM.dsDisc', v); }catch(er){}
+    try{ applyAdminFilters(); }catch(er){} }, true);
+  function dccSummaryHtml(rows, sel){
     if(!rows || !rows.length) return '';
     const tot = rows.reduce((a, r) => a + dsPct(r), 0) / rows.length;
     const D = new Map(), C = {A:0, B:0, C:0, D:0, IFC:0};
@@ -62702,7 +62712,8 @@
     const bar = p => '<span class="dcc-b"><i style="width:' + p.toFixed(0) + '%"></i></span>';
     return '<div class="dcc"><div class="dcc-hd"><span class="dcc-t">پیشرفت مدارک <em>DCC</em></span><b class="dcc-p">' + toFa(Math.round(tot)) + '٪</b>' + bar(tot)
       + '<span class="dcc-codes">' + Object.keys(C).filter(k => C[k]).map(k => '<i class="dcc-c c-' + k + '" title="کد ' + k + '">' + k + ' <b>' + toFa(C[k]) + '</b></i>').join('') + '</span></div>'
-      + '<div class="dcc-ds">' + Array.from(D.entries()).sort((a, b) => b[1].n - a[1].n).map(([d, o]) => { const p = o.s / o.n; return '<span class="dcc-d"><u>' + esc(d) + ' <small>' + toFa(o.n) + ' مدرک</small></u>' + bar(p) + '<b>' + toFa(Math.round(p)) + '٪</b></span>'; }).join('') + '</div></div>';
+      + '<div class="dcc-ds">' + (sel ? '<button type="button" class="dcc-d dcc-all" data-dsdisc=""><u>همهٔ رشته‌ها <small>' + toFa(rows.length) + ' مدرک</small></u><b>×</b></button>' : '')
+      + Array.from(D.entries()).sort((a, b) => b[1].n - a[1].n).map(([d, o]) => { const p = o.s / o.n; return '<button type="button" class="dcc-d' + (sel === d ? ' on' : '') + '" data-dsdisc="' + esc(d) + '" aria-pressed="' + (sel === d) + '" title="فقط اسناد ' + esc(d) + '"><u>' + esc(d) + ' <small>' + toFa(o.n) + ' مدرک</small></u>' + bar(p) + '<b>' + toFa(Math.round(p)) + '٪</b></button>'; }).join('') + '</div></div>';
   }
   window.dccSummaryHtml = dccSummaryHtml;
   const DOC_TYPES = ['نقشه','رندر','مدل‌سازی (BIM)','شاپ‌دراوینگ','دیتیل اجرایی','محاسبات','مشخصات فنی','گزارش فنی','دستورالعمل','سایر'];
@@ -66161,6 +66172,7 @@
     return parts.filter(Boolean).join(c.sep);
   }
   window.dcBuild = dcBuild;
+  window.dcCodeOfLb = (tk, lb) => dcCodeOf(tk, lb);
   const dcTab = k => (dcCfg().t[k] || []);
   /* کدِ هر عنوان فارسی (دیسیپلین، نوع سند)؛ اگر نبود، خودِ مقدار اگر لاتین است */
   function dcCodeOf(tk, label){ const L = dcTab(tk), s = String(label || '').trim(); if(!s) return ''; const hit = L.find(x => x[1] === s || x[0] === s.toUpperCase()) || L.find(x => s && (x[1].indexOf(s) === 0 || s.indexOf(x[1]) === 0)); return hit ? hit[0] : (/^[A-Za-z0-9]+$/.test(s) ? s.toUpperCase() : ''); }
@@ -67079,7 +67091,7 @@
           + (function(){
               /* رشته: چندانتخابی؛ هم‌معنی‌ها یکی */
               let opts = DESIGN_DISC; try{ opts = Array.from(new Set(DESIGN_DISC.filter(x => !tkCatHidden.has(x)).concat(tkCatList).map(dsDiscNorm))); }catch(e){}
-              const cur = dsDiscs(pick(r,AD.dDisc)); cur.forEach(c => { if(opts.indexOf(c) === -1) opts.push(c); });
+              const cur = dsDiscs(pick(r,AD.dDisc) || (isNewItem ? (function(){ const v = dsDiscSel(); return v === 'بدون رشته' ? '' : v; })() : '')); cur.forEach(c => { if(opts.indexOf(c) === -1) opts.push(c); });
               const joined = cur.join('، ');
               return '<div class="field af-chips af-multi"><label>رشته <small>(یک یا چند)</small></label>'
                 + '<select class="a-dDisc" hidden><option value=""></option>' + (joined ? '<option value="' + esc(joined) + '" selected>' + esc(joined) + '</option>' : '') + '</select>'
@@ -72279,7 +72291,10 @@
     let curCatL = ''; try{ curCatL = admCat; }catch(e){}
     const lazyOff = !!(qAdmin || kindFilter || otherFilter || elVal('fAdmOwner')) || !curCatL;
     ADM_ORDER.forEach(k => {
-      const raw = items.filter(x => x.kind === k);
+      const raw0 = items.filter(x => x.kind === k);
+      /* تفکیک دیسیپلین اسناد طراحی (۳۱۴): نوار رشته‌ها بالای فهرست؛ با انتخاب یکی، فقط اسناد همان رشته */
+      const dDisc = k === 'design' ? dsDiscSel() : '';
+      const raw = dDisc ? raw0.filter(x => dsDiscs(pick(x.row,AD.dDisc)).indexOf(dDisc) !== -1 || (dDisc === 'بدون رشته' && !dsDiscs(pick(x.row,AD.dDisc)).length)) : raw0;
       const list = raw.filter(x => !admFinished(x)).concat(raw.filter(admFinished));
       const box = document.getElementById('admList-' + k);
       const cnt = document.getElementById('admCount-' + k);
@@ -72326,7 +72341,7 @@
         let sm = document.getElementById('dccSum');
         if(!sm){ sm = document.createElement('div'); sm.id = 'dccSum'; box.parentElement && box.parentElement.insertBefore(sm, box); }
         sm.style.display = hide ? 'none' : '';
-        if(!hide) sm.innerHTML = dccSummaryHtml(list.map(x => x.row));
+        if(!hide) sm.innerHTML = dccSummaryHtml(raw0.map(x => x.row), dDisc);
       }
       if(!box || hide) return;
       /* فقط دستهٔ باز ساخته می‌شود (پیش‌تر هر پنج دسته با همهٔ ردیف‌ها، ده‌ها هزار گره، حتی در خانه)؛
@@ -84069,7 +84084,7 @@
         + '<div class="rg-fa"><button type="button" class="mini go" data-rgsave>ذخیره</button></div></div>';
     }
     h += L.length ? '<div class="rg-list">' + L.map(x => { const st = R.st.find(s => s[0] === x.o.st) || R.st[0], w = R.warn(x.o), op = RG.open === x.id;
-        return '<div class="rg-it' + (op ? ' open' : '') + '"><button type="button" class="rg-row" data-rgop="' + esc(x.id) + '"><span class="rg-no">' + esc(toFa(x.o.no || '')) + '</span><span class="rg-tx"><b>' + esc(x.o.item || x.o.desc || (x.o.u ? spUnitLb(x.o.u) : '') || R.t) + '</b><small>' + esc(R.line(x.o)) + '</small>' + (w ? '<em class="rg-w">' + esc(w) + '</em>' : '') + '</span><span class="rg-st ' + st[2] + '">' + st[1] + '</span></button>'
+        return '<div class="rg-it' + (op ? ' open' : '') + '"><button type="button" class="rg-row" data-rgop="' + esc(x.id) + '"><span class="rg-no"' + (x.o.code ? ' dir="ltr" title="' + esc(x.o.code) + '"' : '') + '>' + esc(x.o.code || toFa(x.o.no || '')) + '</span><span class="rg-tx"><b>' + esc(x.o.item || x.o.desc || (x.o.u ? spUnitLb(x.o.u) : '') || R.t) + '</b><small>' + esc(R.line(x.o)) + '</small>' + (w ? '<em class="rg-w">' + esc(w) + '</em>' : '') + '</span><span class="rg-st ' + st[2] + '">' + st[1] + '</span></button>'
           + (op ? regDetail(x) : '') + '</div>'; }).join('') + '</div>'
       : '<div class="fx-e">' + (all.length ? 'با این فیلتر موردی نیست.' : 'هنوز موردی ثبت نشده.') + '</div>';
     if(RG.k === 'dly'){ if(!RG.wxEl || RG.wxEl.__m !== m){ RG.wxEl = document.createElement('div'); RG.wxEl.className = 'rg-wx'; RG.wxEl.__m = m; RG.wxEl.innerHTML = '<div class="fx-wait">در حال دریافت هوا…</div>'; if(window.wxOpen) window.wxOpen('wk', RG.wxEl); }
@@ -84108,6 +84123,8 @@
       const f = new File([blob], 'sign-' + cv.dataset.rgsg + '.png', {type: 'image/png'}); try{ o[cv.dataset.rgsg] = await uploadS3Any(f, null, 'sign'); }catch(e){ showDialog('err', 'امضا ذخیره نشد', friendlyErr(e)); return; } }
     const id = o.__id || fxId(); delete o.__id;
     if(!o.no){ const n = regList(RG.k).reduce((mx, x) => Math.max(mx, parseInt(toEn(String(x.o.no || '')).replace(/\D/g, ''), 10) || 0), 0); o.no = R.pre + '-' + String(n + 1).padStart(3, '0'); }
+    /* کدینگ: سابمیتال و RFI کد کامل پروژه می‌گیرند (دیسیپلین، شماره، ویرایش) */
+    try{ const dk = {smt: 'sub', rfi: 'rfi'}[RG.k]; if(dk && window.dcBuild) o.code = window.dcBuild(dk, {DSC: window.dcCodeOfLb('dsc', o.disc || ''), NO: String(o.no || '').replace(/^[^0-9]*/, ''), REV: o.rev}); }catch(e){}
     if(!o.st){ o.st = R.st[0][0]; o.by = fxMe(); o.at = new Date().toISOString(); o.log = [{st: o.st, d: todayShamsi(), by: fxMe()}]; }
     try{ await fxPut(R.kind, id, o); RG.draft = null; RG.open = id; regPaint(); }catch(e){ showDialog('err', 'ثبت نشد', friendlyErr(e)); }
   }
