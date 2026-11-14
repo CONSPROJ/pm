@@ -174,7 +174,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261114081621">
+<meta name="pm-build" content="20261114082018">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -31879,6 +31879,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ const v = JSON.parse(localStorage.getItem(PEOPLE_CACHE_KEY) || '[]'); return Array.isArray(v) ? v : []; }
     catch(e){ return []; }
   })();
+  function pjPeopleFilter(L){ try{ return window.__pjPeopleOk ? L.filter(p => p && window.__pjPeopleOk(p.name)) : L; }catch(e){ return L; } }
+  window.__reFilterPeople = () => { try{ if(!window.__peopleAll) window.__peopleAll = peopleRows.slice(); peopleRows = pjPeopleFilter(window.__peopleAll); }catch(e){} };
   let peopleAt = 0, peopleLoading = null;
   async function loadPeople(force){
     if(peopleLoading) return peopleLoading;
@@ -31892,7 +31894,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           {prefer:'return=representation'}).catch(() =>
             supaFetch('people?select=name,role,level,avatar_url,must_change,active', {prefer:'return=representation'}));
         if(Array.isArray(got) && got.length){
-          peopleRows = got;
+          /* ۳۳۴: در پروژه‌ای غیر از پروژهٔ اصلی فقط اعضای همان پروژه (کاربران سامانه مشترک‌اند، ولی هر پروژه افراد خودش را می‌بیند) */
+          window.__peopleAll = got;
+          peopleRows = pjPeopleFilter(got);
           peopleAt = Date.now();
           try{ await staffLoad(); }catch(e){}
           try{
@@ -42770,14 +42774,19 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       ['دبیرخانه و کنترل مکاتبات', 'pm', 'اداری', 'مسئول دفتر فنی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.letter', 'doc.minute', 'inbox.review', 'reg.trn']]]],
     ['طراحی', [
       ['مدیر طراحی / هماهنگ‌کنندهٔ طراحی', 'cons', 'طراحی', '', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'doc.design.all', 'reg.rfi.ok', 'reg.qc.ok', 'reg.smt', 'inbox.review']],
-      ['طراح معماری', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح سازه', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح داخلی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['مدیر طراحی معماری', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['مدیر طراحی سازه', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['مدیر طراحی تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['مدیر طراحی تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['مدیر طراحی داخلی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['طراح معماری', 'cons', 'طراحی', 'مدیر طراحی معماری', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح سازه', 'cons', 'طراحی', 'مدیر طراحی سازه', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی تأسیسات مکانیکی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی تأسیسات برقی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح داخلی', 'cons', 'طراحی', 'مدیر طراحی داخلی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح محوطه و منظر', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح نما', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['مدل‌ساز BIM', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design']],
+      ['طراح نما', 'cons', 'طراحی', 'مدیر طراحی معماری', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['مدل‌ساز BIM', 'cons', 'طراحی', 'مدیر طراحی معماری', ['tab.admin', 'rep.adm', 'doc.design']],
       ['کنترل مدارک طراحی (DCC)', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', ['reg.trn', 'tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'doc.design', 'doc.design.all', 'doc.letter', 'doc.minute', 'inbox.review']]]],
     ['مهندسی و برنامه‌ریزی', [
       ['مدیر مهندسی', 'pm', 'دفتر فنی', 'مدیریت پروژه', ['tab.admin', 'write.adm', 'adm.editAny', 'rep.adm', 'qt.edit', 'doc.design', 'doc.design.all', 'reg.rfi', 'reg.smt', 'reg.qc.ok', 'inbox.review']],
@@ -50199,6 +50208,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      ادمین بخش‌هایی را که پروژه به کار نمی‌برد خاموش می‌کند تا میز کار، منوی کناری، «ثبت تازه» و جست‌وجو برای همه کوتاه شود.
      جای ذخیره: lists «ماژول‌های پروژه» شناسهٔ cfg (هر پروژه جدا)؛ رونوشت محلی برای باز شدن بی‌درنگ. */
   const MOD_K = 'ماژول‌های پروژه', MOD_FIXED = ['tasks', 'apv'];
+  const MOD_PH = [['design1', 'طراحی فاز ۱', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','sp','qt','cc','co','leave']],
+                ['design2', 'طراحی فاز ۲', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','leave']],
+                ['build', 'اجرا', ['hov']], ['finish', 'نازک‌کاری و تأسیسات', []], ['handover', 'تحویل و بهره‌برداری', ['cut','con','mrc','rcn','la','ptw']]];;
+  window.MOD_PH = MOD_PH;
   /* بخش‌های تخصصی: برای همهٔ پروژه‌ها لازم نیستند. پروژه‌ای که هنوز بخش‌هایش را تنظیم نکرده، این‌ها را خاموش می‌بیند مگر داده داشته باشند؛
      در «بخش‌های فعال پروژه» با یک تیک روشن می‌شوند. هدف: سایت ساده بماند و هر پروژه فقط آنچه لازم دارد را ببیند. */
   const MOD_OPT = ['ptw', 'mrc', 'rfi', 'smt', 'itp', 'rsk', 'dly', 'cc', 'vnd', 'rcn', 'hov', 'con', 'fc', 'mtg', 'cut', 'pf'];
@@ -50222,6 +50235,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const ch = a.join() !== Array.from(modOff).join(); modOff = new Set(a); try{ localStorage.setItem(modLS(), JSON.stringify(a)); }catch(e){}
       if(ch){ try{ window.wsRefresh && window.wsRefresh(); }catch(e){} try{ window.sbBuild && window.sbBuild(); }catch(e){} } }catch(e){}
   }
+  window.modLoad = modLoad;
   setTimeout(() => { modLoad(); setInterval(modLoad, 600000); }, 3000);
   /* ====== مرکز قوانین ادمین ====== */
   const RULES_K = 'قوانین سامانه';
@@ -50262,9 +50276,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* کاربری و مرحلهٔ پروژه: هر مرحله پیشنهاد آماده‌ای از بخش‌ها دارد؛ ادمین بعدش هر بخش را دستی هم تغییر می‌دهد */
     let cfg0 = {}; try{ const L0 = await fxList(MOD_K); const x0 = (L0 || []).find(r => r.id === 'cfg'); cfg0 = (x0 && x0.o) || {}; }catch(e){}
     const st = {phase: cfg0.phase || '', use: cfg0.use || ''};
-    const PH = [['design1', 'طراحی فاز ۱', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','sp','qt','cc','co','leave']],
-                ['design2', 'طراحی فاز ۲', ['crew','wrk','hse','prc','wh','qc','mc','ptw','mrc','itp','dly','mnt','vnd','rcn','hov','cut','con','la','leave']],
-                ['build', 'اجرا', ['hov']], ['finish', 'نازک‌کاری و تأسیسات', []], ['handover', 'تحویل و بهره‌برداری', ['cut','con','mrc','rcn','la','ptw']]];
+    const PH = MOD_PH;
     const USES = ['مسکونی', 'تجاری', 'اداری', 'مختلط', 'هتل', 'درمانی', 'آموزشی', 'صنعتی', 'زیرساخت'];
     const paint = () => {
       B.innerHTML = '<div class="mod-ph"><div><u>مرحلهٔ پروژه</u><span>' + PH.map(([k, t]) => '<button type="button" class="mini' + (st.phase === k ? ' go' : '') + '" data-modph="' + k + '">' + t + '</button>').join('') + '</span></div>'
@@ -98961,6 +98973,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     PJ.mem = ((lists && lists[PJM_KIND]) || []).map(pjMemParse).filter(Boolean);
     try{ localStorage.setItem(PJ_CACHE, JSON.stringify({p: (lists && lists[PJ_KIND]) || [], m: (lists && lists[PJM_KIND]) || []})); }catch(e){}
     pjApply();
+    try{ window.__reFilterPeople && window.__reFilterPeople(); }catch(e){}
     /* عضو پروژهٔ فعلی نیست (یا پروژه حذف شده): برگشت به پروژهٔ اصلی */
     if(PJ.cur !== 'p1' && activeUserName() && !pjMine().some(p => p.id === PJ.cur)) pjSwitch('p1', true);
   }
@@ -98984,6 +98997,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const pjCanEdit = () => { try{ return isAdminUser() || rawLevel() <= 2; }catch(e){ return false; } };
   const pjCanNew = () => { try{ return isAdminUser(); }catch(e){ return false; } };
   /* سمت و سطح هر کس در پروژه‌ای غیر از پروژهٔ اصلی، از دعوتش می‌آید */
+  /* عضو پروژهٔ فعلی؟ (پروژهٔ اصلی یا تا وقتی فهرست اعضا نرسیده: همه) */
+  window.__pjPeopleOk = name => { try{ if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return true; const m = pjMemOf(PJ.cur, name); return !!(m && (m.state === PJ_ST_ON || m.state === PJ_ST_INV)); }catch(e){ return true; } };
   function pjRoleOf(name){
     if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return '';
     const m = pjMemOf(PJ.cur, name); return m && m.state === PJ_ST_ON ? m.role : '';
@@ -99362,7 +99377,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let h = dots;
     if(st === 1){
       h += '<div class="pj-q">این پروژه چیست؟</div><div class="pj-gr">' + pjFieldHtml({k:'name', t:'نام پروژه', req:1, w:2}, d.name) + '</div>'
-        + '<div class="pj-chips">' + PJ_TYPES.map(t => '<button type="button" class="' + (d.type === t ? 'on' : '') + '" data-pjtype="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>';
+        + '<div class="pj-chips">' + PJ_TYPES.map(t => '<button type="button" class="' + (d.type === t ? 'on' : '') + '" data-pjtype="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
+        + '<div class="pj-q">پروژه در چه مرحله‌ای است؟ <small>بخش‌های سایت بنا به مرحله روشن می‌شوند (طراحی: بدون گزارش کارگاه، انبار، کارگری…). بعداً از «بخش‌های فعال پروژه» عوض می‌شود.</small></div>'
+        + '<div class="pj-chips">' + (window.MOD_PH || []).map(([k, t]) => '<button type="button" class="' + ((d.phase || 'build') === k ? 'on' : '') + '" data-pjph="' + k + '">' + esc(t) + '</button>').join('') + '</div>';
     }else if(st === 2){
       const on = k => d.mods[k] !== false;
       h += '<div class="pj-q">چه بخش‌هایی در سایت این پروژه باشد؟</div><div class="pj-chips sm">' + Object.keys(PJ_PRESET).map(k => '<button type="button" data-pjpre="' + k + '">' + k + '</button>').join('') + '</div>'
@@ -99534,6 +99551,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(!(await askConfirm('برداشتن از پروژه', m.name + ' دیگر به این پروژه دسترسی ندارد.', 'برداشتن'))) return;
       try{ await pjSaveMem(null, m); pjPaint(); }catch(err){ showDialog('err', 'انجام نشد', friendlyErr(err)); } return; }
     /* پروژهٔ تازه */
+    const ph = t.closest('[data-pjph]'); if(ph){ pjReadForm(pjSt.draft); pjSt.draft.phase = ph.dataset.pjph;
+      /* طراحی: بخش‌های اجرایی پروژه هم از پیش خاموش */ if(/^design/.test(ph.dataset.pjph)) ['daily', 'crew', 'prc', 'wh', 'qc', 'hse', 'mc', 'sp', 'leave'].forEach(k => { pjSt.draft.mods[k] = false; }); else ['daily', 'crew', 'prc', 'wh', 'qc', 'hse', 'mc', 'sp'].forEach(k => { delete pjSt.draft.mods[k]; });
+      pjPaint(); return; }
     const ty = t.closest('[data-pjtype]'); if(ty){ pjReadForm(pjSt.draft); pjSt.draft.type = ty.dataset.pjtype; pjPaint(); return; }
     const pre = t.closest('[data-pjpre]'); if(pre){ const on = new Set(PJ_PRESET[pre.dataset.pjpre]); PJ_MODS.forEach(m => { pjSt.draft.mods[m.k] = on.has(m.k) ? true : false; }); pjPaint(); return; }
     const ig = t.closest('[data-pjimpgo]'); if(ig){ const d = pjSt.draft; pjReadForm(d); d.pty = (d.pty || []).filter(x => x.n);
@@ -99551,10 +99571,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const M = {}; PJ_MODS.forEach(m => { if(d.mods[m.k] === false) M[m.k] = false; });
       const up = parseInt(d.floorsUp, 10) || 0, dn = parseInt(d.floorsDown, 10) || 0, per = parseInt(d.unitsPer, 10) || 0;
       const p = {id, name: d.name, type: d.type, status: d.status, start: d.start || '', province: d.province || '', city: d.city || '', employer: d.employer || '', floorsUp: d.floorsUp || '', floorsDown: d.floorsDown || '', unitsPer: per || '', units: d.units || '',
-        mods: M, floors: up ? pjFloorsGen(up, dn, per, true) : null, created: todayShamsi(), by: activeUserName(), posLib: true,
+        mods: M, floors: up ? pjFloorsGen(up, dn, per, true) : null, created: todayShamsi(), by: activeUserName(), posLib: true, phase: d.phase || 'build',
         /* طرف‌ها همین‌جا ذخیره نمی‌شوند (آن موقع پروژهٔ فعلی پروژهٔ دیگری است)؛ با اولین ورود به پروژهٔ تازه در همان پروژه ثبت می‌شوند */
         seed: (d.pty || []).filter(x => x.n).length ? {pty: (d.pty || []).filter(x => x.n)} : undefined};
-      if(!p.seed) delete p.seed;
+      p.seed = Object.assign({}, p.seed || {}, {phase: d.phase || 'build', chart: 1});
       Object.keys(p).forEach(k => { if(p[k] === '') delete p[k]; });
       const ok = await pjSaveBtn(t.closest('button'), async () => { await pjSaveReg(p); await pjSaveMem({pid: id, name: activeUserName(), role: 'مدیر سامانه', level: 1, state: PJ_ST_ON, by: activeUserName()}, null);
         /* تیم: هر نفر با سمتش دعوت می‌شود؛ طرف‌ها پرونده (کارت) می‌گیرند */
@@ -99575,8 +99595,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm) return;
       const p = pjCur();
       if(p && p.id && p.id !== 'p1' && p.seed && PJ.cur === p.id){
+        try{ if(p.seed.phase){ const P0 = (window.MOD_PH || []).find(x => x[0] === p.seed.phase); await fxPut('ماژول‌های پروژه', 'cfg', {off: P0 ? P0[2].slice() : [], phase: p.seed.phase, use: '', by: activeUserName(), at: Date.now()}); try{ window.modLoad && window.modLoad(true); }catch(e){} } }catch(e){ console.warn('seed phase', e); }
+        const openChart = !!p.seed.chart;
         try{ for(const x of (p.seed.pty || [])){ if(!x || !x.n) continue; await ctrContactSave(x.n, Object.assign({}, ctrContactOf(x.n) || {}, {t: x.t, d: x.d || undefined, ro: pjPtyRole(x)})); }
           const q = Object.assign({}, p); delete q.seed; await pjSaveReg(q); }catch(e){ console.warn('seed', e); }
+        /* بعد از ساختن پروژه: چارت سازمانی باز می‌شود تا همه جایگاه و سمت بگیرند (دسترسی‌ها از سمت می‌آید) */
+        if(openChart) setTimeout(() => { try{ switchTab('tasks'); window.wsSet('org'); shrToast('پروژه آماده است؛ حالا افراد را در چارت سازمانی جای دهید تا سمت و دسترسی بگیرند'); }catch(e){} }, 800);
       }
       try{
         const L = await fxList(RULES_K, true), x = (L || []).find(r => r.id === 'cfg'), cur = Object.assign({}, (x && x.o && x.o.v) || {});
