@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115053948">
+<meta name="pm-build" content="20261115054816">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30386,6 +30386,7 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) #acM .axh-gr, :is(html,#z0) :is(body,#z1) #acM .axh-ra{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 :is(html,#z0) :is(body,#z1) #acM .axh-swl{text-decoration:none;font-size:11px;color:var(--muted);}
 @media (max-width:900px){ :is(html,#z0) :is(body,#z1) #acM .axh-gh, :is(html,#z0) :is(body,#z1) #acM .axh-r{grid-template-columns:1fr;} :is(html,#z0) :is(body,#z1) #acM .axh-gr, :is(html,#z0) :is(body,#z1) #acM .axh-ra{justify-content:flex-start;} }
+:is(html,#z0) :is(body,#z1) .ogp-acc{display:flex;flex-direction:column;gap:4px;} :is(html,#z0) :is(body,#z1) .ogp-acc > u{text-decoration:none;font-size:11.5px;font-weight:700;color:var(--muted);} :is(html,#z0) :is(body,#z1) .ogp-acc select{width:100%;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -32909,8 +32910,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(/^x:/.test(v)){ const t = v.slice(2), w = sel.closest('.lv-selw') || sel.parentElement, pk = w && w.parentElement.querySelector(':scope > .acx .acx-co');
       const co = pk ? String(pk.value || '').trim() : (cur && accXOf(who)[0] === t ? cur : '');
       if(!co || co === '__new') throw new Error('تیم بیرونی این شخص را انتخاب کنید.');
-      try{ if(typeof ctrContactOf === 'function' && typeof ctrContactSave === 'function'){ const c = ctrContactOf(co) || {}; if(c.t !== t && !(t === 'ctr' && !c.t)) await ctrContactSave(co, Object.assign({}, c, {t})); } }catch(e){}
-      if(co !== cur) await window.extSaveParty(who, co); return; }
+      if(co !== cur || accXOf(who)[0] !== t) await window.extSaveParty(who, co, t); return; }
     if(cur) await window.extSaveParty(who, ''); };
   /* الگوی پایهٔ سمت (فقط در ویرایش سمت) */
   window.tierOptHtml = cur => '<option value="">خودکار (از طرف و عنوان سمت)</option>' + [2, 7, 3, 5, 6, 8, 9].map(L => '<option value="' + L + '"' + (+cur === L ? ' selected' : '') + '>' + LEVEL_DEF[L].n + ' — ' + LEVEL_DEF[L].d + '</option>').join('');
@@ -44426,8 +44426,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const I = ogPersonInfo(n), F = spFloors();
     return '<div class="ogp-f og-pf" data-ogpform="' + esc(n) + '">'
       + (function(){ let h = ''; try{ h = window.roleSelHtml(ogRoleOf(n) || ''); }catch(e){} return h ? '<label><u>سمت در این پروژه</u>' + h.replace('<select class="u-role"', '<select class="u-role" data-ogpf="role" data-nons="1" data-was="' + esc(ogRoleOf(n) || '') + '"') + '</label>' : ''; })()
-      + (function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm) return ''; const cur = window.extPartyOf ? window.extPartyOf(n) : '', L = window.coParties ? window.coParties() : [];
-          return '<label><u>تیم بیرونی <em>برای طراح/مشاور/پیمانکار بیرونی؛ فقط اسناد همین تیم را می‌بیند</em></u><select data-ogpf="co" data-nons="1" data-was="' + esc(cur) + '"><option value="">— تیم اصلی (بدون محدودیت تیمی)</option>' + L.concat(cur && L.indexOf(cur) === -1 ? [cur] : []).map(c => '<option value="' + esc(c) + '"' + (c === cur ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>'; })()
+      /* نوع دسترسی و تیم: همان جزء مشترک «نوع دسترسی» (تیم اصلی / تیم بیرونی) — جای انتخاب تیم جدا */
+      + (function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm || isAdminName(n)) return ''; let L = 3; try{ L = lvStored(n) || 3; }catch(e){}
+          return '<div class="ogp-acc"><u>نوع دسترسی</u><span class="lv-selw"><select data-ogpf="acc" data-nons="1" data-acc-who="' + esc(n) + '" data-was="' + esc(String(L)) + '">' + window.lvOptGroups(L, n) + '</select></span></div>'; })()
       + '<label><u>سرپرست مستقیم</u><select data-ogpf="up" data-nons="1"><option value="">خودکار از سمت</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '"' + (nameKey(I.up) === nameKey(x) ? ' selected' : '') + '>' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select></label>'
       + '<label><u>تیم / گروه در چارت</u><select data-ogpf="side" data-nons="1"><option value="">خودکار از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
       + '<div class="og-fl"><u>محدودهٔ طبقات <small>برای سرپرست طبقات؛ خالی = کل پروژه</small></u><div>' + F.map(f => '<button type="button" data-ogfl="' + esc(f.key) + '" class="' + (I.fl.indexOf(f.key) !== -1 ? 'on' : '') + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div></div>'
@@ -44490,7 +44491,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const o = {side: f.querySelector('[data-ogpf="side"]').value, up: f.querySelector('[data-ogpf="up"]').value, fl: Array.from(f.querySelectorAll('[data-ogfl].on')).map(b => b.dataset.ogfl)};
       const has = o.side || o.up || o.fl.length; pv.disabled = true;
       try{ const rs = f.querySelector('[data-ogpf="role"]'); if(rs && rs.value !== (rs.dataset.was || '')){ await savePerson(n, {role: rs.value || null}); try{ await loadPeople(true); }catch(e3){} }
-        const cs = f.querySelector('[data-ogpf="co"]'); if(cs && cs.value !== (cs.dataset.was || '') && window.extSaveParty) await window.extSaveParty(n, cs.value);
+        const as = f.querySelector('[data-ogpf="acc"]'); if(as){ await window.accApply(n, as); const L2 = window.accLvOf(as); if(String(L2) !== String(as.dataset.was || '')) await savePerson(n, {level: L2}); }
         await ogSaveRow(OG_PER_KIND, n, has ? o : null); if(has) og.per.set(nameKey(n), Object.assign({n}, o)); else og.per.delete(nameKey(n)); og.ed = ''; og.pm = ''; ogRepaintChart(); try{ permRepaint(); }catch(e2){} try{ shrToast('جایگاه ' + n + ' ذخیره شد'); }catch(e2){} }
       catch(err){ pv.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     if(t.closest('[data-ogprint]')){ try{ window.print(); }catch(err){} return; }
@@ -54130,16 +54131,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      صورت وضعیت، قرارداد، نامه و سند طراحیِ همان طرف را می‌خواند. کاربران بیرونی چیزی را مستقیم
      ویرایش نمی‌کنند؛ «پیشنهاد اصلاح» می‌فرستند و مدیر پروژه می‌پذیرد یا رد می‌کند. */
   const EXT_KIND = 'حساب طرف', SUG_KIND = 'پیشنهاد اصلاح', CO_MGR_KIND = 'مدیر شرکت';
-  var extParty = new Map(), sugList = [], coMgr = new Set();
+  /* coTeamT: نوع هر تیم (cons/emp/ctr/own) که هنگام وصل کردن از «نوع دسترسی» ثبت شده (بخش سوم مقدار «حساب طرف»: کاربر¦تیم¦نوع) */
+  var extParty = new Map(), sugList = [], coMgr = new Set(), coTeamT = new Map();
   function extLoad(lists){
-    extParty.clear(); sugList = []; coMgr.clear();
+    extParty.clear(); sugList = []; coMgr.clear(); coTeamT.clear();
     (lists[CO_MGR_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i > 0) coMgr.add(nameKey(v.slice(0, i))); });
-    (lists[EXT_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i > 0) extParty.set(nameKey(v.slice(0, i)), v.slice(i + 1)); });
+    (lists[EXT_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i <= 0) return; const r = v.slice(i + 1), j = r.indexOf('¦'), co = j > 0 ? r.slice(0, j) : r; extParty.set(nameKey(v.slice(0, i)), co); if(j > 0 && r.slice(j + 1)) coTeamT.set(co, r.slice(j + 1)); });
     (lists[SUG_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i <= 0) return; try{ sugList.push(Object.assign({key: v.slice(0, i), raw: v}, JSON.parse(v.slice(i + 1)))); }catch(e){} });
     sugList.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
   }
   window.extPartyOf = n => extParty.get(nameKey(n || '')) || '';
-  window.extSaveParty = (u, p) => extSave(u, p);
+  window.extSaveParty = (u, p, t) => extSave(u, p, t);
   /* پیمانکاری که این کاربر نماینده‌اش است: از پروندهٔ پیمانکار («حساب کاربری نماینده») یا اتصال حساب بیرونی */
   function ctrOfRep(u){
     const k = nameKey(u || ''); if(!k) return '';
@@ -54200,7 +54202,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* نقشه‌های در حال بررسی تیم‌های دیگر برای این نوع تیم دیده شود؟ (قانون پروژه coDraft.نوع؛ پیش‌فرض: طراح/مشاور و کارفرما بله، پیمانکار و مالک فقط تأییدشده‌ها) */
   const CO_DRAFT_DEF = {cons: true, emp: true, ctr: false, own: false};
   window.coTypeOf = co => coTypeOf(co);
-  const coTypeOf = co => { let t = ''; try{ t = ctrTypeOf(co) || ''; }catch(e){} return CO_DRAFT_DEF.hasOwnProperty(t) ? t : 'cons'; };
+  /* نوع تیم: اول نوعی که هنگام وصل کردن انتخاب شده، بعد نوع پروندهٔ تیم؛ پیش‌فرض طراح/مشاور */
+  const coTypeOf = co => { let t = coTeamT.get(co) || ''; if(!t){ try{ t = ctrTypeOf(co) || ''; }catch(e){} } return CO_DRAFT_DEF.hasOwnProperty(t) ? t : 'cons'; };
   function coDraftOk(co){ const t = coTypeOf(co); let v = null; try{ v = window.pmRule ? window.pmRule('coDraft.' + t, '') : ''; }catch(e){} return v === '' || v == null ? CO_DRAFT_DEF[t] : (v === '1' || v === true || v === 'true'); }
   window.coDraftOk = coDraftOk;
   window.coDraftSet = async (t, on) => { const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); cur['coDraft.' + t] = on ? '1' : '0';
@@ -54455,9 +54458,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   });
   const extIsExt = () => { try{ const L = rawLevel(); return L === 4 || L === 6 || L === 8 || L === 9; }catch(e){ return false; } };
   window.extIsExt = extIsExt;
-  async function extSave(user, party){
+  async function extSave(user, party, type){
     await supaFetch('lists?kind=eq.' + encodeURIComponent(EXT_KIND) + '&value=like.' + encodeURIComponent(String(user).replace(/[*%]/g, '') + '¦*'), {method:'DELETE'}).catch(() => {});
-    if(party) await kxListAdd(EXT_KIND, user + '¦' + party);
+    if(party) await kxListAdd(EXT_KIND, user + '¦' + party + (type ? '¦' + type : '')); if(party && type) coTeamT.set(party, type);
     if(party) extParty.set(nameKey(user), party); else extParty.delete(nameKey(user));
     try{ clearNetCache(); }catch(e){}
   }
@@ -64822,7 +64825,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     contract:  [['notify','وضعیت ابلاغ'], ['party','طرف قرارداد'], ['none','بدون گروه']],
     letter:    [['none','بدون گروه'], ['notify','وضعیت ابلاغ'], ['party','طرف مکاتبه']],
     minute:    [['meet','جلسه'], ['none','بدون گروه']],
-    design:    [['floor','طبقه'], ['hold','مرحلهٔ گردش'], ['designer','طراح'], ['none','بدون گروه']]
+    design:    [['floor','طبقه'], ['disc','رشته (دیسیپلین)'], ['hold','مرحلهٔ گردش'], ['designer','طراح'], ['none','بدون گروه']]
   };
   const ADM_GRP_DEF = {statement:'notify', contract:'notify', letter:'none', minute:'meet', design:'floor'};
   function admSortOn(k){ return k !== 'minute' && admSortK(k) !== 'new-desc'; }
@@ -74067,6 +74070,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             return grpHtml('design|d:' + pn, {t: pn, c: bad ? 'bad' : (ok === l.length ? 'ok' : 'info'), av: pn === 'بدون طراح' ? '' : pn}, l, bodyHtml(l), false);
           }).join('');
       }
+      /* به تفکیک رشته (معماری، سازه، تأسیسات…): سند چندرشته‌ای زیر هر رشته‌اش می‌آید؛ ترتیب رشته‌ها همان فهرست رشته‌های سامانه */
+      if(dsGrpMode === 'disc'){
+        const by = new Map();
+        rows.forEach(r => { const D = String(pick(r, AD.dDisc) || '').split(/[،,|]/).map(x => x.trim()).filter(Boolean); (D.length ? D : ['بدون رشته']).forEach(d => { if(!by.has(d)) by.set(d, []); by.get(d).push(r); }); });
+        const dOrd = d => { const i = DESIGN_DISC.indexOf(d); return d === 'بدون رشته' ? 999 : i === -1 ? 500 : i; };
+        return tg + Array.from(by.entries()).sort((a, b) => dOrd(a[0]) - dOrd(b[0]) || a[0].localeCompare(b[0], 'fa')).map(([k, list]) => {
+          const bad = list.filter(r => dsCls(r) === 'bad').length, ok = list.filter(r => dsCls(r) === 'ok').length;
+          const gk = openP('design|dc:' + k);
+          return grpHtml(gk, {t: k, c: bad ? 'bad' : (ok === list.length ? 'ok' : 'info')}, list, dsGrpPerson ? byPerson(gk, list) : bodyHtml(list), false);
+        }).join('');
+      }
       if(dsGrpMode === 'floor'){
         const by = new Map();
         rows.forEach(r => { const k = dsFloorKeys(r)[0]; if(!by.has(k)) by.set(k, []); by.get(k).push(r); });
@@ -75164,7 +75178,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       /* زیرگروه: صورت وضعیت، قرارداد و نامه زیر وضعیت ابلاغ ← رسیدگی؛ اسناد طراحی ← طراح */
       let swOn = null, swT = '';
       if(g === 'notify' && ADM_BY_REVIEW.indexOf(k) !== -1){ swOn = admGroupMode === 'nested'; swT = 'تفکیک رسیدگی'; }
-      else if(k === 'design' && (g === 'floor' || g === 'hold')){ swOn = !!dsGrpPerson; swT = 'تفکیک طراح'; }
+      else if(k === 'design' && (g === 'floor' || g === 'hold' || g === 'disc')){ swOn = !!dsGrpPerson; swT = 'تفکیک طراح'; }
       if(sw){
         sw.hidden = swOn == null;
         if(swOn != null){
