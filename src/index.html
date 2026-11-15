@@ -38,9 +38,11 @@
 /* ====== قوانین سامانه (مرکز قوانین ادمین) ======
    هر عدد یا قاعدهٔ ثابتی که قبلاً در کد بود (مهلت‌ها، روزهای هشدار و بحرانی، ساعت گزارش…) از این‌جا خوانده می‌شود.
    مقدارها برای هر پروژه در lists «قوانین سامانه» شناسهٔ cfg ذخیره می‌شوند و رونوشتشان روی دستگاه، تا پیش از بارگذاری کد در دسترس باشند. */
-(function(){ var R = {}; try{ var pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; R = JSON.parse(localStorage.getItem('siteLogM.rules.' + pj) || '{}') || {}; }catch(e){}
-  window.__pmRules = R;
-  window.pmRule = function(k, d){ var v = R[k]; if(v === undefined || v === null || v === '') return d; if(typeof d === 'number'){ var n = +v; return isFinite(n) ? n : d; } if(typeof d === 'boolean') return v === true || v === 'true' || v === 1; return v; };
+(function(){ var R = {}, S = {}; try{ var pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; R = JSON.parse(localStorage.getItem('siteLogM.rules.' + pj) || '{}') || {}; }catch(e){}
+  /* لایهٔ پیش‌فرض همهٔ پروژه‌ها (مدیر اصلی تعیین می‌کند): قاعدهٔ پروژه ← پیش‌فرض سامانه ← مقدار کارخانه */
+  try{ S = JSON.parse(localStorage.getItem('siteLogM.rules.sys') || '{}') || {}; }catch(e){}
+  window.__pmRules = R; window.__pmSysRules = S;
+  window.pmRule = function(k, d){ var v = R[k]; if(v === undefined || v === null || v === '') v = S[k]; if(v === undefined || v === null || v === '') return d; if(typeof d === 'number'){ var n = +v; return isFinite(n) ? n : d; } if(typeof d === 'boolean') return v === true || v === 'true' || v === 1; return v; };
 })();
 </script>
 <script>
@@ -190,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115061928">
+<meta name="pm-build" content="20261115063144">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30389,6 +30391,8 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .ogp-acc{display:flex;flex-direction:column;gap:4px;} :is(html,#z0) :is(body,#z1) .ogp-acc > u{text-decoration:none;font-size:11.5px;font-weight:700;color:var(--muted);} :is(html,#z0) :is(body,#z1) .ogp-acc select{width:100%;}
 :is(html,#z0) :is(body,#z1) .ogp-ro{display:block;padding:8px 10px;border-radius:10px;background:var(--field);font-size:12px;font-weight:700;color:var(--ink);}
 :is(html,#z0) :is(body,#z1) .ivh-hint{font-size:11px;color:var(--muted);min-height:14px;} :is(html,#z0) :is(body,#z1) .ivh-hint.new{color:#2a6fa0;font-weight:700;}
+:is(html,#z0) :is(body,#z1) #acM .sys-roots{display:flex;flex-wrap:wrap;gap:8px;} :is(html,#z0) :is(body,#z1) #acM .sys-root{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:var(--field);font-size:12.5px;}
+:is(html,#z0) :is(body,#z1) #acM .sys-root.add input{border:0;background:transparent;min-width:200px;font:inherit;outline:none;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -32832,19 +32836,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   })();
 
   // سمت هر نفر در پروژه
-  const ROLE_OF = {
-    'آقای حیدرنیا':'مدیریت پروژه',
-    'آقای خان احمدی':'سرپرست کارگاه',
-    'آقای علی خداپناهی':'سرپرست مشاعات',
-    'آقای خداپناهی':'سرپرست مشاعات',
-    'آقای مهدی اسلامی':'مهندس اجرا',
-    'آقای سامین خواجه‌زاده':'مهندس اجرا',
-    'آقای عرفان حیدری':'مهندس اجرا',
-    'آقای پارسا محمودی':'مهندس اجرا',
-    'آقای امیر ابراهیمی':'امور قراردادی',
-    'آقای مهدی نعیمی':'کنترل پروژه',
-    'خانم سپیده کریمیان':'دفتر فنی پروژه'
-  };
+  /* سمت هر نفر فقط از حسابش (people.role) یا عضویت پروژه می‌آید؛ جدول ثابت «نام → سمت» حذف شد (۳۷۰، مهاجرت در system_owner.sql) */
   /* ====== سطوح دسترسی ======
      ۱ ادمین کل · ۲ مدیریت (ابلاغ فعالیت) · ۳ کاربر عادی · ۴ فقط مشاهده */
   /* نقش‌ها به‌جای شمارهٔ خالی (مثل سامانه‌های بزرگ مدیریت پروژه): هر نقش
@@ -32959,6 +32951,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function levelOf(name){
     if(isAdminName(name)) return 1;
     const st = lvStored(name); if(st === 1) return 1; if(st === 4) return 4;
+    /* عضو تیم بیرونی: سطح از نوع تیمش، نه از سمتش (سمت «مدیر طراحی» یک طراح بیرونی او را مدیر پروژه نمی‌کند) */
+    try{ const co = window.extPartyOf ? window.extPartyOf(name) : ''; if(co){ const ty = window.coTypeOf ? window.coTypeOf(co) : 'cons'; return ty === 'ctr' ? 8 : ty === 'own' ? 9 : 6; } }catch(e){}
     let rl = ''; try{ rl = roleOf(name) || ''; }catch(e){}
     const t = posTierOf(rl); if(t) return t;
     return st || 3;
@@ -33375,9 +33369,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(r && r !== '—') return r;
       if(row && r === '—') return '';
     }catch(e){}
-    const k = nameKey(name);
-    const hit = Object.keys(ROLE_OF).find(n => nameKey(n) === k);
-    return hit ? ROLE_OF[hit] : '';
+    return '';
   }
 
   /* ====== تعطیلات رسمی ایران ======
@@ -33586,12 +33578,22 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   })();
 
   /* ====== اعلان‌ها و تلنگر ====== */
-  const ADMIN_USERS = ['آقای مهدی نعیمی'];
+  /* مدیران اصلی سامانه: از سرور (lists «مدیر اصلی سامانه»، سراسری) و رونوشتش روی دستگاه؛ ROOT_SEED فقط تا وقتی system_owner.sql اجرا نشده (فهرست سرور خالی است) */
+  const ROOT_K = 'مدیر اصلی سامانه', ROOT_SEED = ['آقای مهدی نعیمی'];
+  const ADMIN_USERS = (function(){ try{ const c = JSON.parse(localStorage.getItem('siteLogM.roots') || 'null'); if(Array.isArray(c) && c.length) return c.map(String); }catch(e){} return ROOT_SEED.slice(); })();
+  window.rootsLoad = lists => { const L = ((lists && lists[ROOT_K]) || []).map(v => String(v || '').trim()).filter(Boolean); if(!L.length) return;
+    ADMIN_USERS.length = 0; L.forEach(x => ADMIN_USERS.push(x)); try{ localStorage.setItem('siteLogM.roots', JSON.stringify(L)); }catch(e){} };
+  window.rootsList = () => ADMIN_USERS.slice();
+  window.rootSet = async (name, on) => { if(!isRootUser()) throw new Error('فقط مدیر اصلی سامانه.'); name = String(name || '').trim(); if(!name) return;
+    if(!on && ADMIN_USERS.length <= 1) throw new Error('دست‌کم یک مدیر اصلی لازم است.');
+    if(on) await supaFetch('lists', {method: 'POST', headers: {'Prefer': 'resolution=ignore-duplicates'}, body: [{kind: ROOT_K, value: name, project_id: '*'}]});
+    else await supaFetch('lists?kind=eq.' + encodeURIComponent(ROOT_K) + '&value=eq.' + encodeURIComponent(name), {method: 'DELETE'});
+    const i = ADMIN_USERS.findIndex(x => nameKey(x) === nameKey(name)); if(on && i === -1) ADMIN_USERS.push(name); if(!on && i !== -1) ADMIN_USERS.splice(i, 1);
+    try{ localStorage.setItem('siteLogM.roots', JSON.stringify(ADMIN_USERS)); }catch(e){} };
   const isAdminName = n => ADMIN_USERS.some(x => nameKey(x) === nameKey(n)) || (function(){ try{ return !!(window.__pjAdm && window.__pjAdm(n)); }catch(e){ return false; } })();
   const isAdminUser = () => isAdminName(activeUserName());
   /* کاربر صفر: اولین نام فهرست ادمین‌ها (آقای مهدی نعیمی) — بالاتر از هر ادمین دیگر؛ کسی جز خودش نمی‌تواند سطح یا اجازه‌هایش را عوض کند */
-  const ROOT_USER = ADMIN_USERS[0];
-  const isRootName = n => !!n && nameKey(n) === nameKey(ROOT_USER);
+  const isRootName = n => !!n && ADMIN_USERS.some(x => nameKey(x) === nameKey(n));
   function isRootUser(){ try{ return isRootName(activeUserName()); }catch(e){ return false; } }
   window.isRootUser = isRootUser; window.isRootName = isRootName;
   /* بعد از بار شدن کامل اسکریپت (یکسان‌سازی نام‌ها پایین‌تر تعریف شده) */
@@ -43153,6 +43155,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     ['مالی مشاور', 'cons', 'مالی', 'مشاور / ناظر', ['tab.admin', 'rep.adm']],
     ['نمایندهٔ پیمانکار', 'ctr', 'پیمانکار', '', ['qc.request']]
   ].map(([n, side, dept, up, tpl]) => ({n, side, dept, up, tpl}));
+  /* «مدیریت طرح» در تیم مدیریت: هم‌تراز مدیریت پروژه و با همان الگوی اجازه‌ها (تکرار نشده؛ از همان ردیف گرفته می‌شود) */
+  { const pmRow = OG_DEF.find(x => x.n === 'مدیریت پروژه'); if(pmRow && !OG_DEF.some(x => x.n === 'مدیریت طرح')) OG_DEF.splice(1, 0, {n: 'مدیریت طرح', side: 'pm', dept: 'مدیریت', up: '', tpl: pmRow.tpl.slice()}); }
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   window.OG_DEF_NAMES = () => OG_DEF.map(x => x.n);
   window.__ogDbg = () => og;
@@ -51578,6 +51582,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     ['پیام و جلسات', [['msgEditH', 'مهلت ویرایش پیام', 24, '', 'ساعت'], ['mgDays', 'بازهٔ نمایش جلسات و یادداشت‌ها', 14, '', 'روز']]],
     ['امنیت', [['pwMin', 'کمترین طول رمز عبور', 8, '', 'نویسه'], ['idleDays', 'خروج خودکار پس از چند روز بی‌استفاده', 60, '', 'روز']]]];
   async function rulesLoad(){ try{ const L = await fxList(RULES_K, true); const x = (L || []).find(r => r.id === 'cfg'); const o = (x && x.o && x.o.v) || {};
+      try{ const y = (L || []).find(r => r.id === 'sys'), so = (y && y.o && y.o.v) || {}; const S = window.__pmSysRules; Object.keys(S).forEach(k => delete S[k]); Object.assign(S, so); localStorage.setItem('siteLogM.rules.sys', JSON.stringify(so)); }catch(e){}
       const pj = (function(){ try{ return pjHdrId(); }catch(e){ return 'p1'; } })(); try{ localStorage.setItem('siteLogM.rules.' + pj, JSON.stringify(o)); }catch(e){} return o; }catch(e){ return null; } }
   setTimeout(rulesLoad, 4000);
   window.rulesOpen = async function(){
@@ -51967,7 +51972,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             + '<span class="sys-pa"><button type="button" class="mini" data-sysgo="' + esc(p.id) + '"' + (p.id === PJ.cur ? ' disabled' : '') + '>ورود</button>'
             + (p.id !== 'p1' ? '<button type="button" class="mini" data-sysmem="' + esc(p.id) + '">اعضا</button>' : '')
             + '<button type="button" class="mini go" data-sysho="' + esc(p.id) + '">واگذاری مدیریت</button></span></div>'; }).join('') + '</div></section>'
-      + '<section class="ac-box"><div class="ac-bh"><b>مدیران</b></div><div class="sys-adm"><p>مدیر اصلی سامانه: <b>' + esc(ADMIN_USERS[0] || '') + '</b> — در همهٔ پروژه‌ها به همه‌چیز دسترسی دارد. «واگذاری مدیریت» یک نفر را مدیر کامل همان پروژه می‌کند (همهٔ بخش‌ها و تنظیمات آن پروژه)، بی‌آنکه به پروژه‌های دیگر راه پیدا کند.</p></div></section>';
+      + '<section class="ac-box"><div class="ac-bh"><b>مدیران اصلی سامانه</b><small>همهٔ پروژه‌ها و همهٔ اختیارات؛ دست‌کم یک نفر</small></div><div class="sys-roots">' + window.rootsList().map(r => '<span class="sys-root">' + avatarHtml(r, 'xs', true) + '<b>' + esc(r) + '</b>' + (window.rootsList().length > 1 ? '<button type="button" class="mini bad" data-rootdel="' + esc(r) + '">برداشتن</button>' : '') + '</span>').join('')
+        + '<span class="sys-root add"><input data-rootn="1" list="sysRootL" placeholder="افزودن مدیر اصلی…" autocomplete="off"><datalist id="sysRootL">' + (window.listNamesAll ? window.listNamesAll() : []).map(a => '<option value="' + esc(a) + '">').join('') + '</datalist><button type="button" class="mini go" data-rootadd="1">افزودن</button></span></div></section>'
+      + '<section class="ac-box"><div class="ac-bh"><b>مدیران</b></div><div class="sys-adm"><p>مدیر اصلی سامانه: <b>' + esc(window.rootsList().join('، ')) + '</b> — در همهٔ پروژه‌ها به همه‌چیز دسترسی دارد. «واگذاری مدیریت» یک نفر را مدیر کامل همان پروژه می‌کند (همهٔ بخش‌ها و تنظیمات آن پروژه)، بی‌آنکه به پروژه‌های دیگر راه پیدا کند.</p></div></section>';
     try{ const r = await supaRpc('pm_portfolio', {}); const L = (r && r.projects) || [];
       L.forEach(x => { const el = body.querySelector('[data-sysst="' + CSS.escape(x.id) + '"]'); if(!el) return; const docs = (+x.statements || 0) + (+x.contracts || 0) + (+x.letters || 0) + (+x.minutes || 0);
         el.innerHTML = [['گزارش', x.activities], ['فعالیت', x.tasks], ['سند', docs], ['RFI باز', x.rfi_open], ['ریسک بالا', x.risk_hi]].filter(([, v]) => +v).map(([t, v]) => '<i>' + toFa(v) + ' ' + t + '</i>').join('') || '<em>هنوز داده‌ای ندارد</em>'; });
@@ -51976,6 +51983,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   document.addEventListener('click', async e => {
     const t = e.target; if(!t.closest || !t.closest('#acM')) return;
+    const rd = t.closest('[data-rootdel], [data-rootadd]'); if(rd){ e.preventDefault(); let n = rd.dataset.rootdel || '';
+      if(!n){ const v = String((rd.parentElement.querySelector('[data-rootn]') || {}).value || '').trim(); n = (window.listNamesAll ? window.listNamesAll() : []).find(a => nameKey(a) === nameKey(v)) || ''; if(!n){ showDialog('warn', 'حساب پیدا نشد', 'نام را از فهرست حساب‌ها انتخاب کنید.'); return; } }
+      else if(!(await askConfirm('برداشتن مدیر اصلی', n + ' دیگر مدیر اصلی سامانه نیست.', 'برداشتن'))) return;
+      try{ await window.rootSet(n, !rd.dataset.rootdel); shrToast('ثبت شد'); acPaint(); }catch(er){ showDialog('err', 'ثبت نشد', friendlyErr(er)); } return; }
     const go = t.closest('[data-sysgo]'); if(go){ e.preventDefault(); try{ window.pjSwitchTo(go.dataset.sysgo); }catch(er){} return; }
     const ho = t.closest('[data-sysho]'); if(ho){ e.preventDefault(); const pid = ho.dataset.sysho, p = (window.pjAllList() || []).find(x => x.id === pid) || {};
       const m = fxModal('sysHoM', 'واگذاری مدیریت «' + (p.name || pid) + '»', 'شخص انتخاب‌شده در همین پروژه مدیر کامل می‌شود: همهٔ بخش‌ها، تنظیمات، افراد و چارت همین پروژه. به پروژه‌های دیگر دسترسی پیدا نمی‌کند و شما (مدیر اصلی) همیشه دسترسی دارید.', '', false);
@@ -54258,6 +54269,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const CO_TYPES = [['cons', 'طراحان و مشاوران'], ['emp', 'کارفرما'], ['ctr', 'پیمانکاران'], ['own', 'مالک و سرمایه‌گذار']];
   const coCapsOf = t => { let v = ''; try{ v = window.pmRule ? window.pmRule('coCaps.' + t, '') : ''; }catch(e){} return v ? String(v).split(',').filter(Boolean) : null; };
   window.coCapOk = (k, co) => { const L = coCapsOf(coTypeOf(co)); return L ? L.indexOf(k) !== -1 : CO_OK.test(k); };
+  /* پیش‌فرض همهٔ پروژه‌ها (فقط مدیر اصلی): ردیف sys در «قوانین سامانه» با project_id='*' */
+  async function sysRuleSet(patch){ if(!isRootUser()) throw new Error('فقط مدیر اصلی سامانه.');
+    const L = await fxList('قوانین سامانه', true); const y = (L || []).find(r => r.id === 'sys'); const cur = Object.assign({}, (y && y.o && y.o.v) || {}, patch); Object.keys(cur).forEach(k => { if(cur[k] === null) delete cur[k]; });
+    await supaFetch('lists?kind=eq.' + encodeURIComponent('قوانین سامانه') + '&value=like.' + encodeURIComponent('sys¦*'), {method: 'DELETE'}).catch(() => {});
+    await supaFetch('lists', {method: 'POST', body: [{kind: 'قوانین سامانه', value: 'sys¦' + JSON.stringify({v: cur, by: activeUserName(), at: Date.now()}), project_id: '*'}]});
+    try{ const S = window.__pmSysRules; Object.keys(S).forEach(k => delete S[k]); Object.assign(S, cur); localStorage.setItem('siteLogM.rules.sys', JSON.stringify(cur)); }catch(e){} }
+  window.sysRuleSet = sysRuleSet;
   async function coRuleSet(patch){ const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}, patch);
     Object.keys(cur).forEach(k => { if(cur[k] === null) delete cur[k]; });
     await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.keys(window.__pmRules).forEach(k => delete window.__pmRules[k]); Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
@@ -54282,6 +54300,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* «کاربر دیگر»: برگشت به حساب خودم و باز شدن خودکار انتخاب‌گر */
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-vastop]')){ window.viewAsStop(); } else if(e.target.closest && e.target.closest('[data-vapick]')){ try{ sessionStorage.setItem('siteLogM.vaPick', '1'); }catch(er){} window.viewAsStop(); } }, true);
   setTimeout(() => { try{ if(sessionStorage.getItem('siteLogM.vaPick') === '1' && !window.viewAsOn()){ sessionStorage.removeItem('siteLogM.vaPick'); window.viewAsPick(); } }catch(e){} }, 4000);
+  const corSysBtn = () => { let r = false; try{ r = isRootUser(); }catch(e){} return r ? '<button type="button" class="mini" data-corsys="1" title="این تنظیم پیش‌فرض همهٔ پروژه‌ها می‌شود؛ پروژه‌ای که خودش تنظیم دارد دست نمی‌خورد">پیش‌فرض همهٔ پروژه‌ها</button>' : ''; };
   window.coRulesOpen = function(tab, sec0){
     tab = tab || 'cons'; let sec = sec0 === 'in' ? 'in' : 'out';
     const caps = (typeof PERM_CAPS !== 'undefined' ? PERM_CAPS : []).filter(c => c.g !== 'سامانه');
@@ -54293,11 +54312,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + (sec === 'in' ? (function(){ const IN = caps.filter(c => /^(tab\.tasks|task\.|deck\.|alert\.|remind\.|write\.editOwn|leave\.|org\.team|mgr\.|notif\.)/.test(c.k));
             return '<p class="cor-h">در «فضای تیم» هر تیم فقط اعضای خودش را می‌بیند. این‌جا تعیین می‌کنید سرپرست تیم و اعضای عادی در فضای تیمشان چه کارهایی بکنند.</p>'
               + '<table class="cor-t"><thead><tr><th>کار</th><th>سرپرست تیم</th><th>عضو تیم</th></tr></thead><tbody>' + IN.map(c => '<tr><td><b>' + esc(c.t) + '</b>' + (c.d ? '<small>' + esc(c.d) + '</small>' : '') + '</td><td><input type="checkbox" data-corin="mgr" data-k="' + esc(c.k) + '"' + (window.coSpOn('mgr', tab, c.k) ? ' checked' : '') + '></td><td><input type="checkbox" data-corin="mem" data-k="' + esc(c.k) + '"' + (window.coSpOn('mem', tab, c.k) ? ' checked' : '') + '></td></tr>').join('') + '</tbody></table>'
-              + '<div class="cor-f"><button type="button" class="mini" data-cordef="1">بازگشت به پیش‌فرض</button><button type="button" class="mini go" data-corsave="1">ذخیره</button></div>'; })() : '')
+              + '<div class="cor-f"><button type="button" class="mini" data-cordef="1">بازگشت به پیش‌فرض</button>' + corSysBtn() + '<button type="button" class="mini go" data-corsave="1">ذخیره</button></div>'; })() : '')
         + (sec === 'in' ? '' : '<p class="cor-h">کسی که به تیمی از این نوع وصل است در فضای پروژه فقط همین کارها را می‌تواند، و فقط روی اسناد تیم خودش. تیم اصلی (بی‌اتصال) دست نمی‌خورد.</p>')
         + (sec === 'in' ? '' : '<label class="cor-d"><input type="checkbox" data-cordraft="1"' + (coDraftOk2(tab) ? ' checked' : '') + '><span><b>نقشه‌های در حال بررسی تیم‌های دیگر را هم ببیند</b><small>خاموش: فقط نقشه‌های خودش و نقشه‌های تأییدشده</small></span></label>'
         + '<div class="cor-g">' + Array.from(G.entries()).map(([g, A]) => '<section><h5>' + esc(g) + '</h5>' + A.map(c => '<label><input type="checkbox" data-corcap="' + esc(c.k) + '"' + (on(c.k) ? ' checked' : '') + '><span>' + esc(c.t) + '</span></label>').join('') + '</section>').join('') + '</div>'
-        + '<div class="cor-f"><button type="button" class="mini" data-cordef="1">بازگشت به پیش‌فرض</button><button type="button" class="mini go" data-corsave="1">ذخیره</button></div>')
+        + '<div class="cor-f"><button type="button" class="mini" data-cordef="1">بازگشت به پیش‌فرض</button>' + corSysBtn() + '<button type="button" class="mini go" data-corsave="1">ذخیره</button></div>')
         + '<section class="cor-l"><h5>افراد وصل‌شده از این نوع <em>' + toFa(linked.length) + '</em></h5>' + (linked.length ? linked.map(([n, p]) => '<div>' + avatarHtml(n, 'xs', true) + '<b>' + esc(n) + '</b><small>' + esc(p) + '</small><label class="cor-m"><input type="checkbox" data-cormgr="' + esc(n) + '"' + (window.coIsMgr(n) ? ' checked' : '') + '> سرپرست تیم</label><button type="button" class="mini" data-corunl="' + esc(n) + '">برداشتن اتصال</button></div>').join('') : '<small>کسی وصل نیست. اتصال از دعوت، «کاربران» یا ✎ روی کارت چارت.</small>') + '</section></div>';
     };
     const m = fxModal('corM', 'دسترسی تیم‌های بیرونی', 'محدودیت‌های طراحان، مشاوران، کارفرما و پیمانکاران بیرونی؛ برای هر پروژه جدا', paint(), true), B = m.querySelector('.fx-bd');
@@ -54307,6 +54326,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const sc = e.target.closest('[data-corsec]'); if(sc){ sec = sc.dataset.corsec; B.innerHTML = paint(); return; }
       if(e.target.closest('[data-cordef]')){ await coRuleSet(sec === 'in' ? {['coSpMgr.' + tab]: null, ['coSpMem.' + tab]: null} : {['coCaps.' + tab]: null, ['coDraft.' + tab]: null}); B.innerHTML = paint(); shrToast('به پیش‌فرض برگشت'); return; }
       const u = e.target.closest('[data-corunl]'); if(u){ if(!(await askConfirm('برداشتن اتصال', u.dataset.corunl + ' دیگر محدود به تیم نیست و مثل تیم اصلی دسترسی می‌گیرد.', 'برداشتن'))) return; await window.extSaveParty(u.dataset.corunl, ''); B.innerHTML = paint(); return; }
+      const sy = e.target.closest('[data-corsys]'); if(sy){ const g = r => Array.from(B.querySelectorAll('[data-corin="' + r + '"]:checked')).map(x => x.dataset.k).join(',');
+        const patch = sec === 'in' ? {['coSpMgr.' + tab]: g('mgr'), ['coSpMem.' + tab]: g('mem')} : {['coCaps.' + tab]: Array.from(B.querySelectorAll('[data-corcap]:checked')).map(x => x.dataset.corcap).join(','), ['coDraft.' + tab]: B.querySelector('[data-cordraft]').checked ? '1' : '0'};
+        if(!(await askConfirm('پیش‌فرض همهٔ پروژه‌ها', 'این تنظیم برای همهٔ پروژه‌هایی که خودشان تنظیم جدا ندارند اعمال می‌شود.', 'ثبت'))) return;
+        sy.disabled = true; try{ await sysRuleSet(patch); shrToast('پیش‌فرض همهٔ پروژه‌ها ثبت شد'); }catch(er){ showDialog('err', 'ثبت نشد', friendlyErr(er)); } finally{ sy.disabled = false; } return; }
       const sv = e.target.closest('[data-corsave]'); if(!sv) return; sv.disabled = true;
       if(sec === 'in'){ const g = r => Array.from(B.querySelectorAll('[data-corin="' + r + '"]:checked')).map(x => x.dataset.k).join(',');
         try{ await coRuleSet({['coSpMgr.' + tab]: g('mgr'), ['coSpMem.' + tab]: g('mem')}); shrToast('دسترسی داخل تیم ذخیره شد'); }catch(er){ showDialog('err', 'ثبت نشد', friendlyErr(er)); } finally{ sv.disabled = false; } return; }
@@ -54322,7 +54345,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const A = (function(){ try{ return listNames(); }catch(e){ return []; } })().filter(n => { try{ return !isRootName(n); }catch(e){ return true; } });
     const cnt = {}; A.forEach(n => { const k = (window.accOf ? window.accOf(n) : {k: 'none'}).k; cnt[k] = (cnt[k] || 0) + 1; });
     const T = {}; CO_TYPES.forEach(([t]) => { T[t] = {n: 0, m: 0}; }); extParty.forEach((p, u) => { const t = coTypeOf(p); if(!T[t]) return; T[t].n++; if(coMgr.has(u)) T[t].m++; });
-    const rule = k => { try{ const v = window.pmRule ? window.pmRule(k, '') : ''; return v != null && v !== ''; }catch(e){ return false; } };
+    /* «سفارشی» یعنی همین پروژه تنظیم خودش را دارد (نه پیش‌فرض سامانه) */
+    const rule = k => { try{ const v = (window.__pmRules || {})[k]; return v != null && v !== ''; }catch(e){ return false; } };
     let pos = 0; try{ pos = ogPositions().filter(x => !x.off).length; }catch(e){}
     let q = 0; try{ q = dqDesigns().filter(x => dqExt(x.row) && DQ_OPEN.indexOf(dqSt(x.row)) !== -1).length; }catch(e){}
     const nExt = Object.keys(T).reduce((a, t) => a + T[t].n, 0), nMgr = Object.keys(T).reduce((a, t) => a + T[t].m, 0);
@@ -60383,7 +60407,6 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(pkStaffCache && Date.now() - pkStaffAt < 4000) return pkStaffCache;
     const st = new Set();
     try{ listNames().forEach(n => st.add(nameKey(n))); }catch(e){}
-    try{ Object.keys(ROLE_OF).forEach(n => st.add(nameKey(n))); }catch(e){}
     pkStaffCache = st; pkStaffAt = Date.now();
     return st;
   }
@@ -63005,6 +63028,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       try{ sphLoad(lists); }catch(e2){}
       try{ ptyAvaLoad(lists); }catch(e2){}
       try{ extLoad(lists); }catch(e2){}
+      try{ window.rootsLoad(lists); }catch(e2){}
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
@@ -76854,7 +76878,6 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function isStaffName(n){
     const k = nameKey(n || ''); if(!k) return false;
     try{ if(listNames().some(x => nameKey(x) === k)) return true; }catch(e){}
-    try{ if(Object.keys(ROLE_OF).some(x => nameKey(x) === k)) return true; }catch(e){}
     return false;
   }
   function staffResolve(n){
@@ -80750,7 +80773,6 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function taskPeopleSplit(people, forced){
     const staff = new Set();
     try{ listNames().forEach(n => staff.add(nameKey(n))); }catch(e){}
-    try{ Object.keys(ROLE_OF).forEach(n => staff.add(nameKey(n))); }catch(e){}
     const isForced = p => !!(forced && forced.has(p) && !staff.has(nameKey(p)));
     const isOut = p => p !== 'بدون مسئول' && (p === 'کارفرما' || isForced(p)
       || (!staff.has(nameKey(p)) && (people.get(p) || []).some(r => r.__offsite)));
