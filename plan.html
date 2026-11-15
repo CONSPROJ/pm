@@ -38,7 +38,7 @@
   td input:hover{border-color:var(--line);} td input:focus{background:var(--surface);}
   td.n{width:34px;color:var(--muted);text-align:center;font-size:11px;} td.c{width:54px;color:var(--muted);font-size:11px;direction:ltr;text-align:end;}
   td.nm{min-width:220px;} .nmw{display:flex;align-items:center;gap:2px;} .tg{all:unset;cursor:pointer;width:16px;text-align:center;color:var(--muted);flex:none;font-size:10px;} .tg.x{visibility:hidden;}
-  td.d{width:58px;} td.dt{width:92px;} td.pr{width:120px;} td.pc{width:62px;} td.fl{width:50px;text-align:center;color:var(--muted);} td.bd{width:110px;} td.ct{width:120px;}
+  td.d{width:58px;} td.dt{width:92px;} td.pr{width:120px;} td.pc{width:62px;} td.fl{width:50px;text-align:center;color:var(--muted);} td.bd{width:110px;} td.ct{width:120px;} td.ow{width:150px;} td.ow input{color:var(--ink,inherit);}
   td.ro{color:var(--muted);padding:0 9px;}
   .fl0{color:var(--crit) !important;font-weight:800;}
   .gh{position:sticky;top:0;z-index:3;height:44px;background:var(--surface);border-bottom:1px solid var(--line);}
@@ -89,7 +89,7 @@
   .tk-l{display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto;background:var(--surface);border-radius:10px;padding:6px;margin-bottom:8px;} .tk-l label{display:flex;gap:8px;align-items:flex-start;padding:5px;border-radius:8px;cursor:pointer;} .tk-l label:hover{background:var(--field);} .tk-l input{height:auto;margin-top:3px;} .tk-l b{font-size:12px;display:block;} .tk-l small{font-size:10.5px;color:var(--muted);}
   .io + .io{margin-top:10px;}
   .empty{padding:40px 20px;text-align:center;color:var(--muted);line-height:2;}
-  @media (max-width:900px){ .main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,1fr);} .split{display:none;} .top .hide-s{display:none;} td.bd, td.ct, th.bd, th.ct, td.pr, th.pr, td.vr, th.vr{display:none;} .fb input{width:100%;} }
+  @media (max-width:900px){ .main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,1fr);} .split{display:none;} .top .hide-s{display:none;} td.bd, td.ct, th.bd, th.ct, td.ow, th.ow, td.pr, th.pr, td.vr, th.vr{display:none;} .fb input{width:100%;} }
   @media print{ body{height:auto;overflow:visible;} .top, .st, .split, .kp .noprint{display:none !important;} .main{display:block;} .tw, .gw{overflow:visible;} .gw{page-break-before:always;} }
 </style>
 </head>
@@ -117,11 +117,11 @@
   <button class="btn" data-a="hist">سابقه</button>
   <button class="btn hide-s" data-a="io">ورود / خروج (MSP)</button>
 </div>
-<div class="fb"><span class="seg" id="flt"><button class="btn on" data-flt="all">همه</button><button class="btn" data-flt="crit">بحرانی</button><button class="btn" data-flt="late">عقب از برنامه</button><button class="btn" data-flt="prog">در جریان</button><button class="btn" data-flt="res">با منبع</button></span><input id="fq" type="search" placeholder="جست‌وجوی فعالیت یا پیمانکار…"></div>
+<div class="fb"><span class="seg" id="flt"><button class="btn on" data-flt="all">همه</button><button class="btn" data-flt="crit">بحرانی</button><button class="btn" data-flt="late">عقب از برنامه</button><button class="btn" data-flt="prog">در جریان</button><button class="btn" data-flt="res">با منبع</button></span><input id="fq" type="search" placeholder="جست‌وجوی فعالیت، پیمانکار یا مسئول…"></div>
 <div class="kp" id="kp"></div>
 <div class="main" id="main">
   <div class="tw" id="tw"><table><thead><tr>
-    <th></th><th>کد</th><th>نام فعالیت</th><th>مدت</th><th>شروع</th><th>پایان</th><th class="vr" title="انحراف پایان از خط مبنا (روز کاری)؛ نقطهٔ قرمز = عقب از برنامه در تاریخ وضعیت">انحراف</th><th class="pr">پیش‌نیاز</th><th>پیشرفت</th><th title="شناوری کل (روز کاری)">شناوری</th><th class="bd">بودجه (تومان)</th><th class="ct">منابع (پیمانکار ×نفر)</th>
+    <th></th><th>کد</th><th>نام فعالیت</th><th>مدت</th><th>شروع</th><th>پایان</th><th class="vr" title="انحراف پایان از خط مبنا (روز کاری)؛ نقطهٔ قرمز = عقب از برنامه در تاریخ وضعیت">انحراف</th><th class="pr">پیش‌نیاز</th><th>پیشرفت</th><th class="ow" title="شخص، پیمانکار یا سازمان مسئول فعالیت">مسئول</th><th title="شناوری کل (روز کاری)">شناوری</th><th class="bd">بودجه (تومان)</th><th class="ct">منابع (پیمانکار ×نفر)</th>
   </tr></thead><tbody id="tb"></tbody></table></div>
   <div class="split" id="split"></div>
   <div class="gw" id="gw"><div class="gh" id="gh"></div><div class="gb" id="gb"></div></div>
@@ -235,7 +235,7 @@ async function flush0(){
     cpmPublish();
   }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد: ' + String(e.message || e).slice(0, 80); if(S.auto) setTimeout(flush, 5000); draftSave(); }
 }
-const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0});
+const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0, ow: Array.isArray(a.ow) ? a.ow : []});
 
 /* ---------- تقویم کاری ---------- */
 let CAL = null;
@@ -327,10 +327,11 @@ function render(){
       + (function(){ const v = sum ? null : blVar(a, r), lt = sum ? 0 : lateOf(a, r); return '<td class="vr' + (v > 0 || lt > 10 ? ' bad' : '') + '" title="' + (v != null ? 'انحراف پایان از خط مبنا: ' + toFa(v) + ' روز کاری' : 'خط مبنا ندارد') + (lt ? ' · ' + toFa(lt) + '٪ عقب از برنامه' : '') + '">' + (v == null ? '' : (v > 0 ? '+' : '') + toFa(v)) + (lt > 10 ? '<i>●</i>' : '') + '</td>'; })()
       + (sum ? '<td class="pr ro"></td>' : '<td class="pr">' + inp('dep', toFa(depTxt(a, num)), '', ' placeholder="—" title="شمارهٔ ردیف پیش‌نیاز؛ مثلاً ۳ یا ۲SS+۱" dir="ltr"') + '</td>')
       + (sum ? '<td class="ro">' + toFa(Math.round(C.pcOf(a))) + '٪</td>' : '<td class="pc">' + inp('pc', toFa(a.pc || 0), '', ' inputmode="numeric"') + '</td>')
+      + '<td class="ow">' + (sum ? '' : inp('ow', owTxt(a), '', ' list="owDl" placeholder="—" title="' + esc(owTip(a) || 'افراد پروژه، شرکت‌ها یا سازمان‌ها؛ چندتا با ویرگول') + '"')) + '</td>'
       + '<td class="fl' + (r.tf <= 0 ? ' fl0' : '') + '">' + toFa(r.tf) + '</td>'
       + (sum ? '<td class="bd ro">' + money(C.bOf(a)) + '</td>' : '<td class="bd">' + inp('b', a.b ? toFa(Math.round(a.b).toLocaleString('en-US')) : '', '', ' inputmode="numeric" dir="ltr"') + '</td>')
       + '<td class="ct">' + (sum ? '' : inp('rs', rsTxt(a), '', ' list="ctrDl" placeholder="—" title="مثلاً: پیمانکار اسکلت ×۸، پیمانکار برق ×۲"')) + '</td></tr>'; }).join('')
-    : '<tr><td colspan="12"><div class="empty">هنوز فعالیتی نیست.<br>' + (ed ? '«+ فعالیت» بزنید یا یک برنامهٔ آماده بسازید.<br><button class="btn pri" data-a="tpl" style="margin-top:10px">ساختن از قالب ساختمانی</button>' : 'برنامه‌ای ثبت نشده است.') + '</div></td></tr>';
+    : '<tr><td colspan="13"><div class="empty">هنوز فعالیتی نیست.<br>' + (ed ? '«+ فعالیت» بزنید یا یک برنامهٔ آماده بسازید.<br><button class="btn pri" data-a="tpl" style="margin-top:10px">ساختن از قالب ساختمانی</button>' : 'برنامه‌ای ثبت نشده است.') + '</div></td></tr>';
   renderGantt(rows); renderKp(); tkBadge(); saveUI();
   $('#ste').textContent = S.err;
   $('#stl').textContent = toFa(C.leaves.length) + ' فعالیت · پایان پروژه ' + d2fa(wDay(C.pEnd - 1)) + ' · ' + toFa(C.pEnd - C.s0) + ' روز کاری' + (S.ro ? ' · فقط خواندنی' : '');
@@ -375,7 +376,7 @@ function renderGantt(rows){
     if(isMs) bars += '<div class="bar ms' + (cr ? ' crit' : '') + '" data-bar="' + a.id + '" style="top:' + (top + 10) + 'px;right:' + (right - 7) + 'px" title="' + esc(a.n) + ' · ' + d2fa(ds) + '"></div>';
     else bars += '<div class="bar' + (sum ? ' sum' : cr ? ' crit' : '') + '" data-bar="' + a.id + '" style="top:' + (top + (sum ? 13 : 9)) + 'px;right:' + right + 'px;width:' + width + 'px" title="' + esc(a.n) + ' · ' + d2fa(ds) + ' تا ' + d2fa(de - 1) + ' · شناوری ' + toFa(r.tf) + '">'
       + (sum ? '' : '<i class="pg" style="width:' + Math.min(100, +a.pc || 0) + '%"></i>' + (S.ro ? '' : '<i class="rz" data-rz="' + a.id + '"></i>')) + '</div>';
-    bars += '<div class="lbl" style="top:' + (top + 9) + 'px;right:' + (right + width + 8) + 'px">' + esc(a.n) + (rsOf(a).length ? ' · ' + esc(rsTxt(a)) : '') + '</div>'; });
+    bars += '<div class="lbl" style="top:' + (top + 9) + 'px;right:' + (right + width + 8) + 'px">' + esc(a.n) + (rsOf(a).length ? ' · ' + esc(rsTxt(a)) : owOf(a).length ? ' · ' + esc(owTxt(a)) : '') + '</div>'; });
   rows.forEach(x => (x.a.dep || []).forEach(dp => { const p = pos.get(dp.id), s = pos.get(x.a.id); if(!p || !s) return;
     const cr = (C.R.get(x.a.id) || {}).tf <= 0 && (C.R.get(dp.id) || {}).tf <= 0 && !C.isSum(x.a);
     const t = dp.t || 'FS'; const fromX = (t === 'SS' || t === 'SF') ? p.right : p.left, toX = (t === 'FF' || t === 'SF') ? s.left : s.right;
@@ -442,6 +443,7 @@ document.addEventListener('change', e => { const i = e.target; if(i.id === 'sd')
   else if(f === 'pc'){ const n = +toEn(v); if(isFinite(n)){ a.pc = Math.max(0, Math.min(100, Math.round(n))); if(a.pc > 0 && a.as == null) a.as = wDay(S.calc.R.get(a.id).es); if(a.pc === 100 && a.af == null) a.af = Math.min(todayD(), S.cfg.status); if(a.pc < 100) a.af = null; if(a.pc === 0){ a.as = null; } } }
   else if(f === 'b'){ a.b = +toEn(v).replace(/[^\d.]/g, '') || 0; }
   else if(f === 'rs'){ a.rs = rsParse(v); delete a.who; ctrDatalist(); }
+  else if(f === 'ow'){ a.ow = owParse(v); }
   queueSave(a.id); render(); });
 /* کشیدن میله: جابه‌جایی (محدودیت شروع) یا تغییر مدت */
 (function(){ let drag = null;
@@ -511,13 +513,14 @@ document.addEventListener('dblclick', e => { const tr = e.target.closest('#tb tr
     + '<label class="fx"><span>شروع واقعی</span><input id="dAs" value="' + f(a.as) + '"' + ro + '></label><label class="fx"><span>پایان واقعی</span><input id="dAf" value="' + f(a.af) + '"' + ro + '></label>'
     + '<label class="fx"><span>هزینهٔ واقعی تا امروز (تومان)</span><input id="dAc" dir="ltr" value="' + (a.ac ? toFa(a.ac) : '') + '"' + ro + '></label>'
     + '<label class="fx"><span>منابع (هر کدام: نام پیمانکار ×نفر در روز، با ویرگول جدا)</span><input id="dRs" list="ctrDl" value="' + esc(rsTxt(a)) + '"' + ro + '></label>'
+    + '<label class="fx"><span>مسئول (افراد پروژه، شرکت‌ها یا سازمان‌ها؛ چندتا با ویرگول)</span><input id="dOw" list="owDl" value="' + esc(owTxt(a)) + '" placeholder="نام را بنویسید و از فهرست انتخاب کنید"' + ro + '></label>'
     + '<label class="fx"><span>یادداشت</span><textarea id="dNt" style="direction:rtl;text-align:start;min-height:60px"' + ro + '>' + esc(a.note || '') + '</textarea></label>'
     + '<div class="fx"><button class="btn" data-dhist="' + esc(a.id) + '" style="align-self:flex-start">سابقهٔ تغییرات این فعالیت</button></div>'
     + '<label class="fx"><span><input type="checkbox" id="dMs"' + (a.ms ? ' checked' : '') + ro + '> نقطهٔ عطف (Milestone، مدت صفر)</span></label>'
     + '<div class="fx"><small>پیش‌نیازها با شمارهٔ ردیف: «۳» یعنی بعد از پایان ردیف ۳ (FS)؛ «۳SS+۲» دو روز کاری بعد از شروع ردیف ۳؛ «۴FF» هم‌زمان با پایان ردیف ۴؛ چند پیش‌نیاز با ویرگول.</small></div>',
     S.ro ? '' : '<button class="btn pri" data-ok>اعمال</button>');
   const ok = bg.querySelector('[data-ok]'); if(ok) ok.onclick = () => { a.sn = fa2d(bg.querySelector('#dSn').value); a.as = fa2d(bg.querySelector('#dAs').value); a.af = fa2d(bg.querySelector('#dAf').value);
-    a.ac = +toEn(bg.querySelector('#dAc').value).replace(/[^\d.]/g, '') || 0; a.ms = bg.querySelector('#dMs').checked; a.rs = rsParse(bg.querySelector('#dRs').value); delete a.who; a.note = bg.querySelector('#dNt').value.trim().slice(0, 500); ctrDatalist(); if(a.ms) a.d = 0; else if(!a.d) a.d = 1; queueSave(a.id); bg.remove(); render(); }; });
+    a.ac = +toEn(bg.querySelector('#dAc').value).replace(/[^\d.]/g, '') || 0; a.ms = bg.querySelector('#dMs').checked; a.rs = rsParse(bg.querySelector('#dRs').value); delete a.who; a.ow = owParse(bg.querySelector('#dOw').value); a.note = bg.querySelector('#dNt').value.trim().slice(0, 500); ctrDatalist(); if(a.ms) a.d = 0; else if(!a.d) a.d = 1; queueSave(a.id); bg.remove(); render(); }; });
 /* قالب آمادهٔ پروژهٔ ساختمانی */
 function tplOpen(){ const bg = dlg('قالب برنامهٔ ساختمانی', '<div class="fx"><small>یک برنامهٔ استاندارد با ساختار شکست کار و پیش‌نیازها ساخته می‌شود؛ مدت‌ها را بعداً با شرایط پروژه اصلاح کنید.</small></div>'
     + '<label class="fx"><span>تعداد طبقات (روی زمین)</span><input id="tF" value="۶" inputmode="numeric"></label><label class="fx"><span>تعداد زیرزمین</span><input id="tB" value="۲" inputmode="numeric"></label>'
@@ -540,7 +543,7 @@ function tplOpen(){ const bg = dlg('قالب برنامهٔ ساختمانی', '
 function csvOut(){ const C = S.calc, W = wbsCodes(), num = new Map(ROWS.map((r, i) => [r.a.id, i + 1]));
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const L = [['ردیف','کد WBS','نام','مدت (روز کاری)','شروع','پایان','پیش‌نیاز','پیشرفت٪','شناوری','بحرانی','بودجه','هزینهٔ واقعی','مسئول'].map(q).join(',')]
-    .concat(ROWS.map((x, i) => { const a = x.a, r = C.R.get(a.id) || {}; const sum = C.isSum(a); return [i + 1, W.get(a.id), '  '.repeat(x.lv) + a.n, r.du, toEn(d2fa(wDay(r.es))), toEn(d2fa(wDay(Math.max(r.es, r.ef - 1)))), sum ? '' : toEn(depTxt(a, num)), Math.round(sum ? C.pcOf(a) : (+a.pc || 0)), r.tf, (!sum && r.tf <= 0) ? 'بله' : '', sum ? C.bOf(a) : (+a.b || ''), sum ? C.acOf(a) : (+a.ac || ''), rsTxt(a)].map(q).join(','); }));
+    .concat(ROWS.map((x, i) => { const a = x.a, r = C.R.get(a.id) || {}; const sum = C.isSum(a); return [i + 1, W.get(a.id), '  '.repeat(x.lv) + a.n, r.du, toEn(d2fa(wDay(r.es))), toEn(d2fa(wDay(Math.max(r.es, r.ef - 1)))), sum ? '' : toEn(depTxt(a, num)), Math.round(sum ? C.pcOf(a) : (+a.pc || 0)), r.tf, (!sum && r.tf <= 0) ? 'بله' : '', sum ? C.bOf(a) : (+a.b || ''), sum ? C.acOf(a) : (+a.ac || ''), [owTxt(a), rsTxt(a)].filter(Boolean).join(' · ')].map(q).join(','); }));
   const b = new Blob(['﻿' + L.join('\r\n')], {type: 'text/csv;charset=utf-8'}); const u = URL.createObjectURL(b); const x = document.createElement('a'); x.href = u; x.download = 'برنامه-زمان‌بندی-' + toEn(d2fa(todayD())).replace(/\//g, '-') + '.csv'; x.click(); setTimeout(() => URL.revokeObjectURL(u), 2000); }
 
 /* ====================== منابع، تخصیص، سابقه، ورود/خروج ====================== */
@@ -548,6 +551,20 @@ const K_LOG = 'زمان‌بندی: سابقه';
 S.ctrs = []; S.snap = new Map(); S.flt = 'all'; S.q = '';
 const resCfg = () => (S.cfg.res = S.cfg.res || {});
 const rsOf = a => Array.isArray(a.rs) ? a.rs : (a.who ? [{n: a.who, q: 1}] : []);
+/* مسئولان فعالیت (۳۸۷): افراد پروژه، پیمانکاران/شرکت‌ها و سازمان‌ها — یک فهرست نام، نوع از راهنمای S.dir */
+S.dir = new Map(); const OW_T = {p: 'شخص', c: 'شرکت / پیمانکار', o: 'سازمان'};
+const owOf = a => Array.isArray(a.ow) ? a.ow : [];
+const owTxt = a => owOf(a).join('، ');
+const owTip = a => owOf(a).map(n => n + (S.dir.has(n) ? ' — ' + OW_T[S.dir.get(n)] : '')).join(' · ');
+function owParse(v){ return Array.from(new Set(String(v || '').split(/[،,;]+/).map(x => x.trim()).filter(Boolean))).slice(0, 12); }
+function owDatalist(){ let dl = document.getElementById('owDl'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'owDl'; document.body.appendChild(dl); }
+  const L = Array.from(S.dir.entries()).sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0], 'fa'));
+  dl.innerHTML = L.map(([n, t]) => '<option value="' + esc(n) + '" label="' + OW_T[t] + '">').join(''); }
+async function owLoad(){ const add = (n, t) => { n = String(n || '').trim(); if(n && !S.dir.has(n)) S.dir.set(n, t); };
+  const [P, O] = await Promise.all([api('people?select=name&limit=3000').catch(() => []), api('lists?select=value&kind=eq.' + encodeURIComponent('سازمان') + '&limit=500').catch(() => [])]);
+  (P || []).forEach(r => add(r.name, 'p')); S.ctrs.forEach(n => add(n, 'c'));
+  (O || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'); if(i < 1) return; let o = {}; try{ o = JSON.parse(v.slice(i + 1)) || {}; }catch(e){} add(o.n || v.slice(0, i), 'o'); });
+  owDatalist(); }
 const rsTxt = a => rsOf(a).map(r => r.n + (+r.q && +r.q !== 1 ? ' ×' + toFa(r.q) : '')).join('، ');
 function rsParse(v){ return String(v || '').split(/[،,;]+/).map(x => x.trim()).filter(Boolean).map(x => { const m = toEn(x).match(/^(.*?)[\s:×x*]+(\d+(?:\.\d+)?)$/i); return m && m[1].trim() ? {n: m[1].trim(), q: +m[2]} : {n: x, q: 1}; }); }
 function resCost(a, du){ const R = resCfg(); return rsOf(a).reduce((t, r) => t + (+((R[r.n] || {}).rate) || 0) * (+r.q || 0) * (du || 0), 0); }
@@ -555,8 +572,8 @@ function resNames(){ const s = new Set(S.ctrs); Object.keys(resCfg()).forEach(n 
 function ctrDatalist(){ let dl = document.getElementById('ctrDl'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'ctrDl'; document.body.appendChild(dl); } dl.innerHTML = resNames().map(n => '<option value="' + esc(n) + '">').join(''); }
 
 /* ---------- سابقهٔ تغییرات (Audit) ---------- */
-const FLD = {n: 'نام', p: 'گروه', o: 'ترتیب', d: 'مدت', dep: 'پیش‌نیاز', pc: 'پیشرفت', sn: 'محدودیت شروع', as: 'شروع واقعی', af: 'پایان واقعی', b: 'بودجه', ac: 'هزینهٔ واقعی', rs: 'منابع', ms: 'نقطهٔ عطف', note: 'یادداشت', tk: 'پیوند فهرست'};
-const fmtV = (f, v) => { if(v == null || v === '' || (Array.isArray(v) && !v.length)) return '—'; if(f === 'sn' || f === 'as' || f === 'af') return d2fa(v); if(f === 'rs') return v.map(r => r.n + '×' + toFa(r.q)).join('، ');
+const FLD = {n: 'نام', p: 'گروه', o: 'ترتیب', d: 'مدت', dep: 'پیش‌نیاز', pc: 'پیشرفت', sn: 'محدودیت شروع', as: 'شروع واقعی', af: 'پایان واقعی', b: 'بودجه', ac: 'هزینهٔ واقعی', rs: 'منابع', ms: 'نقطهٔ عطف', note: 'یادداشت', tk: 'پیوند فهرست', ow: 'مسئول'};
+const fmtV = (f, v) => { if(v == null || v === '' || (Array.isArray(v) && !v.length)) return '—'; if(f === 'sn' || f === 'as' || f === 'af') return d2fa(v); if(f === 'rs') return v.map(r => r.n + '×' + toFa(r.q)).join('، '); if(f === 'ow') return v.join('، ');
   if(f === 'dep') return toFa(v.length) + ' مورد'; if(f === 'p'){ const x = S.acts.find(a => a.id === v); return x ? x.n : '—'; } if(f === 'pc') return toFa(v) + '٪'; if(f === 'b' || f === 'ac') return money(v); return toFa(String(v)).slice(0, 80); };
 function auditDiff(ids){ const rows = [];
   ids.forEach(id => { const a = S.acts.find(x => x.id === id), cur = a ? pack(a) : null, old = S.snap.get(id) || null;
@@ -741,7 +758,7 @@ function ioOpen(){
 
 /* ---------- فیلتر و جست‌وجو ---------- */
 function rowPass(a){ const C = S.calc, r = C.R.get(a.id); if(!r) return true;
-  if(S.q && (a.n + ' ' + rsTxt(a)).indexOf(S.q) === -1) return false;
+  if(S.q && (a.n + ' ' + rsTxt(a) + ' ' + owTxt(a)).indexOf(S.q) === -1) return false;
   if(S.flt === 'crit') return r.tf <= 0;
   if(S.flt === 'late') return lateOf(a, r) > 0;
   if(S.flt === 'prog') return (+a.pc || 0) > 0 && (+a.pc || 0) < 100;
@@ -785,7 +802,7 @@ function tkImport(list){ buildCal(); const made = new Map();
     const a = {id: uid(), n: String(t.title).trim().slice(0, 200), p: g.id, o: S.acts.filter(x => x.p === g.id).length, d, dep: [], pc: 0, tk: String(t.id)};
     if(s0 != null) a.sn = s0;
     const side = String(t.side || '').trim(); if(side && S.ctrs.indexOf(side) !== -1) a.rs = [{n: side, q: 1}];
-    const own = [t.owner1, t.owner2].filter(Boolean).join('، '); const fl = String(t.floor || t.position || '').trim(); if(own || fl) a.note = [own ? 'مسئول: ' + own : '', fl ? 'محل: ' + fl : ''].filter(Boolean).join(' · ');
+    const own = [t.owner1, t.owner2].filter(Boolean).join('، '); if(own) a.ow = owParse(own); const fl = String(t.floor || t.position || '').trim(); if(own || fl) a.note = [own ? 'مسئول: ' + own : '', fl ? 'محل: ' + fl : ''].filter(Boolean).join(' · ');
     S.acts.push(a); made.set(String(t.id), a); });
   /* پیش‌نیازهای خود فهرست */
   const byTk = new Map(S.acts.filter(a => a.tk).map(a => [String(a.tk), a]));
@@ -842,6 +859,7 @@ function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(()
     S.bls = bigJoin(B).sort((a, b) => (a.o.at || 0) - (b.o.at || 0));
     S.acts.forEach(a => S.snap.set(a.id, pack(a)));
     try{ S.ctrs = Array.from(new Set((await api('lists?select=value&kind=eq.' + encodeURIComponent('پیمانکار') + '&limit=2000') || []).map(r => String(r.value || '').split('¦')[0].trim()).filter(Boolean))); }catch(e){}
+    try{ await owLoad(); }catch(e){}
     $('#sts').textContent = 'خوانده شد';
   }catch(e){ $('#sts').textContent = 'خوانده نشد: ' + (e.message || e); if(!tok()){ document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">اول در سامانه وارد شوید و از میز کار ← برنامهٔ زمان‌بندی باز کنید.</div>'); } }
   if(S.ro) document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">فقط خواندنی — ویرایش برنامه برای مدیر پروژه و ادمین است.</div>');
