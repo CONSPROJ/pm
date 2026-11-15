@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115063144">
+<meta name="pm-build" content="20261115063536">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30393,6 +30393,13 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .ivh-hint{font-size:11px;color:var(--muted);min-height:14px;} :is(html,#z0) :is(body,#z1) .ivh-hint.new{color:#2a6fa0;font-weight:700;}
 :is(html,#z0) :is(body,#z1) #acM .sys-roots{display:flex;flex-wrap:wrap;gap:8px;} :is(html,#z0) :is(body,#z1) #acM .sys-root{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:var(--field);font-size:12.5px;}
 :is(html,#z0) :is(body,#z1) #acM .sys-root.add input{border:0;background:transparent;min-width:200px;font:inherit;outline:none;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dcq{box-sizing:border-box;width:100%;margin:6px 0;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb, var(--line) 90%, transparent);background:var(--field);font:inherit;font-size:12px;color:var(--ink);outline:none;} :is(html,#z0) :is(body,#z1) .og-subt .og-dcl{max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:2px;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dcg{display:flex;flex-direction:column;gap:4px;} :is(html,#z0) :is(body,#z1) .og-subt .og-dcg > span{display:flex;flex-wrap:wrap;gap:4px;padding-inline-start:14px;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dc{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;border:1px solid color-mix(in srgb, var(--line) 90%, transparent);background:var(--surface);font-size:11.5px;cursor:pointer;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dcg > b .og-dc{font-weight:800;} :is(html,#z0) :is(body,#z1) .og-subt .og-dc input{margin:0;width:13px;height:13px;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dc:has(input:checked){background:color-mix(in srgb, #2a6fa0 10%, var(--surface));border-color:color-mix(in srgb, #2a6fa0 40%, transparent);color:#2a6fa0;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dc.on{opacity:.6;} :is(html,#z0) :is(body,#z1) .og-subt .og-dc[hidden], :is(html,#z0) :is(body,#z1) .og-subt .og-dcg[hidden]{display:none;}
+:is(html,#z0) :is(body,#z1) .og-subt .og-dcx{display:flex;flex-direction:column;gap:4px;margin:8px 0;} :is(html,#z0) :is(body,#z1) .og-subt .og-dcx u{text-decoration:none;font-size:11px;color:var(--muted);}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -43159,6 +43166,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   { const pmRow = OG_DEF.find(x => x.n === 'مدیریت پروژه'); if(pmRow && !OG_DEF.some(x => x.n === 'مدیریت طرح')) OG_DEF.splice(1, 0, {n: 'مدیریت طرح', side: 'pm', dept: 'مدیریت', up: '', tpl: pmRow.tpl.slice()}); }
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   window.OG_DEF_NAMES = () => OG_DEF.map(x => x.n);
+  window.ogDiscHeads = () => { const L = []; try{ og.nodes.forEach(y => { if(y && y.team && (y.disc || y.n)) L.push(y.disc || y.n); }); }catch(e){} return L; };
+  document.addEventListener('input', e => { const q = e.target.closest && e.target.closest('[data-ogdcq]'); if(!q) return; const v = q.value.trim(), box = q.closest('.og-subt');
+    box.querySelectorAll('[data-ogdq]').forEach(c => { c.hidden = !!v && c.dataset.ogdq.indexOf(v) === -1; });
+    box.querySelectorAll('.og-dcg').forEach(g => { g.hidden = !!v && !g.querySelector('[data-ogdq]:not([hidden])'); }); });
   window.__ogDbg = () => og;
   function ogLoad(lists){
     og.pos.clear(); og.per.clear(); ogDescC = null;
@@ -44138,7 +44149,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         return '<li><div class="ogc-fr" data-ogk="g:' + x.k + '" style="--sc:' + OG_SC[x.k] + '"><span class="ogc-frl"><b>' + esc(x.t) + '</b><small>' + toFa(x.all.length + extN(x)) + ' نفر</small>' + addB('g:' + x.k) + outB(x.k) + '</span>'
           + (u2 ? u2.replace(/^<ul>/, '<ul class="ogc-fru">') : '') + '</div></li>'; };
       /* سرفصل خودکار رشته‌ها: کسانی که سمتشان یک رشته است (مدیر طراحی سازه، طراح معماری…) و زیر سرفصل دستی نیستند، زیر سرفصل رشتهٔ خودشان */
-      const DISC_AUTO = ['تأسیسات مکانیکی', 'تأسیسات برقی', 'طراحی داخلی', 'معماری داخلی', 'معماری', 'سازه', 'تأسیسات', 'مکانیک', 'برق', 'محوطه', 'منظر', 'نما', 'ژئوتکنیک', 'ترافیک', 'شهرسازی', 'نقشه‌برداری', 'متره و برآورد', 'BIM'];
+      /* رشته از روی سمت: همهٔ رشته‌های کاتالوگ (بلندترها اول تا «تأسیسات مکانیکی» بر «تأسیسات» مقدم باشد) + چند نام کوتاه رایج */
+      const DISC_AUTO = (function(){ const L = []; try{ window.discCatalog().forEach(([m, s]) => { L.push(m); s.forEach(x => L.push(x)); }); }catch(e){} ['تأسیسات', 'مکانیک', 'برق', 'منظر', 'ترافیک', 'حریق', 'BIM'].forEach(x => { if(L.indexOf(x) === -1) L.push(x); }); return L.sort((a, b) => b.length - a.length); })();
       const discOf = n => { const r = String(ogRoleOf(n) || ''); return DISC_AUTO.find(d => r.indexOf(d) !== -1) || ''; };
       const sideInner = x => { const R = x.roots.filter(n => !kup(n)), G = new Map(), plain = [];
         R.forEach(n => { const d = discOf(n); if(d){ if(!G.has(d)) G.set(d, []); G.get(d).push(n); } else plain.push(n); });
@@ -44292,8 +44304,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + '<div class="ogp-fa"><button type="button" class="mini go" data-ogxsave="1">' + (o.id ? 'ذخیره' : 'افزودن') + '</button>'
         + (o.id ? '<button type="button" class="mini" data-ogxadd="' + esc(o.id) + '">+ زیرمجموعه</button><button type="button" class="mini" data-ogsup="x:' + esc(o.id) + '">+ بالادست</button><button type="button" class="mini bad" data-ogxdel="' + esc(o.id) + '">حذف</button>' : '')
         + '<button type="button" class="mini" data-ogxclose="1">انصراف</button></div>'
-        + (function(){ const up = o.id ? 'x:' + o.id : (o.up || ''); if(!up) return ''; let D = []; try{ D = (typeof DS_TREE !== 'undefined' ? DS_TREE : []).map(x => x[0]); }catch(e){} if(!D.length) return '';
-            return '<div class="og-subt"><u>سرفصل رشته‌ها <small>هر رشته یک سرفصل جدا زیر همین‌جا؛ کسانی که سمتشان همان رشته است خودکار زیرش می‌روند و بقیه را می‌شود رویش کشید</small></u><span>' + D.map(d => '<label><input type="checkbox" data-ogsubd="' + esc(d) + '">' + esc(d) + '</label>').join('') + '</span><button type="button" class="mini go" data-ogsubgo="' + esc(up) + '">ساختن سرفصل‌ها</button></div>'; })()
+        + (function(){ const up = o.id ? 'x:' + o.id : (o.up || ''); if(!up) return ''; let C = []; try{ C = window.discCatalog(); }catch(e){} if(!C.length) return '';
+            /* سرفصل‌هایی که همین‌جا هست: تیک‌خورده و قفل */
+            const here = new Set(); og.nodes.forEach(y => { if(y && y.team && y.up === up) here.add(y.disc || y.n); });
+            const chip = d => '<label class="og-dc' + (here.has(d) ? ' on' : '') + '" data-ogdq="' + esc(d) + '"><input type="checkbox" data-ogsubd="' + esc(d) + '"' + (here.has(d) ? ' checked disabled' : '') + '><span>' + esc(d) + '</span></label>';
+            return '<div class="og-subt"><u>سرفصل رشته‌ها <small>رشته‌ها را انتخاب کنید؛ کسانی که سمتشان همان رشته است خودکار زیرش می‌روند</small></u>'
+              + '<input type="search" class="og-dcq" data-ogdcq="1" placeholder="جست‌وجوی رشته… (مثلاً حریق، هتلینگ، ترافیک)" autocomplete="off">'
+              + '<div class="og-dcl">' + C.map(([m, sub]) => '<div class="og-dcg"><b>' + chip(m) + '</b>' + (sub.length ? '<span>' + sub.map(chip).join('') + '</span>' : '') + '</div>').join('') + '</div>'
+              + '<label class="og-dcx"><u>رشتهٔ دیگر</u><input type="text" data-ogdcx="1" placeholder="نام رشته (چند تا را با ، جدا کنید)" autocomplete="off"></label>'
+              + '<button type="button" class="mini go" data-ogsubgo="' + esc(up) + '">ساختن سرفصل‌ها</button></div>'; })()
+
         + (o.id ? (function(){ let A = []; try{ A = window.listNamesAll ? window.listNamesAll() : []; }catch(e){}
             let AP = []; try{ AP = listNames(); }catch(e){}
             const M = x.n ? AP.map(a => ({a, sc: window.idScore ? window.idScore(x.n, a) : 0})).filter(m => m.sc >= 60).sort((p, q) => q.sc - p.sc).slice(0, 3) : [];
@@ -44341,7 +44361,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       setTimeout(() => { const c = document.querySelector('.og2 [data-ogx="' + CSS.escape(id) + '"]'); if(c) ogXPop(c, {id}); }, 60); return; }
     const ph = t.closest('[data-ogphide]'); if(ph){ const n = ph.dataset.ogphide, cur = og.per.get(nameKey(n)) || {}, o = Object.assign({side: cur.side || '', up: cur.up || '', fl: cur.fl || []}, ph.dataset.v === '1' ? {hide: 1} : {});
       await ogSaveRow(OG_PER_KIND, n, o); og.per.set(nameKey(n), Object.assign({n}, o)); const pp = t.closest('.ogc-pop'); if(pp) pp.remove(); ogRepaintChart(); return; }
-    const sg = t.closest('[data-ogsubgo]'); if(sg){ const up = sg.dataset.ogsubgo, box = sg.closest('.og-subt'), D = Array.from(box.querySelectorAll('[data-ogsubd]:checked')).map(c => c.dataset.ogsubd); if(!D.length){ shrToast('رشته‌ها را تیک بزنید'); return; }
+    const sg = t.closest('[data-ogsubgo]'); if(sg){ const up = sg.dataset.ogsubgo, box = sg.closest('.og-subt'), D = Array.from(box.querySelectorAll('[data-ogsubd]:checked:not(:disabled)')).map(c => c.dataset.ogsubd);
+      String((box.querySelector('[data-ogdcx]') || {}).value || '').split(/[،,]/).map(x => x.trim()).filter(Boolean).forEach(x => { if(D.indexOf(x) === -1) D.push(x); });
+      if(!D.length){ shrToast('رشته‌ها را انتخاب کنید یا نام رشتهٔ دیگر را بنویسید'); return; }
       let i = 0, moved = 0; const P0 = ogPeople();
       for(const d of D){ const id = 'n' + Date.now().toString(36) + (i++), nd = {n: d, r: '', up, team: 1, disc: d}; await ogSaveRow(OG_NODE_KIND, id, nd); og.nodes.set(id, nd);
         /* افرادی که سمتشان همین رشته است (مدیر طراحی سازه، طراح سازه…) و سرپرست تعیین‌شده ندارند، زیر سرفصل خودشان */
@@ -67942,8 +67964,20 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      رشته: کارت رشته‌های اصلی با کد نقش؛ رشته‌ای که زیرشاخه دارد با انتخاب، زیرشاخه‌هایش را باز می‌کند (چندانتخابی).
      نوع سند: گروه‌بندی (نقشه و مدل، محاسبات و مشخصات، برنامه و فهرست‌ها، سایر) با کد ISO هر نوع؛ تک‌انتخابی.
      مقدارها همان قبلی‌اند (select مخفی a-dType و a-dDisc) تا ذخیره، فیلتر و کدینگ بی‌تغییر کار کنند. */
-  const DS_TREE = [['معماری', []], ['سازه', []], ['تأسیسات مکانیکی', ['لوله‌کشی و بهداشتی', 'تهویهٔ مطبوع (HVAC)', 'اطفای حریق']], ['تأسیسات برقی', []],
-    ['طراحی داخلی', []], ['نما', []], ['محوطه', []], ['عمران و ابنیه', ['ژئوتکنیک', 'زهکشی و راه', 'نقشه‌برداری']]];
+  /* کاتالوگ واحد رشته‌ها (اسناد طراحی، کدینگ، سرفصل‌های چارت، گروه‌بندی): رشتهٔ اصلی و زیررشته‌ها.
+     رشته‌های کدینگ همان پروژه و سرفصل‌های ساخته‌شده در چارت هم به آن اضافه می‌شوند (discCatalog) */
+  const DS_TREE = [['معماری', ['معماری داخلی', 'شهرسازی و طراحی شهری']], ['طراحی داخلی', ['دکوراسیون و مبلمان']], ['نما', ['نمای شیشه‌ای و کرتین‌وال']], ['محوطه', ['منظر و فضای سبز']],
+    ['سازه', ['سازه‌های ویژه']], ['ژئوتکنیک', ['گودبرداری و نگهبان', 'نقشه‌برداری']],
+    ['تأسیسات مکانیکی', ['لوله‌کشی و بهداشتی', 'تهویهٔ مطبوع (HVAC)', 'اطفای حریق', 'گاز', 'استخر و سونا']], ['تأسیسات برقی', ['برق قدرت', 'روشنایی', 'جریان ضعیف', 'اعلام حریق']],
+    ['آسانسور و پله‌برقی', []], ['هوشمندسازی (BMS)', []], ['ایمنی و حریق', ['مهندسی حریق', 'پدافند غیرعامل']], ['ترافیک و پارکینگ', ['حمل‌ونقل و دسترسی']],
+    ['هتلینگ', ['آشپزخانهٔ صنعتی', 'لاندری', 'تجهیزات هتلی']], ['آکوستیک', []], ['نورپردازی', []], ['انرژی و پایداری', ['بهینه‌سازی انرژی (مبحث ۱۹)', 'ساختمان سبز']],
+    ['عمران و ابنیه', ['زهکشی و راه']], ['BIM و هماهنگی', ['مدل تجمیعی', 'کنترل تداخلات']], ['متره و برآورد', []], ['برنامه‌ریزی و کنترل پروژه', []]];
+  window.DS_TREE = DS_TREE;
+  /* همهٔ رشته‌ها: کاتالوگ + رشته‌هایی که در چارت همین پروژه ساخته شده (بی‌تکرار) */
+  window.discCatalog = () => { const out = DS_TREE.map(([m, s]) => [m, s.slice()]), have = new Set(); out.forEach(([m, s]) => { have.add(m); s.forEach(x => have.add(x)); });
+    const extra = []; const add = v => { v = String(v || '').trim(); if(v && !have.has(v)){ have.add(v); extra.push(v); } };
+    try{ (window.ogDiscHeads ? window.ogDiscHeads() : []).forEach(add); }catch(e){}
+    if(extra.length) out.push(['سایر رشته‌های این پروژه', extra]); return out; };
   const DS_TYPE_G = [['نقشه و مدل', ['نقشه', 'شاپ‌دراوینگ', 'دیتیل اجرایی', 'مدل‌سازی (BIM)', 'مدل دوبعدی', 'مدل تجمیعی', 'رندر', 'انیمیشن']],
     ['محاسبات و مشخصات', ['محاسبات', 'مشخصات فنی', 'گزارش فنی', 'دستورالعمل', 'متره و برآورد', 'برآورد هزینه', 'گزارش تداخلات', 'نقشه‌برداری']],
     ['برنامه و فهرست‌ها', ['برنامهٔ زمانی', 'فهرست نقشه‌ها', 'جدول فضاها', 'شناسنامهٔ فضا', 'فهرست نواقص']]];
@@ -68100,6 +68134,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.dcPieces = function(kind, V){ const c = dcCfg(), L = [], pat = String(c.pat[kind] || '') + (kind === 'design' && c.tail ? c.sep + c.tail : '');
     pat.split(c.sep).filter(Boolean).forEach(seg => { const ks = Array.from(seg.matchAll(/\{([A-Z]+)\}/g)).map(m => m[1]); const k = ks[0] || ''; const v = dcBuild(kind, V, null, seg); const ISO_POS = ['پروژه', 'پدیدآورنده', 'حجم / زون', 'تراز', 'نوع اطلاعات', 'نقش', 'شماره']; L.push({k, t: ks.length ? ks.map(x => DC_TOK[x] || x).join(' · ') : (c.preset === 'iso' && ISO_POS[L.length] ? ISO_POS[L.length] : 'ثابت'), v, tail: kind === 'design' && c.tail && c.tail.indexOf(seg) !== -1}); }); return L; };
   /* زون‌ها: جدول تنظیم‌شده + ساختمان‌ها/بلوک‌های پروژه (کد بلوک = کد زون)، بی‌تکرار */
+  window.dcTabLb = k => { try{ return dcTab(k).map(x => x[1]); }catch(e){ return []; } };
   const dcTab = k => { const L = (dcCfg().t[k] || []); if(k !== 'zn') return L; let B = []; try{ B = window.pjBlocks ? window.pjBlocks() : []; }catch(e){} if(!B.length) return L;
     const have = new Set(L.map(x => String(x[0]).toUpperCase())); return L.concat(B.filter(b => !have.has(String(b.c).toUpperCase())).map(b => [String(b.c).toUpperCase(), b.n || b.c])); };
   /* کد هر عنوان فارسی (دیسیپلین، نوع، وضعیت…) */
