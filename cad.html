@@ -185,6 +185,7 @@
       <button type="button" data-t="cut" title="کسر از محدوده (X) — بخشی از محدودهٔ انتخاب‌شده را کم کنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="9" y="9" width="7" height="7" stroke-dasharray="2 2"/></svg>کسر</button>
       <button type="button" data-t="wall" title="کدگذاری دیوار (W) — چندخطی بکشید تا هر ضلع کد و طول بگیرد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8l8-4 8 4v12z"/><path d="M9 12h6M9 16h6"/></svg>دیوارها</button>
       <button type="button" data-t="count" title="شمارش آیتم (C) — روی یک آیتم (اسپرینکلر، دتکتور، …) بزنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="7" cy="17" r="2.5"/><path d="M15 17h5M17.5 14.5v5"/></svg>شمارش</button>
+      <button type="button" data-t="pen" title="مداد (D) — طرح آزاد برای ارائه، بی‌اندازه‌گیری"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/></svg></button>
       <button type="button" data-t="measure" title="اندازه‌گیری (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg>اندازه</button>
     </div>
     <select id="hpat" title="الگوی هاشور"><option value="diag">هاشور مورب</option><option value="cross">هاشور ضربدری</option><option value="dots">نقطه‌ای</option><option value="solid">توپر</option></select>
@@ -341,9 +342,9 @@ function paint(ctx, v, W, H, dpr, minTx, noFill){
     L.tx.forEach(t => tx.push(t)); });
   /* متن در فضای صفحه (اندازهٔ واقعی پیکسل)؛ متن‌های خیلی ریز کشیده نمی‌شوند */
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
-  tx.forEach(([x, y, h, rot, str, c, top]) => { const ph = h * k; if(ph < (minTx || 4)) return; const X = (x - v.x) * k, Y = (-y - v.y) * k;
+  tx.forEach(([x, y, h, rot, str, c, top, rtl]) => { const ph = h * k; if(ph < (minTx || 4)) return; const X = (x - v.x) * k, Y = (-y - v.y) * k;
     if(X < -2000 || X > W + 2000 || Y < -2000 || Y > H + 2000) return;
-    ctx.save(); ctx.translate(X, Y); ctx.rotate(-rot); ctx.fillStyle = colOf(c); ctx.font = ph.toFixed(1) + 'px Vazirmatn,Tahoma,sans-serif'; ctx.textBaseline = top ? 'top' : 'alphabetic';
+    ctx.save(); ctx.translate(X, Y); ctx.rotate(-rot); ctx.fillStyle = colOf(c); ctx.font = ph.toFixed(1) + 'px Vazirmatn,Tahoma,sans-serif'; ctx.textBaseline = top ? 'top' : 'alphabetic'; ctx.textAlign = rtl ? 'right' : 'left'; try{ ctx.direction = rtl ? 'rtl' : 'ltr'; }catch(e){}
     String(str).split('\n').forEach((ln, i) => ctx.fillText(ln, 0, i * ph * 1.35)); ctx.restore(); });
 }
 function fullDraw(){
@@ -431,24 +432,29 @@ stage.addEventListener('pointerdown', e => {
   if(ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()); pinch = {d: Math.hypot(a.x - b.x, a.y - b.y)}; pan = null; return; }
   if(S.tool === 'pan' || e.button === 1){ pan = {x: e.clientX, y: e.clientY, vb: Object.assign({}, S.vb)}; stage.classList.add('drag'); return; }
   if(e.button !== 0) return;
+  /* مداد (۴۲۳): کشیدن آزاد با نگه داشتن */
+  if(S.tool === 'pen'){ const w = toWorld(e.clientX, e.clientY); S.cur = {type: 'pen', pts: [{x: w.x, y: w.y}], color: $('#col').value, name: ''}; S.penOn = true; return; }
   addPoint(snap(toWorld(e.clientX, e.clientY), e));
 });
 stage.addEventListener('pointermove', e => {
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if(pinch && ptrs.size === 2){ const [a, b] = Array.from(ptrs.values()), d = Math.hypot(a.x - b.x, a.y - b.y); zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, pinch.d / d); pinch.d = d; return; }
   if(pan){ const r = stage.getBoundingClientRect(); S.vb.x = pan.vb.x - (e.clientX - pan.x) / r.width * pan.vb.w; S.vb.y = pan.vb.y - (e.clientY - pan.y) / r.height * pan.vb.h; apply(); return; }
+  if(S.penOn && S.cur && S.cur.type === 'pen'){ const w = toWorld(e.clientX, e.clientY), L0 = S.cur.pts[S.cur.pts.length - 1], tol = 2 * S.vb.w / (stage.clientWidth || 1);
+    if(Math.hypot(w.x - L0.x, w.y - L0.y) > tol){ S.cur.pts.push({x: w.x, y: w.y}); tmpG.innerHTML = '<polyline points="' + pstr(S.cur.pts) + '" fill="none" stroke="' + S.cur.color + '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'; } return; }
   if(S.tool !== 'pan') flush();
   const w = toWorld(e.clientX, e.clientY), sp = S.tool !== 'pan' ? snap(w, e) : w;
   const c = $('#coords'); c.hidden = false; c.textContent = 'X ' + (+w.x).toFixed(1) + '   Y ' + (+w.y).toFixed(1);
   preview(sp);
 });
 const up = e => { ptrs.delete(e.pointerId); if(ptrs.size < 2) pinch = null;
+  if(S.penOn){ S.penOn = false; const c = S.cur; S.cur = null; tmpG.innerHTML = ''; if(c && c.pts.length > 1){ c.name = 'طرح آزاد ' + toFa(S.marks.filter(m => m.type === 'pen').length + 1); S.marks.push(c); S.sel = S.marks.length - 1; save(); render(); } return; }
   if(pan){ const tap = Math.hypot(e.clientX - pan.x, e.clientY - pan.y) < 5 && e.type === 'pointerup'; pan = null; stage.classList.remove('drag'); commit(); if(tap && S.tool === 'pan') pickAt(e.clientX, e.clientY); } };
 stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
 stage.addEventListener('dblclick', e => { if(S.cur) finish(); });
 
 /* ---------- گیرش (Snap) به نقاط انتهایی خطوط نقشه و نشانه‌ها ---------- */
-function index(){ const all = S.snaps.concat(...S.marks.map(m => m.pts.map(p => [p.x, p.y])));
+function index(){ const all = S.snaps.concat(...S.marks.filter(m => m.type !== 'pen').map(m => m.pts.map(p => [p.x, p.y])));
   let bw = 1000; if(S.base) bw = Math.max(S.base.w, S.base.h); S.snapCell = Math.max(bw / 200, 1e-6); S.grid = new Map();
   all.forEach(p => { const k = Math.floor(p[0] / S.snapCell) + ':' + Math.floor(p[1] / S.snapCell); if(!S.grid.has(k)) S.grid.set(k, []); S.grid.get(k).push(p); }); }
 function snap(w, e){
@@ -477,7 +483,7 @@ document.querySelectorAll('#tools button').forEach(b => b.onclick = () => setToo
 window.addEventListener('keydown', e => { if(e.target.matches('input,select')) return;
   const k = e.key.toLowerCase();
   if(e.key === 'F8' || k === 'o'){ e.preventDefault(); orthoSet(!S.ortho); return; }
-  if(k === 'escape') cancel(); else if(k === 'enter') finish(); else if(k === 'h') setTool('pan'); else if(k === 'l') setTool('line'); else if(k === 'a') setTool('area'); else if(k === 'b') setTool('hatch'); else if(k === 'm') setTool('measure');
+  if(k === 'escape') cancel(); else if(k === 'enter') finish(); else if(k === 'h') setTool('pan'); else if(k === 'l') setTool('line'); else if(k === 'a') setTool('area'); else if(k === 'b') setTool('hatch'); else if(k === 'm') setTool('measure'); else if(k === 'd') setTool('pen');
   else if(k === 'p') setTool('pline'); else if(k === 'x') setTool('cut'); else if(k === 'w') setTool('wall'); else if(k === 'c' && !e.ctrlKey && !e.metaKey) setTool('count');
   else if((k === 'delete' || k === 'backspace') && S.sel >= 0){ S.marks.splice(S.sel, 1); S.sel = -1; save(); render(); }
   else if(k === 'z' && (e.ctrlKey || e.metaKey) && S.marks.length){ S.marks.pop(); save(); render(); } });
@@ -532,6 +538,7 @@ function shape(m, i){
   if((m.type === 'area' || m.type === 'hatch') && m.holes && m.holes.length){
     const fill = m.type === 'hatch' ? (m.pat === 'solid' ? c : 'url(#' + patId(c, m.pat) + ')') : c;
     return '<path data-i="' + i + '" d="' + ringD(m.pts) + m.holes.map(ringD).join('') + '" fill-rule="evenodd" fill="' + fill + '" fill-opacity="' + (m.type === 'area' ? .14 : (m.pat === 'solid' ? .45 : 1)) + '" stroke="' + c + '" stroke-width="' + (on ? 2.6 : 1.6) + '" vector-effect="non-scaling-stroke"/>'; }
+  if(m.type === 'pen') return '<polyline data-i="' + i + '" points="' + pstr(m.pts) + '" fill="none" stroke="' + c + '" stroke-width="' + (on ? 4 : 3) + '" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
   if(m.type === 'line' || m.type === 'measure') return '<polyline data-i="' + i + '" points="' + pstr(m.pts) + '" fill="none" stroke="' + c + '" stroke-width="' + (on ? 3 : 2) + '"' + (m.type === 'measure' ? ' stroke-dasharray="6 4"' : '') + ' vector-effect="non-scaling-stroke"/>';
   const fill = m.type === 'hatch' ? (m.pat === 'solid' ? c : 'url(#' + patId(c, m.pat) + ')') : c;
   return '<polygon data-i="' + i + '" points="' + pstr(m.pts) + '" fill="' + fill + '" fill-opacity="' + (m.type === 'area' ? .14 : (m.pat === 'solid' ? .45 : 1)) + '" stroke="' + c + '" stroke-width="' + (on ? 2.6 : 1.6) + '" vector-effect="non-scaling-stroke"/>';
@@ -560,9 +567,9 @@ function render(onlyDraw){
   L.innerHTML = S.marks.length ? S.marks.map((m, i) => { const closed = m.type === 'area' || m.type === 'hatch';
     if(m.type === 'wall' || m.type === 'count') return rowXHtml(m, i);
     return '<div class="mk' + (i === S.sel ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + m.color + '"></i>'
-      + (closed ? '<input type="text" value="' + (m.name || '').replace(/"/g, '&quot;') + '" data-nm="' + i + '" placeholder="نام ریز محل">' : '<span>' + (m.type === 'measure' ? 'اندازه' : 'خط') + '</span>')
+      + (closed ? '<input type="text" value="' + (m.name || '').replace(/"/g, '&quot;') + '" data-nm="' + i + '" placeholder="نام ریز محل">' : '<span>' + (m.type === 'measure' ? 'اندازه' : m.type === 'pen' ? 'طرح آزاد (مداد)' : 'خط') + '</span>')
       + '<button type="button" data-del="' + i + '" title="حذف">×</button>'
-      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(markA(m))) + ' m²' + (m.holes && m.holes.length ? ' (پس از ' + toFa(m.holes.length) + ' کسر)' : '') + ' · محیط ' + fmt(mLen(markP(m))) + ' m' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small>'
+      + '<small>' + (closed ? 'مساحت ' + fmt(mArea(markA(m))) + ' m²' + (m.holes && m.holes.length ? ' (پس از ' + toFa(m.holes.length) + ' کسر)' : '') + ' · محیط ' + fmt(mLen(markP(m))) + ' m' : m.type === 'pen' ? 'برای ارائه — بی‌اندازه' : 'طول ' + fmt(mLen(len(m.pts))) + ' m') + '</small>'
       + (closed ? '<div class="wl">' + (m.holes && m.holes.length ? '<button type="button" class="btn" data-unhole="' + i + '">برداشتن کسرها</button>' : '') + '<button type="button" class="btn" data-mkwall="' + i + '">کدگذاری دیوارهای این محدوده</button></div>' : '')
       + linkHtml(m, i) + '</div>'; }).join('')
     : '<p style="color:var(--muted);padding:6px 8px;font-size:12px;line-height:1.9">با «محدوده» گوشه‌های هر ریز محل را بزنید تا مساحت و محیطش حساب شود؛ با «هاشور» محدودهٔ رنگی و با «خط» و «اندازه» فاصله‌ها را بکشید. همه روی همین دستگاه برای همین فایل ذخیره می‌شود.</p>';
