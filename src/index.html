@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115051037">
+<meta name="pm-build" content="20261115052019">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30365,6 +30365,12 @@ html.co-space .co-sw button.on{color:#7a5bc4}
 :is(html,#z0) :is(body,#z1) #acM .axh-sw span::after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s;}
 :is(html,#z0) :is(body,#z1) #acM .axh-sw input:checked + span{background:#2f8a5b;} :is(html,#z0) :is(body,#z1) #acM .axh-sw input:checked + span::after{transform:translateX(-13px);}
 @media (max-width:900px){ :is(html,#z0) :is(body,#z1) #acM .axh-flow{grid-template-columns:repeat(2,minmax(0,1fr));} :is(html,#z0) :is(body,#z1) #acM .axh-k{grid-template-columns:repeat(3,minmax(0,1fr));} :is(html,#z0) :is(body,#z1) #acM .axh-l{grid-template-columns:26px minmax(0,1fr);} :is(html,#z0) :is(body,#z1) #acM .axh-la{grid-column:2;justify-content:flex-start;} :is(html,#z0) :is(body,#z1) #acM .axh-tw{padding-inline-start:16px;overflow-x:auto;} }
+:is(html,#z0) :is(body,#z1) #pjGate{position:fixed;inset:0;z-index:9000;background:var(--bg, #f6f7f9);display:grid;place-items:center;padding:16px;}
+:is(html,#z0) :is(body,#z1) #pjGate .pjg-b{width:min(440px,100%);display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:18px;background:var(--surface);border:1px solid color-mix(in srgb, var(--line) 85%, transparent);box-shadow:0 20px 50px -30px rgba(0,0,0,.35);}
+:is(html,#z0) :is(body,#z1) #pjGate .pjg-b > b{font-size:17px;font-weight:800;} :is(html,#z0) :is(body,#z1) #pjGate .pjg-b > small{font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+:is(html,#z0) :is(body,#z1) #pjGate .pjg-r{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--field);} :is(html,#z0) :is(body,#z1) #pjGate .pjg-r span{display:flex;flex-direction:column;gap:2px;} :is(html,#z0) :is(body,#z1) #pjGate .pjg-r small{font-size:11.5px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) #pjGate .pjg-out{all:unset;cursor:pointer;align-self:flex-start;margin-top:6px;font-size:12px;color:var(--muted);text-decoration:underline;}
+html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -32091,8 +32097,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(va && currentUser && va !== currentUser){ window.__realUser = currentUser; currentUser = va; }
     else if(va) sessionStorage.removeItem(VIEW_AS_K); }catch(e){}
   window.viewAsOn = () => !!window.__realUser;
-  window.viewAsStart = name => { try{ sessionStorage.setItem(VIEW_AS_K, name); }catch(e){} location.reload(); };
-  window.viewAsStop = () => { try{ sessionStorage.removeItem(VIEW_AS_K); }catch(e){} location.reload(); };
+  /* پروژه‌ای که مشاهده از آن شروع شد نگه داشته می‌شود تا با پایان مشاهده، مدیر به همان پروژه برگردد */
+  window.viewAsStart = name => { try{ sessionStorage.setItem(VIEW_AS_K, name); sessionStorage.setItem(VIEW_AS_K + 'Pj', localStorage.getItem('siteLogM.project.v1') || 'p1'); }catch(e){} location.reload(); };
+  window.viewAsStop = () => { let pj = ''; try{ pj = sessionStorage.getItem(VIEW_AS_K + 'Pj') || ''; sessionStorage.removeItem(VIEW_AS_K); sessionStorage.removeItem(VIEW_AS_K + 'Pj'); }catch(e){}
+    try{ const cur = localStorage.getItem('siteLogM.project.v1') || 'p1'; if(pj && pj !== cur && window.pjSwitchTo){ window.pjSwitchTo(pj); return; } }catch(e){}
+    location.reload(); };
   /* ورود یا خروج در زبانهٔ دیگر: این زبانه هم همان وضعیت را می‌گیرد */
   window.addEventListener('storage', e => {
     if(e.key === TOK_KEY){ window.__pmTok = e.newValue || ''; return; }
@@ -54156,7 +54165,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* انتخاب کاربر برای «مشاهده به‌جای کاربر» (فقط مدیر اصلی) */
   window.viewAsPick = function(){
     let root = false; try{ root = isRootUser(); }catch(e){} if(!root){ showDialog('warn', 'فقط مدیر اصلی', 'این ابزار فقط برای مدیر اصلی سامانه است.'); return; }
-    const L = (function(){ try{ return listNames(); }catch(e){ return []; } })().filter(n => !isRootName(n));
+    /* فقط اعضای همین پروژه: مشاهده به‌جای کسی که عضو این پروژه نیست معنی ندارد */
+    const L = (function(){ try{ return listNames(); }catch(e){ return []; } })().filter(n => !isRootName(n) && (!window.__pjPeopleOk || window.__pjPeopleOk(n)));
     const row = n => { const co = extParty.get(nameKey(n)) || '', rl = (function(){ try{ return roleOf(n) || ''; }catch(e){ return ''; } })(), a = window.accOf ? window.accOf(n) : {t: ''};
       return '<button type="button" class="va-r" data-vago="' + esc(n) + '" data-vaq="' + esc((n + ' ' + rl + ' ' + co + ' ' + a.t).toLowerCase()) + '">' + avatarHtml(n, 'sm', true) + '<span><b>' + esc(n) + '</b><small>' + esc([rl || 'بدون سمت', a.t, co ? 'تیم: ' + co : ''].filter(Boolean).join(' · ')) + '</small></span><em>مشاهده ‹</em></button>'; };
     const m = fxModal('vaM', 'مشاهده به‌جای کاربر', 'سایت با سمت، نوع دسترسی، تیم و پروژهٔ همان شخص باز می‌شود تا ببینید دقیقاً چه می‌بیند و چه می‌تواند. در این حالت هیچ ثبت، ویرایش یا حذفی انجام نمی‌شود. محدودیت‌های سمت سرور را نشان نمی‌دهد (همهٔ داده با نشست شما خوانده می‌شود و سایت همان فیلترهای آن شخص را اعمال می‌کند).',
@@ -100811,9 +100821,40 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ localStorage.setItem(PJ_CACHE, JSON.stringify({p: (lists && lists[PJ_KIND]) || [], m: (lists && lists[PJM_KIND]) || []})); }catch(e){}
     pjApply();
     try{ window.__reFilterPeople && window.__reFilterPeople(); }catch(e){}
-    /* عضو پروژهٔ فعلی نیست (یا پروژه حذف شده): برگشت به پروژهٔ اصلی */
-    if(PJ.cur !== 'p1' && activeUserName() && !pjMine().some(p => p.id === PJ.cur)) pjSwitch('p1', true);
+    /* عضو پروژهٔ فعلی نیست (یا پروژه حذف شده): برگشت به پروژه‌ای که عضوش است.
+       در حالت «مشاهده به‌جای کاربر» هرگز جابه‌جا نمی‌شود (وگرنه پروژهٔ خود مدیر عوض می‌شد و بیرون می‌افتاد) */
+    pjGateCheck();
   }
+
+  /* ====== راه ورود به پروژه‌ها (۳۶۴) ======
+     پروژهٔ اصلی عضویت جدا ندارد (حساب‌های قدیمی همه عضوش‌اند). ولی حسابی که برای پروژهٔ دیگری دعوت/ساخته شده و در پروژهٔ اصلی سمتی ندارد
+     (مثلاً طراح بیرونی فقط همان پروژه) نباید پروژهٔ اصلی را ببیند. همین قاعده روی سرور هم هست (project_gate.sql). */
+  function pjP1Me(){ const me = activeUserName(); if(!me) return true; try{ if(isAdminUser() || isAdminName(me)) return true; }catch(e){}
+    const k = nameKey(me); if(!PJ.mem.some(m => m.pid !== 'p1' && nameKey(m.name) === k && m.state !== PJ_ST_NO)) return true;
+    const P = window.__peopleAll; if(!P || !P.length) return null;
+    const row = P.find(r => nameKey(r.name) === k); const rl = String((row && row.role) || '').trim(); return !!rl && rl !== '—'; }
+  window.pjP1Me = pjP1Me;
+  let pjGateT = 0;
+  function pjGateCheck(){
+    clearTimeout(pjGateT);
+    if(window.__realUser || !activeUserName() || !PJ.mem.length) return;
+    if(PJ.cur !== 'p1'){ if(!pjMine().some(p => p.id === PJ.cur)) pjSwitch(pjP1Me() === false ? ((pjMine()[0] || {}).id || 'p1') : 'p1', true); return; }
+    const ok = pjP1Me(); if(ok === null){ pjGateT = setTimeout(pjGateCheck, 1200); return; } if(ok) return;
+    const L = pjMine().filter(p => p.id !== 'p1'); if(L.length){ pjSwitch(L[0].id, true); return; }
+    pjGateShow();
+  }
+  /* هیچ پروژهٔ فعالی ندارد (فقط دعوت): صفحهٔ انتظار با دعوت‌ها؛ چیزی از پروژهٔ اصلی پیدا نیست */
+  function pjGateShow(){
+    if(document.getElementById('pjGate')) return;
+    const I = pjInvites(); const g = document.createElement('div'); g.id = 'pjGate'; g.setAttribute('role', 'dialog');
+    g.innerHTML = '<div class="pjg-b"><b>' + (I.length ? 'به پروژه دعوت شده‌اید' : 'هنوز عضو پروژه‌ای نیستید') + '</b><small>' + (I.length ? 'برای ورود، دعوت را بپذیرید.' : 'وقتی مدیر پروژه شما را دعوت کند، دعوت همین‌جا می‌آید.') + '</small>'
+      + I.map(m => '<div class="pjg-r"><span><b>' + esc((PJ.all.get(m.pid) || {}).name || m.pid) + '</b><small>' + esc([m.role || '', m.by ? 'دعوت از ' + m.by : ''].filter(Boolean).join(' · ')) + '</small></span><button type="button" class="mini go" data-pjgok="' + esc(m.pid) + '">پذیرش و ورود</button></div>').join('')
+      + '<button type="button" class="pjg-out" data-pjgout="1">خروج از حساب</button></div>';
+    document.body.appendChild(g); document.documentElement.classList.add('pj-gated');
+    g.addEventListener('click', async e => { const a = e.target.closest('[data-pjgok]'); if(a){ a.disabled = true; const m = pjInvites().find(x => x.pid === a.dataset.pjgok); if(m){ try{ await pjAnswer(m, true); pjSwitch(m.pid, true); }catch(er){ a.disabled = false; showDialog('err', 'انجام نشد', friendlyErr(er)); } } return; }
+      if(e.target.closest('[data-pjgout]')){ try{ applyUser(''); }catch(er){} location.reload(); } });
+  }
+  setTimeout(() => { try{ pjGateCheck(); }catch(e){} }, 2500);
   function pjBoot(){
     try{ const c = JSON.parse(localStorage.getItem(PJ_CACHE) || 'null'); if(c){ const L = {}; L[PJ_KIND] = c.p || []; L[PJM_KIND] = c.m || [];
       const all = new Map(); (L[PJ_KIND]).forEach(v => { const o = pjParse(v); if(o) all.set(o.id, o); });
@@ -100829,7 +100870,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function pjMemOf(pid, name){ const k = nameKey(name || ''); return PJ.mem.find(m => m.pid === pid && nameKey(m.name) === k) || null; }
   function pjMine(){
     const me = activeUserName(); const adm = (() => { try{ return isAdminUser(); }catch(e){ return false; } })();
-    return Array.from(PJ.all.values()).filter(p => p.id === 'p1' || adm || ((pjMemOf(p.id, me) || {}).state === PJ_ST_ON) || nameKey(p.by || '') === nameKey(me));
+    return Array.from(PJ.all.values()).filter(p => (p.id === 'p1' && (adm || pjP1Me() !== false)) || adm || ((pjMemOf(p.id, me) || {}).state === PJ_ST_ON) || nameKey(p.by || '') === nameKey(me));
   }
   function pjInvites(){ const me = activeUserName(); return PJ.mem.filter(m => nameKey(m.name) === nameKey(me) && m.state === PJ_ST_INV && PJ.all.has(m.pid)); }
   const pjCanEdit = () => { try{ return isAdminUser() || rawLevel() <= 2; }catch(e){ return false; } };
@@ -100916,6 +100957,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const PJ_DROP = /^siteLogM\.(contractors|engineers|zones|skills|machines|ctrContacts|partyLinks|ctrSplits|ctrReg|contractSubjects|contractParties|contractNos|allTbl|mx|kx|cend|cbh|subs|admPlace|digest\.|skReg|feedSeen|deckSeen|notifSeen|people)/;
   async function pjSwitch(id, silent){
     if(id === PJ.cur && !silent) return;
+    /* جابه‌جایی دستی پروژه در حالت «مشاهده به‌جای کاربر»: مشاهده تمام می‌شود و مدیر با حساب خودش وارد پروژهٔ تازه می‌شود */
+    if(!silent && window.__realUser){ try{ sessionStorage.removeItem('siteLogM.viewAs'); sessionStorage.removeItem('siteLogM.viewAsPj'); }catch(e){} }
     if(id !== 'p1' && !silent){
       const col = await pjProbe();
       if(col !== true){
