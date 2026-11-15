@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115063536">
+<meta name="pm-build" content="20261115064328">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32914,7 +32914,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(co !== cur || accXOf(who)[0] !== t) await window.extSaveParty(who, co, t); return; }
     if(cur) await window.extSaveParty(who, ''); };
   /* الگوی پایهٔ سمت (فقط در ویرایش سمت) */
-  window.tierOptHtml = cur => '<option value="">خودکار (از طرف و عنوان سمت)</option>' + [2, 7, 3, 5, 6, 8, 9].map(L => '<option value="' + L + '"' + (+cur === L ? ' selected' : '') + '>' + LEVEL_DEF[L].n + ' — ' + LEVEL_DEF[L].d + '</option>').join('');
+  window.tierOptHtml = cur => '<option value="">پیشنهاد سامانه (هنگام ذخیره ثبت می‌شود)</option>' + [2, 7, 3, 5, 6, 8, 9].map(L => '<option value="' + L + '"' + (+cur === L ? ' selected' : '') + '>' + LEVEL_DEF[L].n + ' — ' + LEVEL_DEF[L].d + '</option>').join('');
   /* راهنمای سطوح: دسترسی‌های واقعی هر سطح از جدول اجازه‌ها (با تنظیم فعلی ادمین) */
   window.lvGuideOpen = function(focus){
     const G = ['نوع دسترسی', 'تیم پروژه', 'بیرونی'], caps = (typeof PERM_CAPS !== 'undefined' ? PERM_CAPS : []);
@@ -32934,6 +32934,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function lvForRole(rl){
     rl = String(rl || '').trim(); if(!rl) return 0;
     let side = ''; try{ const P = ogPos(rl); side = (P && P.side) || ''; }catch(e){}
+    return tierGuess(rl, side);
+  }
+  /* پیشنهاد الگوی پایه برای سمتی که الگویش تعیین نشده (فقط هنگام ساختن سمت و ثبت یک‌باره؛ بعد از آن از خود سمت خوانده می‌شود) */
+  function tierGuess(rl, side){
+    rl = String(rl || '').trim(); if(!rl) return 3;
     /* پروژهٔ در مرحلهٔ طراحی: تیم طراحی و مشاور تیم اصلی پروژه است، نه طرف بیرونی (مدیر طرح = سطح مدیریت پروژه) */
     let dz = false; try{ dz = !!(window.pjIsDesign && window.pjIsDesign()); }catch(e){}
     if(side === 'emp' || (side === 'cons' && !dz)) return 6; if(side === 'ctr') return 8; if(side === 'own') return 9;
@@ -32942,7 +32947,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* «مسئول واحد» (۷) فقط با تعیین صریح در ویرایش سمت؛ پیش‌فرض محافظه‌کارانه است تا هیچ سمتی بی‌دلیل هشدارها و کارهای دیگران را نگیرد (اجازه‌های خاص هر سمت از قالب خود سمت می‌آید) */
     return 3;
   }
-  window.lvForRole = lvForRole;
+  window.lvForRole = lvForRole; window.tierGuess = tierGuess;
   /* نوع دسترسیِ ثبت‌شده (۱ مدیر، ۴ فقط مشاهده، بقیه = عضو) */
   function lvStored(name){
     try{ const pv = pjLevelOf(name); if(pv) return pv; }catch(e){}
@@ -43166,6 +43171,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   { const pmRow = OG_DEF.find(x => x.n === 'مدیریت پروژه'); if(pmRow && !OG_DEF.some(x => x.n === 'مدیریت طرح')) OG_DEF.splice(1, 0, {n: 'مدیریت طرح', side: 'pm', dept: 'مدیریت', up: '', tpl: pmRow.tpl.slice()}); }
   const og = {pos: new Map(), per: new Map(), nodes: new Map(), sel: '', ed: ''};
   window.OG_DEF_NAMES = () => OG_DEF.map(x => x.n);
+  /* ثبت یک‌بارهٔ الگوی پایهٔ همهٔ سمت‌های این پروژه (۳۷۲): سمتی که الگو نداشت، الگوی پیشنهادی‌اش ذخیره می‌شود؛ بعد از آن هیچ الگویی از روی عنوان حدس زده نمی‌شود */
+  window.ogTierFix = async () => { if(!window.__listsSrv) return -1; const names = new Set(OG_DEF.map(d => d.n).concat(Array.from(og.pos.keys()))), todo = [];
+    names.forEach(n => { const P = ogPos(n); if(!P || +P.tier) return; todo.push([n, Object.assign({}, og.pos.get(n) || {}, {tier: tierGuess(n, P.side || 'pm')})]); });
+    for(let i = 0; i < todo.length; i += 6) await Promise.all(todo.slice(i, i + 6).map(([n, o]) => ogSaveRowNow(OG_POS_KIND, n, o).then(() => { og.pos.set(n, o); })));
+    return todo.length; };
+  (function tierFixOnce(tries){ setTimeout(async () => { try{
+      if(window.__realUser || !isAdminUser()) return; if(window.pmRule && window.pmRule('posTierSet', '')) return;
+      if(!window.__listsSrv){ if(tries < 20) tierFixOnce(tries + 1); return; }
+      const n = await window.ogTierFix(); if(n < 0) return; await coRuleSet({posTierSet: '1'}); if(n) try{ shrToast('الگوی پایهٔ ' + toFa(n) + ' سمت ثبت شد'); }catch(e){}
+    }catch(e){} }, tries ? 3000 : 8000); })(0);
   window.ogDiscHeads = () => { const L = []; try{ og.nodes.forEach(y => { if(y && y.team && (y.disc || y.n)) L.push(y.disc || y.n); }); }catch(e){} return L; };
   document.addEventListener('input', e => { const q = e.target.closest && e.target.closest('[data-ogdcq]'); if(!q) return; const v = q.value.trim(), box = q.closest('.og-subt');
     box.querySelectorAll('[data-ogdq]').forEach(c => { c.hidden = !!v && c.dataset.ogdq.indexOf(v) === -1; });
@@ -44520,7 +44535,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const tpa = t.closest('[data-ogtplall]'); if(tpa){ tpa.disabled = true; try{ const n = await ogApplyTpl(ogTplMissing()); shrToast(toFa(n) + ' اجازه از قالب‌های پیشنهادی روشن شد'); permRepaint(); }catch(err){ tpa.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     const sv = t.closest('[data-ogsave]'); if(sv){ const f = sv.closest('[data-ogform]'), v = k => String((f.querySelector('[data-ogf="' + k + '"]') || {}).value || '').trim();
       const n = v('n'); if(!n){ showDialog('warn', 'نام سمت', 'نام سمت را بنویسید.'); return; }
-      const old = f.dataset.ogform, prev = og.pos.get(old) || {}, o = Object.assign({}, prev, {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}); if(+v('tier')) o.tier = +v('tier'); else delete o.tier; delete o.us; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
+      const old = f.dataset.ogform, prev = og.pos.get(old) || {}, o = Object.assign({}, prev, {side: v('side') || 'pm', dept: v('dept'), up: v('up') === n ? '' : v('up')}); o.tier = +v('tier') || tierGuess(n, v('side') || 'pm'); delete o.us; if(v('us') && (v('side') || 'pm') === 'cons') o.us = v('us');
       { const ih = f.querySelector('[data-ogf="inh"]'); if(ih) o.inh = !!ih.checked; }
       const cpFrom = v('cp');
       { const on = parseInt(toEn(v('o')), 10); if(!isNaN(on)) o.o = on; }
@@ -63057,6 +63072,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       try{ window.mnAttLoad && window.mnAttLoad(lists); }catch(e2){}
       try{ window.dtLoad && window.dtLoad(lists); }catch(e2){}
       try{ window.ogLoad && window.ogLoad(lists); }catch(e2){}
+      window.__listsSrv = true;
       try{ window.pjAfterLoad && window.pjAfterLoad(); }catch(e2){}
       try{ spLoad(lists); }catch(e2){}
       try{ tkCatLoad(lists); }catch(e2){}
