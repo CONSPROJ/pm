@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115113942">
+<meta name="pm-build" content="20261115114515">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -5752,7 +5752,7 @@
   :is(html,#z0) :is(body,#z1) .trd .a-dTitle{background:var(--surface)!important;border:0!important;border-bottom:2px solid var(--line)!important;border-radius:0!important;padding:8px 2px 9px!important;font-size:16px!important;font-weight:800!important;box-shadow:none!important;transition:border-color .15s;}
   :is(html,#z0) :is(body,#z1) .trd .a-dTitle:focus{border-bottom-color:var(--sky)!important;outline:none;}
   .trc-nx{all:unset;cursor:pointer;flex:none;display:grid;place-items:center;width:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--sky);font-size:15px;font-weight:900;} .trc-nx:hover{border-color:var(--sky);}
-  .trc-s .trc-fix{width:100%;box-sizing:border-box;}
+  .trc-s .trc-fix{width:100%;box-sizing:border-box;} .dc-ord > .dc-ser{flex:1.8 1 170px;} .dc-ord > [data-tk="TYP"], .dc-ord > [data-tk="DSC"]{flex:1.6 1 150px;}
   .trx-bar{position:sticky;bottom:12px;z-index:4;display:flex;align-items:center;gap:14px;padding:12px 12px 12px 16px;border-radius:18px;background:color-mix(in srgb, var(--surface) 92%, transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgba(16,40,70,.45);}
   .trx-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;} .trx-sum b{font-size:13.5px;font-weight:900;} .trx-sum small{font-size:11px;color:var(--muted);} .trx-sum i{font-style:normal;font-weight:800;color:var(--ink);}
   .trx-go{all:unset;box-sizing:border-box;cursor:pointer;display:inline-grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:10px 22px 10px 18px;border-radius:14px;color:#fff;background:linear-gradient(135deg, color-mix(in srgb, var(--sky) 88%, #fff) 0%, var(--sky) 55%, color-mix(in srgb, var(--sky) 80%, #000) 100%);box-shadow:0 10px 22px -10px color-mix(in srgb, var(--sky) 75%, transparent), inset 0 1px 0 rgba(255,255,255,.22);transition:transform .15s, box-shadow .15s, filter .15s;}
@@ -68726,28 +68726,35 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.dcOfRow = dcOfRow;
   /* ---- سازندهٔ کد در فرم سند طراحی ---- */
   function dcRecOf(code){ try{ const L = fxC.get(DC_REC_K) || []; const x = L.find(y => y.id === code); return x ? x.o : null; }catch(e){ return null; } }
-  function dcDesignFieldHtml(r){
+  let dcDlN = 0;
+  /* یک مؤلفهٔ کدینگ برای همه‌جا (۴۰۱): فرم اسناد طراحی (بخش‌های رشته/نوع/وضعیت از فیلدهای فرم) و ترانسمیتال (own: همهٔ بخش‌ها همین‌جا انتخاب می‌شوند) */
+  function dcDesignFieldHtml(r, O){
+    O = O || {}; const own = !!O.own, dlId = 'dcShDL' + (++dcDlN);
     const c = dcCfg(), cur = String(pick(r, AD.dNo) || '').trim(), rec = cur ? dcRecOf(cur) : null, manual = !!cur && !rec;
     const P = (rec && rec.p) || {};
-    const opt = (tk, v, L) => '<option value="">—</option>' + (L || dcTab(tk)).filter((x, i, A) => A.findIndex(y => y[0] === x[0]) === i || tk === 'lvl').map(x => '<option value="' + esc(x[0]) + '"' + (x[0] === v ? ' selected' : '') + '>' + esc(x[0] + ' · ' + x[1]) + '</option>').join('');
+    const opt = (tk, v, L) => '<option value="">—</option>' + (L || dcTab(tk)).filter((x, i, A) => A.findIndex(y => y[0] === x[0]) === i || tk === 'lvl').map(x => '<option value="' + esc(x[0]) + '" data-lb="' + esc(x[1]) + '"' + (x[2] ? ' data-fk="' + esc(x[2]) + '"' : '') + (x[0] === v ? ' selected' : '') + '>' + esc(x[0] + ' · ' + x[1]) + '</option>').join('');
     const all = (c.pat.design || '') + (c.tail || ''), has = k => all.indexOf('{' + k + '}') !== -1;
-    const sel = (k, lb, tk, L) => has(k) ? '<label class="dc-s"><u>' + lb + '<em class="en" dir="ltr">' + (window.DC_EN[k] || '') + '</em></u><select data-dcp="' + k + '"' + (P[k] ? ' data-dcman="1"' : '') + '>' + opt(tk, P[k] || '', L) + '</select></label>' : '';
-    return '<div class="field dc-f' + (manual ? ' man' : '') + '" data-dckind="design">'
+    const sel = (k, lb, tk, L, req) => has(k) ? '<label class="dc-s" data-tk="' + k + '"><u>' + lb + (req ? ' <i class="ib-req">*</i>' : '') + '<em class="en" dir="ltr">' + (window.DC_EN[k] || '') + '</em></u><select data-dcp="' + k + '"' + (P[k] ? ' data-dcman="1"' : '') + '>' + opt(tk, P[k] || '', L) + '</select></label>' : '';
+    return '<div class="field dc-f' + (own ? ' trc' : '') + (manual ? ' man' : '') + '" data-dckind="design">'
       + '<div class="dc-h"><code class="dc-code" dir="ltr">' + esc(cur || '—') + '</code><span class="dc-tail" dir="ltr"></span>'
       + '<button type="button" class="mini" data-dcman>' + (manual ? 'ساختن با کدینگ' : 'نوشتن دستی') + '</button></div>'
       /* ۳۹۵: بخش‌های کد به ترتیب الگوی کدینگ مرکزی؛ بخش‌هایی که از خود فرم می‌آیند (رشته، نوع، وضعیت، ویرایش) نشان داده و خودکار پر می‌شوند */
       + '<div class="dc-g dc-ord" dir="ltr">' + (function(){ const SL = {P: 'پروژه', TYP: 'نوع سند', DSC: 'رشته', SUIT: 'وضعیت', REV: 'ویرایش'}, SRC = {TYP: 'از «نوع سند»', DSC: 'از «رشته»', SUIT: 'از «وضعیت»', REV: 'از «ویرایش»'};
           const one = k => { if(k === 'ORG') return sel('ORG', 'پدیدآورنده', 'org', dcTab('org').length ? null : [[dcSan(c.org) || '', c.org ? 'سازمان پروژه' : 'در «کدینگ اسناد» تعریف کنید']].filter(x => x[0]));
             if(k === 'STG') return sel('STG', 'مرحله', 'stg'); if(k === 'Z') return sel('Z', 'بلوک / زون', 'zn'); if(k === 'LVL') return sel('LVL', 'طبقه / تراز', 'lvl', dcLvlList());
-            if(k === 'SH') return '<label class="dc-s"><u>شماره<em class="en" dir="ltr">Number</em></u><span class="dc-sh"><input type="text" data-dcp="SH" dir="ltr" inputmode="numeric" value="' + esc(P.SH || '') + '" list="dcShDL" placeholder="خودکار" autocomplete="off"><button type="button" class="mini" data-dcnext title="شمارهٔ بعدی همین دسته">بعدی</button></span></label>';
+            if(own && (k === 'TYP' || k === 'DSC' || k === 'SUIT')) return k === 'TYP' ? sel('TYP', 'نوع سند / نقشه', 'typ', null, 1) : k === 'DSC' ? sel('DSC', 'رشته', 'dsc', dcTab('dsc').filter(x => !DC_NONDESIGN.has(x[0])), 1) : sel('SUIT', 'وضعیت', 'suit');
+            if(own && k === 'REV') return '<label class="dc-s" data-tk="REV"><u>ویرایش<em class="en" dir="ltr">Revision</em></u><input type="text" class="a-dRev" dir="ltr" inputmode="numeric" value="0"></label>';
+            /* «نوع نقشه در رشته» = سری شماره از جدول شماره‌گذاری همان رشته (مثلاً STR 0100 = طراحی شمع)؛ شماره = اولین شمارهٔ آزاد همان سری */
+            if(k === 'SH') return '<label class="dc-s dc-ser" hidden><u>نوع نقشه در رشته<em class="en" dir="ltr">Sheet series</em></u><select data-dcser></select></label>'
+              + '<label class="dc-s" data-tk="SH"><u>شماره<em class="en" dir="ltr">Number</em></u><span class="dc-sh"><input type="text" data-dcp="SH" dir="ltr" inputmode="numeric" value="' + esc(P.SH || '') + '" list="' + dlId + '" placeholder="خودکار" autocomplete="off"><button type="button" class="trc-nx" data-dcnext title="اولین شمارهٔ آزاد همین دسته (Next available number)" aria-label="شمارهٔ بعدی">↻</button></span></label>';
             if(k === 'L') return '<label class="dc-s"><u>زیرشیت<em class="en" dir="ltr">Sub-sheet</em></u><input type="text" data-dcp="L" dir="ltr" inputmode="numeric" value="' + esc(P.L || '') + '" placeholder="اختیاری"></label>';
             if(k === 'P') return '<span class="dc-s dc-ac"><u>' + SL.P + '<em class="en" dir="ltr">Project</em></u><b>' + esc(dcSan(c.prj) || c.na) + '</b></span>';
             if(SL[k]) return '<span class="dc-s dc-ac" data-dcac="' + k + '"><u>' + SL[k] + '<em class="en" dir="ltr">' + (window.DC_EN[k] || '') + '</em></u><b>' + esc(c.na) + '</b><small>' + SRC[k] + '</small></span>';
             return ''; };
           const full = String(c.pat.design || '') + (c.tail ? c.sep + c.tail : '');
           return full.split(c.sep).filter(Boolean).map(seg => { const ks = Array.from(seg.matchAll(/\{([A-Z]+)\}/g)).map(m => m[1]); return ks.length ? ks.map(one).join('') : '<span class="dc-s dc-ac lit"><b>' + esc(seg) + '</b></span>'; }).join('<i class="dc-sep">' + esc(c.sep) + '</i>'); })()
-      + '<input type="hidden" data-dcp="DSC"><input type="hidden" data-dcp="TYP"><input type="hidden" data-dcp="SUIT">'
-      + '</div><div class="dc-pcs" aria-label="بخش‌های کد"></div><datalist id="dcShDL"></datalist>'
+      + (own ? '' : '<input type="hidden" data-dcp="DSC"><input type="hidden" data-dcp="TYP"><input type="hidden" data-dcp="SUIT">')
+      + '</div><div class="dc-pcs" aria-label="بخش‌های کد"></div><datalist id="' + dlId + '"></datalist>'
       + '<input type="text" class="a-dNo dc-man" dir="ltr" value="' + esc(cur) + '" placeholder="شمارهٔ دستی سند / نقشه">'
       + '<small class="dc-hint">' + (manual ? 'این سند شمارهٔ قدیمی دارد. برای شناسهٔ استاندارد «ساختن با کدینگ» را بزنید.'
           : (c.preset === 'iso' ? 'شناسه طبق ISO 19650 از نوع سند، رشته (نقش) و طبقه ساخته می‌شود و در همهٔ ویرایش‌ها ثابت است؛ وضعیت (S/A/B) از وضعیت سند و ویرایش (P/C) از شمارهٔ ویرایش. نام فایل‌ها = شناسه-وضعیت-ویرایش.'
@@ -68776,7 +68783,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const V = {}; box.querySelectorAll('[data-dcp]').forEach(e => { V[e.dataset.dcp] = e.value; });
     V.REV = (q('.a-dRev') || {}).value;
     const sh = box.querySelector('[data-dcp="SH"]'); if(sh && !sh.value){ const nx = dcNextSheet(V); if(nx) sh.placeholder = 'بعدی: ' + nx; }
-    if(sh){ const dl = box.querySelector('#dcShDL'), I = dcShIdx(V.DSC); if(dl && dl.dataset.k !== V.DSC){ dl.dataset.k = V.DSC || ''; dl.innerHTML = I.map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join(''); } }
+    if(sh){ const dl = box.querySelector('datalist'), I = dcShIdx(V.DSC); if(dl && dl.dataset.k !== V.DSC){ dl.dataset.k = V.DSC || ''; dl.innerHTML = I.map(x => '<option value="' + x[0] + '">' + esc(x[1]) + '</option>').join(''); }
+      const se = box.querySelector('[data-dcser]'); if(se && se.dataset.k !== (V.DSC || '')){ se.dataset.k = V.DSC || ''; const cv = se.value; se.innerHTML = '<option value="">—</option>' + I.map(x => '<option value="' + esc(x[0]) + '">' + esc(x[0] + ' · ' + x[1]) + '</option>').join(''); se.value = I.some(x => x[0] === cv) ? cv : ''; const w = se.closest('.dc-ser'); if(w) w.hidden = !I.length; } }
     const VV = Object.assign({}, V, {SH: V.SH || dcNextSheet(V)}), code = dcBuild('design', VV);
     box.querySelector('.dc-code').textContent = code || '—';
     const tl = box.querySelector('.dc-tail'); if(tl){ const t = c.tail ? dcBuild('design', VV, null, c.tail) : ''; tl.textContent = t || ''; tl.hidden = !t; }
@@ -68793,6 +68801,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const I = dcShIdx(V.DSC), f1 = I.find(x => parseInt(x[0], 10) >= 100) || I[0]; return f1 ? f1[0].padStart(c.shW, '0') : '1'.padStart(c.shW, '0');
   }
   window.dcNextSh = dcNextSheet;
+  /* اولین شمارهٔ آزاد یک سری (از شمارهٔ سری تا پیش از سری بعدی همان رشته) */
+  function dcNextSer(V, ser){ const c = dcCfg(), pre = dcBuild('design', Object.assign({}, V, {SH: ''}), 'SH'), s0 = parseInt(ser, 10); if(isNaN(s0)) return dcNextSheet(V);
+    const I = dcShIdx(V.DSC).map(x => parseInt(x[0], 10)).filter(n => !isNaN(n)).sort((a, b) => a - b), e = I.find(n => n > s0) || Infinity; let mx = -1;
+    try{ (adminAll || []).filter(x => x && x.kind === 'design').forEach(x => { const no = String(pick(x.row, AD.dNo) || ''); if(no.indexOf(pre + c.sep) !== 0) return; const n = parseInt(no.slice(pre.length + 1).split(c.sep)[0], 10); if(!isNaN(n) && n >= s0 && n < e && n > mx) mx = n; }); }catch(e2){}
+    return String(mx >= 0 ? mx + 1 : s0).padStart(c.shW, '0'); }
+  window.dcNextSer = dcNextSer;
+  document.addEventListener('change', e => { const se = e.target.closest && e.target.closest('[data-dcser]'); if(!se) return; const b = se.closest('.dc-f'), sh = b && b.querySelector('[data-dcp="SH"]'); if(!sh) return;
+    if(se.value){ sh.dataset.ser = se.value; sh.dataset.auto = '1'; sh.value = dcNextSer(b.__parts || {}, se.value); } else { delete sh.dataset.ser; sh.value = ''; }
+    sh.dispatchEvent(new Event('input', {bubbles: true})); }, true);
   window.dcApi = {cfg: dcCfg, tab: dcTab, lvl: dcLvlList, san: dcSan, codeOf: dcCodeOf, nonDesign: DC_NONDESIGN};
   document.addEventListener('change', e => { const t = e.target; if(!t.closest) return; const b = t.closest('.dc-f'); if(b && t.matches('[data-dcp]')){ if(t.tagName === 'SELECT') t.dataset.dcman = t.value ? '1' : ''; dcSync(b); return; }
     const host = t.closest('.nf-body, .modal, .af, form'); const box = host && host.querySelector('.dc-f'); if(box) dcSync(box); }, true);
@@ -88141,23 +88158,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const enL = (fa, en) => esc(fa) + (en ? '<em class="en" dir="ltr">' + esc(en) + '</em>' : '');
   function trOpts(tk, L){ const D = window.dcApi, M = new Map(); (L || D.tab(tk) || []).forEach(x => { if(tk === 'dsc' && D.nonDesign.has(x[0])) return; const k = String(x[0]); if(!M.has(k)) M.set(k, {lb: [], fk: x[2] || ''}); M.get(k).lb.push(x[1]); });
     return '<option value="">—</option>' + Array.from(M.entries()).map(([k, o]) => '<option value="' + esc(k) + '" data-lb="' + esc(o.lb[0]) + '"' + (o.fk ? ' data-fk="' + esc(o.fk) + '"' : '') + '>' + esc(k + ' · ' + o.lb.join(' / ')) + '</option>').join(''); }
-  function trCodeHtml(){ const D = window.dcApi; if(!D) return ''; const c = D.cfg(), full = String(c.pat.design || '') + (c.tail ? c.sep + c.tail : ''), segs = full.split(c.sep).filter(Boolean);
-    const cell = (k, inner, req) => '<label class="trc-s' + (req ? ' req' : '') + '" data-tk="' + k + '"><u>' + enL(TR_TL[k] || k, TR_EN[k]) + (req ? ' <i class="ib-req">*</i>' : '') + '</u>' + inner + '</label>';
-    const ctl = k => { if(k === 'P') return '<span class="trc-s"><u>' + enL('پروژه', TR_EN.P) + '</u><span class="trc-fix" title="کد پروژه (از تنظیم کدینگ)">' + esc(D.san(c.prj) || c.na) + '</span></span>';
-      if(k === 'ORG') return D.tab('org').length ? cell(k, '<select data-dcp="ORG">' + trOpts('org') + '</select>') : cell(k, '<span class="trc-fix">' + esc(D.san(c.org) || c.na) + '</span><input type="hidden" data-dcp="ORG">');
-      if(k === 'STG') return cell(k, '<select data-dcp="STG">' + trOpts('stg') + '</select>');
-      if(k === 'Z') return cell(k, '<select data-dcp="Z">' + trOpts('zn') + '</select>');
-      if(k === 'LVL') return cell(k, '<select data-dcp="LVL" class="trc-lvl">' + trOpts('lvl', D.lvl()) + '</select>');
-      if(k === 'TYP') return cell(k, '<select data-dcp="TYP">' + trOpts('typ') + '</select>', 1);
-      if(k === 'DSC') return cell(k, '<select data-dcp="DSC">' + trOpts('dsc') + '</select>', 1);
-      if(k === 'SUIT') return cell(k, '<select data-dcp="SUIT">' + trOpts('suit') + '</select>');
-      if(k === 'SH') return cell(k, '<span class="dc-sh"><input type="text" data-dcp="SH" dir="ltr" inputmode="numeric" placeholder="خودکار" autocomplete="off"><button type="button" class="trc-nx" data-dcnext title="اولین شمارهٔ آزاد همین دسته (Next available number)" aria-label="شمارهٔ بعدی">↻</button></span>');
-      if(k === 'L') return cell(k, '<input type="text" data-dcp="L" dir="ltr" inputmode="numeric" placeholder="اختیاری" title="برگ‌های یک شیت؛ مثلاً ۰۱ و ۰۲ برای دو برگ یک پلان (Sub-sheet)" autocomplete="off">');
-      if(k === 'REV') return cell(k, '<input type="text" class="a-dRev" dir="ltr" inputmode="numeric" value="0">');
-      return cell(k, '<input type="text" data-dcp="' + k + '" dir="ltr" autocomplete="off">'); };
-    const parts = segs.map(seg => { const ks = Array.from(seg.matchAll(/\{([A-Z]+)\}/g)).map(m => m[1]); return ks.length ? ks.map(ctl).join('') : '<span class="trc-fix lit">' + esc(seg) + '</span>'; });
-    return '<div class="dc-f trc" data-dckind="design"><div class="trc-h"><code class="dc-code" dir="ltr">—</code><span class="dc-tail" dir="ltr"></span><small>' + esc((window.dcApi.cfg().preset === 'iso' ? 'ISO 19650' : 'کدینگ پروژه') + ' · ترتیب بخش‌ها از تنظیم کدینگ مرکزی') + '</small></div>'
-      + '<div class="trc-segs">' + parts.join('<i class="trc-sep" dir="ltr">' + esc(c.sep) + '</i>') + '</div><input type="hidden" class="a-dNo"></div>'; }
+  function trCodeHtml(){ return window.dcDesignFieldHtml ? window.dcDesignFieldHtml({}, {own: 1}) : ''; }
   function trDocHtml(i, party, poi){
     return '<form class="trd" data-trd="' + i + '" onsubmit="return false"><div class="trd-h"><span class="trd-n">' + toFa(i + 1) + '</span><label class="trd-ti"><u>' + enL('عنوان مدرک', 'Document Title') + ' <i class="ib-req">*</i></u><input type="text" class="a-dTitle" placeholder="مثلاً پلان معماری طبقهٔ سوم" autocomplete="off"></label>'
       + '<button type="button" class="trd-x" data-trdx title="حذف این مدرک" aria-label="حذف">✕</button></div>'
@@ -88192,7 +88193,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     box.querySelectorAll('form.trd').forEach(f => { const b = f.querySelector('.dc-f'), sh = b && b.querySelector('[data-dcp="SH"]'); if(!b || !sh || !b.__parts || b.classList.contains('man')) return;
       const P = Object.assign({}, b.__parts, {SH: ''}), pre = window.dcBuild('design', P, 'SH');
       if(sh.value && sh.dataset.auto !== '1'){ const n = parseInt(toEn(sh.value), 10); if(!isNaN(n)) used.set(pre, Math.max(used.get(pre) == null ? -1 : used.get(pre), n)); return; }
-      const n0 = parseInt(window.dcNextSh(P), 10) || 1, n = Math.max(n0, (used.get(pre) == null ? -1 : used.get(pre)) + 1), w = String(window.dcNextSh(P)).length || 4, v = String(n).padStart(w, '0');
+      const n0 = parseInt(sh.dataset.ser ? window.dcNextSer(P, sh.dataset.ser) : window.dcNextSh(P), 10) || 1, n = Math.max(n0, (used.get(pre) == null ? -1 : used.get(pre)) + 1), w = window.dcApi.cfg().shW || 4, v = String(n).padStart(w, '0');
       used.set(pre, n); if(sh.value !== v){ sh.value = v; sh.dataset.auto = '1'; sh.dispatchEvent(new Event('input', {bubbles: true})); } });
     let nf = 0; box.querySelectorAll('form.trd').forEach(f => { const c = (f.querySelector('.a-dNo') || {}).value || ''; const h = f.querySelector('.trd-code'); if(h) h.textContent = c || '—'; f.querySelectorAll('.up-field .a-link').forEach(l => { nf += String(l.value || '').split('\n').filter(Boolean).length; }); });
     const ct = box.querySelector('.trx-cnt'); const sm = toFa(box.querySelectorAll('form.trd').length) + ' مدرک · ' + toFa(nf) + ' فایل'; if(ct) ct.textContent = sm; const sn = box.querySelector('.trx-sn'); if(sn) sn.textContent = sm; }
