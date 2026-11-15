@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115035653">
+<meta name="pm-build" content="20261115040712">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30313,6 +30313,13 @@ html.va-on body{padding-top:46px} @keyframes vaP{50%{opacity:.35}}
 :is(html,#z0) :is(body,#z1) .va-l{display:flex;flex-direction:column;margin-top:10px;max-height:60vh;overflow:auto}
 :is(html,#z0) :is(body,#z1) .va-r{display:flex;align-items:center;gap:10px;padding:9px 6px;border:0;border-bottom:1px dashed var(--line);background:none;color:var(--ink);font:inherit;cursor:pointer;text-align:start;border-radius:8px}
 :is(html,#z0) :is(body,#z1) .va-r:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)} .va-r span{flex:1;display:flex;flex-direction:column} .va-r small{font-size:11.5px;color:var(--muted)} .va-r em{font-style:normal;font-size:12px;color:var(--sky,#2f6f9f);font-weight:700}
+:is(html,#z0) :is(body,#z1) .co-sw{display:flex;gap:4px;margin:6px 10px 8px;padding:4px;border-radius:12px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+:is(html,#z0) :is(body,#z1) .co-sw button{flex:1;height:32px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+:is(html,#z0) :is(body,#z1) .co-sw button.on{background:var(--card,#fff);color:var(--ink);box-shadow:0 2px 8px -4px rgba(0,0,0,.3)}
+html.co-space .co-sw button.on{color:#7a5bc4}
+:is(html,#z0) :is(body,#z1) .co-sp{border-color:color-mix(in srgb,#7a5bc4 35%,var(--line));background:color-mix(in srgb,#7a5bc4 5%,var(--card))}
+:is(html,#z0) :is(body,#z1) .co-mem{display:flex;align-items:center;gap:2px} .co-mem .ava{margin-inline-start:-6px;box-shadow:0 0 0 2px var(--card)} .co-mem u{text-decoration:none;font-size:11.5px;color:var(--muted);margin-inline-start:8px}
+:is(html,#z0) :is(body,#z1) .cor-m{font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -32252,7 +32259,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ const v = JSON.parse(localStorage.getItem(PEOPLE_CACHE_KEY) || '[]'); return Array.isArray(v) ? v : []; }
     catch(e){ return []; }
   })();
-  function pjPeopleFilter(L){ try{ return window.__pjPeopleOk ? L.filter(p => p && window.__pjPeopleOk(p.name)) : L; }catch(e){ return L; } }
+  function pjPeopleFilter(L){ try{ let o = window.__pjPeopleOk ? L.filter(p => p && window.__pjPeopleOk(p.name)) : L;
+      /* فضای شرکت: فقط اعضای همان شرکت (ابلاغ، کارتابل، تیم) */
+      const cs = window.coSpaceCur ? window.coSpaceCur() : ''; if(cs && window.extPartyOf) o = o.filter(p => p && window.extPartyOf(p.name) === cs);
+      return o; }catch(e){ return L; } }
   window.__reFilterPeople = () => { try{ if(!window.__peopleAll) window.__peopleAll = peopleRows.slice(); peopleRows = pjPeopleFilter(window.__peopleAll); }catch(e){} };
   let peopleAt = 0, peopleLoading = null;
   async function loadPeople(force){
@@ -33093,7 +33103,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(PJ_OFF && PJ_OFF.has(k)) return false;
     if(lvl == null){ try{ if(isRootUser()) return true; }catch(e){} }
     /* کاربر شرکتی (طراح/مشاور/پیمانکار بیرونی): فقط کارهای سند و کارتابل خودش؛ گزارش‌ها، مالی کل، اعلان‌های دیگران و مدیریت بسته است */
-    if(lvl == null){ let co = ''; try{ co = window.coScopeMe ? window.coScopeMe() : ''; }catch(e){} if(co && !(window.coCapOk ? window.coCapOk(k, co) : CO_OK.test(k))) return false; }
+    if(lvl == null){ let co = ''; try{ co = window.coScopeMe ? window.coScopeMe() : ''; }catch(e){}
+      if(co && window.coSpaceCur && window.coSpaceCur()) return window.coSpaceCapOk(k);
+      if(co && !(window.coCapOk ? window.coCapOk(k, co) : CO_OK.test(k))) return false; }
     let v = lvl;
     if(v == null){
       try{ v = rawLevel(); }catch(e){ v = 3; }
@@ -54003,10 +54015,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      «حساب طرف» = «نام کاربر¦نام پرونده». روی سرور (external_accounts.sql) پیمانکارِ وصل‌شده فقط
      صورت وضعیت، قرارداد، نامه و سند طراحیِ همان طرف را می‌خواند. کاربران بیرونی چیزی را مستقیم
      ویرایش نمی‌کنند؛ «پیشنهاد اصلاح» می‌فرستند و مدیر پروژه می‌پذیرد یا رد می‌کند. */
-  const EXT_KIND = 'حساب طرف', SUG_KIND = 'پیشنهاد اصلاح';
-  var extParty = new Map(), sugList = [];
+  const EXT_KIND = 'حساب طرف', SUG_KIND = 'پیشنهاد اصلاح', CO_MGR_KIND = 'مدیر شرکت';
+  var extParty = new Map(), sugList = [], coMgr = new Set();
   function extLoad(lists){
-    extParty.clear(); sugList = [];
+    extParty.clear(); sugList = []; coMgr.clear();
+    (lists[CO_MGR_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i > 0) coMgr.add(nameKey(v.slice(0, i))); });
     (lists[EXT_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i > 0) extParty.set(nameKey(v.slice(0, i)), v.slice(i + 1)); });
     (lists[SUG_KIND] || []).forEach(v => { v = String(v); const i = v.indexOf('¦'); if(i <= 0) return; try{ sugList.push(Object.assign({key: v.slice(0, i), raw: v}, JSON.parse(v.slice(i + 1)))); }catch(e){} });
     sugList.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
@@ -54031,6 +54044,25 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function coScopeMe(){ let me = ''; try{ me = activeUserName(); }catch(e){} if(!me) return ''; try{ if(isRootUser() || isAdminName(me)) return ''; }catch(e){}
     return extParty.get(nameKey(me)) || ''; }
   window.coScopeMe = coScopeMe;
+  /* ====== فضای شرکت (۳۶۱) ======
+     کاربر شرکتی دو فضا دارد: «پروژه» (کار با تیم اصلی: نقشه، نامه، کارهایی که تیم اصلی به او سپرده و تأیید می‌کند)
+     و «شرکت ما» (مدیریت تیم خود شرکت: ابلاغ کار، پیگیری، تأیید، اعلان). کارهای فضای شرکت برچسب co_space دارند
+     و روی سرور فقط اعضای همان شرکت (و مدیر اصلی برای رفع اشکال) آن‌ها را می‌بینند (company_space.sql). */
+  const SPACE_K = 'siteLogM.space';
+  window.coSpaceCur = () => { const co = coScopeMe(); if(!co) return ''; let v = ''; try{ v = localStorage.getItem(SPACE_K) || ''; }catch(e){} return v === 'co' ? co : ''; };
+  window.coSpaceSet = on => { try{ on ? localStorage.setItem(SPACE_K, 'co') : localStorage.removeItem(SPACE_K); }catch(e){} try{ clearBundle(); }catch(e){} location.reload(); };
+  window.coIsMgr = n => coMgr.has(nameKey(n || activeUserName()));
+  window.coMgrSet = async (u, on) => { await supaFetch('lists?kind=eq.' + encodeURIComponent(CO_MGR_KIND) + '&value=like.' + encodeURIComponent(String(u).replace(/[*%]/g, '') + '¦*'), {method: 'DELETE'}).catch(() => {});
+    if(on) await kxListAdd(CO_MGR_KIND, u + '¦' + (extParty.get(nameKey(u)) || '')); on ? coMgr.add(nameKey(u)) : coMgr.delete(nameKey(u)); };
+  /* اجازه‌ها در فضای شرکت: مدیر شرکت مثل مدیر روی تیم خودش؛ عضو فقط کارهای خودش */
+  const CO_SP_MGR = /^(tab\.tasks|task\.(add|edit|general|approve)|deck\.(all|manager)|alert\.all|remind\.use|write\.editOwn|leave\.approve|org\.team|mgr\.critical)$/;
+  const CO_SP_MEM = /^(tab\.tasks|task\.add|remind\.use|write\.editOwn)$/;
+  /* کار خام سرور در فضای فعلی است؟ (پروژه: بی‌برچسب؛ شرکت: برچسب همان شرکت). برای همه، حتی ادمین: کارهای شرکت‌ها در فضای پروژه نمی‌آید */
+  /* ستون co_space روی سرور هست؟ (company_space.sql) */
+  window.__coSpaceCol = false;
+  setTimeout(async () => { try{ await supaFetchRaw('tasks?select=co_space&limit=1'); window.__coSpaceCol = true; }catch(e){ window.__coSpaceCol = false; } }, 2500);
+  window.coTaskSpaceOk = x => !x || (String(x.co_space || '')) === (window.coSpaceCur() || '');
+  window.coSpaceCapOk = k => (window.coIsMgr() ? CO_SP_MGR : CO_SP_MEM).test(k);
   /* کاربر شرکتی: گزارش‌ها، ثبت گزارش کارگاه و مدیریت از ستون کناری و نوار پایین برداشته می‌شود */
   setInterval(() => { try{ const on = !!coScopeMe(), de = document.documentElement; if(de.classList.contains('co-scoped') !== on) de.classList.toggle('co-scoped', on); }catch(e){} }, 1500);
   const coMembers = co => { const k = coNk(co), out = []; extParty.forEach((p, u) => { if(coNk(p) === k) out.push(u); }); return out; };
@@ -54095,9 +54127,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + '<label class="cor-d"><input type="checkbox" data-cordraft="1"' + (coDraftOk2(tab) ? ' checked' : '') + '><span><b>نقشه‌های در حال بررسی شرکت‌های دیگر را هم ببیند</b><small>خاموش: فقط نقشه‌های خودش و نقشه‌های تأییدشده</small></span></label>'
         + '<div class="cor-g">' + Array.from(G.entries()).map(([g, A]) => '<section><h5>' + esc(g) + '</h5>' + A.map(c => '<label><input type="checkbox" data-corcap="' + esc(c.k) + '"' + (on(c.k) ? ' checked' : '') + '><span>' + esc(c.t) + '</span></label>').join('') + '</section>').join('') + '</div>'
         + '<div class="cor-f"><button type="button" class="mini" data-cordef="1">بازگشت به پیش‌فرض</button><button type="button" class="mini go" data-corsave="1">ذخیره</button></div>'
-        + '<section class="cor-l"><h5>افراد وصل‌شده از این نوع <em>' + toFa(linked.length) + '</em></h5>' + (linked.length ? linked.map(([n, p]) => '<div>' + avatarHtml(n, 'xs', true) + '<b>' + esc(n) + '</b><small>' + esc(p) + '</small><button type="button" class="mini" data-corunl="' + esc(n) + '">برداشتن اتصال</button></div>').join('') : '<small>کسی وصل نیست. اتصال از دعوت، «کاربران» یا ✎ روی کارت چارت.</small>') + '</section></div>';
+        + '<section class="cor-l"><h5>افراد وصل‌شده از این نوع <em>' + toFa(linked.length) + '</em></h5>' + (linked.length ? linked.map(([n, p]) => '<div>' + avatarHtml(n, 'xs', true) + '<b>' + esc(n) + '</b><small>' + esc(p) + '</small><label class="cor-m"><input type="checkbox" data-cormgr="' + esc(n) + '"' + (window.coIsMgr(n) ? ' checked' : '') + '> مدیر شرکت</label><button type="button" class="mini" data-corunl="' + esc(n) + '">برداشتن اتصال</button></div>').join('') : '<small>کسی وصل نیست. اتصال از دعوت، «کاربران» یا ✎ روی کارت چارت.</small>') + '</section></div>';
     };
     const m = fxModal('corM', 'دسترسی شرکت‌ها', 'محدودیت‌های طراحان، مشاوران، کارفرما و پیمانکاران بیرونی؛ برای هر پروژه جدا', paint(), true), B = m.querySelector('.fx-bd');
+    B.onchange = async e => { const c = e.target.closest('[data-cormgr]'); if(!c) return; c.disabled = true; try{ await window.coMgrSet(c.dataset.cormgr, c.checked); shrToast(c.checked ? c.dataset.cormgr + ' مدیر شرکت شد' : 'برداشته شد'); }catch(er){ c.checked = !c.checked; showDialog('err', 'ثبت نشد', friendlyErr(er)); } finally{ c.disabled = false; } };
     B.onclick = async e => {
       const t = e.target.closest('[data-cort]'); if(t){ tab = t.dataset.cort; B.innerHTML = paint(); return; }
       if(e.target.closest('[data-cordef]')){ await coRuleSet({['coCaps.' + tab]: null, ['coDraft.' + tab]: null}); B.innerHTML = paint(); shrToast('به پیش‌فرض برگشت'); return; }
@@ -54112,10 +54145,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ ctrContacts.forEach(c => { if(c && c.name && ['cons', 'emp', 'own', 'ctr'].indexOf(c.t) !== -1) S.set(coNk(c.name), c.name); }); }catch(e){}
     return Array.from(S.values()).sort((a, b) => a.localeCompare(b, 'fa')); };
   /* بستهٔ دادهٔ سرور برای کاربر شرکتی: فقط سهم خودش (اسناد، کارها)؛ گزارش‌های روزانهٔ کارگاه به او نمی‌رسد */
-  window.coScopeBundle = b => { const co = coScopeMe(); if(!co || !b || b.__co === co) return b;
+  window.coScopeBundle = b => {
+    const co = coScopeMe(); if(!co || !b || b.__co === co) return b;
     try{ const A = b.admin || {}; [['statements', 'statement'], ['contracts', 'contract'], ['minutes', 'minute'], ['letters', 'letter'], ['designs', 'design']].forEach(([k, kind]) => { if(Array.isArray(A[k])) A[k] = A[k].filter(r => coRowOk(kind, r, co)); }); }catch(e){}
     try{ let me = activeUserName(); if(Array.isArray(b.tasks)) b.tasks = b.tasks.filter(t => coRowOk('task', t, co)); void me; }catch(e){}
     try{ if(b.day){ b.day = Object.assign({}, b.day, {rows: [], issues: [], machines: []}); } }catch(e){}
+    /* فضای شرکت: اسناد پروژه این‌جا نیست (در فضای پروژه است) */
+    try{ if(window.coSpaceCur && window.coSpaceCur() && b.admin){ const A = b.admin; Object.keys(A).forEach(k => { if(Array.isArray(A[k])) A[k] = []; }); } }catch(e){}
     try{ Object.defineProperty(b, '__co', {value: co, configurable: true, writable: true}); }catch(e){}
     return b; };
   /* ====== پرتال شرکت (طراح/مشاور بیرونی) و صف بررسی نقشه‌ها (تیم اصلی) — ۳۵۷ ====== */
@@ -54175,7 +54211,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* نوع شرکت: پیمانکار ← پنل نماینده؛ بقیه (طراح، مشاور، کارفرما، مالک) ← پرتال شرکت. نوع نامعلوم: اگر نقشه‌ای به نامش هست، طراح */
   const coIsCtr = co => { let t = ''; try{ t = ctrTypeOf(co) || ''; }catch(e){} if(t) return t === 'ctr'; return !dqDesigns().some(x => coMatch(pick(x.row, AD.dParty), co)); };
   window.coIsCtr = coIsCtr;
-  window.coPanelHtml = function(){ const co = coScopeMe(); if(!co || coIsCtr(co)) return '';
+  window.coPanelHtml = function(){ const co = coScopeMe(); if(!co) return ''; if(window.coSpaceCur && window.coSpaceCur()) return coSpacePanelHtml(co); if(coIsCtr(co)) return '';
     const D = dqDesigns().filter(x => coMatch(pick(x.row, AD.dParty), co)), n = c => D.filter(x => dqCls(dqSt(x.row)) === c).length;
     const I = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
     return '<section class="h3-sec co-pn h3-a" style="--i:2"><div class="co-h"><span class="co-av">' + avatarHtml(co, 'sm', true) + '</span><span class="co-t"><small>پرتال شرکت</small><b>' + esc(co) + '</b></span>'
@@ -54188,9 +54224,27 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(g === 'latest') return window.dqLatestOpen(); if(g === 'mine') return window.dqMineOpen('design');
     const k = g === 'send' ? 'design' : 'letter', cls = g === 'send' ? '.a-dParty' : '.a-lParty';
     try{ homeNewDoc(k); }catch(er){} let n = 0; const t = setInterval(() => { const i = document.querySelector('#secAdm' + k + ' ' + cls); if(i && i.offsetParent){ if(!i.value){ i.value = co; i.dispatchEvent(new Event('input', {bubbles: true})); } i.readOnly = true; i.title = 'شرکت شما (خودکار)'; clearInterval(t); } else if(++n > 40) clearInterval(t); }, 150); });
+  /* فضای «شرکت ما»: ابلاغ کار به تیم، کارهای تیم، یادآور، اعضا؛ فقط اعضای همین شرکت */
+  function coSpacePanelHtml(co){
+    const M = coMembers(co).map(u => (window.listNamesAll ? window.listNamesAll() : []).find(a => nameKey(a) === u) || u), mgr = window.coIsMgr();
+    const I = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+    return '<section class="h3-sec co-pn co-sp h3-a" style="--i:2"><div class="co-h"><span class="co-av">' + avatarHtml(co, 'sm', true) + '</span><span class="co-t"><small>فضای شرکت · فقط اعضای ' + esc(co) + ' این‌جا را می‌بینند</small><b>' + esc(co) + '</b></span>'
+      + '<span class="co-mem">' + M.slice(0, 6).map(n => avatarHtml(n, 'xs', true)).join('') + '<u>' + toFa(M.length) + ' عضو' + (mgr ? ' · شما مدیر شرکت هستید' : '') + '</u></span></div>'
+      + '<div class="co-a">' + (mgr ? '<button type="button" data-h3k="gen">' + I('<path d="M12 5v14M5 12h14"/>') + '<span>ابلاغ کار به تیم</span></button>' : '')
+      + '<button type="button" data-h3k="mine">' + I('<path d="M4 6h16M4 12h16M4 18h10"/>') + '<span>' + (mgr ? 'کارهای تیم' : 'کارهای من') + '</span></button>'
+      + '<button type="button" data-h3k="rem">' + I('<path d="M6 8a6 6 0 1112 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21h4"/>') + '<span>یادآور و اعلان</span></button>'
+      + '<button type="button" data-cosp="pj">' + I('<path d="M3 21h18M5 21V7l7-4 7 4v14"/>') + '<span>برگشت به فضای پروژه</span></button></div></section>';
+  }
+  /* سوییچ دو فضا در ستون کناری (فقط کاربر شرکتی) */
+  setInterval(() => { try{ const co = coScopeMe(), bar = document.getElementById('tabBar'); if(!bar) return; let sw = document.getElementById('coSpSw');
+    if(!co){ if(sw) sw.remove(); return; } const cur = window.coSpaceCur() ? 'co' : 'pj';
+    if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
+    const h = '<button type="button" data-cosp="pj" class="' + (cur === 'pj' ? 'on' : '') + '">پروژه</button><button type="button" data-cosp="co" class="' + (cur === 'co' ? 'on' : '') + '">شرکت ما</button>'; if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; }
+    document.documentElement.classList.toggle('co-space', cur === 'co'); }catch(e){} }, 1200);
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-cosp]'); if(!b) return; e.preventDefault(); e.stopPropagation(); const on = b.dataset.cosp === 'co'; if(!!window.coSpaceCur() === on) return; window.coSpaceSet(on); }, true);
   /* پنل نماینده روی خانه: ارسال صورت وضعیت، ارسال نامه، دیدن کارکرد و اسناد خودش */
   window.repPanelHtml = function(){
-    const me = activeUserName(), c = ctrOfRep(me); if(!c) return ''; try{ const co = coScopeMe(); if(co && !coIsCtr(co)) return ''; }catch(e){}
+    const me = activeUserName(), c = ctrOfRep(me); if(!c) return ''; try{ const co = coScopeMe(); if(co && (!coIsCtr(co) || window.coSpaceCur())) return ''; }catch(e){}
     const I = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
     return '<section class="h3-sec rp-pn h3-a" style="--i:2"><div class="rp-h"><span class="rp-av">' + avatarHtml(c, 'sm', true) + '</span><span class="rp-t"><small>نمایندهٔ پیمانکار</small><b>' + esc(c) + '</b></span></div>'
       + '<div class="rp-a"><button type="button" data-rpgo="statement">' + I('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>') + '<span>ارسال صورت وضعیت</span></button>'
@@ -60990,7 +61044,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         supaFetch('machines?'   + q2)
       ]);
     }
-    const mapd = (t, arr) => (arr || []).map(x => fromSupa(t, x));
+    const mapd = (t, arr) => (arr || []).filter(x => t !== 'tasks' || !window.coTaskSpaceOk || window.coTaskSpaceOk(x)).map(x => fromSupa(t, x));
     rangeCache = {
       key, dates,
       rows: mapd('activities', rw),
@@ -61489,9 +61543,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   document.addEventListener('click', async e => { if(e.target.closest && e.target.closest('[data-maintoff]')){ try{ await window.maintSet(false); shrToast('حالت نگهداری خاموش شد'); }catch(er){ showDialog('err', 'ثبت نشد', friendlyErr(er)); } } });
   async function supaFetch(path, opts){
     if(maintBlocks(path, opts)) throw new Error('سایت در حالت نگهداری است و فعلاً ثبت و ویرایش ممکن نیست. ' + ((maint && maint.msg) || ''));
+    /* فضای شرکت: کار تازه با برچسب شرکت ثبت می‌شود؛ خواندن کارها فقط کارهای فضای فعلی را برمی‌گرداند */
+    const isTasks = /^tasks(\?|$)/.test(String(path)), sp = isTasks && window.coSpaceCur ? window.coSpaceCur() : '';
+    if(isTasks && window.__coSpaceCol){ const m = /([?&]select=)([^&]*)/.exec(path); if(m && !/\*|co_space/.test(m[2])) path = path.replace(m[0], m[1] + m[2] + ',co_space'); }
+    if(isTasks && opts && opts.method === 'POST'){ if(sp && !window.__coSpaceCol) throw new Error('فضای شرکت هنوز روی سرور فعال نشده (company_space.sql اجرا نشده است).');
+      if(window.__coSpaceCol && Array.isArray(opts.body)) opts = Object.assign({}, opts, {body: opts.body.map(r => Object.assign({}, r, {co_space: sp || null}))}); }
     netBusy(1);
     try{
-      const r = await supaFetchRaw(path, opts);
+      let r = await supaFetchRaw(path, opts);
+      if(isTasks && (!opts || !opts.method || opts.method === 'GET') && Array.isArray(r)) r = r.filter(t => !t || (sp ? String(t.co_space || '') === sp : !t.co_space));
       if(opts && opts.method && opts.method !== 'GET'){ try{ liveWrote(path, opts); }catch(e){} }
       return r;
     }
@@ -62592,7 +62652,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       let rq; try{ rq = indexedDB.open('pm-cache', 1); }catch(e){ return res(null); }
       rq.onupgradeneeded = () => { try{ rq.result.createObjectStore('kv'); }catch(e){} };
       rq.onerror = () => res(null);
-      const KEY = (function(){ try{ const p = localStorage.getItem('siteLogM.project.v1') || 'p1'; return p === 'p1' ? 'b3' : 'b3@' + p; }catch(e){ return 'b3'; } })();
+      const KEY = (function(){ try{ const p = localStorage.getItem('siteLogM.project.v1') || 'p1'; let sp0 = ''; try{ sp0 = (window.coSpaceCur && window.coSpaceCur()) ? '#co' : ''; }catch(e){} return (p === 'p1' ? 'b3' : 'b3@' + p) + sp0 + (window.__realUser ? '#va' : ''); }catch(e){ return 'b3'; } })();
       rq.onsuccess = () => { try{ const db = rq.result, tx = db.transaction('kv', mode === 'put' ? 'readwrite' : 'readonly'), st = tx.objectStore('kv');
         const r2 = mode === 'put' ? st.put(val, KEY) : st.get(KEY);
         r2.onsuccess = () => { res(mode === 'put' ? true : r2.result || null); db.close(); };
@@ -62656,7 +62716,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         body:{p_date: dateFa || '', p_prev: prevFa || ''}
       });
       photosApply(d, await phP);
-      const mapd = (t, arr) => (arr || []).map(r => fromSupa(t, r));
+      const mapd = (t, arr) => (arr || []).filter(x => t !== 'tasks' || !window.coTaskSpaceOk || window.coTaskSpaceOk(x)).map(r => fromSupa(t, r));
       return Object.assign({}, heavyCache.data, {
         day: {rows: mapd('activities', d.rows), issues: mapd('issues', d.issues),
               machines: mapd('machines', d.machines)},
@@ -62685,7 +62745,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         j.letters.forEach(x => { if(x && m.has(String(x.id))) x.direction = m.get(String(x.id)); });
       }catch(e){ LTR_DIR_COL = false; }
     }
-    const map = (t, arr) => (arr || []).map(r => fromSupa(t, r));
+    const map = (t, arr) => (arr || []).filter(x => t !== 'tasks' || !window.coTaskSpaceOk || window.coTaskSpaceOk(x)).map(r => fromSupa(t, r));
     const lists = {};
     (j.lists || []).forEach(x => {
       if(!lists[x.kind]) lists[x.kind] = [];
