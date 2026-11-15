@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115105308">
+<meta name="pm-build" content="20261115110049">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -5737,6 +5737,8 @@
     .ibx-kinds{grid-template-columns:1fr 1fr;}     .ibx-bar{flex-wrap:nowrap;gap:6px;padding:8px;} .ibx-bar button{padding:10px 9px;font-size:11.5px;white-space:nowrap;} .ibx-bar .ib-go{overflow:hidden;text-overflow:ellipsis;min-width:0;}
   }
   .ib-kinds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .hl-pe{position:static;order:9;align-self:flex-start;font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted);cursor:pointer;}
+  .hl-pe:hover{color:var(--c, var(--sky));border-color:var(--c, var(--sky));} .hl-pm{margin:0 0 10px !important;}
   /* ترانسمیتال (۳۸۸) */
   .trx{display:flex;flex-direction:column;gap:12px;container-type:inline-size;}
   @container (max-width:680px){ .trd-g{grid-template-columns:1fr 1fr;} .trd-g .trd-ti{grid-column:1 / -1;} .trd-f{grid-template-columns:1fr;} }
@@ -54563,6 +54565,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   async function coRuleSet(patch){ const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}, patch);
     Object.keys(cur).forEach(k => { if(cur[k] === null) delete cur[k]; });
     await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.keys(window.__pmRules).forEach(k => delete window.__pmRules[k]); Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
+  window.coRuleSet = coRuleSet;
   /* «دسترسی تیم‌های بیرونی» (کنسول ← افراد و دسترسی): برای هر نوع تیم، کارهای مجاز، دید نقشه‌های در حال بررسی و فهرست افراد وصل‌شده */
   /* انتخاب کاربر برای «مشاهده به‌جای کاربر» (فقط مدیر اصلی) */
   window.viewAsPick = function(){
@@ -100923,16 +100926,21 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ====== چیدمان خانه (۳۸۰) ======
      بلوک‌های خانه، چند الگوی آماده (مدیریت، طراحی، اجرا، تیم بیرونی، مینیمال) که با سمت، نوع دسترسی و مرحلهٔ پروژه پیشنهاد می‌شوند،
      و ویرایشگر: ترتیب (کشیدن یا بالا/پایین)، نمایش/پنهان. برای هر نفر در هر پروژه جدا (siteLogM.homeLay.<پروژه>). */
-  const HL_DEF = ['hero', 'band', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
+  const HL_DEF = ['hero', 'band', 'rep', 'co', 'org', 'dsk', 'dq', 'early', 'kart', 'quick', 'prj'];
   const HL_B = {hero: ['خوش‌آمد و پروژه', 'سلام، پروژه، کارهای باز و موعدها', 1], band: ['نمای پروژه', 'نمودارها، پیشرفت و شاخص‌های کلیدی پروژه'], kart: ['کارتابل من', 'کار امروز و پیگیری‌ها'], early: ['هشدارهای مهم', 'موارد فوری و بحرانی'], prj: ['وضعیت پروژه', 'نمودارها و شاخص‌های پروژه'],
-    dash: ['نمای پروژه (گوشی)', 'خلاصهٔ نموداری روی گوشی'], quick: ['میان‌برها', 'دسترسی سریع به بخش‌ها'], dsk: ['میز طراحی', 'ارسال نقشه، وضعیت و پیشرفت رشته‌ها'], dq: ['صف بررسی نقشه‌ها', 'ارسالی تیم‌های بیرونی منتظر تصمیم'],
+    quick: ['میان‌برها', 'دسترسی سریع به بخش‌ها'], dsk: ['میز طراحی', 'ارسال نقشه، وضعیت و پیشرفت رشته‌ها'], dq: ['صف بررسی نقشه‌ها', 'ارسالی تیم‌های بیرونی منتظر تصمیم'],
     org: ['سازمان من', 'فضای شرکت در همهٔ پروژه‌ها'], co: ['پرتال تیم', 'آخرین نقشه‌ها و اسناد تیم'], rep: ['پنل پیمانکار', 'صورت وضعیت، نامه و کارکرد']};
-  const HL_P = [
-    {k: 'mgr', t: 'مدیریت پروژه', d: 'نمای کلان: هشدارها، وضعیت پروژه، کارتابل و صف بررسی', c: '#2a6fa0', o: ['hero', 'band', 'early', 'prj', 'dash', 'kart', 'dq', 'quick', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
-    {k: 'des', t: 'طراحی', d: 'میز طراحی جلوی چشم: ارسال نقشه، وضعیت نقشه‌ها و پیشرفت رشته‌ها', c: '#7a4fc0', o: ['hero', 'band', 'dsk', 'dq', 'kart', 'org', 'quick', 'early', 'prj', 'dash', 'co', 'rep'], h: ['prj']},
-    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'band', 'kart', 'early', 'quick', 'dash', 'prj', 'org', 'dq', 'dsk', 'co', 'rep'], h: ['dsk', 'dq']},
-    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'band', 'prj', 'dash', 'dq'], h: ['prj', 'dq', 'band']},
-    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'kart', 'org', 'dsk', 'co', 'rep', 'dq', 'early', 'quick', 'band', 'prj', 'dash'], h: ['early', 'quick', 'prj', 'dash', 'dq', 'band']}];
+  const HL_P0 = [
+    {k: 'mgr', t: 'مدیریت پروژه', d: 'نمای کلان: هشدارها، وضعیت پروژه، کارتابل و صف بررسی', c: '#2a6fa0', o: ['hero', 'band', 'early', 'prj', 'kart', 'dq', 'quick', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
+    {k: 'des', t: 'طراحی', d: 'میز طراحی جلوی چشم: ارسال نقشه، وضعیت نقشه‌ها و پیشرفت رشته‌ها', c: '#7a4fc0', o: ['hero', 'band', 'dsk', 'dq', 'kart', 'org', 'quick', 'early', 'prj', 'co', 'rep'], h: ['prj']},
+    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'band', 'kart', 'early', 'quick', 'prj', 'org', 'dq', 'dsk', 'co', 'rep'], h: ['dsk', 'dq']},
+    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'band', 'prj', 'dq'], h: ['prj', 'dq', 'band']},
+    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'kart', 'org', 'dsk', 'co', 'rep', 'dq', 'early', 'quick', 'band', 'prj'], h: ['early', 'quick', 'prj', 'dq', 'band']}];
+  /* الگوها را ادمین پروژه اصلاح می‌کند (۳۹۰): قانون homePresets = {کلید: {o, h}}؛ پیش‌فرض همهٔ پروژه‌ها از لایهٔ سامانه */
+  const hlOv = () => { try{ const v = window.pmRule ? window.pmRule('homePresets', '') : ''; const o = v ? (typeof v === 'string' ? JSON.parse(v) : v) : {}; return o && typeof o === 'object' ? o : {}; }catch(e){ return {}; } };
+  const hlPs = () => { const O = hlOv(); return HL_P0.map(P => { const x = O[P.k]; return x && Array.isArray(x.o) ? Object.assign({}, P, {o: x.o.filter(k => HL_B[k]), h: (x.h || []).filter(k => HL_B[k]), ed: 1}) : P; }); };
+  const hlCanEdP = () => { try{ return !window.__realUser && isAdminUser(); }catch(e){ return false; } };
+  async function hlSavePreset(k, val){ const O = hlOv(); if(val) O[k] = val; else delete O[k]; await window.coRuleSet({homePresets: Object.keys(O).length ? JSON.stringify(O) : null}); }
   const hlKey = () => { let pj = 'p1'; try{ pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return 'siteLogM.homeLay.' + pj + '.' + nameKey(activeUserName() || ''); };
   /* ۳۸۹: «نمای پروژه» همیشه بلافاصله زیر خوش‌آمد؛ چیدمان‌های ذخیره‌شدهٔ قبلی یک‌بار به‌روز می‌شوند */
   const hlMig = v => { if(v.v >= 2) return v; const o = v.o.filter(k => k !== 'band'), i = o.indexOf('hero'); o.splice(i + 1, 0, 'band'); v.o = o; if(v.p !== 'min' && v.p !== 'ext') v.h = (v.h || []).filter(k => k !== 'band'); v.v = 2; try{ localStorage.setItem(hlKey(), JSON.stringify(v)); }catch(e){} return v; };
@@ -100944,9 +100952,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let rl = ''; try{ rl = String(roleOf(me) || ''); }catch(e){} let lv = 3; try{ lv = levelOf(me); }catch(e){}
     let dz = false; try{ dz = !!window.pjIsDesign(); }catch(e){}
     if(/طراح|BIM|نقشه/.test(rl)) return 'des'; if(lv <= 2) return dz ? 'des' : 'mgr'; return dz ? 'des' : 'site'; }
-  const hlFull = o => o.concat(HL_DEF.filter(k => o.indexOf(k) === -1));
+  const hlFull = o => o.filter(k => HL_B[k]).concat(HL_DEF.filter(k => o.indexOf(k) === -1));
   window.homeLayOrder = () => { const v = hlGet(); if(!v) return HL_DEF.slice(); const H = new Set(v.h || []); return hlFull(v.o).filter(k => !H.has(k)); };
-  const hlApplyPreset = k => { const P = HL_P.find(x => x.k === k) || HL_P[0]; hlSet({p: P.k, o: P.o.slice(), h: P.h.slice()}); };
+  const hlApplyPreset = k => { const P = hlPs().find(x => x.k === k) || hlPs()[0]; hlSet({p: P.k, o: P.o.slice(), h: P.h.slice()}); };
   const hlRerender = () => { try{ const b = document.getElementById('homeView'); if(b) b.__h = ''; homeRender(); }catch(e){} };
   /* پیش‌نمایش کوچک هر الگو: بلوک‌ها به‌شکل نوارهای رنگی با اندازهٔ تقریبی */
   /* اسکلت داخلی هر بلوک در پیش‌نمایش: شبیه خود بخش (دایره و خط، نمودار، فهرست، کاشی) */
@@ -100958,24 +100966,28 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const hlMini = (P, R) => '<span class="hl-mini" style="--c:' + P.c + '">' + P.o.filter(k => P.h.indexOf(k) === -1 && k !== 'dash' && (!R || R.has(k))).slice(0, 6).map(k => '<i class="b-' + k + '" style="--h:' + (HL_SZ[k] || 2) + '">' + (HL_W[k] || '') + '<u>' + esc(HL_B[k][0]) + '</u></i>').join('') + '</span>';
   /* انتخاب الگو: بار اول ورود به هر پروژه، و از «چیدمان خانه» */
   window.homeLayPick = function(first){ const sug = hlSuggest(), cur = (hlGet() || {}).p || '';
-    const m = fxModal('hlPickM', first ? 'خانه‌ات را انتخاب کن' : 'الگوی خانه', first ? 'پیشنهاد بر اساس ' + (function(){ let r = '', dz = false; try{ r = roleOf(activeUserName()) || ''; }catch(e){} try{ dz = !!window.pjIsDesign(); }catch(e){} return (r ? 'سمت «' + r + '»' : 'جایگاه شما') + ' و مرحلهٔ ' + (dz ? 'طراحی' : 'اجرای') + ' پروژه'; })() + '. میز کار هم با همین الگو چیده می‌شود؛ بعداً هر بخش را می‌شود جابه‌جا، اضافه یا پنهان کرد.' : 'یک الگو انتخاب کنید؛ بعد می‌توانید بخش‌ها را جابه‌جا یا پنهان کنید.', '<div class="hl-pg">' + (function(){ const R = hlRel(); return HL_P.map(P => '<button type="button" class="hl-pc' + (P.k === (cur || sug) ? ' on' : '') + '" data-hlp="' + P.k + '" style="--c:' + P.c + '">' + hlMini(P, R) + '<span class="hl-ck">✓</span><span class="hl-pt"><b>' + esc(P.t) + (P.k === sug ? '<i class="hl-sug">پیشنهاد برای شما</i>' : '') + '</b><small>' + esc(P.d) + '</small><em>' + toFa(P.o.filter(k => P.h.indexOf(k) === -1 && R.has(k)).length) + ' بخش</em></span></button>').join(''); })() + '</div>'
+    const m = fxModal('hlPickM', first ? 'خانه‌ات را انتخاب کن' : 'الگوی خانه', first ? 'پیشنهاد بر اساس ' + (function(){ let r = '', dz = false; try{ r = roleOf(activeUserName()) || ''; }catch(e){} try{ dz = !!window.pjIsDesign(); }catch(e){} return (r ? 'سمت «' + r + '»' : 'جایگاه شما') + ' و مرحلهٔ ' + (dz ? 'طراحی' : 'اجرای') + ' پروژه'; })() + '. میز کار هم با همین الگو چیده می‌شود؛ بعداً هر بخش را می‌شود جابه‌جا، اضافه یا پنهان کرد.' : 'یک الگو انتخاب کنید؛ بعد می‌توانید بخش‌ها را جابه‌جا یا پنهان کنید.', '<div class="hl-pg">' + (function(){ const R = hlRel(); return hlPs().map(P => '<button type="button" class="hl-pc' + (P.k === (cur || sug) ? ' on' : '') + '" data-hlp="' + P.k + '" style="--c:' + P.c + '">' + hlMini(P, R) + '<span class="hl-ck">✓</span>' + (hlCanEdP() ? '<span class="hl-pe" role="button" tabindex="0" data-hlpe="' + P.k + '" title="ویرایش این الگو برای همهٔ اعضای پروژه">' + (P.ed ? 'اصلاح‌شده · ' : '') + 'ویرایش الگو</span>' : '') + '<span class="hl-pt"><b>' + esc(P.t) + (P.k === sug ? '<i class="hl-sug">پیشنهاد برای شما</i>' : '') + '</b><small>' + esc(P.d) + '</small><em>' + toFa(P.o.filter(k => P.h.indexOf(k) === -1 && R.has(k)).length) + ' بخش</em></span></button>').join(''); })() + '</div>'
       + '<div class="mod-f hl-mf"><button type="button" class="mini" data-hledit="1">سفارشی‌سازی دقیق خانه</button><button type="button" class="mini" data-wslay="1">چیدمان میز کار</button><button type="button" class="hl-go" data-hlok="1">انتخاب این خانه</button></div>', true);
     m.classList.add('hl-pick'); let sel = cur || sug; const B = m.querySelector('.fx-bd');
-    B.onclick = e => { const c = e.target.closest('[data-hlp]'); if(c){ sel = c.dataset.hlp; B.querySelectorAll('[data-hlp]').forEach(x => x.classList.toggle('on', x === c)); return; }
-      if(e.target.closest('[data-hlok]')){ hlApplyPreset(sel); try{ window.wsLayPreset && window.wsLayPreset(sel); }catch(er){} m.remove(); hlRerender(); try{ shrToast('خانهٔ «' + (HL_P.find(x => x.k === sel) || {}).t + '» آماده است'); }catch(er){} return; }
+    B.onclick = e => { const pe = e.target.closest('[data-hlpe]'); if(pe){ e.stopPropagation(); m.remove(); window.homeLayEdit(pe.dataset.hlpe); return; }
+      const c = e.target.closest('[data-hlp]'); if(c){ sel = c.dataset.hlp; B.querySelectorAll('[data-hlp]').forEach(x => x.classList.toggle('on', x === c)); return; }
+      if(e.target.closest('[data-hlok]')){ hlApplyPreset(sel); try{ window.wsLayPreset && window.wsLayPreset(sel); }catch(er){} m.remove(); hlRerender(); try{ shrToast('خانهٔ «' + (hlPs().find(x => x.k === sel) || {}).t + '» آماده است'); }catch(er){} return; }
       if(e.target.closest('[data-hledit]')){ if(!hlGet()) hlApplyPreset(sel); m.remove(); window.homeLayEdit(); } }; };
   /* ویرایشگر: ترتیب با کشیدن یا دکمهٔ بالا/پایین، نمایش با کلید؛ پیش‌نمایش زنده روی خود خانه */
-  window.homeLayEdit = function(){ const v = hlGet() || (function(){ const P = HL_P.find(x => x.k === hlSuggest()); return {p: P.k, o: P.o.slice(), h: P.h.slice()}; })(); let o = hlFull(v.o), hid = new Set(v.h || []);
-    const paint = () => '<div class="hl-ed"><div class="hl-tp">' + HL_P.map(P => '<button type="button" class="' + (P.k === v.p ? 'on' : '') + '" data-hlpre="' + P.k + '" style="--c:' + P.c + '">' + esc(P.t) + '</button>').join('') + '</div>'
+  window.homeLayEdit = function(pk){ const PM = pk ? hlPs().find(x => x.k === pk) : null;
+    const v = PM ? {p: PM.k, o: PM.o.slice(), h: PM.h.slice()} : hlGet() || (function(){ const P = hlPs().find(x => x.k === hlSuggest()); return {p: P.k, o: P.o.slice(), h: P.h.slice()}; })(); let o = hlFull(v.o), hid = new Set(v.h || []);
+    const paint = () => '<div class="hl-ed">' + (PM ? '<p class="hl-nt hl-pm">ترتیب و بخش‌های پیش‌فرض الگوی «' + esc(PM.t) + '» برای همهٔ اعضای این پروژه. چیدمان شخصی هر نفر دست نمی‌خورد؛ از این به بعد هر کس این الگو را انتخاب کند همین را می‌گیرد.</p>' : '') + '<div class="hl-tp"' + (PM ? ' hidden' : '') + '>' + hlPs().map(P => '<button type="button" class="' + (P.k === v.p ? 'on' : '') + '" data-hlpre="' + P.k + '" style="--c:' + P.c + '">' + esc(P.t) + '</button>').join('') + '</div>'
       + '<ol class="hl-ls">' + o.map((k, i) => { const b = HL_B[k]; if(!b) return ''; return '<li class="hl-it' + (hid.has(k) ? ' off' : '') + '" draggable="' + (b[2] ? 'false' : 'true') + '" data-hlk="' + k + '"><span class="hl-gr">⋮⋮</span><span class="hl-tx"><b>' + esc(b[0]) + '</b><small>' + esc(b[1]) + '</small></span>'
         + (b[2] ? '<i class="hl-lk">همیشه</i>' : '<span class="hl-ac"><button type="button" data-hlup="' + k + '"' + (i <= 1 ? ' disabled' : '') + '>▲</button><button type="button" data-hldn="' + k + '"' + (i === o.length - 1 ? ' disabled' : '') + '>▼</button><label class="org-sw"><input type="checkbox" data-hlon="' + k + '"' + (hid.has(k) ? '' : ' checked') + '><span></span></label></span>') + '</li>'; }).join('') + '</ol>'
       + '<p class="hl-nt">بخشی که برای شما دادهٔ مرتبط ندارد (مثلاً پنل پیمانکار برای تیم اصلی) حتی روشن هم دیده نمی‌شود.</p></div>';
-    const m = fxModal('hlEdM', 'چیدمان خانه', 'بخش‌ها را بکشید یا با فلش جابه‌جا کنید؛ کلید = نمایش', paint() + '<div class="mod-f"><button type="button" class="mini" data-hlreset="1">بازگشت به الگو</button><button type="button" class="mini go" data-hlsave="1">ذخیره</button></div>', false), B = m.querySelector('.fx-bd');
-    const re = () => { const L = B.querySelector('.hl-ed'); if(L) L.outerHTML = paint(); hlSet({p: v.p, o, h: Array.from(hid)}); hlRerender(); };
+    const m = fxModal('hlEdM', PM ? 'ویرایش الگوی «' + PM.t + '»' : 'چیدمان خانه', 'بخش‌ها را بکشید یا با فلش جابه‌جا کنید؛ کلید = نمایش', paint() + '<div class="mod-f"><button type="button" class="mini" data-hlreset="1">' + (PM ? 'الگوی پیش‌فرض سامانه' : 'بازگشت به الگو') + '</button><button type="button" class="mini go" data-hlsave="1">' + (PM ? 'ذخیرهٔ الگو برای پروژه' : 'ذخیره') + '</button></div>', false), B = m.querySelector('.fx-bd');
+    const re = () => { const L = B.querySelector('.hl-ed'); if(L) L.outerHTML = paint(); if(PM) return; hlSet({p: v.p, o, h: Array.from(hid)}); hlRerender(); };
     B.addEventListener('click', e => { const t = e.target;
-      const pr = t.closest('[data-hlpre]'); if(pr){ const P = HL_P.find(x => x.k === pr.dataset.hlpre); v.p = P.k; o = hlFull(P.o.slice()); hid = new Set(P.h); re(); return; }
+      const pr = t.closest('[data-hlpre]'); if(pr){ const P = hlPs().find(x => x.k === pr.dataset.hlpre); v.p = P.k; o = hlFull(P.o.slice()); hid = new Set(P.h); re(); return; }
       const up = t.closest('[data-hlup]'), dn = t.closest('[data-hldn]'); if(up || dn){ const k = (up || dn).dataset[up ? 'hlup' : 'hldn'], i = o.indexOf(k), j = up ? i - 1 : i + 1; if(j < 1 || j >= o.length) return; o.splice(i, 1); o.splice(j, 0, k); re(); return; }
-      if(t.closest('[data-hlreset]')){ const P = HL_P.find(x => x.k === v.p) || HL_P[0]; o = hlFull(P.o.slice()); hid = new Set(P.h); re(); return; }
+      if(t.closest('[data-hlreset]')){ const P = (PM ? HL_P0 : hlPs()).find(x => x.k === v.p) || hlPs()[0]; o = hlFull(P.o.slice()); hid = new Set(P.h); re(); return; }
+      if(PM && t.closest('[data-hlsave]')){ const P0 = HL_P0.find(x => x.k === PM.k), same = JSON.stringify(hlFull(P0.o.slice())) === JSON.stringify(o) && JSON.stringify(P0.h.slice().sort()) === JSON.stringify(Array.from(hid).sort());
+        const bt = t.closest('[data-hlsave]'); bt.disabled = true; hlSavePreset(PM.k, same ? null : {o, h: Array.from(hid)}).then(() => { m.remove(); try{ shrToast('الگوی «' + PM.t + '» برای همهٔ اعضای پروژه ذخیره شد'); }catch(er){} window.homeLayPick(false); }).catch(er => { bt.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(er)); }); return; }
       if(t.closest('[data-hlsave]')){ hlSet({p: v.p, o, h: Array.from(hid)}); m.remove(); hlRerender(); try{ shrToast('چیدمان خانه ذخیره شد'); }catch(er){} } });
     B.addEventListener('change', e => { const c = e.target.closest('[data-hlon]'); if(!c) return; c.checked ? hid.delete(c.dataset.hlon) : hid.add(c.dataset.hlon); re(); });
     let dragK = ''; B.addEventListener('dragstart', e => { const li = e.target.closest('.hl-it'); if(!li) return; dragK = li.dataset.hlk; li.classList.add('drag'); });
@@ -101018,8 +101030,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* چیدمان خانه (۳۸۰): هر بخش یک بلوک است؛ ترتیب و نمایش از الگوی انتخابی هر نفر در همین پروژه (homeLayOrder) */
     const sf = f => { try{ return f() || ''; }catch(e){ return ''; } }, LO = window.homeLayOrder ? window.homeLayOrder() : ['hero', 'band', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
     window.__hlBandSep = true; h3DeskTop.__band = '';
-    const BL = {hero: () => deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) : h5Hero(work, tk, day, dDate, adm), band: () => deskHome && h3DeskTop.__band ? '<section class="hz hz-solo h3-a">' + h3DeskTop.__band + '</section>' : '', rep: () => window.repPanelHtml ? window.repPanelHtml() : '', co: () => window.coPanelHtml ? window.coPanelHtml() : '',
-      org: () => window.orgHomeHtml ? window.orgHomeHtml() : '', dsk: () => window.dsDeskHtml ? window.dsDeskHtml() : '', dq: () => window.dqStripHtml ? window.dqStripHtml() : '', dash: () => deskHome ? '' : h3Dash(day, dDate, adm, tk),
+    const BL = {hero: () => deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) : h5Hero(work, tk, day, dDate, adm), band: () => deskHome ? (h3DeskTop.__band ? '<section class="hz hz-solo h3-a">' + h3DeskTop.__band + '</section>' : '') : h3Dash(day, dDate, adm, tk), rep: () => window.repPanelHtml ? window.repPanelHtml() : '', co: () => window.coPanelHtml ? window.coPanelHtml() : '',
+      org: () => window.orgHomeHtml ? window.orgHomeHtml() : '', dsk: () => window.dsDeskHtml ? window.dsDeskHtml() : '', dq: () => window.dqStripHtml ? window.dqStripHtml() : '', dash: () => '',
       early: () => hmEarly(), kart: () => h3KartBox(G), quick: () => deskHome ? h3Quick() : '', prj: () => G.prj};
     const h = '<div class="h3' + (deskHome ? ' hdx' : ' h5m') + '">' + '<div class="hl-top">' + '<button type="button" class="hl-cust" data-hlcust="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>چیدمان خانه</button></div>' + LO.map(k => BL[k] ? sf(BL[k]) : '').join('') + '</div>';
     const first = homeWho !== me;
