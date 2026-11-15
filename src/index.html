@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115030927">
+<meta name="pm-build" content="20261115031315">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30296,6 +30296,8 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .co-a button:hover{border-color:var(--sky,#2f6f9f);color:var(--sky,#2f6f9f)} .co-a svg{width:24px;height:24px}
 @media (max-width:640px){ :is(html,#z0) :is(body,#z1) .co-a{grid-template-columns:repeat(2,1fr)} :is(html,#z0) :is(body,#z1) .dq-r{grid-template-columns:1fr auto;} :is(html,#z0) :is(body,#z1) .dq-c, :is(html,#z0) :is(body,#z1) .dq-a{display:none} }
 :is(html.co-scoped) :is(#tabView,#tabWrite,#tabAc,.tab-add,[data-tab="view"],[data-tab="write"]){display:none !important}
+:is(html,#z0) :is(body,#z1) .dq-vis{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--sky,#2f6f9f) 6%,var(--card));border:1px solid color-mix(in srgb,var(--sky,#2f6f9f) 20%,var(--line))}
+:is(html,#z0) :is(body,#z1) .dq-vis b{font-size:13px} .dq-vis small{font-size:11.5px;color:var(--muted);line-height:1.7} .dq-vis span{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:4px} .dq-vis label{font-size:12.5px;display:flex;align-items:center;gap:6px;cursor:pointer}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -54010,10 +54012,18 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(kind === 'statement') return coMatch(pick(r, AD.sParty), co);
     if(kind === 'contract') return coMatch(pick(r, AD.cParty), co);
     if(kind === 'letter') return coMatch(pick(r, AD.lParty), co);
-    if(kind === 'design'){ if(coMatch(pick(r, AD.dParty), co)) return true; try{ return dsCls(r) === 'ok'; }catch(e){ return false; } }
+    if(kind === 'design'){ if(coMatch(pick(r, AD.dParty), co)) return true; if(coDraftOk(co)) return true; try{ return dsCls(r) === 'ok'; }catch(e){ return false; } }
     let txt = ''; try{ txt = JSON.stringify(r); }catch(e){} const t = coNk(txt);
     return (!!me && t.indexOf(coNk(me)) !== -1) || t.indexOf(coNk(co)) !== -1; }
   window.coRowOk = coRowOk;
+  /* نقشه‌های در حال بررسی شرکت‌های دیگر برای این نوع شرکت دیده شود؟ (قانون پروژه coDraft.نوع؛ پیش‌فرض: طراح/مشاور و کارفرما بله، پیمانکار و مالک فقط تأییدشده‌ها) */
+  const CO_DRAFT_DEF = {cons: true, emp: true, ctr: false, own: false};
+  const coTypeOf = co => { let t = ''; try{ t = ctrTypeOf(co) || ''; }catch(e){} return CO_DRAFT_DEF.hasOwnProperty(t) ? t : 'cons'; };
+  function coDraftOk(co){ const t = coTypeOf(co); let v = null; try{ v = window.pmRule ? window.pmRule('coDraft.' + t, '') : ''; }catch(e){} return v === '' || v == null ? CO_DRAFT_DEF[t] : (v === '1' || v === true || v === 'true'); }
+  window.coDraftOk = coDraftOk;
+  window.coDraftSet = async (t, on) => { const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); cur['coDraft.' + t] = on ? '1' : '0';
+    await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} };
+  window.CO_DRAFT_DEF = CO_DRAFT_DEF;
   /* شرکت‌های بیرونی پروژه (طراح، مشاور، پیمانکار، کارفرما، مالک) برای انتخاب در فرم‌ها */
   window.coParties = () => { const S = new Map(); try{ (window.pjPartyPeople ? pjPartyPeople() : []).forEach(o => { if(o && o.n) S.set(coNk(o.n), o.n); }); }catch(e){}
     try{ ctrContacts.forEach(c => { if(c && c.name && ['cons', 'emp', 'own', 'ctr'].indexOf(c.t) !== -1) S.set(coNk(c.name), c.name); }); }catch(e){}
@@ -54041,7 +54051,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const Q = dqDesigns().filter(x => DQ_OPEN.indexOf(dqSt(x.row)) !== -1).map(x => ({x, ag: dqAge(dqDate(x.row)) || 0, co: String(pick(x.row, AD.dParty) || 'بدون شرکت')})).sort((a, b) => b.ag - a.ag);
     const G = new Map(); Q.forEach(q => { if(!G.has(q.co)) G.set(q.co, []); G.get(q.co).push(q); });
     const late = Q.filter(q => q.ag > 7).length;
-    const html = '<div class="dq"><div class="dq-k"><span><b>' + toFa(Q.length) + '</b><u>در صف بررسی</u></span><span class="' + (late ? 'bad' : '') + '"><b>' + toFa(late) + '</b><u>بیش از ۷ روز</u></span><span><b>' + toFa(G.size) + '</b><u>شرکت</u></span></div>'
+    let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    const TY = [['cons', 'طراحان و مشاوران'], ['emp', 'کارفرما'], ['ctr', 'پیمانکاران'], ['own', 'مالک']];
+    const vis = adm ? '<div class="dq-vis"><b>نقشه‌های در حال بررسی را چه شرکت‌هایی ببینند؟</b><small>هر شرکت همیشه نقشه‌های خودش و نقشه‌های تأییدشدهٔ همه را می‌بیند؛ این‌جا تعیین می‌کنید نقشه‌های هنوز تأییدنشدهٔ شرکت‌های دیگر را هم ببیند یا نه.</small><span>'
+      + TY.map(([t, lb]) => { const v = (function(){ const r = window.pmRule ? window.pmRule('coDraft.' + t, '') : ''; return r === '' || r == null ? CO_DRAFT_DEF[t] : r === '1'; })(); return '<label><input type="checkbox" data-codraft="' + t + '"' + (v ? ' checked' : '') + '> ' + lb + '</label>'; }).join('') + '</span></div>' : '';
+    const html = '<div class="dq">' + vis + '<div class="dq-k"><span><b>' + toFa(Q.length) + '</b><u>در صف بررسی</u></span><span class="' + (late ? 'bad' : '') + '"><b>' + toFa(late) + '</b><u>بیش از ۷ روز</u></span><span><b>' + toFa(G.size) + '</b><u>شرکت</u></span></div>'
       + (Q.length ? Array.from(G.entries()).map(([co, L]) => '<section class="dq-g"><h5>' + avatarHtml(co, 'xs', true) + esc(co) + '<em>' + toFa(L.length) + '</em></h5>' + L.map(q => dqRow(q.x, false)).join('') + '</section>').join('') : '<div class="dq-empty">نقشه‌ای در صف بررسی نیست.</div>') + '</div>';
     fxModal('dqM', 'صف بررسی نقشه‌ها', 'نقشه‌های رسیده از طراحان که منتظر بررسی، نظر یا تأیید تیم اصلی‌اند؛ با زدن هر ردیف همان سند باز می‌شود و نتیجه فقط به همان شرکت برمی‌گردد.', html, true);
   };
@@ -54051,6 +54065,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const late = Q.filter(x => (dqAge(dqDate(x.row)) || 0) > 7).length, cos = new Set(Q.map(x => String(pick(x.row, AD.dParty) || ''))).size;
     return '<button type="button" class="dq-strip h3-a" data-dqopen="1"><i>' + toFa(Q.length) + '</i><span><b>نقشه در صف بررسی</b><small>از ' + toFa(cos) + ' شرکت' + (late ? ' · <s>' + toFa(late) + ' مورد بیش از ۷ روز</s>' : '') + '</small></span><em>باز کردن صف ‹</em></button>'; };
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-dqopen]')){ e.preventDefault(); window.dqQueueOpen(); } });
+  document.addEventListener('change', async e => { const c = e.target.closest && e.target.closest('[data-codraft]'); if(!c) return; c.disabled = true;
+    try{ await window.coDraftSet(c.dataset.codraft, c.checked); shrToast('ثبت شد'); }catch(er){ c.checked = !c.checked; showDialog('err', 'ثبت نشد', friendlyErr(er)); } finally{ c.disabled = false; } });
   /* آخرین نقشه‌های منتشرشده (تأییدشده) همهٔ شرکت‌ها، آخرین ویرایش هر شماره، به تفکیک رشته */
   window.dqLatestOpen = function(){
     const M = new Map(); dqDesigns().forEach(x => { const st = dqSt(x.row); if(dqCls(st) !== 'ok') return; const k = String(pick(x.row, AD.dNo) || pick(x.row, AD.id)); const o = M.get(k); const rv = parseInt(toEn(String(pick(x.row, AD.dRev) || '0')), 10) || 0; if(!o || rv >= o.rv) M.set(k, {x, rv}); });
