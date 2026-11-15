@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115052019">
+<meta name="pm-build" content="20261115053116">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -43718,7 +43718,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(pid !== 'p1' && window.pjMemState && window.pjMemState(me) !== 'فعال') return false;
     const f = og.prf && og.prf.get(nameKey(me)); return !(f && f.done);
   }
-  async function onbCheck(){ try{ if(document.getElementById('onbModal') || onbSnooze()) return; await ogReqLoad(); await onbLoad(); if(onbNeeded()) onbOpen(); }catch(e){} }
+  async function onbCheck(){ try{ if(window.__realUser || document.getElementById('onbModal') || onbSnooze()) return; await ogReqLoad(); await onbLoad(); if(onbNeeded()) onbOpen(); }catch(e){} }
   window.onbCheck = onbCheck;
   function onbOpen(){
     const me = ogMe(); if(!me) return;
@@ -100585,6 +100585,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     ['click', 'mouseup', 'pointerup'].forEach(ev => document.addEventListener(ev, e => {
       if(guardOv && e.target === guardOv && Date.now() - guardAt < 900){ e.stopImmediatePropagation(); if(e.cancelable) e.preventDefault(); }
     }, true));
+    const ovzRestore = el => { const v = el.dataset.ovz; delete el.dataset.ovz; if(v) el.style.zIndex = v; else el.style.removeProperty('z-index'); };
     function sync(){
       Array.prototype.forEach.call(document.body.children, el => {
         if(!el.matches(SEL)) return;
@@ -100595,15 +100596,22 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       });
       for(let i = OV.length - 1; i >= 0; i--){
         const o = OV[i];
-        if(!visible(o.el)){ OV.splice(i, 1); dropBack(o); skip++; try{ history.back(); }catch(e){ skip--; } o.el.classList.remove('ov-under', 'ov-stacked'); }
+        if(!visible(o.el)){ OV.splice(i, 1); dropBack(o); skip++; try{ history.back(); }catch(e){ skip--; } o.el.classList.remove('ov-under', 'ov-stacked'); if(o.el.dataset.ovz != null) ovzRestore(o.el); }
       }
       /* پنجره‌های پشت‌سرهم: پنجرهٔ زیرین کمی عقب می‌رود و تیره می‌شود و پنجرهٔ تازه
          قاب مشخص می‌گیرد تا چشم بفهمد پنجرهٔ جدید از کجا شروع شده */
       const vis = OV.filter(o => visible(o.el) && !o.el.matches('#msgModal, #confirmModal, #askConfirmModal'));
+      /* پنجرهٔ رویی همیشه واقعاً رو باشد: اگر پنجرهٔ زیرین z-index بزرگ‌تری دارد (مثلاً فرم خوش‌آمد ۱۲۰۰ زیر یک صفحهٔ ۴۶)،
+         رویی موقتاً بالاتر می‌رود؛ وگرنه زیرینِ نادیده همهٔ کلیک‌ها را می‌گرفت و صفحه «یخ» می‌زد */
+      let zMax = 0;
       vis.forEach((o, i) => {
         const top = i === vis.length - 1;
         o.el.classList.toggle('ov-under', !top);
         o.el.classList.toggle('ov-stacked', top && vis.length > 1);
+        if(o.el.dataset.ovz != null && (!top || vis.length < 2)) ovzRestore(o.el);
+        const z = parseInt(getComputedStyle(o.el).zIndex, 10) || 0;
+        if(top && vis.length > 1 && z <= zMax){ if(o.el.dataset.ovz == null) o.el.dataset.ovz = o.el.style.getPropertyValue('z-index') || ''; o.el.style.setProperty('z-index', String(zMax + 1), 'important'); }
+        if(!top) zMax = Math.max(zMax, z);
       });
     }
     let t = 0;
