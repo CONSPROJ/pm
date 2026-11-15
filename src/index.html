@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115113523">
+<meta name="pm-build" content="20261115113942">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30760,7 +30760,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(document.getElementById('pmUpd')) return;
     const b = document.createElement('button'); b.id = 'pmUpd'; b.type = 'button'; b.textContent = 'نسخهٔ تازه آماده است — تازه‌سازی';
     b.style.cssText = 'position:fixed;z-index:2147483000;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);left:50%;transform:translateX(-50%);border:0;border-radius:999px;padding:10px 18px;font:700 13px/1.2 var(--f,inherit);background:#1d4a61;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer;';
-    b.onclick = () => { try{ sessionStorage.removeItem('pm-build-try2'); }catch(e){} location.replace(location.pathname + '?v=' + (want || 'x') + '.' + Date.now().toString(36) + location.hash); };
+    /* ۴۰۰: کلیک روی این دکمه پیش از هر شنوندهٔ دیگری (پنجره‌های باز کلیک بیرون را می‌خوردند) گرفته می‌شود */
+    const run = e => { if(e){ e.preventDefault(); e.stopImmediatePropagation(); } if(b.dataset.go) return; b.dataset.go = '1'; b.textContent = 'در حال تازه‌سازی…';
+      try{ sessionStorage.removeItem('pm-build-try2'); }catch(er){}
+      const u = location.pathname + '?v=' + (want || 'x') + '.' + Date.now().toString(36) + location.hash;
+      Promise.resolve().then(() => { try{ return navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker.getRegistration().then(r => r && r.update && r.update().catch(() => {})) : 0; }catch(er){} })
+        .catch(() => {}).then(() => { location.replace(u); }); setTimeout(() => { location.replace(u); }, 1500); };
+    b.onclick = run; b.addEventListener('pointerup', run);
+    window.addEventListener('click', e => { if(e.target && e.target.closest && e.target.closest('#pmUpd')) run(e); }, true);
+    window.addEventListener('pointerdown', e => { if(e.target && e.target.closest && e.target.closest('#pmUpd')) e.stopImmediatePropagation(); }, true);
     (document.body || document.documentElement).appendChild(b);
   }
   /* ۳۴۸: نسخهٔ تازه هیچ‌وقت خودبه‌خود صفحه را تازه نمی‌کند (پیش‌تر با هر انتشار، وسط کار صفحه بی‌دلیل تازه می‌شد و پنجره‌ها می‌پرید)؛
@@ -68594,7 +68602,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return want && L.indexOf(want) !== -1 ? want : ''; }
   /* نام بین‌المللی بخش‌های کد (اصطلاحات ISO 19650)؛ یک جا برای ترانسمیتال و فرم اسناد طراحی */
   window.DC_EN = {P: 'Project', ORG: 'Originator', STG: 'Stage', Z: 'Volume / Zone', LVL: 'Level', TYP: 'Type', DSC: 'Role / Discipline', SH: 'Number', L: 'Sub-sheet', SUIT: 'Suitability', REV: 'Revision'};
-  const DC_TOK = {STY: 'نوع صورت وضعیت', P: 'پروژه', ORG: 'پدیدآورنده', Z: 'حجم / زون', LVL: 'تراز', TYP: 'نوع اطلاعات', DSC: 'نقش / دیسیپلین', SH: 'شماره', STG: 'مرحله', L: 'زیرشیت', SUIT: 'وضعیت', REV: 'ویرایش', NO: 'شمارهٔ سند', CNO: 'شمارهٔ قرارداد', ADD: 'الحاقیه', DATE: 'تاریخ'};
+  const DC_TOK = {STY: 'نوع صورت وضعیت', P: 'پروژه', ORG: 'پدیدآورنده', Z: 'حجم / زون', LVL: 'تراز', TYP: 'نوع اطلاعات', DSC: 'نقش / دیسیپلین', SH: 'شماره', STG: 'مرحله', SUIT: 'وضعیت', REV: 'ویرایش', NO: 'شمارهٔ سند', CNO: 'شمارهٔ قرارداد', ADD: 'الحاقیه', DATE: 'تاریخ'};
   const DC_PRESETS = {
     iso: {nm: 'ISO 19650 (استاندارد جهانی)', prj: '', org: '', sep: '-', na: 'XX', multi: 'ZZ', multiDsc: 'Z', rev: 'ISO', shW: 4,
       pat: {design: '{P}-{ORG}-{Z}-{LVL}-{TYP}-{DSC}-{SH}', contract: '{P}-{ORG}-ZZ-XX-CT-K-{NO}', statement: '{P}-{ORG}-ZZ-XX-VA-Q-{CNO}.{STY}{NO}-{REV}', letter: '{P}-{ORG}-ZZ-XX-CO-Z-{NO}',
@@ -68616,7 +68624,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         sh: ''
       }},
     isatis: {nm: 'نمونهٔ پروژه (ISATIS)', prj: '', org: '', sep: '-', na: 'NA', multi: 'TFL', multiDsc: 'GEN', rev: 'R00', shW: 4,
-      pat: {design: '{P}-{STG}-{Z}-{LVL}-{DSC}-{TYP}-{SH}-{L}-{REV}', contract: '{P}-CTR-{NO}-{ADD}', statement: '{P}-STM-{CNO}-{STY}-{NO}-{REV}', letter: '{P}-LTR-{NO}',
+      pat: {design: '{P}-{STG}-{Z}-{LVL}-{DSC}-{TYP}-{SH}-{REV}', contract: '{P}-CTR-{NO}-{ADD}', statement: '{P}-STM-{CNO}-{STY}-{NO}-{REV}', letter: '{P}-LTR-{NO}',
         minute: '{P}-MOM-{DATE}-{NO}', trn: '{P}-TRN-{NO}', sub: '{P}-SUB-{DSC}-{NO}-{REV}', rfi: '{P}-RFI-{DSC}-{NO}'},
       tail: '',
       t: {
@@ -68632,7 +68640,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       }}
   };
   window.__dcCfg = null;
-  function dcCfg(){
+  /* ۳۹۹: «زیرشیت» در استاندارد ISO 19650 نیست؛ از همهٔ الگوها (پیش‌فرض و ذخیره‌شده) حذف می‌شود */
+  const dcNoL = (P, sep) => { const o = {}; Object.keys(P || {}).forEach(k => { o[k] = String(P[k] || '').split(sep).filter(x => x.trim() !== '{L}').join(sep); }); return o; };
+  function dcCfg(){ const r = dcCfg0(); r.pat = dcNoL(r.pat, r.sep); r.tail = dcNoL({t: r.tail}, r.sep).t; return r; }
+  function dcCfg0(){
     const c = window.__dcCfg || {}, d = DC_PRESETS[c.preset] || DC_PRESETS.iso;
     return {preset: DC_PRESETS[c.preset] ? c.preset : 'iso', prj: c.prj || dcPrjAuto(), org: c.org || '', sep: c.sep || d.sep, na: c.na != null && c.na !== '' ? c.na : d.na, multi: c.multi || d.multi, multiDsc: c.multiDsc || d.multiDsc,
       rev: c.rev || d.rev, shW: +c.shW || d.shW, pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
