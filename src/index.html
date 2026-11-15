@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115120900">
+<meta name="pm-build" content="20261115121224">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -776,7 +776,18 @@
 #chatModal #umTabs .um-sub{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -2px}
 #chatModal #umTabs .um-sub::-webkit-scrollbar{display:none}
 #chatModal #umTabs .um-sub button{flex:none!important}
-#chatModal #umTabs .um-sub button.um-new{margin-inline-start:auto!important;color:var(--sky)!important}
+#chatModal #umTabs .um-sub{display:flex!important;align-items:center;gap:10px;overflow:visible;margin:2px 0 8px!important}
+#chatModal #umTabs .um-fold{display:flex;gap:2px;padding:3px;border-radius:13px;background:var(--field);border:1px solid var(--line);min-width:0;overflow-x:auto;scrollbar-width:none}
+#chatModal #umTabs .um-fold::-webkit-scrollbar{display:none}
+#chatModal #umTabs .um-sub button{height:36px!important;display:inline-flex!important;align-items:center;gap:7px;padding:0 14px!important;border:0!important;border-radius:10px!important;background:transparent!important;color:var(--muted)!important;font-size:12.5px!important;font-weight:800!important;white-space:nowrap;border-bottom:0!important;transition:background .15s,color .15s}
+#chatModal #umTabs .um-sub button svg{width:16px;height:16px;flex:none}
+#chatModal #umTabs .um-fold button:hover{color:var(--ink)!important}
+#chatModal #umTabs .um-fold button.on{background:var(--surface)!important;color:var(--ink)!important;box-shadow:0 1px 2px rgba(0,0,0,.07),0 4px 10px -6px rgba(0,0,0,.18)}
+#chatModal #umTabs .um-fold button.on svg{color:var(--sky)}
+#chatModal #umTabs .um-sub button i{font-style:normal;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:99px;background:var(--alert);color:#fff;font:800 10.5px/18px var(--f);text-align:center}
+#chatModal #umTabs .um-sub button.um-new{margin-inline-start:auto!important;background:var(--sky)!important;color:#fff!important;padding:0 16px!important;box-shadow:0 8px 18px -10px color-mix(in srgb,var(--sky) 80%,transparent)}
+#chatModal #umTabs .um-sub button.um-new.on{filter:brightness(.95)}
+@media (max-width:640px){#chatModal #umTabs .um-sub{gap:6px}#chatModal #umTabs .um-fold{flex:1}#chatModal #umTabs .um-fold button{flex:1 1 auto!important;justify-content:center;padding:0 7px!important;gap:4px;font-size:12px!important}#chatModal #umTabs .um-fold button svg{display:none}#chatModal #umTabs .um-sub button.um-new span{display:none}#chatModal #umTabs .um-sub button.um-new{padding:0 11px!important}}
 /* حباب پیام: محتوای بلند (نام فایل، نشانی) هرگز از صفحه بیرون نمی‌زند */
 #chatModal #msgList{overflow-x:hidden}
 #chatModal .chat-row{min-width:0;max-width:100%}
@@ -88011,7 +88022,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const h = document.getElementById('umTabs'); if(!h || !ib) return;
     const R = ibCanR(), cur = um.mode === 'ib' ? ib.tab : 'chat';
     const nIn = ib.list.filter(o => ibIn(o) && o.st === 'q' && !ibReadSet().has(o.id)).length, nQ = R ? ib.list.filter(o => o.st === 'q' && !o.to && !ibReadSet().has(o.id)).length : 0;
-    const tb = (k, t, n, cls) => '<button type="button" class="' + (cur === k ? 'on' : '') + (cls ? ' ' + cls : '') + '" data-umtab="' + k + '">' + t + (n ? ' <i>' + toFa(n) + '</i>' : '') + '</button>';
+    /* ۴۱۱: پوشه‌های مکاتبات با آیکن، شمار و نوار یکپارچه؛ «ارسال تازه» دکمهٔ اصلی جدا */
+    const tb = (k, t, n, cls) => '<button type="button" role="tab" aria-selected="' + (cur === k) + '" class="' + (cur === k ? 'on' : '') + (cls ? ' ' + cls : '') + '" data-umtab="' + k + '">' + (k === 'new' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' : (IB_FI[k] || '')) + '<span>' + t + '</span>' + (n ? '<i>' + toFa(n) + '</i>' : '') + '</button>';
     /* دو بخش جدا: گفت‌وگوها (پیام شخصی) و مکاتبات (دریافتی/ارسالی مدارک)؛ زیربخش‌ها فقط داخل مکاتبات */
     let nChat = 0; try{ const me = activeUserName(), mk = chatKey(me); nChat = (allMessages || []).filter(r => pick(r,N.kind) === MSG_KIND && pick(r,N.to) !== PUBLIC_ROOM && chatKey(pick(r,N.to)) === mk && chatKey(pick(r,N.from)) !== mk && pick(r,N.state) !== 'خوانده‌شده').length; }catch(e){}
     const isIb = um.mode === 'ib';
@@ -88020,8 +88032,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     h.innerHTML = '<div class="um-seg" role="tablist">'
       + '<button type="button" role="tab" class="' + (isIb ? '' : 'on') + '" data-umtab="chat">' + IC_CH + '<span>گفت‌وگوها</span>' + (nChat ? '<i>' + toFa(nChat) + '</i>' : '') + '</button>'
       + '<button type="button" role="tab" class="' + (isIb ? 'on' : '') + '" data-umtab="ib">' + IC_IB + '<span>مکاتبات</span>' + ((nIn + nQ) ? '<i>' + toFa(nIn + nQ) + '</i>' : '') + '</button></div>'
-      + (isIb ? '<div class="um-sub">' + tb('in', 'دریافتی', nIn) + (R ? tb('q', 'صف بررسی', nQ) : '') + tb('mine', 'ارسالی') + (R ? tb('arc', 'بایگانی') : '')
-      + tb('new', '+ ارسال تازه', 0, 'um-new') + '</div>' : '')
+      + (isIb ? '<div class="um-sub"><div class="um-fold" role="tablist">' + tb('in', 'دریافتی', nIn) + (R ? tb('q', 'صف بررسی', nQ) : '') + tb('mine', 'ارسالی') + (R ? tb('arc', 'بایگانی') : '') + '</div>'
+      + tb('new', 'ارسال تازه', 0, 'um-new') + '</div>' : '')
       + (um.pre && um.pre.length ? '<p class="um-hint">🏷 «' + esc(um.pre[0].t || '') + '» پیوست شد — گفت‌وگو را انتخاب کنید.</p>' : '');
     try{ const on = h.querySelector('.um-sub button.on'); if(on) requestAnimationFrame(() => { const r = on.getBoundingClientRect(), hr = h.getBoundingClientRect(); if(r.left < hr.left || r.right > hr.right) on.scrollIntoView({inline: 'center', block: 'nearest'}); }); }catch(e){}
   }
