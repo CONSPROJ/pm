@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115064328">
+<meta name="pm-build" content="20261115064618">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30400,6 +30400,8 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .og-subt .og-dc:has(input:checked){background:color-mix(in srgb, #2a6fa0 10%, var(--surface));border-color:color-mix(in srgb, #2a6fa0 40%, transparent);color:#2a6fa0;}
 :is(html,#z0) :is(body,#z1) .og-subt .og-dc.on{opacity:.6;} :is(html,#z0) :is(body,#z1) .og-subt .og-dc[hidden], :is(html,#z0) :is(body,#z1) .og-subt .og-dcg[hidden]{display:none;}
 :is(html,#z0) :is(body,#z1) .og-subt .og-dcx{display:flex;flex-direction:column;gap:4px;margin:8px 0;} :is(html,#z0) :is(body,#z1) .og-subt .og-dcx u{text-decoration:none;font-size:11px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .ivh-bulk{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;margin-bottom:8px;border-radius:12px;background:var(--field);} :is(html,#z0) :is(body,#z1) .ivh-bulk small{font-size:12px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .ivh-auto{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-size:12.5px;font-weight:700;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -43568,7 +43570,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         h += ogReqListHtml() + onbPropHtml();
         if(!nReq) h += '<div class="ivh-empty"><b>چیزی منتظر تأیید نیست</b><small>درخواست‌های حساب، جایگاه چارت و افراد پیشنهادی این‌جا می‌آیند.</small></div>';
       }else if(st.tab === 'inv'){
+        let isA = false; try{ isA = isAdminUser(); }catch(e){}
+        /* مدیر می‌تواند دعوت‌ها را خودش تأیید کند (عضو فعال بی‌انتظار پذیرش) */
+        if(invs.length && isA) h += '<div class="ivh-bulk"><small>' + toFa(invs.length) + ' دعوت منتظر پذیرش</small><button type="button" class="mini go" data-ivactall="1">تأیید همه و عضویت مستقیم</button></div>';
         h += invs.length ? '<div class="ivh-l">' + invs.map(x => '<div class="ivh-r">' + avatarHtml(x.name, 'sm', true) + '<span><b>' + esc(x.name) + '</b><small>' + esc([x.role || 'بدون سمت', LEVEL_SHORT[x.level] || '', x.by ? 'دعوت از ' + x.by : ''].filter(Boolean).join(' · ')) + '</small></span><em>منتظر پذیرش</em>'
+            + (isA ? '<button type="button" class="mini go" data-ivact="' + esc(x.name) + '">تأیید عضویت</button>' : '')
             + '<button type="button" class="mini" data-ivresend="' + esc(x.name) + '">یادآوری</button><button type="button" class="mini bad" data-ivcancel="' + esc(x.name) + '">لغو دعوت</button></div>').join('') + '</div>'
           : '<div class="ivh-empty"><b>دعوت بی‌پاسخی نیست</b><small>هر کس دعوت را بپذیرد عضو فعال پروژه می‌شود و در اولین ورود فرم تکمیل اطلاعاتش باز می‌شود.</small></div>';
       }else{
@@ -43580,7 +43586,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             + '<label><u>نام و نام خانوادگی</u><input data-ivn="1" list="ivhAcc" placeholder="مثلاً آقای رضا مرادی، یا نام یک حساب موجود" autocomplete="off"><datalist id="ivhAcc">' + A.map(a => '<option value="' + esc(a) + '">').join('') + '</datalist><small class="ivh-hint" data-ivhint="1"></small></label>'
             + '<label><u>نوع دسترسی <small>تیم اصلی (از روی سمت) یا یک تیم بیرونی که فقط سهم خودش را می‌بیند</small></u><span class="lv-selw"><select data-ivl="1">' + window.lvOptGroups(3, true) + '</select><button type="button" class="lv-help" data-lvguide="1">؟</button></span></label>'
             + '<label><u>سمت <small>اختیاری؛ برای تیم بیرونی فقط عنوان است</small></u><input data-ivr="1" list="ivhPos" placeholder="سمت…" autocomplete="off"><datalist id="ivhPos">' + pos.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist></label>'
-            + '<div class="ivh-na"><small>' + (pid === 'p1' ? 'عضو مستقیم به همین پروژه اضافه می‌شود.' : 'حساب تازه مستقیم عضو این پروژه می‌شود؛ حساب موجود دعوت می‌گیرد و با پذیرش وارد می‌شود.') + '</small><button type="button" class="mini go" data-ivsend="1">افزودن</button></div></div>';
+            + (pid !== 'p1' && (function(){ try{ return isAdminUser(); }catch(e){ return false; } })() ? '<label class="ivh-auto"><input type="checkbox" data-ivauto="1" checked><span>عضویت مستقیم، بی‌نیاز به پذیرش دعوت</span></label>' : '')
+            + '<div class="ivh-na"><small>' + (pid === 'p1' ? 'عضو مستقیم به همین پروژه اضافه می‌شود.' : 'حساب تازه مستقیم عضو می‌شود؛ حساب موجود با تیک بالا مستقیم عضو می‌شود، وگرنه دعوت می‌گیرد.') + '</small><button type="button" class="mini go" data-ivsend="1">افزودن</button></div></div>';
       }
       B.innerHTML = h;
     };
@@ -43597,6 +43604,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           await loadPeople(true); try{ shrToast(n + ' تأیید شد'); }catch(er){} paint(); }catch(er){ ac.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); } return; }
       const rj = t.closest('[data-ivrej]'); if(rj){ const n = rj.dataset.ivrej; if(!(await askConfirm('رد درخواست', 'درخواست حساب «' + n + '» رد و حذف شود؟', 'رد'))) return;
         try{ await supaFetch('people?name=eq.' + encodeURIComponent(n) + '&pending=eq.true', {method: 'DELETE'}); await loadPeople(true); paint(); }catch(er){ showDialog('err', 'انجام نشد', friendlyErr(er)); } return; }
+      const ac2 = t.closest('[data-ivact], [data-ivactall]'); if(ac2){ ac2.disabled = true; const pid = invPid(), L = ac2.dataset.ivact ? [ac2.dataset.ivact] : (window.pjMembersOf ? window.pjMembersOf(pid) : []).filter(x => x.state === 'دعوت').map(x => x.name);
+        try{ for(const n of L){ await window.pjMemSet(pid, n, {state: 'فعال'}); await sendAction({action: 'nudge', from: activeUserName(), to: n, kind: 'دعوت پروژه', itemId: pid, title: 'عضویت شما در پروژهٔ «' + ((window.pjCur && window.pjCur().name) || '') + '» فعال شد', message: 'از «پروژه‌ها» وارد شوید.'}).catch(() => {}); }
+          shrToast(toFa(L.length) + ' نفر عضو پروژه شد'); paint(); }catch(er){ ac2.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); } return; }
       const rs = t.closest('[data-ivresend]'); if(rs){ const n = rs.dataset.ivresend; try{ await sendAction({action: 'nudge', from: activeUserName(), to: n, kind: 'دعوت پروژه', itemId: invPid(), title: 'یادآوری دعوت به پروژهٔ «' + ((window.pjCur && window.pjCur().name) || '') + '»', message: 'برای پذیرش، از «پروژه‌ها» دعوت را بپذیرید.'}); shrToast('یادآوری رفت'); }catch(er){} return; }
       const cn = t.closest('[data-ivcancel]'); if(cn){ const n = cn.dataset.ivcancel; if(!(await askConfirm('لغو دعوت', 'دعوت «' + n + '» لغو شود؟', 'لغو دعوت'))) return; try{ await window.pjMemDel(invPid(), n); paint(); }catch(er){ showDialog('err', 'انجام نشد', friendlyErr(er)); } return; }
       const sd = t.closest('[data-ivsend]'); if(sd){ const n0 = String((B.querySelector('[data-ivn]') || {}).value || '').trim().replace(/\s+/g, ' '), A = window.listNamesAll ? window.listNamesAll() : [];
@@ -43609,11 +43619,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           if(isNew){ n = n0; await savePerson(n, {pending: false, active: true, must_change: true}); }
           if(pid === 'p1'){ await savePerson(n, {role: rl || null}); try{ await savePerson(n, {level: L}); }catch(e2){} }
           else if(isNew) await window.pjMemSet(pid, n, {role: rl, level: L, state: 'فعال'});
+          else if((B.querySelector('[data-ivauto]') || {}).checked){ await window.pjMemDel(pid, n).catch(() => {}); await window.pjMemSet(pid, n, {role: rl, level: L, state: 'فعال'});
+            await sendAction({action: 'nudge', from: activeUserName(), to: n, kind: 'دعوت پروژه', itemId: pid, title: 'به پروژهٔ «' + ((window.pjCur && window.pjCur().name) || '') + '» اضافه شدید', message: (rl ? 'با سمت ' + rl + '. ' : '') + 'از «پروژه‌ها» وارد شوید.'}).catch(() => {}); }
           else { await window.pjMemDel(pid, n).catch(() => {}); await window.pjMemSet(pid, n, {role: rl, level: L, state: 'دعوت'});
             await sendAction({action: 'nudge', from: activeUserName(), to: n, kind: 'دعوت پروژه', itemId: pid, title: 'دعوت به پروژهٔ «' + ((window.pjCur && window.pjCur().name) || '') + '»', message: (rl ? 'با سمت ' + rl + '. ' : '') + 'برای پذیرش، از «پروژه‌ها» دعوت را بپذیرید.'}).catch(() => {}); }
           if(lvS && here) await window.accApply(n, lvS);
           try{ clearNetCache(); await loadPeople(true); }catch(e2){}
-          if(isNew) await pmShowTempPass(n, 'عضو تازه ساخته شد'); else shrToast(pid === 'p1' ? n + ' به‌روز شد' : 'دعوت برای ' + n + ' رفت');
+          if(isNew) await pmShowTempPass(n, 'عضو تازه ساخته شد'); else shrToast(pid === 'p1' ? n + ' به‌روز شد' : (B.querySelector('[data-ivauto]') || {}).checked ? n + ' عضو پروژه شد' : 'دعوت برای ' + n + ' رفت');
           st.tab = (pid !== 'p1' && !isNew) ? 'inv' : 'new'; paint(); }
         catch(er){ sd.disabled = false; showDialog('err', 'ثبت نشد', friendlyErr(er)); } return; }
       /* تأیید/رد جایگاه و پیشنهادها با همان کنترل‌های سراسری؛ بعدش فهرست تازه شود */
