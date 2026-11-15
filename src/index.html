@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115035048">
+<meta name="pm-build" content="20261115035653">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30306,6 +30306,13 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 :is(html,#z0) :is(body,#z1) .cor-g label{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:3px 0;cursor:pointer}
 :is(html,#z0) :is(body,#z1) .cor-f{display:flex;justify-content:flex-end;gap:8px}
 :is(html,#z0) :is(body,#z1) .cor-l h5{margin:0 0 6px;font-size:12.5px} .cor-l h5 em{font-style:normal;color:var(--muted)} .cor-l > div{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed var(--line)} .cor-l > div small{color:var(--muted);flex:1} .cor-l > small{color:var(--muted)}
+#vaBar{position:fixed;inset-inline:0;top:0;z-index:99999;display:flex;align-items:center;gap:12px;padding:8px 16px;background:#b4231f;color:#fff;font-size:12.5px;box-shadow:0 4px 18px -6px rgba(0,0,0,.4)}
+#vaBar b{font-weight:800} #vaBar small{opacity:.9;flex:1;font-size:12px} #vaBar .va-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:vaP 1.4s infinite}
+#vaBar button{height:30px;padding:0 12px;border-radius:9px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer} #vaBar button:hover{background:rgba(255,255,255,.15)}
+html.va-on body{padding-top:46px} @keyframes vaP{50%{opacity:.35}}
+:is(html,#z0) :is(body,#z1) .va-l{display:flex;flex-direction:column;margin-top:10px;max-height:60vh;overflow:auto}
+:is(html,#z0) :is(body,#z1) .va-r{display:flex;align-items:center;gap:10px;padding:9px 6px;border:0;border-bottom:1px dashed var(--line);background:none;color:var(--ink);font:inherit;cursor:pointer;text-align:start;border-radius:8px}
+:is(html,#z0) :is(body,#z1) .va-r:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)} .va-r span{flex:1;display:flex;flex-direction:column} .va-r small{font-size:11.5px;color:var(--muted)} .va-r em{font-style:normal;font-size:12px;color:var(--sky,#2f6f9f);font-weight:700}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -32021,6 +32028,18 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   };
   let currentUser = '';
   try{ currentUser = localStorage.getItem(USER_KEY) || ''; }catch(e){ currentUser = ''; }
+  /* ====== «مشاهده به‌جای کاربر» (آزمون ادمین، ۳۶۰) ======
+     مدیر اصلی سامانه سایت را دقیقاً با سمت، دسترسی، شرکت و پروژهٔ یک کاربر دیگر می‌بیند تا باگ‌ها را پیدا کند.
+     ورود و نشست همان ادمین می‌ماند؛ فقط نام فعال عوض می‌شود. در این حالت هیچ ثبت، ویرایش یا حذفی به سرور نمی‌رود.
+     فقط در همین زبانه (sessionStorage)؛ با بستن زبانه یا «خروج از مشاهده» تمام می‌شود. */
+  const VIEW_AS_K = 'siteLogM.viewAs';
+  window.__realUser = '';
+  try{ const va = sessionStorage.getItem(VIEW_AS_K) || ''; const ROOTS = ['آقای مهدی نعیمی'];
+    if(va && currentUser && ROOTS.some(r => r.replace(/\s+/g, '') === currentUser.replace(/\s+/g, '')) && va !== currentUser){ window.__realUser = currentUser; currentUser = va; }
+    else if(va) sessionStorage.removeItem(VIEW_AS_K); }catch(e){}
+  window.viewAsOn = () => !!window.__realUser;
+  window.viewAsStart = name => { try{ sessionStorage.setItem(VIEW_AS_K, name); }catch(e){} location.reload(); };
+  window.viewAsStop = () => { try{ sessionStorage.removeItem(VIEW_AS_K); }catch(e){} location.reload(); };
   /* ورود یا خروج در زبانهٔ دیگر: این زبانه هم همان وضعیت را می‌گیرد */
   window.addEventListener('storage', e => {
     if(e.key === TOK_KEY){ window.__pmTok = e.newValue || ''; return; }
@@ -32097,12 +32116,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
           return;
         }
         /* نامی که سرور می‌شناسد ملاک است (مثلاً بعد از ویرایش نام در مدیریت) */
-        if(nameKey(w.name) !== nameKey(currentUser)){ applyUser(w.name); return; }
+        if(nameKey(w.name) !== nameKey(window.__realUser || currentUser)){ applyUser(w.name); return; }
       }
     }catch(e){}
     try{
       /* شمارهٔ نشست در جدول بسته‌ی people_auth است؛ فقط از راه تابع سرور */
-      const r = await supaFetch('rpc/session_epoch', {method:'POST', prefer:'return=representation', body:{p_name: currentUser}});
+      const r = await supaFetch('rpc/session_epoch', {method:'POST', prefer:'return=representation', body:{p_name: window.__realUser || currentUser}});
       const ep = (r && typeof r === 'object' && r.epoch != null) ? +r.epoch : null;
       if(ep == null) return;
       const mine = localStorage.getItem('siteLogM.userEpoch.v1');
@@ -32131,7 +32150,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 
   function applyUser(name){
     setTimeout(() => { try{ xlSync(); }catch(e){} }, 0);
+    const vaPrev = window.__realUser ? currentUser : '';
     currentUser = String(name || '').trim();
+    /* مشاهده به‌جای کاربر: فقط با خروج یا ورود کاربر دیگر تمام می‌شود؛ بازگردانی همان نام در شروع صفحه آن را نمی‌بندد */
+    if(window.__realUser && currentUser !== vaPrev){ window.__realUser = ''; try{ sessionStorage.removeItem(VIEW_AS_K); }catch(e){} }
     if(!currentUser && window.pmTok()){
       /* خروج: نشست روی سرور هم پاک می‌شود؛ اعلان‌های این دستگاه هم قطع می‌شود */
       try{ if(window.pushDrop) window.pushDrop(); }catch(e){}
@@ -32139,7 +32161,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       try{ fetch(SUPA_URL + '/rest/v1/rpc/pm_logout', {method:'POST', headers:{'apikey': SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY, 'Content-Type':'application/json', 'x-pm-token': t0}, body:'{}'}).catch(() => {}); }catch(e){}
       window.pmTok('');
     }
-    try{ currentUser ? localStorage.setItem(USER_KEY, currentUser) : localStorage.removeItem(USER_KEY); }catch(e){}
+    try{ currentUser ? localStorage.setItem(USER_KEY, window.__realUser || currentUser) : localStorage.removeItem(USER_KEY); }catch(e){}
     /* زمان آخرین استفاده از همین ورود شروع می‌شود؛ پیش‌تر زمانِ کهنهٔ پیش از خروج می‌ماند
        و کاربر چند دقیقه بعد از ورود دوباره با «مدتی استفاده نشده بود» بیرون می‌افتاد */
     try{ if(currentUser) localStorage.setItem('siteLogM.userSeen.v1', String(Date.now())); }catch(e){}
@@ -51703,11 +51725,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const AC_SECS = [
     {k:'all', root: 1, t:'مدیریت کل سامانه', d:'همهٔ پروژه‌ها، حساب‌ها و واگذاری مدیریت پروژه‌ها', ic:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 3.6 5.5 3.6 8.5s-1 5.9-3.6 8.5c-2.6-2.6-3.6-5.5-3.6-8.5s1-5.9 3.6-8.5z"/>'},
     {k:'ov',   t:'نمای کلی',          d:'سلامت سامانه، بررسی امنیت و رویدادهای اخیر', ic:'<path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 4v4h6V4z"/>'},
-    {k:'ppl',  t:'افراد و دسترسی',     d:'کاربران، سمت و نوع دسترسی، اجازه‌ها، پرونده‌ها و پیام گروهی', ks:['inv','users','co','ct','rpt','bc'], ic:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>'},
+    {k:'ppl',  t:'افراد و دسترسی',     d:'کاربران، سمت و نوع دسترسی، اجازه‌ها، پرونده‌ها و پیام گروهی', ks:['inv','users','co','va','ct','rpt','bc'], ic:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>'},
     {k:'prj',  t:'پروژه و قوانین',     d:'اطلاعات و مرحلهٔ پروژه، بخش‌های فعال، قوانین و مهلت‌ها، زنجیرهٔ تأیید', ks:['pj','mods','rules','dc','chain','up'], ic:'<path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/>'},
     {k:'data', t:'داده',               d:'تطبیق نام‌ها، محل و طبقه، تخصص‌ها و ویرایشگر پایگاه داده', ks:['data','db'], ic:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'},
     {k:'sec',  t:'امنیت و نگهداری',    d:'پشتیبان، ورودها، گزارش کار، حالت نگهداری و نسخه‌های سایت', ks:['sec','log','maint','ver'], ic:'<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>'}];
   const AC_EXTRA = {
+    va: {ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>', t:'مشاهده به‌جای کاربر (آزمون)', sub:'سایت را دقیقاً با سمت، دسترسی و شرکت یک نفر ببینید تا باگ‌ها پیدا شوند؛ چیزی ثبت نمی‌شود', run: () => window.viewAsPick()},
     co: {ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5M9 10h.01M15 10h.01"/></svg>', t:'دسترسی شرکت‌ها', sub:'طراحان، مشاوران، کارفرما و پیمانکاران بیرونی: چه ببینند و چه کنند', run: () => window.coRulesOpen()},
     inv: {ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7l8 6 8-6"/><circle cx="18.5" cy="6" r="3" fill="currentColor" stroke="none"/></svg>', t:'دعوت‌ها و درخواست‌ها', sub:'درخواست حساب، دعوت به پروژه، جایگاه چارت و افراد پیشنهادی — همه در یک‌جا', run: () => { try{ window.invHubOpen(); }catch(e){} }, get n(){ try{ return window.invHubCount ? window.invHubCount() : 0; }catch(e){ return 0; } }, alert: true},
     pj: {ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/></svg>', t:'اطلاعات پروژه', sub:'نام، کاربری، مرحله، تصاویر و مشخصات', attr:'data-pjopen="1"'},
@@ -54042,6 +54065,25 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     Object.keys(cur).forEach(k => { if(cur[k] === null) delete cur[k]; });
     await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.keys(window.__pmRules).forEach(k => delete window.__pmRules[k]); Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
   /* «دسترسی شرکت‌ها» (کنسول ← افراد و دسترسی): برای هر نوع شرکت، کارهای مجاز، دید نقشه‌های در حال بررسی و فهرست افراد وصل‌شده */
+  /* انتخاب کاربر برای «مشاهده به‌جای کاربر» (فقط مدیر اصلی) */
+  window.viewAsPick = function(){
+    let root = false; try{ root = isRootUser(); }catch(e){} if(!root){ showDialog('warn', 'فقط مدیر اصلی', 'این ابزار فقط برای مدیر اصلی سامانه است.'); return; }
+    const L = (function(){ try{ return listNames(); }catch(e){ return []; } })().filter(n => !isRootName(n));
+    const row = n => { const co = extParty.get(nameKey(n)) || '', rl = (function(){ try{ return roleOf(n) || ''; }catch(e){ return ''; } })(), a = window.accOf ? window.accOf(n) : {t: ''};
+      return '<button type="button" class="va-r" data-vago="' + esc(n) + '" data-vaq="' + esc((n + ' ' + rl + ' ' + co + ' ' + a.t).toLowerCase()) + '">' + avatarHtml(n, 'sm', true) + '<span><b>' + esc(n) + '</b><small>' + esc([rl || 'بدون سمت', a.t, co ? 'شرکت: ' + co : ''].filter(Boolean).join(' · ')) + '</small></span><em>مشاهده ‹</em></button>'; };
+    const m = fxModal('vaM', 'مشاهده به‌جای کاربر', 'سایت با سمت، نوع دسترسی، شرکت و پروژهٔ همان شخص باز می‌شود تا ببینید دقیقاً چه می‌بیند و چه می‌تواند. در این حالت هیچ ثبت، ویرایش یا حذفی انجام نمی‌شود. محدودیت‌های سمت سرور را نشان نمی‌دهد (همهٔ داده با نشست شما خوانده می‌شود و سایت همان فیلترهای آن شخص را اعمال می‌کند).',
+      '<label class="mx-q"><input type="search" data-vaq="1" placeholder="جست‌وجوی نام، سمت یا شرکت…" autocomplete="off"></label><div class="va-l">' + L.map(row).join('') + '</div>', true);
+    const B = m.querySelector('.fx-bd');
+    B.addEventListener('input', e => { if(!e.target.matches('[data-vaq="1"]')) return; const q = e.target.value.trim().toLowerCase(); B.querySelectorAll('.va-r').forEach(r => { r.hidden = !!q && r.dataset.vaq.indexOf(q) === -1; }); });
+    B.addEventListener('click', e => { const b = e.target.closest('[data-vago]'); if(b) window.viewAsStart(b.dataset.vago); });
+  };
+  /* نوار بالای صفحه در حالت مشاهده */
+  if(window.viewAsOn && window.viewAsOn()) setTimeout(function vaBar(){ if(document.getElementById('vaBar')) return; const me = activeUserName(), co = extParty.get(nameKey(me)) || '';
+    const b = document.createElement('div'); b.id = 'vaBar'; b.innerHTML = '<span class="va-dot"></span><b>مشاهده به‌عنوان: ' + esc(me) + '</b><small>' + esc([(function(){ try{ return roleOf(me) || 'بدون سمت'; }catch(e){ return ''; } })(), co ? 'شرکت: ' + co : 'تیم اصلی'].join(' · ')) + ' — فقط دیدن؛ ثبت و ویرایش غیرفعال است</small><button type="button" data-vapick="1">کاربر دیگر</button><button type="button" data-vastop="1">بازگشت به حساب خودم</button>';
+    document.body.appendChild(b); document.documentElement.classList.add('va-on'); }, 1500);
+  /* «کاربر دیگر»: برگشت به حساب خودم و باز شدن خودکار انتخاب‌گر */
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-vastop]')){ window.viewAsStop(); } else if(e.target.closest && e.target.closest('[data-vapick]')){ try{ sessionStorage.setItem('siteLogM.vaPick', '1'); }catch(er){} window.viewAsStop(); } }, true);
+  setTimeout(() => { try{ if(sessionStorage.getItem('siteLogM.vaPick') === '1' && !window.viewAsOn()){ sessionStorage.removeItem('siteLogM.vaPick'); window.viewAsPick(); } }catch(e){} }, 4000);
   window.coRulesOpen = function(tab){
     tab = tab || 'cons';
     const caps = (typeof PERM_CAPS !== 'undefined' ? PERM_CAPS : []).filter(c => c.g !== 'سامانه');
@@ -61464,6 +61506,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* تابع‌های فقط‌خواندنی سرور (بستهٔ روز، داشبورد، هویت) هم مثل GET یکی می‌شوند: چند بخش صفحه که هم‌زمان همان روز را می‌خواهند، یک درخواست می‌فرستند */
     const isReadRpc = o.method === 'POST' && /^rpc\/(bundle\d?|day3|day_only|pm_whoami|session_epoch|pm_portfolio)\b/.test(path);
     const isGet = !o.method || o.method === 'GET' || isReadRpc;
+    if(!isGet && window.__realUser && !/^rpc\/(pm_whoami|session_epoch|pm_file_urls?|s3_|pm_s3)/.test(path)) throw new Error('حالت «مشاهده به‌جای کاربر» فقط برای دیدن است؛ ثبت، ویرایش و حذف انجام نمی‌شود.');
     const dk = isGet ? path + '|' + pjHdrId() + '|' + (o.prefer || '') + '|' + JSON.stringify(o.headers || {}) + (isReadRpc ? '|' + JSON.stringify(o.body || {}) : '') : '';
     if(!isGet) SUPA_RC.clear();
     if(isGet && !o.__noDedupe){ const c = SUPA_RC.get(dk); if(c && Date.now() - c.t < 3000) return c.v ? JSON.parse(c.v) : null; }
