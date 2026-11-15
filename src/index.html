@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115082548">
+<meta name="pm-build" content="20261115100449">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -43752,12 +43752,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         if(lvS && /^x:/.test(lvS.value)){ const pk = lvS.closest('.lv-selw').parentElement.querySelector(':scope > .acx .acx-co'); if(!pk || !pk.value || pk.value === '__new'){ showDialog('warn', 'تیم بیرونی', 'تیم بیرونی این شخص را انتخاب کنید.'); return; } }
         sd.disabled = true;
         try{
-          if(isNew){ n = n0; await savePerson(n, {pending: false, active: true, must_change: true});
+          if(isNew){ n = n0; await savePerson(n, {pending: false, active: true, must_change: true}); if(pid !== 'p1') try{ await window.p1xSet(n, true); }catch(er){}
             /* پروندهٔ عضو (همان که فرم خوش‌آمد پر می‌کند): از همین‌جا پیش‌پر می‌شود */
             try{ let org = fv('org'); if(!org && lvS && /^x:/.test(lvS.value)){ const pk = lvS.closest('.lv-selw').parentElement.querySelector(':scope > .acx .acx-co'); if(pk && pk.value && pk.value !== '__new') org = pk.value; }
               const prf = {mob: toEn(fv('mob')).replace(/[\s-]/g, ''), mail: fv('mail'), org, disc: fv('disc'), by: activeUserName(), at: todayShamsi()}; Object.keys(prf).forEach(k => { if(!prf[k]) delete prf[k]; });
               await ogSaveRowNow(ONB_PRF, n, prf); (og.prf = og.prf || new Map()).set(nameKey(n), Object.assign({n}, prf)); }catch(er){} }
-          if(pid === 'p1'){ await savePerson(n, {role: rl || null}); try{ await savePerson(n, {level: L}); }catch(e2){} }
+          if(pid === 'p1'){ if(!isNew) try{ await window.p1xSet(n, false); }catch(er){} await savePerson(n, {role: rl || null}); try{ await savePerson(n, {level: L}); }catch(e2){} }
           else if(isNew) await window.pjMemSet(pid, n, {role: rl, level: L, state: 'فعال'});
           else if((B.querySelector('[data-ivauto]') || {}).checked){ await window.pjMemDel(pid, n).catch(() => {}); await window.pjMemSet(pid, n, {role: rl, level: L, state: 'فعال'});
             await sendAction({action: 'nudge', from: activeUserName(), to: n, kind: 'دعوت پروژه', itemId: pid, title: 'به پروژهٔ «' + ((window.pjCur && window.pjCur().name) || '') + '» اضافه شدید', message: (rl ? 'با سمت ' + rl + '. ' : '') + 'از «پروژه‌ها» وارد شوید.'}).catch(() => {}); }
@@ -101494,6 +101494,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   const pjMemVal = m => [m.pid, m.name, m.role || '', m.level || '', m.state || '', m.by || ''].join(PJ_SEP);
   function pjLoad(lists){
+    try{ window.p1xLoad(lists); }catch(e){}
     const all = new Map();
     ((lists && lists[PJ_KIND]) || []).forEach(v => { const o = pjParse(v); if(o) all.set(o.id, o); });
     all.set('p1', Object.assign(pjDefault(), all.get('p1') || {}, {id:'p1'}));
@@ -101510,10 +101511,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ====== راه ورود به پروژه‌ها (۳۶۴) ======
      پروژهٔ اصلی عضویت جدا ندارد (حساب‌های قدیمی همه عضوش‌اند). ولی حسابی که برای پروژهٔ دیگری دعوت/ساخته شده و در پروژهٔ اصلی سمتی ندارد
      (مثلاً طراح بیرونی فقط همان پروژه) نباید پروژهٔ اصلی را ببیند. همین قاعده روی سرور هم هست (project_gate.sql). */
-  function pjP1Me(){ const me = activeUserName(); if(!me) return true; try{ if(isAdminUser() || isAdminName(me)) return true; }catch(e){}
-    const k = nameKey(me); if(!PJ.mem.some(m => m.pid !== 'p1' && nameKey(m.name) === k && m.state !== PJ_ST_NO)) return true;
-    const P = window.__peopleAll; if(!P || !P.length) return null;
-    const row = P.find(r => nameKey(r.name) === k); const rl = String((row && row.role) || '').trim(); return !!rl && rl !== '—'; }
+  /* «حساب پروژه‌ای» (۳۸۳): فقط حسابی که برای پروژهٔ دیگری ساخته شده (افزودن عضو در همان پروژه) صریحاً علامت می‌خورد و پروژهٔ اصلی را نمی‌بیند.
+     پیش‌تر از «سمت خالی + عضویت جای دیگر» حدس زده می‌شد و مدیری که در هر دو پروژه بود (سمتش در عضویت) از پروژهٔ اصلی حذف می‌شد. */
+  const P1X_K = 'حساب پروژه‌ای'; let P1X = new Set();
+  window.p1xLoad = lists => { P1X = new Set(((lists && lists[P1X_K]) || []).map(v => nameKey(String(v)))); };
+  window.p1xSet = async (name, on) => { if(on) await supaFetchRaw('lists', {method: 'POST', headers: {'Prefer': 'resolution=ignore-duplicates'}, body: [{kind: P1X_K, value: name, project_id: '*'}]});
+    else await supaFetchRaw('lists?kind=eq.' + encodeURIComponent(P1X_K) + '&value=eq.' + encodeURIComponent(name), {method: 'DELETE'}); on ? P1X.add(nameKey(name)) : P1X.delete(nameKey(name)); };
+  function pjP1Me(){ const me = activeUserName(); if(!me) return true; try{ if(isAdminUser() || isAdminName(me)) return true; }catch(e){} return !P1X.has(nameKey(me)); }
   window.pjP1Me = pjP1Me;
   let pjGateT = 0;
   function pjGateCheck(){
@@ -101586,8 +101590,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.__pjMemN = () => { try{ return PJ.mem.length; }catch(e){ return 0; } };
   /* پروژهٔ اصلی عضویت جدا ندارد (همهٔ حساب‌های قدیمی عضوش‌اند)؛ ولی حسابی که برای پروژهٔ دیگری ساخته/دعوت شده و در پروژهٔ اصلی سمتی ندارد، به این پروژه نشت نمی‌کند */
   const pjP1Ok = name => { try{ if(!PJ.mem.length) return true; const k = nameKey(name); if(k === nameKey(activeUserName() || '')) return true; try{ if(ADMIN_USERS.some(a => nameKey(a) === k)) return true; }catch(e){}
-      if(!PJ.mem.some(m => m.pid !== 'p1' && nameKey(m.name) === k)) return true;
-      const row = (window.__peopleAll || []).find(r => nameKey(r.name) === k); const rl = String((row && row.role) || '').trim(); return !!rl && rl !== '—'; }catch(e){ return true; } };
+      return !P1X.has(k); }catch(e){ return true; } };
   window.__pjPeopleOk = name => { try{ if(PJ && PJ.cur === 'p1') return pjP1Ok(name); if(!PJ || !PJ.mem.length) return true; const m = pjMemOf(PJ.cur, name); return !!(m && (m.state === PJ_ST_ON || m.state === PJ_ST_INV)); }catch(e){ return true; } };
   function pjRoleOf(name){
     if(!PJ || PJ.cur === 'p1' || !PJ.mem.length) return '';
