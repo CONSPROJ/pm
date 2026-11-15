@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115100449">
+<meta name="pm-build" content="20261115100748">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30512,6 +30512,7 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .ws-lit{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 2px 0;padding-inline-start:46px;} :is(html,#z0) :is(body,#z1) .ws-lit label{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--field);font-size:11.5px;cursor:pointer;} :is(html,#z0) :is(body,#z1) .ws-lit label.off{opacity:.55;text-decoration:line-through;}
 :is(html,#z0) :is(body,#z1) .hl-top{display:flex;justify-content:flex-end;margin:0 0 6px;} :is(html,#z0) :is(body,#z1) .hl-top .hl-cust{padding:6px 12px;border-style:solid;border-color:color-mix(in srgb, var(--line) 90%, transparent);background:var(--surface);}
 @media (max-width:640px){ :is(html,#z0) :is(body,#z1) .hl-top{margin:2px 0 8px;} :is(html,#z0) :is(body,#z1) #hlPickM .hl-pg{grid-template-columns:1fr 1fr!important;gap:8px;} :is(html,#z0) :is(body,#z1) .hl-mini{height:120px!important;} :is(html,#z0) :is(body,#z1) .hl-pt small{display:none;} :is(html,#z0) :is(body,#z1) .hl-pc{padding:8px;gap:6px;} :is(html,#z0) :is(body,#z1) .hl-mf{flex-wrap:wrap;} :is(html,#z0) :is(body,#z1) .hl-mf .hl-go{flex:1 1 100%;justify-content:center;order:-1;} :is(html,#z0) :is(body,#z1) .hl-ac button{width:30px;height:30px;} :is(html,#z0) :is(body,#z1) .ws-lay span{display:none;} :is(html,#z0) :is(body,#z1) .ws-lit{padding-inline-start:0;} }
+:is(html,#z0) :is(body,#z1) .hz.hz-solo{padding-top:4px;} :is(html,#z0) :is(body,#z1) .hz.hz-solo > .hz-band{margin-top:0;border-top:0;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -51233,17 +51234,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function welcomeName(){
     const full = String(activeUserName() || '').trim();
     if(!full) return '';
-    const rk = (typeof roleTagOf === 'function') ? roleTagOf(full) : '';
-    let isAdm = false; try{ isAdm = isAdminName(full); }catch(e){}
-    if(rk || isAdm){
-      const sp = (typeof umSplitName === 'function') ? umSplitName(full) : {t:'', f:full, l:''};
-      const fem = /خانم/.test(sp.t);
-      const base = [sp.f, sp.l].filter(Boolean).join(' ');
-      const ttl = fem ? 'سرکار خانم' : 'جناب آقای';
-      const eng = /مهندس/.test(sp.t) ? ' مهندس' : '';
-      return ttl + eng + ' ' + base;
-    }
-    return full.replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '').split(/\s+/)[0] || '';
+    /* همه محترمانه (۳۸۴): «جناب آقای / سرکار خانم» + «دکتر» یا «مهندس» + نام کامل؛ بی‌عنوان: نام کامل */
+    const sp = (typeof umSplitName === 'function') ? umSplitName(full) : {t:'', f:full, l:''};
+    const base = [sp.f, sp.l].filter(Boolean).join(' ') || full.replace(/^(آقای|خانم|مهندس|دکتر)\s+/g, '');
+    const t = String(sp.t || ''), fem = /خانم/.test(t), dr = /دکتر/.test(t), eng = /مهندس/.test(t);
+    if(!t) return full;
+    return (fem ? 'سرکار خانم' : 'جناب آقای') + (dr ? ' دکتر' : eng ? ' مهندس' : '') + ' ' + base;
   }
   function welcomeSub(){
     const full = String(activeUserName() || '').trim();
@@ -100612,9 +100608,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       +     '<button type="button" class="hz-pjs" data-pjsw="1" aria-haspopup="true" title="' + (pjN > 1 ? 'تعویض پروژه · ' + toFa(pjN) + ' پروژه' : 'پروژه‌ها') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>' + (pjN > 1 ? '<sup>' + toFa(pjN) + '</sup>' : '') + '</button>'
       +   '</div>'
       + '</div>'
-      + mine + band
+      + mine + (window.__hlBandSep ? (h3DeskTop.__band = band, '') : band)
       + '</section>';
   }
+  /* «نمای پروژه» بلوک جدای چیدمان خانه (۳۸۴): خوش‌آمد آن را نگه می‌دارد و بلوک band نشانش می‌دهد */
+  h3DeskTop.__band = '';
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-hzgo]'); if(!b) return; e.preventDefault(); e.stopPropagation();
     const [t, k] = b.dataset.hzgo.split(':');
     try{
@@ -100779,16 +100777,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ====== چیدمان خانه (۳۸۰) ======
      بلوک‌های خانه، چند الگوی آماده (مدیریت، طراحی، اجرا، تیم بیرونی، مینیمال) که با سمت، نوع دسترسی و مرحلهٔ پروژه پیشنهاد می‌شوند،
      و ویرایشگر: ترتیب (کشیدن یا بالا/پایین)، نمایش/پنهان. برای هر نفر در هر پروژه جدا (siteLogM.homeLay.<پروژه>). */
-  const HL_DEF = ['hero', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
-  const HL_B = {hero: ['خوش‌آمد و پروژه', 'سلام، پروژه، کارهای باز و موعدها', 1], kart: ['کارتابل من', 'کار امروز و پیگیری‌ها'], early: ['هشدارهای مهم', 'موارد فوری و بحرانی'], prj: ['وضعیت پروژه', 'نمودارها و شاخص‌های پروژه'],
+  const HL_DEF = ['hero', 'band', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
+  const HL_B = {hero: ['خوش‌آمد و پروژه', 'سلام، پروژه، کارهای باز و موعدها', 1], band: ['نمای پروژه', 'نمودارها، پیشرفت و شاخص‌های کلیدی پروژه'], kart: ['کارتابل من', 'کار امروز و پیگیری‌ها'], early: ['هشدارهای مهم', 'موارد فوری و بحرانی'], prj: ['وضعیت پروژه', 'نمودارها و شاخص‌های پروژه'],
     dash: ['نمای پروژه (گوشی)', 'خلاصهٔ نموداری روی گوشی'], quick: ['میان‌برها', 'دسترسی سریع به بخش‌ها'], dsk: ['میز طراحی', 'ارسال نقشه، وضعیت و پیشرفت رشته‌ها'], dq: ['صف بررسی نقشه‌ها', 'ارسالی تیم‌های بیرونی منتظر تصمیم'],
     org: ['سازمان من', 'فضای شرکت در همهٔ پروژه‌ها'], co: ['پرتال تیم', 'آخرین نقشه‌ها و اسناد تیم'], rep: ['پنل پیمانکار', 'صورت وضعیت، نامه و کارکرد']};
   const HL_P = [
-    {k: 'mgr', t: 'مدیریت پروژه', d: 'نمای کلان: هشدارها، وضعیت پروژه، کارتابل و صف بررسی', c: '#2a6fa0', o: ['hero', 'early', 'prj', 'dash', 'kart', 'dq', 'quick', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
-    {k: 'des', t: 'طراحی', d: 'میز طراحی جلوی چشم: ارسال نقشه، وضعیت نقشه‌ها و پیشرفت رشته‌ها', c: '#7a4fc0', o: ['hero', 'dsk', 'dq', 'kart', 'org', 'quick', 'early', 'prj', 'dash', 'co', 'rep'], h: ['prj']},
-    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'kart', 'early', 'quick', 'dash', 'prj', 'org', 'dq', 'dsk', 'co', 'rep'], h: ['dsk', 'dq']},
-    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'prj', 'dash', 'dq'], h: ['prj', 'dq']},
-    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'kart', 'org', 'dsk', 'co', 'rep', 'dq', 'early', 'quick', 'prj', 'dash'], h: ['early', 'quick', 'prj', 'dash', 'dq']}];
+    {k: 'mgr', t: 'مدیریت پروژه', d: 'نمای کلان: هشدارها، وضعیت پروژه، کارتابل و صف بررسی', c: '#2a6fa0', o: ['hero', 'band', 'early', 'prj', 'dash', 'kart', 'dq', 'quick', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
+    {k: 'des', t: 'طراحی', d: 'میز طراحی جلوی چشم: ارسال نقشه، وضعیت نقشه‌ها و پیشرفت رشته‌ها', c: '#7a4fc0', o: ['hero', 'dsk', 'dq', 'kart', 'org', 'quick', 'band', 'early', 'prj', 'dash', 'co', 'rep'], h: ['prj', 'band']},
+    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'kart', 'band', 'early', 'quick', 'dash', 'prj', 'org', 'dq', 'dsk', 'co', 'rep'], h: ['dsk', 'dq']},
+    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'band', 'prj', 'dash', 'dq'], h: ['prj', 'dq', 'band']},
+    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'kart', 'org', 'dsk', 'co', 'rep', 'dq', 'early', 'quick', 'band', 'prj', 'dash'], h: ['early', 'quick', 'prj', 'dash', 'dq', 'band']}];
   const hlKey = () => { let pj = 'p1'; try{ pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return 'siteLogM.homeLay.' + pj + '.' + nameKey(activeUserName() || ''); };
   const hlGet = () => { try{ const v = JSON.parse(localStorage.getItem(hlKey()) || 'null'); if(v && Array.isArray(v.o)) return v; }catch(e){} return null; };
   const hlSet = v => { try{ localStorage.setItem(hlKey(), JSON.stringify(v)); }catch(e){} };
@@ -100805,10 +100803,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* پیش‌نمایش کوچک هر الگو: بلوک‌ها به‌شکل نوارهای رنگی با اندازهٔ تقریبی */
   /* اسکلت داخلی هر بلوک در پیش‌نمایش: شبیه خود بخش (دایره و خط، نمودار، فهرست، کاشی) */
   const HL_W = {hero: '<s class="w-av"></s><s class="w-ln"></s><s class="w-pl"></s>', kart: '<s class="w-li"></s><s class="w-li"></s>', early: '<s class="w-dot"></s><s class="w-ln"></s>',
-    prj: '<s class="w-bars"><s></s><s></s><s></s><s></s><s></s></s>', dsk: '<s class="w-tiles"><s></s><s></s><s></s></s>', dq: '<s class="w-dot q"></s><s class="w-ln"></s>', org: '<s class="w-avs"></s>', quick: '<s class="w-sq"><s></s><s></s><s></s><s></s></s>', co: '<s class="w-tiles"><s></s><s></s></s>', rep: '<s class="w-tiles"><s></s><s></s></s>'};
-  const HL_SZ = {hero: 3, kart: 4, early: 2, prj: 4, dash: 3, quick: 2, dsk: 4, dq: 1, org: 2, co: 2, rep: 2};
+    band: '<s class="w-bars"><s></s><s></s><s></s><s></s><s></s></s>', prj: '<s class="w-bars"><s></s><s></s><s></s><s></s><s></s></s>', dsk: '<s class="w-tiles"><s></s><s></s><s></s></s>', dq: '<s class="w-dot q"></s><s class="w-ln"></s>', org: '<s class="w-avs"></s>', quick: '<s class="w-sq"><s></s><s></s><s></s><s></s></s>', co: '<s class="w-tiles"><s></s><s></s></s>', rep: '<s class="w-tiles"><s></s><s></s></s>'};
+  const HL_SZ = {band: 4, hero: 3, kart: 4, early: 2, prj: 4, dash: 3, quick: 2, dsk: 4, dq: 1, org: 2, co: 2, rep: 2};
   /* بلوک‌هایی که برای این شخص محتوا دارند (پیش‌نمایش فقط همان‌ها را نشان می‌دهد) */
-  const hlRel = () => { const r = new Set(['hero', 'kart', 'early', 'prj', 'quick']); try{ if(window.orgMine && window.orgMine().length) r.add('org'); }catch(e){} try{ if(window.dsDeskHtml && window.dsDeskHtml()) r.add('dsk'); }catch(e){} try{ if(window.dqStripHtml && window.dqStripHtml()) r.add('dq'); }catch(e){} try{ if(window.coPanelHtml && window.coPanelHtml()) r.add('co'); }catch(e){} try{ if(window.repPanelHtml && window.repPanelHtml()) r.add('rep'); }catch(e){} return r; };
+  const hlRel = () => { const r = new Set(['hero', 'band', 'kart', 'early', 'prj', 'quick']); try{ if(window.orgMine && window.orgMine().length) r.add('org'); }catch(e){} try{ if(window.dsDeskHtml && window.dsDeskHtml()) r.add('dsk'); }catch(e){} try{ if(window.dqStripHtml && window.dqStripHtml()) r.add('dq'); }catch(e){} try{ if(window.coPanelHtml && window.coPanelHtml()) r.add('co'); }catch(e){} try{ if(window.repPanelHtml && window.repPanelHtml()) r.add('rep'); }catch(e){} return r; };
   const hlMini = (P, R) => '<span class="hl-mini" style="--c:' + P.c + '">' + P.o.filter(k => P.h.indexOf(k) === -1 && k !== 'dash' && (!R || R.has(k))).slice(0, 6).map(k => '<i class="b-' + k + '" style="--h:' + (HL_SZ[k] || 2) + '">' + (HL_W[k] || '') + '<u>' + esc(HL_B[k][0]) + '</u></i>').join('') + '</span>';
   /* انتخاب الگو: بار اول ورود به هر پروژه، و از «چیدمان خانه» */
   window.homeLayPick = function(first){ const sug = hlSuggest(), cur = (hlGet() || {}).p || '';
@@ -100870,8 +100868,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* ترتیب: خوش‌آمد (با پروژه) ← کارتابل من ← کارهای سریع ← وضعیت پروژه ← بقیه */
     let deskHome = false; try{ deskHome = window.matchMedia('(min-width:1180px)').matches; }catch(e){}
     /* چیدمان خانه (۳۸۰): هر بخش یک بلوک است؛ ترتیب و نمایش از الگوی انتخابی هر نفر در همین پروژه (homeLayOrder) */
-    const sf = f => { try{ return f() || ''; }catch(e){ return ''; } }, LO = window.homeLayOrder ? window.homeLayOrder() : ['hero', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
-    const BL = {hero: () => deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) : h5Hero(work, tk, day, dDate, adm), rep: () => window.repPanelHtml ? window.repPanelHtml() : '', co: () => window.coPanelHtml ? window.coPanelHtml() : '',
+    const sf = f => { try{ return f() || ''; }catch(e){ return ''; } }, LO = window.homeLayOrder ? window.homeLayOrder() : ['hero', 'band', 'rep', 'co', 'org', 'dsk', 'dq', 'dash', 'early', 'kart', 'quick', 'prj'];
+    window.__hlBandSep = true; h3DeskTop.__band = '';
+    const BL = {hero: () => deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) : h5Hero(work, tk, day, dDate, adm), band: () => deskHome && h3DeskTop.__band ? '<section class="hz hz-solo h3-a">' + h3DeskTop.__band + '</section>' : '', rep: () => window.repPanelHtml ? window.repPanelHtml() : '', co: () => window.coPanelHtml ? window.coPanelHtml() : '',
       org: () => window.orgHomeHtml ? window.orgHomeHtml() : '', dsk: () => window.dsDeskHtml ? window.dsDeskHtml() : '', dq: () => window.dqStripHtml ? window.dqStripHtml() : '', dash: () => deskHome ? '' : h3Dash(day, dDate, adm, tk),
       early: () => hmEarly(), kart: () => h3KartBox(G), quick: () => deskHome ? h3Quick() : '', prj: () => G.prj};
     const h = '<div class="h3' + (deskHome ? ' hdx' : ' h5m') + '">' + '<div class="hl-top">' + '<button type="button" class="hl-cust" data-hlcust="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>چیدمان خانه</button></div>' + LO.map(k => BL[k] ? sf(BL[k]) : '').join('') + '</div>';
