@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115121224">
+<meta name="pm-build" content="20261115122026">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -68679,7 +68679,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* ISATIS: جدول‌های فرم کدینگ + هرچه پروژه افزوده (اجتماع؛ برچسب ذخیره‌شده مقدم) */
   const dcUnion = (A, B) => { const M = new Map(); (A || []).forEach(x => M.set(String(x[0]), x)); (B || []).forEach(x => M.set(String(x[0]), x)); return Array.from(M.values()); };
   const dcShUnion = (a, b) => { const M = new Map(); String(a || '').split('\n').concat(String(b || '').split('\n')).forEach(l => { const m = /^\s*([A-Za-z]+\s+\d{2,6})\s*=/.exec(l); if(m) M.set(m[1].toUpperCase().replace(/\s+/, ' '), l.trim()); }); return Array.from(M.values()).join('\n'); };
-  function dcCfg(){ const r = dcCfg0(), c = window.__dcCfg || {};
+  /* ۴۱۲: تنظیم کدینگ فقط وقتی window.__dcCfg عوض شود دوباره ساخته می‌شود (پیش‌تر در هر فراخوانی جدول‌ها و فهرست شیت‌ها از نو ساخته می‌شد و با هزاران سند، گوشی قفل می‌شد) */
+  let dcMemo = {src: undefined, pj: '', v: null};
+  function dcCfg(){ const src = window.__dcCfg || null; let pj = ''; try{ pj = localStorage.getItem('siteLogM.project.v1') || ''; }catch(e){}
+    if(dcMemo.v && dcMemo.src === src && dcMemo.pj === pj) return dcMemo.v; const v = dcCfgBuild(); dcMemo = {src, pj, v}; return v; }
+  window.dcCfgReset = () => { dcMemo = {src: undefined, pj: '', v: null}; };
+  function dcCfgBuild(){ const r = dcCfg0(), c = window.__dcCfg || {};
     if(r.preset === 'isatis' && c.t){ const d = DC_PRESETS.isatis.t; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ'].forEach(k => { r.t[k] = dcUnion(d[k], c.t[k]); }); r.t.sh = dcShUnion(d.sh, c.t.sh);
       if(c.pat && c.pat.design && c.pat.design.indexOf('{L}') === -1 && /\{SH\}/.test(c.pat.design)) r.pat.design = c.pat.design.replace('{SH}', '{SH}' + r.sep + '{L}'); }
     /* ۴۰۸: کاربرد کدینگ در هر بخش سایت (مدیریت سامانه ← کدینگ اسناد): main = استاندارد پایه، iso/isatis = الگوی همان استاندارد، off = بدون کد */
