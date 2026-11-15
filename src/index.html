@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115070637">
+<meta name="pm-build" content="20261115071809">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30410,6 +30410,8 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .ivx-g .ivf > u{text-decoration:none;font-size:11.5px;font-weight:700;color:var(--muted);} :is(html,#z0) :is(body,#z1) .ivx-g .ivf > u i{font-style:normal;color:#c4453a;}
 :is(html,#z0) :is(body,#z1) .ivx-g .ivf input, :is(html,#z0) :is(body,#z1) .ivx-g .ivf select{width:100%;box-sizing:border-box;}
 @media (max-width:640px){ :is(html,#z0) :is(body,#z1) .ivx-g{grid-template-columns:1fr;} :is(html,#z0) :is(body,#z1) .ivx-g .ivf, :is(html,#z0) :is(body,#z1) .ivx-g .ivf.s2{grid-column:1 / -1;} }
+:is(html,#z0) :is(body,#z1) .ds-desk .ds-ic{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:color-mix(in srgb, #2a6fa0 10%, transparent);color:#2a6fa0;} :is(html,#z0) :is(body,#z1) .ds-desk .ds-ic svg{width:18px;height:18px;}
+:is(html,#z0) :is(body,#z1) .ds-desk .co-a button.pri{background:#2a6fa0;color:#fff;border-color:#2a6fa0;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -54577,6 +54579,29 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(g === 'latest') return window.dqLatestOpen(); if(g === 'mine') return window.dqMineOpen('design');
     const k = g === 'send' ? 'design' : 'letter', cls = g === 'send' ? '.a-dParty' : '.a-lParty';
     try{ homeNewDoc(k); }catch(er){} let n = 0; const t = setInterval(() => { const i = document.querySelector('#secAdm' + k + ' ' + cls); if(i && i.offsetParent){ if(!i.value){ i.value = co; i.dispatchEvent(new Event('input', {bubbles: true})); } i.readOnly = true; i.title = 'تیم شما (خودکار)'; clearInterval(t); } else if(++n > 40) clearInterval(t); }, 150); });
+  /* میز طراحی روی خانهٔ طراحان تیم اصلی (۳۷۵): ارسال نقشه در یک کلیک، وضعیت نقشه‌های خودم، آخرین نقشه‌های منتشرشده و صف بررسی.
+     چه کسی: عضو تیم اصلی (نه تیم بیرونی؛ آن‌ها پرتال تیم دارند) که سند طراحی ثبت می‌کند و یا پروژه در مرحلهٔ طراحی است یا سمتش طراحی/رشته‌ای است */
+  const dsIsDesigner = () => { let me = ''; try{ me = activeUserName(); }catch(e){} if(!me) return false; try{ if(coScopeMe()) return false; if(!can('tab.admin') || !(can('write.adm') || can('ds.submit'))) return false; }catch(e){ return false; }
+    let dz = false; try{ dz = !!window.pjIsDesign(); }catch(e){} if(dz) return true;
+    const rl = String((function(){ try{ return roleOf(me) || ''; }catch(e){ return ''; } })()); if(/طراح|BIM|نقشه/.test(rl)) return true;
+    let D = []; try{ window.discCatalog().forEach(([m, sub]) => { D.push(m); sub.forEach(x => D.push(x)); }); }catch(e){} return D.some(d => rl.indexOf(d) !== -1); };
+  window.dsDeskHtml = function(){ if(!dsIsDesigner()) return ''; const me = activeUserName();
+    const mine = dqDesigns().filter(x => nameKey(String(pick(x.row, AD.eng) || '')) === nameKey(me)), n = c => mine.filter(x => dqCls(dqSt(x.row)) === c).length;
+    let rev = false; try{ rev = can('tab.admin') && !!window.dqStripHtml && dqDesigns().some(x => dqExt(x.row)); }catch(e){}
+    const I = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+    return '<section class="h3-sec co-pn ds-desk h3-a" style="--i:2"><div class="co-h"><span class="co-av ds-ic">' + I('<path d="M3 21l3-1 11-11-2-2L4 18z"/><path d="M14 6l2 2M15 3l6 6"/>') + '</span><span class="co-t"><small>میز طراحی</small><b>نقشه‌های من</b></span>'
+      + '<span class="co-k"><i class="q">' + toFa(n('q')) + '<u>در بررسی</u></i><i class="bad">' + toFa(n('bad')) + '<u>نیاز به اصلاح</u></i><i class="ok">' + toFa(n('ok')) + '<u>تأییدشده</u></i></span></div>'
+      + '<div class="co-a"><button type="button" class="pri" data-dsd="send">' + I('<path d="M12 19V5M5 12l7-7 7 7"/>') + '<span>ارسال نقشه</span></button>'
+      + '<button type="button" data-dsd="mine">' + I('<path d="M4 6h16M4 12h16M4 18h10"/>') + '<span>نقشه‌های من</span></button>'
+      + '<button type="button" data-copo="latest">' + I('<path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/>') + '<span>آخرین نقشه‌ها</span></button>'
+      + (rev ? '<button type="button" data-dqopen="1">' + I('<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>') + '<span>صف بررسی</span></button>' : '') + '</div></section>'; };
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-dsd]'); if(!b) return; e.preventDefault();
+    if(!dsIsDesigner()){ const pn = b.closest('.ds-desk'); if(pn) pn.remove(); showDialog('warn', 'دسترسی', 'ثبت سند طراحی برای سمت شما فعال نیست؛ از مدیر پروژه بخواهید.'); return; }
+    if(b.dataset.dsd === 'send'){ try{ homeNewDoc('design'); }catch(er){} return; }
+    /* نقشه‌های من: فهرست اسناد طراحی با گروه‌بندی طراح، روی خودم */
+    try{ switchTab('admin'); }catch(er){} setTimeout(() => { try{ window.admSetCat('design'); }catch(er){} }, 150); });
+  /* میز طراحی پیش از رسیدن اجازه‌ها کشیده می‌شود؛ اگر بعد معلوم شد اجازه ندارد برداشته می‌شود */
+  setInterval(() => { const pn = document.querySelector('.ds-desk'); if(pn && !dsIsDesigner()) pn.remove(); }, 2000);
   /* فضای «تیم ما»: ابلاغ کار به تیم، کارهای تیم، یادآور، اعضا؛ فقط اعضای همین تیم */
   function coSpacePanelHtml(co){
     const M = coMembers(co).map(u => (window.listNamesAll ? window.listNamesAll() : []).find(a => nameKey(a) === u) || u), mgr = window.coIsMgr();
@@ -100443,7 +100468,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(P.length) Promise.all(P).then(() => homeSoon()).catch(() => {}); } }catch(e){}
     /* ترتیب: خوش‌آمد (با پروژه) ← کارتابل من ← کارهای سریع ← وضعیت پروژه ← بقیه */
     let deskHome = false; try{ deskHome = window.matchMedia('(min-width:1180px)').matches; }catch(e){}
-    const xtra = (window.repPanelHtml ? window.repPanelHtml() : '') + (window.coPanelHtml ? window.coPanelHtml() : '') + (window.dqStripHtml ? window.dqStripHtml() : '');
+    const xtra = (window.repPanelHtml ? window.repPanelHtml() : '') + (window.coPanelHtml ? window.coPanelHtml() : '') + (window.dsDeskHtml ? window.dsDeskHtml() : '') + (window.dqStripHtml ? window.dqStripHtml() : '');
     const top = deskHome ? h3DeskTop(work, tk, day, dDate, adm, prc) + xtra
       : h5Hero(work, tk, day, dDate, adm) + xtra;
     const early = (function(){ try{ return hmEarly(); }catch(e){ return ''; } })();
