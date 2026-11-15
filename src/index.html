@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115080339">
+<meta name="pm-build" content="20261115081212">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30476,6 +30476,7 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) .dsk-l{display:flex;gap:6px;flex-wrap:wrap;} :is(html,#z0) :is(body,#z1) .dsk-l button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;background:var(--field);font-size:12px;font-weight:700;} :is(html,#z0) :is(body,#z1) .dsk-l button:hover{background:color-mix(in srgb,#2a6fa0 10%,var(--field));color:#2a6fa0;} :is(html,#z0) :is(body,#z1) .dsk-l svg{width:15px;height:15px;}
 :is(html,#z0) :is(body,#z1) .dsk-cf{display:flex;flex-direction:column;gap:10px;} :is(html,#z0) :is(body,#z1) .dsk-cf label{display:flex;align-items:center;gap:8px;font-size:13px;}
 @media (max-width:760px){ :is(html,#z0) :is(body,#z1) .dsk-k{grid-template-columns:repeat(2,1fr);} :is(html,#z0) :is(body,#z1) .dsk-g{grid-template-columns:1fr;} :is(html,#z0) :is(body,#z1) .dsk-send{padding:0 12px;} }
+:is(html,#z0) :is(body,#z1) .co-swn{font-style:normal;margin-inline-start:5px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#c4453a;color:#fff;font-size:10px;font-weight:800;display:inline-grid;place-items:center;}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -34872,6 +34873,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
        و در آخر تازه‌ترین. مورد بحرانیِ خوانده‌شده نباید بالای یک تلنگر
        نخوانده بنشیند، برای همین «خوانده‌نشده» اول می‌آید. */
     const rank = l => (l === 'hot' ? 0 : (l === 'warm' ? 1 : 2));
+    /* کارهای سازمان من (کارهایی که ادمین سازمان سپرده؛ از همهٔ پروژه‌ها) */
+    try{ (window.orgFeedItems ? window.orgFeedItems(lseen) : []).forEach(x => out.push(x)); }catch(e){}
     // دستهٔ نمایشی: هر مورد بحرانیِ غیرِ «نقص گزارش» به دستهٔ بحرانی می‌رود
     out.forEach(x => {
       /* بحرانیِ خودم در «نیاز به اقدام من» می‌ماند (با نشان بحرانی)؛ فقط موارد دیگران «بحرانی‌های پروژه» است */
@@ -54834,8 +54837,22 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!L.length){ if(co && !org.list.has(co) && orgCanCreate(co)) return '<section class="h3-sec org-card h3-a"><span class="org-ci">' + OI('<path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/>') + '</span><span class="org-cx"><b>فضای سازمان «' + esc(co) + '»</b><small>تیمتان را در همهٔ پروژه‌ها یک‌جا مدیریت کنید: اعضا، ادمین‌ها، کار دادن و پیگیری</small></span><button type="button" class="org-new" data-orgmake="' + esc(co) + '">ساخت فضای سازمان</button></section>'; return ''; }
     const o = L[0], M = orgMembers(o);
     return '<section class="h3-sec org-card h3-a"><span class="org-ci lg">' + avatarHtml(o, 'md', true) + '</span><span class="org-cx"><small>سازمان من' + (L.length > 1 ? ' · ' + toFa(L.length) + ' سازمان' : '') + '</small><b>' + esc(o) + '</b><span class="org-av sm">' + M.slice(0, 6).map(x => avatarHtml(x.u, 'xs', true)).join('') + '<u>' + toFa(M.length) + ' عضو' + (orgIsAdmin(o) ? ' · ادمین' : '') + '</u></span></span><button type="button" class="org-new" data-orgopen="' + esc(o) + '">' + OI('<path d="M5 12h14M13 5l7 7-7 7"/>') + 'ورود به فضای سازمان</button></section>'; };
+  /* اعلان‌های سازمان: کارهای بازی که به من سپرده شده، از همهٔ سازمان‌هایم؛ هر چند دقیقه یک بار */
+  let orgMyT = [];
+  async function orgMyLoad(){ const L = orgMine(); if(!L.length){ orgMyT = []; return; } const me = activeUserName(); let r = [];
+    try{ r = await supaFetchRaw('tasks?select=' + orgTaskSel + '&project_id=eq.*&done=is.false&owner1=eq.' + encodeURIComponent(me) + '&co_space=in.(' + L.map(o => '"' + String(o).replace(/"/g, '') + '"').join(',') + ')&limit=100') || []; }catch(e){ r = []; }
+    orgMyT = (r || []).filter(t => t && L.indexOf(t.co_space) !== -1 && nameKey(t.owner1) === nameKey(me) && !t.done); try{ window.renderNotif && window.renderNotif(); }catch(e){} }
+  window.orgMyCount = () => orgMyT.length;
+  window.orgFeedItems = lseen => orgMyT.map(t => { const d = orgDue(t), fid = 'org:' + t.id;
+    return {cat: 'nudge', fid, level: d != null && d < 0 ? 'hot' : 'warm', who: t.created_by || '', title: 'کار سازمان «' + t.co_space + '»' + (d != null ? (d < 0 ? ' — ' + toFa(-d) + ' روز گذشته' : d === 0 ? ' — موعد امروز' : '') : ''),
+      text: (t.title || '') + (t.side && t.side !== 'داخلی' ? ' · ' + t.side : ''), time: t.start_date || '', seen: !!(lseen && lseen.has(fid)), forMe: true, goto: {kind: 'org', id: t.co_space}}; });
+  document.addEventListener('click', e => { const z = e.target.closest && e.target.closest('[data-goto-kind="org"]'); if(!z) return; e.preventDefault(); e.stopPropagation(); try{ const nm = document.getElementById('notifModal'); if(nm) nm.hidden = true; }catch(er){} window.orgOpen(z.dataset.gotoId); }, true);
+  setTimeout(function orgTick(){ orgMyLoad(); setTimeout(orgTick, 4 * 60000); }, 6000);
   /* سوییچ دو فضا در ستون کناری (فقط کاربر تیمی) */
   setInterval(() => { try{ const co = coScopeMe(), bar = document.getElementById('tabBar'); if(!bar) return; let sw = document.getElementById('coSpSw');
+    /* عضو سازمان: «پروژه | سازمان من» (فضای سازمان در همهٔ پروژه‌ها) به‌جای «تیم ما» */
+    const OL = orgMine(); if(OL.length && !window.coSpaceCur()){ if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
+      const n = orgMyT.length, h = '<button type="button" class="on">پروژه</button><button type="button" data-orgopen="">سازمان من' + (n ? '<i class="co-swn">' + toFa(n) + '</i>' : '') + '</button>'; if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; } return; }
     if(!co){ if(sw) sw.remove(); return; } const cur = window.coSpaceCur() ? 'co' : 'pj';
     if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
     const h = '<button type="button" data-cosp="pj" class="' + (cur === 'pj' ? 'on' : '') + '">پروژه</button><button type="button" data-cosp="co" class="' + (cur === 'co' ? 'on' : '') + '">تیم ما</button>'; if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; }
@@ -70360,6 +70377,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + (L.length > n ? '<button type="button" class="ph-s more" data-fv="' + n + '">+' + toFa(L.length - n) + '</button>' : '')
       + '</span>';
   }
+  /* بازسازی صفحه (خانه، کارت‌ها…) <img> تازه با همان نشانی می‌سازد که باید دوباره رمزگشایی شود و یک لحظه خالی/پرش می‌دهد (مثلاً عکس پروژه).
+     پیش از نقاشی بعدی، اگر همان عکسِ کامل‌شده همین الان برداشته شده، خودش جای تازه می‌نشیند (۳۷۹) */
+  (function imgKeep(){ if(typeof MutationObserver !== 'function') return;
+    const imgsOf = n => n.nodeType !== 1 ? [] : n.tagName === 'IMG' ? [n] : (n.firstElementChild ? Array.from(n.getElementsByTagName('img')) : []);
+    new MutationObserver(ms => { let gone = null;
+      for(const m of ms) for(const n of m.removedNodes) for(const i of imgsOf(n)) if(!i.__ikSw && i.complete && i.naturalWidth && i.src && !i.isConnected){ (gone = gone || new Map()).set(i.src, i); }
+      if(!gone) return;
+      for(const m of ms) for(const n of m.addedNodes) for(const i of imgsOf(n)){ if(i.__ikIn){ i.__ikIn = false; continue; } const o = i.src && gone.get(i.src); if(!o || o === i || !i.isConnected) continue;
+        /* جابه‌جایی خودمان دوباره دیده نشود (وگرنه حلقهٔ بی‌پایان) */
+        i.__ikSw = true; o.__ikIn = true; o.className = i.className; if(i.alt != null) o.alt = i.alt; if(i.dataset.tk) o.dataset.tk = i.dataset.tk; i.replaceWith(o); gone.delete(i.src); } })
+      .observe(document.documentElement, {childList: true, subtree: true}); })();
   /* عکسی که یک بار آمد، در همین نشست به‌شکل blob می‌ماند؛ با هر بازسازی صفحه همان لحظه نشان داده می‌شود (بی چشمک) */
   const s3ThB = new Map();
   /* نشانی آمادهٔ همین عکس (blob یا امضاشدهٔ هنوز معتبر) — برای ساختن <img> با src از همان اول، بی چشمک */
