@@ -190,7 +190,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115054816">
+<meta name="pm-build" content="20261115055505">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30387,6 +30387,7 @@ html.pj-gated body > *:not(#pjGate):not(script){visibility:hidden!important;}
 :is(html,#z0) :is(body,#z1) #acM .axh-swl{text-decoration:none;font-size:11px;color:var(--muted);}
 @media (max-width:900px){ :is(html,#z0) :is(body,#z1) #acM .axh-gh, :is(html,#z0) :is(body,#z1) #acM .axh-r{grid-template-columns:1fr;} :is(html,#z0) :is(body,#z1) #acM .axh-gr, :is(html,#z0) :is(body,#z1) #acM .axh-ra{justify-content:flex-start;} }
 :is(html,#z0) :is(body,#z1) .ogp-acc{display:flex;flex-direction:column;gap:4px;} :is(html,#z0) :is(body,#z1) .ogp-acc > u{text-decoration:none;font-size:11.5px;font-weight:700;color:var(--muted);} :is(html,#z0) :is(body,#z1) .ogp-acc select{width:100%;}
+:is(html,#z0) :is(body,#z1) .ogp-ro{display:block;padding:8px 10px;border-radius:10px;background:var(--field);font-size:12px;font-weight:700;color:var(--ink);}
 .pjw-imp{margin:10px 0 4px;border:1px dashed var(--line,#dde2e8);border-radius:12px;padding:8px 12px}
 .pjw-imp summary{cursor:pointer;font-weight:600;font-size:13px} .pjw-imp summary small{font-weight:400;color:var(--muted);margin-inline-start:6px}
 .pjw-impl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:10px 0;max-height:240px;overflow:auto}
@@ -33212,7 +33213,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* کاربر شرکتی (طراح/مشاور/پیمانکار بیرونی): فقط کارهای سند و کارتابل خودش؛ گزارش‌ها، مالی کل، اعلان‌های دیگران و مدیریت بسته است */
     if(lvl == null){ let co = ''; try{ co = window.coScopeMe ? window.coScopeMe() : ''; }catch(e){}
       if(co && window.coSpaceCur && window.coSpaceCur()) return window.coSpaceCapOk(k);
-      if(co && !(window.coCapOk ? window.coCapOk(k, co) : CO_OK.test(k))) return false; }
+      /* عضو تیم بیرونی: مثل سامانه‌های بزرگ (الگوی دسترسی شرکت + استثنای فردی)، فقط قواعد نوع تیمش ملاک است و سمتش فقط عنوان است؛
+         استثنای فردی که مدیر برای همین شخص گذاشته بر الگو مقدم است */
+      if(co){ let me = ''; try{ me = activeUserName(); }catch(e){} const ov = me ? permUserOf(me, k) : null; if(ov != null) return ov;
+        return window.coCapOk ? window.coCapOk(k, co) : CO_OK.test(k); } }
     let v = lvl;
     if(v == null){
       try{ v = rawLevel(); }catch(e){ v = 3; }
@@ -43209,7 +43213,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const ogRoleOf = n => { try{ return String(roleOf(n) || '').trim(); }catch(e){ return ''; } };
   function ogPersonInfo(n){
     const per = og.per.get(nameKey(n)) || {}, rl = ogRoleOf(n), pos = ogPos(rl);
-    let side = per.side || (pos && pos.side) || '';
+    /* عضو تیم بیرونی: گروه چارت از نوع همان تیم می‌آید (یک منبع برای دسترسی و چارت) */
+    let side = ''; try{ const co = window.extPartyOf ? window.extPartyOf(n) : ''; if(co) side = window.coTypeOf(co); }catch(e){}
+    side = side || per.side || (pos && pos.side) || '';
     if(!side){ try{ const L = levelOf(n); side = L === 6 ? 'emp' : L === 8 ? 'ctr' : L === 9 ? 'own' : 'pm'; }catch(e){ side = 'pm'; } }
     return {n, rl, pos, side, up: per.up || '', fl: per.fl || [], under: (pos && pos.us) || ''};
   }
@@ -44430,7 +44436,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + (function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm || isAdminName(n)) return ''; let L = 3; try{ L = lvStored(n) || 3; }catch(e){}
           return '<div class="ogp-acc"><u>نوع دسترسی</u><span class="lv-selw"><select data-ogpf="acc" data-nons="1" data-acc-who="' + esc(n) + '" data-was="' + esc(String(L)) + '">' + window.lvOptGroups(L, n) + '</select></span></div>'; })()
       + '<label><u>سرپرست مستقیم</u><select data-ogpf="up" data-nons="1"><option value="">خودکار از سمت</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '"' + (nameKey(I.up) === nameKey(x) ? ' selected' : '') + '>' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select></label>'
-      + '<label><u>تیم / گروه در چارت</u><select data-ogpf="side" data-nons="1"><option value="">خودکار از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'
+      + (function(){ const co = window.extPartyOf ? window.extPartyOf(n) : '';
+          /* عضو تیم بیرونی: گروه چارت از نوع تیمش می‌آید و جدا انتخاب نمی‌شود (یک منبع) */
+          if(co) return '<label><u>تیم / گروه در چارت</u><span class="ogp-ro">' + esc((OG_SIDES.find(x => x[0] === window.coTypeOf(co)) || ['', ''])[1]) + ' — از تیم «' + esc(co) + '»</span><select data-ogpf="side" data-nons="1" hidden><option value="" selected></option></select></label>';
+          return '<label><u>تیم / گروه در چارت</u><select data-ogpf="side" data-nons="1"><option value="">خودکار از سمت</option>' + OG_SIDES.map(([k, t]) => '<option value="' + k + '"' + ((og.per.get(nameKey(n)) || {}).side === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label>'; })()
       + '<div class="og-fl"><u>محدودهٔ طبقات <small>برای سرپرست طبقات؛ خالی = کل پروژه</small></u><div>' + F.map(f => '<button type="button" data-ogfl="' + esc(f.key) + '" class="' + (I.fl.indexOf(f.key) !== -1 ? 'on' : '') + '">' + esc(f.label.replace(/^طبقهٔ\s*/, '')) + '</button>').join('') + '</div></div>'
       + '<div class="og-rel"><u>رابطه با دیگری <small>یک نفر را انتخاب کنید و رابطه را بزنید؛ همان لحظه در چارت اعمال می‌شود</small></u>'
       +   '<select data-ogrelx="1" data-nons="1"><option value="">انتخاب شخص…</option>' + P.filter(x => nameKey(x) !== nameKey(n)).map(x => '<option value="' + esc(x) + '">' + esc(x) + (ogRoleOf(x) ? ' — ' + esc(ogRoleOf(x)) : '') + '</option>').join('') + '</select>'
@@ -74074,7 +74083,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(dsGrpMode === 'disc'){
         const by = new Map();
         rows.forEach(r => { const D = String(pick(r, AD.dDisc) || '').split(/[،,|]/).map(x => x.trim()).filter(Boolean); (D.length ? D : ['بدون رشته']).forEach(d => { if(!by.has(d)) by.set(d, []); by.get(d).push(r); }); });
-        const dOrd = d => { const i = DESIGN_DISC.indexOf(d); return d === 'بدون رشته' ? 999 : i === -1 ? 500 : i; };
+        /* ترتیب رشته‌ها: رشته‌های کدینگ اسناد همین پروژه؛ اگر تعریف نشده، فهرست پیش‌فرض سامانه */
+        const DO = (function(){ let L = []; try{ L = dcTab('dsc').map(x => x[1]); }catch(e){} return L.length ? L : DESIGN_DISC; })();
+        const dOrd = d => { const i = DO.indexOf(d); return d === 'بدون رشته' ? 999 : i === -1 ? 500 : i; };
         return tg + Array.from(by.entries()).sort((a, b) => dOrd(a[0]) - dOrd(b[0]) || a[0].localeCompare(b[0], 'fa')).map(([k, list]) => {
           const bad = list.filter(r => dsCls(r) === 'bad').length, ok = list.filter(r => dsCls(r) === 'ok').length;
           const gk = openP('design|dc:' + k);
