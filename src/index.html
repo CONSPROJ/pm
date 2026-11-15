@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115151734">
+<meta name="pm-build" content="20261115152029">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -5756,6 +5756,11 @@
   .hl-pe{position:static;order:9;align-self:flex-start;font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted);cursor:pointer;}
   .hl-pe:hover{color:var(--c, var(--sky));border-color:var(--c, var(--sky));} .hl-pm{margin:0 0 10px !important;}
   .dc-ord{display:flex !important;flex-wrap:wrap;align-items:flex-end;gap:8px 4px;} .dc-ord > .dc-s{direction:rtl;flex:1 1 96px;min-width:86px;}
+  .pct-w{display:flex;flex-direction:column;gap:12px;} .pct-tabs{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--field);border:1px solid var(--line);align-self:flex-start;}
+  .pct-tabs button{all:unset;cursor:pointer;padding:7px 14px;border-radius:9px;font-size:12.5px;font-weight:800;color:var(--muted);} .pct-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .pct-t{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;} .pct-r{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line);background:var(--surface);} .pct-r:first-child{border-top:0;}
+  .pct-r.off{opacity:.5;} .pct-n{display:flex;flex-direction:column;gap:1px;} .pct-n b{font-size:12.5px;} .pct-v{display:inline-flex;align-items:center;gap:4px;} .pct-v input{width:68px;height:34px;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--ink);font:inherit;font-size:13px;text-align:center;}
+  .pct-u{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);} .pct-f{display:flex;justify-content:flex-end;gap:8px;} .pct-ro{font-size:11.5px;color:var(--muted);}
   .dc-use{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:8px;} .dc-ur{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);} .dc-ur b{font-size:12.5px;} .dc-ur select{font:inherit;font-size:12px;padding:6px 8px;border-radius:9px;border:1px solid var(--line);background:var(--field);color:var(--ink);} .dc-ur code{grid-column:1 / -1;font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .dc-ord .dc-sep{display:none;} .dc-f:has(.dc-ord) .dc-pcs{display:none !important;} .dc-ord{counter-reset:dcs;} .dc-ord > .dc-s:not(.lit) u::before{counter-increment:dcs;content:counter(dcs) '. ';opacity:.6;}
   .dc-ord .dc-ac{display:flex;flex-direction:column;gap:3px;} .dc-ord .dc-ac u{text-decoration:none;font-size:10.5px;font-weight:800;color:var(--muted);white-space:nowrap;}
@@ -65115,7 +65120,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* پیشرفت هر مدرک بر اساس وضعیتش، به روش کنترل مدارک (DCC): از تهیه تا «برای اجرا» */
   const DS_PCT = {'کنسل شده':100, '':10, 'در حال بررسی':30, 'نزد مشاور/کارفرما':50, 'رد شده':35, 'نیاز به اصلاح':60, 'تأیید مشروط':80, 'تأیید شده':90, 'برای اجرا':100};
   function dsStOf(r){ try{ const rv = dsRevsOf(r), c = rv[rv.length - 1], L = (c.log || []).filter(x => x && x.st); return L.length ? L[L.length - 1].st : String(pick(r,AD.dStatus) || ''); }catch(e){ return String(pick(r,AD.dStatus) || ''); } }
-  function dsPct(r){ const st = dsStOf(r); return DS_PCT[st] != null ? DS_PCT[st] : 10; }
+  /* ۴۲۲: درصدهای پیشرفت (WBS) از «مدیریت سامانه ← درصدهای پیشرفت» (قانون pct.نوع)؛ پیش‌فرض همین جدول‌ها */
+  window.pctOv = (base, kind) => { let o = null; try{ const v = window.pmRule ? window.pmRule('pct.' + kind, '') : ''; o = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; }catch(e){} return o && typeof o === 'object' ? Object.assign({}, base, o) : base; };
+  window.pctSkip = kind => { try{ const v = window.pmRule ? window.pmRule('pct.skip.' + kind, '') : ''; return new Set(String(v || '').split('|').filter(Boolean)); }catch(e){ return new Set(); } };
+  window.PCT_BASE = () => ({design: DS_PCT});
+  function dsPct(r){ const st = dsStOf(r), M = window.pctOv(DS_PCT, 'design'); return M[st] != null ? M[st] : (M[''] != null ? M[''] : 10); }
   window.dsPct = dsPct;
   /* خلاصهٔ DCC: پیشرفت وزنیِ کل و هر رشته، و شمار کدهای نتیجه */
   function dsDiscSel(){ try{ return sessionStorage.getItem('siteLogM.dsDisc') || ''; }catch(e){ return ''; } }
@@ -67870,6 +67879,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     'بررسی پیمانکار':50, 'رد پیمانکار':50, 'تأیید پیمانکار':60,
     'بررسی کارفرما':75, 'رد کارفرما':75, 'تایید شده':90, 'پرداخت شده':100
   };
+  window.PCT_ADM = () => ({party: ADM_PCT, noParty: ADM_PCT_NOP});
   const ADM_PCT_STEPS = [['تنظیم',10], ['بررسی داخلی',25], ['تأیید داخلی',40], ['پیمانکار',50],
                          ['کارفرما',75], ['تأیید',90], ['پرداخت',100]];
   /* گردش پیمانکار کم پیش می‌آید (به‌خصوص در صورت وضعیت)؛ فقط وقتی
@@ -67887,7 +67897,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const rv = String(effectiveReview(r) || '') || RV_DRAFT;
     if(kind === 'statement' && (isPaid(r) || rv === RV_PAID)) return 100;
     if(kind === 'contract' && (rv === 'تایید شده' || rv === RV_PAID)) return 100;
-    const map = admHasParty(r) ? ADM_PCT : ADM_PCT_NOP;
+    const map = window.pctOv(admHasParty(r) ? ADM_PCT : ADM_PCT_NOP, kind);
     return map[rv] != null ? map[rv] : 0;
   }
 
@@ -69003,6 +69013,22 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
       try{ const o = slim(read()); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
   };
+  /* ویرایشگر درصدهای پیشرفت (۴۲۲) */
+  window.pctOpen = function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){}
+    const K = [['statement', 'صورت وضعیت', Object.assign({}, window.PCT_ADM().party)], ['contract', 'قرارداد', Object.assign({}, window.PCT_ADM().party)], ['design', 'اسناد طراحی', Object.assign({}, window.PCT_BASE().design)]];
+    const EN = Object.assign({}, window.ST_EN || {}, {'در حال تنظیم': 'Draft', 'بررسی داخلی': 'Internal Review', 'رد داخلی': 'Internal Rejection', 'تأیید داخلی': 'Internal Approval', 'بررسی پیمانکار': 'Contractor Review', 'رد پیمانکار': 'Contractor Rejection', 'تأیید پیمانکار': 'Contractor Approval', 'بررسی کارفرما': 'Client Review', 'رد کارفرما': 'Client Rejection', 'تایید شده': 'Approved', 'پرداخت شده': 'Paid', '': 'Received'});
+    const tab = k => { const base = K.find(x => x[0] === k)[2], M = window.pctOv(base, k), sk = window.pctSkip(k);
+      return '<div class="pct-t" data-pctk="' + k + '">' + Object.keys(base).map(st => '<label class="pct-r' + (sk.has(st) ? ' off' : '') + '"><span class="pct-n"><b>' + esc(st || 'دریافت (بدون وضعیت)') + '</b><em class="en" dir="ltr">' + esc(EN[st] || '') + '</em></span>'
+        + '<span class="pct-v"><input type="number" min="0" max="100" step="5" data-pcts="' + esc(st) + '" value="' + esc(String(M[st])) + '"' + (adm ? '' : ' disabled') + '><u>٪</u></span>'
+        + '<span class="pct-u"><input type="checkbox" data-pctu="' + esc(st) + '"' + (sk.has(st) ? '' : ' checked') + (adm ? '' : ' disabled') + '><small>در این پروژه</small></span></label>').join('') + '</div>'; };
+    const m = fxModal('pctM', 'درصدهای پیشرفت (WBS)', 'وزن هر مرحله در درصد پیشرفت و نمودارها؛ مرحله‌ای که در این فاز پروژه کاربرد ندارد را خاموش کنید', '<div class="pct-w"><nav class="pct-tabs">' + K.map((x, i) => '<button type="button" class="' + (i ? '' : 'on') + '" data-pcttab="' + x[0] + '">' + x[1] + '</button>').join('') + '</nav><div class="pct-b">' + tab('statement') + '</div>'
+      + (adm ? '<div class="pct-f"><button type="button" class="mini" data-pctreset="1">پیش‌فرض سامانه</button><button type="button" class="mini go" data-pctsave="1">ذخیره برای این پروژه</button></div>' : '<p class="pct-ro">فقط مدیر سامانه تغییر می‌دهد.</p>') + '</div>', false), B = m.querySelector('.fx-bd'); let cur = 'statement';
+    B.addEventListener('click', async e => { const tb = e.target.closest('[data-pcttab]'); if(tb){ cur = tb.dataset.pcttab; B.querySelectorAll('[data-pcttab]').forEach(x => x.classList.toggle('on', x === tb)); B.querySelector('.pct-b').innerHTML = tab(cur); return; }
+      if(e.target.closest('[data-pctreset]')){ try{ await window.coRuleSet({['pct.' + cur]: null, ['pct.skip.' + cur]: null}); B.querySelector('.pct-b').innerHTML = tab(cur); shrToast('پیش‌فرض سامانه برگشت'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } return; }
+      const sv = e.target.closest('[data-pctsave]'); if(sv){ const o = {}, off = []; B.querySelectorAll('[data-pcts]').forEach(i => { const v = Math.max(0, Math.min(100, parseInt(toEn(i.value), 10) || 0)); o[i.dataset.pcts] = v; }); B.querySelectorAll('[data-pctu]').forEach(c => { if(!c.checked) off.push(c.dataset.pctu); });
+        sv.disabled = true; try{ await window.coRuleSet({['pct.' + cur]: JSON.stringify(o), ['pct.skip.' + cur]: off.join('|') || null}); shrToast('درصدهای «' + K.find(x => x[0] === cur)[1] + '» ذخیره شد'); try{ if(typeof invalidateAdmin === 'function') invalidateAdmin(); }catch(er){} }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } } });
+    B.addEventListener('change', e => { const c = e.target.closest('[data-pctu]'); if(c) c.closest('.pct-r').classList.toggle('off', !c.checked); }); };
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-pctopen]')){ e.preventDefault(); e.stopPropagation(); window.pctOpen(); } }, true);
   document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('[data-dcopen]'); if(!t) return; e.preventDefault(); e.stopPropagation(); dcgLoad(true).then(() => window.dcgOpen()); }, true);
   /* «جزئیات بیشتر» کارت دفتر فنی */
   function admMoreHtml(kind, r, head, o){
@@ -77164,7 +77190,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const nx = dsNextOf(st);
     const main = '<span class="rfb-track">' + segs + '</span>'
       + '<span class="rfb-tx"><u>' + esc(cap) + '</u><b>' + (DS_CODE[st] ? '<i class="dsb-code">' + DS_CODE[st] + '</i>' : '') + esc(st || 'بدون گردش') + '</b></span>'
-      + '<span class="dsb-pct" title="پیشرفت مدرک (DCC)"><b>' + toFa(DS_PCT[st] != null ? DS_PCT[st] : 10) + '٪</b></span>'
+      + '<span class="dsb-pct" title="پیشرفت مدرک (DCC)"><b>' + toFa(dsPct(r)) + '٪</b></span>'
       + (days != null ? '<span class="rfb-d' + (lateD ? ' late' : '') + '" title="' + toFa(days) + ' روز در این مرحله"><b>' + toFa(days) + '</b>روز</span>' : '')
       + (editable && id ? '<span class="rfb-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></span>' : '');
     const head = (editable && id)
@@ -100333,6 +100359,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
              add('adm', 'mods', 'بخش‌های فعال پروژه', 'خاموش کردن بخش‌های بی‌استفاده برای همه', HM_I.doc, 'hc-amb', null, false, 'data-modbtn="1"');
              add('adm', 'maint', 'حالت نگهداری', 'سایت برای همه فقط‌خواندنی (روز انتقال یا تعمیرات)', ST2_I.ref, 'hc-amb', null, false, 'data-maintbtn="1"');
              add('adm', 'dc', 'کدینگ اسناد', 'کد یکتای اسناد و نام فایل‌ها: پروژه، مرحله، تراز، دیسیپلین، نوع، شیت، ویرایش', HM_I.doc, 'hc-sky', null, false, 'data-dcopen="1"');
+             add('adm', 'pct', 'درصدهای پیشرفت (WBS)', 'وزن هر مرحله در صورت وضعیت، قرارداد و اسناد طراحی؛ مرحله‌های بی‌استفاده در این پروژه', HM_I.doc, 'hc-sky', null, false, 'data-pctopen="1"');
              add('adm', 'rules', 'قوانین و مهلت‌ها', 'هر قاعدهٔ ثابت سامانه: مهلت‌ها، روزهای هشدار، ساعت گزارش', HM_I.clock || HM_I.doc, 'hc-vio', null, false, 'data-rulesbtn="1"'); }
     if(admU && hmCan('msg.broadcast')) add('adm', 'bc', 'پیام گروهی', 'یک پیام برای همه', PF_I.mega, 'hc-vio', null, false, so('bc', 'پیام گروهی'));
     if(admU) add('adm', 'log', 'سابقهٔ فعالیت کاربران', 'ورودها و کارها', PF_I.log, 'hc-teal', null, false, so('log', 'سابقهٔ فعالیت کاربران'));
