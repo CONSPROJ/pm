@@ -13,7 +13,7 @@ self.addEventListener('activate', e => e.waitUntil((async () => {
 
 /* فایل‌های ثابت: کتابخانه‌ها، آیکون‌ها و قلم‌ها.
    نسخه‌دار (مثل xlsx-0.18.5) و قلم‌ها: اول از حافظه. بی‌نسخه (cad-*.js): از حافظه و هم‌زمان تازه‌سازی برای بار بعد. */
-const STATIC_CACHE = 'pm-static-v1';
+const STATIC_CACHE = 'pm-static-v2';
 self.addEventListener('fetch', e => {
   const req = e.request;
   if(req.method !== 'GET') return;
@@ -26,6 +26,8 @@ self.addEventListener('fetch', e => {
     const c = await caches.open(STATIC_CACHE);
     const hit = await c.match(req);
     const net = fetch(req).then(res => { if(res && (res.ok || res.type === 'opaque')) c.put(req, res.clone()).catch(() => {}); return res; });
+    /* اسکریپت‌های بی‌نسخهٔ نقشه‌خوان (cad-*.js، libredwg-web.js): اول شبکه تا اصلاحیه‌ها همان بار اول برسند؛ قطع بودن = نسخهٔ نگه‌داشته */
+    if(hit && !versioned && /\.m?js$/.test(u.pathname)){ try{ const r = await net; if(r && r.ok) return r; }catch(err){} return hit; }
     if(hit){ if(!versioned) e.waitUntil(net.catch(() => {})); return hit; }
     return net;
   })());

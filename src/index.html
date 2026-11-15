@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115152658">
+<meta name="pm-build" content="20261115154117">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -54867,12 +54867,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   setInterval(() => { try{ document.querySelectorAll('.adm-design[data-id]:not([data-dqx]), .afr[data-afrkind="design"][data-id]:not([data-dqx])').forEach(el => { el.dataset.dqx = '1'; const r = (typeof rowMap !== 'undefined' && rowMap.get(el.dataset.id)) || null; if(!r || !dqExt(r)) return;
       el.classList.add('dq-ext'); const h = el.querySelector('.afr-ttl, .rv-h, .adm-h, b, .t'); const tag = document.createElement('i'); tag.className = 'dq-xtag'; tag.textContent = 'ارسالی ' + (pick(r, AD.dParty) || 'مشاور'); (h || el).appendChild(tag); }); }catch(e){} }, 1500);
   /* نوار صف بررسی روی خانهٔ تیم اصلی (فقط اگر چیزی در صف باشد) */
-  window.dqStripHtml = function(){ let co = ''; try{ co = coScopeMe(); }catch(e){} if(co) return ''; try{ if(!can('tab.admin')) return ''; }catch(e){ return ''; }
+  window.dqStripHtml = function(){ let co = ''; try{ co = coScopeMe(); }catch(e){}
+    const C = window.ibCorPending ? window.ibCorPending() : [], KN = {letter:'نامه', statement:'صورت وضعیت', contract:'قرارداد'};
+    const kc = {}; C.forEach(o => { kc[o.t] = (kc[o.t] || 0) + 1; });
+    const cor = C.length ? '<button type="button" class="dq-strip h3-a" data-ibcorq="1"><i>' + toFa(C.length) + '</i><span><b>مکاتبات منتظر بررسی</b><small>' + Object.keys(kc).map(k => toFa(kc[k]) + ' ' + (KN[k] || 'مورد')).join(' · ') + '</small></span><em>بررسی</em></button>' : '';
+    let adm = false; try{ adm = !co && can('tab.admin'); }catch(e){}
+    if(!adm){ const T2 = (window.ibTrPending ? window.ibTrPending() : []); return cor + (T2.length ? '<button type="button" class="dq-strip h3-a" data-ibtrq="1"><i>' + toFa(T2.length) + '</i><span><b>ترانسمیتال منتظر شما</b><small>' + toFa(T2.reduce((a, o) => a + ((o.docs || []).length || 1), 0)) + ' مدرک طراحی</small></span><em>بررسی</em></button>' : ''); }
     const T = window.ibTrPending ? window.ibTrPending() : [];
     const tr = T.length ? '<button type="button" class="dq-strip h3-a" data-ibtrq="1"><i>' + toFa(T.length) + '</i><span><b>ترانسمیتال منتظر تأیید</b><small>' + toFa(T.reduce((a, o) => a + ((o.docs || []).length || 1), 0)) + ' مدرک طراحی</small></span><em>بررسی و تأیید ‹</em></button>' : '';
-    const Q = dqDesigns().filter(x => dqExt(x.row) && DQ_OPEN.indexOf(dqSt(x.row)) !== -1); if(!Q.length) return tr;
+    const Q = dqDesigns().filter(x => dqExt(x.row) && DQ_OPEN.indexOf(dqSt(x.row)) !== -1); if(!Q.length) return cor + tr;
     const late = Q.filter(x => (dqAge(dqDate(x.row)) || 0) > 7).length, cos = new Set(Q.map(x => String(pick(x.row, AD.dParty) || ''))).size;
-    return tr + '<button type="button" class="dq-strip h3-a" data-dqopen="1"><i>' + toFa(Q.length) + '</i><span><b>نقشه در صف بررسی</b><small>از ' + toFa(cos) + ' تیم' + (late ? ' · <s>' + toFa(late) + ' مورد بیش از ۷ روز</s>' : '') + '</small></span><em>باز کردن صف ‹</em></button>'; };
+    return cor + tr + '<button type="button" class="dq-strip h3-a" data-dqopen="1"><i>' + toFa(Q.length) + '</i><span><b>نقشه در صف بررسی</b><small>از ' + toFa(cos) + ' تیم' + (late ? ' · <s>' + toFa(late) + ' مورد بیش از ۷ روز</s>' : '') + '</small></span><em>باز کردن صف ‹</em></button>'; };
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-dqopen]')){ e.preventDefault(); window.dqQueueOpen(); } });
   document.addEventListener('change', async e => { const c = e.target.closest && e.target.closest('[data-codraft]'); if(!c) return; c.disabled = true;
     try{ await window.coDraftSet(c.dataset.codraft, c.checked); shrToast('ثبت شد'); }catch(er){ c.checked = !c.checked; showDialog('err', 'ثبت نشد', friendlyErr(er)); } finally{ c.disabled = false; } });
@@ -70772,11 +70777,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* عکسی که یک بار آمد، در همین نشست به‌شکل blob می‌ماند؛ با هر بازسازی صفحه همان لحظه نشان داده می‌شود (بی چشمک) */
   const s3ThB = new Map();
   /* نشانی آمادهٔ همین عکس (blob یا امضاشدهٔ هنوز معتبر) — برای ساختن <img> با src از همان اول، بی چشمک */
-  window.s3SrcNow = tk => { try{ const b = s3ThB.get(tk); if(b) return b; const c = s3ThumbC.get(tk); return c && c.t > Date.now() && c.u ? c.u : ''; }catch(e){ return ''; } };
+  /* ۴۲۵: عکس‌های کوچک (کاور پروژه‌ها و…) روی دستگاه هم می‌مانند تا با عوض کردن پروژه (بارگذاری دوبارهٔ صفحه) همان لحظه بیایند */
+  const S3P_K = 'siteLogM.s3thumbs.v1'; let s3P = {}; try{ s3P = JSON.parse(localStorage.getItem(S3P_K) || '{}') || {}; }catch(e){ s3P = {}; }
+  const s3PSave = (tk, d) => { try{ s3P[tk] = {d, at: Date.now()}; const K = Object.keys(s3P).sort((a, b) => s3P[b].at - s3P[a].at); K.slice(14).forEach(k => delete s3P[k]); localStorage.setItem(S3P_K, JSON.stringify(s3P)); }catch(e){ try{ s3P = {}; localStorage.removeItem(S3P_K); }catch(e2){} } };
+  window.s3SrcNow = tk => { try{ const b = s3ThB.get(tk); if(b) return b; if(s3P[tk] && s3P[tk].d) return s3P[tk].d; const c = s3ThumbC.get(tk); return c && c.t > Date.now() && c.u ? c.u : ''; }catch(e){ return ''; } };
   function s3ThBKeep(tk, url){
     if(s3ThB.has(tk) || !url) return;
     s3ThB.set(tk, '');
-    fetch(url, {referrerPolicy:'no-referrer'}).then(r => r.ok ? r.blob() : null).then(b => { if(b && b.size) s3ThB.set(tk, URL.createObjectURL(b)); else s3ThB.delete(tk); }).catch(() => s3ThB.delete(tk));
+    fetch(url, {referrerPolicy:'no-referrer'}).then(r => r.ok ? r.blob() : null).then(b => { if(b && b.size){ s3ThB.set(tk, URL.createObjectURL(b));
+        if(b.size < 60000 && !s3P[tk]){ try{ const fr = new FileReader(); fr.onload = () => { if(typeof fr.result === 'string') s3PSave(tk, fr.result); }; fr.readAsDataURL(b); }catch(e){} } } else s3ThB.delete(tk); }).catch(() => s3ThB.delete(tk));
   }
   function s3ThumbSet(img, r){
     if(!r || !r.u){ img.classList.add('th-bad'); return; }
@@ -88221,6 +88230,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const ibMine = o => nameKey(o.by) === nameKey(activeUserName());
   /* مورد مستقیم: فرستنده گیرنده را تعیین کرده؛ در صف عمومی بررسی نمی‌آید */
   const ibIn = o => !!o.to && nameKey(o.to) === nameKey(activeUserName());
+  /* ۴۲۶: مکاتبات (غیر نقشه) منتظر من، برای نوار صف بررسی روی خانه */
+  window.ibCorPending = () => { try{ return ib.list.filter(o => o.t !== 'design' && o.st === 'q' && ((ibCanR() && !o.to) || (ibIn(o) && !ibReadSet().has(o.id)))); }catch(e){ return []; } };
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-ibcorq]')){ e.preventDefault(); try{ ib.tf = ''; window.umOpenIb(ibCanR() ? 'q' : 'in', ''); }catch(er){} } });
   window.ibPending = () => (ibCanR() ? ib.list.filter(o => o.st === 'q' && !o.to).length : 0) + ib.list.filter(o => ibIn(o) && o.st === 'q' && !ibReadSet().has(o.id)).length;
   /* نشان روی دکمهٔ بالای صفحه: برای بررسی‌کننده موارد صف، برای فرستنده نتیجه‌های تازه‌ای که هنوز ندیده */
   const IB_SEEN = 'siteLogM.ibSeen.v1';
@@ -101307,9 +101319,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const HL_P0 = [
     {k: 'mgr', t: 'مدیریت پروژه', d: 'نمای کلان: هشدارها، وضعیت پروژه، کارتابل و صف بررسی', c: '#2a6fa0', o: ['hero', 'band', 'early', 'prj', 'kart', 'dq', 'quick', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
     {k: 'des', t: 'طراحی', d: 'میز طراحی جلوی چشم: ارسال نقشه، وضعیت نقشه‌ها و پیشرفت رشته‌ها', c: '#7a4fc0', o: ['hero', 'band', 'dsk', 'dq', 'kart', 'org', 'quick', 'early', 'prj', 'co', 'rep'], h: ['prj']},
-    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'band', 'kart', 'early', 'quick', 'prj', 'org', 'dq', 'dsk', 'co', 'rep'], h: ['dsk', 'dq']},
-    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'band', 'prj', 'dq'], h: ['prj', 'dq', 'band']},
-    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'kart', 'org', 'dsk', 'co', 'rep', 'dq', 'early', 'quick', 'band', 'prj'], h: ['early', 'quick', 'prj', 'dq', 'band']}];
+    {k: 'site', t: 'اجرا و کارگاه', d: 'کار امروز و پیگیری‌ها، هشدارها و میان‌برهای کارگاه', c: '#2f8a5b', o: ['hero', 'band', 'dq', 'kart', 'early', 'quick', 'prj', 'org', 'dsk', 'co', 'rep'], h: ['dsk']},
+    {k: 'ext', t: 'تیم بیرونی', d: 'سازمان و پرتال تیم شما، اسناد و کارهای سپرده‌شده', c: '#b0631c', o: ['hero', 'dq', 'org', 'co', 'rep', 'dsk', 'kart', 'quick', 'early', 'band', 'prj'], h: ['prj', 'band']},
+    {k: 'min', t: 'مینیمال', d: 'فقط خوش‌آمد و کارتابل من؛ ساده و آرام', c: '#5b6575', o: ['hero', 'dq', 'kart', 'org', 'dsk', 'co', 'rep', 'early', 'quick', 'band', 'prj'], h: ['early', 'quick', 'prj', 'band']}];
   /* الگوها را ادمین پروژه اصلاح می‌کند (۳۹۰): قانون homePresets = {کلید: {o, h}}؛ پیش‌فرض همهٔ پروژه‌ها از لایهٔ سامانه */
   const hlOv = () => { try{ const v = window.pmRule ? window.pmRule('homePresets', '') : ''; const o = v ? (typeof v === 'string' ? JSON.parse(v) : v) : {}; return o && typeof o === 'object' ? o : {}; }catch(e){ return {}; } };
   const hlPs = () => { const O = hlOv(); return HL_P0.map(P => { const x = O[P.k]; return x && Array.isArray(x.o) ? Object.assign({}, P, {o: x.o.filter(k => HL_B[k]), h: (x.h || []).filter(k => HL_B[k]), ed: 1}) : P; }); };
@@ -101317,9 +101329,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   async function hlSavePreset(k, val){ const O = hlOv(); if(val) O[k] = val; else delete O[k]; await window.coRuleSet({homePresets: Object.keys(O).length ? JSON.stringify(O) : null}); }
   const hlKey = () => { let pj = 'p1'; try{ pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return 'siteLogM.homeLay.' + pj + '.' + nameKey(activeUserName() || ''); };
   /* ۳۸۹: «نمای پروژه» همیشه بلافاصله زیر خوش‌آمد؛ چیدمان‌های ذخیره‌شدهٔ قبلی یک‌بار به‌روز می‌شوند */
-  const hlMig = v => { if(v.v >= 2) return v; const o = v.o.filter(k => k !== 'band'), i = o.indexOf('hero'); o.splice(i + 1, 0, 'band'); v.o = o; if(v.p !== 'min' && v.p !== 'ext') v.h = (v.h || []).filter(k => k !== 'band'); v.v = 2; try{ localStorage.setItem(hlKey(), JSON.stringify(v)); }catch(e){} return v; };
+  const hlMig = v => { if(v.v === 2){ v.h = (v.h || []).filter(k => k !== 'dq'); v.v = 3; try{ localStorage.setItem(hlKey(), JSON.stringify(v)); }catch(e){} return v; } if(v.v >= 3) return v; const o = v.o.filter(k => k !== 'band'), i = o.indexOf('hero'); o.splice(i + 1, 0, 'band'); v.o = o; if(v.p !== 'min' && v.p !== 'ext') v.h = (v.h || []).filter(k => k !== 'band'); v.h = v.h.filter(k => k !== 'dq'); v.v = 3; try{ localStorage.setItem(hlKey(), JSON.stringify(v)); }catch(e){} return v; };
   const hlGet = () => { try{ const v = JSON.parse(localStorage.getItem(hlKey()) || 'null'); if(v && Array.isArray(v.o)) return hlMig(v); }catch(e){} return null; };
-  const hlSet = v => { try{ localStorage.setItem(hlKey(), JSON.stringify(Object.assign({v: 2}, v))); }catch(e){} };
+  const hlSet = v => { try{ localStorage.setItem(hlKey(), JSON.stringify(Object.assign({v: 3}, v))); }catch(e){} };
   /* پیشنهاد بر اساس جایگاه: تیم بیرونی، مدیر، طراح (یا پروژهٔ در مرحلهٔ طراحی)، بقیه اجرا */
   function hlSuggest(){ let me = ''; try{ me = activeUserName(); }catch(e){}
     try{ if(coScopeMe() || (window.orgMine && window.orgMine().length && !isAdminUser())) return 'ext'; }catch(e){}
