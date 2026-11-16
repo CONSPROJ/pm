@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116112819">
+<meta name="pm-build" content="20261116113831">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30835,6 +30835,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
 @media(min-width:760px){ :is(html,#z0) :is(body,#z1) #admBar .ws-badd{display:none!important} }
 :is(html,#z0) :is(body,#z1) #adminView .adm-newbtn{width:200px;justify-content:center;overflow:hidden;text-overflow:ellipsis}
 #adminView .adm-meta > .dsh{flex:1 0 100%;margin:8px 0 0;box-sizing:border-box}
+/* تقویم: فعالیت‌های برنامهٔ زمان‌بندی (۴۷۰) */
+.tc-cell{position:relative} .tc-cell .tc-sch{position:absolute;top:3px;inset-inline:4px;height:3px;border-radius:2px;background:#7b6bd6;opacity:.8;pointer-events:none} .tc-cell .tc-sch.crit{background:var(--alert,#c0392b)}
+.tc2-sch{margin-bottom:14px} .tc2-si{display:flex;align-items:center;gap:8px;padding:8px;margin-top:5px;border-radius:12px;background:color-mix(in srgb,#7b6bd6 6%,var(--surface));border-inline-start:3px solid #7b6bd6}
+.tc2-si.crit{border-inline-start-color:var(--alert,#c0392b)} .tc2-si .tc2-at{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .tc2-si .tc2-at b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .tc2-si .tc2-at small{font-size:11px;color:var(--muted)}
+.tc2-sb{display:flex;gap:4px;flex:none} .tc2-sb button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--ink)} .tc2-sb button:hover{border-color:#7b6bd6;color:#7b6bd6} .tc2-sb button.del:hover{border-color:var(--alert,#c0392b);color:var(--alert,#c0392b)}
 .aq-dtf span{display:flex;gap:6px} .aq-dtf input{flex:1;min-width:0}
 .aq-dtx{font-size:12px;color:var(--muted);padding:0 6px;white-space:nowrap}
 #adminView .adm-xbar .adm-xh{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin:0 2px 8px}
@@ -54847,6 +54852,8 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   function coScopeMe(){ let me = ''; try{ me = activeUserName(); }catch(e){} if(!me) return ''; try{ if(isRootUser() || isAdminName(me)) return ''; }catch(e){}
     return extParty.get(nameKey(me)) || ''; }
   window.coScopeMe = coScopeMe;
+  /* تیم (شرکت/سازمان بیرونی) هر شخص: برای تقویم برنامهٔ زمان‌بندی */
+  window.schTeamOf = n => { try{ return extParty.get(nameKey(n)) || ''; }catch(e){ return ''; } };
   /* ====== فضای تیم (۳۶۱) ======
      کاربر تیمی دو فضا دارد: «پروژه» (کار با تیم اصلی: نقشه، نامه، کارهایی که تیم اصلی به او سپرده و تأیید می‌کند)
      و «تیم ما» (مدیریت تیم خود تیم: ابلاغ کار، پیگیری، تأیید، اعلان). کارهای فضای تیم برچسب co_space دارند
@@ -80714,6 +80721,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       add(pick(r,T.start), 'start', r);
       add(pick(r,T.due), 'due', r);
     });
+    /* برنامهٔ زمان‌بندی: بازهٔ فعالیت‌های این شخص/تیمش روی روزهای ماه */
+    const schWho = only || (function(){ try{ return activeUserName(); }catch(e){ return ''; } })();
+    if(!TKP.A && !TKP.busy && !renderTaskCalendar.__schReq){ renderTaskCalendar.__schReq = 1; tkPlanLoad().then(() => { try{ renderTaskCalendar(list, boxEl, st); }catch(e){} }); }
+    const SCH = (ck === 'p' ? schMine(schWho) : []).filter(a => { const s0 = faParts(a.s), e0 = faParts(a.e); if(!s0 || !e0) return false; const ms = y * 100 + m; return s0[0] * 100 + s0[1] <= ms && e0[0] * 100 + e0[1] >= ms; });
+    const schDay = {}; SCH.forEach(a => { const s0 = faParts(a.s), e0 = faParts(a.e); const d0 = (s0[0] * 100 + s0[1] < y * 100 + m) ? 1 : s0[2], d1 = (e0[0] * 100 + e0[1] > y * 100 + m) ? 31 : e0[2]; for(let d = d0; d <= d1; d++) (schDay[d] = schDay[d] || []).push(a); });
 
     // چیدمان ماه
     const inMonth = (m <= 6) ? 31 : (m <= 11 ? 30 : (function(){
@@ -80784,6 +80796,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
               return '<i class="' + c + '">' + esc(pick(x.r,T.title) || 'بدون عنوان') + '</i>';
             }).join('') + (L.length > lim ? '<em>+' + toFa(L.length - lim) + ' مورد</em>' : '') + '</span>';
           })() : '')
+        + (schDay[d] && !fri && !hol ? '<span class="tc-sch' + (schDay[d].some(a => a.crit) ? ' crit' : '') + '" title="' + esc(schDay[d].map(a => a.n).join('، ')) + '"></span>' : '')
         + (dues.length ? '<u>'+toFa(dues.length)+'</u>' : '')
         + '</button>';
     }
@@ -80801,7 +80814,13 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       else { mStat.open++; agenda.push({d:+dn, x, late:false}); }
     }));
     agenda.sort((a2, b2) => (b2.late - a2.late) || (a2.d - b2.d));
-    const agendaHtml = '<div class="tc2-ag">'
+    /* فعالیت‌های برنامهٔ زمان‌بندی من/تیمم در این ماه، با ویرایش و حذف (در برنامهٔ زمان‌بندی)، بالای موعدها */
+    const schHtml = (SCH.length ? '<div class="tc2-ag tc2-sch"><div class="tc2-agh"><b>برنامهٔ زمان‌بندی' + (only ? '' : ' من') + '</b><u>' + toFa(SCH.length) + '</u></div>'
+        + SCH.slice(0, 14).map(a => '<div class="tc2-si' + (a.crit ? ' crit' : '') + '"><span class="tc2-at"><b>' + esc(a.n) + '</b><small>' + esc(toFa(a.s.slice(5)) + ' تا ' + toFa(a.e.slice(5))) + (a.g ? ' · ' + esc(a.g) : '') + ' · ' + toFa(a.pc) + '٪' + (a.crit ? ' · بحرانی' : '') + (a.team ? ' · تیم' : '') + '</small></span>'
+          + '<span class="tc2-sb"><button type="button" data-schact="' + esc(a.id) + '" title="باز کردن و ویرایش در برنامهٔ زمان‌بندی">' + (schCanEdit() ? 'ویرایش' : 'نمایش') + '</button>'
+          + (schCanEdit() ? '<button type="button" class="del" data-schact="' + esc(a.id) + '" data-schdel="1" title="حذف از برنامهٔ زمان‌بندی">حذف</button>' : '') + '</span></div>').join('')
+        + (SCH.length > 14 ? '<div class="tc2-more">و ' + toFa(SCH.length - 14) + ' فعالیت دیگر</div>' : '') + '</div>' : '');
+    const agendaHtml = schHtml + '<div class="tc2-ag">'
       + '<div class="tc2-agh"><b>موعدهای باز این ماه</b><u>' + toFa(agenda.length) + '</u></div>'
       + (agenda.length ? agenda.slice(0, 12).map(a2 =>
           '<button type="button" class="tc2-ai' + (a2.late ? ' late' : '') + '" data-tc-pick="' + key(a2.d) + '">'
@@ -80811,7 +80830,8 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
           + '</button>').join('')
           + (agenda.length > 12 ? '<div class="tc2-more">و ' + toFa(agenda.length - 12) + ' مورد دیگر — روی روزها بزنید</div>' : '')
         : '<div class="tc2-none">موعد بازی در این ماه نیست.</div>')
-      + '</div>';
+      + '</div>'
+
 
     box.innerHTML = (state ? '' : '<div class="task-div"><span>تقویم تحویل</span></div>')
       + '<div class="tcal' + (isOpen ? ' open' : '') + '">'
@@ -81307,12 +81327,22 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     TKP.busy = supaFetch('lists?select=value&kind=eq.' + encodeURIComponent('زمان‌بندی: محاسبه') + '&limit=500', {prefer: 'return=representation'}).then(R => {
       const P = []; let n = 0; (R || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'), m = v.slice(0, i).match(/^cpm~(\d+)\/(\d+)$/); if(!m) return; n = +m[2]; try{ P[+m[1]] = JSON.parse(v.slice(i + 1)); }catch(e){} });
       let o = null; if(n && P.filter(x => typeof x === 'string').length === n){ try{ o = JSON.parse(P.join('')); }catch(e){} }
-      TKP.m = (o && o.m) || {}; TKP.end = (o && o.end) || ''; TKP.at = Date.now();
+      TKP.m = (o && o.m) || {}; TKP.A = (o && Array.isArray(o.A)) ? o.A : []; TKP.end = (o && o.end) || ''; TKP.at = Date.now();
       document.querySelectorAll('[data-tkplan]').forEach(el => { const h = tkPlanInner(el.dataset.tkplan); el.innerHTML = h; el.hidden = !h; });
       document.querySelectorAll('.tfr-item[data-task-id] > .tfr').forEach(row => { if(row.querySelector('.tkpl-chip')) return; const c = tkPlanChip(row.parentElement.dataset.taskId); if(!c) return; const st = row.querySelector('.tfr-chip'); if(st) st.insertAdjacentHTML('beforebegin', c); });
       return TKP.m; }).catch(() => { TKP.m = TKP.m || {}; TKP.at = Date.now(); return TKP.m; }).finally(() => { TKP.busy = null; });
     return TKP.busy; }
   window.tkPlanLoad = tkPlanLoad;
+  /* ====== تقویم: فعالیت‌های برنامهٔ زمان‌بندی که مسئول یا منبعشان این شخص یا تیم اوست ======
+     رکورد A در «زمان‌بندی: محاسبه»: [id, نام, شروع, پایان, پیشرفت, مسئولان[], منابع[], بحرانی, گروه] */
+  function schMine(who){ const A = TKP.A || []; if(!who || !A.length) return [];
+    const k = nameKey(who), tm = window.schTeamOf ? window.schTeamOf(who) : '', tk = tm ? nameKey(tm) : '';
+    const hit = n => { const x = nameKey(n); return x && (x === k || (tk && x === tk)); };
+    return A.filter(a => (a[5] || []).some(hit) || (a[6] || []).some(hit)).map(a => ({id: a[0], n: a[1], s: a[2], e: a[3], pc: a[4] || 0, crit: !!a[7], g: a[8] || '', team: !(a[5] || []).concat(a[6] || []).some(n => nameKey(n) === k) })); }
+  window.schMine = schMine;
+  function schCanEdit(){ try{ return can('tab.admin') || isAdminUser(); }catch(e){ return false; } }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-schact]'); if(!b) return; e.preventDefault(); e.stopPropagation();
+    const ed = schCanEdit(); try{ window.open('plan.html?theme=' + (document.documentElement.dataset.theme || '') + (ed ? '&ed=1' : '') + '&act=' + encodeURIComponent(b.dataset.schact) + (b.dataset.schdel ? '&del=1' : ''), '_blank', 'noopener'); }catch(er){} });
   function tkPlanInner(id){ const x = TKP.m && TKP.m[id]; if(!x) return '';
     const late = (function(){ try{ const t = toEn(todayShamsi()); return x[4] < 100 && String(x[1]) < t; }catch(e){ return false; } })();
     return '<span class="tkpl-h">برنامهٔ زمان‌بندی</span><span class="tkpl-d">' + toFa(x[0]) + ' تا ' + toFa(x[1]) + '</span>'
