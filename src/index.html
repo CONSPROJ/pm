@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116055925">
+<meta name="pm-build" content="20261116060120">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30300,7 +30300,8 @@ body:not(.og-dragging) .ogc-rootdrop{display:none}
 .ix .ixh-ph{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;width:min(560px,92%)}
 .ix .ixh-photo{position:relative;margin:0;width:100%;aspect-ratio:16/10;border-radius:26px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.12);animation:ixPh 1.1s cubic-bezier(.22,.8,.2,1) both}
 .ix .ixh-photo > .pi-cv{position:absolute;inset:0;width:100%;height:100%;border-radius:0;font-size:64px}
-.ix .ixh-photo > .pi-cv img{transform-origin:50% 60%;animation:ixPhZ 14s ease-out both}
+.ix .ixh-photo > .pi-cv img{transform-origin:50% 60%;opacity:0;transition:opacity .6s ease} .ix .ixh-photo > .pi-cv img.ld{opacity:1;animation:ixPhZ 14s ease-out both} /* ۴۴۱: تا عکس کامل نیامده پنهان؛ بعد نرم ظاهر و بزرگ‌نمایی از همان لحظه */
+.ix .ixh-photo > .pi-cv.has > i{opacity:0}
 .ix .ixh-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(6,14,26,.82))}
 .ix .ixh-photo figcaption{position:absolute;inset-inline:22px;bottom:18px;z-index:1;color:#fff;display:flex;flex-direction:column;gap:2px;text-align:start}
 .ix .ixh-photo figcaption b{font-size:24px;font-weight:800;letter-spacing:-.2px}
@@ -51562,6 +51563,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return KEEP.map(k => ALL.find(x => x.k === k)).filter(x => x && (!x.show || x.show()));
   }
 
+  /* ۴۴۱: عکس معرفی پروژه وقتی کامل بار شد ظاهر می‌شود (بی‌پرش) */
+  document.addEventListener('load', e => { const t = e.target; if(t && t.tagName === 'IMG' && t.closest && t.closest('.ixh-photo')) t.classList.add('ld'); }, true);
+  const ixImgReady = root => { try{ root.querySelectorAll('.ixh-photo img').forEach(i => { if(i.complete && i.naturalWidth) i.classList.add('ld'); }); }catch(e){} };
   function introShow(){
     if(document.querySelector('.ix')) return;
     const S = introSlides();
@@ -51597,7 +51601,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       +   '<span class="ix-count"></span>'
       +   '<button type="button" class="ix-next" data-ix="next"><span>بعدی</span>' + IX_I.arrow + '</button>'
       + '</div>';
-    document.body.appendChild(wrap);
+    document.body.appendChild(wrap); ixImgReady(wrap); setTimeout(() => ixImgReady(wrap), 60);
     document.documentElement.classList.add('ix-open');
 
     let i = -1, paused = false;
