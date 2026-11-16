@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116065140">
+<meta name="pm-build" content="20261116065459">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30747,6 +30747,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 #dcM .dc-tb.cx .dc-tbh code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--sky,#2a6fa0)} #dcM .dc-cxdel{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;color:var(--alert,#c0392b);padding:2px 6px;border-radius:6px} #dcM .dc-cxdel:hover{background:var(--alert-soft,#fdecea)}
 #dcM .dc-cxadd{display:grid;grid-template-columns:auto 160px minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:12px;padding:10px 12px;border:1px dashed var(--line,#e3e7ed);border-radius:12px} #dcM .dc-cxadd b{font-size:12.5px} #dcM .dc-cxadd input{height:36px!important;min-height:36px!important}
 @media (max-width:640px){ #dcM .dc-cxadd{grid-template-columns:1fr} }
+.aq{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.aq-ch{display:flex;gap:4px;flex-wrap:wrap} .aq-ch button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;font-size:12px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line)}
+.aq-ch button i{font-style:normal;font-size:10.5px;font-weight:800;min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:grid;place-items:center;background:var(--field);color:var(--ink)}
+.aq-ch button:hover{border-color:color-mix(in srgb,var(--sky) 45%,var(--line))} .aq-ch button.on{background:var(--ink);border-color:var(--ink);color:var(--surface)} .aq-ch button.on i{background:rgba(255,255,255,.18);color:inherit}
+.aq-ch button.hot:not(.on) i{background:var(--alert-soft,#fdecea);color:var(--alert,#c0392b)} .aq-ch button.alert:not(.on) i{background:var(--warn-soft,#fdf3e1);color:var(--warn,#c98a1b)}
+.aq-dt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)} .aq-dt input{width:110px;height:32px!important;min-height:32px!important;text-align:center;font-size:12px!important}
+.aq-x{all:unset;cursor:pointer;font-size:12px;font-weight:700;color:var(--alert,#c0392b);padding:4px 8px;border-radius:8px} .aq-x:hover{background:var(--alert-soft,#fdecea)}
+/* ۴۵۷: جعبه‌های جست‌وجو همه‌جا پیدا: زمینهٔ روشن، کادر و حلقهٔ فوکوس */
+:is(html,#z0) :is(body,#z1) :is(.pc-q, .sd2 .sd-row, .nt2-q input){background:var(--surface)!important;border:1px solid color-mix(in srgb,var(--ink) 16%,var(--line))!important;box-shadow:0 1px 2px rgba(15,23,42,.05)!important}
+:is(html,#z0) :is(body,#z1) :is(.pc-q, .sd2 .sd-row):focus-within{border-color:var(--sky)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--sky) 18%,transparent)!important}
+:is(html,#z0) :is(body,#z1) :is(.pc-q, .sd2 .sd-row) input::placeholder{color:color-mix(in srgb,var(--ink) 52%,transparent)}
 .nxm-sc{overflow:auto;max-height:70vh;border:1px solid var(--line,#e3e7ed);border-radius:16px;background:var(--surface,#fff)} .nxm-t{width:100%;border-collapse:collapse;font-size:12.5px}
 .nxm-t th,.nxm-t td{padding:8px 10px;border-bottom:1px solid var(--line,#e3e7ed);text-align:center;white-space:nowrap} .nxm-t thead th{position:sticky;top:0;z-index:1;font-size:11.5px;font-weight:800;color:var(--muted);background:var(--field,#f3f5f8)} .nxm-t tbody tr:last-child > *{border-bottom:0}
 .nxm-t th:first-child{text-align:right;min-width:230px} .nxm-t tr.on > *{background:var(--sky-soft,#eaf3fa)}
@@ -75586,11 +75597,35 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 
   }
 
+  /* ۴۵۷: فیلترهای سریع اسناد (همیشه پیدا، بالای فهرست): همه، باز، نیاز به توجه، بحرانی، منتظر من، تمام‌شده + بازهٔ تاریخ.
+     معیارها همان هشدار و وضعیت کارت‌ها (admCardAlert، admCardHot، admDoneState) است، نه قاعدهٔ تازه. */
+  const AQ = {f: '', from: '', to: ''};
+  const AQ_F = [['', 'همه'], ['open', 'باز'], ['alert', 'نیاز به توجه'], ['hot', 'بحرانی'], ['mine', 'منتظر من'], ['done', 'تمام‌شده']];
+  const aqDateOf = x => { const r = x.row; const v = exact(r, 'تاریخ ارسال') || exact(r, 'تاریخ') || exact(r, 'تاریخ جلسه') || ''; return normDate(v) || ''; };
+  function aqOk(x, f){ const k = x.kind, r = x.row; let me = ''; try{ me = nameKey(activeUserName()); }catch(e){}
+    const done = (() => { try{ return admDoneState(k, r).cls === 'ok'; }catch(e){ return false; } })();
+    if(f === 'open') return !done; if(f === 'done') return done;
+    if(f === 'alert'){ try{ return !done && !!admCardAlert(k, r); }catch(e){ return false; } }
+    if(f === 'hot'){ try{ return !done && !!admCardHot(k, r); }catch(e){ return false; } }
+    if(f === 'mine'){ if(done) return false; try{ if(nameKey(String(pick(r, AD_OWNER[k] || ['مسئول']) || '')) === me) return true; }catch(e){} try{ return reviewersOf(r).some(n => nameKey(n) === me); }catch(e){ return false; } }
+    return true; }
+  function aqDateOk(x){ if(!AQ.from && !AQ.to) return true; const d = aqDateOf(x); if(!d) return false; return (!AQ.from || d >= AQ.from) && (!AQ.to || d <= AQ.to); }
+  function aqPaint(base){ let bar = document.getElementById('admQuick'); const vb = document.getElementById('admViewBar'); if(!vb) return;
+    if(!bar){ bar = document.createElement('div'); bar.id = 'admQuick'; bar.className = 'aq'; vb.parentNode.insertBefore(bar, vb); }
+    let cat = ''; try{ cat = admCat || ''; }catch(e){} const B = base.filter(x => !cat || x.kind === cat);
+    bar.innerHTML = '<div class="aq-ch" role="tablist">' + AQ_F.map(([f, t]) => { const n = B.filter(x => aqOk(x, f) && aqDateOk(x)).length; return '<button type="button" class="' + (AQ.f === f ? 'on ' : '') + (f || 'all') + '" data-aqf="' + f + '">' + t + '<i>' + toFa(n) + '</i></button>'; }).join('') + '</div>'
+      + '<div class="aq-dt"><span>از</span><input type="text" class="date-in" data-aqd="from" placeholder="تاریخ" value="' + esc(AQ.from ? toFa(AQ.from) : '') + '" inputmode="numeric"><span>تا</span><input type="text" class="date-in" data-aqd="to" placeholder="تاریخ" value="' + esc(AQ.to ? toFa(AQ.to) : '') + '" inputmode="numeric">'
+      + (AQ.f || AQ.from || AQ.to ? '<button type="button" class="aq-x" data-aqx="1">پاک کردن</button>' : '') + '</div>'; }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-aqf], [data-aqx]'); if(!b) return; e.preventDefault();
+    if(b.dataset.aqx){ AQ.f = ''; AQ.from = ''; AQ.to = ''; } else AQ.f = b.dataset.aqf; applyAdminFilters(); });
+  document.addEventListener('change', e => { const i = e.target.closest && e.target.closest('[data-aqd]'); if(!i) return; AQ[i.dataset.aqd] = normDate(i.value) || ''; applyAdminFilters(); });
   function applyAdminFilters(){
     const n = (adminFilters.any() ? 1 : 0) + (elVal('fAdmOwner') ? 1 : 0);
     markDrawer('admFilterDrawer', n);
     markDrawer('admTabDrawer', n);
-    const base = admOwnerFilter(adminFilters.apply(adminAll));
+    const base0 = admOwnerFilter(adminFilters.apply(adminAll));
+    try{ aqPaint(base0); }catch(e){}
+    const base = base0.filter(x => aqOk(x, AQ.f) && aqDateOk(x));
     renderAdminList(base.filter(x => rowMatches([
       pick(x.row,AD.sName), pick(x.row,AD.cTitle),
       pick(x.row,AD.mSubject), pick(x.row,AD.lSubject), pick(x.row,AD.dTitle), pick(x.row,AD.dDisc),
