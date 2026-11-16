@@ -273,12 +273,12 @@ async function flush0(){
     const lg = auditDiff(ids); if(c && S.cfgLog){ lg.push(auditNote(S.cfgLog)); S.cfgLog = ''; } auditPut(lg).catch(() => {});
     $('#sts').textContent = 'ذخیره شد ✓ ' + new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'}); if(!S.auto) toast('برنامه ذخیره شد', 'ok');
     if(!dirty.size && !cfgDirty){ try{ localStorage.removeItem(DRAFT_K()); }catch(e){} }
-    cpmPublish();
+    cpmPublish(); if(!tkBusy) setTimeout(() => tkAutoSync(), 200);
   }catch(e){ ids.forEach(i => dirty.add(i)); if(c) cfgDirty = true; $('#sts').textContent = 'ذخیره نشد: ' + String(e.message || e).slice(0, 80);
     let m = String(e.message || e); try{ const j = JSON.parse(m); m = j.message || j.hint || m; }catch(x){}
     toast('برنامه ذخیره نشد', 'bad', (e.status === 401 || e.status === 403 || /42501|permission|policy/i.test(m) ? 'اجازهٔ ذخیره روی سرور نیست (دوباره وارد شوید یا از ادمین دسترسی بگیرید). ' : '') + m.slice(0, 160) + ' — تغییرها در این مرورگر نگه داشته شده‌اند.', 'تلاش دوباره', flush); if(S.auto) setTimeout(flush, 5000); draftSave(); }
 }
-const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0, ow: Array.isArray(a.ow) ? a.ow : []});
+const pack = a => ({n: a.n, p: a.p || '', o: a.o, d: a.d, dep: a.dep || [], pc: a.pc || 0, sn: a.sn || null, as: a.as || null, af: a.af || null, b: a.b || 0, ac: a.ac || 0, rs: rsOf(a), note: a.note || '', ms: a.ms ? 1 : 0, tk: a.tk || '', cat: a.cat || '', tkGone: a.tkGone ? 1 : 0, ta: a.ta ? 1 : 0, ow: Array.isArray(a.ow) ? a.ow : []});
 
 /* ---------- تقویم کاری ---------- */
 let CAL = null;
@@ -569,10 +569,12 @@ function cfgOpen(){ const c = S.cfg, ro = S.ro ? ' disabled' : '';
   const bg = dlg('تقویم و تنظیم پروژه', '<label class="fx"><span>تاریخ شروع پروژه</span><input id="cS" value="' + d2fa(c.start) + '"' + ro + '></label>'
     + '<div class="fx"><span>روزهای کاری هفته</span><div class="wd">' + WDN.map((n, i) => '<label><input type="checkbox" data-wd="' + i + '"' + (c.wd[i] > 0 ? ' checked' : '') + ro + '>' + ['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'][i] + '</label>').join('') + '</div></div>'
     + '<label class="fx"><span><input type="checkbox" id="cAuto"' + (S.auto ? ' checked' : '') + ro + '> ذخیرهٔ خودکار (هر تغییر بی‌درنگ ذخیره شود)</span><small>خاموش: تغییرها را هر قدر لازم است انجام دهید و با «ذخیره» یا Ctrl+S یک‌جا ثبت کنید؛ «لغو تغییرات» همه را کنار می‌گذارد.</small></label>'
+    + '<label class="fx"><span><input type="checkbox" id="cTk"' + (c.tkAuto !== 0 ? ' checked' : '') + ro + '> هم‌گامی خودکار با لیست فعالیت‌ها</span><small>هر فعالیت برنامه که مسئول یا منبعِ فرد دارد، با ذخیره در لیست فعالیت‌های سامانه هم ساخته می‌شود (یا به فعالیت هم‌نام پیوند می‌خورد) و مسئول و موعدش با برنامه یکی می‌ماند.</small></label>'
     + '<label class="fx"><span>تعطیلات (هر سطر یک تاریخ)</span><textarea id="cH"' + ro + '>' + esc((c.hol || []).map(toFa).join('\n')) + '</textarea><small>تعطیلات رسمی سال را این‌جا بنویسید (مثلاً ۱۴۰۵/۰۱/۰۱). روز تعطیل در محاسبهٔ مدت‌ها حساب نمی‌شود.</small></label>',
     S.ro ? '' : '<button class="btn pri" data-ok>اعمال</button>');
   const ok = bg.querySelector('[data-ok]'); if(ok) ok.onclick = () => { const st = fa2d(bg.querySelector('#cS').value); if(st != null) c.start = st;
     c.wd = WDN.map((n, i) => bg.querySelector('[data-wd="' + i + '"]').checked ? 1 : 0); if(!c.wd.some(Boolean)) c.wd[0] = 1;
+    c.tkAuto = bg.querySelector('#cTk').checked ? 1 : 0; if(c.tkAuto) setTimeout(() => tkAutoSync(true), 400);
     S.auto = bg.querySelector('#cAuto').checked; try{ localStorage.setItem('siteLogM.plan.auto', S.auto ? '1' : '0'); }catch(e){} if(S.auto) setTimeout(flush, 300);
     c.hol = bg.querySelector('#cH').value.split(/\n+/).map(x => x.trim()).filter(x => fa2d(x) != null).map(toEn); queueSave('__cfg'); bg.remove(); render(); }; }
 function blOpen(){ const L = S.bls.slice().reverse();
@@ -972,9 +974,41 @@ function tkPushPlan(){ compute(); const C = S.calc, out = [];
     let cur = t.deps; if(typeof cur === 'string'){ try{ cur = JSON.parse(cur); }catch(e){ cur = []; } }
     if(tState(t) === 'done') return;   /* کار تمام‌شده دست نمی‌خورد؛ «تاریخ ابلاغ» هم همیشه همان می‌ماند */
     const ch = {}; void sd; if(toEn(t.due_date || '') !== toEn(fd)) ch.due_date = fd;
+    /* ۴۷۷: مسئول فعالیت (فرد) هم به فهرست می‌رود؛ اگر فقط منبعِ فرد تعیین شده، همان */
+    const ppl = tkPeople(a); if(ppl.length && ('owner1' in t)){ if(String(t.owner1 || '') !== ppl[0]) ch.owner1 = ppl[0]; if(('owner2' in t) && String(t.owner2 || '') !== (ppl[1] || '')) ch.owner2 = ppl[1] || ''; }
     if(JSON.stringify(cur || []) !== JSON.stringify(deps) && ('deps' in t)) ch.deps = deps;
     if(Object.keys(ch).length) out.push({t, ch, a}); });
   return out; }
+/* مسئول در لیست فعالیت‌ها: فرد یا پیمانکار همان‌طور؛ تیم چارت ← سرپرستش؛ سازمان و نام آزاد نه */
+function tkPeople(a){ const map = n => { const k = S.dir.get(n); if(k === 'p' || k === 'q' || k === 'c') return n; if(k === 't'){ const T = (S.teams || []).find(x => x.label === n); return T && T.head ? T.head : ''; } return ''; };
+  const pick = L => Array.from(new Set(L.map(map).filter(Boolean)));
+  const o = pick(owOf(a)); return (o.length ? o : pick(rsOf(a).map(r => r.n))).slice(0, 2); }
+/* فعالیت پایهٔ برنامه که مسئول یا منبعِ فرد دارد ولی در فهرست فعالیت‌ها نیست */
+function tkMissing(){ const C = S.calc; return S.acts.filter(a => !a.tk && !C.isSum(a) && !a.ms && tkPeople(a).length && (+a.pc || 0) < 100); }
+async function tkCreate(list){ const C = S.calc; let ok = 0, bad = 0, err = '';
+  for(const a of list){ const r = C.R.get(a.id); if(!r) continue; const ppl = tkPeople(a), par = actById(a.p);
+    const body = {title: String(a.n || '').slice(0, 200), start_date: d2fa(wDay(r.es)), due_date: d2fa(wDay(Math.max(r.es, r.ef - 1))), owner1: ppl[0] || '', owner2: ppl[1] || '', created_by: S.me || '', approved: true, category: par ? String(par.n || '').slice(0, 60) : ''};
+    try{ let R = null; try{ R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); }
+      catch(e){ if(/category/.test(e.message || '')){ delete body.category; R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); } else throw e; }
+      const id = R && R[0] && R[0].id; if(id != null){ a.tk = String(id); a.ta = 1; queueSave(a.id); if(S.tasks) S.tasks.push(R[0]); ok++; } else bad++; }
+    catch(e){ bad++; err = String(e.message || e).slice(0, 160); } }
+  auditPut([auditNote('از برنامه به فهرست فعالیت‌ها: ' + ok + ' فعالیت ساخته شد' + (bad ? '، ' + bad + ' ناموفق' : ''))]); return {ok, bad, err}; }
+/* ۴۷۸: هم‌گامی خودکار برنامه ← لیست فعالیت‌ها (بعد از هر ذخیرهٔ موفق).
+   فعالیتِ بی‌پیوند با مسئول/منبعِ فرد: اول فعالیت هم‌نامِ بی‌پیوند فهرست پیوند می‌خورد، وگرنه ساخته می‌شود (ta = ساختهٔ برنامه).
+   برای فعالیت‌های ساختهٔ برنامه، مسئول و موعد با برنامه یکی می‌شود؛ بقیهٔ پیوندها فقط با دکمهٔ دستی «ارسال موعدها». */
+let tkBusy = false;
+async function tkAutoSync(force){ if(S.ro || tkBusy || S.cfg.tkAuto === 0) return; tkBusy = true;
+  try{ if(!S.tasks || force) await tasksLoad(); if(!S.tasks) return; compute();
+    const M = tkMissing(); let made = 0, linked = 0, upd = 0, bad = '';
+    if(M.length){ const free = new Map(); tkUnlinked().forEach(t => { const k = String(t.title || '').trim(); if(k && !free.has(k)) free.set(k, t); });
+      const toMake = []; M.forEach(a => { const t = free.get(String(a.n || '').trim()); if(t){ a.tk = String(t.id); a.ta = 1; free.delete(String(a.n || '').trim()); queueSave(a.id); linked++; } else toMake.push(a); });
+      if(toMake.length){ const R = await tkCreate(toMake); made = R.ok; toMake.forEach(a => { if(a.tk) a.ta = 1; }); if(R.bad) bad = R.err; } }
+    const P = tkPushPlan().filter(x => x.a.ta); if(P.length){ const R = await tkSendPlan(P); upd = R.ok; }
+    if(made || linked){ await flush0(); }
+    if(made || linked || upd) toast('لیست فعالیت‌ها هم‌گام شد', 'ok', [made ? toFa(made) + ' فعالیت ساخته شد' : '', linked ? toFa(linked) + ' پیوند خورد' : '', upd ? toFa(upd) + ' به‌روز شد' : ''].filter(Boolean).join(' · '));
+    if(bad) toast('ساختن در لیست فعالیت‌ها کامل نشد', 'bad', bad);
+  }catch(e){ toast('هم‌گامی با لیست فعالیت‌ها انجام نشد', 'bad', String(e.message || e).slice(0, 160)); }
+  finally{ tkBusy = false; } }
 async function tkSendPlan(L){ let ok = 0, bad = 0;
   for(const x of L){ try{ await api('tasks?id=eq.' + encodeURIComponent(x.t.id), {method: 'PATCH', body: x.ch}); Object.assign(x.t, x.ch); ok++; }catch(e){ bad++; } }
   auditPut([auditNote('تاریخ‌های برنامه به فهرست فعالیت‌ها رفت: ' + ok + ' فعالیت' + (bad ? '، ' + bad + ' ناموفق' : ''))]); return {ok, bad}; }
@@ -988,9 +1022,16 @@ async function tkOpen(){
       + '<div class="io"><b>از فهرست به برنامه</b><small>وضعیت هر فعالیت فهرست (در حال اجرا، انجام‌شده و تاریخ تکمیل) و عنوانش با هر باز شدن برنامه خودکار به پیشرفت و تاریخ‌های واقعی می‌آید.</small>'
         + (un.length ? '<div class="tk-l">' + un.slice(0, 40).map(t => '<label><input type="checkbox" data-tki="' + esc(t.id) + '" checked><span><b>' + esc(t.title) + '</b><small>' + esc([t.category, t.side, t.floor ? 'طبقه ' + toFa(t.floor) : '', t.due_date ? 'موعد ' + toFa(t.due_date) : ''].filter(Boolean).join(' · ')) + '</small></span></label>').join('') + (un.length > 40 ? '<small>و ' + toFa(un.length - 40) + ' فعالیت دیگر</small>' : '') + '</div>'
           + (S.ro ? '' : '<button class="btn pri" data-tkimp>افزودن ' + toFa(un.length) + ' فعالیت به برنامه (گروه‌بندی بر اساس رشته)</button>') : '<small>همهٔ فعالیت‌های فهرست در برنامه هستند ✓</small>') + '</div>'
+      + (function(){ const M = tkMissing(); if(!M.length) return '';
+          return '<div class="io"><b>فعالیت‌های برنامه که در فهرست فعالیت‌ها نیستند</b><small>این فعالیت‌ها مسئول یا منبعِ فرد دارند؛ با ساختن در فهرست، در کارتابل، کارت شخص و تقویم او هم می‌آیند و از این به بعد وضعیتشان هم‌گام می‌شود.</small>'
+            + '<div class="tk-l">' + M.slice(0, 60).map(a => { const r = S.calc.R.get(a.id) || {}; return '<label><input type="checkbox" data-tkm="' + esc(a.id) + '" checked><span><b>' + esc(a.n) + '</b><small>' + esc(tkPeople(a).join('، ') + (r.es != null ? ' · ' + d2fa(wDay(r.es)) + ' تا ' + d2fa(wDay(Math.max(r.es, r.ef - 1))) : '')) + '</small></span></label>'; }).join('') + '</div>'
+            + (S.ro ? '' : '<button class="btn pri" data-tkmk>ساختن ' + toFa(M.length) + ' فعالیت در فهرست فعالیت‌ها</button>') + '</div>'; })()
       + '<div class="io"><b>از برنامه به فهرست</b><small>«موعد اتمام» هر فعالیت فهرست با پایان برنامه‌ریزی‌شده (حاصل مسیر بحرانی) و پیش‌نیازهایش با برنامه یکی می‌شود تا مسئولان، یادآورها و برنامهٔ سه‌هفته‌ای سامانه با همین برنامه کار کنند. فعالیت‌های انجام‌شده و «تاریخ ابلاغ» دست نمی‌خورند.</small>'
         + (push.length ? '<small><b>' + toFa(push.length) + '</b> فعالیت موعد یا پیش‌نیاز متفاوت دارد.</small>' + (S.ro ? '' : '<button class="btn pri" data-tkpush>ارسال موعدها به فهرست فعالیت‌ها</button>') : '<small>تاریخ‌های فهرست با برنامه یکی است ✓</small>') + '</div>';
     const im = L.querySelector('[data-tkimp]'); if(im) im.onclick = () => { const sel = new Set(Array.from(L.querySelectorAll('[data-tki]:checked')).map(i => i.dataset.tki)); const list = un.filter((t, i) => i >= 40 || sel.has(String(t.id))); const n = tkImport(list); render(); paint(); alert(toFa(n) + ' فعالیت به برنامه افزوده شد.'); };
+    const mk = L.querySelector('[data-tkmk]'); if(mk) mk.onclick = async () => { const sel = new Set(Array.from(L.querySelectorAll('[data-tkm]:checked')).map(i => i.dataset.tkm)); const list = tkMissing().filter(a => sel.has(a.id)); if(!list.length) return;
+      mk.disabled = true; mk.textContent = 'در حال ساختن…'; const R = await tkCreate(list); if(R.ok){ await flush(); cpmPublish(); }
+      toast(R.ok ? toFa(R.ok) + ' فعالیت در فهرست فعالیت‌ها ساخته شد' : 'ساخته نشد', R.bad ? 'bad' : 'ok', R.bad ? toFa(R.bad) + ' مورد ناموفق: ' + R.err : ''); paint(); };
     const pu = L.querySelector('[data-tkpush]'); if(pu) pu.onclick = async () => { if(!confirm('موعد اتمام و پیش‌نیازهای ' + toFa(push.length) + ' فعالیت در فهرست سامانه با برنامه یکی شود؟')) return; pu.disabled = true; const r = await tkSendPlan(push); alert(toFa(r.ok) + ' فعالیت به‌روز شد' + (r.bad ? '؛ ' + toFa(r.bad) + ' مورد ناموفق (اجازهٔ ویرایش؟)' : '.')); paint(); }; };
   paint(); }
 /* خلاصهٔ محاسبه برای کارت فعالیت در سامانه */

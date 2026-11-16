@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116122021">
+<meta name="pm-build" content="20261116150928">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30837,7 +30837,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
 #adminView .adm-meta > .dsh{flex:1 0 100%;margin:8px 0 0;box-sizing:border-box}
 /* تقویم: فعالیت‌های برنامهٔ زمان‌بندی (۴۷۰) */
 .tc-cell{position:relative} .tc-cell .tc-sch{position:absolute;top:3px;inset-inline:4px;height:3px;border-radius:2px;background:#7b6bd6;opacity:.8;pointer-events:none} .tc-cell .tc-sch.crit{background:var(--alert,#c0392b)}
-.tc2-sch{margin-bottom:14px} .tc2-si{display:flex;align-items:center;gap:8px;padding:8px;margin-top:5px;border-radius:12px;background:color-mix(in srgb,#7b6bd6 6%,var(--surface));border-inline-start:3px solid #7b6bd6}
+.tc2-sch{margin-bottom:14px} .pf-sch:empty{display:none} .pf-sch{margin:12px 0} .tc2-si{display:flex;align-items:center;gap:8px;padding:8px;margin-top:5px;border-radius:12px;background:color-mix(in srgb,#7b6bd6 6%,var(--surface));border-inline-start:3px solid #7b6bd6}
 .tc2-si.crit{border-inline-start-color:var(--alert,#c0392b)} .tc2-si .tc2-at{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px} .tc2-si .tc2-at b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .tc2-si .tc2-at small{font-size:11px;color:var(--muted)}
 .tc2-sb{display:flex;gap:4px;flex:none} .tc2-sb button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--ink)} .tc2-sb button:hover{border-color:#7b6bd6;color:#7b6bd6} .tc2-sb button.del:hover{border-color:var(--alert,#c0392b);color:var(--alert,#c0392b)}
 .aq-dtf span{display:flex;gap:6px} .aq-dtf input{flex:1;min-width:0}
@@ -50386,11 +50386,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
         const sumH = '<div class="kt3-sum"><span><b>' + toFa(open.length) + '</b><u>کار باز</u></span><span class="' + (nLate ? 'bad' : '') + '"><b>' + toFa(nLate) + '</b><u>عقب از موعد</u></span>'
           + '<span class="' + (nSoon ? 'warn' : '') + '"><b>' + toFa(nSoon) + '</b><u>موعد این هفته</u></span><span class="' + (warn ? 'bad' : '') + '"><b>' + toFa(warn) + '</b><u>بحرانی</u></span></div>'
           + (nDoc && nDoc < ord.length ? '<div class="kt3-f" role="tablist"><button type="button" data-ktf="all" class="on">همه <em>' + toFa(ord.length) + '</em></button><button type="button" data-ktf="doc">اسناد <em>' + toFa(nDoc) + '</em></button><button type="button" data-ktf="task">اجرایی <em>' + toFa(ord.length - nDoc) + '</em></button></div>' : '');
-        kMine = (K && window.sugHtml ? window.sugHtml() : '') + '<div class="kt-sec kt3"><div class="mg3-h">' + (K ? 'کارهای باز من' : 'کارهای باز') + '<span class="n">' + toFa(open.length) + '</span></div>'
+        kMine = (K && window.sugHtml ? window.sugHtml() : '') + '<div class="pf-sch" data-pfsch="' + esc(name) + '"></div><div class="kt-sec kt3"><div class="mg3-h">' + (K ? 'کارهای باز من' : 'کارهای باز') + '<span class="n">' + toFa(open.length) + '</span></div>'
           + (ord.length ? sumH + '<div class="kt-gs" data-f="all" data-n="' + (secH.match(/<details/g) || []).length + '">' + secH + '</div>'
             : '<div class="pf2-empty">' + SEC_ICON.chore + '<b>' + (K ? 'کار بازی در کارتابل شما نیست' : 'کار بازی برای این شخص ثبت نشده') + '</b>' + (K ? '<small>هر فعالیتی که به شما ابلاغ شود اینجا می‌آید.</small>' : '') + '</div>')
           + '</div>'
-          + '<div class="mg3-h">' + (K ? 'تقویم من' : 'تقویم این شخص') + '</div><div id="pfCal"></div>';
+                    + '<div class="mg3-h">' + (K ? 'تقویم من' : 'تقویم این شخص') + '</div><div id="pfCal"></div>';
         profileState.calList = all;
         profileState.kMine = {all: all.length, open: open.length, warn: warn, done: doneN,
           soon: open.filter(r => { const d = dl(r); return d != null && d >= 0 && d <= 7; }).length,
@@ -81359,6 +81359,15 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const hit = n => { const x = nameKey(n); return x && (x === k || (tk && x === tk) || OT.has(x)); };
     return A.filter(a => (a[5] || []).some(hit) || (a[6] || []).some(hit)).map(a => ({id: a[0], n: a[1], s: a[2], e: a[3], pc: a[4] || 0, crit: !!a[7], g: a[8] || '', team: !(a[5] || []).concat(a[6] || []).some(n => nameKey(n) === k) })); }
   window.schMine = schMine;
+  function schPfPaint(){ document.querySelectorAll('[data-pfsch]').forEach(el => { el.dataset.done = '1'; const L = schMine(el.dataset.pfsch); if(!L.length){ el.innerHTML = ''; return; }
+    const today = todayShamsi(), ed = schCanEdit(); L.sort((a, b) => String(a.s).localeCompare(String(b.s)));
+    const act = L.filter(a => a.pc < 100);
+    el.innerHTML = '<div class="mg3-h">برنامهٔ زمان‌بندی<span class="n">' + toFa(act.length) + '</span></div><div class="tc2-ag tc2-sch">' + act.slice(0, 12).map(a => { const late = a.e && toEn(a.e) < toEn(today);
+      return '<div class="tc2-si' + (a.crit || late ? ' crit' : '') + '"><span class="tc2-at"><b>' + esc(a.n) + '</b><small>' + esc(toFa(a.s) + ' تا ' + toFa(a.e)) + (a.g ? ' · ' + esc(a.g) : '') + ' · ' + toFa(a.pc) + '٪' + (late ? ' · عقب از برنامه' : a.crit ? ' · بحرانی' : '') + (a.team ? ' · از طریق تیم' : '') + '</small></span>'
+        + '<span class="tc2-sb"><button type="button" data-schact="' + esc(a.id) + '">' + (ed ? 'ویرایش' : 'نمایش') + '</button></span></div>'; }).join('')
+      + (act.length > 12 ? '<div class="tc2-more">و ' + toFa(act.length - 12) + ' فعالیت دیگر</div>' : '') + (!act.length ? '<div class="tc2-none">همهٔ فعالیت‌های برنامه انجام شده‌اند.</div>' : '') + '</div>'; }); }
+  window.schPfPaint = schPfPaint;
+  new MutationObserver(() => { if(!document.querySelector('[data-pfsch]:not([data-done])')) return; tkPlanLoad().then(schPfPaint).catch(() => {}); }).observe(document.body, {childList: true, subtree: true});
   function schCanEdit(){ try{ return can('tab.admin') || isAdminUser(); }catch(e){ return false; } }
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-schact]'); if(!b) return; e.preventDefault(); e.stopPropagation();
     const ed = schCanEdit(); try{ window.open('plan.html?r=' + Date.now().toString(36) + '&theme=' + (document.documentElement.dataset.theme || '') + (ed ? '&ed=1' : '') + '&act=' + encodeURIComponent(b.dataset.schact) + (b.dataset.schdel ? '&del=1' : ''), '_blank', 'noopener'); }catch(er){} });
