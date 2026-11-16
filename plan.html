@@ -1072,6 +1072,8 @@ function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(()
   if(!S.ro){ try{ const D = JSON.parse(localStorage.getItem(DRAFT_K()) || 'null'); if(D && D.acts && (D.dirty.length || D.cfgDirty) && confirm(toFa(D.dirty.length + (D.cfgDirty ? 1 : 0)) + ' تغییر ذخیره‌نشده از دفعهٔ قبل پیدا شد. بازگردانده شود؟')){
       S.acts = D.acts; Object.assign(S.cfg, D.cfg || {}); D.dirty.forEach(i => dirty.add(i)); if(D.cfgDirty) cfgDirty = true; S.draftRestored = true; } else if(D) localStorage.removeItem(DRAFT_K()); }catch(e){} }
   ctrDatalist(); render(); HIS.last = snapNow(); saveUI();
+  /* ۴۷۹: هم‌گامی با لیست فعالیت‌ها و انتشار برای تقویم/کارت شخص همان باز شدن هم انجام می‌شود، نه فقط بعد از ذخیره */
+  if(!S.ro) setTimeout(() => { try{ compute(); cpmPublish(); }catch(e){} tkAutoSync(); }, 2500);
   tasksLoad().then(T => { if(!T) return; compute(); const n = S.ro ? 0 : tkPull(); if(n){ S.cfgLog = 'به‌روزرسانی خودکار از فهرست فعالیت‌ها: ' + n + ' فعالیت'; if(!S.draftRestored) flush(); } render(); });
   try{ const f = new URLSearchParams(location.search).get('focus'); if(f){ const a = S.acts.find(x => String(x.tk) === f || x.id === f); if(a){ let p = a.p; while(p){ S.fold.delete(p); p = (S.acts.find(x => x.id === p) || {}).p; } S.sel = a.id; render(); setTimeout(() => { const tr = document.querySelector('#tb tr[data-id="' + a.id + '"]'); if(tr) tr.scrollIntoView({block: 'center'}); }, 80); } } }catch(e){}
   setTimeout(() => { const gw = $('#gw'); gw.scrollLeft = gw.scrollWidth; }, 60);
