@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116120135">
+<meta name="pm-build" content="20261116120856">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -43693,6 +43693,17 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       if(!window.__listsSrv){ if(tries < 20) tierFixOnce(tries + 1); return; }
       const n = await window.ogTierFix(); if(n < 0) return; await coRuleSet({posTierSet: '2'}); if(n) try{ shrToast('الگوی پایهٔ ' + toFa(n) + ' سمت ثبت شد'); }catch(e){}
     }catch(e){} }, tries ? 3000 : 8000); })(0);
+  /* تیم‌های چارت برای برنامهٔ زمان‌بندی (۴۷۴): همان الگوریتم plan.html — برچسب تیم و اعضای زیر سرپرست */
+  function ogTeamIndex(N){ /* N: Map(id → گره چارت). خروجی: تیم‌ها {id, label, head, members[]} — نام تکراری با نام سرپرست (یا گروه بالا) جدا می‌شود */
+    const T = []; N.forEach((y, id) => { if(y && y.team && (y.disc || y.n)) T.push({id, base: String(y.disc || y.n).trim(), head: String(y.r || '').trim(), up: y.up || ''}); });
+    const cnt = new Map(); T.forEach(t => cnt.set(t.base, (cnt.get(t.base) || 0) + 1));
+    const upName = id => { const p = N.get(id); return p ? String(p.r || p.disc || p.n || '').trim() : ''; };
+    T.forEach(t => { t.label = cnt.get(t.base) > 1 ? t.base + ' — ' + (t.head || upName(t.up) || t.id) : t.base; });
+    const seen = new Map(); T.forEach(t => { const k = t.label; seen.set(k, (seen.get(k) || 0) + 1); if(seen.get(k) > 1) t.label += ' (' + seen.get(k) + ')'; });
+    const kids = new Map(); N.forEach((y, id) => { if(!y || !y.up) return; (kids.get(y.up) || kids.set(y.up, []).get(y.up)).push(id); });
+    T.forEach(t => { const M = new Set(); if(t.head) M.add(t.head); const walk = (id, d) => { if(d > 12) return; (kids.get(id) || []).forEach(k => { const y = N.get(k); if(y && y.r) String(y.r).split(/[،,]/).forEach(x => { x = x.trim(); if(x) M.add(x); }); walk(k, d + 1); }); }; walk(t.id, 0); t.members = Array.from(M); });
+    return T; }
+  window.ogTeamsOf = name => { try{ const k = nameKey(name); return ogTeamIndex(og.nodes).filter(x => x.members.some(m => nameKey(m) === k)).map(x => x.label); }catch(e){ return []; } };
   window.ogDiscHeads = () => { const L = []; try{ og.nodes.forEach(y => { if(y && y.team && (y.disc || y.n)) L.push(y.disc || y.n); }); }catch(e){} return L; };
   document.addEventListener('input', e => { const q = e.target.closest && e.target.closest('[data-ogdcq]'); if(!q) return; const v = q.value.trim(), box = q.closest('.og-subt');
     box.querySelectorAll('[data-ogdq]').forEach(c => { c.hidden = !!v && c.dataset.ogdq.indexOf(v) === -1; });
@@ -81339,7 +81350,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
      رکورد A در «زمان‌بندی: محاسبه»: [id, نام, شروع, پایان, پیشرفت, مسئولان[], منابع[], بحرانی, گروه] */
   function schMine(who){ const A = TKP.A || []; if(!who || !A.length) return [];
     const k = nameKey(who), tm = window.schTeamOf ? window.schTeamOf(who) : '', tk = tm ? nameKey(tm) : '';
-    const hit = n => { const x = nameKey(n); return x && (x === k || (tk && x === tk)); };
+    /* تیم‌های چارت سازمانی که این شخص زیر سرپرستشان است */
+    const OT = new Set((window.ogTeamsOf ? window.ogTeamsOf(who) : []).map(nameKey));
+    const hit = n => { const x = nameKey(n); return x && (x === k || (tk && x === tk) || OT.has(x)); };
     return A.filter(a => (a[5] || []).some(hit) || (a[6] || []).some(hit)).map(a => ({id: a[0], n: a[1], s: a[2], e: a[3], pc: a[4] || 0, crit: !!a[7], g: a[8] || '', team: !(a[5] || []).concat(a[6] || []).some(n => nameKey(n) === k) })); }
   window.schMine = schMine;
   function schCanEdit(){ try{ return can('tab.admin') || isAdminUser(); }catch(e){ return false; } }

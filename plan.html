@@ -25,7 +25,7 @@
   .toast.bad{background:var(--bad);} .toast.ok{background:var(--ok);} .toast .btn{height:28px;background:rgba(255,255,255,.18);color:#fff;} .toast small{opacity:.85;display:block;font-size:11px;margin-top:2px;word-break:break-word;}
   .pk{display:flex;flex-direction:column;gap:6px;position:relative;} .pk-ch{display:flex;flex-wrap:wrap;gap:6px;} .pk-ch:empty{display:none;}
   .pk-c{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--field);font-size:12px;font-weight:700;} .pk-c i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;color:#fff;background:var(--acc);flex:none;}
-  .pk-c i.c{background:#b7791f;} .pk-c i.o{background:#6d5bd0;} .pk-c i.x{background:var(--muted);} .pk-c small{font-weight:500;color:var(--muted);font-size:10.5px;}
+  .pk-c i.q{background:#8a94a6;} .pk-c i.t{background:#2a8a6a;} .pk-c i.c{background:#b7791f;} .pk-c i.o{background:#6d5bd0;} .pk-c i.x{background:var(--muted);} .pk-c small{font-weight:500;color:var(--muted);font-size:10.5px;}
   .pk-c input{width:38px;height:22px;padding:0 4px;border-radius:6px;text-align:center;font-size:11.5px;} .pk-c button{all:unset;cursor:pointer;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted);} .pk-c button:hover{background:var(--line);color:var(--bad);}
   .pk-sg{position:absolute;top:100%;inset-inline:0;z-index:60;margin-top:4px;max-height:260px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 36px -14px rgba(0,0,0,.3);padding:4px;}
   .pk-sg u{display:block;text-decoration:none;font-size:10.5px;font-weight:800;color:var(--muted);padding:6px 8px 2px;} .pk-sg button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;font-size:12.5px;}
@@ -629,7 +629,7 @@ function actDlg(a){ if(!a) return; const sum = S.calc && S.calc.isSum(a), ro = S
     a.ow = pkVal(bg, 'dOw').map(x => x.n).slice(0, 12); a.note = v('dNt').trim().slice(0, 500); ctrDatalist(); queueSave(a.id); bg.remove(); render(); };
   return bg; }
 /* انتخاب‌گر افراد/تیم/شرکت: جست‌وجو در فهرست سامانه، یا نام آزاد */
-const PK_T = {p: 'فرد پروژه', c: 'پیمانکار / شرکت', o: 'سازمان / تیم', x: 'نام آزاد'};
+const PK_T = {p: 'فرد پروژه', q: 'فرد بیرون از پروژه', t: 'تیم چارت سازمانی', c: 'پیمانکار / شرکت', o: 'سازمان / تیم', x: 'نام آزاد'};
 const pkIni = n => String(n || '').replace(/^(آقای|خانم|شرکت|گروه|مهندس)\s+/, '').trim().slice(0, 1) || '؟';
 function pkChip(x, q){ const t = S.dir.get(x.n) || 'x', sub = S.sub.get(x.n) || PK_T[t];
   return '<span class="pk-c" data-n="' + esc(x.n) + '" title="' + esc(PK_T[t]) + '"><i class="' + t + '">' + esc(pkIni(x.n)) + '</i>' + esc(x.n) + (sub ? '<small>' + esc(sub) + '</small>' : '')
@@ -641,8 +641,8 @@ function pkWire(bg){ bg.querySelectorAll('.pk').forEach(P => { const inp = P.que
   const has = n => Array.from(P.querySelectorAll('.pk-ch > .pk-c')).some(c => c.dataset.n === n);
   const add = n => { n = String(n || '').trim(); if(!n || has(n)) return; P.querySelector('.pk-ch').insertAdjacentHTML('beforeend', pkChip({n, q: 1}, q)); inp.value = ''; paint(); sg.hidden = true; };
   const paint = () => { const t = inp.value.trim(); const L = Array.from(S.dir.entries()).filter(([n]) => !has(n) && (!t || n.indexOf(t) !== -1 || (S.sub.get(n) || '').indexOf(t) !== -1));
-    const G = ['p', 'o', 'c'].map(k => [k, L.filter(x => x[1] === k).slice(0, 12)]).filter(g => g[1].length); cur = [];
-    let h = G.map(([k, R]) => '<u>' + {p: 'افراد پروژه', o: 'تیم‌ها و سازمان‌ها', c: 'پیمانکاران و شرکت‌ها'}[k] + '</u>' + R.map(([n]) => { cur.push(n); return '<button type="button" data-pka="' + esc(n) + '"><span class="pk-c" style="padding:0;background:none"><i class="' + k + '">' + esc(pkIni(n)) + '</i></span>' + esc(n) + '<small>' + esc(S.sub.get(n) || '') + '</small></button>'; }).join('')).join('');
+    const G = ['p', 't', 'o', 'c', 'q'].map(k => [k, k === 'q' && !t ? [] : L.filter(x => x[1] === k).slice(0, k === 'q' ? 8 : 12)]).filter(g => g[1].length); cur = [];
+    let h = G.map(([k, R]) => '<u>' + {p: 'افراد این پروژه', t: 'تیم‌های چارت سازمانی', o: 'تیم‌ها و سازمان‌ها', c: 'پیمانکاران و شرکت‌ها', q: 'افراد دیگر سامانه'}[k] + '</u>' + R.map(([n]) => { cur.push(n); return '<button type="button" data-pka="' + esc(n) + '"><span class="pk-c" style="padding:0;background:none"><i class="' + k + '">' + esc(pkIni(n)) + '</i></span>' + esc(n) + '<small>' + esc(S.sub.get(n) || '') + '</small></button>'; }).join('')).join('');
     if(t && !S.dir.has(t) && !has(t)){ h += '<u>نام دیگر</u><button type="button" data-pka="' + esc(t) + '">+ افزودن «' + esc(t) + '»</button>'; cur.push(t); }
     sg.innerHTML = h || '<u>موردی نیست</u>'; sg.hidden = document.activeElement !== inp; const f = sg.querySelector('[data-pka]'); if(f) f.classList.add('on'); };
   inp.addEventListener('focus', paint); inp.addEventListener('input', paint); inp.addEventListener('click', paint);
@@ -681,7 +681,7 @@ S.ctrs = []; S.snap = new Map(); S.flt = 'all'; S.q = '';
 const resCfg = () => (S.cfg.res = S.cfg.res || {});
 const rsOf = a => Array.isArray(a.rs) ? a.rs : (a.who ? [{n: a.who, q: 1}] : []);
 /* مسئولان فعالیت (۳۸۷): افراد پروژه، پیمانکاران/شرکت‌ها و سازمان‌ها — یک فهرست نام، نوع از راهنمای S.dir */
-S.dir = new Map(); S.sub = new Map(); const OW_T = {p: 'شخص', c: 'شرکت / پیمانکار', o: 'سازمان'};
+S.dir = new Map(); S.sub = new Map(); const OW_T = {p: 'شخص', q: 'شخص (بیرون از پروژه)', t: 'تیم چارت سازمانی', c: 'شرکت / پیمانکار', o: 'سازمان'};
 const owOf = a => Array.isArray(a.ow) ? a.ow : [];
 const owTxt = a => owOf(a).join('، ');
 const owTip = a => owOf(a).map(n => n + (S.dir.has(n) ? ' — ' + OW_T[S.dir.get(n)] : '')).join(' · ');
@@ -689,13 +689,34 @@ function owParse(v){ return Array.from(new Set(String(v || '').split(/[،,;]+/).
 function owDatalist(){ let dl = document.getElementById('owDl'); if(!dl){ dl = document.createElement('datalist'); dl.id = 'owDl'; document.body.appendChild(dl); }
   const L = Array.from(S.dir.entries()).sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0], 'fa'));
   dl.innerHTML = L.map(([n, t]) => '<option value="' + esc(n) + '" label="' + OW_T[t] + '">').join(''); }
+function ogTeamIndex(N){ /* N: Map(id → گره چارت). خروجی: تیم‌ها {id, label, head, members[]} — نام تکراری با نام سرپرست (یا گروه بالا) جدا می‌شود */
+  const T = []; N.forEach((y, id) => { if(y && y.team && (y.disc || y.n)) T.push({id, base: String(y.disc || y.n).trim(), head: String(y.r || '').trim(), up: y.up || ''}); });
+  const cnt = new Map(); T.forEach(t => cnt.set(t.base, (cnt.get(t.base) || 0) + 1));
+  const upName = id => { const p = N.get(id); return p ? String(p.r || p.disc || p.n || '').trim() : ''; };
+  T.forEach(t => { t.label = cnt.get(t.base) > 1 ? t.base + ' — ' + (t.head || upName(t.up) || t.id) : t.base; });
+  const seen = new Map(); T.forEach(t => { const k = t.label; seen.set(k, (seen.get(k) || 0) + 1); if(seen.get(k) > 1) t.label += ' (' + seen.get(k) + ')'; });
+  const kids = new Map(); N.forEach((y, id) => { if(!y || !y.up) return; (kids.get(y.up) || kids.set(y.up, []).get(y.up)).push(id); });
+  T.forEach(t => { const M = new Set(); if(t.head) M.add(t.head); const walk = (id, d) => { if(d > 12) return; (kids.get(id) || []).forEach(k => { const y = N.get(k); if(y && y.r) String(y.r).split(/[،,]/).forEach(x => { x = x.trim(); if(x) M.add(x); }); walk(k, d + 1); }); }; walk(t.id, 0); t.members = Array.from(M); });
+  return T; }
 async function owLoad(){ const add = (n, t) => { n = String(n || '').trim(); if(n && !S.dir.has(n)) S.dir.set(n, t); };
-  const [P, O, M] = await Promise.all([api('people?select=name,role&limit=3000').catch(() => api('people?select=name&limit=3000').catch(() => [])), api('lists?select=value&kind=eq.' + encodeURIComponent('سازمان') + '&limit=500').catch(() => []),
-    api('lists?select=value&kind=eq.' + encodeURIComponent('عضو پروژه') + '&limit=3000').catch(() => [])]);
-  /* اعضای همین پروژه اول؛ بقیهٔ افراد سامانه هم قابل انتخاب‌اند */
-  const inPj = new Set(); (M || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'); let o = {}; try{ o = JSON.parse(v.slice(i + 1)) || {}; }catch(e){} if((o.p || o.project || o.pj) && String(o.p || o.project || o.pj) !== pj()) return; const n = o.name || o.n || o.u || ''; if(n) inPj.add(String(n).trim()); });
-  const PP = (P || []).slice().sort((a, b) => (inPj.has(b.name) ? 1 : 0) - (inPj.has(a.name) ? 1 : 0));
-  PP.forEach(r => { add(r.name, 'p'); if(r.role && !S.sub.has(r.name)) S.sub.set(String(r.name).trim(), r.role + (inPj.size && !inPj.has(r.name) ? ' · بیرون از پروژه' : '')); }); S.ctrs.forEach(n => add(n, 'c'));
+  const [P0, O, M, X, NG] = await Promise.all([api('people?select=name,role,active,pending&limit=3000').catch(() => api('people?select=name,role&limit=3000').catch(() => api('people?select=name&limit=3000').catch(() => []))), api('lists?select=value&kind=eq.' + encodeURIComponent('سازمان') + '&limit=500').catch(() => []),
+    api('lists?select=value&kind=eq.' + encodeURIComponent('عضو پروژه') + '&limit=3000').catch(() => []), api('lists?select=value&kind=eq.' + encodeURIComponent('حساب پروژه‌ای') + '&limit=3000').catch(() => []),
+    api('lists?select=value&kind=eq.' + encodeURIComponent('چارت گره') + '&limit=3000').catch(() => [])]);
+  /* همان قاعدهٔ سامانه (__pjPeopleOk): کاربر فعال و تأییدشده؛ در پروژهٔ اصلی بدون «حساب پروژه‌ای» (حساب‌هایی که برای پروژهٔ دیگری ساخته شده‌اند) */
+  const nk = n => String(n || '').replace(/[\u200c\s]+/g, ' ').replace(/ي/g, 'ی').replace(/ك/g, 'ک').trim();
+  const P1X = new Set((X || []).map(r => nk(r.value)));
+  const P = (P0 || []).filter(r => r && r.name && !r.pending && r.active !== false);
+  /* ۴۷۳: اعضای همین پروژه از «عضو پروژه» (pid¦نام¦سمت¦سطح¦وضعیت) — همان منبع سامانه؛ پروژهٔ اصلی (p1) همهٔ کاربران.
+     بقیهٔ کاربران سامانه نوع «q» (افراد دیگر)، فقط با جست‌وجو پیشنهاد می‌شوند. */
+  const role = new Map((P || []).map(r => [String(r.name || '').trim(), r.role || ''])), mem = new Map();
+  (M || []).forEach(r => { const a = String(r.value || '').split('¦'); if(a.length < 5 || a[0] !== PJ0 || (a[4] !== 'فعال' && a[4] !== 'دعوت')) return; const n = String(a[1] || '').trim(); if(n) mem.set(n, a[2] || role.get(n) || ''); });
+  if(PJ0 === 'p1') role.forEach((ro, n) => { if(n && !mem.has(n) && !P1X.has(nk(n))) mem.set(n, ro); });
+  mem.forEach((ro, n) => { add(n, 'p'); if(ro) S.sub.set(n, ro); });
+  role.forEach((ro, n) => { if(!n || mem.has(n)) return; add(n, 'q'); S.sub.set(n, (ro ? ro + ' · ' : '') + 'بیرون از این پروژه'); });
+  /* تیم‌های چارت سازمانی همین پروژه (۴۷۴) */
+  try{ const N = new Map(); (NG || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'); if(i < 1) return; try{ N.set(v.slice(0, i), JSON.parse(v.slice(i + 1)) || {}); }catch(e){} });
+    S.teams = ogTeamIndex(N); S.teams.forEach(t => { add(t.label, 't'); S.sub.set(t.label, 'تیم چارت' + (t.head ? ' · سرپرست: ' + t.head : '') + ' · ' + toFa(t.members.length) + ' نفر'); }); }catch(e){}
+  S.ctrs.forEach(n => add(n, 'c'));
   (O || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'); if(i < 1) return; let o = {}; try{ o = JSON.parse(v.slice(i + 1)) || {}; }catch(e){} add(o.n || v.slice(0, i), 'o'); });
   owDatalist(); }
 const rsTxt = a => rsOf(a).map(r => r.n + (+r.q && +r.q !== 1 ? ' ×' + toFa(r.q) : '')).join('، ');
