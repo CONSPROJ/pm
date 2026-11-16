@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116061045">
+<meta name="pm-build" content="20261116061530">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30747,6 +30747,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 #dcM .dc-tb.cx .dc-tbh code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--sky,#2a6fa0)} #dcM .dc-cxdel{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;color:var(--alert,#c0392b);padding:2px 6px;border-radius:6px} #dcM .dc-cxdel:hover{background:var(--alert-soft,#fdecea)}
 #dcM .dc-cxadd{display:grid;grid-template-columns:auto 160px minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:12px;padding:10px 12px;border:1px dashed var(--line,#e3e7ed);border-radius:12px} #dcM .dc-cxadd b{font-size:12.5px} #dcM .dc-cxadd input{height:36px!important;min-height:36px!important}
 @media (max-width:640px){ #dcM .dc-cxadd{grid-template-columns:1fr} }
+.nt2-q{display:flex;align-items:center;gap:10px;margin:0 0 8px} .nt2-q input{flex:1;height:36px!important;min-height:36px!important} .nt2-q span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.nt2-sd{border:1px solid var(--line,#e3e7ed);border-radius:12px;padding:8px 10px;margin-bottom:6px} .nt2-sdh{display:flex;align-items:center;gap:8px;margin-bottom:6px} .nt2-sdh b{font-size:12.5px} .nt2-sdh em{font-style:normal;font-size:11px;color:var(--muted)}
+.nt2-all{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11.5px;font-weight:700;color:var(--sky,#2a6fa0);padding:3px 9px;border-radius:8px;border:1px solid var(--line,#e3e7ed)} .nt2-all.on{color:var(--muted)} .nt2-all:hover{background:var(--sky-soft,#eaf3fa)}
+.nt2-sd .pc-chip[hidden],.nt2-sd[hidden]{display:none!important}
 #dcM .dc-toks{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px} #dcM .dc-toks button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px 4px 5px;border-radius:9px;border:1px solid var(--line,#e3e7ed);background:var(--surface,#fff)}
 #dcM .dc-toks button:hover{border-color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa)} #dcM .dc-toks code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:11px;color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa);border-radius:6px;padding:1px 5px}
 #dcM .dc-pt{border:1px solid var(--line,#e3e7ed);border-radius:12px;overflow:hidden} #dcM .dc-pth{display:grid;grid-template-columns:170px minmax(0,1.3fr) minmax(0,1fr);gap:10px;padding:8px 14px;background:var(--field,#f3f5f8);font-size:11px;font-weight:800;color:var(--muted)}
@@ -33430,6 +33434,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      d:'در زنگوله و کارت‌ها موارد همهٔ افراد دیده می‌شود، نه فقط مال خودش', def:[1,2]},
     {g:'اعلان‌ها', k:'notif.fine', t:'اعلان درخواست جریمهٔ کارگر',
      d:'وقتی جریمه‌ای ثبت می‌شود و منتظر تأیید است', def:[1,2]},
+    /* ۴۴۵: رونوشت مکاتبات و ترانسمیتال‌ها (جدا از گیرندهٔ اصلی؛ با ntCc فرستاده می‌شود) */
+    {g:'اعلان‌ها', k:'notif.ib', t:'رونوشت مکاتبهٔ تازه', d:'هر نامه، صورت وضعیت یا قرارداد تازه‌ای که به پروژه فرستاده می‌شود', def:[1,2]},
+    {g:'اعلان‌ها', k:'notif.tr', t:'رونوشت ترانسمیتال تازه', d:'ارسال نقشه و مدرک طراحی، و اصلاحیه‌ها برای بررسی', def:[1,2]},
+    {g:'اعلان‌ها', k:'notif.ibres', t:'نتیجهٔ بررسی مکاتبات', d:'تأیید یا رد هر مکاتبه و ترانسمیتال', def:[1]},
     {g:'کارگری', k:'fine.approve', t:'تأیید یا رد جریمهٔ کارگر',
      d:'پیش‌تر فقط سرپرست کارگاه و ادمین', def:[1,2]},
     {g:'مدیریت', k:'deck.all', t:'کارت‌های فعالیت همهٔ افراد',
@@ -43368,7 +43376,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   function ntCardsHtml(caps, people){
     if(!caps.length) return '<div class="pc-none">اعلانی با این عبارت پیدا نشد.</div>';
-    const roles = (function(){ try{ return ogPositions().map(x => x.n); }catch(e){ return ROLE_LIST.filter(r => r && r !== '—'); } })();
+    const POS = (function(){ try{ return ogPositions().map(x => ({n: x.n, s: x.side || 'pm'})); }catch(e){ return ROLE_LIST.filter(r => r && r !== '—').map(n => ({n, s: 'pm'})); } })();
+    /* ۴۴۵: سمت‌ها به تفکیک طرف (تیم مدیریت پروژه، کارفرما، پیمانکار، …) با «همه» برای هر طرف و جست‌وجو */
+    const SD = []; POS.forEach(x => { let g = SD.find(y => y.s === x.s); if(!g){ g = {s: x.s, L: []}; SD.push(g); } g.L.push(x.n); });
+    const posMode = permPosMode();
+    const rolesHtml = (k, rl, on) => '<div class="nt2-q"><input type="search" data-ntq placeholder="جست‌وجوی سمت…" autocomplete="off"><span>' + toFa(rl.length) + ' سمت انتخاب شده</span></div>'
+      + SD.map(g => { const nOn = g.L.filter(r => rl.indexOf(r) !== -1).length, all = nOn === g.L.length;
+        return '<div class="nt2-sd"><div class="nt2-sdh"><b>' + esc(OG_SIDE_T(g.s)) + '</b><em>' + toFa(nOn) + ' از ' + toFa(g.L.length) + '</em><button type="button" class="nt2-all' + (all ? ' on' : '') + '" data-ntside="' + esc(k) + '" data-side="' + esc(g.s) + '" data-v="' + (all ? '0' : '1') + '">' + (all ? 'برداشتن همه' : 'همه') + '</button></div>'
+          + '<div class="nt2-rl">' + g.L.map(r => '<button type="button" class="pc-chip' + (rl.indexOf(r) !== -1 ? ' on' : ntRoleImplied(r, on, people) ? ' imp' : '') + '" data-pcr="' + esc(k) + '" data-role="' + esc(r) + '">' + esc(r) + '</button>').join('') + '</div></div>'; }).join('');
     return '<div class="nt2">' + caps.map(c => {
       const on = permLevelsOf(c.k), rl = permRolesOf(c.k);
       const ex = people.map(n => [n, permUserOf(n, c.k)]).filter(x => x[1] != null);
@@ -43378,8 +43393,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + '<span class="nt2-t"><b>' + esc(c.t) + '</b>' + (c.d ? '<small>' + esc(c.d) + '</small>' : '') + '</span>'
         + '<span class="nt2-n"><b>' + toFa(eff.length) + '</b><small>گیرنده</small></span>' + (ex.length ? '<em class="nt2-x">' + toFa(ex.length) + ' استثنا</em>' : '') + '<i class="nt2-ar">‹</i></button>'
         + (open ? '<div class="nt2-b">'
-          + '<div class="nt2-s"><u>الگوی پایهٔ سمت</u><div class="pm-lv2">' + PERM_LEVELS.map(L => '<button type="button" class="pm-tk2' + (on.indexOf(L) !== -1 ? ' on' : '') + '" data-pm-k="' + esc(c.k) + '" data-pm-l="' + L + '" aria-pressed="' + (on.indexOf(L) !== -1) + '">' + esc(PM_LV_S[L] || L) + '</button>').join('') + '</div></div>'
-          + '<div class="nt2-s"><u>سمت‌ها <em>هر کس این سمت را دارد</em></u><div class="nt2-rl">' + roles.map(r => '<button type="button" class="pc-chip' + (rl.indexOf(r) !== -1 ? ' on' : ntRoleImplied(r, on, people) ? ' imp' : '') + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(r) + '">' + esc(r) + '</button>').join('') + '</div></div>'
+          + (posMode ? '' : '<div class="nt2-s"><u>الگوی پایهٔ سمت</u><div class="pm-lv2">' + PERM_LEVELS.map(L => '<button type="button" class="pm-tk2' + (on.indexOf(L) !== -1 ? ' on' : '') + '" data-pm-k="' + esc(c.k) + '" data-pm-l="' + L + '" aria-pressed="' + (on.indexOf(L) !== -1) + '">' + esc(PM_LV_S[L] || L) + '</button>').join('') + '</div></div>')
+          + '<div class="nt2-s"><u>سمت‌ها <em>هر کس این سمت را دارد</em></u>' + rolesHtml(c.k, rl, on) + '</div>'
           + '<div class="nt2-s"><u>استثنای فردی</u>' + (ex.length ? '<div class="nt2-ex">' + ex.map(([n, v]) => '<span class="nt2-e ' + (v ? 'ok' : 'no') + '">' + avatarHtml(n, 'sm', true).replace(' data-person=', ' data-np=') + '<b>' + esc(n) + '</b><i>' + (v ? 'می‌گیرد' : 'نمی‌گیرد') + '</i><button type="button" class="sp-x" data-ntxrm="' + esc(n) + '" data-k="' + esc(c.k) + '" aria-label="برداشتن">×</button></span>').join('') + '</div>' : '<small class="nt2-mu">استثنایی نیست.</small>')
           +   '<div class="nt2-add"><select data-ntxp="' + esc(c.k) + '"><option value="">+ افزودن نفر…</option>' + people.filter(n => permUserOf(n, c.k) == null).map(n => '<option value="' + esc(n) + '">' + esc(n) + (roleOf(n) ? ' — ' + esc(roleOf(n)) : '') + '</option>').join('') + '</select>'
           +   '<button type="button" class="pp-btn" data-ntxadd="1" data-k="' + esc(c.k) + '" data-v="1">بگیرد</button><button type="button" class="pp-btn" data-ntxadd="1" data-k="' + esc(c.k) + '" data-v="0">نگیرد</button></div></div>'
@@ -45009,7 +45024,10 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       }
       body = '<div class="pp">' + list + '<section class="pp-d">' + det + '</section></div>';
     }
-    const T = [['rl', PC_I.role, 'سمت‌ها'], ['mx', PC_I.lv, 'ماتریس'], ['us', PC_I.usr, 'افراد و استثناها'], ['nt', PC_I.bell, 'اعلان‌ها'], ['lv', PC_I.lv, 'الگوهای پایه']];
+    /* ۴۴۶: در حالت سمت‌محور، وقتی همه سمت دارند «الگوهای پایه» لازم نیست (فقط برای افراد بی‌سمت معنا دارد) */
+    const lvNeed = !permPosMode() || people.some(n => !permHasCatPos(n));
+    const T = [['rl', PC_I.role, 'سمت‌ها'], ['mx', PC_I.lv, 'ماتریس'], ['us', PC_I.usr, 'افراد و استثناها'], ['nt', PC_I.bell, 'اعلان‌ها']].concat(lvNeed ? [['lv', PC_I.lv, 'الگوی افراد بی‌سمت']] : []);
+    if(!lvNeed && pcState.tab === 'lv') pcState.tab = 'rl';
     const TD = {rl: 'هر سمت یک قالب اجازه دارد؛ مافوق، کار زیرمجموعه را هم می‌تواند. سمت تازه از «کتابخانه».', mx: 'همهٔ سمت‌ها کنار هم: هر خانه یعنی آن سمت آن کار را می‌تواند. خانهٔ کم‌رنگ = از زیرمجموعه.',
       us: 'دسترسی نهایی هر نفر و دلیلش؛ برای یک نفر خاص استثنا بگذارید (مجاز یا ممنوع).', nt: 'چه کسی کدام اعلان را می‌گیرد: بر اساس سمت، الگوی پایه یا نام.',
       lv: permPosMode() ? 'هر سمت بر اساس طرفش یک الگوی پایه دارد؛ در حالت سمت‌محور الگو فقط این کارهای مشترک را می‌دهد و بقیه از خود سمت می‌آید.' : 'هر سمت بر اساس طرفش (تیم پروژه، کارفرما، پیمانکار، مالک) یک الگوی پایه دارد: این‌جا کارهای هر الگو. پس از روشن کردن حالت سمت‌محور فقط پایهٔ مشترک از این‌جا می‌آید.'};
@@ -45158,10 +45176,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     }
     const ro = t.closest('[data-pcr]');
     const ov = t.closest('[data-pco]');
-    if(!ro && !ov) return;
+    const sd = t.closest('[data-ntside]');
+    if(!ro && !ov && !sd) return;
     e.stopPropagation();
     try{
-      if(ro){
+      if(sd){
+        const k = sd.dataset.ntside, side = sd.dataset.side, on = sd.dataset.v === '1';
+        let L = []; try{ L = ogPositions().filter(x => (x.side || 'pm') === side).map(x => x.n); }catch(er){}
+        const cur = permRolesOf(k).filter(r => L.indexOf(r) === -1).concat(on ? L : []);
+        await permRoleSave(k, cur);
+      }else if(ro){
         const k = ro.dataset.pcr, r = ro.dataset.role;
         const cur = permRolesOf(k).slice();
         const i = cur.indexOf(r);
@@ -88425,6 +88449,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     await ibSave(n);
     if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.');
     else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.'));
+    ntCc('notif.ib', 'رونوشت: ' + (IB_T[n.t] || 'مکاتبه'), (n.party || n.by || '') + ' — ' + (IB_T[n.t] || 'مکاتبه') + ' تازه ارسال کرد.', n.to ? [n.to] : ibReviewers());
     return n;
   };
   const ibMoney = v => { const n = parseFloat(toEn(String(v || '')).replace(/[,٬\s]/g, '')); return isFinite(n) && n > 0 ? n : 0; };
@@ -88564,6 +88589,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(n.prev){ const o0 = ib.list.find(x => x.id === n.prev); if(o0){ await ibSave(Object.assign({}, o0, {next: n.id, log: (o0.log || []).concat([{by: me, at: now, note: 'اصلاحیه ارسال شد: ' + o.no}]).slice(-80)})).catch(() => {}); } }
       if(n.to) ibNotify(n.to, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.');
       else ibReviewers().forEach(rv => ibNotify(rv, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.'));
+      ntCc('notif.tr', 'رونوشت ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' ارسال شد.', n.to ? [n.to] : ibReviewers());
       if(box.closest('#ibArea')){ ib.tab = 'mine'; ib.open = n.id; ibRender(); } else { const m = box.closest('.modal-bg, .fx-bg'); if(m) m.remove(); }
       showDialog('ok', 'ترانسمیتال ' + o.no + ' ارسال شد', toFa(n.docs.length) + ' مدرک برای ' + (n.to || 'صف بررسی دفتر فنی') + ' فرستاده شد. پس از تأیید تیم اصلی، هر مدرک با کد خودش در «اسناد طراحی» ثبت می‌شود؛ وضعیت را در «مکاتبات ← ارسالی» می‌بینید.'); }
     catch(err){ showDialog('err', 'ارسال نشد', friendlyErr(err)); btn.disabled = false; btn.innerHTML = t0; }
@@ -88582,7 +88608,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       files: L.map(d => d.files).join('\n'), log: [{by: me, at: now, note: 'ترانسمیتال ' + no + ' ارسال شد — اصلاحیهٔ ' + (o.no || '')}]}; if(o.to) n.to = o.to; else if(o.rv) n.to = o.rv;
     b.disabled = true; const t0 = b.textContent; b.textContent = 'در حال ارسال…';
     try{ await ibSave(n); await ibSave(Object.assign({}, o, {next: n.id, log: (o.log || []).concat([{by: me, at: now, note: 'اصلاحیه ارسال شد: ' + no}]).slice(-80)}));
-      if(n.to && nameKey(n.to) !== nameKey(me)) ibNotify(n.to, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.'); else ibReviewers().forEach(r => ibNotify(r, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.'));
+      if(n.to && nameKey(n.to) !== nameKey(me)) ibNotify(n.to, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.'); else ibReviewers().forEach(r => ibNotify(r, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.')); ntCc('notif.tr', 'رونوشت اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده از ' + (o.party || '') + ' ارسال شد.', n.to ? [n.to] : ibReviewers());
       ib.tab = 'mine'; ib.open = n.id; ibRender(); try{ shrToast('اصلاحیه برای بررسی دوباره فرستاده شد'); }catch(er){} }
     catch(err){ showDialog('err', 'ارسال نشد', friendlyErr(err)); b.disabled = false; b.textContent = t0; } });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-trresub]'); if(!b) return; const o = ib.list.find(x => x.id === b.dataset.trresub); if(!o) return;
@@ -88755,6 +88781,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   document.addEventListener('input', e => { if(!(e.target && e.target.matches && e.target.matches('[data-ibq]'))) return; ib.q = e.target.value; clearTimeout(ibRender.__t); ibRender.__t = setTimeout(ibRender, 180); });
   window.ibRender = ibRender;
+  document.addEventListener('input', e => { const q = e.target.closest && e.target.closest('[data-ntq]'); if(!q) return; const v = q.value.trim(), b = q.closest('.nt2-s');
+    b.querySelectorAll('.nt2-sd').forEach(g => { let n = 0; g.querySelectorAll('.pc-chip').forEach(c => { const ok = !v || c.textContent.indexOf(v) !== -1; c.hidden = !ok; if(ok) n++; }); g.hidden = !n; }); });
+  /* ۴۴۵: رونوشت برای همهٔ کسانی که اعلان cap را دارند (از دسترسی‌ها ← اعلان‌ها)، بجز فرستنده و گیرندگان اصلی */
+  function ntCc(cap, title, msg, skip){ try{ const me = activeUserName(), S = new Set([me].concat(skip || []).filter(Boolean).map(nameKey));
+      (peopleRows || []).filter(p => p && p.name && !p.pending && p.active !== false && !S.has(nameKey(p.name))).forEach(p => { let ok = false; try{ ok = canUser(p.name, cap); }catch(e){} if(ok) ibNotify(p.name, title, msg); }); }catch(e){} }
   function ibNotify(to, title, msg){
     try{ return sendAction({action: 'nudge', from: activeUserName(), to, kind: IB_KIND, itemId: '', title, message: msg, date: todayShamsi()}); }catch(e){}
   }
@@ -88818,6 +88849,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       try{ await ibSave(n); ib.preRefs = null;
         if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.');
         else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.'));
+        ntCc('notif.ib', 'رونوشت: ' + (IB_T[n.t] || 'مکاتبه'), (n.party || n.by || '') + ' — ' + (IB_T[n.t] || 'مکاتبه') + ' تازه ارسال کرد.', n.to ? [n.to] : ibReviewers());
         ib.trDraft = null; ib.tab = 'mine'; ib.open = n.id; ibRender(); showDialog('ok', 'ارسال شد', n.to ? 'برای ' + n.to + ' فرستاده شد؛ وضعیتش را در «ارسالی» می‌بینید.' : 'مورد در صف بررسی است؛ نتیجه را از «ارسالی» یا اعلان‌ها می‌بینید.'); }
       catch(err){ showDialog('err', 'ارسال نشد', friendlyErr(err)); sd.disabled = false; sd.textContent = ib.kind === 'design' ? 'ارسال ترانسمیتال' : 'ارسال'; }
       finally{ ib.busy = false; }
@@ -88848,6 +88880,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         const n = Object.assign(o, {st: 'ok', made, rv: me, log: (o.log || []).concat(Object.keys(ch).length ? [{by: me, at: now, ch}] : []).concat([{by: me, at: now, note: 'تأیید و ثبت شد'}]).slice(-80)});
         await ibSave(n);
         if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: تأیید شد', 'موردی که فرستاده بودید تأیید و ثبت شد.');
+        ntCc('notif.ibres', 'تأیید شد: ' + (o.no || IB_T[o.t] || ''), (o.party || o.by || '') + ' — ' + (o.ti || IB_T[o.t] || '') + ' تأیید شد.', [o.by]);
         try{ if(typeof invalidateAdmin === 'function') invalidateAdmin(); }catch(err){}
         ibRender();
       }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); ok.disabled = false; }
@@ -88861,6 +88894,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       ib.busy = true;
       try{ await ibSave(Object.assign({}, o, {st: 'no', why, rv: me, log: (o.log || []).concat([{by: me, at: now, note: 'رد شد: ' + why}]).slice(-80)}));
         if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: رد شد', 'موردی که فرستاده بودید رد شد؛ دلیلش را در «ارسال‌های من» ببینید.');
+        ntCc('notif.ibres', 'رد شد: ' + (o.no || IB_T[o.t] || ''), (o.party || o.by || '') + ' — ' + (o.ti || IB_T[o.t] || '') + ' رد شد.', [o.by]);
         ibRender(); }
       catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
       finally{ ib.busy = false; }
