@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116154434">
+<meta name="pm-build" content="20261116155158">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30843,6 +30843,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
 .prfi{margin:12px 0 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)} .prfi-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px} .prfi-h b{font-size:13px;font-weight:800} .prfi-h small{font-size:11px;color:var(--muted)}
 .prfi dl{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 14px} .prfi dl > div{display:flex;flex-direction:column;gap:2px;min-width:0} .prfi dt{font-size:11px;color:var(--muted);font-weight:600} .prfi dd{margin:0;font-size:12.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis}
 .dc-std{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.dv-new{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap} .dv-new input{margin:0}
 .aq-dtf span{display:flex;gap:6px} .aq-dtf input{flex:1;min-width:0}
 .aq-dtx{font-size:12px;color:var(--muted);padding:0 6px;white-space:nowrap}
 #adminView .adm-xbar .adm-xh{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin:0 2px 8px}
@@ -40985,7 +40986,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const card = o => ctdkCardHtml(o, nm, ed);
     const empty = !D.list.length && !D.orph.length;
     return '<section class="ctx-s ctdk" data-ctxsec="docs" data-ctdk="1"><div class="ctx-h">' + CTX_I.doc + '<b>قراردادها و صورت وضعیت‌ها</b><small>مبالغ به تومان</small>'
-      + (can('write.adm') ? '<button type="button" class="ctdk-new" data-ctdknew="1">+ قرارداد تازه</button>' : '') + '</div>'
+      + (can('write.adm') && (!window.docNewOk || window.docNewOk('contract')) ? '<button type="button" class="ctdk-new" data-ctdknew="1">+ قرارداد تازه</button>' : '') + '</div>'
       + '<input type="hidden" data-ctk="ct" value="' + esc((man || []).join(' | ')) + '">'
       + (empty ? '' : '<div class="ctdk-k"><span><b>' + toFa(T.nc) + '</b><u>قرارداد</u></span><span><b>' + ctdkMoney(T.amt) + '</b><u>جمع قراردادها</u></span><span><b>' + toFa(T.ns) + '</b><u>صورت وضعیت</u></span><span class="ok"><b>' + ctdkMoney(T.paid) + '</b><u>پرداخت‌شده</u></span><span class="' + (T.rest ? 'warn' : '') + '"><b>' + ctdkMoney(T.rest) + '</b><u>مانده</u></span></div>')
       + (empty ? '<div class="ctdk-empty">' + (loading ? '<i class="ctdk-spin"></i>در حال خواندن قراردادها و صورت وضعیت‌های دفتر فنی…' : 'قرارداد یا صورت وضعیتی به نام این پیمانکار پیدا نشد.' + (ed ? ' اگر به نام دیگری ثبت شده، از پیشنهادهای زیر یکی کنید یا از جست‌وجو اضافه کنید.' : '')) + '</div>' : '')
@@ -41843,7 +41844,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     return '<div class="cct">'
       + '<div class="cdx-note">همهٔ قراردادهای دفتر فنی. روی هر قرارداد بزنید تا شماره، عنوان، طرف‌ها، مبلغ و تاریخش را اصلاح کنید؛ قراردادی که برای دو نفر است، هر دو را به‌عنوان طرف قرارداد بگیرد.' + (multi ? ' <b>' + toFa(multi) + ' قرارداد چندطرفه</b>' : '') + '</div>'
       + '<div class="cdx-tb"><label class="mx-q">' + DC_I.search + '<input type="search" id="cctQ" placeholder="شماره، عنوان یا طرف قرارداد…" value="' + esc(q) + '" autocomplete="off"></label>'
-      +   (can('write.adm') ? '<button type="button" class="cdx-new" data-cctnew="1">' + CDX_I.plus + '<span>قرارداد تازه</span></button>' : '') + '</div>'
+      +   (can('write.adm') && (!window.docNewOk || window.docNewOk('contract')) ? '<button type="button" class="cdx-new" data-cctnew="1">' + CDX_I.plus + '<span>قرارداد تازه</span></button>' : '') + '</div>'
       + (cct.neu ? '<div class="cct-r op new"><div class="cct-h"><b>قرارداد تازه</b></div>' + cctEditHtml({}) + '</div>' : '')
       + '<div class="cct-l">' + (rows.length ? cctGroups(rows).map(G => {
           const one = (r, sub) => {
@@ -48989,7 +48990,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       + ' data-ktkind="' + esc(r.__admKind || 'task') + '" data-ktid="' + esc(id) + '">'
       + '<span class="kt3-ic k-' + esc(r.__admKind || 'task') + '">' + ((typeof KIND_ICON !== 'undefined' && KIND_ICON[r.__admKind]) || (typeof SEC_ICON !== 'undefined' && SEC_ICON.chore) || '') + '</span>'
       + '<span class="kt-t"><b>' + esc(pick(r,T.title) || 'بدون عنوان') + '</b>'
-      +   '<small><em class="kd">' + esc((r.__admKind && KIND_LABEL[r.__admKind]) || 'اجرایی') + '</em>' + esc(st.label) + (g && g !== KIND_LABEL[r.__admKind] ? ' · ' + esc(g) : '') + '</small></span>'
+      +   '<small><em class="kd">' + esc((r.__admKind && KIND_LABEL[r.__admKind]) || (function(){ try{ return taskGroupOf(r); }catch(e){ return 'اجرایی'; } })()) + '</em>' + esc(st.label) + (g && g !== KIND_LABEL[r.__admKind] ? ' · ' + esc(g) : '') + '</small></span>'
       + '<span class="kt3-r"><span class="kt-due">' + due + '</span>' + (crit ? '<i class="kt3-cr">بحرانی</i>' : '') + '</span></button>';
   }
   function kartHtml(name, day, p){
@@ -49320,8 +49321,8 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   const AB_TYPES = [
     {k:'general', t:'فعالیت عمومی', d:'یک کار برای چند نفر؛ هر کس فعالیت خودش را می‌گیرد', where:'لیست فعالیت هر گیرنده', ic: AB_I.gen, c:'ok', ok: () => canSendGeneral()},
     {k:'exec', t:'فعالیت اجرایی', d:'کار کارگاهی با یک یا دو مسئول و موقعیت', where:'لیست فعالیت، بخش فعالیت‌های اجرایی', ic: AB_I.exec, c:'warn', ok: () => canSendGeneral()},
-    {k:'statement', t:'صورت وضعیت', d:'ثبت صورت وضعیت تازه با مسئول و بررسی‌کننده‌ها', where:'دفتر فنی، بخش صورت وضعیت', ic: AB_I.statement, c:'sky', ok: () => can('write.adm')},
-    {k:'contract', t:'قرارداد', d:'ثبت قرارداد تازه با طرف قرارداد و مبلغ', where:'دفتر فنی، بخش قراردادها', ic: AB_I.contract, c:'vio', ok: () => can('write.adm')}
+    {k:'statement', t:'صورت وضعیت', d:'ثبت صورت وضعیت تازه با مسئول و بررسی‌کننده‌ها', where:'دفتر فنی، بخش صورت وضعیت', ic: AB_I.statement, c:'sky', ok: () => can('write.adm') && (!window.docNewOk || window.docNewOk('statement'))},
+    {k:'contract', t:'قرارداد', d:'ثبت قرارداد تازه با طرف قرارداد و مبلغ', where:'دفتر فنی، بخش قراردادها', ic: AB_I.contract, c:'vio', ok: () => can('write.adm') && (!window.docNewOk || window.docNewOk('contract'))}
   ];
   const abState = {type:'general', picked:[], q:'', busy:false, done:null};
   const abTypes = () => AB_TYPES.filter(x => x.ok());
@@ -54934,6 +54935,12 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   const DV_TYPES = [['cons', 'طراح و مشاور'], ['emp', 'کارفرما'], ['ctr', 'پیمانکار'], ['own', 'مالک']];
   function docVisOf(kind, co){ let v = ''; try{ v = window.pmRule ? window.pmRule('docVis.' + kind + '.' + coTypeOf(co), '') : ''; }catch(e){} return v === 'all' || v === 'none' ? v : 'own'; }
   window.docVisOf = docVisOf;
+  /* ۴۸۴: ثبت سند تازه در «پروژه» برای تیم‌های بیرونی، جدا از دیدن (قانون docNew.<نوع>.<نوع تیم> = '1'|'0').
+     پیش‌فرض: طراح و مشاور ← سند طراحی و نامه؛ پیمانکار ← صورت وضعیت و نامه؛ کارفرما ← نامه؛ مالک ← هیچ؛ قرارداد و صورتجلسه فقط تیم اصلی */
+  const DN_DEF = {cons: {design: 1, letter: 1}, ctr: {statement: 1, letter: 1}, emp: {letter: 1}, own: {}};
+  function docNewRule(kind, t){ let v = ''; try{ v = window.pmRule ? String(window.pmRule('docNew.' + kind + '.' + t, '')) : ''; }catch(e){} return v === '1' ? true : v === '0' ? false : !!((DN_DEF[t] || {})[kind]); }
+  function docNewOk(kind){ let co = ''; try{ co = coScopeMe(); }catch(e){} if(!co) return true; return docNewRule(kind, coTypeOf(co)); }
+  window.docNewOk = docNewOk;
   /* ۴۶۳: اشتراک یک سند با تیم‌های مشخص، بی‌تغییر قاعدهٔ کلی (lists: اشتراک سند → «نوع:شناسه¦{to:[تیم‌ها], by, at}») */
   const SHR_K = 'اشتراک سند', SHR = new Map();
   async function shrLoad(force){ try{ const L = await fxList(SHR_K, force); SHR.clear(); (L || []).forEach(x => { if(x && x.id && x.o && Array.isArray(x.o.to)) SHR.set(x.id, x.o); }); }catch(e){} }
@@ -54961,6 +54968,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   window.coDraftSet = async (t, on) => { const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); cur['coDraft.' + t] = on ? '1' : '0';
     await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} };
   window.CO_DRAFT_DEF = CO_DRAFT_DEF;
+  async function docNewSet(kind, t, on){ const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); const k = 'docNew.' + kind + '.' + t;
+    const def = !!((DN_DEF[t] || {})[kind]); if(on === def) delete cur[k]; else cur[k] = on ? '1' : '0'; await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()});
+    try{ if(k in cur) window.__pmRules[k] = cur[k]; else delete window.__pmRules[k]; localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
   async function docVisSet(kind, t, v){ const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); const k = 'docVis.' + kind + '.' + t;
     if(v === 'own') delete cur[k]; else cur[k] = v; await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ if(v === 'own') delete window.__pmRules[k]; else window.__pmRules[k] = v; localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
   /* ۴۶۳: «قابل مشاهده برای» و «اشتراک با…» در جزئیات هر سند (فقط تیم اصلی می‌بیند) */
@@ -54990,9 +55000,13 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const mem = t => { const out = []; try{ const A = window.listNamesAll ? window.listNamesAll() : []; extParty.forEach((co, u) => { if(coTypeOf(co) === t) out.push({u: A.find(a => nameKey(a) === u) || u, co}); }); }catch(e){} return out; };
     const paint = () => '<div class="dv"><div class="dv-sc"><table class="dv-t"><thead><tr><th>سند</th>' + DV_TYPES.map(([t, n]) => { const M = mem(t); return '<th><b>' + n + '</b><small>' + (M.length ? toFa(M.length) + ' نفر' : 'کسی وصل نیست') + '</small>' + (M.length ? '<button type="button" class="dv-va" data-vago="' + esc(M[0].u) + '" title="صفحه را همان‌طور که ' + esc(M[0].u) + ' (' + esc(M[0].co) + ') می‌بیند ببینید">دیدن به‌جای او</button>' : '') + '</th>'; }).join('') + '</tr></thead><tbody>'
       + DV_KINDS.map(([k, n]) => '<tr><th>' + n + '</th>' + DV_TYPES.map(([t]) => { let v = ''; try{ v = window.pmRule('docVis.' + k + '.' + t, ''); }catch(e){} v = v === 'all' || v === 'none' ? v : 'own';
-        return '<td><span class="dv-seg">' + DV_S.map(([sv, sn]) => '<button type="button" class="' + (sv === v ? 'on ' + sv : '') + '" data-dvk="' + k + '" data-dvt="' + t + '" data-dvv="' + sv + '">' + sn + '</button>').join('') + '</span></td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>'
-      + '<p class="dv-n">تیم اصلی همیشه همه را می‌بیند. «سهم خودش» یعنی سندهایی که طرف یا طراح آن همان تیم است؛ در اسناد طراحی، نقشه‌های تأییدشدهٔ همه هم دیده می‌شوند. این فقط دید «پروژه» است؛ فضای خود تیم جداست و دست نمی‌خورد.</p></div>';
+        const nw = docNewRule(k, t);
+        return '<td><span class="dv-seg">' + DV_S.map(([sv, sn]) => '<button type="button" class="' + (sv === v ? 'on ' + sv : '') + '" data-dvk="' + k + '" data-dvt="' + t + '" data-dvv="' + sv + '">' + sn + '</button>').join('') + '</span>'
+          + '<label class="dv-new"><input type="checkbox" data-dnk="' + k + '" data-dnt="' + t + '"' + (nw ? ' checked' : '') + '> می‌تواند ثبت کند</label></td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>'
+      + '<p class="dv-n">«می‌تواند ثبت کند»: آن تیم در اسناد پروژه سند تازهٔ همان نوع ثبت کند (جدا از دسترسی کلی ثبت). تیم اصلی همیشه همه را می‌بیند. «سهم خودش» یعنی سندهایی که طرف یا طراح آن همان تیم است؛ در اسناد طراحی، نقشه‌های تأییدشدهٔ همه هم دیده می‌شوند. این فقط دید «پروژه» است؛ فضای خود تیم جداست و دست نمی‌خورد.</p></div>';
     const m = fxModal('dvM', 'دید اسناد تیم‌های بیرونی', 'هر تیم بیرونی از هر نوع سند چه چیزی را در «اسناد» ببیند', paint(), true), B = m.querySelector('.fx-bd');
+    B.addEventListener('change', async e => { const c = e.target.closest('[data-dnk]'); if(!c) return; c.disabled = true;
+      try{ await docNewSet(c.dataset.dnk, c.dataset.dnt, c.checked); shrToast('ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); c.checked = !c.checked; } c.disabled = false; });
     B.addEventListener('click', async e => { const va = e.target.closest('[data-vago]'); if(va){ e.stopPropagation(); window.viewAsStart(va.dataset.vago); return; } const b = e.target.closest('[data-dvk]'); if(!b || b.classList.contains('on')) return; b.closest('.dv-seg').querySelectorAll('button').forEach(x => x.disabled = true);
       try{ await docVisSet(b.dataset.dvk, b.dataset.dvt, b.dataset.dvv); B.innerHTML = paint(); shrToast('ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); B.innerHTML = paint(); } }); };
   document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-critopen]')){ e.preventDefault(); e.stopPropagation(); window.rulesOpen('اسناد و هشدارها'); } }, true);
@@ -55438,11 +55452,13 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   /* سوییچ دو فضا در ستون کناری (فقط کاربر تیمی) */
   setInterval(() => { try{ const co = coScopeMe(), bar = document.getElementById('tabBar'); if(!bar) return; let sw = document.getElementById('coSpSw');
     /* عضو سازمان: «پروژه | سازمان من» (فضای سازمان در همهٔ پروژه‌ها) به‌جای «تیم ما» */
-    const OL = orgMine(); if(OL.length && !window.coSpaceCur()){ if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
+    /* ۴۸۶: عضو سازمانی که تیم بیرونی همین پروژه هم هست، «تیم ما» (فضای داخلی تیم در پروژه) را هم دارد؛ پیش‌تر «سازمان من» جای آن را می‌گرفت */
+    const OL = orgMine(); if(OL.length && !co && !window.coSpaceCur()){ if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
       const n = orgMyT.length, h = '<button type="button" class="on">پروژه</button><button type="button" data-orgopen="">سازمان من' + (n ? '<i class="co-swn">' + toFa(n) + '</i>' : '') + '</button>'; if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; } return; }
     if(!co){ if(sw) sw.remove(); return; } const cur = window.coSpaceCur() ? 'co' : 'pj';
     if(!sw){ sw = document.createElement('div'); sw.id = 'coSpSw'; sw.className = 'co-sw'; const nb = bar.querySelector('#navBrand'); (nb || bar.firstElementChild).after(sw); }
-    const h = '<button type="button" data-cosp="pj" class="' + (cur === 'pj' ? 'on' : '') + '">پروژه</button><button type="button" data-cosp="co" class="' + (cur === 'co' ? 'on' : '') + '">تیم ما</button>'; if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; }
+    const h = '<button type="button" data-cosp="pj" class="' + (cur === 'pj' ? 'on' : '') + '">پروژه</button><button type="button" data-cosp="co" class="' + (cur === 'co' ? 'on' : '') + '">تیم ما</button>'
+      + (OL.length ? '<button type="button" data-orgopen="">سازمان من' + (orgMyT.length ? '<i class="co-swn">' + toFa(orgMyT.length) + '</i>' : '') + '</button>' : ''); if(sw.__h !== h){ sw.innerHTML = h; sw.__h = h; }
     document.documentElement.classList.toggle('co-space', cur === 'co');
     /* ۴۶۳: نوار رنگی فضای فعلی بالای صفحه — اشتباهی در فضای دیگر ثبت نشود */
     let bn = document.getElementById('coSpBan'); const pg = document.querySelector('.page'); if(pg){ if(!bn){ bn = document.createElement('div'); bn.id = 'coSpBan'; pg.prepend(bn); }
@@ -73393,6 +73409,8 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   function admNewFormHtml(k){
     /* بدون اجازهٔ «ثبت مورد اداری تازه»، فرم خالی هم نمی‌آید */
     if(!can('write.adm')) return '';
+    /* تیم بیرونی فقط نوع‌هایی که قاعدهٔ «می‌تواند ثبت کند» اجازه می‌دهد */
+    if(window.docNewOk && !window.docNewOk(k)) return '';
     return '<div class="rv adm-k adm-'+k+' nf" data-new-kind="'+k+'" data-persist="1">'
       + newFormHead(k)
       + '<div class="nf-body">' + admEditHtml(k, {}, 'new') + addMoreBtn(k) + '</div></div>';
@@ -75867,7 +75885,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
         let vbb = document.getElementById('admViewBtn'); if(!vbb){ vbb = document.createElement('button'); vbb.type = 'button'; vbb.id = 'admViewBtn'; vbb.className = 'adm-tbtn'; vbb.setAttribute('aria-expanded', 'false');
           vbb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>نمایش</span>'; }
         if(vbb.parentNode !== F) F.appendChild(vbb); if(nb.parentNode === F && nb.previousElementSibling !== vbb) F.appendChild(nb);
-        const lb = nf ? String((nf.querySelector('.nf-toggle b') || {}).textContent || '').replace(/\?/g, '').trim() : ''; nb.hidden = !nf; const h = '<span>+</span>' + esc(lb || 'ثبت تازه'); if(nb.__h !== h){ nb.innerHTML = h; nb.__h = h; } } }catch(e){}
+        let ck = ''; try{ ck = admCat || ''; }catch(e){} const lb = nf ? String((nf.querySelector('.nf-toggle b') || {}).textContent || '').replace(/\?/g, '').trim() : ''; nb.hidden = !nf || !!(ck && window.docNewOk && !window.docNewOk(ck)); const h = '<span>+</span>' + esc(lb || 'ثبت تازه'); if(nb.__h !== h){ nb.innerHTML = h; nb.__h = h; } } }catch(e){}
     if(!base) return;
     let cat = ''; try{ cat = admCat || ''; }catch(e){} const B = base.filter(x => !cat || x.kind === cat);
     let M = bar.querySelector(':scope > .aq-main'); if(!M){ bar.innerHTML = '<div class="aq-main"></div><div class="aq-side"></div>'; M = bar.firstChild; }
@@ -100082,7 +100100,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     let ext = false; try{ ext = !!(window.ibIsExt && window.ibIsExt()); }catch(e){}
     if(ext) [['letter', 'نامه', 'نامهٔ رسمی به تیم پروژه', 'doc'], ['statement', 'صورت وضعیت', 'ارسال صورت وضعیت برای بررسی', 'doc'], ['design', 'ارسال نقشه و مدرک طراحی', 'ترانسمیتال با کدینگ پروژه، برای بررسی و تأیید', 'doc']].reverse().forEach(([k, t, sd, ic]) =>
       L.unshift({g: 'ارسال به تیم پروژه', k: 'ib-' + k, t, s: sd, ic, c: 'hc-sky', run: () => window.ibNewOf(k)}));
-    if(!ext && tabOk('admin') && hmCan('write.adm')) HM_KINDS.forEach(x =>
+    if(tabOk('admin') && hmCan('write.adm')) HM_KINDS.forEach(x => (!ext || (window.docNewOk && window.docNewOk(x.k))) &&
       L.push({g:'اسناد دفتر فنی', k:'doc-' + x.k, t:x.t, s:'', ic:x.ic, c:'hc-vio', small:true, run: () => homeNewDoc(x.k)}));
     let addT = false; try{ addT = tabOk('tasks') && canAddTask(); }catch(e){}
     if(addT) L.push({g:'فعالیت', k:'task', t:'فعالیت اجرایی تازه', s:'ابلاغ کار به مسئول، با موعد', ic:'task', c:'hc-ind', run: () => homeNewTask()});

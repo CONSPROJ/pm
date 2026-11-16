@@ -983,12 +983,15 @@ function tkPushPlan(){ compute(); const C = S.calc, out = [];
 function tkPeople(a){ const map = n => { const k = S.dir.get(n); if(k === 'p' || k === 'q' || k === 'c') return n; if(k === 't'){ const T = (S.teams || []).find(x => x.label === n); return T && T.head ? T.head : ''; } return ''; };
   const pick = L => Array.from(new Set(L.map(map).filter(Boolean)));
   const o = pick(owOf(a)); return (o.length ? o : pick(rsOf(a).map(r => r.n))).slice(0, 2); }
+/* ۴۸۵: دستهٔ فعالیت در لیست فعالیت‌ها: «اجرایی» فقط وقتی پیمانکار مسئول یا منبع آن است؛ بقیه (طراحی، مطالعه، مدیریت…) «ابلاغی» به فرد */
+const TK_GEN = 'فعالیت عمومی';
+const tkSide = a => owOf(a).concat(rsOf(a).map(r => r.n)).some(n => S.dir.get(n) === 'c') ? '' : TK_GEN;
 /* فعالیت پایهٔ برنامه که مسئول یا منبعِ فرد دارد ولی در فهرست فعالیت‌ها نیست */
 function tkMissing(){ const C = S.calc; return S.acts.filter(a => !a.tk && !C.isSum(a) && !a.ms && tkPeople(a).length && (+a.pc || 0) < 100); }
 async function tkCreate(list){ const C = S.calc; let ok = 0, bad = 0, err = '';
   for(const a of list){ const r = C.R.get(a.id); if(!r) continue; const ppl = tkPeople(a), par = actById(a.p);
     /* ۴۸۳: «تاریخ ابلاغ» = روزی که فعالیت واقعاً ابلاغ می‌شود (امروز)، نه شروع برنامه‌ریزی‌شده؛ شروع برنامه روی کارت فعالیت از پیوند برنامه دیده می‌شود */
-    const body = {title: String(a.n || '').slice(0, 200), start_date: d2fa(todayD()), due_date: d2fa(wDay(Math.max(r.es, r.ef - 1))), owner1: ppl[0] || '', owner2: ppl[1] || '', created_by: S.me || '', approved: true, category: par ? String(par.n || '').slice(0, 60) : ''};
+    const body = {title: String(a.n || '').slice(0, 200), start_date: d2fa(todayD()), due_date: d2fa(wDay(Math.max(r.es, r.ef - 1))), owner1: ppl[0] || '', owner2: ppl[1] || '', created_by: S.me || '', approved: true, side: tkSide(a), category: par ? String(par.n || '').slice(0, 60) : ''};
     try{ let R = null; try{ R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); }
       catch(e){ if(/category/.test(e.message || '')){ delete body.category; R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); } else throw e; }
       const id = R && R[0] && R[0].id; if(id != null){ a.tk = String(id); a.ta = 1; queueSave(a.id); if(S.tasks) S.tasks.push(R[0]); ok++; } else bad++; }
@@ -1009,6 +1012,8 @@ async function tkAutoSync(force){ if(S.ro || tkBusy || S.cfg.tkAuto === 0) retur
       const ps = toEn(d2fa(wDay(r.es))), cur = toEn(String(t.start_date)); if(cur !== ps || ps === toEn(d2fa(todayD()))) return;
       let nd = d2fa(todayD()); try{ if(t.created_at){ const g = new Date(t.created_at); if(!isNaN(g)){ const j = g2j(g.getFullYear(), g.getMonth() + 1, g.getDate()); nd = toFa(j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0')); } } }catch(e){}
       if(toEn(nd) !== cur) fix.push({t, ch: {start_date: nd}, a}); });
+    /* دستهٔ فعالیت‌های ساختهٔ برنامه با ماهیتشان یکی شود */
+    S.acts.forEach(a => { if(!a.ta || !a.tk || S.calc.isSum(a)) return; const t = tkById(a.tk); if(!t || !('side' in t)) return; const sd = tkSide(a); if(String(t.side || '') !== sd && !fix.some(x => x.t === t)) fix.push({t, ch: {side: sd}, a}); else { const f = fix.find(x => x.t === t); if(f && String(t.side || '') !== sd) f.ch.side = sd; } });
     if(fix.length){ const R = await tkSendPlan(fix); upd += R.ok; }
     const P = tkPushPlan().filter(x => x.a.ta); if(P.length){ const R = await tkSendPlan(P); upd += R.ok; }
     if(made || linked){ await flush0(); }
