@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116063902">
+<meta name="pm-build" content="20261116065140">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30780,6 +30780,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 .nt2-sdh{cursor:pointer;list-style:none;margin:0!important} .nt2-sdh::-webkit-details-marker{display:none} .nt2-ch{font-style:normal;margin-inline-start:auto;color:var(--muted);transition:transform .15s} details[open] > .nt2-sdh .nt2-ch{transform:rotate(-90deg)} details.nt2-sd[open] > .nt2-rl{margin-top:8px}
 .nt2-all{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--sky,#2a6fa0);padding:3px 9px;border-radius:8px;border:1px solid var(--line,#e3e7ed)} .nt2-all.on{color:var(--muted)} .nt2-all:hover{background:var(--sky-soft,#eaf3fa)}
 .nt2-sd .pc-chip[hidden],.nt2-sd[hidden]{display:none!important}
+.dv-sc{overflow-x:auto;border:1px solid var(--line,#e3e7ed);border-radius:14px} .dv-t{width:100%;border-collapse:collapse;font-size:12.5px} .dv-t th,.dv-t td{padding:9px 10px;border-bottom:1px solid var(--line,#e3e7ed);text-align:center;vertical-align:middle}
+.dv-t thead th{background:var(--field,#f3f5f8)} .dv-t thead th b{display:block;font-size:12.5px} .dv-t thead th small{display:block;font-size:10.5px;color:var(--muted);font-weight:500} .dv-t tbody th{text-align:right;font-weight:800;white-space:nowrap} .dv-t tbody tr:last-child > *{border-bottom:0}
+.dv-va{all:unset;cursor:pointer;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--sky,#2a6fa0);padding:2px 8px;border-radius:7px;border:1px solid var(--line,#e3e7ed)} .dv-va:hover{background:var(--sky-soft,#eaf3fa)}
+.dv-seg{display:inline-flex;gap:2px;padding:2px;border-radius:9px;background:var(--field,#f3f5f8)} .dv-seg button{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:5px 8px;border-radius:7px;color:var(--muted);white-space:nowrap}
+.dv-seg button.on{background:var(--surface,#fff);box-shadow:0 1px 3px rgba(0,0,0,.1);color:var(--ink)} .dv-seg button.on.all{color:var(--ok,#2f8a5b)} .dv-seg button.on.none{color:var(--alert,#c0392b)} .dv-n{font-size:11.5px;color:var(--muted);line-height:1.9;margin:10px 2px 0}
+#dvM .fx-m{width:min(900px,96vw)!important;max-width:min(900px,96vw)!important}
 .sla{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px} .sla-g{border:1px solid var(--line,#e3e7ed);border-radius:12px;padding:10px 12px} .sla-g > b{display:block;font-size:12.5px;margin-bottom:8px}
 .sla-h,.sla-r{display:grid;grid-template-columns:minmax(0,1fr) 110px 110px;gap:8px;align-items:center} .sla-h{font-size:10.5px;font-weight:800;color:var(--muted);padding-bottom:4px} .sla-r{padding:4px 0;border-top:1px solid var(--line,#e3e7ed)} .sla-r > span:first-child{font-size:12.5px}
 .sla .rl-v input{width:56px} .sla .rl-v.ch input{border-color:var(--sky,#2a6fa0)}
@@ -45095,13 +45101,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   /* ماتریس سمت × اجازه (مثل سامانه‌های بزرگ): ستون‌ها سمت‌های یک طرف، ردیف‌ها اجازه‌ها؛ کلیک = روشن/خاموش برای آن سمت */
   function permRoleMatrixHtml(capOk, colT){
-    const side = pcState.mxs || 'pm', L = ogPositions().filter(x => (x.side || 'pm') === side).sort((a, b) => ogOrd(a) - ogOrd(b));
-    const sides = OG_SIDES.filter(([k]) => ogPositions().some(x => (x.side || 'pm') === k));
+    /* ۴۵۶: «تیم طراحی» زبانهٔ جدا: سمت‌های تیم اصلی با بخش «طراحی» یا نام طراح/BIM؛ از زبانهٔ تیم مدیریت برداشته می‌شوند (بی‌تکرار) */
+    const isDes = x => (x.side || 'pm') === 'pm' && (x.dept === 'طراحی' || /طراح|BIM/.test(x.n || ''));
+    const sideOf = x => isDes(x) ? 'des' : (x.side || 'pm');
+    const SIDES = [OG_SIDES[0], ['des', 'تیم طراحی']].concat(OG_SIDES.slice(1));
+    const side = pcState.mxs || 'pm', L = ogPositions().filter(x => sideOf(x) === side).sort((a, b) => ogOrd(a) - ogOrd(b));
+    const sides = SIDES.filter(([k]) => ogPositions().some(x => sideOf(x) === k));
     const caps = PERM_CAPS.filter(capOk).map(c => colT && c.ng ? Object.assign({}, c, {g: c.ng}) : c).sort((a, b) => colT ? NT_ORD.indexOf(a.ng || '') - NT_ORD.indexOf(b.ng || '') : 0);
     const inh = (x, k) => { if(!ogInhOn(x)) return ''; const R = permRolesOf(k); return ogDescOf(x.n).find(d => R.indexOf(d) !== -1) || ''; };
     const head = '<tr><th class="mx-c">' + (colT || 'اجازه') + '</th>' + L.map(x => { const H = window.ogHoldersOf(x.n); return '<th title="' + esc(x.n + (H.length ? ' — ' + H.join('، ') : ' — هنوز کسی این سمت را ندارد')) + '"' + (H.length ? '' : ' class="mx-emp"') + '><span>' + esc(x.n) + '</span>' + (H.length ? '<i class="mx-hd">' + H.slice(0, 3).map(n => avatarHtml(n, 'xs', true)).join('') + (H.length > 3 ? '<b>+' + toFa(H.length - 3) + '</b>' : '') + '</i>' : '') + '</th>'; }).join('') + '</tr>';
     const rows = pcGroups(caps).map(g => '<tr class="mx-g"><td colspan="' + (L.length + 1) + '">' + esc(g.g) + '</td></tr>'
-      + g.items.map(c => { const R = permRolesOf(c.k), bs = permIsBase(c.k); return '<tr' + (bs ? ' class="mx-bs"' : '') + '><td class="mx-c"><b>' + esc(c.t) + '</b>' + (bs ? '<em>پایه: از سطح</em>' : '') + '</td>' + L.map(x => { const on = R.indexOf(x.n) !== -1, ih = on ? '' : inh(x, c.k);
+      + g.items.map(c => { const R = permRolesOf(c.k), bs = !colT && permIsBase(c.k); return '<tr' + (bs ? ' class="mx-bs"' : '') + '><td class="mx-c"><b>' + esc(c.t) + '</b>' + (bs ? '<em>پایه: از سطح</em>' : '') + '</td>' + L.map(x => { const on = R.indexOf(x.n) !== -1, ih = on ? '' : inh(x, c.k);
           return '<td><button type="button" class="mx-b' + (on ? ' on' : ih ? ' ih' : '') + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(x.n) + '" title="' + esc(x.n + ' — ' + c.t + (ih ? ' (از ' + ih + ')' : '')) + '" aria-pressed="' + on + '"></button></td>'; }).join('') + '</tr>'; }).join('')).join('');
     return '<div class="mx-sides">' + sides.map(([k, t]) => '<button type="button" class="' + (k === side ? 'on' : '') + '" data-mxs="' + k + '">' + esc(t) + '</button>').join('') + '</div>'
       + (L.length ? '<div class="mx-w"><table class="mx-t"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div><p class="mx-lg"><i class="on"></i> مستقیم <i class="ih"></i> از زیرمجموعه <i></i> ندارد</p>' : '<div class="pc-none">این طرف سمتی ندارد.</div>');
@@ -52373,7 +52383,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     {k:'ov',   t:'نمای کلی',          d:'سلامت سامانه، بررسی امنیت و رویدادهای اخیر', ic:'<path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 4v4h6V4z"/>'},
     {k:'acc',  t:'دسترسی‌های پروژه',   d:'همهٔ لایه‌های دسترسی همین پروژه در یک‌جا', ic:'<rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.6"/>'},
     {k:'ppl',  t:'افراد',              d:'کاربران، دعوت‌ها، پرونده‌ها و پیام گروهی', ks:['inv','users','ct','rpt','bc'], ic:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>'},
-    {k:'prj',  t:'پروژه و قوانین',     d:'اطلاعات و مرحلهٔ پروژه، بخش‌های فعال، قوانین و مهلت‌ها، زنجیرهٔ تأیید', ks:['pj','mods','rules','dc','drv','pct','chain','up'], ic:'<path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/>'},
+    {k:'prj',  t:'پروژه و قوانین',     d:'اطلاعات و مرحلهٔ پروژه، بخش‌های فعال، قوانین و مهلت‌ها، زنجیرهٔ تأیید', ks:['pj','mods','rules','dc','dv','drv','pct','chain','up'], ic:'<path d="M4 20V8l8-4 8 4v12"/><path d="M9 20v-6h6v6"/>'},
     {k:'data', t:'داده',               d:'تطبیق نام‌ها، محل و طبقه، تخصص‌ها و ویرایشگر پایگاه داده', ks:['data','db'], ic:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'},
     {k:'sec',  t:'امنیت و نگهداری',    d:'پشتیبان، ورودها، گزارش کار، حالت نگهداری و نسخه‌های سایت', ks:['sec','log','maint','ver'], ic:'<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>'}];
   const AC_EXTRA = {
@@ -54738,7 +54748,14 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return coMembers(co).some(u => { const x = coNk(u); return x && (a.indexOf(x) !== -1 || x.indexOf(a) !== -1); }); }
   window.coMatch = coMatch;
   /* یک سند برای کاربر تیمی دیده شود؟ */
+  /* ۴۵۵: دید اسناد تیم‌های بیرونی (ماتریس «دید اسناد»): برای هر نوع سند و نوع تیم — all همه، own سهم خودش، none هیچ.
+     قانون پروژه docVis.<نوع سند>.<نوع تیم>؛ پیش‌فرض own (رفتار قبلی). همین قاعده روی سرور: doc_visibility.sql */
+  const DV_KINDS = [['statement', 'صورت وضعیت'], ['contract', 'قرارداد'], ['letter', 'نامه'], ['minute', 'صورتجلسه'], ['design', 'اسناد طراحی']];
+  const DV_TYPES = [['cons', 'طراح و مشاور'], ['emp', 'کارفرما'], ['ctr', 'پیمانکار'], ['own', 'مالک']];
+  function docVisOf(kind, co){ let v = ''; try{ v = window.pmRule ? window.pmRule('docVis.' + kind + '.' + coTypeOf(co), '') : ''; }catch(e){} return v === 'all' || v === 'none' ? v : 'own'; }
+  window.docVisOf = docVisOf;
   function coRowOk(kind, r, co){ if(!co) return true; if(!r) return false;
+    if(DV_KINDS.some(x => x[0] === kind)){ const dv = docVisOf(kind, co); if(dv === 'all') return true; if(dv === 'none') return false; }
     let me = ''; try{ me = activeUserName(); }catch(e){}
     if(kind === 'statement') return coMatch(pick(r, AD.sParty), co);
     if(kind === 'contract') return coMatch(pick(r, AD.cParty), co);
@@ -54757,6 +54774,19 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   window.coDraftSet = async (t, on) => { const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); cur['coDraft.' + t] = on ? '1' : '0';
     await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ Object.assign(window.__pmRules, cur); localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} };
   window.CO_DRAFT_DEF = CO_DRAFT_DEF;
+  async function docVisSet(kind, t, v){ const L = await fxList('قوانین سامانه', true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); const k = 'docVis.' + kind + '.' + t;
+    if(v === 'own') delete cur[k]; else cur[k] = v; await fxPut('قوانین سامانه', 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); try{ if(v === 'own') delete window.__pmRules[k]; else window.__pmRules[k] = v; localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(e){} }
+  window.dvOpen = function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){} if(!adm) return;
+    const DV_S = [['all', 'همه'], ['own', 'سهم خودش'], ['none', 'نمی‌بیند']];
+    const mem = t => { const out = []; try{ const A = window.listNamesAll ? window.listNamesAll() : []; extParty.forEach((co, u) => { if(coTypeOf(co) === t) out.push({u: A.find(a => nameKey(a) === u) || u, co}); }); }catch(e){} return out; };
+    const paint = () => '<div class="dv"><div class="dv-sc"><table class="dv-t"><thead><tr><th>سند</th>' + DV_TYPES.map(([t, n]) => { const M = mem(t); return '<th><b>' + n + '</b><small>' + (M.length ? toFa(M.length) + ' نفر' : 'کسی وصل نیست') + '</small>' + (M.length ? '<button type="button" class="dv-va" data-vago="' + esc(M[0].u) + '" title="صفحه را همان‌طور که ' + esc(M[0].u) + ' (' + esc(M[0].co) + ') می‌بیند ببینید">دیدن به‌جای او</button>' : '') + '</th>'; }).join('') + '</tr></thead><tbody>'
+      + DV_KINDS.map(([k, n]) => '<tr><th>' + n + '</th>' + DV_TYPES.map(([t]) => { let v = ''; try{ v = window.pmRule('docVis.' + k + '.' + t, ''); }catch(e){} v = v === 'all' || v === 'none' ? v : 'own';
+        return '<td><span class="dv-seg">' + DV_S.map(([sv, sn]) => '<button type="button" class="' + (sv === v ? 'on ' + sv : '') + '" data-dvk="' + k + '" data-dvt="' + t + '" data-dvv="' + sv + '">' + sn + '</button>').join('') + '</span></td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>'
+      + '<p class="dv-n">تیم اصلی همیشه همه را می‌بیند. «سهم خودش» یعنی سندهایی که طرف یا طراح آن همان تیم است؛ در اسناد طراحی، نقشه‌های تأییدشدهٔ همه هم دیده می‌شوند. این فقط دید «پروژه» است؛ فضای خود تیم جداست و دست نمی‌خورد.</p></div>';
+    const m = fxModal('dvM', 'دید اسناد تیم‌های بیرونی', 'هر تیم بیرونی از هر نوع سند چه چیزی را در «اسناد» ببیند', paint(), true), B = m.querySelector('.fx-bd');
+    B.addEventListener('click', async e => { const va = e.target.closest('[data-vago]'); if(va){ e.stopPropagation(); window.viewAsStart(va.dataset.vago); return; } const b = e.target.closest('[data-dvk]'); if(!b || b.classList.contains('on')) return; b.closest('.dv-seg').querySelectorAll('button').forEach(x => x.disabled = true);
+      try{ await docVisSet(b.dataset.dvk, b.dataset.dvt, b.dataset.dvv); B.innerHTML = paint(); shrToast('ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); B.innerHTML = paint(); } }); };
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('[data-dvopen]')){ e.preventDefault(); e.stopPropagation(); window.dvOpen(); } }, true);
   window.CO_OK_RE = CO_OK;
   /* اجازه‌های هر نوع تیم: تنظیم ادمین (قانون coCaps.نوع = فهرست کلیدها)، وگرنه پیش‌فرض محدود */
   const CO_TYPES = [['cons', 'طراحان و مشاوران'], ['emp', 'کارفرما'], ['ctr', 'پیمانکاران'], ['own', 'مالک و سرمایه‌گذار']];
@@ -100590,6 +100620,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
              add('adm', 'mods', 'بخش‌های فعال پروژه', 'خاموش کردن بخش‌های بی‌استفاده برای همه', HM_I.doc, 'hc-amb', null, false, 'data-modbtn="1"');
              add('adm', 'maint', 'حالت نگهداری', 'سایت برای همه فقط‌خواندنی (روز انتقال یا تعمیرات)', ST2_I.ref, 'hc-amb', null, false, 'data-maintbtn="1"');
              add('adm', 'dc', 'کدینگ اسناد', 'کد یکتای اسناد و نام فایل‌ها: پروژه، مرحله، تراز، دیسیپلین، نوع، شیت، ویرایش', HM_I.doc, 'hc-sky', null, false, 'data-dcopen="1"');
+             add('adm', 'dv', 'دید اسناد تیم‌های بیرونی', 'طراح، مشاور، کارفرما، پیمانکار و مالک از هر نوع سند چه ببینند', HM_I.doc, 'hc-sky', null, false, 'data-dvopen="1"');
              add('adm', 'drv', 'گردش تأیید نقشه‌ها', 'تأییدکنندهٔ نقشه‌های هر رشته و اینکه تأیید نهایی با تیم اصلی است یا کارفرما', HM_I.doc, 'hc-sky', null, false, 'data-drvopen="1"');
              add('adm', 'pct', 'درصدهای پیشرفت (WBS)', 'وزن هر مرحله در صورت وضعیت، قرارداد و اسناد طراحی؛ مرحله‌های بی‌استفاده در این پروژه', HM_I.doc, 'hc-sky', null, false, 'data-pctopen="1"');
              add('adm', 'rules', 'قوانین و مهلت‌ها', 'هر قاعدهٔ ثابت سامانه: مهلت‌ها، روزهای هشدار، ساعت گزارش', HM_I.clock || HM_I.doc, 'hc-vio', null, false, 'data-rulesbtn="1"'); }
