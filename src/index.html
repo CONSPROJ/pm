@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116053316">
+<meta name="pm-build" content="20261116054124">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30716,7 +30716,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 #dcM .dc-live code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;font-weight:700;color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa);padding:6px 10px;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
 #dcM .dc-p{display:none} #dcM .dc-set[data-pane="std"] .dc-p[data-dcp="std"], #dcM .dc-set[data-pane="use"] .dc-p[data-dcp="use"], #dcM .dc-set[data-pane="pat"] .dc-p[data-dcp="pat"], #dcM .dc-set[data-pane="tab"] .dc-p[data-dcp="tab"], #dcM .dc-set[data-pane="prj"] .dc-p[data-dcp="prj"]{display:block}
 #dcM .dc-lvlb{display:none} #dcM .dc-set[data-pane="tab"] .dc-lvlb{display:inline-flex}
-#dcM .dc-foot{position:sticky;bottom:-16px;z-index:3;align-items:center;padding:12px 0;margin-bottom:-12px;background:var(--surface,#fff);border-top:1px solid var(--line,#e3e7ed)} #dcM .dc-foot small{margin-inline-start:auto;font-size:11px;color:var(--muted)}
+#dcM .dc-foot{position:sticky;bottom:-16px;z-index:3;align-items:center;padding:12px 0;margin-bottom:-12px;background:var(--surface,#fff);border-top:1px solid var(--line,#e3e7ed)} #dcM .dc-foot .dc-drvl{margin-inline-start:auto;font-size:12px;font-weight:700;border:0;background:none;color:var(--sky,#2a6fa0);cursor:pointer;padding:6px 4px} #drvM{z-index:90!important}
+#dcM .dc-tpsw{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin:0 0 12px} #dcM .dc-tpsw button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:12px;border:1px solid var(--line,#e3e7ed)}
+#dcM .dc-tpsw button b{font-size:13px} #dcM .dc-tpsw button small{font-size:11px;color:var(--muted)} #dcM .dc-tpsw button.on{border-color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa);box-shadow:inset 0 0 0 1px var(--sky,#2a6fa0)} #dcM .dc-tbs[hidden]{display:none!important}
 #dcM .dc-p[data-dcp="use"] .dc-use{display:flex;flex-direction:column;gap:0;border:1px solid var(--line,#e3e7ed);border-radius:12px;overflow:hidden}
 #dcM .dc-p[data-dcp="use"] .dc-ur{display:grid;grid-template-columns:200px 240px minmax(0,1fr);gap:12px;align-items:center;border:0;border-radius:0;border-bottom:1px solid var(--line,#e3e7ed);padding:8px 14px;background:transparent}
 #dcM .dc-p[data-dcp="use"] .dc-ur:last-child{border-bottom:0} #dcM .dc-p[data-dcp="use"] .dc-ur > *{grid-row:1!important;grid-column:auto!important;margin:0!important} #dcM .dc-p[data-dcp="use"] .dc-ur select{height:36px;min-height:36px} #dcM .dc-p[data-dcp="use"] .dc-ur code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -68746,7 +68748,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       if(c.pat && c.pat.design && c.pat.design.indexOf('{L}') === -1 && /\{SH\}/.test(c.pat.design)) r.pat.design = c.pat.design.replace('{SH}', '{SH}' + r.sep + '{L}'); }
     /* ۴۰۸: کاربرد کدینگ در هر بخش سایت (مدیریت سامانه ← کدینگ اسناد): main = استاندارد پایه، iso/isatis = الگوی همان استاندارد، off = بدون کد */
     const U = r.use || {}; Object.keys(U).forEach(k => { const u = U[k]; if(u === 'off'){ r.pat[k] = ''; if(k === 'design') r.tail = ''; } else if(u && u !== 'main' && DC_PRESETS[u]){ r.pat[k] = DC_PRESETS[u].pat[k] || r.pat[k]; if(k === 'design') r.tail = DC_PRESETS[u].tail || ''; } });
+    /* ۴۳۵: هر استاندارد جدول کدهای خودش را دارد (T)؛ فرم‌ها و کدها از جدول همان استانداردی می‌خوانند که «اسناد طراحی» به کار می‌برد (tp) */
+    r.T = {}; Object.keys(DC_PRESETS).forEach(pk => { r.T[pk] = pk === r.preset ? r.t : dcTablesFor(pk, (c.tx || {})[pk]); });
+    const ud = U.design; r.tp = ud && ud !== 'main' && ud !== 'off' && DC_PRESETS[ud] ? ud : r.preset; r.t = r.T[r.tp];
     return r; }
+  function dcTablesFor(pk, saved){ const d = (DC_PRESETS[pk] || {}).t || {}, o = Object.assign({}, d); if(!saved) return o;
+    if(pk === 'isatis'){ Object.keys(saved).forEach(k => { o[k] = k === 'sh' ? dcShUnion(d.sh, saved.sh) : (Array.isArray(d[k]) ? dcUnion(d[k], saved[k]) : saved[k]); }); return o; }
+    return Object.assign(o, saved); }
+  /* فقط تفاوت با جدول پیش‌فرض همان استاندارد ذخیره می‌شود (ISATIS)، تا ردیف ذخیره از سقف سرور بزرگ‌تر نشود */
+  function dcSlimT(pk, t){ const d = (DC_PRESETS[pk] || {}).t; if(!d || pk !== 'isatis' || !t) return t; const o = Object.assign({}, t);
+    ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o[k])) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o[k] = o[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o[k].length) delete o[k]; });
+    if(typeof o.sh === 'string'){ const D = new Set(String(d.sh || '').split('\n').map(l => l.trim())); o.sh = o.sh.split('\n').map(l => l.trim()).filter(l => l && !D.has(l)).join('\n'); if(!o.sh) delete o.sh; } return o; }
   function dcCfg0(){
     const c = window.__dcCfg || {}, d = DC_PRESETS[c.preset] || DC_PRESETS.iso;
     return {preset: DC_PRESETS[c.preset] ? c.preset : 'iso', prj: c.prj || dcPrjAuto(), org: c.org || '', sep: c.sep || d.sep, na: c.na != null && c.na !== '' ? c.na : d.na, multi: c.multi || d.multi, multiDsc: c.multiDsc || d.multiDsc,
@@ -68784,7 +68796,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     pat.split(c.sep).filter(Boolean).forEach(seg => { const ks = Array.from(seg.matchAll(/\{([A-Z]+)\}/g)).map(m => m[1]); const k = ks[0] || ''; const v = dcBuild(kind, V, null, seg); const ISO_POS = ['پروژه', 'پدیدآورنده', 'حجم / زون', 'تراز', 'نوع اطلاعات', 'نقش', 'شماره']; L.push({k, t: ks.length ? ks.map(x => DC_TOK[x] || x).join(' · ') : (c.preset === 'iso' && ISO_POS[L.length] ? ISO_POS[L.length] : 'ثابت'), v, tail: kind === 'design' && c.tail && c.tail.indexOf(seg) !== -1}); }); return L; };
   /* زون‌ها: جدول تنظیم‌شده + ساختمان‌ها/بلوک‌های پروژه (کد بلوک = کد زون)، بی‌تکرار */
   window.dcTabLb = k => { try{ return dcTab(k).map(x => x[1]); }catch(e){ return []; } };
-  const dcTab = k => { const L = (dcCfg().t[k] || []); if(k !== 'zn') return L; if(dcCfg().preset === 'isatis'){ let B0 = []; try{ B0 = window.pjBlocks ? window.pjBlocks() : []; }catch(e){} return B0.length ? B0.map(b => [String(b.c).toUpperCase(), b.n || b.c]) : L; } let B = []; try{ B = window.pjBlocks ? window.pjBlocks() : []; }catch(e){} if(!B.length) return L;
+  const dcTab = k => { const L = (dcCfg().t[k] || []); if(k !== 'zn') return L; if((dcCfg().tp || dcCfg().preset) === 'isatis'){ let B0 = []; try{ B0 = window.pjBlocks ? window.pjBlocks() : []; }catch(e){} return B0.length ? B0.map(b => [String(b.c).toUpperCase(), b.n || b.c]) : L; } let B = []; try{ B = window.pjBlocks ? window.pjBlocks() : []; }catch(e){} if(!B.length) return L;
     const have = new Set(L.map(x => String(x[0]).toUpperCase())); return L.concat(B.filter(b => !have.has(String(b.c).toUpperCase())).map(b => [String(b.c).toUpperCase(), b.n || b.c])); };
   /* کد هر عنوان فارسی (دیسیپلین، نوع، وضعیت…) */
   function dcCodeOf(tk, label){ const L = dcTab(tk), s = String(label || '').trim(); if(!s) return ''; const hit = L.find(x => x[1] === s || x[0] === s.toUpperCase() || String(x[1]).split(' — ').some(q => q.trim() === s)) || L.find(x => s && (x[1].indexOf(s) === 0 || s.indexOf(x[1]) === 0)); return hit ? hit[0] : (/^[A-Za-z0-9]+$/.test(s) ? s.toUpperCase() : ''); }
@@ -68975,12 +68987,18 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const dcTxt = L => (L || []).map(x => x[0] + ' = ' + x[1]).join('\n');
   const dcParse = s => String(s || '').split('\n').map(l => { const i = l.indexOf('='); if(i < 1) return null; const k = dcSan(l.slice(0, i)), v = l.slice(i + 1).trim(); return k && v ? [k, v] : null; }).filter(Boolean);
   const DC_EX = {design: {ORG: 'ISA', STG: '4', Z: 'ZZ', LVL: '03', DSC: 'S', TYP: 'DR', SH: '0100', SUIT: 'S3', REV: 1}, contract: {NO: '1403/12'}, statement: {NO: '1403.12.4', CNO: '1403/12', REV: 0}, letter: {NO: '1250'}, minute: {NO: '18', DATE: '050822'}, trn: {NO: '31'}, sub: {DSC: 'A', NO: '12', REV: 0}, rfi: {DSC: 'M', NO: '7'}};
-  let dcPane = 'std';
+  let dcPane = 'std', dcTpShow = '';
   window.dcgOpen = function(){
     let adm = false; try{ adm = isAdminUser(); }catch(e){}
     const ro = adm ? '' : ' readonly', dis = adm ? '' : ' disabled';
     const paint = c => {
-      const tb = (k, lb, hint) => '<label class="dc-tb"><b>' + lb + '</b><small>' + hint + '</small><textarea data-dct="' + k + '" data-latin="1" rows="6" dir="auto"' + ro + '>' + esc(k === 'sh' ? (c.t.sh || '') : dcTxt(c.t[k])) + '</textarea></label>';
+      const TT = c.T || {[c.preset]: c.t};
+      const tbP = pk => { const T = TT[pk] || {}, at = pk === c.preset ? 'data-dct="' : 'data-dctx="' + pk + ':';
+        return (k, lb, hint) => '<label class="dc-tb"><b>' + lb + '</b><small>' + hint + '</small><textarea ' + at + k + '" data-latin="1" rows="6" dir="auto"' + ro + '>' + esc(k === 'sh' ? (T.sh || '') : dcTxt(T[k])) + '</textarea></label>'; };
+      const tbs = pk => { const tb = tbP(pk), iso = pk === 'iso'; return tb('typ', 'نوع اطلاعات', iso ? 'ISO: DR نقشه، M3 مدل، SP مشخصات…' : 'کد نوع سند یا نقشه') + tb('dsc', 'نقش / دیسیپلین', iso ? 'ISO: A معماری، S سازه، M مکانیک، E برق…' : 'کد رشته') + tb('suit', 'وضعیت (Suitability)', 'عنوان = وضعیت سند در سامانه')
+        + tb('org', 'پدیدآورنده‌ها', 'کد = نام شرکت یا تیم طراح (همان نام «طراح» در فرم)') + tb('zn', 'حجم / زون / بلوک', 'ZZ = همه') + tb('lvl', 'تراز', 'خالی = خودکار از طبقات پروژه')
+        + tb('stg', 'مرحله', 'RIBA یا فازهای رایج ایران (فاز ۰، ۱، ۲) — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>') + tb('sh', 'فهرست شیت‌ها (اختیاری)', 'هر خط: <code>A 0100 = عنوان</code>'); };
+      const tpNow = c.tp || c.preset, tpShow = dcTpShow && TT[dcTpShow] ? dcTpShow : tpNow;
       const NAV = [['std', 'استاندارد و پایه'], ['use', 'کاربرد در بخش‌ها'], ['pat', 'قالب کدها'], ['tab', 'جدول کدها'], ['prj', 'مراحل و بلوک‌ها']];
       return '<div class="dc-set"><div class="dc-top"><nav class="dc-nav" role="tablist">' + NAV.map(x => '<button type="button" role="tab" data-dcnav="' + x[0] + '"' + (x[0] === dcPane ? ' class="on" aria-selected="true"' : '') + '>' + x[1] + '</button>').join('') + '</nav>'
       + '<div class="dc-live"><small>نمونهٔ کد نقشه</small><code dir="ltr" data-dcex="design">' + esc(dcFull('design', DC_EX.design)) + '</code></div></div>'
@@ -69018,28 +69036,29 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<section class="dc-p" data-dcp="pat"><h4>قالب کد هر نوع سند</h4><p class="dc-tk">' + Object.keys(DC_TOK).map(k => '<code>{' + k + '}</code> ' + esc(DC_TOK[k])).join(' · ') + '</p>'
       + DC_KINDS.map(([k, t]) => '<div class="dc-pr"><b>' + t + '</b><input type="text" dir="ltr" data-dcpat="' + k + '" value="' + esc(c.pat[k] || '') + '"' + ro + '><code class="dc-ex" data-dcex="' + k + '" dir="ltr">' + esc(dcFull(k, DC_EX[k] || {})) + '</code></div>').join('')
       + '<div class="dc-pr"><b>وضعیت و ویرایش (کنار شناسه)</b><input type="text" dir="ltr" data-dcc="tail" value="' + esc(c.tail || '') + '" placeholder="خالی = ندارد"' + ro + '><code class="dc-ex" dir="ltr">' + esc(c.tail ? dcBuild('design', DC_EX.design, null, c.tail) : '—') + '</code></div></section>'
-      + '<section class="dc-p" data-dcp="tab"><h4>جدول کدها</h4><p class="dc-tk">هر خط: <code>کد = عنوان</code>. عنوان‌ها همان گزینه‌های فرم‌اند (نوع سند، رشته، وضعیت، طراح) و با انتخاب هرکدام کد همان بخش عوض می‌شود. چند عنوان می‌توانند یک کد داشته باشند.</p><div class="dc-tbs">'
-      + tb('typ', 'نوع اطلاعات', 'ISO: DR نقشه، M3 مدل، SP مشخصات…') + tb('dsc', 'نقش / دیسیپلین', 'ISO: A معماری، S سازه، M مکانیک، E برق…') + tb('suit', 'وضعیت (Suitability)', 'عنوان = وضعیت سند در سامانه')
-      + tb('org', 'پدیدآورنده‌ها', 'کد = نام شرکت یا تیم طراح (همان نام «طراح» در فرم)') + tb('zn', 'حجم / زون / بلوک', 'ZZ = همه') + tb('lvl', 'تراز', 'خالی = خودکار از طبقات پروژه')
-      + tb('stg', 'مرحله', 'RIBA یا فازهای رایج ایران (فاز ۰، ۱، ۲) — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>') + tb('sh', 'فهرست شیت‌ها (اختیاری)', 'هر خط: <code>A 0100 = عنوان</code>')
-      + '</div></section>'
-      + (adm ? '<div class="dc-save dc-foot"><button type="button" class="pj-pri" data-dcsave>ذخیرهٔ کدینگ</button><button type="button" class="pj-sec dc-lvlb" data-dclvl>ساختن تراز از طبقات پروژه</button><small>تأییدکنندهٔ نقشه‌ها و تأیید نهایی: مدیریت سامانه ← گردش تأیید نقشه‌ها</small></div>' : '<p class="dc-tk dc-foot">فقط مدیر سامانه کدینگ را تغییر می‌دهد.</p>')
+      + '<section class="dc-p" data-dcp="tab"><h4>جدول کدها</h4><p class="dc-tk">هر خط: <code>کد = عنوان</code>. عنوان‌ها همان گزینه‌های فرم‌اند (نوع سند، رشته، وضعیت، طراح) و با انتخاب هرکدام کد همان بخش عوض می‌شود. چند عنوان می‌توانند یک کد داشته باشند.</p></p>'
+      + '<div class="dc-tpsw" role="tablist">' + Object.keys(DC_PRESETS).map(pk => '<button type="button" data-dctp="' + pk + '"' + (pk === tpShow ? ' class="on"' : '') + '><b>' + esc(DC_PRESETS[pk].nm) + '</b><small>' + (pk === tpNow ? 'فرم‌های طراحی از این جدول' : pk === c.preset ? 'استاندارد پایه' : 'برای بخش‌هایی که این استاندارد را دارند') + '</small></button>').join('') + '</div>'
+      + Object.keys(DC_PRESETS).map(pk => '<div class="dc-tbs" data-tp="' + pk + '"' + (pk === tpShow ? '' : ' hidden') + '>' + tbs(pk) + '</div>').join('')
+      + '</section>'
+      + (adm ? '<div class="dc-save dc-foot"><button type="button" class="pj-pri" data-dcsave>ذخیرهٔ کدینگ</button><button type="button" class="pj-sec dc-lvlb" data-dclvl>ساختن تراز از طبقات پروژه</button><button type="button" class="lnk dc-drvl" data-drvopen="1">تأییدکنندهٔ نقشه‌ها و تأیید نهایی ←</button></div>' : '<p class="dc-tk dc-foot">فقط مدیر سامانه کدینگ را تغییر می‌دهد.</p>')
       + '</div>'; };
     const m = fxModal('dcM', 'سیستم کدینگ اسناد', 'شناسهٔ یکتای هر سند و نام فایل‌ها؛ همهٔ فرم‌ها، ترانسمیتال و نام فایل‌ها از همین‌جا پیروی می‌کنند', paint(dcCfg()), true);
     const pane = k => { dcPane = k; m.querySelectorAll('[data-dcnav]').forEach(b => { const on = b.dataset.dcnav === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }); m.querySelector('.dc-set').dataset.pane = k; };
     pane(dcPane);
     const body = () => m.querySelector('.dc-set').parentElement;
     /* ۴۱۴: ISATIS: فقط افزوده‌ها/تغییرهای پروژه ذخیره می‌شود (جدول‌های فرم در کد است) تا ردیف ذخیره از سقف سرور بزرگ‌تر نشود */
-    const slim = o => { try{ const d = (DC_PRESETS[o.preset] || {}).t; if(!d || o.preset !== 'isatis') return o; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o.t[k])) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o.t[k] = o.t[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o.t[k].length) delete o.t[k]; });
+    const slim = o => { try{ if(o.tx) Object.keys(o.tx).forEach(pk => { o.tx[pk] = dcSlimT(pk, o.tx[pk]); }); }catch(e){} try{ const d = (DC_PRESETS[o.preset] || {}).t; if(!d || o.preset !== 'isatis') return o; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o.t[k])) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o.t[k] = o.t[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o.t[k].length) delete o.t[k]; });
         if(typeof o.t.sh === 'string'){ const D = new Set(String(d.sh || '').split('\n').map(l => l.trim())); o.t.sh = o.t.sh.split('\n').map(l => l.trim()).filter(l => l && !D.has(l)).join('\n'); if(!o.t.sh) delete o.t.sh; } }catch(e){} return o; };
-    const read = () => { const o = {preset: (m.querySelector('.dc-pb.on') || {dataset: {}}).dataset.dcpre || 'iso'}; m.querySelectorAll('[data-dcc]').forEach(e => { o[e.dataset.dcc] = e.type === 'checkbox' ? e.checked : e.value.trim(); }); o.shW = +o.shW || 4; const old = window.__dcCfg || {}; if(old.rvw) o.rvw = old.rvw; if(old.fin) o.fin = old.fin; o.use = {}; m.querySelectorAll('[data-dcuse]').forEach(e => { if(e.value && e.value !== 'main') o.use[e.dataset.dcuse] = e.value; }); o.pat = {}; m.querySelectorAll('[data-dcpat]').forEach(e => { o.pat[e.dataset.dcpat] = e.value.trim(); }); o.t = {}; m.querySelectorAll('[data-dct]').forEach(e => { o.t[e.dataset.dct] = e.dataset.dct === 'sh' ? e.value : dcParse(e.value); }); return o; };
+    const read = () => { const o = {preset: (m.querySelector('.dc-pb.on') || {dataset: {}}).dataset.dcpre || 'iso'}; m.querySelectorAll('[data-dcc]').forEach(e => { o[e.dataset.dcc] = e.type === 'checkbox' ? e.checked : e.value.trim(); }); o.shW = +o.shW || 4; const old = window.__dcCfg || {}; if(old.rvw) o.rvw = old.rvw; if(old.fin) o.fin = old.fin; o.use = {}; m.querySelectorAll('[data-dcuse]').forEach(e => { if(e.value && e.value !== 'main') o.use[e.dataset.dcuse] = e.value; }); o.pat = {}; m.querySelectorAll('[data-dcpat]').forEach(e => { o.pat[e.dataset.dcpat] = e.value.trim(); }); o.t = {}; m.querySelectorAll('[data-dct]').forEach(e => { o.t[e.dataset.dct] = e.dataset.dct === 'sh' ? e.value : dcParse(e.value); });
+      o.tx = {}; m.querySelectorAll('[data-dctx]').forEach(e => { const [pk, k] = e.dataset.dctx.split(':'); (o.tx[pk] = o.tx[pk] || {})[k] = k === 'sh' ? e.value : dcParse(e.value); }); return o; };
     const exUpd = () => { const keep = window.__dcCfg; window.__dcCfg = read(); m.querySelectorAll('[data-dcex]').forEach(e => { e.textContent = dcFull(e.dataset.dcex, DC_EX[e.dataset.dcex] || {}); }); window.__dcCfg = keep; };
     m.addEventListener('input', exUpd); m.addEventListener('change', exUpd);
     m.addEventListener('click', async e => {
       const nv = e.target.closest('[data-dcnav]'); if(nv){ pane(nv.dataset.dcnav); return; }
-      const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
-      const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = m.querySelector('[data-dct="stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); ta.dispatchEvent(new Event('input', {bubbles: true})); m.querySelectorAll('.dc-stgs [data-dcstg]').forEach(x => x.classList.toggle('on', x === sg)); try{ shrToast('نظام مراحل عوض شد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید'); }catch(er){} } return; }
-      if(e.target.closest('[data-dclvl]')){ const ta = m.querySelector('[data-dct="lvl"]'); const keep = window.__dcCfg; const r = read(); r.t.lvl = []; window.__dcCfg = r; ta.value = dcTxt(dcLvlList()); window.__dcCfg = keep; return; }
+      const tpb = e.target.closest('[data-dctp]'); if(tpb){ dcTpShow = tpb.dataset.dctp; m.querySelectorAll('[data-dctp]').forEach(b => b.classList.toggle('on', b === tpb)); m.querySelectorAll('.dc-tbs[data-tp]').forEach(g => { g.hidden = g.dataset.tp !== dcTpShow; }); return; }
+      const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org, use: cur.use, tx: cur.tx}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
+      const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = (sg.closest('.dc-tbs') || m).querySelector('[data-dct="stg"], [data-dctx$=":stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); ta.dispatchEvent(new Event('input', {bubbles: true})); m.querySelectorAll('.dc-stgs [data-dcstg]').forEach(x => x.classList.toggle('on', x === sg)); try{ shrToast('نظام مراحل عوض شد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید'); }catch(er){} } return; }
+      if(e.target.closest('[data-dclvl]')){ const ta = m.querySelector('.dc-tbs:not([hidden]) :is([data-dct="lvl"], [data-dctx$=":lvl"])'); const keep = window.__dcCfg; const r = read(); r.t.lvl = []; window.__dcCfg = r; ta.value = dcTxt(dcLvlList()); window.__dcCfg = keep; return; }
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
       try{ const o = slim(read()); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
   };
