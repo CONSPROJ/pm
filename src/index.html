@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116072609">
+<meta name="pm-build" content="20261116072832">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30772,6 +30772,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 :is(html,#z0) :is(body,#z1) #admTabFilters :is(.ns-btn, .pcombo-btn){height:40px!important;min-height:40px!important;width:100%;border-radius:10px!important;border:1px solid var(--line)!important;background:var(--surface)!important;box-shadow:none!important;padding:0 12px!important;font-size:13px!important;font-weight:600!important}
 :is(html,#z0) :is(body,#z1) #admTabFilters :is(.ns-btn, .pcombo-btn):hover{border-color:color-mix(in srgb,var(--sky) 45%,var(--line))!important}
 :is(html,#z0) :is(body,#z1) #admTabFilters .pc-dot{width:22px!important;height:22px!important;background:var(--field)!important}
+:is(html,#z0) :is(body,#z1) #admTabFilters .aq-f select{height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:0 10px;font:inherit;font-size:13px;font-weight:600}
+:is(html,#z0) :is(body,#z1) #admTabFilters .aq-amt span{display:flex;gap:6px} :is(html,#z0) :is(body,#z1) #admTabFilters .aq-amt input{height:40px!important;min-height:40px!important;border-radius:10px!important;border:1px solid var(--line)!important;background:var(--surface)!important;width:100%;text-align:center;font-size:12.5px!important}
 :is(html,#z0) :is(body,#z1) #admTabFilters #fAdmReset{height:40px;padding:0 14px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--alert,#c0392b);font-weight:700}
 :is(html,#z0) :is(body,#z1) #admTabFilters #fAdmReset:hover{background:var(--alert-soft,#fdecea)}
 
@@ -75626,7 +75628,18 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 
   /* ۴۵۷: فیلترهای سریع اسناد (همیشه پیدا، بالای فهرست): همه، باز، نیاز به توجه، بحرانی، منتظر من، تمام‌شده + بازهٔ تاریخ.
      معیارها همان هشدار و وضعیت کارت‌ها (admCardAlert، admCardHot، admDoneState) است، نه قاعدهٔ تازه. */
-  const AQ = {f: '', from: '', to: ''};
+  const AQ = {f: '', from: '', to: '', st: '', amin: 0, amax: 0};
+  const AQ_ST = ['در حال تنظیم', 'بررسی داخلی', 'رد داخلی', 'تأیید داخلی', 'بررسی پیمانکار', 'رد پیمانکار', 'تأیید پیمانکار', 'بررسی کارفرما', 'رد کارفرما', 'تایید شده', 'پرداخت شده'];
+  /* فیلترهای پیشرفته در پنل «فیلتر دفتر فنی»: مرحلهٔ رسیدگی و بازهٔ مبلغ (صورت وضعیت و قرارداد) */
+  function aqExtraEnsure(){ const F = document.getElementById('admTabFilters'); if(!F || F.querySelector('[data-aqst]')) return; const rs = F.querySelector('#fAdmReset');
+    const html = '<div class="field aq-f"><label>مرحلهٔ رسیدگی</label><select data-aqst="1"><option value="">همه</option>' + AQ_ST.map(x => '<option>' + x + '</option>').join('') + '</select></div>'
+      + '<div class="field aq-f aq-amt"><label>مبلغ (تومان)</label><span><input type="text" data-aqa="amin" inputmode="numeric" placeholder="از"><input type="text" data-aqa="amax" inputmode="numeric" placeholder="تا"></span></div>';
+    if(rs) rs.insertAdjacentHTML('beforebegin', html); else F.insertAdjacentHTML('beforeend', html);
+    if(rs && !rs.__aq){ rs.__aq = 1; rs.addEventListener('click', () => { AQ.st = ''; AQ.amin = 0; AQ.amax = 0; F.querySelectorAll('[data-aqst], [data-aqa]').forEach(i => { i.value = ''; }); applyAdminFilters(); }); } }
+  document.addEventListener('change', e => { const t = e.target; if(!t.closest) return; if(t.matches('[data-aqst]')){ AQ.st = t.value; applyAdminFilters(); } else if(t.matches('[data-aqa]')){ AQ[t.dataset.aqa] = (+toEn(String(t.value).replace(/[,،\s]/g, '')) || 0) * 10; applyAdminFilters(); } });
+  function aqAdvOk(x){ if(AQ.st){ let v = ''; try{ v = String(effectiveReview(x.row) || pick(x.row, AD.review) || ''); }catch(e){} if(v !== AQ.st) return false; }
+    if(AQ.amin || AQ.amax){ if(x.kind !== 'statement' && x.kind !== 'contract') return false; const a = moneyNum(pick(x.row, x.kind === 'statement' ? AD.sAmount : AD.cAmount)) || 0; if(AQ.amin && a < AQ.amin) return false; if(AQ.amax && a > AQ.amax) return false; }
+    return true; }
   const AQ_F = [['', 'همه'], ['open', 'باز'], ['alert', 'نیاز به توجه'], ['hot', 'بحرانی'], ['mine', 'منتظر من'], ['done', 'تمام‌شده']];
   const aqDateOf = x => { const r = x.row; const v = exact(r, 'تاریخ ارسال') || exact(r, 'تاریخ') || exact(r, 'تاریخ جلسه') || ''; return normDate(v) || ''; };
   function aqOk(x, f){ const k = x.kind, r = x.row; let me = ''; try{ me = nameKey(activeUserName()); }catch(e){}
@@ -75651,7 +75664,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const n = (adminFilters.any() ? 1 : 0) + (elVal('fAdmOwner') ? 1 : 0);
     markDrawer('admFilterDrawer', n);
     markDrawer('admTabDrawer', n);
-    const base0 = admOwnerFilter(adminFilters.apply(adminAll));
+    try{ aqExtraEnsure(); }catch(e){}
+    const base0 = admOwnerFilter(adminFilters.apply(adminAll)).filter(aqAdvOk);
+    try{ markDrawer('admTabDrawer', n + (AQ.st ? 1 : 0) + (AQ.amin || AQ.amax ? 1 : 0)); }catch(e){}
     try{ aqPaint(base0); }catch(e){}
     const base = base0.filter(x => aqOk(x, AQ.f) && aqDateOk(x));
     renderAdminList(base.filter(x => rowMatches([
