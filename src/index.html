@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116121232">
+<meta name="pm-build" content="20261116122021">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -33607,7 +33607,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     {g:'سامانه', k:'ctr.callmgmt', t:'تماس با مدیریت پیمانکاران',
      d:'شمارهٔ مدیریت پیمانکار را می‌بیند و بین مدیریت و نمایندگان انتخاب می‌کند؛ بقیه فقط با نمایندگان تماس می‌گیرند', def:[1,2]},
     {g:'گزارش‌ها', k:'home.dash', t:'نمودارهای مدیریتی خانه',
-     d:'نمودار فعالیت‌ها، اسناد، مطالبات و نیروی کارگاه بالای صفحهٔ خانه', def:[1,2]},
+     d:'بخش «نمای پروژه» خانه (شاخص‌ها و نمودارها) و «هشدار زودهنگام»؛ هر نوع آمار جداگانه با چهار مورد زیر', def:[1,2]},
+    {g:'گزارش‌ها', k:'home.tasks', t:'خانه: آمار فعالیت‌های کل پروژه', d:'فعالیت باز و عقب‌افتادهٔ همهٔ پروژه (نه فقط کارهای خود فرد)', def:[1,2]},
+    {g:'گزارش‌ها', k:'home.docs', t:'خانه: آمار اسناد دفتر فنی', d:'سند در جریان، بحرانی‌ها، قیف اسناد و هشدار قرارداد و مدرک طراحی', def:[1,2]},
+    {g:'گزارش‌ها', k:'home.fin', t:'خانه: آمار مالی', d:'مطالبات و بدهی صورت وضعیت‌ها، پرداخت‌ها و هشدار صورت وضعیت پرداخت‌نشده', def:[1]},
+    {g:'گزارش‌ها', k:'home.site', t:'خانه: آمار کارگاه', d:'نفرات امروز، روند نیروی کارگاه و پیمانکاران حاضر', def:[1,2,3]},
     {g:'گزارش‌ها', k:'rep.show', t:'خلاصه گزارش (ارائهٔ تمام‌صفحه)',
      d:'کاشی «خلاصه گزارش» در گزارش‌ها و دکمهٔ کارتابل: نیرو، طبقات، کارها، مالی و موانع در چند اسلاید', def:[1,2,3]},
     {g:'سامانه', k:'leave.approve', t:'تأیید درخواست مرخصی',
@@ -100342,7 +100346,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       + '<span class="hk-ic">' + HM_I[ic] + '</span>'
       + '<span class="hk-v">' + v + '</span><span class="hk-l">' + l + '</span>'
       + (sub ? '<span class="hk-s">' + sub + '</span>' : '') + '</button>';
-    if(tabOk('view') && hmSite()){
+    if(window.hmG.site()){
       if(day && day.has){
         const dv = day.prevTot != null ? day.tot - day.prevTot : null;
         const sub = dv == null ? (day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '')
@@ -100350,11 +100354,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
         K.push(kpi('hc-sky', 'people', hmNum(day.tot), 'نفرات ' + (dDate === todayShamsi() ? 'امروز' : 'دیروز'), sub, 'data-hmday="' + esc(dDate) + '"'));
       }else K.push(kpi('hc-sky', 'people', day ? '—' : '<i class="hm-dots"></i>', 'نفرات کارگاه', day ? 'گزارشی ثبت نشده' : '', 'data-hmday="' + esc(dDate || '') + '"'));
     }
-    if(tabOk('tasks')){
+    if(window.hmG.tasks()){
       K.push(kpi('hc-ind' + (tk && tk.late ? ' alert' : ''), 'task', tk ? hmNum(tk.open) : '<i class="hm-dots"></i>', 'فعالیت باز',
         tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب از موعد</i>' : 'همه در موعد') : '', 'data-hm="tasks"'));
     }
-    if(tabOk('admin') && adm){
+    if(window.hmG.docs() && adm){
       let n = 0, hot = 0, emp = 0;
       Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; emp += adm[k].emp; });
       if(!hmAllAlerts()) hot = 0;
@@ -100427,7 +100431,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     return hmCard('hm-work', hmHead('flag', title, sub), body, foot);
   }
   function hmDayCard(day, dDate){
-    if(!tabOk('view') || !hmSite()) return '';
+    if(!window.hmG.site()) return '';
     const isT = dDate === todayShamsi();
     const head = hmHead('chart', 'گزارش روزانهٔ کارگاه', dDate ? esc(faDateLong(dDate) || dDate) + (isT ? ' · امروز' : '') : 'در حال دریافت…',
       hmMore('باز کردن', 'data-hmday="' + esc(dDate || '') + '"'));
@@ -100448,7 +100452,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
           + avatarHtml(x.n, 'sm', true) + '<i>' + (x.ok ? '✓' : '!') + '</i></span>').join('') + '</div></div>' : ''));
   }
   function hmDocsCard(adm){
-    if(!tabOk('admin')) return '';
+    if(!window.hmG.docs()) return '';
     const loaded = (adminAll || []).length > 0 || homeAt;
     const head = hmHead('doc', 'اسناد و دفتر فنی', loaded ? 'موارد در جریان هر دسته' : 'در حال دریافت…', hmMore('همه', 'data-hm="admin"'));
     if(!loaded) return hmCard('hm-docs', head, hmSkel(5));
@@ -100578,9 +100582,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const k = (v, l, cls, attr) => K.push('<button type="button" class="h5-k' + (cls ? ' ' + cls : '') + '" ' + attr + '>' + (typeof v === 'number' ? '<b data-cnt="' + v + '">' + toFa(v) + '</b>' : '<b>' + v + '</b>') + '<span>' + l + '</span></button>');
     k(tk ? tk.mine : dots, 'کار باز من', '', 'data-h3k="mine"');
     k(tk ? tk.mineLate : dots, 'عقب از موعد', tk && tk.mineLate ? 'bad' : '', 'data-h3k="mine"');
-    if(tabOk('view') && hmSite()) k(day && day.has ? day.tot : (day ? '—' : dots), 'نفر ' + (dDate && dDate !== todayShamsi() ? 'دیروز' : 'امروز'), '', 'data-hmday="' + esc(dDate || '') + '"');
+    if(window.hmG.site()) k(day && day.has ? day.tot : (day ? '—' : dots), 'نفر ' + (dDate && dDate !== todayShamsi() ? 'دیروز' : 'امروز'), '', 'data-hmday="' + esc(dDate || '') + '"');
     if(AP.n) k(AP.n, 'منتظر تأیید', 'warn', 'data-apvopen="1"');
-    else if(tabOk('tasks')) k(tk ? tk.open : dots, 'فعالیت باز', tk && tk.late ? 'bad' : '', 'data-hm="tasks"');
+    else if(window.hmG.tasks()) k(tk ? tk.open : dots, 'فعالیت باز', tk && tk.late ? 'bad' : '', 'data-hm="tasks"');
     return '<section class="h5 h3-a" style="--i:0;--h:' + pjHue(PJ.cur) + '">'
       + '<div class="h5-top"><div class="h5-hi"><small>' + (dayT ? HM_I.sun : HM_I.moon) + hmGreeting() + (pp ? ' · ' + wd + ' ' + toFa(pp[2]) + ' ' + FA_MONTHS[pp[1] - 1] : '') + '</small><h2>' + esc(nm) + '</h2></div>' + wxChipHtml() + '</div>'
       + '<button type="button" class="h5-pj" data-pjopen="1"><span class="h5-pc">' + pjCoverHtml(pj, 'h5-pcv') + '</span><span class="h5-pt"><b>' + esc(pj.name || 'پروژه') + '</b><small>' + esc([pj.status || '', pjN > 1 ? toFa(pjN) + ' پروژه' : ''].filter(Boolean).join(' · ') || 'پروژهٔ فعال') + '</small></span>'
@@ -100725,7 +100729,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
         C.push(card('sky', HM_I.msg, 'پیام‌ها', toFa(U.length) + ' خوانده‌نشده از ' + esc(W.slice(0, 2).join('، ')) + (W.length > 2 ? ' و ' + toFa(W.length - 2) + ' نفر دیگر' : ''), 'خواندن', 'data-h3msg="' + esc(W.length === 1 ? W[0] : '') + '"')); } }catch(e){}
     /* نبض کارگاه برای مدیران: نفرات امروز و گزارش‌دهنده‌هایی که هنوز نفرستاده‌اند */
     try{ const L = (typeof levelOf === 'function') ? levelOf(me) : 3;
-      if((function(){ try{ return can('home.dash'); }catch(e){ return false; } })() && X.day && X.day.has){
+      if((function(){ try{ return can('home.dash') && can('home.site') && (isAdminUser() || !coScopeMe()); }catch(e){ return false; } })() && X.day && X.day.has){
         const miss = (X.day.req || []).filter(x => !x.ok);
         const dlt = X.day.prevTot ? X.day.tot - X.day.prevTot : 0;
         if(!tabOk('view')) C.push(card('grn', HM_I.people, 'نفرات کارگاه', toFa(X.day.tot) + ' نفر' + (X.dDate && X.dDate !== todayShamsi() ? ' (دیروز)' : '') + ' · ' + toFa(X.day.ctrN) + ' پیمانکار' + (dlt ? ' · ' + (dlt > 0 ? '+' : '−') + toFa(Math.abs(dlt)) : '') + (X.day.issues ? ' · ' + toFa(X.day.issues) + ' مانع' : ''), 'گزارش', 'data-h3rep="daily"'));
@@ -101202,6 +101206,15 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   }
   /* نمودارهای مدیریتی فقط برای سطوح بالا (دسترسی «نمودارهای مدیریتی خانه») */
   const hmDashOk = () => { try{ return isAdminUser() || can('home.dash'); }catch(e){ return false; } };
+  /* ۴۷۶: هر نوع آمار خانه دسترسی جدا دارد (ماتریس دسترسی‌ها ← گزارش‌ها). تیم بیرونی (فضای شرکت) آمار کل پروژه را هرگز نمی‌بیند؛ فقط کارهای خودش */
+  const hmWide = () => { try{ return isAdminUser() || !coScopeMe(); }catch(e){ return true; } };
+  const hmCapX = k => { try{ return isAdminUser() || can(k); }catch(e){ return false; } };
+  const hmG = {
+    tasks: () => hmWide() && tabOk('tasks') && hmCapX('home.tasks'),
+    docs: () => hmWide() && tabOk('admin') && hmCapX('home.docs'),
+    fin: () => hmWide() && tabOk('admin') && hmCapX('home.fin'),
+    site: () => hmWide() && tabOk('view') && hmSite() && hmCapX('home.site')};
+  window.hmG = hmG;
   document.addEventListener('scroll', e => { const g = e.target; if(!g || !g.classList || !g.classList.contains('hd4-g')) return; const D = g.parentElement.querySelectorAll('.hd4-dots i'); if(!D.length) return;
     const c = g.children[0]; if(!c) return; const i = Math.round(Math.abs(g.scrollLeft) / (c.getBoundingClientRect().width + 10)); D.forEach((d, j) => d.classList.toggle('on', j === Math.min(i, D.length - 1))); }, true);
 
@@ -101258,11 +101271,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const tile = (cls, ic, l, big, unit, sub, viz, attr, side) => OFF.has(cls.slice(2)) ? 0 : TL.push('<div class="hzk-t ' + cls + (side ? ' sd' : '') + '" ' + attr + ' role="button" tabindex="0"><div class="hzk-x"><span class="hzk-l"><i>' + (HM_I[ic] || '') + '</i>' + l + '</span>'
       + '<b class="hzk-v">' + big + (unit ? '<small>' + unit + '</small>' : '') + '</b><span class="hzk-s">' + (sub || '&nbsp;') + '</span>' + (side ? '' : '<div class="hzk-z">' + viz + '</div>') + '</div>' + (side ? '<div class="hzk-z">' + viz + '</div>' : '') + '</div>');
     /* پیشرفت فیزیکی: میانگین تخصص‌ها + سه تخصص اصلی */
-    try{ const S0 = pgSkills(); if(S0.length){ const A = S0.map(x => [x, Math.round(pgSkillPct(x))]), avg = Math.round(A.reduce((t, x) => t + x[1], 0) / A.length);
+    try{ const S0 = window.hmG && (window.hmG.site() || window.hmG.tasks()) ? pgSkills() : []; if(S0.length){ const A = S0.map(x => [x, Math.round(pgSkillPct(x))]), avg = Math.round(A.reduce((t, x) => t + x[1], 0) / A.length);
       tile('k-pg', 'chart', 'پیشرفت فیزیکی', toFa(avg) + '٪', '', toFa(A.length) + ' تخصص · ' + toFa(A.filter(x => x[1] >= 100).length) + ' تمام‌شده',
         '<div class="hzk-pgs">' + A.sort((x, y) => y[1] - x[1]).slice(0, 3).map(x => '<span data-tip="' + hdbTip(x[0], [['پیشرفت', toFa(x[1]) + '٪', 'g']]) + '"><u>' + esc(x[0]) + '</u><i><b style="width:' + Math.min(100, x[1]) + '%"></b></i><em>' + toFa(x[1]) + '٪</em></span>').join('') + '</div>', 'data-hzgo="view:pc"'); } }catch(e){}
     /* فعالیت‌ها */
-    if(tabOk('tasks') && (tasksAll || []).length){
+    if(window.hmG.tasks() && (tasksAll || []).length){
       const S = {done: 0, doing: 0, todo: 0, late: 0};
       (tasksAll || []).forEach(r => { if(!r || r.__adm || !pick(r,T.id)) return; const sd = String(pick(r,T.side) || '').trim(); if(sd === 'فعالیت عمومی' || sd === 'کار اداری') return;
         let st = 'none'; try{ st = taskStatus(r).cls; }catch(e){} if(st === 'done'){ S.done++; return; } const d = daysSince(pick(r,T.due)); if(d != null && d > 0) S.late++; else if(st === 'doing') S.doing++; else S.todo++; });
@@ -101276,7 +101289,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       }
     }
     /* اسناد در جریان */
-    if(tabOk('admin') && adm && (adminAll || []).length){
+    if(window.hmG.docs() && adm && (adminAll || []).length){
       const L = HM_KINDS.map(x => ({k: x.k, t: x.t, n: (adm[x.k] || {}).n || 0, hot: (adm[x.k] || {}).hot || 0}));
       const all = L.reduce((t, x) => t + x.n, 0), hot = hmAllAlerts() ? L.reduce((t, x) => t + x.hot, 0) : 0;
       tile('k-dc', 'doc', 'اسناد در جریان', '<span data-cnt="' + all + '">' + toFa(all) + '</span>', 'سند', hot ? '<em class="bad">' + toFa(hot) + ' بحرانی</em>' : '<em class="ok">بدون مورد بحرانی</em>',
@@ -101299,7 +101312,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const card = (cls, t, big, sub, body, attr) => C.push('<div class="hd4-c ' + cls + '"' + (attr || '') + '><div class="hd4-h"><u>' + t + '</u><b>' + big + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>' + body + '</div>');
     const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
     /* ۱) فعالیت‌ها: حلقهٔ وضعیت */
-    if(tabOk('tasks') && (tasksAll || []).length){
+    if(hmG.tasks() && (tasksAll || []).length){
       const S = {done: 0, doing: 0, todo: 0, late: 0};
       (tasksAll || []).forEach(r => {
         if(!r || r.__adm || !pick(r,T.id)) return;
@@ -101320,7 +101333,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       }
     }
     /* ۲) اسناد در جریان: یک نوار برای هر نوع */
-    if(tabOk('admin') && adm && (adminAll || []).length){
+    if(hmG.docs() && adm && (adminAll || []).length){
       const L = HM_KINDS.map(x => ({k: x.k, t: x.t, n: (adm[x.k] || {}).n || 0, hot: (adm[x.k] || {}).hot || 0}));
       const mx = Math.max(1, ...L.map(x => x.n)), all = L.reduce((t, x) => t + x.n, 0), hot = hmAllAlerts() ? L.reduce((t, x) => t + x.hot, 0) : 0;
       card('hd4-dc', 'اسناد در جریان', '<span data-cnt="' + all + '">' + toFa(all) + '</span><i>سند</i>', hot ? '<em class="bad">' + toFa(hot) + ' بحرانی</em>' : 'بدون مورد بحرانی',
@@ -101328,7 +101341,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
           + '<span class="hd4-bl">' + x.t + '</span><span class="hd4-bt"><i style="width:' + Math.max(x.n ? 4 : 0, Math.round(x.n / mx * 100)) + '%"></i></span><b>' + toFa(x.n) + (x.hot && hot ? '<em></em>' : '') + '</b></button>').join('') + '</div>');
     }
     /* ۳) مالی: پرداخت‌شده در برابر مطالبات، و صورت وضعیت شش ماه اخیر */
-    if(tabOk('admin') && hmCan('rep.adm')){
+    if(hmG.fin()){
       let st = []; try{ st = stLive((adminAll || []).filter(a => a && a.kind === 'statement' && a.row).map(a => a.row)); }catch(e){ st = []; }
       const amt = st.reduce((t, r) => t + amtNum(pick(r,AD.sAmount)), 0), paid = st.reduce((t, r) => t + Math.min(paidOf(r), amtNum(pick(r,AD.sAmount)) || paidOf(r)), 0);
       if(amt > 0){
@@ -101344,7 +101357,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       }
     }
     /* ۴) نیروی کارگاه: امانی و پیمانی، و گزارش‌دهندگان */
-    if(tabOk('view') && hmSite() && day && day.has){
+    if(hmG.site() && day && day.has){
       const dv = day.prevTot != null ? day.tot - day.prevTot : null, okN = day.req.filter(x => x.ok).length;
       card('hd4-hr', 'نیروی کارگاه · ' + (dDate === todayShamsi() ? 'امروز' : 'دیروز'), '<span data-cnt="' + day.tot + '">' + toFa(day.tot) + '</span><i>نفر</i>',
         dv == null ? toFa(day.ctrN) + ' پیمانکار' : (dv ? '<em class="' + (dv > 0 ? 'up' : 'dn') + '">' + (dv > 0 ? '▲ ' : '▼ ') + toFa(Math.abs(dv)) + '</em> نسبت به روز قبل' : 'بی‌تغییر نسبت به روز قبل'),
@@ -101365,7 +101378,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       + '<span class="pj4-ki">' + HM_I[ic] + '</span><span class="pj4-kv"' + (typeof v === 'number' ? ' data-cnt="' + v + '"' : '') + '>' + (typeof v === 'number' ? toFa(v) : v) + '</span>'
       + '<span class="pj4-kl">' + l + '</span>' + (sub ? '<span class="pj4-ks">' + sub + '</span>' : '') + '</button>');
     const dots = '<i class="hm-dots"></i>';
-    if(tabOk('view') && hmSite()){
+    if(hmG.site()){
       if(day && day.has){
         const dv = day.prevTot != null ? day.tot - day.prevTot : null;
         kpi('hc-sky', 'people', day.tot, 'نفر ' + (dDate === todayShamsi() ? 'امروز' : 'دیروز'),
@@ -101373,8 +101386,8 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
           'data-hmday="' + esc(dDate) + '"');
       }else kpi('hc-sky', 'people', day ? '—' : dots, 'نفرات کارگاه', day ? 'گزارشی نیست' : '', 'data-hmday="' + esc(dDate || '') + '"');
     }
-    if(tabOk('tasks')) kpi('hc-ind', 'task', tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب</i>' : 'در موعد') : '', 'data-hm="tasks"', tk && tk.late);
-    if(tabOk('admin') && adm){
+    if(hmG.tasks()) kpi('hc-ind', 'task', tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب</i>' : 'در موعد') : '', 'data-hm="tasks"', tk && tk.late);
+    if(hmG.docs() && adm){
       let n = 0, hot = 0; Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; });
       if(!hmAllAlerts()) hot = 0;
       const ld = (adminAll || []).length;
@@ -101384,7 +101397,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     if(!K.length) return '';
     /* گزارش‌دهندگان روز، زیر شاخص‌ها */
     let ppl = '';
-    if(tabOk('view') && hmSite() && day && day.has && day.req.length){
+    if(hmG.site() && day && day.has && day.req.length){
       const okN = day.req.filter(x => x.ok).length;
       ppl = '<button type="button" class="hx-ppl" data-hmday="' + esc(dDate) + '"><span class="hx-pl"><b>گزارش‌دهندگان امروز</b><small>' + toFa(okN) + ' از ' + toFa(day.req.length) + ' نفر ثبت کرده‌اند</small></span>'
         + '<span class="hx-pbar"><i style="width:' + Math.round(okN / day.req.length * 100) + '%"></i></span>'
@@ -101594,9 +101607,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     let ok = false; try{ ok = hmDashOk(); }catch(e){} if(!ok) return '';
     const OFF = dashOffSet();
     const D = hdbMonth(), P = [];
-    try{ if(tabOk('view') && hmSite() && !OFF.has('hr')) P.push(['hr', D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>']); }catch(e){}
-    try{ if(tabOk('admin')){ if(!OFF.has('fn')) P.push(['fn', hdbDebt()]); if(!OFF.has('fl')) P.push(['fl', hdbFunnel()]); } }catch(e){}
-    try{ if(!OFF.has('pp')) P.push(['pp', hdbTeam()]); }catch(e){}
+    try{ if(hmG.site() && !OFF.has('hr')) P.push(['hr', D && D.days.length ? hdbArea(D) : '<div class="hdb-p hdb-wide hdb-sk"><div class="hdb-h"><div><u>روند نیروی کارگاه · ۳۰ روز</u><b>…</b></div></div><div class="hdb-plot"></div></div>']); }catch(e){}
+    try{ if(hmG.fin() && !OFF.has('fn')) P.push(['fn', hdbDebt()]); if(hmG.docs() && !OFF.has('fl')) P.push(['fl', hdbFunnel()]); }catch(e){}
+    try{ if(hmWide() && !OFF.has('pp')) P.push(['pp', hdbTeam()]); }catch(e){}
     const ord = dashOrd(); const pos = k => { const i = ord.indexOf(k); return i === -1 ? 99 : i; };
     const L = P.filter(x => x[1]).map((x, i) => [x[0], x[1], i]).sort((a, b) => (pos(a[0]) - pos(b[0])) || (a[2] - b[2]));
     if(!L.length) return '';
@@ -101665,10 +101678,10 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     let band = '';
     if(hmDashOk()){
       const P = [];
-      if(tabOk('view') && hmSite()) P.push(day && day.has ? st(day.tot, 'نفرات ' + (dDate === t0 ? 'امروز' : 'دیروز'), day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '', 'data-hmday="' + esc(dDate) + '"')
+      if(hmG.site()) P.push(day && day.has ? st(day.tot, 'نفرات ' + (dDate === t0 ? 'امروز' : 'دیروز'), day.ctrN ? toFa(day.ctrN) + ' پیمانکار' : '', 'data-hmday="' + esc(dDate) + '"')
         : st(day ? '—' : dots, 'نفرات کارگاه', day ? 'گزارشی نیست' : '', 'data-hmday="' + esc(dDate || '') + '"'));
-      if(tabOk('tasks')) P.push(st(tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب از موعد</i>' : 'همه در موعد') : '', 'data-hm="tasks"', tk && tk.late));
-      if(tabOk('admin') && adm){ let n = 0, hot = 0; Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; }); const ld = (adminAll || []).length;
+      if(hmG.tasks()) P.push(st(tk ? tk.open : dots, 'فعالیت باز', tk ? (tk.late ? '<i class="dn">' + toFa(tk.late) + ' عقب از موعد</i>' : 'همه در موعد') : '', 'data-hm="tasks"', tk && tk.late));
+      if(hmG.docs() && adm){ let n = 0, hot = 0; Object.keys(adm).forEach(k => { n += adm[k].n; hot += adm[k].hot; }); const ld = (adminAll || []).length;
         P.push(st(ld ? n : dots, 'سند در جریان', ld ? (hot ? '<i class="dn">' + toFa(hot) + ' بحرانی</i>' : 'بدون مورد بحرانی') : '', 'data-hm="admin"', hot)); }
       if(hmCan('write.prc') && hmMod('prc')){ const ph = prc && prc.hot; P.push(st(prc ? prc.open : dots, 'خرید باز', ph ? '<i class="dn">' + toFa(prc.hot) + ' بحرانی</i>' : 'درخواست‌های جاری', 'data-hm="prcList"', ph)); }
       const ch = h3Dash(day, dDate, adm, tk, true, prc);
@@ -101731,20 +101744,20 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   function HM_DESK(){ try{ return window.matchMedia('(min-width:1180px)').matches; }catch(e){ return false; } }
   function HM_EWN(){ return HM_DESK() ? 3 : 2; }
   function hmEarly(){
-    let ok = false; try{ ok = hmDashOk() || tabOk('admin'); }catch(e){} if(!ok) return '';
+    let ok = false; try{ ok = hmDashOk() && (hmG.docs() || hmG.fin() || hmG.tasks()); }catch(e){} if(!ok) return '';
     const L = [], t0 = todayShamsi();
     const A = adminAll || [];
-    try{ A.filter(a => a && a.kind === 'contract' && a.row).forEach(a => { const r = a.row; if(admCancelled(r) || admFinishedCt(r)) return;
+    if(hmG.docs()) try{ A.filter(a => a && a.kind === 'contract' && a.row).forEach(a => { const r = a.row; if(admCancelled(r) || admFinishedCt(r)) return;
       const S = window.ctrEndState ? window.ctrEndState(r) : null; if(!S || !S.end || S.over > 0 || S.done) return;
       const left = faDiff(t0, S.end); if(left == null || left < 0 || left > 30) return;
       L.push({w: 100 - left, tone: left <= 10 ? 'bad' : 'warn', ic: 'ct', t: 'قرارداد «' + (pick(r,AD.cTitle) || pick(r,AD.cParty) || '') + '»', s: (left ? toFa(left) + ' روز دیگر تمام می‌شود' : 'امروز تمام می‌شود') + ' · ' + toFa(S.end), go: 'contract|' + pick(r,AD.id)}); }); }catch(e){}
-    try{ A.filter(a => a && a.kind === 'design' && a.row).forEach(a => { const r = a.row; if(admCancelled(r)) return; const h = dsHolderNow(r);
+    if(hmG.docs()) try{ A.filter(a => a && a.kind === 'design' && a.row).forEach(a => { const r = a.row; if(admCancelled(r)) return; const h = dsHolderNow(r);
       if(!h || (h.side !== 'cons' && h.side !== 'emp') || h.days == null || h.days <= 14 || h.days > 35) return;
       L.push({w: 60 + Math.min(40, h.days - 14), tone: h.days > 28 ? 'bad' : 'warn', ic: 'ds', t: 'مدرک «' + (pick(r,AD.dTitle) || pick(r,AD.dNo) || '') + '»', s: toFa(h.days) + ' روز نزد ' + (h.txt || (h.side === 'emp' ? 'کارفرما' : 'مشاور')), go: 'design|' + pick(r,AD.id)}); }); }catch(e){}
-    try{ stLive(A.filter(a => a && a.kind === 'statement' && a.row).map(a => a.row)).forEach(r => { const amt = amtNum(pick(r,AD.sAmount)); if(!amt || paidOf(r) >= amt) return;
+    if(hmG.fin()) try{ stLive(A.filter(a => a && a.kind === 'statement' && a.row).map(a => a.row)).forEach(r => { const amt = amtNum(pick(r,AD.sAmount)); if(!amt || paidOf(r) >= amt) return;
       const d = admSentDate('statement', r) || pick(r,AD.sDate); const n = d ? daysSince(d) : null; if(n == null || n <= 45 || n > 90) return;
       L.push({w: 50 + Math.min(40, (n - 45) / 3), tone: n > 75 ? 'bad' : 'warn', ic: 'st', t: 'صورت وضعیت ' + (pick(r,AD.sNo) ? toFa(pick(r,AD.sNo)) + ' ' : '') + '«' + (pick(r,AD.sName) || '') + '»', s: toFa(n) + ' روز از ارسال · مانده ' + arToman(amt - paidOf(r)) + ' تومان', go: 'statement|' + pick(r,AD.id)}); }); }catch(e){}
-    try{ if(typeof tbCache !== 'undefined' && tbCache && tbCache.items) tbCache.items.forEach(list => list.forEach(it => { if(!it.open) return; const n = daysSince(faDateOf(it.date) || ''); if(n == null || n <= 7 || n > 30) return;
+    if(hmG.tasks()) try{ if(typeof tbCache !== 'undefined' && tbCache && tbCache.items) tbCache.items.forEach(list => list.forEach(it => { if(!it.open) return; const n = daysSince(faDateOf(it.date) || ''); if(n == null || n <= 7 || n > 30) return;
       L.push({w: 40 + Math.min(50, n), tone: n > 21 ? 'bad' : 'warn', ic: 'blk', t: 'مانع: ' + (it.text || ''), s: toFa(n) + ' روز باز' + (it.kind ? ' · ' + it.kind : '') + (it.ctr ? ' · ' + it.ctr : ''), go: 'task|' + (it.task || '')}); })); }catch(e){}
     try{ (window.fxConAlerts ? window.fxConAlerts() : []).forEach(x => L.push({w: x.w, tone: x.tone, ic: 'blk', t: x.t, s: x.s, go: 'con|1'})); }catch(e){}
     if(!L.length) return '';
