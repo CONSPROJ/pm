@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116054124">
+<meta name="pm-build" content="20261116054541">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30735,7 +30735,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 #dcM .dc-pr{display:grid;grid-template-columns:150px minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:center;margin-bottom:6px} #dcM .dc-pr b{font-size:13px} #dcM .dc-pr input{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
 #dcM .dc-ex{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #dcM .dc-tbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px} #dcM .dc-tb{display:flex;flex-direction:column;gap:3px;font-size:12.5px} #dcM .dc-tb small{color:var(--muted);font-size:11px}
-#dcM .dc-tb textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.7;min-height:130px}
+#dcM .dc-tb{border:1px solid var(--line,#e3e7ed);border-radius:12px;padding:10px;gap:6px!important;background:var(--surface,#fff)} #dcM .dc-tbh{display:flex;align-items:center;gap:8px} #dcM .dc-tbh b{font-size:13px} #dcM .dc-tbh em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa);border-radius:99px;padding:1px 8px}
+#dcM .dc-rows{display:flex;flex-direction:column;gap:4px;max-height:230px;overflow-y:auto;padding:2px} #dcM .dc-r{display:grid;grid-template-columns:96px minmax(0,1fr) 26px;gap:4px;align-items:center}
+#dcM .dc-r input{height:32px!important;min-height:32px!important;padding:0 8px!important;font-size:12px!important;border-radius:8px!important} #dcM .dc-rc{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700}
+#dcM .dc-rx{all:unset;cursor:pointer;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--muted);font-size:15px} #dcM .dc-rx:hover{background:var(--alert-soft,#fdecea);color:var(--alert,#c0392b)}
+#dcM .dc-radd{all:unset;cursor:pointer;align-self:flex-start;font-size:12px;font-weight:800;color:var(--sky,#2a6fa0);padding:4px 6px;border-radius:7px} #dcM .dc-radd:hover{background:var(--sky-soft,#eaf3fa)}
+#dcM .dc-xl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px} #dcM .dc-xl small{font-size:11px;color:var(--muted)} #dcM .dc-xin{cursor:pointer;display:inline-flex;align-items:center}
 #dcM .dc-save{display:flex;gap:8px;flex-wrap:wrap}
 @media (max-width:640px){ #dcM .dc-pr{grid-template-columns:1fr} }
 
@@ -32327,6 +32332,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 <div id="printArea"></div>
 
 <script>
+  /* ۴۳۸: تنظیم‌های نمایشی هر پروژه (مرتب‌سازی، گروه‌بندی، نمای اسناد) جدا روی دستگاه؛ کلید + «@» + شناسهٔ پروژه */
+  function pjLs(k){ let pj = 'p1'; try{ pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return k + '@' + pj; }
   /* ====== نمای پیش‌فرض ادمین (بخش اول) ======
      اگر ادمین نمای تازه‌ای برای همه ذخیره کرده که روی این دستگاه هنوز اعمال
      نشده، پیش از خوانده شدن ترجیحات صفحه اعمال می‌شود. */
@@ -33635,27 +33642,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     }
     clearNetCache();
   }
-  /* پیشنهاد سطح‌بندی: نقش هر سطح روشن، بدون هم‌پوشانی گیج‌کننده */
-  const PERM_PRESET = {
-    'tab.write':[1,2,3,5], 'tab.view':[1,2,3,4,5], 'tab.tasks':[1,2,3,4,5], 'tab.admin':[1,2,3,4],
-    'write.daily':[1,2,3], 'write.crew':[1,2,3,5], 'write.adm':[1,2,3], 'write.editOwn':[1,2,3,5],
-    'rep.time':[1,2,3,4,5], 'rep.week':[1,2,3,4,5], 'rep.month':[1,2,3,4], 'rep.adm':[1,2,3,4],
-    'rep.hr':[1,2,3,4,5], 'rep.crew':[1,2,5],
-    'deck.manager':[1,2], 'mgr.critical':[1,2], 'deck.all':[1,2], 'deck.editAny':[1,2],
-    'task.general':[1,2], 'task.approve':[1,2], 'review.tickAny':[1,2],
-    'rep.editAny':[1], 'adm.editAny':[1,2], 'adm.path':[1],
-    'crew.manage':[1,5], 'crew.editAny':[1,2,5], 'crew.instant':[1,5], 'fine.approve':[1],
-    'notif.missing':[1,2], 'alert.all':[1,2], 'notif.fine':[1],
-    'comment.delAny':[1,2], 'nudge.presets':[1,2], 'msg.broadcast':[1,2],
-    'users.manage':[1], 'db.edit':[1], 'ctr.contact':[1,2], 'leave.approve':[1,2], 'rep.show':[1,2,3], 'home.dash':[1,2]
-  };
-  async function permApplyPreset(){
-    const rows = Object.keys(PERM_PRESET).map(k => ({kind: PERM_KIND, value: permKeyW(k) + '=' + PERM_PRESET[k].slice().sort().join(',')}));
-    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND) + permScopeQ(), {method:'DELETE'}); }catch(e){}
-    await supaFetch('lists?on_conflict=kind,value', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates'}, body: rows});
-    permMap = {}; Object.keys(PERM_PRESET).forEach(k => { permMap[k] = PERM_PRESET[k].slice().sort(); });
-    clearNetCache();
-  }
+  /* ۴۳۶: جدول دوم «پیش‌فرض پیشنهادی» (PERM_PRESET) حذف شد؛ پیش‌فرض فقط def خود هر اجازه در PERM_CAPS است (یک منبع) */
   async function permReset(){
     try{
       await supaFetch('lists?kind=eq.' + encodeURIComponent(PERM_KIND) + permScopeQ(), {method:'DELETE'});
@@ -45019,8 +45006,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '<p class="pc2-td">' + esc(TD[pcState.tab] || '') + '</p>'
       + (pcState.tab === 'lv' ? '<details class="pc-guide"><summary>الگوهای پایه و تعداد افراد<span>' + PERM_LEVELS.map(L => esc(PM_LV[L] || '') + ' ' + toFa(cntL[L] || 0)).join(' · ') + '</span></summary>'
       +   '<div class="pc-lvls2">' + PERM_LEVELS.map(L => '<div class="pc-lv2"><b>' + esc(LEVEL_SHORT[L] || '') + '<i>' + toFa(cntL[L] || 0) + ' نفر</i></b><small>' + esc(LV_DESC[L] || '') + '</small></div>').join('') + '</div></details>'
-      + '<div class="pc-acts"><button type="button" class="mini go" id="pmPreset">اعمال پیش‌فرض پیشنهادی</button>'
-      +   '<button type="button" class="mini" id="pmReset">بازگرداندن به پیش‌فرض</button>'
+      + '<div class="pc-acts">' + (changed ? '<button type="button" class="mini" id="pmReset">بازگرداندن الگوها به پیش‌فرض</button>' : '')
       +   '<span class="pc-st">' + (changed ? toFa(changed) + ' اجازهٔ تغییرکرده' : 'الگوها پیش‌فرض') + '</span></div>' : '')
       + '<label class="pc-q pc2-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'
       +   '<input type="search" id="pcQ" placeholder="جست‌وجوی اجازه' + (pcState.tab === 'us' ? '، نام یا سمت' : '') + '… (مثلاً یادآور، اکسل، جریمه)" value="' + esc(q) + '" autocomplete="off">'
@@ -45155,8 +45141,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     }
     const ro = t.closest('[data-pcr]');
     const ov = t.closest('[data-pco]');
-    const pr = t.closest('#pmPreset');
-    if(!ro && !ov && !pr) return;
+    if(!ro && !ov) return;
     e.stopPropagation();
     try{
       if(ro){
@@ -45168,10 +45153,6 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       }else if(ov){
         const v = ov.dataset.v;
         await permUserSave(pcState.who, ov.dataset.pco, v === '' ? null : v === '1');
-      }else{
-        const ok = await askConfirm('پیش‌فرض پیشنهادی', 'دسترسی همهٔ الگوهای پایه با جدول پیشنهادی جایگزین شود؟ استثنای افراد و سمت‌ها دست نمی‌خورند.', 'اعمال کن');
-        if(!ok) return;
-        await permApplyPreset();
       }
       permRepaint();
       try{ syncTabs(); syncKindCaps(); syncWriteCaps(); }catch(e2){}
@@ -46531,7 +46512,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         return;
       }
       if(e.target.closest('#pmReset')){
-        if(!confirm('همهٔ دسترسی‌ها به حالت پیش‌فرض برگردند؟')) return;
+        if(!await askConfirm('بازگرداندن الگوهای پایه', 'تغییرهای الگوهای پایه پاک و پیش‌فرض سامانه برمی‌گردد. سمت‌ها و استثنای افراد دست نمی‌خورند.', 'بازگرداندن')) return;
         try{ await permReset(); await renderAdminPanel(); }
         catch(err){ showDialog('err','انجام نشد', friendlyErr(err)); }
         return;
@@ -50622,7 +50603,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const g = e.target.closest('[data-tkgrp]');
     if(!g || g.dataset.tkgrp === taskGroup) return;
     taskGroup = g.dataset.tkgrp;
-    try{ localStorage.setItem('taskGroup', taskGroup); }catch(err){}
+    try{ localStorage.setItem(pjLs('taskGroup'), taskGroup); }catch(err){}
     document.querySelectorAll('[data-tkgrp]').forEach(x => x.classList.toggle('on', x.dataset.tkgrp === taskGroup));
     try{ applyTaskFilters(); }catch(err){}
   });
@@ -50632,7 +50613,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const b = e.target.closest('[data-tkview]');
     if(!b || b.dataset.tkview === taskView) return;
     taskView = b.dataset.tkview;
-    try{ localStorage.setItem('taskView', taskView); }catch(err){}
+    try{ localStorage.setItem(pjLs('taskView'), taskView); }catch(err){}
     document.querySelectorAll('[data-tkview]').forEach(x => x.classList.toggle('on', x.dataset.tkview === taskView));
     /* پنجره‌های باز، باز بمانند */
     const openIds = Array.from(document.querySelectorAll('#taskView .eng.foldable.open')).map(x => x.id);
@@ -54950,7 +54931,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     let D = []; try{ window.discCatalog().forEach(([m, sub]) => { D.push(m); sub.forEach(x => D.push(x)); }); }catch(e){} return D.some(d => rl.indexOf(d) !== -1); };
   /* میز طراحی (۳۷۸): بلوک‌ها قابل انتخاب برای هر نفر (siteLogM.dsDesk): وضعیت، نقشه‌های اخیر، پیشرفت رشته‌ها، میان‌برها */
   const DSD_B = [['kpi', 'وضعیت نقشه‌های من'], ['recent', 'نقشه‌های اخیر من'], ['disc', 'پیشرفت رشته‌ها'], ['links', 'میان‌برها']];
-  const dsdCfg = () => { try{ const v = JSON.parse(localStorage.getItem('siteLogM.dsDesk') || 'null'); if(v && typeof v === 'object') return v; }catch(e){} return {kpi: 1, recent: 1, disc: 1, links: 1}; };
+  const dsdCfg = () => { try{ const v = JSON.parse(localStorage.getItem(pjLs('siteLogM.dsDesk')) || 'null'); if(v && typeof v === 'object') return v; }catch(e){} return {kpi: 1, recent: 1, disc: 1, links: 1}; };
   window.dsDeskHtml = function(){ if(!dsIsDesigner()) return ''; const me = activeUserName(), C = dsdCfg();
     const all = dqDesigns(), mine = all.filter(x => nameKey(String(pick(x.row, AD.eng) || '')) === nameKey(me)), n = c => mine.filter(x => dqCls(dqSt(x.row)) === c).length;
     let rev = false; try{ rev = can('tab.admin') && all.some(x => dqExt(x.row)); }catch(e){}
@@ -54974,7 +54955,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + '</section>'; };
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-dsdcfg]'); if(!b) return; e.preventDefault(); const C = dsdCfg();
     const m = fxModal('dsdCfgM', 'چیدمان میز طراحی', 'بخش‌هایی که می‌خواهید روی خانه ببینید', '<div class="dsk-cf">' + DSD_B.map(([k, t]) => '<label><input type="checkbox" data-dsdk="' + k + '"' + (C[k] ? ' checked' : '') + '><span>' + t + '</span></label>').join('') + '</div><div class="mod-f"><button type="button" class="mini go" data-dsdok="1">ذخیره</button></div>', false);
-    m.querySelector('.fx-bd').onclick = ev => { if(!ev.target.closest('[data-dsdok]')) return; const o = {}; m.querySelectorAll('[data-dsdk]').forEach(i => { o[i.dataset.dsdk] = i.checked ? 1 : 0; }); try{ localStorage.setItem('siteLogM.dsDesk', JSON.stringify(o)); }catch(er){} m.remove(); try{ homeRender(); }catch(er){ try{ window.homeRefresh && window.homeRefresh(); }catch(e2){} } }; });
+    m.querySelector('.fx-bd').onclick = ev => { if(!ev.target.closest('[data-dsdok]')) return; const o = {}; m.querySelectorAll('[data-dsdk]').forEach(i => { o[i.dataset.dsdk] = i.checked ? 1 : 0; }); try{ localStorage.setItem(pjLs('siteLogM.dsDesk'), JSON.stringify(o)); }catch(er){} m.remove(); try{ homeRender(); }catch(er){ try{ window.homeRefresh && window.homeRefresh(); }catch(e2){} } }; });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-dsd]'); if(!b) return; e.preventDefault();
     if(!dsIsDesigner()){ const pn = b.closest('.dsk'); if(pn) pn.remove(); showDialog('warn', 'دسترسی', 'ثبت سند طراحی برای سمت شما فعال نیست؛ از مدیر پروژه بخواهید.'); return; }
     if(b.dataset.dsd === 'send'){ try{ window.trOpen(); }catch(er){ try{ homeNewDoc('design'); }catch(e2){} } return; }
@@ -56499,7 +56480,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       const v = sw.dataset.trv;
       box.classList.toggle('as-bar', v === 'bar');
       box.querySelectorAll('[data-trv]').forEach(b => b.classList.toggle('on', b === sw));
-      try{ localStorage.setItem('trView', v); }catch(e2){}
+      try{ localStorage.setItem(pjLs('trView'), v); }catch(e2){}
     }
   });
 
@@ -56681,7 +56662,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       +   stats
       +   (() => {
             let tv = 'line';
-            try{ tv = localStorage.getItem('trView') || 'line'; }catch(e){}
+            try{ tv = localStorage.getItem(pjLs('trView')) || 'line'; }catch(e){}
             return '<div class="tr-box' + (tv === 'bar' ? ' as-bar' : '') + '">'
               + '<div class="tr-head"><div class="rc-title">نفرات هر روز — امانی و پیمانی</div>'
               +   '<span class="tr-sw">'
@@ -65517,7 +65498,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* دسته‌بندی: «فقط ابلاغ» (حالت قبلی) یا «ابلاغ + وضعیت بررسی» (تو در تو) */
   let admGroupMode = 'nested';
   try{
-    const sg = localStorage.getItem('admGroupMode');
+    const sg = localStorage.getItem(pjLs('admGroupMode'));
     if(sg === 'flat' || sg === 'nested') admGroupMode = sg;
   }catch(e){}
   /* مرتب‌سازی دستی دفتر فنی: '' یعنی همان گروه‌بندی همیشگی؛ با شماره یا تاریخ
@@ -65533,12 +65514,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     : (f === 'no' || f === 'amt') ? (dir === 'desc' ? 'بزرگ به کوچک' : 'کوچک به بزرگ')
     : (dir === 'desc' ? 'جدید به قدیم' : 'قدیم به جدید');
   let admSort = 'new-desc';
-  try{ const so = localStorage.getItem('admSort2'); if(ADM_SORTS.indexOf(so) !== -1) admSort = so; }catch(e){}
+  try{ const so = localStorage.getItem(pjLs('admSort2')); if(ADM_SORTS.indexOf(so) !== -1) admSort = so; }catch(e){}
   /* ترتیب هر دستهٔ اسناد جدا (صورت وضعیت، قرارداد، نامه…)؛ پیش‌تر یک ترتیب برای همه بود */
-  let ADM_SORT_K = {}; try{ ADM_SORT_K = JSON.parse(localStorage.getItem('admSort3') || '{}') || {}; }catch(e){}
+  let ADM_SORT_K = {}; try{ ADM_SORT_K = JSON.parse(localStorage.getItem(pjLs('admSort3')) || '{}') || {}; }catch(e){}
   const admSortK = k => { const v = ADM_SORT_K[k]; return ADM_SORTS.indexOf(v) !== -1 ? v : 'new-desc'; };
-  function admSortSet(k, v){ ADM_SORT_K[k] = v; admSort = v; try{ localStorage.setItem('admSort3', JSON.stringify(ADM_SORT_K)); localStorage.setItem('admSort2', v); }catch(e){} }
-  try{ const c0 = localStorage.getItem('admCat') || 'statement'; admSort = admSortK(c0); }catch(e){}
+  function admSortSet(k, v){ ADM_SORT_K[k] = v; admSort = v; try{ localStorage.setItem(pjLs('admSort3'), JSON.stringify(ADM_SORT_K)); localStorage.setItem(pjLs('admSort2'), v); }catch(e){} }
+  try{ const c0 = localStorage.getItem(pjLs('admCat')) || 'statement'; admSort = admSortK(c0); }catch(e){}
   /* گروه‌بندی هر دسته جدا ذخیره می‌شود؛ گزینه‌ها برای همه یک شکل‌اند.
      نامه پیش‌فرض بی‌گروه و تازه‌ترین بالا. */
   const ADM_GRP_OPTS = {
@@ -65553,11 +65534,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   /* مرتب‌سازی دستی فعال است: تکه‌تکه کردن پنهان (پیمانکار، شمارهٔ سند) کنار می‌رود تا ترتیب انتخابی دست‌نخورده دیده شود */
   const admManual = k => admSortK(k) !== 'new-desc';
   function admGrpOf(k){
-    let v = ''; try{ v = localStorage.getItem('admGrp.' + k) || ''; }catch(e){}
-    if(!v && k === 'design'){ try{ v = localStorage.getItem('siteLogM.dsGrp2') || ''; }catch(e){} }
+    let v = ''; try{ v = localStorage.getItem(pjLs('admGrp.' + k)) || ''; }catch(e){}
+    if(!v && k === 'design'){ try{ v = localStorage.getItem(pjLs('siteLogM.dsGrp2')) || ''; }catch(e){} }
     return (ADM_GRP_OPTS[k] || []).some(o => o[0] === v) ? v : (ADM_GRP_DEF[k] || 'none');
   }
-  function admGrpSet(k, v){ try{ localStorage.setItem('admGrp.' + k, v); }catch(e){} }
+  function admGrpSet(k, v){ try{ localStorage.setItem(pjLs('admGrp.' + k), v); }catch(e){} }
   const ADM_NO_KEYS = {statement: 'sNo', contract: 'cNo', letter: 'lNo', design: 'dNo'};
   function admSortRows(kind, rows){
     const [by, dir] = admSortK(kind).split('-'), sg = dir === 'asc' ? 1 : -1;
@@ -65589,12 +65570,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
   let admView = 'fast';   // حالت پایه: فهرست سریع
   try{
-    const sv = localStorage.getItem('admView');
+    const sv = localStorage.getItem(pjLs('admView'));
     if(sv === 'card' || sv === 'fast' || sv === 'table') admView = sv;
     /* «تازه‌ترین‌ها»ی قدیم حالا همان «بدون گروه + تازه‌ترین» است */
     if(sv === 'new'){
-      localStorage.setItem('admView', 'fast'); localStorage.setItem('admSort', 'date-desc');
-      ['statement','contract','letter','minute','design'].forEach(k => localStorage.setItem('admGrp.' + k, 'none'));
+      localStorage.setItem(pjLs('admView'), 'fast'); localStorage.setItem(pjLs('admSort'), 'date-desc');
+      ['statement','contract','letter','minute','design'].forEach(k => localStorage.setItem(pjLs('admGrp.' + k), 'none'));
     }
   }catch(e){}
 
@@ -68988,16 +68969,31 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const dcParse = s => String(s || '').split('\n').map(l => { const i = l.indexOf('='); if(i < 1) return null; const k = dcSan(l.slice(0, i)), v = l.slice(i + 1).trim(); return k && v ? [k, v] : null; }).filter(Boolean);
   const DC_EX = {design: {ORG: 'ISA', STG: '4', Z: 'ZZ', LVL: '03', DSC: 'S', TYP: 'DR', SH: '0100', SUIT: 'S3', REV: 1}, contract: {NO: '1403/12'}, statement: {NO: '1403.12.4', CNO: '1403/12', REV: 0}, letter: {NO: '1250'}, minute: {NO: '18', DATE: '050822'}, trn: {NO: '31'}, sub: {DSC: 'A', NO: '12', REV: 0}, rfi: {DSC: 'M', NO: '7'}};
   let dcPane = 'std', dcTpShow = '';
+  /* ۴۳۷: جدول‌های کد — یک فهرست برای ویرایشگر، خروجی و ورود اکسل */
+  const DC_TBL = [['typ', 'نوع اطلاعات', 'ISO: DR نقشه، M3 مدل، SP مشخصات…', 'کد نوع سند یا نقشه'], ['dsc', 'نقش / دیسیپلین', 'ISO: A معماری، S سازه، M مکانیک، E برق…', 'کد رشته'],
+    ['suit', 'وضعیت (Suitability)', 'عنوان = وضعیت سند در سامانه', 'عنوان = وضعیت سند در سامانه'], ['org', 'پدیدآورنده‌ها', 'کد = نام شرکت یا تیم طراح (همان نام «طراح» در فرم)', 'کد = نام شرکت یا تیم طراح'],
+    ['zn', 'حجم / زون / بلوک', 'ZZ = همه؛ بلوک‌های پروژه خودکار می‌آیند', 'بلوک‌های پروژه خودکار می‌آیند'], ['lvl', 'تراز', 'خالی = خودکار از طبقات پروژه', 'خالی = خودکار از طبقات پروژه'],
+    ['stg', 'مرحله', 'RIBA یا فازهای ایران — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>', 'RIBA یا فازهای ایران — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>'],
+    ['sh', 'فهرست شیت‌ها', 'کد = رشته و شماره، مثلاً A 0100', 'کد = رشته و شماره، مثلاً ARC 0100']];
+  const dcRowsOf = txt => String(txt || '').split('\n').map(l => { const i = l.indexOf('='); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter(r => r && r[0]);
+  const dcRowHtml = (r, adm) => '<div class="dc-r"><input type="text" class="dc-rc" dir="ltr" value="' + esc(r[0]) + '" placeholder="کد"' + (adm ? '' : ' readonly') + '><input type="text" class="dc-rt" dir="auto" value="' + esc(r[1]) + '" placeholder="عنوان"' + (adm ? '' : ' readonly') + '>'
+    + (adm ? '<button type="button" class="dc-rx" data-dcrdel="1" aria-label="حذف">×</button>' : '') + '</div>';
+  /* ردیف‌ها ← textarea پنهان (منبع read) */
+  const dcRowsSync = tb => { const ta = tb.querySelector('textarea'); ta.value = Array.from(tb.querySelectorAll('.dc-r')).map(r => [r.querySelector('.dc-rc').value.trim(), r.querySelector('.dc-rt').value.trim()]).filter(x => x[0] && x[1]).map(x => x[0] + ' = ' + x[1]).join('\n');
+    const n = tb.querySelector('.dc-tbh em'); if(n) n.textContent = toFa(dcRowsOf(ta.value).length); };
+  /* textarea ← ردیف‌ها (پس از RIBA، ساختن تراز یا ورود اکسل) */
+  const dcRowsPaint = (ta, adm) => { const tb = ta.closest('.dc-tb'); if(!tb) return; const R = dcRowsOf(ta.value); tb.querySelector('.dc-rows').innerHTML = R.map(r => dcRowHtml(r, adm)).join(''); const n = tb.querySelector('.dc-tbh em'); if(n) n.textContent = toFa(R.length); };
   window.dcgOpen = function(){
     let adm = false; try{ adm = isAdminUser(); }catch(e){}
     const ro = adm ? '' : ' readonly', dis = adm ? '' : ' disabled';
     const paint = c => {
       const TT = c.T || {[c.preset]: c.t};
       const tbP = pk => { const T = TT[pk] || {}, at = pk === c.preset ? 'data-dct="' : 'data-dctx="' + pk + ':';
-        return (k, lb, hint) => '<label class="dc-tb"><b>' + lb + '</b><small>' + hint + '</small><textarea ' + at + k + '" data-latin="1" rows="6" dir="auto"' + ro + '>' + esc(k === 'sh' ? (T.sh || '') : dcTxt(T[k])) + '</textarea></label>'; };
-      const tbs = pk => { const tb = tbP(pk), iso = pk === 'iso'; return tb('typ', 'نوع اطلاعات', iso ? 'ISO: DR نقشه، M3 مدل، SP مشخصات…' : 'کد نوع سند یا نقشه') + tb('dsc', 'نقش / دیسیپلین', iso ? 'ISO: A معماری، S سازه، M مکانیک، E برق…' : 'کد رشته') + tb('suit', 'وضعیت (Suitability)', 'عنوان = وضعیت سند در سامانه')
-        + tb('org', 'پدیدآورنده‌ها', 'کد = نام شرکت یا تیم طراح (همان نام «طراح» در فرم)') + tb('zn', 'حجم / زون / بلوک', 'ZZ = همه') + tb('lvl', 'تراز', 'خالی = خودکار از طبقات پروژه')
-        + tb('stg', 'مرحله', 'RIBA یا فازهای رایج ایران (فاز ۰، ۱، ۲) — <button type="button" class="lnk" data-dcstg="riba">RIBA</button> · <button type="button" class="lnk" data-dcstg="iran">فازهای ایران</button>') + tb('sh', 'فهرست شیت‌ها (اختیاری)', 'هر خط: <code>A 0100 = عنوان</code>'); };
+        return ([k, lb, hIso, hAll]) => { const txt = k === 'sh' ? (T.sh || '') : dcTxt(T[k]), R = dcRowsOf(txt);
+          return '<div class="dc-tb" data-dctb="' + k + '"><div class="dc-tbh"><b>' + lb + '</b><em>' + toFa(R.length) + '</em></div><small>' + (pk === 'iso' ? hIso : hAll) + '</small>'
+            + '<textarea ' + at + k + '" hidden>' + esc(txt) + '</textarea><div class="dc-rows">' + R.map(r => dcRowHtml(r, adm)).join('') + '</div>'
+            + (adm ? '<button type="button" class="dc-radd" data-dcradd="1">+ افزودن کد</button>' : '') + '</div>'; }; };
+      const tbs = pk => { const tb = tbP(pk); return DC_TBL.map(tb).join(''); };
       const tpNow = c.tp || c.preset, tpShow = dcTpShow && TT[dcTpShow] ? dcTpShow : tpNow;
       const NAV = [['std', 'استاندارد و پایه'], ['use', 'کاربرد در بخش‌ها'], ['pat', 'قالب کدها'], ['tab', 'جدول کدها'], ['prj', 'مراحل و بلوک‌ها']];
       return '<div class="dc-set"><div class="dc-top"><nav class="dc-nav" role="tablist">' + NAV.map(x => '<button type="button" role="tab" data-dcnav="' + x[0] + '"' + (x[0] === dcPane ? ' class="on" aria-selected="true"' : '') + '>' + x[1] + '</button>').join('') + '</nav>'
@@ -69037,6 +69033,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + DC_KINDS.map(([k, t]) => '<div class="dc-pr"><b>' + t + '</b><input type="text" dir="ltr" data-dcpat="' + k + '" value="' + esc(c.pat[k] || '') + '"' + ro + '><code class="dc-ex" data-dcex="' + k + '" dir="ltr">' + esc(dcFull(k, DC_EX[k] || {})) + '</code></div>').join('')
       + '<div class="dc-pr"><b>وضعیت و ویرایش (کنار شناسه)</b><input type="text" dir="ltr" data-dcc="tail" value="' + esc(c.tail || '') + '" placeholder="خالی = ندارد"' + ro + '><code class="dc-ex" dir="ltr">' + esc(c.tail ? dcBuild('design', DC_EX.design, null, c.tail) : '—') + '</code></div></section>'
       + '<section class="dc-p" data-dcp="tab"><h4>جدول کدها</h4><p class="dc-tk">هر خط: <code>کد = عنوان</code>. عنوان‌ها همان گزینه‌های فرم‌اند (نوع سند، رشته، وضعیت، طراح) و با انتخاب هرکدام کد همان بخش عوض می‌شود. چند عنوان می‌توانند یک کد داشته باشند.</p></p>'
+      + (adm ? '<div class="dc-xl"><button type="button" class="mini" data-dcxout="1">خروجی اکسل جدول‌ها</button><label class="mini dc-xin">ورود از اکسل<input type="file" accept=".xlsx,.xls,.csv" data-dcxin="1" hidden></label><small>هر جدول یک برگه با ستون‌های «کد» و «عنوان»</small></div>' : '')
       + '<div class="dc-tpsw" role="tablist">' + Object.keys(DC_PRESETS).map(pk => '<button type="button" data-dctp="' + pk + '"' + (pk === tpShow ? ' class="on"' : '') + '><b>' + esc(DC_PRESETS[pk].nm) + '</b><small>' + (pk === tpNow ? 'فرم‌های طراحی از این جدول' : pk === c.preset ? 'استاندارد پایه' : 'برای بخش‌هایی که این استاندارد را دارند') + '</small></button>').join('') + '</div>'
       + Object.keys(DC_PRESETS).map(pk => '<div class="dc-tbs" data-tp="' + pk + '"' + (pk === tpShow ? '' : ' hidden') + '>' + tbs(pk) + '</div>').join('')
       + '</section>'
@@ -69052,13 +69049,27 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const read = () => { const o = {preset: (m.querySelector('.dc-pb.on') || {dataset: {}}).dataset.dcpre || 'iso'}; m.querySelectorAll('[data-dcc]').forEach(e => { o[e.dataset.dcc] = e.type === 'checkbox' ? e.checked : e.value.trim(); }); o.shW = +o.shW || 4; const old = window.__dcCfg || {}; if(old.rvw) o.rvw = old.rvw; if(old.fin) o.fin = old.fin; o.use = {}; m.querySelectorAll('[data-dcuse]').forEach(e => { if(e.value && e.value !== 'main') o.use[e.dataset.dcuse] = e.value; }); o.pat = {}; m.querySelectorAll('[data-dcpat]').forEach(e => { o.pat[e.dataset.dcpat] = e.value.trim(); }); o.t = {}; m.querySelectorAll('[data-dct]').forEach(e => { o.t[e.dataset.dct] = e.dataset.dct === 'sh' ? e.value : dcParse(e.value); });
       o.tx = {}; m.querySelectorAll('[data-dctx]').forEach(e => { const [pk, k] = e.dataset.dctx.split(':'); (o.tx[pk] = o.tx[pk] || {})[k] = k === 'sh' ? e.value : dcParse(e.value); }); return o; };
     const exUpd = () => { const keep = window.__dcCfg; window.__dcCfg = read(); m.querySelectorAll('[data-dcex]').forEach(e => { e.textContent = dcFull(e.dataset.dcex, DC_EX[e.dataset.dcex] || {}); }); window.__dcCfg = keep; };
+    m.addEventListener('input', e => { const tb = e.target.closest && e.target.closest('.dc-tb'); if(tb && e.target.closest('.dc-r')) dcRowsSync(tb); }, true);
     m.addEventListener('input', exUpd); m.addEventListener('change', exUpd);
+    const visTbs = () => m.querySelector('.dc-tbs:not([hidden])');
+    m.addEventListener('change', async e => { const fi = e.target.closest && e.target.closest('[data-dcxin]'); if(!fi || !fi.files || !fi.files[0]) return;
+      try{ await window.dcXlsxReady(); const wb = XLSX.read(await fi.files[0].arrayBuffer(), {type: 'array'}); let n = 0; const G = visTbs();
+        wb.SheetNames.forEach(sn => { const def = DC_TBL.find(x => x[1] === sn.trim() || x[0] === sn.trim().toLowerCase()); if(!def) return; const ta = G.querySelector('[data-dctb="' + def[0] + '"] textarea'); if(!ta) return;
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header: 1, defval: ''}).slice(1).map(r => [String(r[0] || '').trim(), String(r[1] || '').trim()]).filter(r => r[0] && r[1]);
+          ta.value = rows.map(r => r[0] + ' = ' + r[1]).join('\n'); dcRowsPaint(ta, adm); n++; });
+        exUpd(); shrToast(n ? toFa(n) + ' جدول از اکسل آمد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید' : 'برگه‌ای با نام جدول‌ها پیدا نشد'); }
+      catch(er){ showDialog('err', 'اکسل خوانده نشد', friendlyErr(er)); } finally{ fi.value = ''; } });
     m.addEventListener('click', async e => {
       const nv = e.target.closest('[data-dcnav]'); if(nv){ pane(nv.dataset.dcnav); return; }
+      const ra = e.target.closest('[data-dcradd]'); if(ra){ const tb = ra.closest('.dc-tb'), box = tb.querySelector('.dc-rows'); box.insertAdjacentHTML('beforeend', dcRowHtml(['', ''], adm)); box.lastElementChild.querySelector('.dc-rc').focus(); box.scrollTop = box.scrollHeight; return; }
+      const rd = e.target.closest('[data-dcrdel]'); if(rd){ const tb = rd.closest('.dc-tb'); rd.closest('.dc-r').remove(); dcRowsSync(tb); exUpd(); return; }
+      if(e.target.closest('[data-dcxout]')){ try{ await window.dcXlsxReady(); const G = visTbs(), wb = XLSX.utils.book_new();
+          DC_TBL.forEach(([k, lb]) => { const ta = G.querySelector('[data-dctb="' + k + '"] textarea'); const ws = XLSX.utils.aoa_to_sheet([['کد', 'عنوان']].concat(dcRowsOf(ta ? ta.value : ''))); ws['!cols'] = [{wch: 14}, {wch: 48}]; XLSX.utils.book_append_sheet(wb, ws, lb.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31)); });
+          XLSX.writeFile(wb, 'coding-tables-' + (G.dataset.tp || 'base') + '.xlsx'); }catch(er){ showDialog('err', 'خروجی ساخته نشد', friendlyErr(er)); } return; }
       const tpb = e.target.closest('[data-dctp]'); if(tpb){ dcTpShow = tpb.dataset.dctp; m.querySelectorAll('[data-dctp]').forEach(b => b.classList.toggle('on', b === tpb)); m.querySelectorAll('.dc-tbs[data-tp]').forEach(g => { g.hidden = g.dataset.tp !== dcTpShow; }); return; }
       const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org, use: cur.use, tx: cur.tx}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
-      const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = (sg.closest('.dc-tbs') || m).querySelector('[data-dct="stg"], [data-dctx$=":stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); ta.dispatchEvent(new Event('input', {bubbles: true})); m.querySelectorAll('.dc-stgs [data-dcstg]').forEach(x => x.classList.toggle('on', x === sg)); try{ shrToast('نظام مراحل عوض شد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید'); }catch(er){} } return; }
-      if(e.target.closest('[data-dclvl]')){ const ta = m.querySelector('.dc-tbs:not([hidden]) :is([data-dct="lvl"], [data-dctx$=":lvl"])'); const keep = window.__dcCfg; const r = read(); r.t.lvl = []; window.__dcCfg = r; ta.value = dcTxt(dcLvlList()); window.__dcCfg = keep; return; }
+      const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = (sg.closest('.dc-tbs') || m).querySelector('[data-dct="stg"], [data-dctx$=":stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); dcRowsPaint(ta, adm); ta.dispatchEvent(new Event('input', {bubbles: true})); m.querySelectorAll('.dc-stgs [data-dcstg]').forEach(x => x.classList.toggle('on', x === sg)); try{ shrToast('نظام مراحل عوض شد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید'); }catch(er){} } return; }
+      if(e.target.closest('[data-dclvl]')){ const ta = m.querySelector('.dc-tbs:not([hidden]) :is([data-dct="lvl"], [data-dctx$=":lvl"])'); const keep = window.__dcCfg; const r = read(); r.t.lvl = []; window.__dcCfg = r; ta.value = dcTxt(dcLvlList()); window.__dcCfg = keep; dcRowsPaint(ta, adm); exUpd(); return; }
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
       try{ const o = slim(read()); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
   };
@@ -73539,7 +73550,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      دسته نشان داده می‌شود. جست‌وجو و فیلتر همهٔ دسته‌ها را با هم
      می‌گردند. دکمهٔ + هر کارت مستقیم فرم ثبت همان دسته را باز می‌کند. */
   let admCat = 'statement';
-  try{ const c0 = localStorage.getItem('admCat'); if(c0) admCat = c0; }catch(e){}
+  try{ const c0 = localStorage.getItem(pjLs('admCat')); if(c0) admCat = c0; }catch(e){}
   /* نوار پرش دفتر فنی: بعد از دسته‌ها، زیرگروه‌های دستهٔ باز (مثلاً در صورت وضعیت و
      قرارداد: در حال تنظیم، درون‌سازمانی، برون‌سازمانی …) تا مثل بقیهٔ برگه‌ها با
      اسکرول روشن شوند و از هر جای صفحه بشود به گروه دیگر پرید */
@@ -73850,7 +73861,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!quiet) admHomeSet(false);
     if(!document.getElementById('secAdm' + k) || k === 'chore' || k === 'all') k = 'statement';
     admCat = k; admSort = admSortK(k);
-    try{ localStorage.setItem('admCat', k); }catch(e){}
+    try{ localStorage.setItem(pjLs('admCat'), k); }catch(e){}
     { const lz = document.getElementById('admList-' + k); if(lz && lz.__lazy && adminLoaded){ lz.__lazy = 0; try{ applyAdminFilters(); }catch(e){} } }
     try{ window.__admBarPaint && window.__admBarPaint(); }catch(e){}
     box.dataset.cat = k;
@@ -74414,7 +74425,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
 
   let genHideDone = false;
-  try{ genHideDone = localStorage.getItem('siteLogM.genHideDone.v1') === '1'; }catch(e){}
+  try{ genHideDone = localStorage.getItem(pjLs('siteLogM.genHideDone.v1')) === '1'; }catch(e){}
 
   function genToolbarHtml(total, shown, hiddenN){
     return '<div class="gen-tools">'
@@ -74487,7 +74498,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(gd){
       e.preventDefault(); e.stopPropagation();
       genHideDone = !genHideDone;
-      try{ localStorage.setItem('siteLogM.genHideDone.v1', genHideDone ? '1' : '0'); }catch(err){}
+      try{ localStorage.setItem(pjLs('siteLogM.genHideDone.v1'), genHideDone ? '1' : '0'); }catch(err){}
       reloadGeneralLists();
       return;
     }
@@ -74496,7 +74507,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       e.preventDefault(); e.stopPropagation();
       genHideSave(new Set());
       genHideDone = false;
-      try{ localStorage.setItem('siteLogM.genHideDone.v1', '0'); }catch(err){}
+      try{ localStorage.setItem(pjLs('siteLogM.genHideDone.v1'), '0'); }catch(err){}
       reloadGeneralLists();
       return;
     }
@@ -74801,11 +74812,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      هر سند با ستون «طبقه» به یک طبقه (یا کل ساختمان) بسته است. نمای «طبقه»
      یک جدول خلاصه می‌دهد (برای هر طبقه: چند نقشه، چندتا تأییدشده، چندتا در
      گردش، چندتا اصلاحی) و زیرش دسته‌های هر طبقه، از بام تا زیرزمین. */
-  let dsGrpMode = (function(){ try{ return localStorage.getItem('siteLogM.dsGrp2') || 'floor'; }catch(e){ return 'floor'; } })();
+  let dsGrpMode = (function(){ try{ return localStorage.getItem(pjLs('siteLogM.dsGrp2')) || 'floor'; }catch(e){ return 'floor'; } })();
   /* لایهٔ اضافه «به تفکیک شخص»: کسی که سند الان به او سپرده شده (نگه‌دارنده)،
      وگرنه مسئول پرونده. روشن باشد، پنجره‌ها تا همین لایه باز می‌آیند و فقط
      خود کارت‌ها بسته‌اند. */
-  let dsGrpPerson = (function(){ try{ return localStorage.getItem('siteLogM.dsGrpP') === '1'; }catch(e){ return false; } })();
+  let dsGrpPerson = (function(){ try{ return localStorage.getItem(pjLs('siteLogM.dsGrpP')) === '1'; }catch(e){ return false; } })();
   /* «به تفکیک شخص» در اسناد طراحی یعنی کسی که نقشه را کشیده (طراح)،
      نه مسئول پیگیری یا کسی که سند الان دستش است */
   function dsPersonOf(r){
@@ -74847,13 +74858,13 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   document.addEventListener('click', e => {
     const gp = e.target.closest && e.target.closest('[data-dsgrpp]');
     if(gp){
-      dsGrpPerson = !dsGrpPerson; try{ localStorage.setItem('siteLogM.dsGrpP', dsGrpPerson ? '1' : ''); }catch(err){}
+      dsGrpPerson = !dsGrpPerson; try{ localStorage.setItem(pjLs('siteLogM.dsGrpP'), dsGrpPerson ? '1' : ''); }catch(err){}
       try{ applyAdminFilters(); }catch(err){}
       return;
     }
     const g = e.target.closest && e.target.closest('[data-dsgrp]');
     if(g){
-      dsGrpMode = g.dataset.dsgrp; try{ localStorage.setItem('siteLogM.dsGrp2', dsGrpMode); }catch(err){}
+      dsGrpMode = g.dataset.dsgrp; try{ localStorage.setItem(pjLs('siteLogM.dsGrp2'), dsGrpMode); }catch(err){}
       try{ applyAdminFilters(); }catch(err){}
       return;
     }
@@ -76000,7 +76011,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function vdLive(v){
     const has = k => Object.prototype.hasOwnProperty.call(v, k);
     try{ if(has('admView')) admView = v.admView; }catch(e){}
-    try{ if(has('admSort')){ admSort = v.admSort; ADM_SORT_K = {}; try{ localStorage.setItem('admSort3', '{}'); }catch(e2){} ['statement','contract','letter','minute','design'].forEach(k => { ADM_SORT_K[k] = v.admSort; }); } }catch(e){}
+    try{ if(has('admSort')){ admSort = v.admSort; ADM_SORT_K = {}; try{ localStorage.setItem(pjLs('admSort3'), '{}'); }catch(e2){} ['statement','contract','letter','minute','design'].forEach(k => { ADM_SORT_K[k] = v.admSort; }); } }catch(e){}
     try{ if(has('admGroupMode')) admGroupMode = v.admGroupMode; }catch(e){}
     try{ if(has('siteLogM.dsGrpP')) dsGrpPerson = v['siteLogM.dsGrpP'] === '1'; }catch(e){}
     try{ if(has('siteLogM.ltrDir') && /^(ارسالی|دریافتی)$/.test(v['siteLogM.ltrDir'])) admLtrDir = v['siteLogM.ltrDir']; }catch(e){}
@@ -76126,15 +76137,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
         const k = curCat();
-        if(k === 'design'){ dsGrpPerson = !dsGrpPerson; try{ localStorage.setItem('siteLogM.dsGrpP', dsGrpPerson ? '1' : ''); }catch(e2){} }
-        else{ admGroupMode = admGroupMode === 'nested' ? 'flat' : 'nested'; try{ localStorage.setItem('admGroupMode', admGroupMode); }catch(e2){} }
+        if(k === 'design'){ dsGrpPerson = !dsGrpPerson; try{ localStorage.setItem(pjLs('siteLogM.dsGrpP'), dsGrpPerson ? '1' : ''); }catch(e2){} }
+        else{ admGroupMode = admGroupMode === 'nested' ? 'flat' : 'nested'; try{ localStorage.setItem(pjLs('admGroupMode'), admGroupMode); }catch(e2){} }
         redraw();
         return;
       }
       const b = e.target.closest('[data-admview]');
       if(!b || b.dataset.admview === admView) return;
       admView = b.dataset.admview;
-      try{ localStorage.setItem('admView', admView); }catch(e2){}
+      try{ localStorage.setItem(pjLs('admView'), admView); }catch(e2){}
       redraw();
     });
   })();
@@ -80630,7 +80641,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      مثل بخش اداری: فهرستی (پایه) هر کار را در یک سطر نشان می‌دهد و با
      لمس، همان کارت کامل زیرش باز می‌شود؛ کارتی همه را باز نشان می‌دهد. */
   let taskView = 'list';
-  try{ const tv = localStorage.getItem('taskView'); if(tv === 'card' || tv === 'list') taskView = tv; }catch(e){}
+  try{ const tv = localStorage.getItem(pjLs('taskView')); if(tv === 'card' || tv === 'list') taskView = tv; }catch(e){}
   /* دسته‌بندی لیست فعالیت: پرسنل (مسئول)، پیمانکار، یا طبقه */
   /* دسته‌بندی همیشه با کاشی‌هاست (افراد، کارفرما، مشاور، پیمانکاران، طبقه)؛ دکمه‌های جدا حذف شد */
   let taskGroup = 'person';
@@ -89410,7 +89421,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
      («عکس پیشرفت»: طبقه، فعالیت، شرح) + عکس‌های پیوست اسناد و بازرسی‌ها؛
      به ترتیب ماه، با فیلتر طبقه و منبع، و نمایشگر تمام‌صفحه. */
   const GL_KIND = 'عکس پیشرفت';
-  const gl = {t: 0, list: [], fl: '', src: '', add: false, n: 48, q: '', view: (function(){ try{ return localStorage.getItem('siteLogM.glView') || 'grid'; }catch(e){ return 'grid'; } })()};
+  const gl = {t: 0, list: [], fl: '', src: '', add: false, n: 48, q: '', view: (function(){ try{ return localStorage.getItem(pjLs('siteLogM.glView')) || 'grid'; }catch(e){ return 'grid'; } })()};
   const glCanAdd = () => { try{ return isAdminUser() || can('write.daily') || can('write.adm') || can('qc.request'); }catch(e){ return false; } };
   async function glLoad(force){
     if(!force && gl.t && Date.now() - gl.t < 30000) return gl;
@@ -89479,7 +89490,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const t = e.target; if(!t.closest || !t.closest('#arcBody')) return;
     const ad = t.closest('[data-gladd]'); if(ad){ gl.add = ad.dataset.gladd === '1'; arcRender(); return; }
     const s = t.closest('[data-glsrc]'); if(s){ gl.src = s.dataset.glsrc; gl.n = 48; arcRender(); return; }
-    const gv = t.closest('[data-glview]'); if(gv){ gl.view = gv.dataset.glview; try{ localStorage.setItem('siteLogM.glView', gl.view); }catch(err){} arcRender(); return; }
+    const gv = t.closest('[data-glview]'); if(gv){ gl.view = gv.dataset.glview; try{ localStorage.setItem(pjLs('siteLogM.glView'), gl.view); }catch(err){} arcRender(); return; }
     const f = t.closest('[data-glfl]'); if(f){ gl.fl = f.dataset.glfl; gl.n = 48; arcRender(); return; }
     const ty = t.closest('[data-glty]'); if(ty){ gl.ty = gl.ty === ty.dataset.glty ? '' : ty.dataset.glty; gl.n = 48; arcRender(); return; }
     if(t.closest('[data-glmore]')){ gl.n += 48; arcRender(); return; }
@@ -103683,6 +103694,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       tables: [{t: 'خلاصهٔ هر پیمانکار', head: ['پیمانکار', 'تخصص', 'روز حضور', 'نفر-روز', 'بیشترین نفرات', 'میانگین نفر در روز', 'اولین روز', 'آخرین روز'], rows},
                {t: 'حضور روزبه‌روز (نفر)', head: ['پیمانکار', 'تخصص'].concat(D.map(d => toFa(d.slice(5)))), rows: matrix}]}; }
   /* ---------- خروجی ---------- */
+  window.dcXlsxReady = () => rcXlsxReady();
   function rcXlsxReady(){
     if(window.XLSX) return Promise.resolve();
     return new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'lib/xlsx-0.18.5.full.min.js'; s.onload = () => res(); s.onerror = () => rej(new Error('کتابخانهٔ اکسل بارگذاری نشد')); document.head.appendChild(s); });
