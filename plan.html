@@ -987,7 +987,8 @@ function tkPeople(a){ const map = n => { const k = S.dir.get(n); if(k === 'p' ||
 function tkMissing(){ const C = S.calc; return S.acts.filter(a => !a.tk && !C.isSum(a) && !a.ms && tkPeople(a).length && (+a.pc || 0) < 100); }
 async function tkCreate(list){ const C = S.calc; let ok = 0, bad = 0, err = '';
   for(const a of list){ const r = C.R.get(a.id); if(!r) continue; const ppl = tkPeople(a), par = actById(a.p);
-    const body = {title: String(a.n || '').slice(0, 200), start_date: d2fa(wDay(r.es)), due_date: d2fa(wDay(Math.max(r.es, r.ef - 1))), owner1: ppl[0] || '', owner2: ppl[1] || '', created_by: S.me || '', approved: true, category: par ? String(par.n || '').slice(0, 60) : ''};
+    /* ۴۸۳: «تاریخ ابلاغ» = روزی که فعالیت واقعاً ابلاغ می‌شود (امروز)، نه شروع برنامه‌ریزی‌شده؛ شروع برنامه روی کارت فعالیت از پیوند برنامه دیده می‌شود */
+    const body = {title: String(a.n || '').slice(0, 200), start_date: d2fa(todayD()), due_date: d2fa(wDay(Math.max(r.es, r.ef - 1))), owner1: ppl[0] || '', owner2: ppl[1] || '', created_by: S.me || '', approved: true, category: par ? String(par.n || '').slice(0, 60) : ''};
     try{ let R = null; try{ R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); }
       catch(e){ if(/category/.test(e.message || '')){ delete body.category; R = await api('tasks', {method: 'POST', prefer: 'return=representation', body: [body]}); } else throw e; }
       const id = R && R[0] && R[0].id; if(id != null){ a.tk = String(id); a.ta = 1; queueSave(a.id); if(S.tasks) S.tasks.push(R[0]); ok++; } else bad++; }
@@ -1003,7 +1004,13 @@ async function tkAutoSync(force){ if(S.ro || tkBusy || S.cfg.tkAuto === 0) retur
     if(M.length){ const free = new Map(); tkUnlinked().forEach(t => { const k = String(t.title || '').trim(); if(k && !free.has(k)) free.set(k, t); });
       const toMake = []; M.forEach(a => { const t = free.get(String(a.n || '').trim()); if(t){ a.tk = String(t.id); a.ta = 1; free.delete(String(a.n || '').trim()); queueSave(a.id); linked++; } else toMake.push(a); });
       if(toMake.length){ const R = await tkCreate(toMake); made = R.ok; toMake.forEach(a => { if(a.tk) a.ta = 1; }); if(R.bad) bad = R.err; } }
-    const P = tkPushPlan().filter(x => x.a.ta); if(P.length){ const R = await tkSendPlan(P); upd = R.ok; }
+    /* اصلاح فعالیت‌هایی که پیش‌تر با «تاریخ ابلاغ = شروع برنامه» ساخته شدند: تاریخ ساخت خود فعالیت (یا امروز) */
+    const fix = []; S.acts.forEach(a => { if(!a.ta || !a.tk || S.calc.isSum(a)) return; const t = tkById(a.tk), r = S.calc.R.get(a.id); if(!t || !r || !t.start_date) return;
+      const ps = toEn(d2fa(wDay(r.es))), cur = toEn(String(t.start_date)); if(cur !== ps || ps === toEn(d2fa(todayD()))) return;
+      let nd = d2fa(todayD()); try{ if(t.created_at){ const g = new Date(t.created_at); if(!isNaN(g)){ const j = g2j(g.getFullYear(), g.getMonth() + 1, g.getDate()); nd = toFa(j[0] + '/' + String(j[1]).padStart(2, '0') + '/' + String(j[2]).padStart(2, '0')); } } }catch(e){}
+      if(toEn(nd) !== cur) fix.push({t, ch: {start_date: nd}, a}); });
+    if(fix.length){ const R = await tkSendPlan(fix); upd += R.ok; }
+    const P = tkPushPlan().filter(x => x.a.ta); if(P.length){ const R = await tkSendPlan(P); upd += R.ok; }
     if(made || linked){ await flush0(); }
     if(made || linked || upd) toast('لیست فعالیت‌ها هم‌گام شد', 'ok', [made ? toFa(made) + ' فعالیت ساخته شد' : '', linked ? toFa(linked) + ' پیوند خورد' : '', upd ? toFa(upd) + ' به‌روز شد' : ''].filter(Boolean).join(' · '));
     if(bad) toast('ساختن در لیست فعالیت‌ها کامل نشد', 'bad', bad);
