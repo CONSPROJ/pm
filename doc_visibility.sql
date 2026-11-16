@@ -69,3 +69,45 @@ begin
 end $$;
 
 select tablename, policyname from pg_policies where schemaname = 'public' and policyname = 'pm party scope' order by tablename;
+
+-- ===== ۴۶۳: اشتراک یک سند با تیم (lists «اشتراک سند»: «نوع:شناسه¦{"to":["تیم",…],…}») =====
+create or replace function public.pm_doc_shared(k text, rid text) returns boolean
+language sql stable security definer
+set search_path = public
+as $$
+  select case when public.pm_party() is null then true else exists (
+    select 1 from public.lists
+     where kind = 'اشتراک سند'
+       and value like k || ':' || rid || '¦%'
+       and project_id in (coalesce(public.pm_project(), 'p1'), '*')
+       and value ilike '%"' || public.pm_party() || '"%') end
+$$;
+revoke all on function public.pm_doc_shared(text, text) from public;
+grant execute on function public.pm_doc_shared(text, text) to anon, authenticated;
+
+do $$
+declare t text; k text;
+begin
+  foreach t in array array['statements', 'contracts', 'letters'] loop
+    if to_regclass('public.' || t) is not null then
+      k := left(t, length(t) - 1);
+      execute format('drop policy if exists "pm party scope" on public.%I', t);
+      execute format('create policy "pm party scope" on public.%I as restrictive for select using ((select public.pm_doc_shared(%L, id::text)) or case (select public.pm_doc_vis(%L)) when ''all'' then true when ''none'' then false else (select public.pm_party_ok(party)) end)', t, k, k);
+    end if;
+  end loop;
+
+  if to_regclass('public.designs') is not null then
+    drop policy if exists "pm party scope" on public.designs;
+    create policy "pm party scope" on public.designs as restrictive for select
+      using ((select public.pm_doc_shared('design', id::text)) or case (select public.pm_doc_vis('design')) when 'all' then true when 'none' then false
+             else ((select public.pm_party_ok(party)) or (select public.pm_party_draft_ok()) or coalesce(status, '') in ('تأیید شده', 'تأیید مشروط', 'برای اجرا')) end);
+  end if;
+
+  if to_regclass('public.minutes') is not null then
+    drop policy if exists "pm party scope" on public.minutes;
+    create policy "pm party scope" on public.minutes as restrictive for select
+      using ((select public.pm_doc_shared('minute', id::text)) or case (select public.pm_doc_vis('minute')) when 'all' then true when 'none' then false else (select public.pm_party_txt_ok(minutes::text)) end);
+  end if;
+end $$;
+
+select tablename, policyname from pg_policies where schemaname = 'public' and policyname = 'pm party scope' order by tablename;
