@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261115164127">
+<meta name="pm-build" content="20261116045740">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -1945,6 +1945,8 @@
   .af .add-row input[type=text]{flex:1 1 120px;}
   .af .rvw-pickrow{display:flex;flex-wrap:wrap;gap:6px;}
   /* ====== مسئولین بررسی داخلی v2 ====== */
+  .ib-del{height:34px;padding:0 14px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--alert);font:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-inline-start:auto;}
+  .ib-del:hover{background:var(--alert-soft);}
   .rvw2-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .rvw2-h label{margin:0 !important;}
   .rvw2-n{margin-inline-start:auto;font-size:10.5px;font-weight:700;color:var(--sky);padding:2px 9px;border-radius:99px;background:var(--sky-soft);}
@@ -68729,7 +68731,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function dcCfg0(){
     const c = window.__dcCfg || {}, d = DC_PRESETS[c.preset] || DC_PRESETS.iso;
     return {preset: DC_PRESETS[c.preset] ? c.preset : 'iso', prj: c.prj || dcPrjAuto(), org: c.org || '', sep: c.sep || d.sep, na: c.na != null && c.na !== '' ? c.na : d.na, multi: c.multi || d.multi, multiDsc: c.multiDsc || d.multiDsc,
-      rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
+      rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
   async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} return dcCfg(); }
@@ -68832,6 +68834,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         segs.forEach((seg, i) => { const m = /^\{([A-Z]+)\}$/.exec(seg); if(m){ if(parts[i] && parts[i] !== c.na && m[1] !== 'P' && m[1] !== 'REV') P[m[1]] = parts[i]; } else if(seg.indexOf('{') === -1 && seg !== parts[i]) ok = false; });
         if(ok) return P; } }catch(e){} return null; }
   window.dcParseCode = dcParseCode;
+  /* ۴۲۹: تأیید نهایی نقشه‌ها با کارفرماست؟ (مدیریت سامانه ← کدینگ ← تأییدکنندهٔ نقشه‌ها) */
+  window.dcFinEmp = () => { try{ return dcCfg().fin === 'emp'; }catch(e){ return false; } };
+  window.dcRevLbl = (rev, suit) => { try{ return dcRev(rev, suit) || String(rev == null ? '0' : rev); }catch(e){ return String(rev || '0'); } };
   /* یک مؤلفهٔ کدینگ برای همه‌جا (۴۰۱): فرم اسناد طراحی (بخش‌های رشته/نوع/وضعیت از فیلدهای فرم) و ترانسمیتال (own: همهٔ بخش‌ها همین‌جا انتخاب می‌شوند) */
   function dcDesignFieldHtml(r, O){
     O = O || {}; const own = !!O.own, dlId = 'dcShDL' + (++dcDlN);
@@ -68966,8 +68971,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             + K.map(([k, t]) => { const u = U[k] || 'main', pat = u === 'off' ? '' : (u === 'main' ? String((c.pat || {})[k] || '') : String((DC_PRESETS[u].pat || {})[k] || ''));
                 return '<label class="dc-ur"><b>' + t + '</b><select data-dcuse="' + k + '"' + dis + '>' + O.map(x => '<option value="' + x[0] + '"' + (x[0] === u ? ' selected' : '') + '>' + esc(x[1]) + '</option>').join('') + '</select><code dir="ltr">' + esc(pat || '—') + '</code></label>'; }).join('') + '</div></section>'; })()
       + (function(){ const D = (c.t.dsc || []).filter((x, i, A) => A.findIndex(y => y[0] === x[0]) === i && !DC_NONDESIGN.has(x[0])), R = c.rvw || {}; let P = []; try{ P = window.OG_DEF_NAMES ? window.OG_DEF_NAMES() : []; }catch(e){}
-          if(!D.length) return ''; const o = v => '<option value="">— صف بررسی دفتر فنی —</option>' + P.map(n => '<option' + (n === v ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
-          return '<section><h4>تأییدکنندهٔ نقشه‌های هر رشته</h4><p class="dc-tk">ترانسمیتال‌های هر رشته مستقیم به صف کسی می‌رود که این سمت را دارد (مثلاً معماری → مسئول طراحی معماری). خالی = صف بررسی دفتر فنی.</p><div class="dc-use">'
+          const fin = '<label class="dc-ur dc-fin"><b>تأیید نهایی نقشه‌ها</b><select data-dcc="fin"' + dis + '><option value="int"' + (c.fin !== 'emp' ? ' selected' : '') + '>با تیم اصلی (تأیید در مکاتبات = نهایی)</option><option value="emp"' + (c.fin === 'emp' ? ' selected' : '') + '>با کارفرما (تأیید در مکاتبات = تأیید داخلی)</option></select></label>';
+          const o = v => '<option value="">— صف بررسی دفتر فنی —</option>' + P.map(n => '<option' + (n === v ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+          return '<section><h4>تأییدکنندهٔ نقشه‌های هر رشته</h4><p class="dc-tk">ترانسمیتال‌های هر رشته مستقیم به صف کسی می‌رود که این سمت را دارد (مثلاً معماری → مسئول طراحی معماری). خالی = صف بررسی دفتر فنی. اگر تأیید نهایی با کارفرماست، تأیید در مکاتبات فقط «تأیید داخلی» ثبت می‌شود و نقشه «نزد مشاور/کارفرما» می‌ماند تا تأیید کارفرما.</p><div class="dc-use">' + fin
             + D.map(x => '<label class="dc-ur"><b>' + esc(x[0] + ' · ' + String(x[1]).split(' — ').pop()) + '</b><select data-dcrvw="' + esc(x[0]) + '"' + dis + '>' + o(R[x[0]] || '') + '</select></label>').join('') + '</div></section>'; })()
       + '<section><h4>پایه</h4><div class="dc-row">'
       + '<label><u>کد پروژه</u><input type="text" data-dcc="prj" dir="ltr" value="' + esc(c.prj) + '" placeholder="۲ تا ۶ نویسه، مثلاً SBM"' + ro + '></label>'
@@ -70823,6 +70829,9 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const tk = img.dataset.tk, b = tk && s3ThB.get(tk); if(b){ img.src = b; return; }
     const c = tk && s3ThumbC.get(tk); if(c && c.t > Date.now() && c.u){ s3ThumbSet(img, c); return; }
     if(s3TIO) s3TIO.observe(img); else { s3TQ.push({img, tk: img.dataset.tk}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); } };
+  /* برای عکس‌هایی که هنوز در صفحه نیستند (فهرست پروژه‌ها پیش از باز شدن): بی‌درنگ در صف، نه با دیدن روی صفحه */
+  window.s3ThumbWatch = img => { if(img.dataset.q) return; img.dataset.q = '1'; const tk = img.dataset.tk, b = tk && s3ThB.get(tk); if(b){ img.src = b; return; }
+    const c = tk && s3ThumbC.get(tk); if(c && c.t > Date.now() && c.u){ s3ThumbSet(img, c); return; } if(tk){ s3TQ.push({img, tk}); if(!s3TT) s3TT = setTimeout(s3ThumbFlush, 60); } };
   new MutationObserver(ms => {
     for(const m of ms) for(const n of m.addedNodes){
       if(n.nodeType !== 1) continue;
@@ -88206,6 +88215,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   const ibDiscOpts = () => { const L = []; try{ window.discCatalog().forEach(([m, sub]) => { L.push(m); sub.forEach(x => L.push(x)); }); }catch(e){} return L; };
   const ibTypeOpts = () => { const L = []; try{ DS_TYPE_G.forEach(([g, A]) => A.forEach(x => L.push(x))); }catch(e){} return L; };
   const IB_ST = {q: ['در صف بررسی', 'run'], ok: ['تأیید و ثبت شد', 'ok'], no: ['رد شد', 'bad'], seen: ['دیده شد', 'ok']};
+  const IB_ST_EMP = ['تأیید داخلی · منتظر کارفرما', 'run'];
+  const ibStOf = o => (o && o.st === 'ok' && o.t === 'design' && window.dcFinEmp && window.dcFinEmp()) ? IB_ST_EMP : (IB_ST[o && o.st] || IB_ST.q);
   const IB_F = [['ti', 'عنوان / موضوع', 'text'], ['disc', 'رشته', 'sel', ['design'], ibDiscOpts], ['dtype', 'نوع مدرک', 'sel', ['design'], ibTypeOpts], ['party', 'از طرف', 'text'], ['no', 'شماره / کد مدرک', 'text'], ['rev', 'ویرایش (Rev)', 'text', ['design']], ['poi', 'هدف ارسال', 'sel', ['design'], () => IB_POI], ['d', 'تاریخ', 'date'], ['due', 'مهلت پاسخ', 'date', ['design', 'letter']], ['amt', 'مبلغ (ریال)', 'money', ['statement', 'contract']], ['cn', 'نام قرارداد', 'text', ['statement']], ['to', 'گیرنده (اختیاری؛ خالی = صف بررسی دفتر فنی)', 'text'], ['desc', 'توضیحات', 'area']];
   const ib = {list: [], tab: '', open: '', kind: 'letter', busy: false};
   function ibLoad(lists){
@@ -88251,6 +88262,17 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!(e.target.closest && e.target.closest('#ibBtn'))) return;
     umOpenIb(ibNews().length && !window.ibPending() ? 'mine' : 'in', '');
   });
+  /* ۴۲۹: حذف مکاتبه/ترانسمیتال فقط برای مدیر؛ سندی که از آن در «اسناد» ثبت شده سر جایش می‌ماند */
+  const ibAdm = () => { try{ return can('tab.admin') && !coScopeMe(); }catch(e){ return false; } };
+  document.addEventListener('click', async e => { const b = e.target.closest && e.target.closest('[data-ibdel]'); if(!b) return; e.preventDefault(); if(!ibAdm()) return;
+    const o = ib.list.find(x => x.id === b.dataset.ibdel); if(!o) return;
+    if(!await askConfirm('حذف «' + (o.ti || o.no || 'این مورد') + '»؟', 'از مکاتبات همهٔ کاربران حذف می‌شود و برنمی‌گردد.' + (o.made ? ' سندی که از آن در «اسناد» ثبت شده حذف نمی‌شود.' : ''), 'حذف')) return;
+    b.disabled = true;
+    try{ await supaFetch('lists?kind=eq.' + encodeURIComponent(IB_KIND) + '&value=like.' + encodeURIComponent(o.id + '¦*'), {method: 'DELETE'});
+      ib.list = ib.list.filter(x => x.id !== o.id);
+      for(const x of ib.list.filter(y => y.next === o.id || y.prev === o.id)){ const y = Object.assign({}, x); if(y.next === o.id) delete y.next; if(y.prev === o.id) delete y.prev; await ibSave(y).catch(() => {}); }
+      try{ clearNetCache(); }catch(er){} try{ ibBadge(); }catch(er){} ib.open = ''; ibRender(); try{ shrToast('حذف شد'); }catch(er){} }
+    catch(err){ b.disabled = false; showDialog('err', 'حذف نشد', friendlyErr(err)); } });
   async function ibSave(o){
     const v = Object.assign({}, o); delete v.id;
     await supaFetch('lists?kind=eq.' + encodeURIComponent(IB_KIND) + '&value=like.' + encodeURIComponent(o.id + '¦*'), {method: 'DELETE'}).catch(() => {});
@@ -88418,7 +88440,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const box = b.closest('[data-ibbox]') || document; if(box.querySelector('.up-it.busy')){ showDialog('warn', 'آپلود تمام نشده', 'تا پایان آپلود فایل‌ها صبر کنید.'); return; }
     const L = []; o.docs.forEach((d, i) => { const w = box.querySelector('.trr-fix[data-trfi="' + i + '"] .a-link'), f = w ? String(w.value || '').trim() : ''; if(!f) return;
       const rev = String((parseInt(toEn(String(d.rev || '0')), 10) || 0) + 1), code = trNextCode(d.code, rev); L.push(Object.assign({}, d, {rev, code, full: code, files: f, src: '', rv: '', cm: ''})); });
-    if(!L.length){ showDialog('warn', 'فایل اصلاحی', 'برای دست‌کم یک مدرک «نیاز به اصلاح» یا «رد» فایل اصلاحی بارگذاری کنید.'); return; }
+    if(!L.length){ showDialog('warn', 'فایل اصلاحی', 'برای دست‌کم یک مدرک' + (o.st === 'no' ? '' : ' «نیاز به اصلاح» یا «رد»') + ' فایل اصلاحی بارگذاری کنید.'); return; }
     const me = activeUserName(), now = todayShamsi() + ' ' + new Date().toTimeString().slice(0, 5), no = trNo();
     const n = {id: 'ib' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), t: 'design', st: 'q', by: me, at: now, ti: 'اصلاحیهٔ ' + (o.no || '') + (o.ti ? ' — ' + o.ti : ''), party: o.party, poi: o.poi, d: todayShamsi(), due: o.due || '', no, prev: o.id, docs: L,
       files: L.map(d => d.files).join('\n'), log: [{by: me, at: now, note: 'ترانسمیتال ' + no + ' ارسال شد — اصلاحیهٔ ' + (o.no || '')}]}; if(o.to) n.to = o.to; else if(o.rv) n.to = o.rv;
@@ -88489,7 +88511,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     return '<ol class="ibx-steps">' + S.map(x => '<li class="' + x[1] + '"><i></i><b>' + x[0] + '</b>' + (x[2] ? '<small>' + esc(x[2]) + '</small>' : '') + '</li>').join('') + '</ol>';
   }
   function ibRowHtml(o){
-    const st = IB_ST[o.st] || IB_ST.q, on = ib.open === o.id, R = ibCanR();
+    const st = ibStOf(o), on = ib.open === o.id, R = ibCanR();
     const unread = (R && o.st === 'q' && !ibReadSet().has(o.id)) || (ibMine(o) && o.st !== 'q' && !ibSeen().has(o.id + ':' + o.st));
     let nf = 0; try{ nf = attachList(o.files || '').length; }catch(e){}
     return '<button type="button" class="ibx-row' + (on ? ' on' : '') + (unread ? ' new' : '') + '" data-ibopen="' + esc(o.id) + '">'
@@ -88506,7 +88528,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const log = (o.log || []).slice().reverse().map(e => '<li><span class="ibx-la">' + rvAva(e.by || '?') + '</span><div><b>' + esc(e.by || '') + '</b> <small>' + esc(toFa(e.at || '')) + '</small>'
       + (e.note ? '<p>' + esc(e.note) + '</p>' : '')
       + (e.ch ? '<p class="ch">' + Object.keys(e.ch).map(k => { const f = IB_F.find(x => x[0] === k); const [a, b] = e.ch[k]; return esc((f ? f[1] : k === 'files' ? 'پیوست‌ها' : k)) + ': <s>' + esc(toFa(a || '—').slice(0, 60)) + '</s> ← <ins>' + esc(toFa(b || '—').slice(0, 60)) + '</ins>'; }).join('<br>') + '</p>' : '') + '</div></li>').join('');
-    const code = o.t !== 'design' ? ibCodeOf(o.t, o) : '', st = IB_ST[o.st] || IB_ST.q;
+    const code = o.t !== 'design' ? ibCodeOf(o.t, o) : '', st = ibStOf(o);
     /* ۴۲۱: فقط مشخصاتی که بالا (عنوان، شماره، فرستنده، تاریخ، گیرنده) نیامده‌اند؛ یک ردیف سبک */
     const kv = ibFieldsHtml(o, false, ['poi', 'due', 'cn', 'amt'].concat(o.t === 'design' && !o.docs ? ['disc', 'dtype', 'rev'] : []));
     return '<div class="ibx-pane ibm-read" data-ibbox="' + esc(o.id) + '">'
@@ -88521,7 +88543,6 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + (kv ? '<div class="ib-view ibm-kv">' + kv + '</div>' : '')
       + (o.prev || o.next ? '<div class="trx-chain">' + (o.prev ? '<button type="button" data-ibopen="' + esc(o.prev) + '">‹ ارسال قبلی (پیش از اصلاح)</button>' : '') + (o.next ? '<button type="button" data-ibopen="' + esc(o.next) + '">اصلاحیهٔ بعدی ›</button>' : '') + '</div>' : '')
       + (o.docs && o.docs.length ? trRegHtml(o) : '')
-      + (o.t === 'design' && o.docs && ibMine(o) && !o.next && (o.st === 'no' || (o.st === 'ok' && o.docs.some(d => d.rv === 'C' || d.rv === 'D'))) ? '<div class="ib-act"><button type="button" class="ib-go" data-trresub="' + esc(o.id) + '">ارسال اصلاحیه</button><small>مدارک «نیاز به اصلاح» با ویرایش بعدی آماده می‌شوند</small></div>' : '')
       + (!o.docs && ibFilesHtml(o.files) ? '<div class="ibm-sec"><u>پیوست‌ها</u>' + ibFilesHtml(o.files) + '</div>' : '')
       + refsV
       + (ed ? '<details class="ibm-edit"><summary>' + (rv ? 'اصلاح مشخصات پیش از تأیید' : 'اصلاح ارسال') + '<small>هر تغییر با نام شما در تاریخچه ثبت می‌شود</small></summary>'
@@ -88534,7 +88555,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         + (rv ? '<button type="button" class="ib-no" data-ibno="' + esc(o.id) + '">رد با دلیل</button>' : '')
         + (o.by && !ibMine(o) ? '<button type="button" class="ib-sv" data-umreply="' + esc(o.id) + '">پاسخ</button>' : '')
         + (ibMine(o) && o.to ? '<button type="button" class="ib-sv" data-umreply="' + esc(o.id) + '">گفت‌وگو با ' + esc(o.to) + '</button>' : '')
-        + '</div>' : '')
+        + (ibAdm() ? '<button type="button" class="ib-del" data-ibdel="' + esc(o.id) + '" title="فقط مدیر سامانه">حذف</button>' : '')
+        + '</div>' : (ibAdm() ? '<div class="ib-act ibx-bar ibm-bar"><button type="button" class="ib-del" data-ibdel="' + esc(o.id) + '">حذف</button></div>' : ''))
       + (log ? '<details class="ibx-log ibm-log"><summary>تاریخچه <small>' + toFa((o.log || []).length) + ' رویداد</small></summary><ul>' + log + '</ul></details>' : '')
       + '</div>';
   }
@@ -88545,15 +88567,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function trRegHtml(o){
     const fl = v => { let L = []; try{ L = attachList(v || ''); }catch(e){} return L.map(a => attachItemHtml(a, false)).join(''); };
     const rv = ibCanR() && o.st === 'q' && (!o.to || ibIn(o)) || (ibIn(o) && o.st === 'q');
-    const fixOk = ibMine(o) && !o.next && o.st === 'ok' && o.docs.some(d => d.rv === 'C' || d.rv === 'D');
+    const fixOk = ibMine(o) && !o.next && (o.st === 'no' || (o.st === 'ok' && o.docs.some(d => d.rv === 'C' || d.rv === 'D')));
     return '<div class="ibx-card trr"><div class="ibx-sh">فهرست مدارک <small>' + toFa(o.docs.length) + ' مدرک' + (rv ? ' · برای هر مدرک نتیجه و نظر بررسی را ثبت کنید' : '') + '</small></div>'
       + o.docs.map((d, i) => { const R = trRvOf(d.rv);
         return '<div class="trr-r' + (R ? ' rv-' + R[0] : '') + '"><span class="trd-n">' + toFa(i + 1) + '</span><div class="trr-m"><code dir="ltr">' + esc(d.full || d.code || '—') + '</code><b>' + esc(d.ti || '') + '</b>'
-        + '<small>' + esc([d.disc, d.dtype, 'ویرایش ' + toFa(d.rev || '0')].filter(Boolean).join(' · ')) + '</small>'
+        + '<small>' + esc([d.disc, d.dtype, 'ویرایش ' + window.dcRevLbl(d.rev || '0', d.suit || '')].filter(Boolean).join(' · ')) + '</small>'
         + (rv ? '<div class="trr-rv"><div class="trr-rb" role="radiogroup">' + TR_RV.map(x => '<button type="button" class="c-' + x[0] + (d.rv === x[0] ? ' on' : '') + '" data-trrvb="' + i + ':' + x[0] + '" title="' + esc(x[2]) + '"><b>' + x[0] + '</b>' + esc(x[1]) + '</button>').join('') + '<input type="hidden" data-trrv="' + i + '" value="' + esc(d.rv || '') + '"></div>'
               + '<textarea data-trcm="' + i + '" rows="2" placeholder="نظر بررسی (CRS) برای این مدرک — هر بند در یک خط">' + esc(d.cm || '') + '</textarea></div>'
             : (R ? '<div class="trr-res c-' + R[0] + '"><b>' + R[0] + ' · ' + esc(R[1]) + ' <em class="en" dir="ltr">' + esc(R[2]) + '</em></b>' + (d.cm ? '<p>' + esc(d.cm).replace(/\n/g, '<br>') + '</p>' : '') + '</div>' : '')
-              + (fixOk && (d.rv === 'C' || d.rv === 'D') ? '<div class="trr-fix" data-trfi="' + i + '"><u>بارگذاری نسخهٔ اصلاحی — ویرایش ' + toFa((parseInt(toEn(String(d.rev || '0')), 10) || 0) + 1) + ' <em class="en" dir="ltr">Revised issue</em></u>' + attachFieldHtml('', 'design') + '</div>' : ''))
+              + (fixOk && (o.st === 'no' || d.rv === 'C' || d.rv === 'D') ? '<div class="trr-fix" data-trfi="' + i + '"><u>بارگذاری نسخهٔ اصلاحی — ویرایش <code dir="ltr">' + esc(window.dcRevLbl((parseInt(toEn(String(d.rev || '0')), 10) || 0) + 1, d.suit || '')) + '</code> <em class="en" dir="ltr">Revised issue</em></u>' + attachFieldHtml('', 'design') + '</div>' : ''))
         + '</div><div class="trr-f">' + (d.files ? '<div class="ib-files">' + fl(d.files) + '</div>' : '') + (d.src ? '<div class="ib-files trr-src"><u>فایل منبع</u>' + fl(d.src) + '</div>' : '') + '</div></div>'; }).join('')
       + (fixOk ? '<div class="trr-fixbar"><button type="button" class="ib-go" data-trfix="' + esc(o.id) + '">ارسال نسخه‌های اصلاحی برای بررسی دوباره</button><small>هر مدرک با ویرایش بعدی و همان کد می‌رود؛ این ارسال و نظرهایش در تاریخچه می‌ماند.</small></div>' : '') + '</div>';
   }
@@ -88605,8 +88627,8 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const note = [o.desc, 'از «دریافتی‌ها» — فرستنده: ' + (o.by || '')].filter(Boolean).join('\n');
     if(o.t === 'statement') p.statements = [{contractName: o.cn || '', party: o.party || o.by, number: o.no || '', amount: o.amt || '', sentDate: o.d || todayShamsi(), notify: '', review: 'بررسی داخلی', owner: activeUserName(), link: o.files || '', note}];
     else if(o.t === 'contract') p.contracts = [{title: o.ti || '', number: o.no || '', party: o.party || o.by, subject: o.desc || '', amount: o.amt || '', sentDate: o.d || todayShamsi(), notify: '', review: 'بررسی داخلی', owner: activeUserName(), link: o.files || ''}];
-    else if(o.t === 'design' && o.docs && o.docs.length) p.designs = o.docs.map(d => ({title: d.ti || '', number: d.code || '', discipline: d.disc || '', revision: d.rev || '0', party: o.party || o.by, sentDate: o.d || todayShamsi(), status: (trRvOf(d.rv) || [])[1] || TR_POI[o.poi] || 'در حال بررسی', notify: '', dueDate: o.due || '', owner: activeUserName(), floor: d.floor || '', zone: d.zone || '',
-      link: [d.files, d.src].filter(Boolean).join('\n'), note: [o.no ? 'ترانسمیتال ' + o.no : '', o.poi ? 'هدف ارسال (Purpose of Issue): ' + window.poiFull(o.poi) : '', d.rv ? 'نتیجهٔ بررسی: ' + d.rv + ' — ' + ((trRvOf(d.rv) || [])[1] || '') : '', d.cm ? 'نظر بررسی (CRS):\n' + d.cm : '', d.src ? 'فایل منبع پیوست است' : '', note].filter(Boolean).join('\n'), docType: d.dtype || ''}));
+    else if(o.t === 'design' && o.docs && o.docs.length) p.designs = o.docs.map(d => ({title: d.ti || '', number: d.code || '', discipline: d.disc || '', revision: d.rev || '0', party: o.party || o.by, sentDate: o.d || todayShamsi(), status: ((d.rv === 'A' || d.rv === 'B') && window.dcFinEmp && window.dcFinEmp()) ? 'نزد مشاور/کارفرما' : ((trRvOf(d.rv) || [])[1] || TR_POI[o.poi] || 'در حال بررسی'), notify: '', dueDate: o.due || '', owner: activeUserName(), floor: d.floor || '', zone: d.zone || '',
+      link: [d.files, d.src].filter(Boolean).join('\n'), note: [o.no ? 'ترانسمیتال ' + o.no : '', o.poi ? 'هدف ارسال (Purpose of Issue): ' + window.poiFull(o.poi) : '', d.rv ? 'نتیجهٔ بررسی' + ((d.rv === 'A' || d.rv === 'B') && window.dcFinEmp && window.dcFinEmp() ? ' داخلی (تأیید نهایی با کارفرما)' : '') + ': ' + d.rv + ' — ' + ((trRvOf(d.rv) || [])[1] || '') : '', d.cm ? 'نظر بررسی (CRS):\n' + d.cm : '', d.src ? 'فایل منبع پیوست است' : '', note].filter(Boolean).join('\n'), docType: d.dtype || ''}));
     else if(o.t === 'design') p.designs = [{title: o.ti || '', number: o.no || '', discipline: o.disc || '', revision: o.rev || '0', party: o.party || o.by, sentDate: o.d || todayShamsi(), status: 'دریافت', notify: '', dueDate: o.due || '', owner: activeUserName(), link: o.files || '', note: [o.poi ? 'هدف ارسال (Purpose of Issue): ' + window.poiFull(o.poi) : '', note].filter(Boolean).join('\n'), docType: o.dtype || ''}];
     else if(o.t === 'letter') p.letters = [{subject: o.ti || '', number: o.no || '', party: o.party || o.by, sentDate: o.d || todayShamsi(), notify: '', owner: activeUserName(), link: o.files || '', direction: 'دریافتی'}];
     else return {};
@@ -102327,20 +102349,29 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     if(!b){ if(old && !e.target.closest('.pjsw-pop')) old.remove(); return; }
     e.preventDefault(); e.stopPropagation();
     if(old){ old.remove(); return; }
-    const L = pjMine(), cur = PJ.cur;
+    const pop = pjswBuild();
+    const sec = b.closest('.pj4') || document.body; pop.removeAttribute('style'); sec.appendChild(pop);
+    if(sec === document.body){ const r = b.getBoundingClientRect(), W = window.innerWidth;
+      Object.assign(pop.style, {position:'fixed', zIndex:'95', insetInlineEnd:'auto', right:'auto', top:Math.min(r.bottom + 8, window.innerHeight - 200) + 'px',
+        left:Math.max(8, Math.min(r.right - 300, W - 308)) + 'px', width:'300px'}); }
+  }, true);
+  /* ۴۳۰: فهرست عوض کردن پروژه یک بار ساخته و دوباره به کار می‌رود (عکس‌ها دوباره بار و رمزگشایی نمی‌شوند)؛ پیش از باز شدن هم در پس‌زمینه آماده می‌شود */
+  const PSW = {sig: '', el: null};
+  function pjswBuild(){
+    const L = pjMine(), cur = PJ.cur, sig = cur + '|' + L.map(p => p.id + ':' + (p.name || '') + ':' + (p.status || '') + ':' + (p.city || '') + ':' + JSON.stringify([p.logo || '', p.cover || 0, (p.images || [])[p.cover || 0] || ''])).join('|');
+    if(PSW.el && PSW.sig === sig) return PSW.el;
     const pop = document.createElement('div'); pop.className = 'pjsw-pop';
     pop.innerHTML = '<div class="pjsw-h"><b>انتخاب پروژه</b><small>' + toFa(L.length) + ' پروژه</small></div>'
       + L.map(p => '<button type="button" data-pjgo="' + esc(p.id) + '" class="' + (p.id === cur ? 'on' : '') + '">' + pjCoverHtml(p, 'pjsw-cv') + '<span><b>' + esc(p.name || 'پروژه') + '</b><small>' + esc([p.status, p.city].filter(Boolean).join(' · ')) + '</small></span>' + (p.id === cur ? '<i>✓</i>' : '') + '</button>').join('')
       + '<button type="button" class="pjsw-all" data-pjopen="1">همهٔ پروژه‌ها و تنظیمات</button>';
-    const sec = b.closest('.pj4') || document.body; sec.appendChild(pop);
-    /* بیرون از کارت پروژه (سرآیند خانه، ستون کناری): درست زیر همان دکمه */
-    if(sec === document.body){ const r = b.getBoundingClientRect(), W = window.innerWidth;
-      Object.assign(pop.style, {position:'fixed', zIndex:'95', insetInlineEnd:'auto', right:'auto', top:Math.min(r.bottom + 8, window.innerHeight - 200) + 'px',
-        left:Math.max(8, Math.min(r.right - 300, W - 308)) + 'px', width:'300px'}); }
     pop.addEventListener('click', ev => { const g = ev.target.closest('[data-pjgo]');
       if(g){ ev.stopPropagation(); pop.remove(); if(g.dataset.pjgo !== PJ.cur) pjSwitch(g.dataset.pjgo); return; }
       if(ev.target.closest('[data-pjopen]')) setTimeout(() => pop.remove(), 0); });
-  }, true);
+    /* عکس‌های بی‌نشانی (s3t) را همین حالا در صف بگذار و آماده‌ها را از پیش رمزگشایی کن */
+    pop.querySelectorAll('img').forEach(i => { try{ if(i.classList.contains('s3t') && window.s3ThumbWatch) window.s3ThumbWatch(i); else if(i.decode && i.getAttribute('src')) i.decode().catch(() => {}); }catch(e){} });
+    PSW.sig = sig; PSW.el = pop; return pop;
+  }
+  setTimeout(() => { const run = () => { try{ if(pjMine().length > 1) pjswBuild(); }catch(e){} }; if(window.requestIdleCallback) requestIdleCallback(run, {timeout: 4000}); else run(); }, 2500);
   function pjListHtml(){
     const cur = pjCur(), mine = pjMine(), inv = pjInvites(), me = activeUserName();
     const facts = [cur.status, cur.city, cur.type].filter(Boolean).map(esc).join(' · ');
