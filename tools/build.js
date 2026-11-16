@@ -22,7 +22,11 @@ function cssMin(c){
     parts.push(html.slice(last, m.index)); last = re.lastIndex;
     const [all, tag, attrs = '', body] = m;
     if(tag === 'style'){ const b = cssMin(body); cssIn += body.length; cssOut += b.length; parts.push('<style' + attrs + '>' + b + '</style>'); continue; }
-    if(/\bsrc=/.test(attrs) || /type="(?!text\/javascript|module)/.test(attrs) || !body.trim()){ parts.push(all); continue; }
+    /* <script src="…" data-inline>: فایل مشترک lib/… در صفحهٔ اصلی درج می‌شود (یک منبع برای صفحهٔ اصلی و نقشه‌خوان) */
+    let bodyX = body; const inl = /\bdata-inline\b/.test(attrs) && /\bsrc="([^"]+)"/.exec(attrs);
+    if(inl){ bodyX = fs.readFileSync(require('path').join(require('path').dirname(src), '..', inl[1]), 'utf8'); }
+    else if(/\bsrc=/.test(attrs) || /type="(?!text\/javascript|module)/.test(attrs) || !body.trim()){ parts.push(all); continue; }
+    if(inl){ const r = await minify(bodyX, {ecma: 2020, compress: {passes: 1}, mangle: true}); jsIn += bodyX.length; jsOut += r.code.length; parts.push('<script>' + r.code + '</script>'); continue; }
     const r = await minify(body, { ecma: 2020, module: false, toplevel: false, compress: { passes: 1, unsafe: false, keep_fargs: true, keep_fnames: true, drop_console: false, pure_getters: false, hoist_funs: false, reduce_funcs: false, inline: 1, sequences: false }, mangle: { keep_fnames: true }, format: { comments: false, ascii_only: false } });
     jsIn += body.length; jsOut += r.code.length;
     parts.push('<script' + attrs + '>' + r.code + '</script>');
