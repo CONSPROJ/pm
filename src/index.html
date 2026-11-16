@@ -192,7 +192,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116050415">
+<meta name="pm-build" content="20261116050947">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -14865,7 +14865,7 @@
     color:var(--muted);background:var(--field);
   }
   /* فرم انتخاب‌شده با حرکت نرم باز می‌شود */
-  .wp-in{animation:wpIn .45s cubic-bezier(.2,.7,.3,1) both;}
+  .wp-in{animation:wpIn .45s cubic-bezier(.2,.7,.3,1) backwards;}
   @keyframes wpIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @media (max-width: 640px){
     .wpick{grid-template-columns:1fr;gap:10px;}
@@ -18162,7 +18162,7 @@
     content-visibility:auto;contain-intrinsic-size:auto 420px;
   }
 
-  .panel.pane-in{animation:paneIn2 .32s cubic-bezier(.22,.8,.2,1) both;will-change:transform,opacity;}
+  .panel.pane-in{animation:paneIn2 .32s cubic-bezier(.22,.8,.2,1) backwards;}
   .panel.pane-in.pane-r{animation-name:paneIn2r;}
   @keyframes paneIn2{from{opacity:0;transform:translate3d(-14px,6px,0);}to{opacity:1;transform:none;}}
   @keyframes paneIn2r{from{opacity:0;transform:translate3d(14px,6px,0);}to{opacity:1;transform:none;}}
@@ -29355,7 +29355,7 @@
 
   /* ورود نماها: یک حرکت برای همه (تب، بخش اسناد، ماژول و فهرست میز کار، گزارش) */
   @keyframes uiIn{from{opacity:0;transform:translate3d(0,6px,0);}to{opacity:1;transform:none;}}
-  :is(html,#z0) :is(body,#z1) :is(.panel.pane-in, .panel.pane-in.pane-r, .vw-in, #wsHost.wp-in, .wp-in){animation:uiIn var(--d2) var(--ez) both !important;}
+  :is(html,#z0) :is(body,#z1) :is(.panel.pane-in, .panel.pane-in.pane-r, .vw-in, #wsHost.wp-in, .wp-in){animation:uiIn var(--d2) var(--ez) backwards !important;} /* ۴۳۳: backwards نه both — تبدیلِ ماندگار پس از پایان، پدر را قاب fixed می‌کرد (کشوی ویرایش کارگر وسط صفحه گیر می‌کرد) */
   /* فهرست‌هایی که ردیف‌ها پلکانی می‌آیند، خود ظرف حرکت نمی‌کند */
   :is(html,#z0) :is(body,#z1) :is(#wsList, #admCats, .ws-cg).wp-in{animation:none !important;}
   :is(html,#z0) :is(body,#z1) :is(#wsList.wp-in .ws-row, .ws-cg.wp-in .ws-row, #admCats.wp-in > .acat){animation:uiIn var(--d2) var(--ez) both !important;animation-delay:calc(min(var(--i, 0), 8) * 18ms) !important;}
@@ -30707,6 +30707,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 .dc-f .dc-sh{display:flex;gap:4px} .dc-f .dc-sh input{flex:1}
 .dc-f .dc-man{display:none} .dc-f.man .dc-man{display:block} .dc-f.man .dc-g{display:none} .dc-f.man .dc-code{opacity:.5}
 .dc-f .dc-hint{color:var(--muted);font-size:11.5px}
+#wrkAskM .fx-m{width:min(420px,94vw)!important} .wad{display:flex;flex-direction:column;gap:14px} .wad-f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)} .wad-f input{height:42px;font-size:15px;text-align:center} .wad-a{display:flex;justify-content:flex-end;gap:8px}
 #dcM{z-index:80!important} #dcM .fx-m{width:min(1040px,96vw)!important;max-width:min(1040px,96vw)!important}
 #dcM .dc-top{position:sticky;top:-16px;z-index:3;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;margin-top:-10px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#e3e7ed)}
 #dcM .dc-nav{display:flex;gap:3px;padding:3px;border-radius:12px;background:var(--field,#f3f5f8);border:1px solid var(--line,#e3e7ed);flex-wrap:wrap}
@@ -94728,31 +94729,16 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   }
 
   /* پنجرهٔ کوچک گرفتن تاریخ شمسی */
+  /* ۴۳۳: پرسیدن تاریخ با پنجرهٔ یکسان سایت (fxModal)؛ بالاتر از کشوی ویرایش کارگر */
   function wrkAskDate(title, text, def){
     return new Promise(resolve => {
-      const bg = document.createElement('div');
-      bg.className = 'modal-bg';
-      bg.innerHTML = '<div class="modal-card">'
-        + '<div class="mc-head"><span class="mc-ic">📅</span><b class="mc-title">'
-        +   esc(title) + '</b></div>'
-        + '<div class="mc-text">' + esc(text) + '</div>'
-        + '<div class="field" style="margin:10px 0;">'
-        +   '<label for="wrkAskIn">تاریخ (شمسی)</label>'
-        +   '<input type="text" id="wrkAskIn" class="date-in" value="'
-        +     esc(def || wrkDateVal()) + '"></div>'
-        + '<div class="mc-acts">'
-        +   '<button type="button" class="add" id="wrkAskOk">تأیید</button>'
-        +   '<button type="button" class="mini" id="wrkAskNo">انصراف</button>'
-        + '</div></div>';
-      document.body.appendChild(bg);
-      const done = v => { bg.remove(); resolve(v); };
-      bg.querySelector('#wrkAskOk').addEventListener('click', () => {
-        const v = normDate(bg.querySelector('#wrkAskIn').value);
-        if(!v){ showDialog('warn','تاریخ درست نیست','تاریخ را مثل ۱۴۰۵/۰۶/۲۸ بنویسید.'); return; }
-        done(v);
-      });
-      bg.querySelector('#wrkAskNo').addEventListener('click', () => done(''));
-      bg.addEventListener('click', e => { if(e.target === bg) done(''); });
+      const m = fxModal('wrkAskM', esc(title), esc(text), '<div class="wad"><label class="wad-f"><span>تاریخ (شمسی)</span><input type="text" id="wrkAskIn" class="date-in" dir="ltr" value="' + esc(def || wrkDateVal()) + '"></label>'
+        + '<div class="wad-a"><button type="button" class="mini" data-wadno="1">انصراف</button><button type="button" class="mini go" data-wadok="1">تأیید</button></div></div>', false);
+      m.style.zIndex = '2300'; let settled = false;
+      const done = v => { if(settled) return; settled = true; m.remove(); resolve(v); };
+      const ok = () => { const v = normDate(m.querySelector('#wrkAskIn').value); if(!v){ showDialog('warn', 'تاریخ درست نیست', 'تاریخ را مثل ۱۴۰۵/۰۶/۲۸ بنویسید.'); return; } done(v); };
+      m.addEventListener('click', e => { if(e.target.closest('[data-wadok]')) ok(); else if(e.target.closest('[data-wadno]') || e.target === m || e.target.closest('[data-fxx]')) done(''); }, true);
+      m.addEventListener('keydown', e => { if(e.key === 'Enter') ok(); else if(e.key === 'Escape') done(''); });
     });
   }
 
