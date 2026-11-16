@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116115446">
+<meta name="pm-build" content="20261116120135">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -81327,7 +81327,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     TKP.busy = supaFetch('lists?select=value&kind=eq.' + encodeURIComponent('زمان‌بندی: محاسبه') + '&limit=500', {prefer: 'return=representation'}).then(R => {
       const P = []; let n = 0; (R || []).forEach(r => { const v = String(r.value || ''), i = v.indexOf('¦'), m = v.slice(0, i).match(/^cpm~(\d+)\/(\d+)$/); if(!m) return; n = +m[2]; try{ P[+m[1]] = JSON.parse(v.slice(i + 1)); }catch(e){} });
       let o = null; if(n && P.filter(x => typeof x === 'string').length === n){ try{ o = JSON.parse(P.join('')); }catch(e){} }
-      TKP.m = (o && o.m) || {}; TKP.A = (o && Array.isArray(o.A)) ? o.A : []; TKP.end = (o && o.end) || ''; TKP.at = Date.now();
+      /* برنامهٔ پروژهٔ دیگری نباشد (انتشار قدیمی بی‌پروژه پذیرفته می‌شود) */
+      if(o && o.pj && o.pj !== pjHdrId()) o = null;
+      TKP.m = (o && o.m) || {}; TKP.A = (o && Array.isArray(o.A)) ? o.A : []; TKP.R = (o && Array.isArray(o.R)) ? o.R : []; TKP.at2 = (o && o.at) || 0; TKP.end = (o && o.end) || ''; TKP.at = Date.now();
       document.querySelectorAll('[data-tkplan]').forEach(el => { const h = tkPlanInner(el.dataset.tkplan); el.innerHTML = h; el.hidden = !h; });
       document.querySelectorAll('.tfr-item[data-task-id] > .tfr').forEach(row => { if(row.querySelector('.tkpl-chip')) return; const c = tkPlanChip(row.parentElement.dataset.taskId); if(!c) return; const st = row.querySelector('.tfr-chip'); if(st) st.insertAdjacentHTML('beforebegin', c); });
       return TKP.m; }).catch(() => { TKP.m = TKP.m || {}; TKP.at = Date.now(); return TKP.m; }).finally(() => { TKP.busy = null; });
@@ -82855,6 +82857,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   /* برنامهٔ واردشده: آخرین فایل ذخیره‌شده */
   async function gtLoadPlan(force){
     if(!force && gt.planAt && Date.now() - gt.planAt < 60000) return gt.plan;
+    /* ۴۷۲: منبع اصلی، برنامهٔ زمان‌بندی خود سامانه (plan.html) است؛ فایل واردشده فقط اگر برنامه‌ای ساخته نشده */
+    try{ if(force) TKP.at = 0; await tkPlanLoad(); if(TKP.R && TKP.R.length){ gt.plan = {name: 'برنامهٔ زمان‌بندی پروژه', file: '', sch: 1, at: TKP.at2 ? new Date(TKP.at2).toISOString() : '',
+      rows: TKP.R.map(x => ({n: x[0], s: x[1], e: x[2], p: x[3], l: x[4], sum: x[5], ms: x[6], crit: x[7], w: x[8], aid: x[9]}))}; gt.planAt = Date.now(); return gt.plan; } }catch(e){}
     try{
       const raw = await supaFetch('nudges?select=id,created_at,from_name,message&kind=eq.' + encodeURIComponent(GT_KIND) + '&order=created_at.desc&limit=1') || [];
       if(raw[0]){ const o = JSON.parse(raw[0].message || '{}'); o.by = raw[0].from_name; o.at = raw[0].created_at; gt.plan = o; }
@@ -83132,8 +83137,10 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       + '</div>';
     let info = '';
     if(gt.src === 'plan'){
-      info = gt.plan ? '<div class="gt-info"><b>' + esc(gt.plan.name || gt.plan.file || 'برنامهٔ زمان‌بندی') + '</b><small>' + esc(gt.plan.file || '') + ' · ' + toFa((gt.plan.rows || []).length) + ' فعالیت · ' + esc(gt.plan.by || '') + '</small></div>'
-        : '<div class="gt-empty"><b>هنوز برنامهٔ زمان‌بندی وارد نشده</b><small>از MS Project فایل را با «Save As ← XML» ذخیره کنید (یا خروجی XER پریماورا یا CSV) و با دکمهٔ «بارگذاری برنامه» بدهید.</small></div>';
+      info = gt.plan ? (gt.plan.sch
+          ? '<div class="gt-info"><b>برنامهٔ زمان‌بندی پروژه</b><small>هم‌گام با صفحهٔ «برنامهٔ زمان‌بندی» · ' + toFa((gt.plan.rows || []).length) + ' فعالیت · ' + toFa((gt.plan.rows || []).filter(x => x.crit).length) + ' بحرانی' + (gt.plan.at ? (function(){ const d = new Date(gt.plan.at); const j = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return ' · به‌روز ' + toFa(j[1] + '/' + j[2] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')); })() : '') + '</small></div>'
+          : '<div class="gt-info"><b>' + esc(gt.plan.name || gt.plan.file || 'برنامهٔ زمان‌بندی') + '</b><small>' + esc(gt.plan.file || '') + ' · ' + toFa((gt.plan.rows || []).length) + ' فعالیت · ' + esc(gt.plan.by || '') + '</small></div>')
+        : '<div class="gt-empty"><b>هنوز برنامهٔ زمان‌بندی ساخته نشده</b><small>برنامه را در «برنامهٔ زمان‌بندی» بسازید (یا از MS Project / Primavera وارد کنید)؛ بعد از ذخیره همین‌جا دیده می‌شود.</small></div>';
     }
     if(!all.length){
       box.innerHTML = '<div class="gt">' + tb + info + (gt.src === 'site' || gt.plan ? (gt.src === 'site' && gt.view === 'iss' ? '<div class="gt-empty"><b>مانعی در گزارش‌های روزانهٔ ۱۲۰ روز اخیر نیست</b><small>موانعی که در گزارش روزانه نوشته می‌شوند، اینجا از اولین تا آخرین روز یک نوار می‌شوند.</small></div>' : gt.src === 'site' && gt.view === 'blk' ? '<div class="gt-empty"><b>مانع بازی ثبت نشده</b><small>موانع باز و موانعی که در ۴۵ روز اخیر رفع شده‌اند اینجا می‌آیند.</small></div>' : '<div class="gt-empty"><b>موردی با تاریخ برای نمایش نیست</b><small>فعالیت‌هایی که تاریخ ابلاغ یا موعد دارند اینجا می‌آیند.</small></div>') : '') + '</div>';
@@ -83191,7 +83198,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       if(r.grp || r.sum){
         const c = r.grp ? ((GT_K[r.k] || {}).c || '#9aa7b6') : '#9aa7b6';
         return '<div class="gt-r g' + (r.grp ? '' : ' s') + '" style="--c:' + c + ';--lv:' + (r.lvl || 0) + '"><div class="gt-tt"><button type="button" class="gt-gh" data-gtg="' + esc(r.gk) + '"><span class="gt-cv' + (gt.shut.has(r.gk) ? '' : ' op') + '">' + GT_I.chev + '</span><i></i><b>' + esc(r.t) + '</b>'
-          + (r.n ? '<u>' + toFa(r.n) + '</u>' : '') + (r.late ? '<em>' + toFa(r.late) + ' دیرکرد</em>' : '') + (r.openBlk ? '<em>' + toFa(r.openBlk) + ' باز</em>' : '') + '</button></div>' + bar(r) + '</div>';
+          + (r.n ? '<u>' + toFa(r.n) + '</u>' : '') + (r.late ? '<em>' + (r.late === true ? 'دیرکرد' : toFa(r.late) + ' دیرکرد') + '</em>' : '') + (r.openBlk ? '<em>' + toFa(r.openBlk) + ' باز</em>' : '') + '</button></div>' + bar(r) + '</div>';
       }
       return '<div class="gt-r' + (r.late ? ' is-late' : '') + '" style="--c:' + col(r) + '"><div class="gt-tt"><button type="button" class="gt-nm" data-gti="' + esc(r.gk || r.id + (r.bid ? '#' + r.bid : '')) + '"><b>' + esc(r.t) + '</b><small>' + esc(meta(r)) + '</small></button></div>' + bar(r) + '</div>';
     }).join('');

@@ -202,7 +202,12 @@ const dirty = new Set(); let saveT = 0, cfgDirty = false;
 
 /* ---------- سرور ---------- */
 const tok = () => { try{ return localStorage.getItem('siteLogM.tok.v1') || ''; }catch(e){ return ''; } };
-const pj = () => { try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } };
+/* پروژه هنگام باز شدن پنجره ثابت می‌شود (۴۷۲): اگر در سامانه پروژه عوض شود، این پنجره نباید برنامهٔ پروژهٔ قبلی را در پروژهٔ تازه بنویسد */
+const PJ0 = (function(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } })();
+const pj = () => PJ0;
+window.addEventListener('storage', e => { if(e.key !== 'siteLogM.project.v1' || (e.newValue || 'p1') === PJ0) return;
+  S.ro = true; try{ draftSave(); }catch(x){} document.querySelectorAll('[data-ed]').forEach(b => { b.disabled = true; });
+  if(!document.getElementById('pjMoved')) document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note" id="pjMoved" style="display:flex;align-items:center;gap:10px">پروژه در سامانه عوض شد؛ این پنجره برنامهٔ پروژهٔ قبلی است و دیگر ذخیره نمی‌کند (تغییرهای ذخیره‌نشده در همین مرورگر نگه داشته شد). <button class="btn" onclick="location.reload()">باز کردن برنامهٔ پروژهٔ فعلی</button></div>'); });
 const pjCol = () => { try{ return sessionStorage.getItem('siteLogM.pjCol') === '1'; }catch(e){ return false; } };
 async function api(path, o){ o = o || {};
   const res = await fetch(SUPA_URL + '/rest/v1/' + path, {method: o.method || 'GET', headers: Object.assign({'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': o.prefer || 'return=minimal', 'x-pm-project': pj()}, tok() ? {'x-pm-token': tok()} : {}, o.headers || {}), body: o.body ? JSON.stringify(o.body) : undefined});
@@ -974,7 +979,10 @@ function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(()
   /* همهٔ فعالیت‌های پایه با مسئول/منبع: برای تقویم افراد و تیم‌ها در سامانه */
   const A = []; S.acts.forEach(a => { if(C.isSum(a)) return; const r = C.R.get(a.id); if(!r) return; const ow = owOf(a), rs = rsOf(a).map(x => x.n); if(!ow.length && !rs.length) return;
     const par = actById(a.p); A.push([a.id, String(a.n || '').slice(0, 80), toEn(d2fa(wDay(r.es))), toEn(d2fa(wDay(Math.max(r.es, r.ef - 1)))), Math.round(+a.pc || 0), ow, rs, r.tf <= 0 ? 1 : 0, par ? String(par.n || '').slice(0, 40) : '']); });
-  const js = JSON.stringify([m, A]); if(js === cpmLast) return; cpmLast = js; bigPut(K_CPM, 'cpm', {at: Date.now(), end: toEn(d2fa(wDay(C.pEnd - 1))), m, A}).catch(() => { cpmLast = ''; }); }, 2500); }
+  /* کل درخت برنامه برای «برنامهٔ اجرا» در لیست فعالیت‌ها: [نام، شروع، پایان، پیشرفت، سطح، گروه، نقطهٔ عطف، بحرانی، WBS، id] */
+  const W = wbsCodes(), Rr = []; const walk = (pid, lv) => S.acts.filter(a => (a.p || '') === pid).sort((x, y) => x.o - y.o).forEach(a => { const r = C.R.get(a.id); if(r){ const sum = C.isSum(a);
+    Rr.push([String(a.n || '').slice(0, 120), toEn(d2fa(wDay(r.es))), toEn(d2fa(wDay(Math.max(r.es, r.ef - 1)))), Math.round(sum ? C.pcOf(a) : (+a.pc || 0)), lv, sum ? 1 : 0, a.ms ? 1 : 0, !sum && r.tf <= 0 ? 1 : 0, W.get(a.id) || '', a.id]); } walk(a.id, lv + 1); }); walk('', 0);
+  const js = JSON.stringify([m, A, Rr]); if(js === cpmLast) return; cpmLast = js; bigPut(K_CPM, 'cpm', {at: Date.now(), end: toEn(d2fa(wDay(C.pEnd - 1))), m, A, R: Rr, pj: PJ0}).catch(() => { cpmLast = ''; }); }, 2500); }
 
 /* ---------- شروع ---------- */
 (async () => {
@@ -991,6 +999,8 @@ function cpmPublish(){ if(S.ro) return; clearTimeout(cpmT); cpmT = setTimeout(()
     S.acts.forEach(a => S.snap.set(a.id, pack(a)));
     try{ S.ctrs = Array.from(new Set((await api('lists?select=value&kind=eq.' + encodeURIComponent('پیمانکار') + '&limit=2000') || []).map(r => String(r.value || '').split('¦')[0].trim()).filter(Boolean))); }catch(e){}
     try{ await owLoad(); }catch(e){}
+    try{ const R = await api('lists?select=value&kind=eq.' + encodeURIComponent('پروژه') + '&value=like.' + encodeURIComponent(PJ0 + '¦*') + '&limit=1') || []; let nm = ''; if(R[0]){ const v = String(R[0].value), i = v.indexOf('¦'); try{ nm = (JSON.parse(v.slice(i + 1)) || {}).name || ''; }catch(e){} }
+      if(!nm && PJ0 === 'p1') nm = 'پروژهٔ اصلی'; if(nm){ S.pjName = nm; $('#sub').textContent = nm + ' · CPM · مسیر بحرانی · خط مبنا'; document.title = 'برنامهٔ زمان‌بندی — ' + nm; } }catch(e){}
     $('#sts').textContent = 'خوانده شد';
   }catch(e){ $('#sts').textContent = 'خوانده نشد: ' + (e.message || e); if(!tok()){ document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">اول در سامانه وارد شوید و از میز کار ← برنامهٔ زمان‌بندی باز کنید.</div>'); } }
   if(S.ro) document.body.insertAdjacentHTML('afterbegin', '<div class="ro-note">فقط خواندنی — ویرایش برنامه برای مدیر پروژه و ادمین است.</div>');
