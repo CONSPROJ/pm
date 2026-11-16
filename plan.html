@@ -32,6 +32,11 @@
   .pk-sg button:hover, .pk-sg button.on{background:var(--field);} .pk-sg button small{color:var(--muted);font-size:11px;margin-inline-start:auto;}
   .dlg-f .btn.dng{background:color-mix(in srgb, var(--bad) 10%, var(--surface));color:var(--bad);margin-inline-end:auto;}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .fh{position:fixed;z-index:30;width:9px;height:9px;background:var(--acc);border:2px solid var(--surface);border-radius:2px;cursor:ns-resize;box-shadow:0 0 0 1px var(--acc);touch-action:none;} .fh[hidden]{display:none;}
+  body.filling, body.filling *{cursor:ns-resize !important;user-select:none;} #tb td.fill-t{background:color-mix(in srgb, var(--acc) 12%, transparent) !important;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent);}
+  #tb input.pkc{cursor:pointer;} #tb input.pkc:hover{background:var(--field);} #tb input.pkc::placeholder{color:color-mix(in srgb, var(--acc) 55%, var(--muted));font-weight:600;opacity:0;} #tb tr:hover input.pkc::placeholder, #tb tr.sel input.pkc::placeholder{opacity:1;}
+  .cpk{position:fixed;z-index:70;width:340px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 44px -16px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px;}
+  .cpk-h{display:flex;flex-direction:column;gap:2px;} .cpk-h b{font-size:13px;font-weight:800;} .cpk-h small{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .cpk-f{display:flex;gap:6px;justify-content:flex-end;}
   .btn:hover{filter:brightness(.96);} .btn.pri{background:var(--acc);color:#fff;} .btn.on{background:color-mix(in srgb, var(--acc) 14%, var(--surface));color:var(--acc);} .btn[disabled]{opacity:.45;pointer-events:none;}
   .btn svg{width:15px;height:15px;} .btn em.bdg{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:var(--warn);padding:1px 6px;border-radius:999px;}
   .seg{display:inline-flex;background:var(--field);border-radius:10px;padding:3px;gap:2px;} .seg .btn{height:26px;background:transparent;padding:0 9px;} .seg .btn.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);}
@@ -360,10 +365,10 @@ function render(){
       + (function(){ const v = sum ? null : blVar(a, r), lt = sum ? 0 : lateOf(a, r); return '<td class="vr' + (v > 0 || lt > 10 ? ' bad' : '') + '" title="' + (v != null ? 'انحراف پایان از خط مبنا: ' + toFa(v) + ' روز کاری' : 'خط مبنا ندارد') + (lt ? ' · ' + toFa(lt) + '٪ عقب از برنامه' : '') + '">' + (v == null ? '' : (v > 0 ? '+' : '') + toFa(v)) + (lt > 10 ? '<i>●</i>' : '') + '</td>'; })()
       + (sum ? '<td class="pr ro"></td>' : '<td class="pr">' + inp('dep', toFa(depTxt(a, num)), '', ' placeholder="—" title="شمارهٔ ردیف پیش‌نیاز؛ مثلاً ۳ یا ۲SS+۱" dir="ltr"') + '</td>')
       + (sum ? '<td class="ro">' + toFa(Math.round(C.pcOf(a))) + '٪</td>' : '<td class="pc">' + inp('pc', toFa(a.pc || 0), '', ' inputmode="numeric"') + '</td>')
-      + '<td class="ow">' + (sum ? '' : inp('ow', owTxt(a), '', ' list="owDl" placeholder="—" title="' + esc(owTip(a) || 'افراد پروژه، شرکت‌ها یا سازمان‌ها؛ چندتا با ویرگول') + '"')) + '</td>'
+      + '<td class="ow">' + (sum ? '' : inp('ow', owTxt(a), 'pkc', ' readonly placeholder="+" title="' + esc(owTip(a) || 'کلیک: انتخاب از افراد پروژه، تیم‌ها و شرکت‌ها') + '"')) + '</td>'
       + '<td class="fl' + (r.tf <= 0 ? ' fl0' : '') + '">' + toFa(r.tf) + '</td>'
       + (sum ? '<td class="bd ro">' + money(C.bOf(a)) + '</td>' : '<td class="bd">' + inp('b', a.b ? toFa(Math.round(a.b).toLocaleString('en-US')) : '', '', ' inputmode="numeric" dir="ltr"') + '</td>')
-      + '<td class="ct">' + (sum ? '' : inp('rs', rsTxt(a), '', ' list="ctrDl" placeholder="—" title="مثلاً: پیمانکار اسکلت ×۸، پیمانکار برق ×۲"')) + '</td></tr>'; }).join('')
+      + '<td class="ct">' + (sum ? '' : inp('rs', rsTxt(a), 'pkc', ' readonly placeholder="+ منبع" title="کلیک: انتخاب منبع و تعداد نفر؛ یا دستگیرهٔ گوشه را پایین بکشید / از اکسل بچسبانید"')) + '</td></tr>'; }).join('')
     : '<tr><td colspan="13"><div class="empty">هنوز فعالیتی نیست.<br>' + (ed ? '«+ فعالیت» بزنید یا یک برنامهٔ آماده بسازید.<br><button class="btn pri" data-a="tpl" style="margin-top:10px">ساختن از قالب ساختمانی</button>' : 'برنامه‌ای ثبت نشده است.') + '</div></td></tr>';
   renderGantt(rows); renderKp(); tkBadge(); saveUI();
   $('#ste').textContent = S.err;
@@ -471,7 +476,9 @@ document.addEventListener('keydown', e => { if(S.ro) return; const mod = e.ctrlK
   if(e.key === 'Enter'){ e.preventDefault(); e.target.blur(); if(e.target.dataset.f === 'n' && (e.ctrlKey || e.metaKey)) addAct(S.sel); }
   if(e.key === 'Tab' && e.altKey){ e.preventDefault(); act(e.shiftKey ? 'out' : 'in'); } } });
 document.addEventListener('change', e => { const i = e.target; if(i.id === 'sd'){ const d = fa2d(i.value); if(d != null){ S.cfg.status = d; histSnap(); queueSave('__cfg'); render(); } return; }
-  if(!i.matches('#tb input[data-f]') || S.ro) return; const tr = i.closest('tr'), a = actById(tr.dataset.id); if(!a) return; const f = i.dataset.f, v = i.value.trim();
+  if(!i.matches('#tb input[data-f]') || S.ro) return; const tr = i.closest('tr'), a = actById(tr.dataset.id); if(!a) return; applyF(a, i.dataset.f, i.value.trim()); queueSave(a.id); render(); });
+/* مقدار یک ستون برای یک فعالیت (ویرایش خانه، کشیدن به پایین، چسباندن از اکسل) */
+function applyF(a, f, v){ v = String(v == null ? '' : v).trim();
   if(f === 'n') a.n = v || 'بی‌نام';
   else if(f === 'd'){ const n = +toEn(v); if(isFinite(n) && n >= 0){ a.d = Math.round(n); a.ms = n === 0; } }
   else if(f === 's'){ const d = fa2d(v); a.sn = d != null ? d : null; }
@@ -479,8 +486,53 @@ document.addEventListener('change', e => { const i = e.target; if(i.id === 'sd')
   else if(f === 'pc'){ const n = +toEn(v); if(isFinite(n)){ a.pc = Math.max(0, Math.min(100, Math.round(n))); if(a.pc > 0 && a.as == null) a.as = wDay(S.calc.R.get(a.id).es); if(a.pc === 100 && a.af == null) a.af = Math.min(todayD(), S.cfg.status); if(a.pc < 100) a.af = null; if(a.pc === 0){ a.as = null; } } }
   else if(f === 'b'){ a.b = +toEn(v).replace(/[^\d.]/g, '') || 0; }
   else if(f === 'rs'){ a.rs = rsParse(v); delete a.who; ctrDatalist(); }
-  else if(f === 'ow'){ a.ow = owParse(v); }
-  queueSave(a.id); render(); });
+  else if(f === 'ow'){ a.ow = owParse(v); } }
+/* ====== مثل اکسل: دستگیرهٔ پرکردن (کشیدن به پایین)، چسباندن ستونی از اکسل، انتخاب‌گر منابع و مسئول ====== */
+(function(){ if(!document.getElementById('tb')) return;
+  const fh = document.createElement('div'); fh.className = 'fh'; fh.title = 'بکشید پایین تا همین مقدار در ردیف‌های زیر هم بیاید'; fh.hidden = true; document.body.appendChild(fh);
+  let src = null;
+  const place = () => { if(!src || !src.isConnected || S.ro){ fh.hidden = true; return; } const r = src.closest('td').getBoundingClientRect(), tw = $('#tw').getBoundingClientRect();
+    if(r.bottom < tw.top + 30 || r.top > tw.bottom){ fh.hidden = true; return; } fh.hidden = false; fh.style.top = (r.bottom - 5) + 'px'; fh.style.left = (r.left - 4) + 'px'; };
+  document.addEventListener('focusin', e => { const i = e.target.closest && e.target.closest('#tb input[data-f]'); if(i){ i.__id = i.closest('tr').dataset.id; src = i; place(); } });
+  $('#tw').addEventListener('scroll', place, {passive: true}); addEventListener('resize', place);
+  new MutationObserver(() => { if(src && !src.isConnected){ const tr = document.querySelector('#tb tr[data-id="' + CSS.escape(src.__id || '') + '"]'); const f = src.dataset.f, id = src.__id; src = tr ? tr.querySelector('input[data-f="' + f + '"]') : null; if(src) src.__id = id; } place(); }).observe($('#tb'), {childList: true});
+  let drag = null;
+  fh.addEventListener('pointerdown', e => { if(!src || S.ro) return; e.preventDefault(); fh.setPointerCapture(e.pointerId);
+    const tr0 = src.closest('tr'); drag = {f: src.dataset.f, v: src.value, i0: ROWS.findIndex(x => x.a.id === tr0.dataset.id), i1: -1}; document.body.classList.add('filling'); });
+  fh.addEventListener('pointermove', e => { if(!drag) return; const el = document.elementFromPoint(e.clientX, e.clientY), tr = el && el.closest && el.closest('#tb tr[data-id]');
+    if(tr){ const i = ROWS.findIndex(x => x.a.id === tr.dataset.id); if(i !== drag.i1){ drag.i1 = i; $$('#tb td.fill-t').forEach(t => t.classList.toggle('fill-t', false));
+      if(i > drag.i0) $$('#tb tr[data-id]').forEach((t, k) => { if(k > drag.i0 && k <= i){ const c = t.querySelector('input[data-f="' + drag.f + '"]'); if(c) c.closest('td').classList.add('fill-t'); } }); } }
+    const tw = $('#tw').getBoundingClientRect(); if(e.clientY > tw.bottom - 24) $('#tw').scrollTop += 14; else if(e.clientY < tw.top + 40) $('#tw').scrollTop -= 14; });
+  fh.addEventListener('pointerup', () => { if(!drag) return; const d = drag; drag = null; document.body.classList.toggle('filling', false); $$('#tb td.fill-t').forEach(t => t.classList.toggle('fill-t', false));
+    if(d.i1 <= d.i0) return; let n = 0;
+    for(let k = d.i0 + 1; k <= d.i1; k++){ const a = ROWS[k] && ROWS[k].a; if(!a || S.calc.isSum(a)) continue;
+      /* پیش‌نیاز مثل اکسل نسبی است: «۴» در ردیف بعد «۵» می‌شود */
+      const v = d.f === 'dep' ? toEn(d.v).replace(/\d+/g, m => String(+m + (k - d.i0))) : d.v; applyF(a, d.f, v); queueSave(a.id); n++; }
+    render(); toast(toFa(n) + ' ردیف پر شد', 'ok'); });
+  /* چسباندن: چند خط (ستونی از اکسل) از همین ردیف به پایین؛ با Tab، ستون‌های بعدی همان ردیف */
+  document.addEventListener('paste', e => { const i = e.target.closest && e.target.closest('#tb input[data-f]'); if(!i || S.ro) return;
+    const t = (e.clipboardData || window.clipboardData).getData('text') || ''; const L = t.replace(/\r/g, '').replace(/\n+$/, '').split('\n');
+    if(L.length < 2 && t.indexOf('\t') < 0 && !i.readOnly) return; e.preventDefault();
+    const tr0 = i.closest('tr'), i0 = ROWS.findIndex(x => x.a.id === tr0.dataset.id), F = Array.from(tr0.querySelectorAll('input[data-f]')).map(x => x.dataset.f), c0 = F.indexOf(i.dataset.f); let n = 0;
+    L.forEach((line, k) => { const a = ROWS[i0 + k] && ROWS[i0 + k].a; if(!a) return; const C = line.split('\t');
+      C.forEach((v, j) => { const f = F[c0 + j]; if(!f) return; if(S.calc.isSum(a) && f !== 'n') return; applyF(a, f, v); }); queueSave(a.id); n++; });
+    render(); if(n > 1) toast(toFa(n) + ' ردیف از چسباندن پر شد', 'ok'); });
+  /* کپی خانه (Ctrl+C) روی خانهٔ فقط‌خواندنی منابع/مسئول هم متن آن را برمی‌دارد */
+  document.addEventListener('copy', e => { const i = e.target.closest && e.target.closest('#tb input.pkc'); if(!i) return; e.preventDefault(); (e.clipboardData || window.clipboardData).setData('text', i.value); });
+  /* منابع و مسئول: با یک کلیک انتخاب‌گر (افراد پروژه، تیم‌ها، پیمانکاران) */
+  let pop = null;
+  const close = save => { if(!pop) return; const P = pop; pop = null; if(save){ const a = actById(P.__id); if(a){ const V = pkVal(P, 'cpkI'); if(P.__f === 'rs'){ a.rs = V; delete a.who; ctrDatalist(); } else a.ow = V.map(x => x.n).slice(0, 12); queueSave(a.id); render(); } } P.parentNode && P.parentNode.removeChild(P); };
+  document.addEventListener('click', e => { if(pop && !pop.contains(e.target)){ close(true); }
+    let i = e.target.closest && e.target.closest('#tb input[data-f="rs"], #tb input[data-f="ow"]'); if(!i || S.ro) return; const a = actById(i.closest('tr').dataset.id); if(!a) return;
+    if(!i.isConnected){ const tr = document.querySelector('#tb tr[data-id="' + CSS.escape(a.id) + '"]'); i = tr && tr.querySelector('input[data-f="' + i.dataset.f + '"]'); if(!i) return; }
+    const f = i.dataset.f; pop = document.createElement('div'); pop.className = 'cpk'; pop.__id = a.id; pop.__f = f;
+    pop.innerHTML = '<div class="cpk-h"><b>' + (f === 'rs' ? 'منابع' : 'مسئول') + '</b><small>' + esc(a.n) + '</small></div>' + pkHtml('cpkI', f === 'rs' ? rsOf(a) : owOf(a).map(n => ({n})), f === 'rs') + '<div class="cpk-f"><button class="btn" data-cpx>انصراف</button><button class="btn pri" data-cpok>تأیید</button></div>';
+    document.body.appendChild(pop); pkWire(pop); const r = i.closest('td').getBoundingClientRect(); const w = 340;
+    pop.style.top = Math.max(8, Math.min(innerHeight - 300, r.bottom + 4)) + 'px'; pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + 'px';
+    pop.querySelector('[data-cpx]').onclick = ev => { ev.stopPropagation(); close(false); }; pop.querySelector('[data-cpok]').onclick = ev => { ev.stopPropagation(); close(true); };
+    setTimeout(() => { const x = pop && pop.querySelector('.pk-in'); if(x) x.focus(); }, 0); }, true);
+  document.addEventListener('keydown', e => { if(!pop) return; if(e.key === 'Escape'){ e.preventDefault(); close(false); } else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey || (!e.defaultPrevented && e.target.matches && e.target.matches('.pk-in') && !e.target.value.trim()))){ e.preventDefault(); close(true); } });
+})();
 /* کشیدن میله: جابه‌جایی (محدودیت شروع) یا تغییر مدت */
 (function(){ let drag = null;
   document.addEventListener('pointerdown', e => { if(S.ro) return; const rz = e.target.closest('[data-rz]'), b = e.target.closest('.bar[data-bar]:not(.sum)'); if(!b) return;
@@ -579,18 +631,18 @@ function pkChip(x, q){ const t = S.dir.get(x.n) || 'x', sub = S.sub.get(x.n) || 
     + (q ? '<input data-q value="' + toFa(x.q == null ? 1 : x.q) + '" inputmode="decimal" title="نفر در روز"' + (S.ro ? ' disabled' : '') + '>' : '') + (S.ro ? '' : '<button type="button" data-pkx title="برداشتن">✕</button>') + '</span>'; }
 function pkHtml(id, vals, q){ return '<div class="pk" id="' + id + '" data-q="' + (q ? 1 : 0) + '"><div class="pk-ch">' + vals.map(x => pkChip(x, q)).join('') + '</div>'
   + (S.ro ? '' : '<input class="pk-in" placeholder="نام فرد، تیم یا شرکت را بنویسید…" autocomplete="off"><div class="pk-sg" hidden></div>') + '</div>'; }
-function pkVal(bg, id){ const P = bg.querySelector('#' + id); if(!P) return []; return Array.from(P.querySelectorAll('.pk-c')).map(c => { const qi = c.querySelector('[data-q]'); const o = {n: c.dataset.n}; if(qi){ const n = +toEn(qi.value); o.q = isFinite(n) && n > 0 ? n : 1; } return o; }); }
+function pkVal(bg, id){ const P = bg.querySelector('#' + id); if(!P) return []; return Array.from(P.querySelectorAll('.pk-ch > .pk-c')).map(c => { const qi = c.querySelector('[data-q]'); const o = {n: c.dataset.n}; if(qi){ const n = +toEn(qi.value); o.q = isFinite(n) && n > 0 ? n : 1; } return o; }); }
 function pkWire(bg){ bg.querySelectorAll('.pk').forEach(P => { const inp = P.querySelector('.pk-in'), sg = P.querySelector('.pk-sg'), q = P.dataset.q === '1'; if(!inp) return; let cur = [];
-  const has = n => Array.from(P.querySelectorAll('.pk-c')).some(c => c.dataset.n === n);
-  const add = n => { n = String(n || '').trim(); if(!n || has(n)) return; P.querySelector('.pk-ch').insertAdjacentHTML('beforeend', pkChip({n, q: 1}, q)); inp.value = ''; paint(); };
+  const has = n => Array.from(P.querySelectorAll('.pk-ch > .pk-c')).some(c => c.dataset.n === n);
+  const add = n => { n = String(n || '').trim(); if(!n || has(n)) return; P.querySelector('.pk-ch').insertAdjacentHTML('beforeend', pkChip({n, q: 1}, q)); inp.value = ''; paint(); sg.hidden = true; };
   const paint = () => { const t = inp.value.trim(); const L = Array.from(S.dir.entries()).filter(([n]) => !has(n) && (!t || n.indexOf(t) !== -1 || (S.sub.get(n) || '').indexOf(t) !== -1));
     const G = ['p', 'o', 'c'].map(k => [k, L.filter(x => x[1] === k).slice(0, 12)]).filter(g => g[1].length); cur = [];
     let h = G.map(([k, R]) => '<u>' + {p: 'افراد پروژه', o: 'تیم‌ها و سازمان‌ها', c: 'پیمانکاران و شرکت‌ها'}[k] + '</u>' + R.map(([n]) => { cur.push(n); return '<button type="button" data-pka="' + esc(n) + '"><span class="pk-c" style="padding:0;background:none"><i class="' + k + '">' + esc(pkIni(n)) + '</i></span>' + esc(n) + '<small>' + esc(S.sub.get(n) || '') + '</small></button>'; }).join('')).join('');
     if(t && !S.dir.has(t) && !has(t)){ h += '<u>نام دیگر</u><button type="button" data-pka="' + esc(t) + '">+ افزودن «' + esc(t) + '»</button>'; cur.push(t); }
     sg.innerHTML = h || '<u>موردی نیست</u>'; sg.hidden = document.activeElement !== inp; const f = sg.querySelector('[data-pka]'); if(f) f.classList.add('on'); };
-  inp.addEventListener('focus', paint); inp.addEventListener('input', paint);
+  inp.addEventListener('focus', paint); inp.addEventListener('input', paint); inp.addEventListener('click', paint);
   inp.addEventListener('blur', () => setTimeout(() => { sg.hidden = true; }, 150));
-  inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); if(cur[0]) add(cur[0]); else add(inp.value); } else if(e.key === 'Backspace' && !inp.value){ const c = P.querySelectorAll('.pk-c'); if(c.length) c[c.length - 1].remove(); } });
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter'){ if(!inp.value.trim()) return; e.preventDefault(); if(cur[0]) add(cur[0]); else add(inp.value); } else if(e.key === 'Backspace' && !inp.value){ const c = P.querySelectorAll('.pk-ch > .pk-c'); if(c.length) c[c.length - 1].remove(); } });
   sg.addEventListener('mousedown', e => { const b = e.target.closest('[data-pka]'); if(!b) return; e.preventDefault(); add(b.dataset.pka); inp.focus(); });
   P.addEventListener('click', e => { const x = e.target.closest('[data-pkx]'); if(x){ x.closest('.pk-c').remove(); } }); }); }
 /* قالب آمادهٔ پروژهٔ ساختمانی */
