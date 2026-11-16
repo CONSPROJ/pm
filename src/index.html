@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116060422">
+<meta name="pm-build" content="20261116061045">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30742,6 +30742,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 #dcM .dc-r input{height:32px!important;min-height:32px!important;padding:0 8px!important;font-size:12px!important;border-radius:8px!important} #dcM .dc-rc{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700}
 #dcM .dc-rx{all:unset;cursor:pointer;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--muted);font-size:15px} #dcM .dc-rx:hover{background:var(--alert-soft,#fdecea);color:var(--alert,#c0392b)}
 #dcM .dc-radd{all:unset;cursor:pointer;align-self:flex-start;font-size:12px;font-weight:800;color:var(--sky,#2a6fa0);padding:4px 6px;border-radius:7px} #dcM .dc-radd:hover{background:var(--sky-soft,#eaf3fa)}
+#dcM .dc-r{grid-template-columns:16px 96px minmax(0,1fr) 26px!important} #dcM .dc-dg{cursor:grab;color:var(--muted);font-size:12px;letter-spacing:-2px;user-select:none;text-align:center;line-height:32px} #dcM .dc-dg:active{cursor:grabbing}
+#dcM .dc-r.drg{opacity:.45} #dcM .dc-tb.dc-ov{border-color:var(--sky,#2a6fa0);box-shadow:inset 0 0 0 1px var(--sky,#2a6fa0)} #dcM [data-dctp].dc-ov{border-style:dashed;border-color:var(--ok,#2f8a5b);background:var(--ok-soft,#eaf6ef)}
+#dcM .dc-tb.cx .dc-tbh code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--sky,#2a6fa0)} #dcM .dc-cxdel{all:unset;cursor:pointer;margin-inline-start:auto;font-size:11px;color:var(--alert,#c0392b);padding:2px 6px;border-radius:6px} #dcM .dc-cxdel:hover{background:var(--alert-soft,#fdecea)}
+#dcM .dc-cxadd{display:grid;grid-template-columns:auto 160px minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:12px;padding:10px 12px;border:1px dashed var(--line,#e3e7ed);border-radius:12px} #dcM .dc-cxadd b{font-size:12.5px} #dcM .dc-cxadd input{height:36px!important;min-height:36px!important}
+@media (max-width:640px){ #dcM .dc-cxadd{grid-template-columns:1fr} }
 #dcM .dc-toks{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px} #dcM .dc-toks button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px 4px 5px;border-radius:9px;border:1px solid var(--line,#e3e7ed);background:var(--surface,#fff)}
 #dcM .dc-toks button:hover{border-color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa)} #dcM .dc-toks code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;font-size:11px;color:var(--sky,#2a6fa0);background:var(--sky-soft,#eaf3fa);border-radius:6px;padding:1px 5px}
 #dcM .dc-pt{border:1px solid var(--line,#e3e7ed);border-radius:12px;overflow:hidden} #dcM .dc-pth{display:grid;grid-template-columns:170px minmax(0,1.3fr) minmax(0,1fr);gap:10px;padding:8px 14px;background:var(--field,#f3f5f8);font-size:11px;font-weight:800;color:var(--muted)}
@@ -52368,10 +52373,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       return; }
     const ex = AC_EXTRA[k]; if(ex && ex.run){ ex.run(); return; }
     const x = ex || acTools()[k]; if(!x || !x.attr) return;
-    const t = document.createElement('div'); t.innerHTML = '<span ' + x.attr + '></span>';
-    if(ex) document.body.appendChild(t);
-    try{ ex ? t.firstChild.click() : window.h3Dispatch(t.firstChild); }catch(e){}
-    if(ex) setTimeout(() => t.remove(), 0);
+    /* ۴۴۳: کارتی که ویژگی خودش را دارد (data-drvopen، data-pctopen، …) کلیک واقعی می‌گیرد تا شنونده‌های سند آن را ببینند؛ فقط data-h3k از مسیر h3Dispatch */
+    const real = ex || !/data-h3k=/.test(x.attr);
+    const t = document.createElement('div'); t.hidden = true; t.innerHTML = '<span ' + x.attr + '></span>';
+    if(real) document.body.appendChild(t);
+    try{ real ? t.firstChild.click() : window.h3Dispatch(t.firstChild); }catch(e){}
+    if(real) setTimeout(() => t.remove(), 0);
   }
   function acCard(k){
     const T = acTools(), x = T[k] || AC_EXTRA[k]; if(!x) return '';
@@ -68758,7 +68765,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
   function dcCfg0(){
     const c = window.__dcCfg || {}, d = DC_PRESETS[c.preset] || DC_PRESETS.iso;
     return {preset: DC_PRESETS[c.preset] ? c.preset : 'iso', prj: c.prj || dcPrjAuto(), org: c.org || '', sep: c.sep || d.sep, na: c.na != null && c.na !== '' ? c.na : d.na, multi: c.multi || d.multi, multiDsc: c.multiDsc || d.multiDsc,
-      rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
+      rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', cx: Array.isArray(c.cx) ? c.cx.filter(x => x && /^[A-Z]{1,5}$/.test(x.k)) : [], use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
   async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} return dcCfg(); }
@@ -68888,6 +68895,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             if(k === 'SH') return '<label class="dc-s dc-ser" hidden><u>نوع نقشه در رشته<em class="en" dir="ltr">Sheet series</em></u><select data-dcser></select></label>'
               + '<label class="dc-s" data-tk="SH"><u>شماره<em class="en" dir="ltr">Number</em></u><span class="dc-sh"><input type="text" data-dcp="SH" dir="ltr" inputmode="numeric" value="' + esc(P.SH || '') + '" list="' + dlId + '" placeholder="خودکار" autocomplete="off"><button type="button" class="trc-nx" data-dcnext title="اولین شمارهٔ آزاد همین دسته (Next available number)" aria-label="شمارهٔ بعدی">↻</button></span></label>';
             if(k === 'P') return '<span class="dc-s dc-ac"><u>' + SL.P + '<em class="en" dir="ltr">Project</em></u><b>' + esc(dcSan(c.prj) || c.na) + '</b></span>';
+            const cx = (c.cx || []).find(x => x.k === k); if(cx) return sel(k, esc(cx.t), k.toLowerCase());
             if(SL[k]) return '<span class="dc-s dc-ac" data-dcac="' + k + '"><u>' + SL[k] + '<em class="en" dir="ltr">' + (window.DC_EN[k] || '') + '</em></u><b>' + esc(c.na) + '</b><small>' + SRC[k] + '</small></span>';
             return ''; };
           const full = String(c.pat.design || '') + (c.tail ? c.sep + c.tail : '');
@@ -68995,8 +69003,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     try{ A = k === 'zn' ? (window.pjBlocks ? window.pjBlocks() : []).map(b => [String(b.c).toUpperCase(), b.n || b.c]) : dcLvlList().filter(x => x[2]).map(x => [x[0], x[1]]); }catch(e){}
     return '<div class="dc-auto"><div class="dc-auh"><u>' + (k === 'zn' ? 'خودکار از بلوک‌های پروژه' : 'خودکار از طبقات پروژه') + '</u>' + (adm ? '<button type="button" class="lnk" data-spblkmgr="1">' + (A.length ? 'ویرایش' : 'تعریف') + ' ' + (k === 'zn' ? 'بلوک‌ها' : 'طبقات') + '</button>' : '') + '</div>'
       + (A.length ? '<div class="dc-auc">' + A.map(x => '<span><code dir="ltr">' + esc(x[0]) + '</code>' + esc(x[1]) + '</span>').join('') + '</div>' : '<small>' + (k === 'zn' ? 'پروژه بلوک تعریف‌شده ندارد؛ در کد «همه» می‌آید.' : 'طبقه‌ای برای پروژه تعریف نشده است.') + '</small>') + '</div>'; };
+  /* ۴۴۴: بخش‌های سفارشی کد (cfg.cx = [{k: 'PH', t: 'فاز'}]): توکن {PH} در قالب، جدول خودش، و فیلد خودکار در فرم سند */
+  const dcTblAll = cx => DC_TBL.concat((cx || []).map(x => [x.k.toLowerCase(), esc(x.t), 'بخش سفارشی؛ در قالب با {' + x.k + '}', 'بخش سفارشی؛ در قالب با {' + x.k + '}', x.k]));
+  const dcTokAll = cx => Object.assign({}, DC_TOK, ...(cx || []).map(x => ({[x.k]: x.t})));
+  window.dcCxOf = k => { try{ return (dcCfg().cx || []).find(x => x.k === k) || null; }catch(e){ return null; } };
   const dcRowsOf = txt => String(txt || '').split('\n').map(l => { const i = l.indexOf('='); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter(r => r && r[0]);
-  const dcRowHtml = (r, adm) => '<div class="dc-r"><input type="text" class="dc-rc" dir="ltr" value="' + esc(r[0]) + '" placeholder="کد"' + (adm ? '' : ' readonly') + '><input type="text" class="dc-rt" dir="auto" value="' + esc(r[1]) + '" placeholder="عنوان"' + (adm ? '' : ' readonly') + '>'
+  const dcRowHtml = (r, adm) => '<div class="dc-r">' + (adm ? '<span class="dc-dg" draggable="true" title="جابه‌جایی؛ روی استاندارد دیگر رها کنید تا کپی شود" aria-label="جابه‌جایی">⋮⋮</span>' : '') + '<input type="text" class="dc-rc" dir="ltr" value="' + esc(r[0]) + '" placeholder="کد"' + (adm ? '' : ' readonly') + '><input type="text" class="dc-rt" dir="auto" value="' + esc(r[1]) + '" placeholder="عنوان"' + (adm ? '' : ' readonly') + '>'
     + (adm ? '<button type="button" class="dc-rx" data-dcrdel="1" aria-label="حذف">×</button>' : '') + '</div>';
   /* ردیف‌ها ← textarea پنهان (منبع read) */
   const dcRowsSync = tb => { const ta = tb.querySelector('textarea'); ta.value = Array.from(tb.querySelectorAll('.dc-r')).map(r => [r.querySelector('.dc-rc').value.trim(), r.querySelector('.dc-rt').value.trim()]).filter(x => x[0] && x[1]).map(x => x[0] + ' = ' + x[1]).join('\n');
@@ -69009,11 +69021,11 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     const paint = c => {
       const TT = c.T || {[c.preset]: c.t};
       const tbP = pk => { const T = TT[pk] || {}, at = pk === c.preset ? 'data-dct="' : 'data-dctx="' + pk + ':';
-        return ([k, lb, hIso, hAll]) => { const txt = k === 'sh' ? (T.sh || '') : dcTxt(T[k]), R = dcRowsOf(txt);
-          return '<div class="dc-tb" data-dctb="' + k + '"><div class="dc-tbh"><b>' + lb + '</b><em>' + toFa(R.length) + '</em></div><small>' + (pk === 'iso' ? hIso : hAll) + '</small>'
+        return ([k, lb, hIso, hAll, cxk]) => { const txt = k === 'sh' ? (T.sh || '') : dcTxt(T[k]), R = dcRowsOf(txt);
+          return '<div class="dc-tb' + (cxk ? ' cx' : '') + '" data-dctb="' + k + '"><div class="dc-tbh"><b>' + lb + (cxk ? ' <code dir="ltr">{' + cxk + '}</code>' : '') + '</b><em>' + toFa(R.length) + '</em>' + (cxk && adm ? '<button type="button" class="dc-cxdel" data-cxdel="' + cxk + '" title="حذف این بخش">حذف بخش</button>' : '') + '</div><small>' + (pk === 'iso' ? hIso : hAll) + '</small>'
             + dcAutoHtml(k, adm) + '<textarea ' + at + k + '" hidden>' + esc(txt) + '</textarea>' + (k === 'zn' || k === 'lvl' ? '<u class="dc-man">کدهای دستی (اضافه بر خودکار)</u>' : '') + '<div class="dc-rows">' + R.map(r => dcRowHtml(r, adm)).join('') + '</div>'
             + (adm ? '<button type="button" class="dc-radd" data-dcradd="1">+ افزودن کد</button>' : '') + '</div>'; }; };
-      const tbs = pk => { const tb = tbP(pk); return DC_TBL.map(tb).join(''); };
+      const tbs = pk => { const tb = tbP(pk); return dcTblAll(c.cx).map(tb).join(''); };
       const tpNow = c.tp || c.preset, tpShow = dcTpShow && TT[dcTpShow] ? dcTpShow : tpNow;
       const NAV = [['std', 'استاندارد و پایه'], ['use', 'کاربرد در بخش‌ها'], ['pat', 'قالب کدها'], ['tab', 'جدول کدها'], ['prj', 'مراحل و بلوک‌ها']];
       return '<div class="dc-set"><div class="dc-top"><nav class="dc-nav" role="tablist">' + NAV.map(x => '<button type="button" role="tab" data-dcnav="' + x[0] + '"' + (x[0] === dcPane ? ' class="on" aria-selected="true"' : '') + '>' + x[1] + '</button>').join('') + '</nav>'
@@ -69051,7 +69063,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
             + (adm ? '<div class="dc-save" style="justify-content:flex-start"><button type="button" class="pj-sec" data-spblkmgr="1">' + (B.length ? 'ویرایش ساختمان‌ها و بلوک‌ها' : '+ تعریف ساختمان‌ها و بلوک‌ها') + '</button></div>' : '') + '</section>'; })()
       + '<section class="dc-p" data-dcp="pat"><h4>قالب کد هر نوع سند</h4><p class="dc-tk">روی هر بخش بزنید تا در قالبی که مکان‌نما در آن است اضافه شود؛ نمونهٔ کد کنار هر قالب زنده به‌روز می‌شود.</p>'
       + (adm ? '<div class="dc-xl"><button type="button" class="mini" data-dcpout="1">خروجی اکسل قالب‌ها</button><label class="mini dc-xin">ورود از اکسل<input type="file" accept=".xlsx,.xls,.csv" data-dcpin="1" hidden></label><small>ستون‌ها: کلید، نوع سند، قالب</small></div>' : '')
-      + '<div class="dc-toks">' + Object.keys(DC_TOK).map(k => '<button type="button" data-dctok="' + k + '"' + dis + '><code dir="ltr">{' + k + '}</code>' + esc(DC_TOK[k]) + '</button>').join('') + '</div>'
+      + '<div class="dc-toks">' + (function(){ const TK = dcTokAll(c.cx); return Object.keys(TK).map(k => '<button type="button" data-dctok="' + k + '"' + dis + '><code dir="ltr">{' + k + '}</code>' + esc(TK[k]) + '</button>').join(''); })() + '</div>'
       + '<div class="dc-pt"><div class="dc-pth"><span>نوع سند</span><span>قالب</span><span>نمونه</span></div>'
       + DC_KINDS.map(([k, t]) => '<div class="dc-pr"><b>' + t + '</b><input type="text" dir="ltr" data-dcpat="' + k + '" value="' + esc(c.pat[k] || '') + '"' + ro + '><code class="dc-ex" data-dcex="' + k + '" dir="ltr">' + esc(dcFull(k, DC_EX[k] || {})) + '</code></div>').join('')
       + '<div class="dc-pr"><b>وضعیت و ویرایش<small>کنار شناسهٔ سند طراحی</small></b><input type="text" dir="ltr" data-dcc="tail" value="' + esc(c.tail || '') + '" placeholder="خالی = ندارد"' + ro + '><code class="dc-ex" dir="ltr">' + esc(c.tail ? dcBuild('design', DC_EX.design, null, c.tail) : '—') + '</code></div></div></section>'
@@ -69059,9 +69071,12 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
       + (adm ? '<div class="dc-xl"><button type="button" class="mini" data-dcxout="1">خروجی اکسل جدول‌ها</button><label class="mini dc-xin">ورود از اکسل<input type="file" accept=".xlsx,.xls,.csv" data-dcxin="1" hidden></label><small>هر جدول یک برگه با ستون‌های «کد» و «عنوان»</small></div>' : '')
       + '<div class="dc-tpsw" role="tablist">' + Object.keys(DC_PRESETS).map(pk => '<button type="button" data-dctp="' + pk + '"' + (pk === tpShow ? ' class="on"' : '') + '><b>' + esc(DC_PRESETS[pk].nm) + '</b><small>' + (pk === tpNow ? 'فرم‌های طراحی از این جدول' : pk === c.preset ? 'استاندارد پایه' : 'برای بخش‌هایی که این استاندارد را دارند') + '</small></button>').join('') + '</div>'
       + Object.keys(DC_PRESETS).map(pk => '<div class="dc-tbs" data-tp="' + pk + '"' + (pk === tpShow ? '' : ' hidden') + '>' + tbs(pk) + '</div>').join('')
+      + (adm ? '<div class="dc-cxadd"><b>بخش تازهٔ کد</b><input type="text" data-cxk dir="ltr" maxlength="5" placeholder="کلید لاتین، مثلاً PH"><input type="text" data-cxt placeholder="عنوان، مثلاً فاز اجرا"><button type="button" class="mini go" data-cxadd="1">افزودن بخش</button></div>' : '')
       + '</section>'
       + (adm ? '<div class="dc-save dc-foot"><button type="button" class="pj-pri" data-dcsave>ذخیرهٔ کدینگ</button></div>' : '<p class="dc-tk dc-foot">فقط مدیر سامانه کدینگ را تغییر می‌دهد.</p>')
       + '</div>'; };
+    let dcCxCur = (dcCfg().cx || []).slice();
+    const repaint = () => { const cur = read(), keep = window.__dcCfg; window.__dcCfg = Object.assign({}, keep || {}, cur); body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); };
     const m = fxModal('dcM', 'سیستم کدینگ اسناد', 'شناسهٔ یکتای هر سند و نام فایل‌ها؛ همهٔ فرم‌ها، ترانسمیتال و نام فایل‌ها از همین‌جا پیروی می‌کنند', paint(dcCfg()), true);
     const pane = k => { dcPane = k; m.querySelectorAll('[data-dcnav]').forEach(b => { const on = b.dataset.dcnav === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }); m.querySelector('.dc-set').dataset.pane = k; };
     pane(dcPane);
@@ -69069,12 +69084,25 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
     /* ۴۱۴: ISATIS: فقط افزوده‌ها/تغییرهای پروژه ذخیره می‌شود (جدول‌های فرم در کد است) تا ردیف ذخیره از سقف سرور بزرگ‌تر نشود */
     const slim = o => { try{ if(o.tx) Object.keys(o.tx).forEach(pk => { o.tx[pk] = dcSlimT(pk, o.tx[pk]); }); }catch(e){} try{ const d = (DC_PRESETS[o.preset] || {}).t; if(!d || o.preset !== 'isatis') return o; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o.t[k])) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o.t[k] = o.t[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o.t[k].length) delete o.t[k]; });
         if(typeof o.t.sh === 'string'){ const D = new Set(String(d.sh || '').split('\n').map(l => l.trim())); o.t.sh = o.t.sh.split('\n').map(l => l.trim()).filter(l => l && !D.has(l)).join('\n'); if(!o.t.sh) delete o.t.sh; } }catch(e){} return o; };
-    const read = () => { const o = {preset: (m.querySelector('.dc-pb.on') || {dataset: {}}).dataset.dcpre || 'iso'}; m.querySelectorAll('[data-dcc]').forEach(e => { o[e.dataset.dcc] = e.type === 'checkbox' ? e.checked : e.value.trim(); }); o.shW = +o.shW || 4; const old = window.__dcCfg || {}; if(old.rvw) o.rvw = old.rvw; if(old.fin) o.fin = old.fin; o.use = {}; m.querySelectorAll('[data-dcuse]').forEach(e => { if(e.value && e.value !== 'main') o.use[e.dataset.dcuse] = e.value; }); o.pat = {}; m.querySelectorAll('[data-dcpat]').forEach(e => { o.pat[e.dataset.dcpat] = e.value.trim(); }); o.t = {}; m.querySelectorAll('[data-dct]').forEach(e => { o.t[e.dataset.dct] = e.dataset.dct === 'sh' ? e.value : dcParse(e.value); });
+    const read = () => { const o = {preset: (m.querySelector('.dc-pb.on') || {dataset: {}}).dataset.dcpre || 'iso'}; m.querySelectorAll('[data-dcc]').forEach(e => { o[e.dataset.dcc] = e.type === 'checkbox' ? e.checked : e.value.trim(); }); o.shW = +o.shW || 4; o.cx = dcCxCur.slice(); const old = window.__dcCfg || {}; if(old.rvw) o.rvw = old.rvw; if(old.fin) o.fin = old.fin; o.use = {}; m.querySelectorAll('[data-dcuse]').forEach(e => { if(e.value && e.value !== 'main') o.use[e.dataset.dcuse] = e.value; }); o.pat = {}; m.querySelectorAll('[data-dcpat]').forEach(e => { o.pat[e.dataset.dcpat] = e.value.trim(); }); o.t = {}; m.querySelectorAll('[data-dct]').forEach(e => { o.t[e.dataset.dct] = e.dataset.dct === 'sh' ? e.value : dcParse(e.value); });
       o.tx = {}; m.querySelectorAll('[data-dctx]').forEach(e => { const [pk, k] = e.dataset.dctx.split(':'); (o.tx[pk] = o.tx[pk] || {})[k] = k === 'sh' ? e.value : dcParse(e.value); }); return o; };
     const exUpd = () => { const keep = window.__dcCfg; window.__dcCfg = read(); m.querySelectorAll('[data-dcex]').forEach(e => { e.textContent = dcFull(e.dataset.dcex, DC_EX[e.dataset.dcex] || {}); }); window.__dcCfg = keep; };
     m.addEventListener('input', e => { const tb = e.target.closest && e.target.closest('.dc-tb'); if(tb && e.target.closest('.dc-r')) dcRowsSync(tb); }, true);
     m.addEventListener('input', exUpd); m.addEventListener('change', exUpd);
     const visTbs = () => m.querySelector('.dc-tbs:not([hidden])');
+    /* جابه‌جایی ردیف با کشیدن: در همان جدول، به جدول دیگر، یا روی استاندارد دیگر (کپی) */
+    let drg = null;
+    m.addEventListener('dragstart', e => { const h = e.target.closest && e.target.closest('.dc-dg'); if(!h) return; drg = h.closest('.dc-r'); drg.classList.add('drg'); try{ e.dataTransfer.effectAllowed = 'copyMove'; e.dataTransfer.setData('text/plain', 'dc'); e.dataTransfer.setDragImage(drg, 20, 16); }catch(er){} });
+    m.addEventListener('dragend', () => { if(drg) drg.classList.remove('drg'); drg = null; m.querySelectorAll('.dc-ov').forEach(x => x.classList.remove('dc-ov')); });
+    m.addEventListener('dragover', e => { if(!drg) return; const sw = e.target.closest('[data-dctp]'), rw = e.target.closest('.dc-r'), box = e.target.closest('.dc-tb');
+      if(!(sw && !sw.classList.contains('on')) && !rw && !box) return; e.preventDefault(); m.querySelectorAll('.dc-ov').forEach(x => x.classList.remove('dc-ov')); (sw || box).classList.add('dc-ov');
+      if(rw && rw !== drg && !sw){ const r = rw.getBoundingClientRect(); rw.parentNode.insertBefore(drg, e.clientY > r.top + r.height / 2 ? rw.nextSibling : rw); } else if(box && !rw && !sw){ const L = box.querySelector('.dc-rows'); if(drg.parentNode !== L) L.appendChild(drg); } });
+    m.addEventListener('drop', e => { if(!drg) return; e.preventDefault(); const from = drg.__from, sw = e.target.closest('[data-dctp]');
+      if(sw && !sw.classList.contains('on')){ const k = drg.closest('.dc-tb').dataset.dctb, G = m.querySelector('.dc-tbs[data-tp="' + sw.dataset.dctp + '"]'), tb = G && G.querySelector('[data-dctb="' + k + '"]');
+        const code = drg.querySelector('.dc-rc').value.trim(), title = drg.querySelector('.dc-rt').value.trim(); if(!tb || !code) return;
+        const ex = Array.from(tb.querySelectorAll('.dc-r')).find(r => r.querySelector('.dc-rc').value.trim() === code); if(ex) ex.querySelector('.dc-rt').value = title; else tb.querySelector('.dc-rows').insertAdjacentHTML('beforeend', dcRowHtml([code, title], adm));
+        dcRowsSync(tb); shrToast('«' + code + '» در ' + DC_PRESETS[sw.dataset.dctp].nm + ' کپی شد'); return; }
+      m.querySelectorAll('.dc-tbs .dc-tb').forEach(dcRowsSync); exUpd(); });
     m.addEventListener('focusin', e => { if(e.target.matches && e.target.matches('[data-dcpat], [data-dcc="tail"]')) dcPatLast = e.target; });
     m.addEventListener('change', async e => { const fp = e.target.closest && e.target.closest('[data-dcpin]'); if(!fp || !fp.files || !fp.files[0]) return;
       try{ await window.dcXlsxReady(); const wb = XLSX.read(await fp.files[0].arrayBuffer(), {type: 'array'}), ws = wb.Sheets[wb.SheetNames[0]]; let n = 0;
@@ -69082,7 +69110,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         exUpd(); shrToast(n ? toFa(n) + ' قالب از اکسل آمد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید' : 'ردیفی با کلید نوع سند پیدا نشد'); }catch(er){ showDialog('err', 'اکسل خوانده نشد', friendlyErr(er)); } finally{ fp.value = ''; } });
     m.addEventListener('change', async e => { const fi = e.target.closest && e.target.closest('[data-dcxin]'); if(!fi || !fi.files || !fi.files[0]) return;
       try{ await window.dcXlsxReady(); const wb = XLSX.read(await fi.files[0].arrayBuffer(), {type: 'array'}); let n = 0; const G = visTbs();
-        wb.SheetNames.forEach(sn => { const def = DC_TBL.find(x => x[1] === sn.trim() || x[0] === sn.trim().toLowerCase()); if(!def) return; const ta = G.querySelector('[data-dctb="' + def[0] + '"] textarea'); if(!ta) return;
+        wb.SheetNames.forEach(sn => { const def = dcTblAll(dcCxCur).find(x => x[1] === sn.trim() || x[0] === sn.trim().toLowerCase()); if(!def) return; const ta = G.querySelector('[data-dctb="' + def[0] + '"] textarea'); if(!ta) return;
           const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header: 1, defval: ''}).slice(1).map(r => [String(r[0] || '').trim(), String(r[1] || '').trim()]).filter(r => r[0] && r[1]);
           ta.value = rows.map(r => r[0] + ' = ' + r[1]).join('\n'); dcRowsPaint(ta, adm); n++; });
         exUpd(); shrToast(n ? toFa(n) + ' جدول از اکسل آمد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید' : 'برگه‌ای با نام جدول‌ها پیدا نشد'); }
@@ -69094,10 +69122,15 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
         inp.value = pre + ins + post; inp.focus(); const q = (pre + ins).length; try{ inp.setSelectionRange(q, q); }catch(er){} exUpd(); return; }
       if(e.target.closest('[data-dcpout]')){ try{ await window.dcXlsxReady(); const wb = XLSX.utils.book_new(), rows = [['کلید', 'نوع سند', 'قالب']].concat(DC_KINDS.map(([k, t]) => [k, t, (m.querySelector('[data-dcpat="' + k + '"]') || {}).value || ''])).concat([['tail', 'وضعیت و ویرایش', (m.querySelector('[data-dcc="tail"]') || {}).value || '']]);
           const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{wch: 10}, {wch: 26}, {wch: 50}]; XLSX.utils.book_append_sheet(wb, ws, 'قالب‌ها'); XLSX.writeFile(wb, 'coding-patterns.xlsx'); }catch(er){ showDialog('err', 'خروجی ساخته نشد', friendlyErr(er)); } return; }
+      if(e.target.closest('[data-cxadd]')){ const k = String((m.querySelector('[data-cxk]') || {}).value || '').trim().toUpperCase(), t = String((m.querySelector('[data-cxt]') || {}).value || '').trim();
+        if(!/^[A-Z]{1,5}$/.test(k)){ showDialog('warn', 'کلید بخش', 'کلید ۱ تا ۵ حرف لاتین باشد، مثلاً PH.'); return; } if(!t){ showDialog('warn', 'عنوان بخش', 'عنوان بخش را بنویسید.'); return; }
+        if(DC_TOK[k] || dcCxCur.some(x => x.k === k)){ showDialog('warn', 'کلید تکراری', '{' + k + '} از قبل هست؛ کلید دیگری بگذارید.'); return; }
+        dcCxCur.push({k, t}); repaint(); shrToast('بخش {' + k + '} اضافه شد؛ آن را در «قالب کدها» در قالب بگذارید و ذخیره کنید'); return; }
+      const cxd = e.target.closest('[data-cxdel]'); if(cxd){ const k = cxd.dataset.cxdel; if(!await askConfirm('حذف بخش {' + k + '}', 'جدول این بخش پاک و از فرم‌ها برداشته می‌شود. اگر در قالبی هست، آن را هم از قالب بردارید.', 'حذف')) return; dcCxCur = dcCxCur.filter(x => x.k !== k); repaint(); return; }
       const ra = e.target.closest('[data-dcradd]'); if(ra){ const tb = ra.closest('.dc-tb'), box = tb.querySelector('.dc-rows'); box.insertAdjacentHTML('beforeend', dcRowHtml(['', ''], adm)); box.lastElementChild.querySelector('.dc-rc').focus(); box.scrollTop = box.scrollHeight; return; }
       const rd = e.target.closest('[data-dcrdel]'); if(rd){ const tb = rd.closest('.dc-tb'); rd.closest('.dc-r').remove(); dcRowsSync(tb); exUpd(); return; }
       if(e.target.closest('[data-dcxout]')){ try{ await window.dcXlsxReady(); const G = visTbs(), wb = XLSX.utils.book_new();
-          DC_TBL.forEach(([k, lb]) => { const ta = G.querySelector('[data-dctb="' + k + '"] textarea'); const ws = XLSX.utils.aoa_to_sheet([['کد', 'عنوان']].concat(dcRowsOf(ta ? ta.value : ''))); ws['!cols'] = [{wch: 14}, {wch: 48}]; XLSX.utils.book_append_sheet(wb, ws, lb.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31)); });
+          dcTblAll(dcCxCur).forEach(([k, lb]) => { const ta = G.querySelector('[data-dctb="' + k + '"] textarea'); const ws = XLSX.utils.aoa_to_sheet([['کد', 'عنوان']].concat(dcRowsOf(ta ? ta.value : ''))); ws['!cols'] = [{wch: 14}, {wch: 48}]; XLSX.utils.book_append_sheet(wb, ws, lb.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31)); });
           XLSX.writeFile(wb, 'coding-tables-' + (G.dataset.tp || 'base') + '.xlsx'); }catch(er){ showDialog('err', 'خروجی ساخته نشد', friendlyErr(er)); } return; }
       const tpb = e.target.closest('[data-dctp]'); if(tpb){ dcTpShow = tpb.dataset.dctp; m.querySelectorAll('[data-dctp]').forEach(b => b.classList.toggle('on', b === tpb)); m.querySelectorAll('.dc-tbs[data-tp]').forEach(g => { g.hidden = g.dataset.tp !== dcTpShow; }); return; }
       const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org, use: cur.use, tx: cur.tx}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
