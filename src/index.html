@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261116152208">
+<meta name="pm-build" content="20261116153217">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -30842,6 +30842,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
 .tc2-sb{display:flex;gap:4px;flex:none} .tc2-sb button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--ink)} .tc2-sb button:hover{border-color:#7b6bd6;color:#7b6bd6} .tc2-sb button.del:hover{border-color:var(--alert,#c0392b);color:var(--alert,#c0392b)}
 .prfi{margin:12px 0 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)} .prfi-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px} .prfi-h b{font-size:13px;font-weight:800} .prfi-h small{font-size:11px;color:var(--muted)}
 .prfi dl{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 14px} .prfi dl > div{display:flex;flex-direction:column;gap:2px;min-width:0} .prfi dt{font-size:11px;color:var(--muted);font-weight:600} .prfi dd{margin:0;font-size:12.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis}
+.dc-std{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
 .aq-dtf span{display:flex;gap:6px} .aq-dtf input{flex:1;min-width:0}
 .aq-dtx{font-size:12px;color:var(--muted);padding:0 6px;white-space:nowrap}
 #adminView .adm-xbar .adm-xh{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin:0 2px 8px}
@@ -69031,15 +69032,18 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   /* ۳۹۹: «زیرشیت» در استاندارد ISO 19650 نیست؛ از همهٔ الگوها (پیش‌فرض و ذخیره‌شده) حذف می‌شود */
   const dcNoL = (P, sep) => { const o = {}; Object.keys(P || {}).forEach(k => { o[k] = String(P[k] || '').split(sep).filter(x => x.trim() !== '{L}').join(sep); }); return o; };
   /* ISATIS: جدول‌های فرم کدینگ + هرچه پروژه افزوده (اجتماع؛ برچسب ذخیره‌شده مقدم) */
+  /* ۴۸۲: «مرحله» مجموعهٔ جایگزین است (RIBA یا فازهای ایران یا فهرست خود پروژه)، نه افزودنی: اگر جدول ذخیره‌شده هیچ‌کدام از کدهای پیش‌فرض را ندارد، همان جدول ذخیره‌شده ملاک است */
+  const dcStgPick = (D, S) => { const d = new Set((D || []).map(x => String(x[0]))); return Array.isArray(S) && S.length && !S.some(x => d.has(String(x[0]))) ? S.slice() : null; };
   const dcUnion = (A, B) => { const M = new Map(); (A || []).forEach(x => M.set(String(x[0]), x)); (B || []).forEach(x => M.set(String(x[0]), x)); return Array.from(M.values()); };
   const dcShUnion = (a, b) => { const M = new Map(); String(a || '').split('\n').concat(String(b || '').split('\n')).forEach(l => { const m = /^\s*([A-Za-z]+\s+\d{2,6})\s*=/.exec(l); if(m) M.set(m[1].toUpperCase().replace(/\s+/, ' '), l.trim()); }); return Array.from(M.values()).join('\n'); };
   /* ۴۱۲: تنظیم کدینگ فقط وقتی window.__dcCfg عوض شود دوباره ساخته می‌شود (پیش‌تر در هر فراخوانی جدول‌ها و فهرست شیت‌ها از نو ساخته می‌شد و با هزاران سند، گوشی قفل می‌شد) */
   let dcMemo = {src: undefined, pj: '', v: null};
   function dcCfg(){ const src = window.__dcCfg || null; let pj = ''; try{ pj = localStorage.getItem('siteLogM.project.v1') || ''; }catch(e){}
-    if(dcMemo.v && dcMemo.src === src && dcMemo.pj === pj) return dcMemo.v; const v = dcCfgBuild(); dcMemo = {src, pj, v}; return v; }
+    if(dcMemo.v && dcMemo.src === src && dcMemo.pj === pj) return dcMemo.v; const v = dcCfgBuild(); v.ver = ++dcVerN; dcMemo = {src, pj, v}; return v; }
+  let dcVerN = 0;
   window.dcCfgReset = () => { dcMemo = {src: undefined, pj: '', v: null}; };
   function dcCfgBuild(){ const r = dcCfg0(), c = window.__dcCfg || {};
-    if(r.preset === 'isatis' && c.t){ const d = DC_PRESETS.isatis.t; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ'].forEach(k => { r.t[k] = dcUnion(d[k], c.t[k]); }); r.t.sh = dcShUnion(d.sh, c.t.sh);
+    if(r.preset === 'isatis' && c.t){ const d = DC_PRESETS.isatis.t; ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ'].forEach(k => { r.t[k] = (k === 'stg' && dcStgPick(d.stg, c.t.stg)) || dcUnion(d[k], c.t[k]); }); r.t.sh = dcShUnion(d.sh, c.t.sh);
       if(c.pat && c.pat.design && c.pat.design.indexOf('{L}') === -1 && /\{SH\}/.test(c.pat.design)) r.pat.design = c.pat.design.replace('{SH}', '{SH}' + r.sep + '{L}'); }
     /* ۴۰۸: کاربرد کدینگ در هر بخش سایت (مدیریت سامانه ← کدینگ اسناد): main = استاندارد پایه، iso/isatis = الگوی همان استاندارد، off = بدون کد */
     const U = r.use || {}; Object.keys(U).forEach(k => { const u = U[k]; if(u === 'off'){ r.pat[k] = ''; if(k === 'design') r.tail = ''; } else if(u && u !== 'main' && DC_PRESETS[u]){ r.pat[k] = DC_PRESETS[u].pat[k] || r.pat[k]; if(k === 'design') r.tail = DC_PRESETS[u].tail || ''; } });
@@ -69048,11 +69052,11 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const ud = U.design; r.tp = ud && ud !== 'main' && ud !== 'off' && DC_PRESETS[ud] ? ud : r.preset; r.t = r.T[r.tp];
     return r; }
   function dcTablesFor(pk, saved){ const d = (DC_PRESETS[pk] || {}).t || {}, o = Object.assign({}, d); if(!saved) return o;
-    if(pk === 'isatis'){ Object.keys(saved).forEach(k => { o[k] = k === 'sh' ? dcShUnion(d.sh, saved.sh) : (Array.isArray(d[k]) ? dcUnion(d[k], saved[k]) : saved[k]); }); return o; }
+    if(pk === 'isatis'){ Object.keys(saved).forEach(k => { o[k] = k === 'sh' ? dcShUnion(d.sh, saved.sh) : (k === 'stg' && dcStgPick(d.stg, saved.stg)) || (Array.isArray(d[k]) ? dcUnion(d[k], saved[k]) : saved[k]); }); return o; }
     return Object.assign(o, saved); }
   /* فقط تفاوت با جدول پیش‌فرض همان استاندارد ذخیره می‌شود (ISATIS)، تا ردیف ذخیره از سقف سرور بزرگ‌تر نشود */
   function dcSlimT(pk, t){ const d = (DC_PRESETS[pk] || {}).t; if(!d || pk !== 'isatis' || !t) return t; const o = Object.assign({}, t);
-    ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o[k])) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o[k] = o[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o[k].length) delete o[k]; });
+    ['bld', 'stg', 'zn', 'lvl', 'dsc', 'typ', 'org', 'suit', 'sty'].forEach(k => { if(!Array.isArray(o[k])) return; if(k === 'stg' && !o.stg.some(x => (d.stg || []).some(y => String(y[0]) === String(x[0])))) return; const D = new Map((d[k] || []).map(x => [String(x[0]), String(x[1])])); o[k] = o[k].filter(x => D.get(String(x[0])) !== String(x[1])); if(!o[k].length) delete o[k]; });
     if(typeof o.sh === 'string'){ const D = new Set(String(d.sh || '').split('\n').map(l => l.trim())); o.sh = o.sh.split('\n').map(l => l.trim()).filter(l => l && !D.has(l)).join('\n'); if(!o.sh) delete o.sh; } return o; }
   function dcCfg0(){
     const c = window.__dcCfg || {}, d = DC_PRESETS[c.preset] || DC_PRESETS.iso;
@@ -69060,7 +69064,7 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
       rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', cx: Array.isArray(c.cx) ? c.cx.filter(x => x && /^[A-Z]{1,5}$/.test(x.k)) : [], tord: Array.isArray(c.tord) ? c.tord.slice() : [], use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
-  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} return dcCfg(); }
+  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} const r = dcCfg(); try{ dcRefreshForms(); }catch(e){} return r; }
   window.dcgLoad = dcgLoad;
   setTimeout(() => { try{ dcgLoad(); }catch(e){} }, 3500);
   const dcSan = v => toEn(String(v == null ? '' : v)).trim().replace(/[\/\\\s]+/g, '.').replace(/[^A-Za-z0-9._()]/g, '').replace(/^\.+|\.+$/g, '').toUpperCase();
@@ -69102,16 +69106,25 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
   window.dcOptsUnion = dcOptsUnion;
   /* تراز: جدول دستی، وگرنه از طبقات پروژه (ISO: ۲ نویسه: 00 همکف، 01…، B1…، RF بام، ZZ چند تراز) */
   function dcLvlList(){ const L = dcTab('lvl');
+    /* ۴۸۲: ترازها از جدول کدینگ مرکزی. طبقه‌های ساختمان فقط الگوهای (x) همان جدول را پر می‌کنند (FLR(x) ← FLR3 با نام طبقه)، کدی بیرون از جدول ساخته نمی‌شود و همهٔ ردیف‌های ثابت جدول می‌مانند */
     if(L.length && L.some(x => /\(x\)$/i.test(String(x[0])))){ const out = [], seen = new Set(), add = (c, lb, k) => { if(!c || seen.has(c)) return; seen.add(c); out.push([c, lb, k]); };
+      const T = L.filter(x => /\(x\)$/i.test(String(x[0]))), fixed = L.filter(x => !/\(x\)$/i.test(String(x[0])));
+      const txt = x => String(x[0]) + ' ' + String(x[1] || '');
+      const tOf = re => T.find(x => re.test(txt(x))), fOf = re => fixed.find(x => re.test(txt(x)));
+      const tB = tOf(/BSM|BAS|basement|زیرزمین/i), tM = tOf(/MEZ|mezz|نیم/i), tF = T.find(x => /^(FLR|FL|F|L)\(/i.test(String(x[0]))) || T.find(x => !/MEZ|TFL|SEC|BSM|نیم|تیپ|typical|mezz|برش|زیرزمین/i.test(txt(x)) && /floor|طبقه/i.test(txt(x)));
+      const fG = fOf(/^GRD$|^GF$|^00$|ground|همکف/i), fR = fOf(/^RF$|^ROF$|roof|بام/i), fB = fOf(/^BSM$|basement|زیرزمین/i);
       let F = []; try{ F = BUILDING.filter(f => f && f.kind !== 'blk'); }catch(e){}
-      if(F.length){ const fixed = L.filter(x => !/\(x\)$/i.test(String(x[0])));
-        fixed.filter(x => ['PLE', 'FND'].indexOf(String(x[0])) !== -1).forEach(x => add(x[0], x[1]));
-        F.forEach(f => { const kk = String(f.key || ''), k = kk.indexOf(':') !== -1 ? kk.split(':')[1] : kk, n = parseInt(toEn(k), 10), lb = String(f.label || k).replace(/^.*?·\s*/, ''), pre = f.blk ? String(f.blk).toUpperCase() : '';
-          let c = ''; if(f.kind === 'roof' || /بام|roof/i.test(lb)) c = 'RF'; else if(/نیم|mezz/i.test(lb)) c = 'MEZ' + (isNaN(n) ? 1 : Math.abs(n) || 1); else if(!isNaN(n) && n < 0) c = 'BSM' + Math.abs(n); else if(n === 0 || /همکف/.test(lb)) c = 'GRD'; else if(!isNaN(n)) c = 'FLR' + n; else c = dcSan(k).slice(0, 4);
-          add(c, (pre ? pre + ' · ' : '') + lb, kk); });
-        fixed.filter(x => ['PLE', 'FND', 'BSM', 'GRD', 'RF'].indexOf(String(x[0])) === -1).forEach(x => add(x[0], x[1]));
-        L.filter(x => /^(TFL|SEC)\(x\)$/i.test(String(x[0]))).forEach(x => { const b = String(x[0]).slice(0, 3).toUpperCase(); for(let i = 1; i <= (b === 'TFL' ? 3 : 6); i++) add(b + i, String(x[1]) + ' ' + toFa(i)); });
-        return out; } }
+      F.forEach(f => { const kk = String(f.key || ''), k = kk.indexOf(':') !== -1 ? kk.split(':')[1] : kk, n = parseInt(toEn(k), 10), lb = String(f.label || k).replace(/^.*?·\s*/, ''), pre = f.blk ? String(f.blk).toUpperCase() : '';
+        const base = x => String(x[0]).replace(/\(x\)$/i, '').toUpperCase(); let c = '';
+        if(f.kind === 'roof' || /بام|roof/i.test(lb)){ if(fR) c = String(fR[0]); }
+        else if(/نیم|mezz/i.test(lb)){ if(tM) c = base(tM) + (isNaN(n) ? 1 : Math.abs(n) || 1); }
+        else if(!isNaN(n) && n < 0){ if(tB) c = base(tB) + Math.abs(n); else if(fB) c = String(fB[0]); }
+        else if(n === 0 || /همکف/.test(lb)){ if(fG) c = String(fG[0]); }
+        else if(!isNaN(n)){ if(tF) c = base(tF) + n; }
+        if(c) add(c, (pre ? pre + ' · ' : '') + lb, kk); });
+      fixed.forEach(x => add(String(x[0]), x[1]));
+      T.forEach(x => { const b = String(x[0]).replace(/\(x\)$/i, '').toUpperCase(); if(out.some(y => new RegExp('^' + b + '\\d+$').test(String(y[0])))) return; const N = /TFL|typical|تیپ/i.test(txt(x)) ? 3 : /SEC|برش/i.test(txt(x)) ? 6 : /MEZ|mezz|نیم/i.test(txt(x)) ? 2 : 10; for(let i = 1; i <= N; i++) add(b + i, String(x[1]) + ' ' + toFa(i)); });
+      return out; }
     if(L.length){ let nf = 0; try{ nf = BUILDING.filter(f => f.kind !== 'blk' && parseInt(toEn(String(f.key).split(':').pop()), 10) > 0).length; }catch(e){}
       const N = {FLR: Math.max(nf, 10), TFL: 3, MEZ: 2, SEC: 6}, out = [];
       L.forEach(x => { const m = /^([A-Z]+)\(x\)$/i.exec(String(x[0])); if(!m){ out.push(x); return; } const b = m[1].toUpperCase(), n = N[b] || 5; for(let i = 1; i <= n; i++) out.push([b + i, String(x[1]) + ' ' + toFa(i)]); });
@@ -69170,8 +69183,9 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
     const opt = (tk, v, L) => '<option value="">—</option>' + (L || dcTab(tk)).filter((x, i, A) => A.findIndex(y => y[0] === x[0]) === i || tk === 'lvl').map(x => '<option value="' + esc(x[0]) + '" data-lb="' + esc(x[1]) + '"' + (x[2] ? ' data-fk="' + esc(x[2]) + '"' : '') + (x[0] === v ? ' selected' : '') + '>' + esc(x[0] + ' · ' + x[1]) + '</option>').join('');
     const all = (c.pat.design || '') + (c.tail || ''), has = k => all.indexOf('{' + k + '}') !== -1;
     const sel = (k, lb, tk, L, req) => has(k) ? '<label class="dc-s" data-tk="' + k + '"><u>' + lb + (req ? ' <i class="ib-req">*</i>' : '') + '<em class="en" dir="ltr">' + (window.DC_EN[k] || '') + '</em></u><select data-dcp="' + k + '"' + (P[k] ? ' data-dcman="1"' : '') + '>' + opt(tk, P[k] || '', L) + '</select></label>' : '';
-    return '<div class="field dc-f' + (own ? ' trc' : '') + (manual ? ' man' : '') + '" data-dckind="design">'
+    return '<div class="field dc-f' + (own ? ' trc' : '') + (manual ? ' man' : '') + '" data-dckind="design" data-dcv="' + c.ver + '">'
       + '<div class="dc-h"><code class="dc-code" dir="ltr">' + esc(cur || '—') + '</code><span class="dc-tail" dir="ltr"></span>'
+      + '<span class="dc-std" title="استاندارد کدینگ این بخش؛ تغییر در مدیریت سامانه ← کدینگ اسناد">' + esc(((DC_PRESETS[c.tp || c.preset] || {}).nm || '').replace(/\s*\(.*\)\s*$/, '')) + '</span>'
       + '<button type="button" class="mini" data-dcman>' + (manual ? 'ساختن با کدینگ' : 'نوشتن دستی') + '</button></div>'
       /* ۳۹۵: بخش‌های کد به ترتیب الگوی کدینگ مرکزی؛ بخش‌هایی که از خود فرم می‌آیند (رشته، نوع، وضعیت، ویرایش) نشان داده و خودکار پر می‌شوند */
       + '<div class="dc-g dc-ord" dir="ltr">' + (function(){ const SL = {P: 'پروژه', TYP: 'نوع سند', DSC: 'رشته', SUIT: 'وضعیت', REV: 'ویرایش'}, SRC = {TYP: 'از «نوع سند»', DSC: 'از «رشته»', SUIT: 'از «وضعیت»', REV: 'از «ویرایش»'};
@@ -69200,6 +69214,14 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
             : 'کد از بخش‌های فرم ساخته می‌شود؛ نام فایل‌های پیوست هم همین کد می‌شود.')) + '</small></div>';
   }
   window.dcDesignFieldHtml = dcDesignFieldHtml;
+  /* ۴۸۲: فرم «ثبت سند طراحی تازه» هنگام بار شدن صفحه ساخته می‌شود، پیش از رسیدن تنظیم کدینگ (ISO پیش‌فرض می‌ماند).
+     هر بخش کدِ هنوز خالی که با نسخهٔ قدیمی کدینگ ساخته شده، با کدینگ فعلی از نو ساخته می‌شود (بعد از خواندن/ذخیرهٔ کدینگ و هنگام باز شدن فرم) */
+  function dcRefreshForms(){ try{ const v = dcCfg().ver; document.querySelectorAll('.dc-f[data-dckind="design"]').forEach(b => { if(String(b.dataset.dcv) === String(v)) return;
+      const no = b.querySelector('.a-dNo'), filled = no && no.value.trim(); if(filled && (b.classList.contains('man') || !b.closest('.nf'))) return; /* کد دستی یا سند موجود دست نمی‌خورد؛ کد خودکار فرم تازه از نو ساخته می‌شود */
+      const own = b.classList.contains('trc'), t = document.createElement('div'); t.innerHTML = own ? dcDesignFieldHtml({}, {own: 1}) : dcDesignFieldHtml({}); const nb = t.firstElementChild; if(!nb) return;
+      b.replaceWith(nb); try{ dcSync(nb); }catch(e){} }); }catch(e){} }
+  window.dcRefreshForms = dcRefreshForms;
+  document.addEventListener('click', e => { if(e.target.closest && e.target.closest('#admNewBtn, .nf-toggle, [data-trnew], [data-quick-new]')) setTimeout(dcRefreshForms, 60); }, true);
   /* مقدارهای خودکار از خود فرم (نوع، رشته، طبقه، وضعیت، ویرایش، طراح) وقتی کاربر دستی انتخاب نکرده */
   function dcSync(box){
     if(box && box.classList.contains('dc-live')){ dcLiveSync(box); return; }
@@ -69434,10 +69456,10 @@ body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="
           dcTblAll(dcCxCur).forEach(([k, lb]) => { const ta = G.querySelector('[data-dctb="' + k + '"] textarea'); const ws = XLSX.utils.aoa_to_sheet([['کد', 'عنوان']].concat(dcRowsOf(ta ? ta.value : ''))); ws['!cols'] = [{wch: 14}, {wch: 48}]; XLSX.utils.book_append_sheet(wb, ws, lb.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31)); });
           XLSX.writeFile(wb, 'coding-tables-' + (G.dataset.tp || 'base') + '.xlsx'); }catch(er){ showDialog('err', 'خروجی ساخته نشد', friendlyErr(er)); } return; }
       const tpb = e.target.closest('[data-dctp]'); if(tpb){ dcTpShow = tpb.dataset.dctp; m.querySelectorAll('[data-dctp]').forEach(b => b.classList.toggle('on', b === tpb)); m.querySelectorAll('.dc-tbs[data-tp]').forEach(g => { g.hidden = g.dataset.tp !== dcTpShow; }); return; }
-      const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org, use: cur.use, tx: cur.tx}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
+      const pb = e.target.closest('[data-dcpre]'); if(pb){ const cur = read(), keep = window.__dcCfg; /* ۴۸۲: بخش‌هایی که صریحاً روی استاندارد قبلی بودند با استاندارد تازه هم‌راه می‌شوند (پیش‌تر فرم اسناد طراحی روی ISO می‌ماند) */ const U2 = {}; Object.keys(cur.use || {}).forEach(k => { U2[k] = cur.use[k] === cur.preset ? 'main' : cur.use[k]; }); window.__dcCfg = {preset: pb.dataset.dcpre, prj: cur.prj, org: cur.org, use: U2, tx: cur.tx}; body().innerHTML = paint(dcCfg()); window.__dcCfg = keep; pane(dcPane); return; }
       const sg = e.target.closest('[data-dcstg]'); if(sg){ e.preventDefault(); const ta = (sg.closest('.dc-tbs') || m).querySelector('[data-dct="stg"], [data-dctx$=":stg"]'); if(ta && !ta.readOnly){ ta.value = dcTxt(DC_STG_SETS[sg.dataset.dcstg]); dcRowsPaint(ta, adm); ta.dispatchEvent(new Event('input', {bubbles: true})); m.querySelectorAll('.dc-stgs [data-dcstg]').forEach(x => x.classList.toggle('on', x === sg)); try{ shrToast('نظام مراحل عوض شد؛ برای ثبت «ذخیرهٔ کدینگ» را بزنید'); }catch(er){} } return; }
       const sv = e.target.closest('[data-dcsave]'); if(!sv) return; sv.disabled = true;
-      try{ const o = slim(read()); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
+      try{ const o = slim(read()); await fxPut(DC_K, 'cfg', {v: o, by: activeUserName(), at: Date.now()}); window.__dcCfg = o; try{ dcRefreshForms(); }catch(e){} shrToast('کدینگ اسناد ذخیره شد'); }catch(er){ showDialog('err', 'ذخیره نشد', friendlyErr(er)); } finally{ sv.disabled = false; } });
   };
   /* ویرایشگر درصدهای پیشرفت (۴۲۲) */
   window.pctOpen = function(){ let adm = false; try{ adm = isAdminUser(); }catch(e){}
