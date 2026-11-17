@@ -193,7 +193,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117060707">
+<meta name="pm-build" content="20261117061405">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -29360,8 +29360,11 @@
   /* فهرست‌هایی که ردیف‌ها پلکانی می‌آیند، خود ظرف حرکت نمی‌کند */
   :is(html,#z0) :is(body,#z1) :is(#wsList, #admCats, .ws-cg).wp-in{animation:none !important;}
   /* ۴۸۷: ماژول میز کار فقط یک محو کوتاه، بی جابه‌جایی؛ بخش داخلی (whArea، qcArea…) حرکت جدا ندارد — دو حرکت روی هم پرش و چشمک می‌ساخت */
-  @keyframes uiFade{from{opacity:.3;}to{opacity:1;}}
-  :is(html,#z0) :is(body,#z1) #wsHost.wp-in{animation:uiFade .16s ease-out backwards !important;}
+  @keyframes uiFade{from{opacity:0;transform:translate3d(0,6px,0);}to{opacity:1;transform:none;}}
+  :is(html,#z0) :is(body,#z1) #wsHost.wp-in{animation:uiFade .24s cubic-bezier(.2,.8,.2,1) backwards !important;}
+  /* ۴۹۲: بخش‌هایی که صفحهٔ کامل می‌شوند همان ورود را دارند؛ پس‌زمینهٔ تیرهٔ پنجره هرگز دیده نمی‌شود */
+  :is(html,#z0) :is(body,#z1) .modal-bg.fx-page{animation:none !important;}
+  :is(html,#z0) :is(body,#z1) .modal-bg.fx-page.fx-pg-in > .modal{animation:uiFade .24s cubic-bezier(.2,.8,.2,1) backwards !important;}
   :is(html,#z0) :is(body,#z1) #wsHost :is(.wp-in, .vw-in){animation:none !important;}
   :is(html,#z0) :is(body,#z1) :is(#wsList.wp-in .ws-row, .ws-cg.wp-in .ws-row, #admCats.wp-in > .acat){animation:uiIn var(--d2) var(--ez) both !important;animation-delay:calc(min(var(--i, 0), 8) * 18ms) !important;}
   :is(html,#z0) :is(body,#z1) #admCats.wp-in > .acat:nth-child(n){animation-delay:0ms !important;}
@@ -87533,14 +87536,17 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   /* بخشی که از میز کار باز می‌شود و خودش پنجره است: روی دسکتاپ به‌جای پنجرهٔ کوچک روی «فعالیت‌ها»، صفحهٔ کامل در جای محتوا */
   const fxVis = el => !el.hidden && el.isConnected && getComputedStyle(el).display !== 'none';
   function fxPageUnset(m){ try{ window.pgBackOff(m); }catch(e){} m.classList.remove('fx-page'); m.style.inset = ''; delete m.dataset.wsk; if(m.__pgObs){ m.__pgObs.disconnect(); m.__pgObs = null; } fxPageSync(); }
-  window.fxPageWatch = k => { const before = new Set(Array.from(document.querySelectorAll('.modal-bg')).filter(fxVis)); const t0 = Date.now();
-    const tick = () => { const m = Array.from(document.querySelectorAll('.modal-bg')).reverse().find(x => fxVis(x) && !before.has(x) && x.id !== 'profileModal' && x.id !== 'confirmModal');
-      if(!m){ if(Date.now() - t0 < 1500) setTimeout(tick, 40); return; }
+  /* ۴۹۲: پنجره همان لحظهٔ ساخته شدن (پیش از اولین نقاشی، با MutationObserver) صفحه می‌شود؛ پیش‌تر هر ۴۰ms نگاه می‌شد و یکی دو قاب پس‌زمینهٔ تیرهٔ پنجره دیده می‌شد */
+  window.fxPageWatch = k => { const before = new Set(Array.from(document.querySelectorAll('.modal-bg')).filter(fxVis)); let done = false, mo = null;
+    const tick = () => { if(done) return true; const m = Array.from(document.querySelectorAll('.modal-bg')).reverse().find(x => fxVis(x) && !before.has(x) && x.id !== 'profileModal' && x.id !== 'confirmModal');
+      if(!m) return false; done = true; if(mo) mo.disconnect();
+      m.classList.add('fx-pg-in');
       document.querySelectorAll('.modal-bg.fx-page').forEach(x => { if(x !== m) window.fxPageClose(x); });
       m.classList.add('fx-page'); m.dataset.wsk = k; fxPagePos(m); fxPageSync(); try{ window.pgBackOn(m); }catch(e){}
       const o = new MutationObserver(() => { if(!fxVis(m)) fxPageUnset(m); }); o.observe(m, {attributes: true, attributeFilter: ['hidden', 'style', 'class']}); m.__pgObs = o;
-      const o2 = new MutationObserver(() => { if(!m.isConnected){ o2.disconnect(); fxPageSync(); } }); o2.observe(document.body, {childList: true}); };
-    tick(); };
+      const o2 = new MutationObserver(() => { if(!m.isConnected){ o2.disconnect(); fxPageSync(); } }); o2.observe(document.body, {childList: true}); return true; };
+    if(tick()) return; mo = new MutationObserver(() => { tick(); }); mo.observe(document.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class', 'style']});
+    setTimeout(() => { if(!done && mo) mo.disconnect(); }, 1500); };
   window.fxPageClose = one => { const L = one ? [one] : Array.from(document.querySelectorAll('.modal-bg.fx-page'));
     L.forEach(x => { if(x.classList.contains('fx-bg')) x.remove(); else { x.hidden = true; fxPageUnset(x); } }); if(L.length) fxPageSync(); };
   window.addEventListener('resize', () => document.querySelectorAll('.modal-bg.fx-page').forEach(fxPagePos));
