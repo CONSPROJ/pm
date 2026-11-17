@@ -28,11 +28,16 @@
   var GLOBAL = /^siteLogM\.(user\.|tok\.|project\.|theme|lang|prefs|a2hs|pin$|pinAll|vm\.|backend|errSent|lastAct|userSeen|userEpoch|avatars|avaS3|avaMig|pplAvaMig|ptyAva|covers|people\.|pjReg|pjCol|permLists|pushFor|kxGuide|tour|sbMini|draft|outbox|bkPass|bkAutoTry|bkLast|maint|hd4Open|discToast|acSec|rules\.|modOff\.|viewDef|onbLater)/;
   var RX = {test: function(k){ return k.indexOf('siteLogM.') === 0 && !GLOBAL.test(k); }};
   var S = Storage.prototype, g = S.getItem, st = S.setItem, rm = S.removeItem;
-  var pid = function(){ try{ return g.call(window.localStorage, 'siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } };
+  /* ۴۹۳: پروژهٔ هر زبانه جداست. پیش‌تر پروژهٔ فعلی هر بار از حافظهٔ مشترک مرورگر خوانده می‌شد؛ اگر در زبانهٔ (یا پنجرهٔ) دیگری پروژه عوض می‌شد،
+     این زبانه هم بی‌خبر با سرآیند پروژهٔ دیگر داده می‌گرفت و گزارش‌های آن پروژه زیر نام این پروژه می‌آمد. حالا هر زبانه پروژهٔ خودش را
+     (در sessionStorage همان زبانه) نگه می‌دارد؛ فقط جابه‌جایی پروژه در خود همین زبانه آن را عوض می‌کند. زبانهٔ تازه با آخرین پروژه شروع می‌شود. */
+  var PK = 'siteLogM.project.v1', TK = 'siteLogM.tabPj', pin = null;
+  try{ pin = g.call(window.sessionStorage, TK); if(pin == null){ pin = g.call(window.localStorage, PK) || 'p1'; st.call(window.sessionStorage, TK, pin); } }catch(e){}
+  var pid = function(){ try{ return pin || g.call(window.localStorage, PK) || 'p1'; }catch(e){ return 'p1'; } };
   var k2 = function(self, k){ k = String(k); if(!RX.test(k) || k.indexOf('@') !== -1) return k; var p = pid(self); return p === 'p1' ? k : k + '@' + p; };
-  S.getItem = function(k){ return g.call(this, k2(this, k)); };
-  S.setItem = function(k, v){ return st.call(this, k2(this, k), v); };
-  S.removeItem = function(k){ return rm.call(this, k2(this, k)); };
+  S.getItem = function(k){ if(k === PK && this === window.localStorage && pin != null) return pin; return g.call(this, k2(this, k)); };
+  S.setItem = function(k, v){ if(k === PK && this === window.localStorage){ pin = String(v); try{ st.call(window.sessionStorage, TK, pin); }catch(e){} } return st.call(this, k2(this, k), v); };
+  S.removeItem = function(k){ if(k === PK && this === window.localStorage){ pin = null; try{ rm.call(window.sessionStorage, TK); }catch(e){} } return rm.call(this, k2(this, k)); };
 }catch(e){} })();
 </script>
 <script>
@@ -193,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117061405">
+<meta name="pm-build" content="20261117073443">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
