@@ -985,7 +985,9 @@ function tkPeople(a){ const map = n => { const k = S.dir.get(n); if(k === 'p' ||
   const o = pick(owOf(a)); return (o.length ? o : pick(rsOf(a).map(r => r.n))).slice(0, 2); }
 /* ۴۸۵: دستهٔ فعالیت در لیست فعالیت‌ها: «اجرایی» فقط وقتی پیمانکار مسئول یا منبع آن است؛ بقیه (طراحی، مطالعه، مدیریت…) «ابلاغی» به فرد */
 const TK_GEN = 'فعالیت عمومی';
-const tkSide = a => owOf(a).concat(rsOf(a).map(r => r.n)).some(n => S.dir.get(n) === 'c') ? '' : TK_GEN;
+/* ۴۹۵: «طرف» فعالیت ساختهٔ برنامه: نام پیمانکار اگر پیمانکار مسئول یا منبع است (اجرایی)؛ وگرنه خالی (در سایت «مهندسی و طراحی»).
+   پیش‌تر «فعالیت عمومی» می‌گرفت که در سایت یعنی ابلاغ همگانی و از شمار فعالیت‌های باز کنار می‌رفت. */
+const tkSide = a => owOf(a).concat(rsOf(a).map(r => r.n)).find(n => S.dir.get(n) === 'c') || '';
 /* فعالیت پایهٔ برنامه که مسئول یا منبعِ فرد دارد ولی در فهرست فعالیت‌ها نیست */
 function tkMissing(){ const C = S.calc; return S.acts.filter(a => !a.tk && !C.isSum(a) && !a.ms && tkPeople(a).length && (+a.pc || 0) < 100); }
 async function tkCreate(list){ const C = S.calc; let ok = 0, bad = 0, err = '';
