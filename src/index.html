@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117104302">
+<meta name="pm-build" content="20261117114005">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -58324,7 +58324,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
         else{ try{ const L = dsRevsOf(r).flatMap(rv => rv.log || []); if(L.some(y => y && y.at && hit(y.at))) rel = (dsHolderNow(r) && hit(dsHolderNow(r).at)) ? 'الان نزد اوست' : 'در گردش'; }catch(e){} }
       }else if(x.kind === 'statement' || x.kind === 'contract'){ if(hit(pick(r, x.kind === 'statement' ? AD.sParty : AD.cParty))) rel = 'طرف قرارداد'; }
       else if(x.kind === 'letter'){ if(hit(pick(r,AD.lParty))) rel = 'طرف نامه'; }
-      else if(x.kind === 'minute'){ if(hit(pick(r,AD.mOwner))) rel = 'مسئول انجام'; }
+      else if(x.kind === 'minute'){ if(hit(pick(r,AD.mOwner))) rel = 'مسئول انجام'; else if(hit(pick(r,AD.mFollow))) rel = 'مسئول پیگیری'; else if(window.mnPartyList && window.mnPartyList(r).some(hit)) rel = 'حاضر جلسه'; }
       if(!rel) return;
       const t = x.kind === 'design' ? dsTitle(r) : x.kind === 'minute' ? (pick(r,AD.mText) || pick(r,AD.mSubject) || '')
               : x.kind === 'letter' ? (pick(r,AD.lSubject) || 'نامه') : x.kind === 'contract' ? (pick(r,AD.cTitle) || pick(r,AD.cSubject) || 'قرارداد') : (pick(r,AD.sName) || 'صورت وضعیت');
@@ -58358,7 +58358,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
      list(key): ردیف‌های هر بخش؛ extra(kd): ردیف‌های اضافه (مثلاً سند طراحی که نزد مشاور است). */
   function ctDocsParts(name, list, extra){
     const partyOf = (key, kd) => {
-      const a = list(key).filter(r => ctrPartySplit(admParty(kd, r)).some(p1 => sameEntity(p1, name)));
+      const a = list(key).filter(r => (kd === 'minute' && window.mnPartyList ? window.mnPartyList(r) : ctrPartySplit(admParty(kd, r))).some(p1 => sameEntity(p1, name)));
       if(extra){ const seen = new Set(a.map(r => String(pick(r,AD.id) || ''))); (extra(kd) || []).forEach(r => { const i = String(pick(r,AD.id) || ''); if(!seen.has(i)){ seen.add(i); a.push(r); } }); }
       return a;
     };
@@ -64588,7 +64588,15 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
           }
         }catch(e){}
       }
-      await supaFetch(table + '?id=eq.' + encodeURIComponent(obj.id), {method:'PATCH', body: patch});
+      /* ۵۰۳: ردیفِ ذخیره‌شده از سرور برمی‌گردد و سنجیده می‌شود؛ اگر سرور هیچ ردیفی را تغییر نداد (قانون دسترسی)
+         یا مقداری را که پاک کردیم دوباره گذاشت، به‌جای «ذخیره شد»ِ دروغین خطای روشن نشان داده می‌شود */
+      const res = await supaFetch(table + '?id=eq.' + encodeURIComponent(obj.id), {method:'PATCH', body: patch, prefer: 'return=representation'});
+      if(Array.isArray(res)){
+        if(!res.length) throw new Error('سرور این سند را تغییر نداد؛ اجازهٔ ویرایش آن در پایگاه‌داده برای این حساب نیست.');
+        const back = res[0] || {};
+        const stuck = Object.keys(patch).filter(c => patch[c] === null && c in back && back[c] != null && String(back[c]).trim() !== '');
+        if(stuck.length) throw new Error('سرور مقدار پاک‌شده را نگه داشت (' + stuck.join('، ') + '). یک قانون یا مقدار پیش‌فرض در پایگاه‌داده آن را دوباره پر می‌کند.');
+      }
       return true;
     }catch(err){
       lastServerError = friendlyErr(err);
@@ -70328,6 +70336,12 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       if(ck){ if(k === ck) return true; try{ return nameKey(window.extPartyOf(n) || '') === ck; }catch(e){ return false; } } return false; };
     return mnAttOf(row).some(hit) || mnAttSplit(pick(row, AD.mOwner)).some(hit) || mnAttSplit(pick(row, AD.mFollow)).some(hit); }
   window.mnIsMine = mnIsMine;
+  /* ۵۰۳: همهٔ طرف‌های یک بند صورتجلسه: مسئول، پیگیر، حاضران، و شرکت/پیمانکارِ هر حاضر (نمایندهٔ پیمانکار → خود پیمانکار) */
+  function mnPartyList(row){ if(!row) return []; const L = [];
+    mnAttSplit(pick(row, AD.mOwner)).concat(mnAttSplit(pick(row, AD.mFollow))).forEach(n => L.push(n));
+    mnAttOf(row).forEach(n => { L.push(n); try{ const c = window.extPartyOf && window.extPartyOf(n); if(c) L.push(c); }catch(e){} try{ const c = window.ctrOfRep && window.ctrOfRep(n); if(c) L.push(c); }catch(e){} });
+    const seen = new Set(); return L.filter(n => { const k = nameKey(n || ''); if(!k || seen.has(k)) return false; seen.add(k); return true; }); }
+  window.mnPartyList = mnPartyList;
   async function mnAttSave(subj, meet, names){
     const k = mnAttKey(subj, meet); if(!k || k === '|') return;
     const L = Array.from(new Set((names || []).map(x => String(x).trim()).filter(Boolean)));
