@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117101416">
+<meta name="pm-build" content="20261117103247">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -55192,6 +55192,8 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   window.shrOf = shrOf;
   function coRowOk(kind, r, co){ if(!co) return true; if(!r) return false;
     { const sh = shrOf(kind, r); if(sh && sh.to.some(t => coNk(t) === coNk(co))) return true; }
+    /* ۵۰۱: صورتجلسه برای حاضرانش (خودم یا هم‌تیمی‌هایم) هم دیده می‌شود */
+    if(kind === 'minute' && window.mnIsMine && window.mnIsMine(r, co)) return true;
     if(DV_KINDS.some(x => x[0] === kind)){ const dv = docVisOf(kind, co); if(dv === 'all') return true; if(dv === 'none') return false; }
     let me = ''; try{ me = activeUserName(); }catch(e){}
     if(kind === 'statement') return coMatch(pick(r, AD.sParty), co);
@@ -62983,6 +62985,8 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       if(['amount','paid','ostad','shagerd','idx',
           'internal_days','party_days','client_days','review_days'].indexOf(col) !== -1)
         v = (v === '' || v == null) ? null : Number(toEn(String(v)).replace(/[^\d.-]/g,''));
+      /* ۵۰۰: تاریخ اختیاریِ خالی «بی‌مقدار» (null) فرستاده می‌شود نه متن خالی؛ ستون تاریخ در پایگاه‌داده متن خالی را نمی‌پذیرفت و پاک کردن موعد ذخیره نمی‌شد */
+      if(['action_date', 'due_date', 'done_date', 'end_date'].indexOf(col) !== -1 && (v === '' || v == null)) v = null;
       out[col] = v;
     });
     return out;
@@ -70317,6 +70321,13 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   window.mnAttLoad = mnAttLoad;
   function mnAttOf(row){ if(!row) return []; return MN_ATT.get(mnAttKey(pick(row,AD.mSubject), pick(row,AD.mMeet))) || []; }
   window.mnAttOf = mnAttOf;
+  /* ۵۰۱: آیا این صورتجلسه به من مربوط است؟ حاضر، مسئول انجام یا پیگیر؛ با co: هر عضو آن تیم هم حساب است */
+  function mnIsMine(row, co){ if(!row) return false; let me = ''; try{ me = activeUserName(); }catch(e){}
+    const mk = nameKey(me || ''), ck = co ? nameKey(co) : '';
+    const hit = n => { const k = nameKey(n || ''); if(!k) return false; if(mk && k === mk) return true;
+      if(ck){ if(k === ck) return true; try{ return nameKey(window.extPartyOf(n) || '') === ck; }catch(e){ return false; } } return false; };
+    return mnAttOf(row).some(hit) || mnAttSplit(pick(row, AD.mOwner)).some(hit) || mnAttSplit(pick(row, AD.mFollow)).some(hit); }
+  window.mnIsMine = mnIsMine;
   async function mnAttSave(subj, meet, names){
     const k = mnAttKey(subj, meet); if(!k || k === '|') return;
     const L = Array.from(new Set((names || []).map(x => String(x).trim()).filter(Boolean)));
@@ -73231,7 +73242,10 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
      اسناد طراحی برای کسی که «همهٔ رشته‌ها» ندارد فقط رشته‌های سمت خودش. کاربر صفر همه را می‌بیند. */
   function docKindOk(kind){ try{ return can('doc.' + kind); }catch(e){ return true; } }
   function docRowOk(x){
-    if(!x || !docKindOk(x.kind)) return false;
+    if(!x) return false;
+    /* ۵۰۱: صورتجلسه‌ای که در آن حاضر، مسئول یا پیگیر هستم، حتی بی‌دسترسی به کل صورتجلسه‌ها */
+    if(x.kind === 'minute' && !docKindOk('minute')){ try{ return !!(window.mnIsMine && window.mnIsMine(x.row, '')); }catch(e){ return false; } }
+    if(!docKindOk(x.kind)) return false;
     { const co = window.coScopeMe ? window.coScopeMe() : ''; if(co && !(window.coRowOk && window.coRowOk(x.kind, x.row, co))) return false; }
     if(x.kind !== 'design') return true;
     try{ if(can('doc.design.all')) return true; }catch(e){ return true; }
@@ -73241,7 +73255,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     return D.some(d => d && rl.indexOf(d) !== -1) || (/معمار/.test(rl) && D.some(d => /معمار/.test(d))) || (/سازه/.test(rl) && D.some(d => /سازه/.test(d))) || (/مکانیک|تأسیسات مکانیکی/.test(rl) && D.some(d => /مکانیک/.test(d))) || (/برق/.test(rl) && D.some(d => /برق/.test(d)));
   }
   window.docKindOk = docKindOk;
-  setInterval(() => { try{ ['statement', 'contract', 'letter', 'minute', 'design'].forEach(k => { const ok = docKindOk(k);
+  setInterval(() => { try{ ['statement', 'contract', 'letter', 'minute', 'design'].forEach(k => { const ok = docKindOk(k) || (k === 'minute' && (adminAll || []).some(x => x.kind === 'minute' && window.mnIsMine && window.mnIsMine(x.row, '')));
     document.querySelectorAll('[data-admcat="' + k + '"], #secAdm' + k + ', .kcap[data-acat="' + k + '"]').forEach(e => { if(e.hidden === ok) e.hidden = !ok; }); }); }catch(e){} }, 1500);
   const pendingAdmin = new Map();   // id → {target, values, del}
   const pendingNewAdmin = [];       // [{kind, item, label}]
