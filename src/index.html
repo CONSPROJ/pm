@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117115245">
+<meta name="pm-build" content="20261117120318">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -54936,7 +54936,8 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   var ptyAva = new Map();
   try{ (JSON.parse(localStorage.getItem(('siteLogM.ptyAva.v1.' + (function(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } })())) || '[]') || []).forEach(([k, v]) => ptyAva.set(k, v)); }catch(e){}
   const ptyAvaHold = new Map();   // عکسی که همین الان ذخیره شد؛ تا سرور کامل برگرداند، همین نشان داده می‌شود
-  const ptyAvaNm = new Map();     // کلید ← نام همان‌طور که در lists نوشته شده (برای انتقال)
+  const ptyAvaNm = new Map();
+  const ptyAvaDel = new Set();    // ۵۰۵: عکس‌هایی که همین‌جا حذف شدند
   /* عکس فضای ابری یک بار گرفته و با کلیدش (که هرگز عوض نمی‌شود) روی همین دستگاه می‌ماند؛
      دفعه‌های بعد بی‌هیچ درخواستی نشان داده می‌شود */
   const AVA_S3_KEY = 'siteLogM.avaS3.v1';
@@ -54960,6 +54961,10 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   const avaB2U = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result || '')); fr.onerror = rej; fr.readAsDataURL(b); });
   const AVA_MIME = {webp:'image/webp', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png'};
   /* همهٔ عکس‌های لازمِ این لحظه با یک درخواست لینک می‌گیرند */
+  /* ۵۰۵: عکسی که گرفتنش نشد، تا سه بار خودکار دوباره گرفته و همان‌جا نشانده می‌شود (پیش‌تر تا رندر بعدی حروف می‌ماند) */
+  const avaTry = new Map();
+  function avaRetry(k, sl){ const n = (avaTry.get(k) || 0) + 1; if(n > 3) return; avaTry.set(k, n);
+    setTimeout(() => { if(typeof avaS3.get(k) === 'string') return; avaFail.delete(k); avaQ.set(k, sl); if(!avaT) avaT = setTimeout(avaFlush, 40); }, 15000 * n); }
   async function avaFlush(){
     avaT = 0; const L = Array.from(avaQ.entries()); avaQ = new Map(); if(!L.length) return;
     L.forEach(([k]) => avaBusy.add(k));
@@ -54968,7 +54973,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     catch(er){
       if(er.status === 404) urls = await Promise.all(L.map(([k, sl]) => s3Rpc('pm_file_url', {p_key: k, p_name: '', p_download: false, p_slot: sl}).then(r => ({u: r.url, a: r.alt})).catch(() => ({}))));
     }
-    if(!urls){ L.forEach(([k]) => { avaBusy.delete(k); avaFail.set(k, Date.now() + 30000); }); return; }
+    if(!urls){ L.forEach(([k, sl]) => { avaBusy.delete(k); avaFail.set(k, Date.now() + 30000); avaRetry(k, sl); }); return; }
     await Promise.all(L.map(async ([k], i) => {
       const o = urls[i] || {}; let src = '';
       for(const u of [o.u, o.a]){
@@ -54978,7 +54983,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       }
       if(src){ avaS3.set(k, src); avaS3Save(); }
       else if(o.u){ src = o.u; avaS3.set(k, {u: src, t: Date.now() + 8 * 60000}); }   // اجازهٔ خواندن از داخل سایت نبود: خود لینک
-      else avaFail.set(k, Date.now() + 30000);
+      else{ avaFail.set(k, Date.now() + 30000); avaRetry(k, L[i][1]); }
       avaBusy.delete(k);
       if(src){ ptyAva.forEach((v, nk) => { const r = avaRef(v); if(r && r.key === k) avaPaint(ptyAvaNm.get(nk) || nk, src); });
         try{ for(const n in avatars){ const r = avaRef(avatars[n]); if(r && r.key === k){ avaPaint(n, src); try{ refreshWhoChip(); }catch(e){} } } }catch(e){} }
@@ -55033,6 +55038,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     refs.forEach((v, k) => next.set(k, v));   // عکس فضای ابری بر تکه‌های قدیمیِ پاک‌نشده مقدم است
     /* تکه‌ها ناقص رسیدند (بارگذاری نیمه یا وسط ذخیره): عکس قبلی نمی‌پرد */
     seen.forEach(k => { if(!next.has(k) && old.has(k)) next.set(k, old.get(k)); });
+    /* ۵۰۵: نبودنِ ردیف عکس در یک بارگذاری (پاسخ ناقص یا قطع‌شده) دلیل پاک شدن عکس نیست؛ عکس قبلی می‌ماند.
+       حذف عکس از همین دستگاه مستقیم از حافظه برداشته می‌شود (ptyAvaDel) */
+    old.forEach((v, k) => { if(!next.has(k) && !ptyAvaDel.has(k)) next.set(k, v); });
     ptyAvaHold.forEach((h, k) => { if(Date.now() - h.at < 120000) next.set(k, h.uri); else ptyAvaHold.delete(k); });
     ptyAva.clear(); next.forEach((v, k) => ptyAva.set(k, v));
     try{ localStorage.setItem(('siteLogM.ptyAva.v1.' + (function(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } })()), JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
@@ -55084,7 +55092,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       await supaFetch(base, {method:'DELETE'});
       ptyAvaHold.delete(avaKey(name));
     }
-    if(uri){ ptyAva.set(avaKey(name), uri); ptyAvaNm.set(avaKey(name), name); } else ptyAva.delete(avaKey(name));
+    if(uri){ ptyAva.set(avaKey(name), uri); ptyAvaNm.set(avaKey(name), name); ptyAvaDel.delete(avaKey(name)); } else { ptyAva.delete(avaKey(name)); ptyAvaDel.add(avaKey(name)); }
     try{ localStorage.setItem(('siteLogM.ptyAva.v1.' + (function(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } })()), JSON.stringify(Array.from(ptyAva.entries()))); }catch(e){}
     try{ clearNetCache(); }catch(e){}
   }
