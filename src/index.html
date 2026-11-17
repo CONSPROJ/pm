@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117121510">
+<meta name="pm-build" content="20261117122841">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -2900,7 +2900,11 @@
   .mtg.g-bad .mtg-d{background:color-mix(in srgb, var(--alert) 14%, var(--field));} .mtg.g-bad .mtg-d b{color:var(--alert);}
   .mtg.g-warn .mtg-d{background:color-mix(in srgb, var(--warn) 14%, var(--field));}
   .mtg.g-ok .mtg-t > b{color:var(--muted);}
-  .mtg-who{display:flex;flex:0 0 auto;}
+  .mtg-who{display:flex;flex:0 0 auto;align-items:center;}
+  .mtg-who .mtg-wl{font-size:10.5px;font-weight:700;color:var(--muted);margin-inline-end:6px;}
+  .mtg-who .ava.mtg-ava{width:26px;height:26px;min-width:26px;border-radius:50%;margin-inline-start:-7px;border:2px solid var(--surface);background:var(--field);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--ink);overflow:hidden;cursor:inherit;box-shadow:none;}
+  .mtg-who .mtg-wl + .ava.mtg-ava{margin-inline-start:0;}
+  .mtg-who .ava.mtg-ava img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
   .mtg-who i{font-style:normal;width:26px;height:26px;border-radius:50%;margin-inline-start:-7px;border:2px solid var(--surface);background:var(--field);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--ink);}
   @media (max-width:520px){ .mtg-who{display:none;} }
 
@@ -40081,7 +40085,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       const el = e.target.closest('[data-person]');
       if(!el) return;
       // جاهایی که خودِ کارت کار دیگری دارد (انتخاب گفت‌وگو، روز تقویم، انتخاب گیرنده)
-      if(e.target.closest('.p-card, .day-item, .nd-p, .jcal, [data-cm-tagp]')) return;
+      if(e.target.closest('.p-card, .day-item, .nd-p, .jcal, [data-cm-tagp], .mtg-who')) return;
       e.stopPropagation();
       openProfile(el.dataset.person);
     });
@@ -69386,7 +69390,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', cx: Array.isArray(c.cx) ? c.cx.filter(x => x && /^[A-Z]{1,5}$/.test(x.k)) : [], tord: Array.isArray(c.tord) ? c.tord.slice() : [], use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
-  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; }catch(e){} const r = dcCfg(); try{ dcRefreshForms(); }catch(e){} return r; }
+  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; window.__dcLoaded = true; }catch(e){} const r = dcCfg(); try{ dcRefreshForms(); }catch(e){} return r; }
   window.dcgLoad = dcgLoad;
   setTimeout(() => { try{ dcgLoad(); }catch(e){} }, 3500);
   const dcSan = v => toEn(String(v == null ? '' : v)).trim().replace(/[\/\\\s]+/g, '.').replace(/[^A-Za-z0-9._()]/g, '').replace(/^\.+|\.+$/g, '').toUpperCase();
@@ -72115,7 +72119,10 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     const have = new Map(Array.from(list.querySelectorAll('.up-it[data-url]')).map(r => [(r.querySelector('.up-nm b') || {}).textContent || '', r]));
     const big = [], rep = [], seen = new Set();
     /* کدینگ: فایل‌های پیوست فرم یک سند نام همان کد را می‌گیرند (کد، کد-۰۲، …) */
-    try{ const base = window.dcFileBase && window.dcFileBase(field);
+    /* ۵۰۸: پیش از تصمیم دربارهٔ تغییر نام، تنظیم کدینگ همین پروژه باید رسیده باشد (پیش‌تر تا ۳٫۵ ثانیه پس از باز شدن یا با کندی شبکه
+       پیش‌فرض «روشن» به کار می‌رفت و با وجود خاموش بودن، فایل به نام کد ذخیره می‌شد) */
+    try{ if(!window.__dcLoaded && window.dcgLoad) await Promise.race([window.dcgLoad(), new Promise(r => setTimeout(r, 4000))]); }catch(e){}
+    try{ const base = window.__dcLoaded && window.dcFileBase && window.dcFileBase(field);
       if(base){ let n = list.querySelectorAll('.up-it[data-url]').length; files = Array.from(files).map(f => { const ext = (/\.[A-Za-z0-9]{1,6}$/.exec(f.name) || [''])[0].toLowerCase(); const nm = base + (n++ ? '-' + String(n).padStart(2, '0') : '') + ext; return nm === f.name ? f : new File([f], nm, {type: f.type, lastModified: f.lastModified}); }); } }catch(e){}
     const jobs = Array.from(files).filter(f => {
       if(f.size > upMaxMB() * 1048576 && !/^image\//.test(f.type)){ big.push(f.name); return false; }
@@ -75672,7 +75679,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
         const meet = pick(l[0],AD.mMeet) || pick(l[0],AD.date) || '';
         const who = Array.from(new Set(l.filter(r0 => !isDone(r0)).map(r0 => String(pick(r0,AD.mOwner) || '').trim()).filter(Boolean)));
         const md = faToDate(meet);
-        return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who};
+        /* ۵۰۷: عکس حاضران جلسه سرِ کارت؛ اگر حاضری ثبت نشده، مسئولان بندهای باز */
+        let att = []; try{ const sn = new Set(); l.forEach(r0 => ((window.mnAttOf && window.mnAttOf(r0)) || []).forEach(n0 => { const k0 = nameKey(n0); if(k0 && !sn.has(k0)){ sn.add(k0); att.push(n0); } })); }catch(e){}
+        return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who, att};
       }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.hot - a.hot) || (b.late - a.late) || (b.md - a.md));
       /* مرتب‌سازی دستی: جلسه‌ها به همان ترتیب انتخابی (جای اولین بندشان در فهرست مرتب‌شده) */
       if(admManual(kind)){ const pos = new Map(); rows.forEach((r0, i) => { const k0 = mKey(r0); if(!pos.has(k0)) pos.set(k0, i); }); mtgs.sort((a, b) => pos.get(a.k) - pos.get(b.k)); }
@@ -75689,7 +75698,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
           +   '<span class="mtg-t"><b>' + esc(m.subj) + '</b>'
           +     '<small>' + toFa(all) + ' بند' + (m.done ? ' · <em class="ok">' + toFa(m.done) + ' انجام شد</em>' : '') + (m.late ? ' · <em class="bad">' + toFa(m.late) + ' معوق</em>' : '') + (closed ? ' · <em class="ok">بسته شد</em>' : '') + '</small>'
           +     '<i class="mtg-bar"><i style="width:' + pct + '%"></i></i></span>'
-          +   (m.who.length ? '<span class="mtg-who">' + m.who.slice(0, 3).map(n2 => '<i title="' + esc(n2) + '">' + esc(initialsOf(n2)) + '</i>').join('') + (m.who.length > 3 ? '<i>+' + toFa(m.who.length - 3) + '</i>' : '') + '</span>' : '')
+          +   (function(){ const P = m.att.length ? m.att : m.who; if(!P.length) return ''; const N = 5;
+                return '<span class="mtg-who" title="' + esc((m.att.length ? 'حاضران: ' : 'مسئولان: ') + P.join('، ')) + '">' + (m.att.length ? '<small class="mtg-wl">حاضران</small>' : '')
+                  + P.slice(0, N).map(n2 => avatarHtml(n2, 'mtg-ava', true)).join('') + (P.length > N ? '<i>+' + toFa(P.length - N) + '</i>' : '') + '</span>'; })()
           +   '<span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>'
           + '</button>'
           + '<div class="adm-grp-body">' + bodyHtml(m.l) + '</div></div>';
