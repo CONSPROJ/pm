@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117075243">
+<meta name="pm-build" content="20261117083916">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -70349,7 +70349,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     if((e.key === 'Enter' || e.key === ',' || e.key === '،') && t.value.trim()){ e.preventDefault(); e.stopPropagation(); mnAttAdd(t.closest('.mna'), t.value); }
     else if(e.key === 'Backspace' && !t.value){ const b = t.closest('.mna'), L = mnAttSplit(b.querySelector('.a-mAtt').value); if(L.length){ L.pop(); const f = document.createElement('div'); f.innerHTML = mnAttPickerHtml(L); const w = b.parentElement; b.replaceWith(f.firstChild); const ni = w.querySelector('.mna-in'); if(ni) ni.focus(); } }
   }, true);
-  document.addEventListener('change', e => { const t = e.target; if(t.classList && t.classList.contains('mna-in') && t.value.trim()) mnAttAdd(t.closest('.mna'), t.value); }, true);
+  /* ۴۹۸: هنگام تایپ، رفتن کوتاه فوکوس به فهرست پیشنهاد «change» می‌داد و نیمهٔ نام («علی ر») حاضر ثبت می‌شد. حالا فقط وقتی واقعاً از کادر بیرون رفته‌اید (و نه به فهرست پیشنهاد) */
+  document.addEventListener('change', e => { const t = e.target; if(!(t.classList && t.classList.contains('mna-in'))) return;
+    setTimeout(() => { if(!t.isConnected || !t.value.trim()) return; const a = document.activeElement; if(a === t || (a && a.closest && a.closest('.ac-pop, .sug-pop, .dl-pop, [data-acpop], .mna'))) return; mnAttAdd(t.closest('.mna'), t.value); }, 260); }, true);
   /* انتخاب از فهرست پیشنهاد: اگر نام کامل یکی از افراد شد، همان لحظه کپسول می‌شود */
   document.addEventListener('input', e => { const t = e.target; if(!t.classList || !t.classList.contains('mna-in')) return; const v = t.value.trim(); if(!v) return;
     try{ if((listNames() || []).some(x => x === v)) setTimeout(() => { if(t.isConnected && t.value.trim() === v) mnAttAdd(t.closest('.mna'), v); }, 120); }catch(err){} }, true);
@@ -102465,7 +102467,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       + (G.length ? G.map((g, gi) => '<h2>' + esc(g.sec) + ' <small>' + toFa(g.L.length) + '</small></h2><table class="wkr-t mtg-t"><thead><tr><th class="c"></th><th>بند</th><th>مسئول</th><th>وضعیت</th></tr></thead><tbody>'
           + g.L.map((x, i) => '<tr class="' + (x.on ? '' : 'off') + '"><td class="c"><input type="checkbox" data-mtgon="' + gi + ':' + i + '"' + (x.on ? ' checked' : '') + '></td><td>' + esc(x.text) + '</td><td>' + esc(x.owner || '—') + '</td><td>' + esc(x.meta) + '</td></tr>').join('') + '</tbody></table>').join('')
         : '<p class="wkr-e">موردی برای دستور جلسه پیدا نشد — مانع باز، کار دیر یا سند منتظری نیست.</p>')
-      + '<footer class="wkr-f">دستور جلسه خودکار از سامانهٔ پروژه · بندهای تیک‌خورده در صورتجلسه ثبت می‌شوند (موعد اقدام: ' + esc(toFa(next)) + ')</footer></section>';
+      + '<footer class="wkr-f">دستور جلسه خودکار از سامانهٔ پروژه · بندهای تیک‌خورده در صورتجلسه ثبت می‌شوند <label class="mtg-due">موعد اقدام <small>(اختیاری)</small> <input type="text" class="date-in" data-mtgdue placeholder="بدون موعد" autocomplete="off"></label></footer></section>';
     m.innerHTML = '<div class="modal wkr-m"><div class="wkr-bar"><b>جلسهٔ هماهنگی هفتگی</b><span>بندها را تیک بزنید/بردارید؛ چاپ کنید یا مستقیم صورتجلسه ثبت شود</span><button type="button" class="xlh-b" data-mtgp="1">چاپ</button><button type="button" class="xlh-b pri" data-mtgsave="1">ثبت صورتجلسه</button><button type="button" class="ico-btn" data-mtgx="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div><div class="wkr-body">' + body() + '</div></div>';
     document.body.appendChild(m);
     m.addEventListener('change', e => { const c = e.target.closest('[data-mtgon]'); if(!c) return; const [gi, i] = c.dataset.mtgon.split(':').map(Number); G[gi].L[i].on = c.checked; c.closest('tr').classList.toggle('off', !c.checked); });
@@ -102473,13 +102475,15 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       if(e.target.closest('[data-mtgp]')){ const area = document.getElementById('printArea'); area.innerHTML = body().replace(/<td class="c">[\s\S]*?<\/td>|<th class="c"><\/th>/g, '').replace(/<tr class="off">[\s\S]*?<\/tr>/g, ''); const old = document.title; document.title = 'دستور جلسه - ' + (pj.name || '') + ' - ' + toFa(t0).replace(/\//g, '-');
         window.addEventListener('afterprint', () => { document.title = old; area.innerHTML = ''; }, {once: true}); window.print(); return; }
       const sv = e.target.closest('[data-mtgsave]'); if(!sv) return;
-      const items = G.flatMap(g => g.L.filter(x => x.on).map(x => ({text: x.text + (x.meta ? ' (' + x.meta + ')' : ''), owner: x.owner || activeUserName(), follower: activeUserName(), actionDate: next})));
+      /* ۴۹۸: موعد اقدام پیش‌فرض نیست؛ فقط اگر در پایین دستور جلسه وارد شود */
+      const due = (function(){ const i = m.querySelector('[data-mtgdue]'); const v = i ? String(i.value || '').trim() : ''; return v ? (normDate(v) || toEn(v)) : ''; })();
+      const items = G.flatMap(g => g.L.filter(x => x.on).map(x => ({text: x.text + (x.meta ? ' (' + x.meta + ')' : ''), owner: x.owner || activeUserName(), follower: activeUserName(), actionDate: due})));
       if(!items.length){ showDialog('warn', 'بندی انتخاب نشده', 'دست‌کم یک بند را تیک بزنید.'); return; }
-      if(!(await askConfirm('ثبت صورتجلسه', toFa(items.length) + ' بند با موعد اقدام ' + toFa(next) + ' در صورتجلسهٔ «جلسهٔ هماهنگی هفتگی» ثبت شود؟ مسئول هر بند پیگیری را می‌بیند.', 'ثبت'))) return;
+      if(!(await askConfirm('ثبت صورتجلسه', toFa(items.length) + ' بند' + (due ? ' با موعد اقدام ' + toFa(due) : ' بدون موعد') + ' در صورتجلسهٔ «جلسهٔ هماهنگی هفتگی» ثبت شود؟ مسئول هر بند پیگیری را می‌بیند.', 'ثبت'))) return;
       sv.disabled = true; sv.textContent = 'در حال ثبت…';
       const me = activeUserName() || '';
       const payload = {type: 'admin', date: t0, project: (document.getElementById('projectName') || {}).value || '', engineer: me,
-        minutes: [{subject: 'جلسهٔ هماهنگی هفتگی ' + toFa(t0), meetDate: t0, category: 'اجرایی', owner: me, actionDate: next, items}]};
+        minutes: [{subject: 'جلسهٔ هماهنگی هفتگی ' + toFa(t0), meetDate: t0, category: 'اجرایی', owner: me, actionDate: due, items}]};
       const r = await post(payload);
       if(r && r.state !== 'failed'){ m.remove(); try{ clearNetCache(); }catch(er){} try{ shrToast('صورتجلسه با ' + toFa(items.length) + ' بند ثبت شد'); }catch(er){} setTimeout(() => { try{ loadAdmin(); }catch(er){} }, 400); }
       else { sv.disabled = false; sv.textContent = 'ثبت صورتجلسه'; showDialog('warn', 'ثبت نشد', lastServerError || 'اتصال برقرار نشد؛ دوباره تلاش کنید.'); } });
