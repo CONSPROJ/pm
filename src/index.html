@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117083916">
+<meta name="pm-build" content="20261117101416">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -68622,8 +68622,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
           /* همهٔ چیزهای قابل تغییر گردش، یک‌جا: تاریخ ابلاغ، موعد، مسئول، مراحل، و دورهای بررسی داخلی (چه کسی، از کی تا کی، چه کسی تأیید کرد) */
           const dt = (cls, lb, v) => '<label class="pe-f"><span>' + lb + '</span><input type="text" class="' + cls + ' date-in" inputmode="text" value="' + esc(v ? toFa(normDate(v) || v) : '') + '" placeholder="—"></label>';
           return '<div class="pe-sec"><b class="pe-sh">ابلاغ، موعد و مسئول</b><div class="pe-g">'
-            + dt('pe-sent', 'تاریخ ابلاغ', exact(row, 'تاریخ ارسال'))
-            + dt('pe-due', 'موعد (مرحلهٔ تنظیم)', exact(row, 'موعد اتمام'))
+            /* ۴۹۹: صورتجلسه ستون‌های خودش را دارد (تاریخ صورتجلسه، تاریخ اقدام)؛ پیش‌تر «موعد اتمام» نوشته می‌شد که برای صورتجلسه ستونی ندارد و پاک کردن موعد ذخیره نمی‌شد */
+            + dt('pe-sent', kind === 'minute' ? 'تاریخ جلسه' : 'تاریخ ابلاغ', exact(row, kind === 'minute' ? 'تاریخ صورتجلسه' : 'تاریخ ارسال'))
+            + dt('pe-due', kind === 'minute' ? 'موعد اقدام (خالی = بی‌موعد)' : 'موعد (مرحلهٔ تنظیم)', exact(row, kind === 'minute' ? 'تاریخ اقدام' : 'موعد اتمام'))
             + '<label class="pe-f"><span>مسئول</span><input type="text" class="pe-own" data-list="engineerList" autocomplete="off" value="' + esc(pick(row, AD_OWNER[kind] || ['مسئول']) || '') + '"></label>'
             + '</div></div>';
         })()
@@ -68673,8 +68674,9 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       /* ابلاغ، موعد، مسئول */
       { const g = c => { const el = bg.querySelector(c); return el ? el.value.trim() : null; };
         const se = g('.pe-sent'), du = g('.pe-due'), ow = g('.pe-own');
-        if(se !== null){ const v = se ? normDate(se) : ''; if(se && !v){ note.textContent = 'تاریخ ابلاغ نامعتبر است.'; return; } if(v !== (normDate(exact(row, 'تاریخ ارسال') || '') || '')) values['تاریخ ارسال'] = v; }
-        if(du !== null){ const v = du ? normDate(du) : ''; if(du && !v){ note.textContent = 'موعد نامعتبر است.'; return; } if(v !== (normDate(exact(row, 'موعد اتمام') || '') || '')) values['موعد اتمام'] = v; }
+        const kS = kind === 'minute' ? 'تاریخ صورتجلسه' : 'تاریخ ارسال', kD = kind === 'minute' ? 'تاریخ اقدام' : 'موعد اتمام';
+        if(se !== null){ const v = se ? normDate(se) : ''; if(se && !v){ note.textContent = 'تاریخ ابلاغ نامعتبر است.'; return; } if(v !== (normDate(exact(row, kS) || '') || '')) values[kS] = v; }
+        if(du !== null){ const v = du ? normDate(du) : ''; if(du && !v){ note.textContent = 'موعد نامعتبر است.'; return; } if(v !== (normDate(exact(row, kD) || '') || '')) values[kD] = v; }
         if(ow !== null && ow !== String(pick(row, AD_OWNER[kind] || ['مسئول']) || '')) values['مسئول'] = ow; }
       /* دورهای بررسی داخلی: دورهای بسته در تاریخچه بازنویسی می‌شوند؛ دور جاری در ستون مسئولین و تأییدکنندگان */
       { const rdEls = Array.from(bg.querySelectorAll('.pe-rd'));
