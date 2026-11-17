@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117120318">
+<meta name="pm-build" content="20261117121510">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -960,6 +960,8 @@
   .rdl-l{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:12px;} .rdl-r{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,1fr) 60px;gap:4px 10px;align-items:center;padding:8px 12px;font-size:12.5px;} .rdl-r + .rdl-r{border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);}
   .rdl-d{color:var(--muted);font-size:11.5px;} .rdl-z{color:var(--muted);} .rdl-n{font-weight:700;text-align:left;} .rdl-r p{grid-column:2 / -1;margin:0;color:var(--ink);font-size:12px;}
   @media (max-width:640px){ .rdl-r{grid-template-columns:1fr auto;} .rdl-r .rdl-z, .rdl-r p{grid-column:1 / -1;} }
+  .rdl-r[hidden]{display:none !important;} .rdl-r + .rdl-r[hidden] + .rdl-r{border-top:1px solid var(--line);}
+  .rdl-none{padding:22px 12px;text-align:center;color:var(--muted);font-size:12.5px;} .rdl-none[hidden]{display:none;}
 
   /* ====== داشبورد پروژه (خانهٔ دسکتاپ) ====== */
   #homeView .hdb{position:relative;margin:0 0 18px;}
@@ -104806,8 +104808,17 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   ];
   window.rcCanAny = () => RC_LIST.some(x => rcCan(x.k));
   /* فیلتر گزارش‌های روزانهٔ بازه با پیمانکار و جست‌وجو */
-  const rdlFilter = el => { const box = el.closest('.rdl'); if(!box) return; const c = (box.querySelector('[data-rdlctr]') || {}).value || '', q = toEn(String((box.querySelector('[data-rdlq]') || {}).value || '').trim()).toLowerCase();
-    box.querySelectorAll('.rdl-r').forEach(r => { r.hidden = (c && r.dataset.c !== c) || (q && String(r.dataset.q || '').toLowerCase().indexOf(q) === -1); }); };
+  /* ۵۰۶: ردیف‌ها display:grid داشتند و hidden اثر نمی‌کرد (جست‌وجو هیچ ردیفی را پنهان نمی‌کرد)؛ حالا با CSS درست شد.
+     جست‌وجو: ی/ي، ک/ك، نیم‌فاصله و رقم‌ها یکسان؛ چند کلمه = همه باید باشند؛ شمار نتیجه و پیام «چیزی پیدا نشد» */
+  const rdlNorm = v => toEn(String(v || '')).replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[ۀة]/g, 'ه').replace(/[\u200c\u200f\u200e\u0640]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const rdlFilter = el => { const box = el.closest('.rdl'); if(!box) return; const c = (box.querySelector('[data-rdlctr]') || {}).value || '', W = rdlNorm((box.querySelector('[data-rdlq]') || {}).value).split(' ').filter(Boolean);
+    let n = 0, all = 0;
+    box.querySelectorAll('.rdl-r').forEach(r => { all++; if(r.__q == null) r.__q = rdlNorm(r.dataset.q + ' ' + r.textContent);
+      const hide = !!((c && r.dataset.c !== c) || (W.length && !W.every(w => r.__q.indexOf(w) !== -1))); if(r.hidden !== hide) r.hidden = hide; if(!hide) n++; });
+    const L = box.querySelector('.rdl-l'); let none = box.querySelector('.rdl-none');
+    if(!none && L){ none = document.createElement('div'); none.className = 'rdl-none'; none.textContent = 'گزارشی با این جست‌وجو پیدا نشد.'; L.appendChild(none); }
+    if(none) none.hidden = n > 0;
+    const sh = box.previousElementSibling, cnt = sh && sh.querySelector('.n'); if(cnt) cnt.textContent = (c || W.length) ? toFa(n) + ' از ' + toFa(all) : toFa(all); };
   document.addEventListener('input', e => { if(e.target && e.target.matches && e.target.matches('[data-rdlq]')) rdlFilter(e.target); });
   document.addEventListener('change', e => { if(e.target && e.target.matches && e.target.matches('[data-rdlctr]')) rdlFilter(e.target); });
   /* جست‌وجو در گزارش‌های روزانهٔ کارت پیمانکار */
