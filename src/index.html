@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261118051256">
+<meta name="pm-build" content="20261118051855">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -75703,16 +75703,20 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
         const done = l.filter(isDone).length;
         const late = l.filter(r0 => !isDone(r0) && (daysSince(pick(r0,AD.mDate)) || 0) > 0).length;
         let hot = 0; l.forEach(r0 => { try{ if(admCardHot('minute', r0)) hot++; }catch(e){} });
-        const meet = pick(l[0],AD.mMeet) || pick(l[0],AD.date) || '';
+        const meet = (l.map(r0 => pick(r0,AD.mMeet)).find(Boolean)) || pick(l[0],AD.date) || '';
         const who = Array.from(new Set(l.filter(r0 => !isDone(r0)).map(r0 => String(pick(r0,AD.mOwner) || '').trim()).filter(Boolean)));
         const md = faToDate(meet);
         /* ۵۰۷: عکس حاضران جلسه سرِ کارت؛ اگر حاضری ثبت نشده، مسئولان بندهای باز */
         let att = []; try{ const sn = new Set(); l.forEach(r0 => ((window.mnAttOf && window.mnAttOf(r0)) || []).forEach(n0 => { const k0 = nameKey(n0); if(k0 && !sn.has(k0)){ sn.add(k0); att.push(n0); } })); }catch(e){}
         return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who, att};
       /* ۵۱۱: ترتیب جلسه‌ها با تاریخ جلسه (تازه‌ترین بالا)؛ جلسهٔ کاملاً بسته پایین. پیش‌تر معوق‌ها بالا می‌ماندند و جلسهٔ قدیمی «گیر می‌کرد» */
-      }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.md - a.md));
+      }).sort((a, b) => (b.md - a.md) || String(a.subj).localeCompare(String(b.subj), 'fa'));
       /* مرتب‌سازی دستی: جلسه‌ها به همان ترتیب انتخابی (جای اولین بندشان در فهرست مرتب‌شده) */
-      if(admManual(kind)){ const pos = new Map(); rows.forEach((r0, i) => { const k0 = mKey(r0); if(!pos.has(k0)) pos.set(k0, i); }); mtgs.sort((a, b) => pos.get(a.k) - pos.get(b.k)); }
+      /* ۵۱۳: مرتب‌سازی «تاریخ» = تاریخ خود جلسه (بالا/پایین)؛ پیش‌تر جای اولین بندِ جلسه در فهرستِ مرتب‌شده با تاریخ بندها ملاک بود و جلسه‌های قدیم و جدید قاطی می‌شدند.
+         مرتب‌سازی‌های دیگر (شماره و …) همان جای اولین بند */
+      const sk = String(admSortK(kind) || '');
+      if(/^date-/.test(sk)){ const up = sk === 'date-asc'; mtgs.sort((a, b) => (up ? a.md - b.md : b.md - a.md) || String(a.subj).localeCompare(String(b.subj), 'fa')); }
+      else if(admManual(kind)){ const pos = new Map(); rows.forEach((r0, i) => { const k0 = mKey(r0); if(!pos.has(k0)) pos.set(k0, i); }); mtgs.sort((a, b) => pos.get(a.k) - pos.get(b.k)); }
       const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
       return mtgs.map(m => {
         const key = 'minute|m:' + m.k, all = m.l.length, closed = m.done === all;
