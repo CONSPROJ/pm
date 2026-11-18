@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261118050831">
+<meta name="pm-build" content="20261118051256">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -31200,7 +31200,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
     /* ۴۰۰: کلیک روی این دکمه پیش از هر شنوندهٔ دیگری (پنجره‌های باز کلیک بیرون را می‌خوردند) گرفته می‌شود */
     const run = e => { if(e){ e.preventDefault(); e.stopImmediatePropagation(); } if(b.dataset.go) return; b.dataset.go = '1'; b.textContent = 'در حال تازه‌سازی…';
       try{ sessionStorage.removeItem('pm-build-try2'); }catch(er){}
-      const u = location.pathname + '?v=' + (want || 'x') + '.' + Date.now().toString(36) + location.hash;
+      const u = (readyUrl || (location.pathname + '?v=' + (want || 'x') + '.' + Date.now().toString(36))) + location.hash;
       Promise.resolve().then(() => { try{ return navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker.getRegistration().then(r => r && r.update && r.update().catch(() => {})) : 0; }catch(er){} })
         .catch(() => {}).then(() => { try{ location.assign(u); }catch(er){ location.href = u; } }); setTimeout(() => { try{ location.assign(u); }catch(er){} }, 900); setTimeout(() => { try{ location.reload(); }catch(er){} }, 2600); };
     b.onclick = run; b.addEventListener('pointerup', run);
@@ -31210,22 +31210,41 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   }
   /* ۳۴۸: نسخهٔ تازه هیچ‌وقت خودبه‌خود صفحه را تازه نمی‌کند (پیش‌تر با هر انتشار، وسط کار صفحه بی‌دلیل تازه می‌شد و پنجره‌ها می‌پرید)؛
      فقط دکمهٔ «نسخهٔ تازه آماده است» می‌آید و کاربر خودش هر وقت خواست می‌زند. باز کردن دوبارهٔ سایت هم خودش نسخهٔ تازه را می‌آورد. */
-  function apply(){ hint(); }
+  /* ۵۱۲: دکمه فقط وقتی می‌آید که خودِ صفحهٔ تازه از سرور می‌رسد (نه فقط build.txt)؛ پیش‌تر build.txt زودتر از صفحه عوض می‌شد،
+     زدن دکمه همان نسخهٔ قبل را می‌آورد و دکمه دوباره می‌آمد («چند بار باید تازه کرد»). همان نشانیِ آزموده‌شده باز می‌شود.
+     فقط سر صفحه (تا جای meta شمارهٔ ساخت) خوانده می‌شود، نه کل چند مگابایت. */
+  let readyUrl = '', probing = '';
+  async function probe(w){
+    const u = location.pathname + '?v=' + w + '.' + Date.now().toString(36);
+    const r = await fetch(u, {cache: 'no-store'}); if(!r.ok || !r.body) return '';
+    const rd = r.body.getReader(), dec = new TextDecoder(); let txt = '';
+    try{ while(txt.length < 200000){ const {done, value} = await rd.read(); if(done) break; txt += dec.decode(value, {stream: true}); const m = /name="pm-build" content="(\d+)"/.exec(txt); if(m){ try{ rd.cancel(); }catch(e){} return m[1] === w ? u : ''; } } }catch(e){}
+    try{ rd.cancel(); }catch(e){} return ''; }
+  async function apply(){
+    if(readyUrl && probing === want){ hint(); return; }
+    if(probing === want) return; probing = want; const w = want;
+    for(let i = 0; i < 12 && w === want; i++){
+      let u = ''; try{ u = await probe(w); }catch(e){}
+      if(u){ readyUrl = u; hint(); return; }
+      await new Promise(r => setTimeout(r, i < 4 ? 15000 : 45000));
+    }
+    if(w === want){ readyUrl = ''; hint(); } }
   async function check(){
-    if(busy) return; busy = true;
+    if(busy || document.visibilityState === 'hidden') return; busy = true;
     try{
-      /* فقط یک فایل چندبایتی (build.txt) خوانده می‌شود؛ پیش‌تر هر بار که برنامه جلو می‌آمد
-         کل صفحهٔ چند مگابایتی بی‌حافظه دانلود و خوانده می‌شد و گوشی را کند می‌کرد */
+      /* فقط یک فایل چندبایتی (build.txt) خوانده می‌شود */
       const r = await fetch(new URL('build.txt', location.href).href + '?b=' + Date.now(), {cache:'no-store'});
       if(r.ok){
         const t = (await r.text()).trim();
-        if(/^\d{8,}$/.test(t) && t !== cur){ want = t; apply(); }
+        if(/^\d{8,}$/.test(t) && t !== cur && t > cur){ if(want !== t){ want = t; readyUrl = ''; } apply(); }
       }
     }catch(e){}
     busy = false;
   }
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') check(); });
-  setInterval(check, 10 * 60000);
+  window.addEventListener('focus', () => check());
+  window.addEventListener('online', () => check());
+  setInterval(check, 2 * 60000);
   setTimeout(check, 1500);
 })();
 </script>
