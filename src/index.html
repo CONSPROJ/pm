@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261118054034">
+<meta name="pm-build" content="20261118054940">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -18676,6 +18676,18 @@
     background:var(--surface);border:1px solid var(--line);border-inline-start:3px solid var(--tc);transition:transform .15s, border-color .2s, box-shadow .2s;}
   .cf-st:hover{transform:translateY(-1px);box-shadow:0 10px 22px -18px rgba(15,20,35,.6);}
   .cf-st.ok{--tc:var(--ok);} .cf-st.half{--tc:var(--warn);} .cf-st.bad{--tc:var(--alert);}
+  /* ۵۱۶: کارت صورت وضعیت نو */
+  :is(html,#z0) :is(body,#z1) #ctProfModal .cf-st.cfs2, .cf-st.cfs2{display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:9px !important;padding:14px 16px 12px !important;border-radius:16px !important;border:1px solid var(--line) !important;border-inline-start:1px solid var(--line) !important;
+    background:radial-gradient(90% 80% at 100% 0%, color-mix(in srgb, var(--tc) 7%, transparent), transparent 70%), var(--surface) !important;box-shadow:0 1px 2px rgba(15,20,35,.04) !important;transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;}
+  .cf-st.cfs2:hover{transform:translateY(-2px);border-color:color-mix(in srgb, var(--tc) 35%, var(--line)) !important;box-shadow:0 14px 28px -20px rgba(15,20,35,.45) !important;}
+  .cfs2 .cfs-h{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .cfs2 .cfs-no{font-size:11.5px;font-weight:800;color:var(--muted);padding:3px 9px;border-radius:999px;background:var(--field);}
+  .cfs2 .cfs-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--tc);padding:3px 9px;border-radius:999px;background:color-mix(in srgb, var(--tc) 11%, transparent);}
+  .cfs2 .cfs-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .cfs2 .cfs-amt{display:flex;align-items:baseline;gap:6px;line-height:1.25;} .cfs2 .cfs-amt b{font-size:21px;font-weight:900;color:var(--ink);} .cfs2 .cfs-amt u{text-decoration:none;font-size:11.5px;font-weight:700;color:var(--muted);}
+  .cfs2 .cfs-amt.none{font-size:13.5px;font-weight:700;color:var(--muted);padding:4px 0;}
+  .cfs2 .cfs-bar{display:block;height:5px;border-radius:999px;background:color-mix(in srgb, var(--ink) 7%, transparent);overflow:hidden;} .cfs2 .cfs-bar > i{display:block;height:100%;border-radius:inherit;background:var(--tc);}
+  .cfs2 .cfs-f{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11.5px;} .cfs2 .cfs-f > span{font-weight:800;color:var(--tc);} .cfs2 .cfs-f > small{font-size:11px;color:var(--muted);}
   .cf-no{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 48px;height:48px;border-radius:12px;
     background:color-mix(in srgb, var(--tc) 10%, var(--field));}
   .cf-no u{text-decoration:none;font-size:10px;color:var(--muted);font-weight:700;} .cf-no b{font-size:16px;font-weight:900;color:var(--ink);line-height:1.1;}
@@ -58135,7 +58147,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
                   +   '<circle class="fg" cx="36" cy="36" r="' + R + '" style="--c:' + C.toFixed(1) + ';--o:' + (C * (1 - pct / 100)).toFixed(1) + '"/></svg>'
                   +   '<span><b>' + toFa(pct) + '<i>٪</i></b><u>پرداخت</u></span></span>'
                   + '<span class="cf-main"><u>' + (due > 0 ? 'مطالبات پیمانکار' : 'همهٔ صورت‌وضعیت‌ها تسویه شده') + '</u>'
-                  +   '<b>' + esc(arToman(due > 0 ? due : amt)) + '<em>تومان</em></b>'
+                  +   '<b>' + esc(arToman(due > 0 ? due : amt)) + ' <em>تومان</em></b>'
                   +   (due > 0
                         ? '<span class="cf-chip">' + (dueDays != null ? toFa(dueDays) + ' روز از ارسال قدیمی‌ترین سند باز به کارفرما' : toFa(openCount) + ' سند در انتظار پرداخت') + '</span>'
                         : (payDate ? '<span class="cf-chip">آخرین پرداخت ' + esc(admDate(payDate)) + '</span>' : ''))
@@ -58178,11 +58190,13 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
                   const cls = !a3 ? '' : (rest <= 0 ? 'ok' : (p3 > 0 ? 'half' : 'bad'));
                   const pp = a3 ? Math.min(100, Math.round(p3 / a3 * 100)) : 0;
                   const rv = isPaid(r) ? 'پرداخت شده' : String(effectiveReview(r) || '');
-                  return '<button type="button" class="cf-st ' + cls + '" data-goto-kind="statement" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
-                    + '<span class="cf-no"><u>شماره</u><b>' + (no ? esc(window.noFa(no)) : '—') + '</b></span>'
-                    + '<span class="cf-mid"><span class="cf-l1"><b>' + (a3 ? esc(arToman(a3)) + ' <u>تومان</u>' : 'بدون مبلغ') + '</b>'
-                    +   '<em>' + (!a3 ? '' : rest <= 0 ? 'پرداخت شد' : (p3 > 0 ? 'باقی ' + esc(arToman(rest)) : 'پرداخت نشده')) + '</em></span>'
-                    +   '<i class="cf-pb"><i style="width:' + pp + '%"></i></i>'
+                  /* ۵۱۶: کارت صورت وضعیت نو: شماره و وضعیت پرداخت بالا، مبلغ درشت، نوار باریک، پرداخت/باقی و مرحله و تاریخ پایین */
+                  const chip = !a3 ? '' : rest <= 0 ? 'پرداخت شد' : (p3 > 0 ? 'پرداخت ناقص' : 'پرداخت نشده');
+                  return '<button type="button" class="cf-st cfs2 ' + cls + '" data-goto-kind="statement" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
+                    + '<span class="cfs-h"><span class="cfs-no">ص.و ' + (no ? esc(window.noFa(no)) : '—') + '</span>' + (chip ? '<span class="cfs-chip">' + chip + '</span>' : '') + '</span>'
+                    + (a3 ? '<span class="cfs-amt"><b>' + esc(arToman(a3)) + '</b> <u>تومان</u></span>' : '<span class="cfs-amt none">مبلغ ثبت نشده</span>')
+                    + '<span class="cfs-bar"><i style="width:' + pp + '%"></i></span>'
+                    + '<span class="cfs-f"><span>' + (!a3 ? '—' : toFa(pp) + '٪ پرداخت' + (rest > 0 ? ' · باقی ' + esc(arToman(rest)) : '')) + '</span>'
                     +   '<small>' + (rv ? esc(rv) + ' · ' : '') + (dt ? esc(admDate(dt)) : '—') + (ago != null ? ' · ' + toFa(ago) + ' روز' : '') + '</small></span>'
                     + '</button>';
                 };
@@ -60053,7 +60067,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       if(rIn){ const p2 = pays.filter(x => rIn(x.d)); pays.length = 0; p2.forEach(x => pays.push(x)); }
       const payH = pays.slice(0, 9).map(x => '<button type="button" class="arx-r" data-goto-kind="statement" data-goto-id="' + esc(String(pick(x.r,AD.id) || '')) + '">'
         + '<span class="arx-rt"><b>' + esc(pick(x.r,AD.sParty) || pick(x.r,AD.sName) || 'صورت وضعیت') + '</b><small>صورت وضعیت ' + esc(toFa(pick(x.r,AD.sNo) || '')) + ' · ' + esc(toFa(admDate(x.d) || x.d)) + '</small></span>'
-        + '<span class="arx-rv ok">' + esc(arToman(x.a)) + '<u>تومان</u></span></button>').join('');
+        + '<span class="arx-rv ok">' + esc(arToman(x.a)) + ' <u>تومان</u></span></button>').join('');
       let ptd = ''; try{ const t0 = paidTodayHtml(a.statements, dateLabel); if(t0.indexOf('class="ptd"') !== -1) ptd = t0; }catch(e){}
       try{ h += adminChartsHtml(Object.assign({}, a, {statements: st}), 'fin'); }catch(e){}
       h += ptd
@@ -69926,7 +69940,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       if(amt > 0){
         const pc = Math.max(0, Math.min(100, Math.round(paid / amt * 100)));
         out.push('<div class="am2-fin">'
-          + '<div class="am2-fh"><span>' + (kind === 'contract' ? 'مبلغ قرارداد' : 'مبلغ') + '</span><b>' + tmn(amt) + '<u>تومان</u></b></div>'
+          + '<div class="am2-fh"><span>' + (kind === 'contract' ? 'مبلغ قرارداد' : 'مبلغ') + '</span><b>' + tmn(amt) + ' <u>تومان</u></b></div>'
           + '<div class="am2-bar"><i style="width:' + pc + '%"></i></div>'
           + '<div class="am2-fs">'
           +   '<span class="pd"><i></i>پرداخت‌شده <b>' + (paid ? tmn(paid) : '۰') + '</b></span>'
@@ -102096,7 +102110,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
         for(let i = 5; i >= 0; i--){ let y = +now[0], m = +now[1] - i; while(m < 1){ m += 12; y--; } M.push({y, m, v: 0}); }
         st.forEach(r => { const p0 = faParts(admSentDate('statement', r) || pick(r,AD.sDate) || ''); if(!p0) return; const b = M.find(x => x.y === +p0[0] && x.m === +p0[1]); if(b) b.v += amtNum(pick(r,AD.sAmount)); });
         const mm = Math.max(1, ...M.map(x => x.v)), MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-        card('hd4-fn', 'مطالبات پیمانکاران', esc(arToman(due)) + '<i>تومان</i>', toFa(pp) + '٪ از ' + esc(arToman(amt)) + ' پرداخت شده',
+        card('hd4-fn', 'مطالبات پیمانکاران', esc(arToman(due)) + ' <i>تومان</i>', toFa(pp) + '٪ از ' + esc(arToman(amt)) + ' پرداخت شده',
           '<div class="hd4-st" title="پرداخت‌شده ' + esc(arToman(paid)) + ' · مانده ' + esc(arToman(due)) + ' تومان"><i class="pd" style="width:' + pp + '%"></i><i class="du" style="width:' + (100 - pp) + '%"></i></div>'
           + '<div class="hd4-cols" aria-label="مبلغ صورت وضعیت‌ها در شش ماه اخیر">' + M.map(x => '<span title="' + MN[x.m - 1] + ': ' + esc(arToman(x.v)) + ' تومان"><i style="height:' + (x.v ? Math.max(6, Math.round(x.v / mm * 100)) : 2) + '%"></i><u>' + MN[x.m - 1] + '</u></span>').join('') + '</div>'
           + '<ul class="hd4-lg row"><li class="k-pd"><i></i>پرداخت‌شده</li><li class="k-du"><i></i>مانده</li><li class="k-cl"><i></i>صورت وضعیت هر ماه</li></ul>', ' data-hmv="admin" role="button" tabindex="0"');
@@ -102285,7 +102299,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     const M = new Map(); A.forEach(a => { const r = a.row, p = String(pick(r,AD.sParty) || '').trim() || 'بی‌طرف'; const amt = amtNum(pick(r,AD.sAmount)) || 0, pd = Math.min(amt, paidOf(r) || 0); const o = M.get(p) || {p, a: 0, d: 0}; o.a += amt; o.d += pd; M.set(p, o); });
     const L = Array.from(M.values()).filter(o => o.a > 0 && !isAmani(o.p)).sort((x, y) => (y.a - y.d) - (x.a - x.d)).slice(0, 5); if(!L.length) return '';
     const max = Math.max(...L.map(o => o.a)), totA = L.reduce((t, o) => t + o.a, 0), totD = L.reduce((t, o) => t + o.d, 0);
-    return '<div class="hdb-p" data-rcopen="1"><div class="hdb-h"><div><u>مطالبات پیمانکاران</u><b>' + esc(arToman(totA - totD)) + '<small>تومان مانده</small></b></div>'
+    return '<div class="hdb-p" data-rcopen="1"><div class="hdb-h"><div><u>مطالبات پیمانکاران</u><b>' + esc(arToman(totA - totD)) + ' <small>تومان مانده</small></b></div>'
       + '<div class="hdb-lg"><span><i class="g"></i>پرداخت‌شده ' + toFa(Math.round(totD / Math.max(1, totA) * 100)) + '٪</span><span><i class="r"></i>مانده</span></div></div><div class="hdb-bl">'
       + L.map(o => '<div class="hdb-br" data-tip="' + hdbTip(o.p, [['صورت وضعیت‌شده', arToman(o.a) + ' تومان', ''], ['پرداخت‌شده', arToman(o.d) + ' تومان', 'g'], ['مانده', arToman(o.a - o.d) + ' تومان', 'r']]) + '"><span class="hdb-bn">' + avatarHtml(o.p, 'xs', true) + '<b>' + esc(o.p) + '</b></span>'
         + '<span class="hdb-bt st" style="--w:' + (o.a / max * 100).toFixed(1) + '%"><i class="g" style="width:' + (o.d / o.a * 100).toFixed(1) + '%"></i><i class="r" style="width:' + ((o.a - o.d) / o.a * 100).toFixed(1) + '%"></i></span><em>' + esc(arToman(o.a - o.d)) + '</em></div>').join('')
