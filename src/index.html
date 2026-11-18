@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261117143410">
+<meta name="pm-build" content="20261118050831">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -2889,6 +2889,10 @@
   /* صورتجلسه: کارت جلسه */
   .adm-grp.mtg{border-radius:16px;}
   .mtg-h{display:flex !important;align-items:center;gap:12px;padding:12px 14px !important;text-align:start;}
+  /* ۵۱۱: جلسه همیشه باز؛ سرتیتر دکمهٔ باز و بسته نیست */
+  .adm-grp.mtg .mtg-t > small{margin-inline-start:8px;}
+  .adm-grp.mtg > .mtg-h{cursor:default !important;} .adm-grp.mtg > .mtg-h:hover{filter:none !important;}
+  .adm-grp.mtg > .adm-grp-body{display:block !important;max-height:none !important;opacity:1 !important;visibility:visible !important;}
   .mtg-d{flex:0 0 48px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--field);line-height:1.15;}
   .mtg-d b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);} .mtg-d u{text-decoration:none;font-size:10.5px;color:var(--muted);font-weight:600;}
   .mtg-t{flex:1;min-width:0;flex-direction:column;gap:4px;}
@@ -75686,13 +75690,14 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
         /* ۵۰۷: عکس حاضران جلسه سرِ کارت؛ اگر حاضری ثبت نشده، مسئولان بندهای باز */
         let att = []; try{ const sn = new Set(); l.forEach(r0 => ((window.mnAttOf && window.mnAttOf(r0)) || []).forEach(n0 => { const k0 = nameKey(n0); if(k0 && !sn.has(k0)){ sn.add(k0); att.push(n0); } })); }catch(e){}
         return {k, l, done, late, hot, meet, md: md ? md.getTime() : 0, subj: pick(l[0],AD.mSubject) || 'صورتجلسه', who, att};
-      }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.hot - a.hot) || (b.late - a.late) || (b.md - a.md));
+      /* ۵۱۱: ترتیب جلسه‌ها با تاریخ جلسه (تازه‌ترین بالا)؛ جلسهٔ کاملاً بسته پایین. پیش‌تر معوق‌ها بالا می‌ماندند و جلسهٔ قدیمی «گیر می‌کرد» */
+      }).sort((a, b) => ((a.done === a.l.length) - (b.done === b.l.length)) || (b.md - a.md));
       /* مرتب‌سازی دستی: جلسه‌ها به همان ترتیب انتخابی (جای اولین بندشان در فهرست مرتب‌شده) */
       if(admManual(kind)){ const pos = new Map(); rows.forEach((r0, i) => { const k0 = mKey(r0); if(!pos.has(k0)) pos.set(k0, i); }); mtgs.sort((a, b) => pos.get(a.k) - pos.get(b.k)); }
       const MN = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
       return mtgs.map(m => {
         const key = 'minute|m:' + m.k, all = m.l.length, closed = m.done === all;
-        const open = (narrowing || admView === 'fast' || admView === 'table') ? (admGrpOpen.get(key) !== false) : (admGrpOpen.get(key) === true);
+        const open = true;   /* ۵۱۱: سرتیتر جلسه همیشه باز است؛ باز و بسته نمی‌شود */
         const fp = faParts(m.meet);
         const tone = closed ? 'ok' : (m.hot ? 'bad' : (m.late ? 'warn' : 'info'));
         const pct = all ? Math.round(m.done / all * 100) : 0;
@@ -75705,7 +75710,6 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
           +   (function(){ const P = m.att.length ? m.att : m.who; if(!P.length) return ''; const N = 5;
                 return '<span class="mtg-who" title="' + esc((m.att.length ? 'حاضران: ' : 'مسئولان: ') + P.join('، ')) + '">' + (m.att.length ? '<small class="mtg-wl">حاضران</small>' : '')
                   + P.slice(0, N).map(n2 => avatarHtml(n2, 'mtg-ava', true)).join('') + (P.length > N ? '<i>+' + toFa(P.length - N) + '</i>' : '') + '</span>'; })()
-          +   '<span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>'
           + '</button>'
           + '<div class="adm-grp-body">' + bodyHtml(m.l) + '</div></div>';
       }).join('');
@@ -75858,6 +75862,7 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
   document.addEventListener('click', e => {
     const h = e.target.closest('.adm-grp > .adm-grp-head');
     if(!h) return;
+    if(h.parentElement.classList.contains('mtg')) return;   /* ۵۱۱: سرتیتر صورتجلسه باز/بسته نمی‌شود */
     const g = h.parentElement;
     if(e.target.closest('.g-alert')){
       g.classList.add('open');
@@ -104313,6 +104318,12 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       L.querySelectorAll(':scope > .afr-hd').forEach(x => x.remove());
       /* گوشی/تبلت یا فهرست باریک (پنل کناری باز): سرستون جا نمی‌شود و ستون‌هایش له می‌شد — برداشته می‌شود */
       if(!mq.matches || L.clientWidth < 860){ L.querySelectorAll('.afr-hdr').forEach(x => x.remove()); return; }
+      /* ۵۱۱: صورتجلسه — هر جلسه فهرست خودش را دارد؛ سرستون بالای همهٔ جلسه‌ها می‌نشیند، نه داخل کارت جلسهٔ اول */
+      const g0 = L.querySelector('.adm-grp.mtg');
+      if(g0){ L.querySelectorAll('.adm-grp.mtg .afr-hdr').forEach(x => x.remove()); let w = L.querySelector('.afr-hdw');
+        if(!w || w.nextElementSibling !== g0){ if(w) w.remove(); w = document.createElement('div'); w.className = 'adm-fast afr-hdw'; w.innerHTML = '<div class="afr afr-hdr">' + HD + '</div>'; g0.parentElement.insertBefore(w, g0); }
+        return; }
+      L.querySelectorAll('.afr-hdw').forEach(x => x.remove());
       const f = L.querySelector('.adm-fast'); const cur = L.querySelector('.afr-hdr');
       if(cur && (!f || cur.parentElement !== f || f.firstElementChild !== cur)) cur.remove();
       if(f && f.querySelector(':scope > .afr, :scope > .afr-cg') && !f.querySelector(':scope > .afr-hdr')){ const d = document.createElement('div'); d.className = 'afr afr-hdr'; d.innerHTML = HD; f.prepend(d); } }); mark(); };
