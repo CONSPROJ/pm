@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261119085924">
+<meta name="pm-build" content="20261119090554">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -26500,7 +26500,9 @@
     :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > :is(.mi-k, .mi-st, .mi-p, .mi-a, .mi-t):last-of-type{border-bottom:0 !important;}
     :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > :is(.mi-k, .mi-st, .mi-p, .mi-a, .mi-t)::before{font-size:11.5px;font-weight:700;color:var(--muted);margin-inline-end:auto;order:-1;}
     :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-k::before{content:"سند";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-st::before{content:"نوع";}
-    :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-p::before{content:"طرف";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-a::before{content:"مبلغ";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-t::before{content:"تاریخ";}
+    :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-p::before{content:"طرف";}
+    :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-st.mi-fl::before{content:"طبقه";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-st.mi-z::before{content:"محل";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-p.mi-ds::before{content:"طراح";}
+    :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-z{text-align:start;line-height:1.7;} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-a::before{content:"مبلغ";} :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-t::before{content:"تاریخ";}
     :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-k{font-weight:700;}
     :is(html,#z0) :is(body,#z1) .adm-k .adm-meta > .mi-dlw{margin:6px 0 !important;align-self:flex-start;}
   }
@@ -70531,7 +70533,16 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     const ctr = ctrCardNames();
     const seen = new Set();
     const opt = (n, g) => { const k = nameKey(n); if(!k || seen.has(k)) return ''; seen.add(k); return '<option value="' + esc(n) + '" data-g="' + g + '">'; };
-    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + ctr.map(n => opt(n, 'پیمانکاران')).join('');
+    dl.innerHTML = people.map(n => opt(n, 'نفرات پروژه')).join('') + mnEmpNames().map(n => opt(n, 'کارفرما')).join('') + ctr.map(n => opt(n, 'پیمانکاران')).join('');
+  }
+  /* ۵۲۴: اشخاص کارفرما و مالک برای حاضران جلسه: سمت‌های کارفرما، کارفرمای «اطلاعات پروژه»، حساب‌های بیرونی کارفرما و افراد پروندهٔ کارفرما */
+  function mnEmpNames(){
+    const out = [], add = n => { n = String(n || '').trim(); if(n) out.push(n); }, isE = t => t === 'emp' || t === 'own';
+    try{ empHolderNames().forEach(add); }catch(e){}
+    try{ window.pjPartyPeople().filter(x => isE(x.t)).forEach(x => add(x.n)); }catch(e){}
+    try{ ctrContacts.forEach(c => { if(!c || !isE(c.t)) return; try{ if(ctrIsHidden(c.name)) return; }catch(e){} add(c.c); ctrRepsOf(c).forEach(r => add(r.n)); }); }catch(e){}
+    try{ extParty.forEach((co, uk) => { if(isE(coTeamT.get(co) || ctrTypeOf(co))) { const u = (listNamesAll() || []).find(x => nameKey(x) === uk); if(u) add(u); } }); }catch(e){}
+    return out;
   }
   /* ====== حاضران صورتجلسه ======
      در فهرست‌ها (kind «حاضران صورتجلسه») با کلید «موضوع|تاریخ جلسه» نگه داشته می‌شود تا به ستون تازه‌ای
@@ -99026,9 +99037,10 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     const ed = (function(){ try{ return canEditAdm('design', row); }catch(e){ return false; } })();
     const fk = pick(row,AD.dFloor), party = pick(row,AD.dParty);
     const bits = ['<span class="mi-k">سند طراحی' + (pick(row,AD.dType) ? ' <b>' + esc(pick(row,AD.dType)) + '</b>' : '') + '</span>'];
-    if(fk) bits.push('<button type="button" class="dz-lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button>');
-    if(pick(row,AD.dZone)) bits.push('<span class="mi-p">' + esc(pick(row,AD.dZone)) + '</span>');
-    if(party) bits.push('<button type="button" class="dz-lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button>');
+    /* ۵۲۳: هر خط برچسب خودش را دارد (پیش‌تر «محل» کلاس طرف را داشت و زیر برچسب «طرف» می‌آمد، طبقه و طراح بی‌برچسب بودند) */
+    if(fk) bits.push('<span class="mi-st mi-fl"><button type="button" class="dz-lk" data-flr="' + esc(fk) + '">' + esc(fk === 'ALL' ? 'کل ساختمان' : (floorLabel(fk) || fk)) + '</button></span>');
+    if(pick(row,AD.dZone)) bits.push('<span class="mi-st mi-z">' + esc(pick(row,AD.dZone)) + '</span>');
+    if(party) bits.push('<span class="mi-p mi-ds"><button type="button" class="dz-lk" data-hrprof="' + esc(party) + '">' + esc(party) + '</button></span>');
     let body = ''; try{ body = designDocHtml(row, ed, id); }catch(e){ body = ''; }
     return '<div class="dk-adm adm-host"><div class="rv adm-k adm-gen dk-dsk" data-id="' + esc(id) + '">'
       + '<div class="adm-head">' + (owner ? avatarHtml(owner, 'rail') : '')
