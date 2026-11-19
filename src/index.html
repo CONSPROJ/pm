@@ -31996,6 +31996,19 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   :is(html,#z0) :is(body,#z1) #tabBar#tabBar.nav5 > .tab-add[aria-selected="true"] .ic svg{transform:rotate(135deg);}
   :is([data-theme="dark"],#z0) :is(body,#z1) #tabBar#tabBar.nav5 > .tab-add .ic{background:var(--sky) !important;color:#0f1620 !important;box-shadow:0 8px 20px -8px color-mix(in srgb, var(--sky) 70%, transparent) !important;}
 }
+
+/* ۵۶۰: «چیدمان خانه» آیکونی در گوشهٔ کارت بالای خانه — هم‌اندازه و هم‌جای «?» نوار بالای بخش‌ها */
+:is(html,#z0) :is(body,#z1) #homeView#homeView .hz{position:relative;}
+:is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hl-cust.hl-ic{all:unset;box-sizing:border-box;position:absolute;top:16px;inset-inline-end:16px;z-index:3;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;cursor:pointer;background:var(--surface);border:1px solid var(--line);color:var(--muted);box-shadow:0 1px 2px rgba(15,23,42,.06);transition:color .15s, border-color .15s, background .15s;}
+:is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hl-cust.hl-ic svg{width:15px;height:15px;}
+:is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hl-cust.hl-ic:hover{color:var(--sky);border-color:color-mix(in srgb, var(--sky) 40%, var(--line));}
+:is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hz-hd{padding-inline-end:40px;}
+@media (max-width:640px){ :is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hz-hd{padding-inline-end:0;} :is(html,#z0) :is(body,#z1) #homeView#homeView .hz > .hz-hd > .hz-who{padding-inline-end:40px;} }
+
+@media (max-width:1179px){ html.pg-hero-on #pageTitle{display:none !important;} }
+
+/* ۵۶۰: هم‌ترازی دقیق نوار بالای همهٔ بخش‌ها: فاصلهٔ ریز بالای ظرف خانه و صفحه‌های آغاز اسناد/گزارش‌ها برداشته شد */
+:is(html,#z0) :is(body,#z1) #homeView#homeView, :is(html,#z0) :is(body,#z1) .panel > .lnd.lnd{padding-top:0 !important;}
 </style>
 </head>
 <body class="wpick-idle">
@@ -53536,6 +53549,11 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     (defs || []).forEach(add); return out;
   }
   window.pageHeroHtml = pageHeroHtml; window.pageHeroTop = pageHeroTop;
+  /* ۵۶۰: گوشی — وقتی صفحهٔ باز نوار بالای بخش (ws-hero) دارد، عنوان صفحه (#pageTitle) تکراری است (نام بخش در خود نوار هست)؛
+     پنهان می‌شود تا نوار بالا در خانه، میز کار، اسناد و گزارش‌ها هم‌ارتفاع بنشیند */
+  (function(){ let last = null; const chk = () => { try{ const on = !![...document.querySelectorAll('.page .panel:not([hidden]) .ws-hero')].find(h => h.offsetParent);
+      if(on !== last){ last = on; document.documentElement.classList.toggle('pg-hero-on', on); } }catch(e){} };
+    setInterval(chk, 350); document.addEventListener('click', () => requestAnimationFrame(chk), true); })();
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-pghelp]'); if(!b) return; e.preventDefault(); e.stopPropagation();
     const h = b.closest('.pg-hero'), k = h && h.dataset.pgkey, on = !h.classList.contains('help'); h.classList.toggle('help', on); b.setAttribute('aria-expanded', on); if(on) PG_HELP.add(k); else PG_HELP.delete(k); }, true);
   const PG_TIPS = {
@@ -103600,7 +103618,13 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
         return '<section class="hz-mb h3-a"><div class="hz-bh"><b>نمای پروژه</b><small>' + esc(pjn) + '</small><button type="button" class="hz-dsh" data-dshpick="1" title="انتخاب نمودارها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>سفارشی‌سازی</span></button></div>' + h3Dash(day, dDate, adm, tk) + cu + '</section>'; }, rep: () => window.repPanelHtml ? window.repPanelHtml() : '', co: () => window.coPanelHtml ? window.coPanelHtml() : '',
       org: () => window.orgHomeHtml ? window.orgHomeHtml() : '', dsk: () => window.dsDeskHtml ? window.dsDeskHtml() : '', dq: () => window.dqStripHtml ? window.dqStripHtml() : '', dash: () => '',
       early: () => hmEarly(), kart: () => h3KartBox(G), quick: () => deskHome ? h3Quick() : '', prj: () => G.prj};
-    const h = '<div class="h3' + (deskHome ? ' hdx' : ' h5m') + '">' + '<div class="hl-top">' + '<button type="button" class="hl-cust" data-hlcust="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>چیدمان خانه</button></div>' + LO.map(k => BL[k] ? sf(BL[k]) : '').join('') + '</div>';
+    /* ۵۶۰: «چیدمان خانه» فقط آیکون، گوشهٔ کارت بالای خانه (جای «?» نوار بالای بخش‌های دیگر) تا کارت بالا در همهٔ بخش‌ها هم‌تراز باشد؛
+       اگر کسی کارت بالا را در چیدمان پنهان کرده، همان دکمهٔ متنی بالای صفحه می‌ماند */
+    const HL_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>';
+    let body0 = LO.map(k => BL[k] ? sf(BL[k]) : '').join('');
+    const inHero = /<section class="hz h3-a"[^>]*>/.test(body0);
+    if(inHero) body0 = body0.replace(/(<section class="hz h3-a"[^>]*>)/, '$1<button type="button" class="hl-cust hl-ic" data-hlcust="1" title="چیدمان خانه" aria-label="چیدمان خانه">' + HL_IC + '</button>');
+    const h = '<div class="h3' + (deskHome ? ' hdx' : ' h5m') + '">' + (inHero ? '' : '<div class="hl-top"><button type="button" class="hl-cust" data-hlcust="1">' + HL_IC + 'چیدمان خانه</button></div>') + body0 + '</div>';
     const first = homeWho !== me;
     homeWho = me;
     if(box.__h === h) return;
