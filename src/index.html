@@ -69599,7 +69599,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       rev: c.rev || d.rev, shW: +c.shW || d.shW, rvw: Object.assign({}, c.rvw || {}), fin: c.fin === 'emp' ? 'emp' : 'int', cx: Array.isArray(c.cx) ? c.cx.filter(x => x && /^[A-Z]{1,5}$/.test(x.k)) : [], tord: Array.isArray(c.tord) ? c.tord.slice() : [], use: Object.assign({}, c.use || {}), pat: Object.assign({}, d.pat, c.pat || {}), tail: c.tail != null ? c.tail : d.tail, t: Object.assign({}, d.t, c.t || {}), on: c.on !== false, saved: !!window.__dcCfg};
   }
   function dcPrjAuto(){ try{ const n = String((window.pjCur && window.pjCur().name) || ''); const lat = toEn(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean); return lat.length ? lat.map(w => w[0]).join('').toUpperCase().slice(0, 6) : 'PRJ'; }catch(e){ return 'PRJ'; } }
-  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); window.__dcCfg = (x && x.o && x.o.v) || null; window.__dcLoaded = true; }catch(e){} const r = dcCfg(); try{ dcRefreshForms(); }catch(e){} return r; }
+  async function dcgLoad(force){ try{ const L = await fxList(DC_K, force); const x = (L || []).find(r => r.id === 'cfg'); if(force && !x && window.__dcCfg && !(L || []).length) return dcCfg(); /* خطای شبکه (فهرست خالی): تنظیم قبلی بماند */ window.__dcCfg = (x && x.o && x.o.v) || null; window.__dcLoaded = true; window.__dcAt = Date.now(); }catch(e){} const r = dcCfg(); try{ dcRefreshForms(); }catch(e){} return r; }
   window.dcgLoad = dcgLoad;
   setTimeout(() => { try{ dcgLoad(); }catch(e){} }, 3500);
   const dcSan = v => toEn(String(v == null ? '' : v)).trim().replace(/[\/\\\s]+/g, '.').replace(/[^A-Za-z0-9._()]/g, '').replace(/^\.+|\.+$/g, '').toUpperCase();
@@ -69829,7 +69829,8 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
   setTimeout(() => { try{ fxList(DC_REC_K); }catch(e){} }, 4000);
   /* نام پایهٔ فایل پیوست در فرم هر سند (ISO: شناسه-وضعیت-ویرایش) */
   window.dcFileBase = function(field){
-    try{ const c = dcCfg(); if(!c.on) return '';
+    /* ۵۲۷: فقط وقتی تنظیم ذخیره‌شدهٔ پروژه صریحاً روشن است؛ نبودِ تنظیم یا خطای خواندن یعنی نام اصلی بماند */
+    try{ const c = dcCfg(); if(!c.on || !c.saved) return '';
       const kind = field.dataset.kind || '', host = field.closest('.nf-body, .modal, .af, form'); if(!host) return '';
       if(kind === 'design'){ const v = (host.querySelector('.a-dNo') || {}).value || ''; if(!dcSan(v)) return ''; const b = host.querySelector('.dc-f'); return b && !b.classList.contains('man') && b.__parts ? dcFull('design', Object.assign({}, b.__parts, {SH: b.__parts.SH || dcNextSheet(b.__parts)}), String(v).trim()) : String(v).trim(); }
       if(['contract', 'statement', 'letter', 'minute'].indexOf(kind) === -1) return '';
@@ -69883,7 +69884,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       + '<p class="dc-tk">' + (c.preset === 'iso' ? 'ISO 19650: شناسه = پروژه-پدیدآورنده-حجم-تراز-نوع-نقش-شماره. وضعیت (S0 کار در جریان، S1 هماهنگی، S2 اطلاع، S3 بررسی و نظر، S4 تأیید مرحله، A تأییدشده، B تأیید با نظر، CR چون‌ساخت) و ویرایش (P01 پیش از تأیید، C01 پس از تأیید) کنار شناسه می‌آیند. ZZ = چند/همه، XX = هیچ.' : 'کدینگ نمونهٔ پروژه: همهٔ بخش‌ها و ویرایش در خود کد.') + '</p></section>'
       + (function(){ const K = [['design', 'اسناد و نقشه‌های طراحی'], ['trn', 'ترانسمیتال'], ['letter', 'نامه‌ها'], ['statement', 'صورت وضعیت'], ['contract', 'قراردادها'], ['minute', 'صورتجلسه'], ['sub', 'سابمیتال (تأیید مصالح)'], ['rfi', 'استعلام فنی (RFI)']], U = c.use || {};
           const O = [['main', 'استاندارد پایهٔ پروژه']].concat(Object.keys(DC_PRESETS).map(k => [k, DC_PRESETS[k].nm])).concat([['off', 'بدون کدینگ (شمارهٔ دستی)']]);
-          return '<section class="dc-p" data-dcp="use"><label class="dc-fn"><span><b>تغییر نام فایل‌های پیوست به کد سند</b><small>روشن: فایل‌هایی که در فرم هر سند بارگذاری می‌شوند نام همان کد را می‌گیرند (کد، کد-۰۲ …). خاموش: نام اصلی فایل می‌ماند.</small></span><span class="rl-sw"><input type="checkbox" data-dcc="on"' + (c.on ? ' checked' : '') + dis + '><i></i></span></label>'
+          return '<section class="dc-p" data-dcp="use"><label class="dc-fn"><span><b>تغییر نام فایل‌های پیوست به کد سند</b><small>روشن: فایل‌هایی که در فرم هر سند بارگذاری می‌شوند نام همان کد را می‌گیرند (کد، کد-۰۲ …). خاموش: نام اصلی فایل می‌ماند.</small></span><span class="rl-sw"><input type="checkbox" data-dcc="on"' + (c.on && c.saved ? ' checked' : '') + dis + '><i></i></span></label>'
             + '<h4>کاربرد کدینگ در بخش‌های سایت</h4><p class="dc-tk">برای هر بخش مشخص کنید از کدام کدینگ استفاده شود؛ همهٔ فرم‌ها، ترانسمیتال، فهرست‌ها و نام فایل‌ها از همین تنظیم پیروی می‌کنند.</p><div class="dc-use">'
             + K.map(([k, t]) => { const u = U[k] || 'main', pat = u === 'off' ? '' : (u === 'main' ? String((c.pat || {})[k] || '') : String((DC_PRESETS[u].pat || {})[k] || ''));
                 return '<label class="dc-ur"><b>' + t + '</b><select data-dcuse="' + k + '"' + dis + '>' + O.map(x => '<option value="' + x[0] + '"' + (x[0] === u ? ' selected' : '') + '>' + esc(x[1]) + '</option>').join('') + '</select><code dir="ltr">' + esc(pat || '—') + '</code></label>'; }).join('') + '</div></section>'; })()
@@ -72339,7 +72340,9 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     /* کدینگ: فایل‌های پیوست فرم یک سند نام همان کد را می‌گیرند (کد، کد-۰۲، …) */
     /* ۵۰۸: پیش از تصمیم دربارهٔ تغییر نام، تنظیم کدینگ همین پروژه باید رسیده باشد (پیش‌تر تا ۳٫۵ ثانیه پس از باز شدن یا با کندی شبکه
        پیش‌فرض «روشن» به کار می‌رفت و با وجود خاموش بودن، فایل به نام کد ذخیره می‌شد) */
-    try{ if(!window.__dcLoaded && window.dcgLoad) await Promise.race([window.dcgLoad(), new Promise(r => setTimeout(r, 4000))]); }catch(e){}
+    /* ۵۲۷: تنظیم کدینگ پیش از هر بارگذاری تازه خوانده می‌شود (اگر بیش از یک دقیقه گذشته)؛ پیش‌تر یک بار در هر نشست خوانده و نگه داشته می‌شد
+       و صفحه‌ای که پیش از خاموش کردن «تغییر نام فایل» باز بود همچنان نام کد می‌گذاشت */
+    try{ if(window.dcgLoad && (!window.__dcLoaded || Date.now() - (window.__dcAt || 0) > 60000)) await Promise.race([window.dcgLoad(true), new Promise(r => setTimeout(r, 4000))]); }catch(e){}
     try{ const base = window.__dcLoaded && window.dcFileBase && window.dcFileBase(field);
       if(base){ let n = list.querySelectorAll('.up-it[data-url]').length; files = Array.from(files).map(f => { const ext = (/\.[A-Za-z0-9]{1,6}$/.exec(f.name) || [''])[0].toLowerCase(); const nm = base + (n++ ? '-' + String(n).padStart(2, '0') : '') + ext; return nm === f.name ? f : new File([f], nm, {type: f.type, lastModified: f.lastModified}); }); } }catch(e){}
     const jobs = Array.from(files).filter(f => {
