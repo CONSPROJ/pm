@@ -1922,7 +1922,7 @@
   .af-sec{position:relative;padding:14px 14px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);
     animation:ms-in .3s both;}
   /* فهرست کشویی روی بخش‌های بعدی باز شود، نه زیرشان */
-  .af-sec:focus-within, .af-sec:has(.combo-pop:not([hidden])){z-index:6;}
+  .af-sec:focus-within{z-index:6;} .af-sec:has(.combo-pop:not([hidden])){z-index:8;} /* ۵۲۵: نوار ثبت (۷) روی بخشِ فوکوس‌خورده؛ فهرست بازشده روی نوار */
   .af-sec:nth-child(2){animation-delay:40ms;} .af-sec:nth-child(3){animation-delay:80ms;} .af-sec:nth-child(4){animation-delay:120ms;}
   .af-h{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
   .af-hi{flex:0 0 28px;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--sky-soft);color:var(--sky);}
@@ -1988,7 +1988,7 @@
   .rvw2-flash{animation:popIn .5s ease;}
   .rvw2-p{min-width:0;} .rvw2-tx{min-width:0;} .rvw2-tx b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
   .af .a-addband{margin-top:8px;}
-  .af-foot{position:sticky;bottom:0;z-index:3;display:flex;gap:8px;justify-content:flex-end;padding:12px 14px;margin-top:2px;border-radius:16px;
+  .af-foot{position:sticky;bottom:0;z-index:7;display:flex;gap:8px;justify-content:flex-end;padding:12px 14px;margin-top:2px;border-radius:16px;
     background:color-mix(in srgb, var(--surface) 88%, transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     border:1px solid var(--line);box-shadow:0 -10px 24px -22px rgba(15,20,35,.5);}
   .af-foot .mini{height:40px;padding:0 18px;border-radius:12px;font-size:12.5px;}
@@ -29663,7 +29663,7 @@
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open > .nf-toggle .nf-ar::before{content:'';width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E") center/16px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E") center/16px no-repeat;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open > .nf-toggle .nf-ar:hover{color:var(--ink);background:var(--field);}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open > .nf-body{flex:1 1 auto;min-height:0;overflow-y:auto !important;overscroll-behavior:contain;padding:18px 20px 0 !important;margin:0 !important;}
-  html body :is(#adminView, .adm-host) .nf[data-persist="1"].open .af-foot{position:sticky !important;bottom:0 !important;z-index:4;margin:16px -20px 0 !important;padding:12px 20px !important;background:var(--surface) !important;border-top:1px solid var(--line) !important;display:flex !important;gap:8px;justify-content:flex-start;}
+  html body :is(#adminView, .adm-host) .nf[data-persist="1"].open .af-foot{position:sticky !important;bottom:0 !important;z-index:7;margin:16px -20px 0 !important;padding:12px 20px !important;background:var(--surface) !important;border-top:1px solid var(--line) !important;display:flex !important;gap:8px;justify-content:flex-start;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open .af-foot .mini.go{min-width:160px;height:42px !important;font-size:13.5px !important;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open .af-foot .mini:not(.go){height:42px !important;}
   html body :is(#adminView, .adm-host) .nf[data-persist="1"].open .add-more{display:none !important;}
@@ -35352,7 +35352,8 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
   function admHolders(kind, r){
     if(!r || kind === 'minute' || kind === 'letter') return null;
     const st = String(pick(r,AD.review) || '');
-    if(st === 'بررسی کارفرما'){ const H = empHolderNames(); return H.length ? H : ['کارفرما']; }
+    /* ۵۲۶: نزد کارفرما یعنی نزد طرف کارفرما، نه شخصی که در چارت اول آمده و در مسیر سند نیست */
+    if(st === 'بررسی کارفرما') return ['کارفرما'];
     if(st === 'بررسی داخلی' || st === 'رد داخلی'){
       let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); }catch(e){}
       return w.length ? w : null;
@@ -35360,6 +35361,15 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     if(/پیمانکار/.test(st) && !/تأیید پیمانکار/.test(st)){ let p = ''; try{ p = admParty(kind, r); }catch(e){} return p ? [p] : null; }
     return null;
   }
+  /* ۵۲۶: سندی که نزد طرف بیرونی است (کارفرما یا پیمانکار): نام آن طرف؛ در فهرست و سربرگ به‌جای مسئول داخلی می‌آید */
+  function admExtHolder(kind, r){
+    if(!r || (kind !== 'statement' && kind !== 'contract')) return '';
+    const st = String(pick(r,AD.review) || '');
+    if(st === 'بررسی کارفرما') return 'کارفرما';
+    if(/پیمانکار/.test(st) && !/تأیید پیمانکار/.test(st)){ let p = ''; try{ p = admParty(kind, r); }catch(e){} return String(p || '').trim() || 'پیمانکار'; }
+    return '';
+  }
+  window.admExtHolder = admExtHolder;
   /* سند الان دست کیست و چند روز است آنجا مانده؛ برای «موعد گذشته» در اعلان‌ها */
   function admHeldBy(kind, r){
     if(!r) return null;
@@ -35371,7 +35381,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
         return ok(sn.st === 'نزد مشاور/کارفرما' ? (String(pick(r,AD.dParty) || '').trim() || 'مشاور/کارفرما') : 'دفتر فنی', sn.days);
       }
       if(kind === 'minute' || kind === 'letter') return null;
-      if(st === 'بررسی کارفرما'){ const H = empHolderNames(); return ok(H.length ? H.slice(0, 2).map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).join('، ') : 'کارفرما', rvEmployerDays(r)); }
+      if(st === 'بررسی کارفرما') return ok('کارفرما', rvEmployerDays(r));
       if(st === 'بررسی داخلی' || st === 'رد داخلی'){
         let w = []; try{ const D = reviewersDoneOf(r); w = (reviewersOf(r) || []).filter(n => !D.has(nameKey(n))); if(!w.length) w = reviewersOf(r) || []; }catch(e){}
         return ok(w.length ? w.map(n => String(n).replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')).slice(0, 2).join('، ') : 'بررسی داخلی', rvInternalDays(r));
@@ -66640,7 +66650,8 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       + '<span class="afr-meta">'
       + '<span class="afr-st' + (stTxt ? ' ' + stCls + ' tn-' + tn : ' nil') + '">' + (stTxt ? '<i></i>' : '') + esc(stTxt) + '</span>'
       /* ستون مسئول: مسئول پرونده (عکس و نام)؛ در بررسی داخلی، عکس بررسی‌کننده‌ها کنارش */
-      + '<span class="afr-ava afr-own">' + (function(){ const ow = String(pick(r, AD_OWNER[kind] || ['مسئول']) || '').trim();
+      + '<span class="afr-ava afr-own">' + (function(){ const ow = String(pick(r, AD_OWNER[kind] || ['مسئول']) || '').trim(), xh = admExtHolder(kind, r);
+          if(xh) return avatarHtml(xh, '', true) + '<span class="afr-onm" title="' + esc('سند نزد ' + xh + ' است' + (ow ? '؛ پیگیری: ' + ow : '')) + '">نزد ' + esc(xh.replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')) + '</span>';
           return (ow ? avatarHtml(ow, '', true) + '<span class="afr-onm">' + esc(ow.replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '')) + '</span>' : '')
             ; })()
       + '</span>'
@@ -70253,7 +70264,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
          حذف شد تا هیچ ردیفی پدینگ اضافه نگیرد و همه تمام‌عرض باشند —
          ریشهٔ «مرز از چپ» و تمام‌عرض نشدن جزئیات همین بود. */
       /* نشان هشدار روی گوشهٔ عکس می‌نشیند؛ بدون عکس، همان جای خودش */
-      +   (owner ? '<span class="adm-avw">' + avatarHtml(owner, 'rail') + alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r)) + '</span>'
+      +   (owner ? '<span class="adm-avw">' + avatarHtml(admExtHolder(kind, r) || owner, 'rail') + alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r)) + '</span>'
                  : alertFlagHtml(id, admCardAlert(kind, r), admCardHot(kind, r)))
       +   '<div class="adm-titlewrap">'
       +     '<h4 class="adm-title">'+esc(head.title)+'</h4>'
