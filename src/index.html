@@ -198,7 +198,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261119144118">
+<meta name="pm-build" content="20261119144445">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -19541,6 +19541,9 @@
   .cm3-all:hover{background:var(--field);}
   @media (max-width:640px){ .cm3-r{grid-template-columns:minmax(0,1fr) 62px;grid-template-areas:"l n" "t t";row-gap:6px;} .cm3-l{grid-area:l;} .cm3-t{grid-area:t;} .cm3-n{grid-area:n;justify-content:flex-end;} }
   .lnd{display:none;}
+  #panelView.lnd-on > :not(.lnd), html.lnd-v :is(#reportView, #viewTb){display:none !important;}
+  #panelView.lnd-on > .lnd{display:block;}
+  @media (max-width:1179px){ #panelView.lnd-on > .lnd{padding:4px 0 24px;} #panelView .lnd .lnd-h{display:none;} }
   @media (min-width:1180px){
     .panel.lnd-on > :not(.lnd), html.lnd-v :is(#reportView, #viewTb){display:none !important;}
     .panel.lnd-on > .lnd{display:block;max-width:var(--cw, 1040px);margin:0 auto;padding:6px 0 30px;}
@@ -54020,8 +54023,10 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
       pn.classList.add('lnd-on'); document.documentElement.classList.toggle('lnd-v', kind !== 'adm');
     }
     document.addEventListener('click', e => {
-      if(!mq.matches || !e.target.closest) return;
-      const t = e.target.closest('#tabAdmin, #tabView');
+      if(!e.target.closest) return;
+      /* ۵۴۱: گوشی فقط گزارش‌ها صفحهٔ آغاز می‌گیرد (اسناد روی گوشی فهرست دسته‌های خودش را دارد) */
+      if(!mq.matches && !e.target.closest('#tabView, [data-lndview], [data-sbview], [data-sbadm], [data-sbws], #tabHome, #tabTasks, #tabAdmin, #viewKindCaps .kcap')) return;
+      const t = e.target.closest(mq.matches ? '#tabAdmin, #tabView' : '#tabView');
       if(t && !e.target.closest('.sb-it, .sb-sub')){ const k = t.id === 'tabAdmin' ? 'adm' : 'view';
         /* صفحهٔ آغاز همان لحظه (با محتوای قبلی‌اش) — پیش‌تر ۱۲۰ms محتوای قبلی بخش دیده می‌شد و بعد این صفحه می‌پرید */
         try{ const pn = document.getElementById(k === 'adm' ? 'panelAdmin' : 'panelView'); if(pn && pn.querySelector(':scope > .lnd')){ pn.classList.add('lnd-on'); document.documentElement.classList.toggle('lnd-v', k !== 'adm'); } else build(k); }catch(er){}
