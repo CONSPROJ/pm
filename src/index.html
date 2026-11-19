@@ -3,6 +3,18 @@
 <head>
 <script src="lib/hlp.js" data-inline></script>
 <script>
+/* ۵۵۶: سافاری (WebKit) با گذاشتن outerHTML یا insertAdjacentHTML بیرونی روی عنصری که دیگر در صفحه نیست خطای
+   «NoModificationAllowedError» می‌دهد؛ استاندارد و کروم بی‌صدا رد می‌شوند. همین رفتار استاندارد این‌جا برای همه یکسان می‌شود. */
+(function(){ try{
+  const P = Element.prototype, d = Object.getOwnPropertyDescriptor(P, 'outerHTML');
+  if(d && d.set) Object.defineProperty(P, 'outerHTML', {configurable: true, enumerable: d.enumerable, get: d.get, set: function(v){ if(!this.parentNode) return; d.set.call(this, v); }});
+  const ia = P.insertAdjacentHTML;
+  if(ia) P.insertAdjacentHTML = function(pos, h){ const p = String(pos || '').toLowerCase(); if((p === 'beforebegin' || p === 'afterend') && !this.parentNode) return; return ia.call(this, pos, h); };
+  const ie = P.insertAdjacentElement;
+  if(ie) P.insertAdjacentElement = function(pos, el){ const p = String(pos || '').toLowerCase(); if((p === 'beforebegin' || p === 'afterend') && !this.parentNode) return null; return ie.call(this, pos, el); };
+}catch(e){} })();
+</script>
+<script>
 /* ====== نسخه‌های قبلی سایت ======
    هر انتشار یک رونوشت دست‌نخورده در v/<شمارهٔ ساخت>.html دارد. ادمین می‌تواند یک نسخهٔ قبلی را
    برای خودش (siteLogM.pin) یا برای همه (lists «نسخهٔ سایت» ← رونوشت محلی siteLogM.pinAll) بگذارد.
