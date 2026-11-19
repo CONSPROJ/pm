@@ -870,9 +870,14 @@
     :is(html,#z0) :is(body,#z1) #homeView .h3.h5m .hd4.open > .hd4-g{display:flex !important;grid-template-columns:none !important;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px;scroll-padding:0 16px;}
     #homeView .h3.h5m .hd4 > .hd4-g::-webkit-scrollbar{display:none;}
     :is(html,#z0) :is(body,#z1) #homeView .h3.h5m .hd4.open > .hd4-g > .hd4-c{flex:0 0 84%;max-width:360px;scroll-snap-align:start;margin:0 !important;min-height:0;}
-    #homeView .h3.h5m .hd4 .hd4-dots{display:flex;justify-content:center;gap:5px;margin:8px 0 0;}
-    #homeView .h3.h5m .hd4 .hd4-dots i{width:5px;height:5px;border-radius:5px;background:color-mix(in srgb, var(--muted) 40%, transparent);transition:width .2s, background .2s;}
-    #homeView .h3.h5m .hd4 .hd4-dots i.on{width:14px;background:var(--ink);}
+    /* ۵۵۰: همهٔ نمودارهای زیر «نمای پروژه» هم کشویی — نیرو، مطالبات، صورت‌وضعیت، تیم */
+    :is(html,#z0) :is(body,#z1) #homeView .h3.h5m .hdb-in .hdb-g{display:flex !important;grid-template-columns:none !important;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;align-items:stretch;padding:0 2px 2px;}
+    #homeView .h3.h5m .hdb-in .hdb-g::-webkit-scrollbar{display:none;}
+    :is(html,#z0) :is(body,#z1) #homeView .h3.h5m .hdb-in .hdb-g > .hdb-p{flex:0 0 86%;max-width:380px;grid-column:auto !important;scroll-snap-align:start;margin:0 !important;max-height:372px;overflow-y:auto;scrollbar-width:none;}
+    #homeView .h3.h5m .hdb-in .hdb-g > .hdb-p::-webkit-scrollbar{display:none;}
+    #homeView .h3.h5m :is(.hd4,.hdb-in) .hd4-dots{display:flex;justify-content:center;gap:5px;margin:8px 0 0;}
+    #homeView .h3.h5m :is(.hd4,.hdb-in) .hd4-dots i{width:5px;height:5px;border-radius:5px;background:color-mix(in srgb, var(--muted) 40%, transparent);transition:width .2s, background .2s;}
+    #homeView .h3.h5m :is(.hd4,.hdb-in) .hd4-dots i.on{width:14px;background:var(--ink);}
     #homeView .h3.h5m .hd4:not(.open) .hd4-dots{display:none;}
   }
 
@@ -1041,7 +1046,7 @@
   #homeView .hzk-v{font-size:24px;}
 
   /* داشبورد یکپارچه درون «نمای پروژه»: فشرده */
-  #homeView .hdb-in{margin:0 0 12px;}
+  #homeView .hdb-in{margin:0 0 12px;} #homeView .hdb-in > .hd4-dots{display:none;}
   #homeView .hdb-in .hdb-g{grid-template-columns:repeat(4, minmax(0,1fr));gap:10px;}
   #homeView .hdb-in .hdb-g.n2 .hdb-p:not(.hdb-wide){grid-column:span 2;} #homeView .hdb-in .hdb-g.n1 .hdb-p{grid-column:1 / -1;}
   #homeView .hdb-in .hdb-wide{grid-column:span 2;}
@@ -53235,7 +53240,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     let p = null, dl = ''; try{ p = pjCur(); }catch(e){} try{ dl = faDateLong(todayShamsi()) || ''; }catch(e){}
     let cv = ''; try{ cv = p && window.pjCoverOf ? window.pjCoverOf(p, 'ws-hcv') : ''; }catch(e){}
     const on = PG_HELP.has(o.key);
-    return '<section class="ws-hero pg-hero' + (on ? ' help' : '') + '" data-pgkey="' + esc(o.key) + '">'
+    return '<section class="ws-hero pg-hero' + (on ? ' help' : '') + '" data-pgkey="' + esc(o.key) + '" style="--h:' + (function(){ try{ return pjHue(PJ.cur); }catch(e){ return 205; } })() + '">'
       + (o.tips && o.tips.length ? '<button type="button" class="pg-hg" data-pghelp="1" aria-expanded="' + on + '" title="راهنمای این بخش" aria-label="راهنمای این بخش">?</button>' : '')
       + '<div class="ws-hx">' + (cv || '') + '<div class="ws-ht"><small>' + esc([o.section, dl].filter(Boolean).join(' · ')) + '</small><h2>' + esc((p && p.name) || o.section || '') + '</h2></div></div>'
       + (o.tips && o.tips.length ? '<ul class="pg-tips">' + o.tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '')
@@ -102492,7 +102497,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     fin: () => hmWide() && tabOk('admin') && hmCapX('home.fin'),
     site: () => hmWide() && tabOk('view') && hmSite() && hmCapX('home.site')};
   window.hmG = hmG;
-  document.addEventListener('scroll', e => { const g = e.target; if(!g || !g.classList || !g.classList.contains('hd4-g')) return; const D = g.parentElement.querySelectorAll('.hd4-dots i'); if(!D.length) return;
+  document.addEventListener('scroll', e => { const g = e.target; if(!g || !g.classList || !(g.classList.contains('hd4-g') || g.classList.contains('hdb-g'))) return; const D = g.parentElement.querySelectorAll('.hd4-dots i'); if(!D.length) return;
     const c = g.children[0]; if(!c) return; const i = Math.round(Math.abs(g.scrollLeft) / (c.getBoundingClientRect().width + 10)); D.forEach((d, j) => d.classList.toggle('on', j === Math.min(i, D.length - 1))); }, true);
 
   /* ====== نوار شاخص‌های پروژه (خانهٔ دسکتاپ) ======
@@ -102890,7 +102895,7 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
     const ord = dashOrd(); const pos = k => { const i = ord.indexOf(k); return i === -1 ? 99 : i; };
     const L = P.filter(x => x[1]).map((x, i) => [x[0], x[1], i]).sort((a, b) => (pos(a[0]) - pos(b[0])) || (a[2] - b[2]));
     if(!L.length) return '';
-    return '<div class="hdb hdb-in"><div class="hdb-g n' + L.length + '" data-dkbox="1">' + L.map(x => dashTag(x[0], x[1])).join('') + '</div><div class="hdb-tt" hidden></div></div>';
+    return '<div class="hdb hdb-in"><div class="hdb-g n' + L.length + '" data-dkbox="1">' + L.map(x => dashTag(x[0], x[1])).join('') + '</div>' + (L.length > 1 ? '<div class="hd4-dots" aria-hidden="true">' + L.map((x, i) => '<i' + (i ? '' : ' class="on"') + '></i>').join('') + '</div>' : '') + '<div class="hdb-tt" hidden></div></div>';
   }
   /* کشیدن و رها کردن پنل‌ها برای جابه‌جایی */
   (function(){
