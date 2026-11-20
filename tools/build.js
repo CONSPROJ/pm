@@ -14,14 +14,45 @@ function cssMin(c){
   /* فاصله‌ها: خط‌ها و تورفتگی؛ فاصلهٔ داخل مقدارها (مثل "0 0 1px") دست نمی‌خورد */
   return o.replace(/\s*\n\s*/g, '\n').replace(/\n+/g, '\n').replace(/\n?([{};])\n?/g, '$1').replace(/^\s+|\s+$/g, '');
 }
+/* ۶۰۶: حذف قاعده‌های CSS مرده — قاعده‌ای که همهٔ سلکتورهایش کلاس یا شناسه‌ای می‌خواهند که هیچ‌جای کد غیر CSS (اسکریپت‌ها، HTML،
+   ترجمه، کتابخانه‌های درج‌شده) نیامده، هرگز به عنصری نمی‌خورد. محافظه‌کارانه: هر رشته‌ای که پشتش + یا ${ آمده پیشوندِ ساخت پویا حساب می‌شود
+   و همهٔ کلاس‌هایی که با آن شروع می‌شوند زنده می‌مانند؛ داخل :is/:where/:not/:has بررسی نمی‌شود. متن بقیهٔ CSS دست نمی‌خورد (برش با جای دقیق). */
+let csstree = null; try{ csstree = require(path.join(__dirname, 'node_modules', 'css-tree')); }catch(e){}
+function deadPruner(html){
+  if(!csstree || process.env.NO_PRUNE) return null;
+  let code = html.replace(/<style[^>]*>[\s\S]*?<\/style>/g, ' ');
+  try{ code += fs.readFileSync(path.join(path.dirname(src), 'i18n-en.js'), 'utf8'); }catch(e){}
+  (html.match(/<script[^>]*\bsrc="([^"]+)"[^>]*data-inline/g) || []).forEach(t => { const f = /src="([^"]+)"/.exec(t)[1]; try{ code += fs.readFileSync(path.join(path.dirname(src), '..', f), 'utf8'); }catch(e){} });
+  const words = new Set(code.match(/[A-Za-z_][A-Za-z0-9_-]*/g) || []);
+  const pre = new Set();
+  (code.match(/['"`]([A-Za-z_][A-Za-z0-9_-]*)['"`]?\s*(\+|\$\{)/g) || []).forEach(x => { const k = /['"`]([A-Za-z_][A-Za-z0-9_-]*)/.exec(x); if(k && k[1].length >= 2) pre.add(k[1]); });
+  (code.match(/([A-Za-z_][A-Za-z0-9_-]*)\$\{/g) || []).forEach(x => { const k = x.slice(0, -2); if(k.length >= 2) pre.add(k); });
+  const P = Array.from(pre);
+  const alive = t => words.has(t) || P.some(p => t.startsWith(p));
+  return function prune(css){
+    let ast; try{ ast = csstree.parse(css, {positions: true, parseValue: false, parseAtrulePrelude: false, parseCustomProperty: false}); }catch(e){ return {css, n: 0}; }
+    const cut = [];
+    csstree.walk(ast, {visit: 'Rule', enter(node){
+      if(!node.loc || !node.prelude || node.prelude.type !== 'SelectorList') return;
+      const sels = node.prelude.children.toArray(); if(!sels.length) return;
+      const dead = sels.every(sel => { let d = false; csstree.walk(sel, {enter(n){ if(d) return;
+        if(n.type === 'PseudoClassSelector' && /^(is|where|not|has|host|nth-child|nth-last-child)$/.test(n.name)) return csstree.walk.skip;
+        if((n.type === 'ClassSelector' || n.type === 'IdSelector') && !alive(n.name)) d = true; }}); return d; });
+      if(dead) cut.push([node.loc.start.offset, node.loc.end.offset]); }});
+    if(!cut.length) return {css, n: 0};
+    cut.sort((a, b) => b[0] - a[0]); let o = css; cut.forEach(([a, b]) => { o = o.slice(0, a) + o.slice(b); });
+    return {css: o, n: cut.length};
+  };
+}
 (async () => {
+  const prune = deadPruner(html); let pruned = 0;
   const parts = []; let last = 0;
   const re = /<(script|style)(\s[^>]*)?>([\s\S]*?)<\/\1>/g; let m;
   let jsIn = 0, jsOut = 0, cssIn = 0, cssOut = 0;
   while((m = re.exec(html))){
     parts.push(html.slice(last, m.index)); last = re.lastIndex;
     const [all, tag, attrs = '', body] = m;
-    if(tag === 'style'){ const b = cssMin(body); cssIn += body.length; cssOut += b.length; parts.push('<style' + attrs + '>' + b + '</style>'); continue; }
+    if(tag === 'style'){ let body2 = body; if(prune){ const r0 = prune(body); body2 = r0.css; pruned += r0.n; } const b = cssMin(body2); cssIn += body.length; cssOut += b.length; parts.push('<style' + attrs + '>' + b + '</style>'); continue; }
     /* <script src="…" data-inline>: فایل مشترک lib/… در صفحهٔ اصلی درج می‌شود (یک منبع برای صفحهٔ اصلی و نقشه‌خوان) */
     let bodyX = body; const inl = /\bdata-inline\b/.test(attrs) && /\bsrc="([^"]+)"/.exec(attrs);
     if(inl){ bodyX = fs.readFileSync(require('path').join(require('path').dirname(src), '..', inl[1]), 'utf8'); }
@@ -39,5 +70,5 @@ function cssMin(c){
   outHtml = outHtml.replace(/^(<!doctype html>)/i, '$1<!-- built from src/index.html — edit the source, then tools/build.sh -->');
   fs.writeFileSync(out, outHtml);
   const kb = n => Math.round(n / 1024);
-  console.log('JS', kb(jsIn), '→', kb(jsOut), 'KB | CSS', kb(cssIn), '→', kb(cssOut), 'KB | total', kb(Buffer.byteLength(html)), '→', kb(Buffer.byteLength(outHtml)), 'KB');
+  console.log('JS', kb(jsIn), '→', kb(jsOut), 'KB | CSS', kb(cssIn), '→', kb(cssOut), 'KB (' + pruned + ' dead rules) | total', kb(Buffer.byteLength(html)), '→', kb(Buffer.byteLength(outHtml)), 'KB');
 })().catch(e => { console.error(e); process.exit(1); });

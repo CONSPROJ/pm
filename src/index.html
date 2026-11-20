@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261120163818">
+<meta name="pm-build" content="20261120165520">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32415,6 +32415,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 /* سربرگ چسبان همان بوم نیمه‌شفاف با تاری (روی هاله یکدست دیده می‌شود، نه نوار جدا) */
 :is(html,#z0) :is(body,#z1) .app-head{background:color-mix(in srgb, var(--canvas) 72%, transparent) !important;}
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+/* ۶۰۶: سرعت — ردیف‌های فهرست‌های بلند (اسناد، اشخاص، آخرین اسناد، اعلان‌ها) بیرون از دید محاسبه و کشیده نمی‌شوند تا به آن‌ها برسید؛
+   contain-intrinsic-size با «auto» اندازهٔ واقعی را بعد از اولین دیده‌شدن به خاطر می‌سپارد تا اسکرول نپرد */
+@media screen{
+  :is(html,#z0) :is(body,#z1) :is(.adm-fast > .afr, .cdx-list > .cdx-r, .cf-feed > .cff, .cfd-pane > .cfdl-r){content-visibility:auto;contain-intrinsic-size:auto 64px;}
+}
 /* ۶۰۳: چیپ‌های زیر نام کارت طرف (رشته، نقش، قرارداد) — با overflow:hidden در ردیف flex تا زیر اندازهٔ متنشان جمع می‌شدند و متن به لبه می‌چسبید/بریده می‌شد.
    هرگز جمع نمی‌شوند (ردیف بعد می‌روند)، فاصلهٔ داخلی بیشتر، و فقط اگر از کل عرض بلندتر باشند سه‌نقطه. دکمهٔ دوربین کمی بیرون‌تر تا روی حروف عکس نیفتد. */
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .ct4-meta > *{flex-shrink:0 !important;max-width:100%;}
@@ -52503,7 +52508,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function layDef(){ try{ return localStorage.getItem('siteLogM.layDef') || 'auto'; }catch(e){ return 'auto'; } }
   function layEff(){
     let p = upref('layout') || layDef();
-    if(p !== 'list' && p !== 'tiles') p = window.innerWidth >= 900 ? 'tiles' : 'list';
+    /* ۶۰۶: matchMedia به‌جای innerWidth — خواندن innerWidth با تغییرِ در انتظار، محاسبهٔ دوبارهٔ سبک کل صفحه را اجبار می‌کرد */
+    if(p !== 'list' && p !== 'tiles') p = (layEff.mq || (layEff.mq = matchMedia('(min-width:900px)'))).matches ? 'tiles' : 'list';
     return p;
   }
   function layoutApply(){
