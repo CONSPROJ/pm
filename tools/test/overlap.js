@@ -34,7 +34,7 @@ function detect(rootSel){
       if(x.bottom < 0 || x.top > innerHeight * 3) return;
       /* ارتفاع خط واقعی کمی کمتر از کادر متن است؛ ۲۰٪ از بالا و پایین کم می‌شود تا خط‌های پشت‌سرهم برخورد حساب نشوند */
       const h = x.bottom - x.top, sh = h * .2;
-      items.push({el, ly: layerOf(el), t: n.nodeValue.trim().slice(0, 28), l: x.left, r: x.right, t0: x.top + sh, b: x.bottom - sh}); cnt++;
+      items.push({el, ly: layerOf(el), t: n.nodeValue.trim().slice(0, 28), l: x.left, r: x.right, t0: x.top + sh, b: x.bottom - sh, rl: r.left, rr: r.right}); cnt++;
     });
   }
   const out = [];
@@ -49,6 +49,16 @@ function detect(rootSel){
       out.push('«' + a.t + '» × «' + b.t + '»  [' + path(a.el) + ' | ' + path(b.el) + '] @' + Math.round(Math.max(a.l, b.l)) + ',' + Math.round(Math.max(a.t0, b.t0)));
     }
   }
+  /* ۶۰۳: متن داخل چیپ/دکمه (قاب گرد کوچک با زمینه یا حاشیه) به لبه نچسبد و بریده نشود */
+  const boxOf = el => { for(let e = el, k = 0; e && k < 4; e = e.parentElement, k++){ const c = getComputedStyle(e), b = e.getBoundingClientRect();
+      if(parseFloat(c.borderTopLeftRadius) >= 8 && b.width < 360 && b.height < 56 && b.height > 14 && (c.backgroundColor !== 'rgba(0, 0, 0, 0)' || parseFloat(c.borderTopWidth) > 0 || c.boxShadow !== 'none')) return {e, b, c}; } return null; };
+  const seenBox = new Set();
+  items.forEach(it => { const bx = boxOf(it.el); if(!bx || seenBox.has(bx.e)) return;
+    /* ردیف اسکرول‌خور افقی (زبانه‌ها): بریدن لبه عمدی است */
+    if(/auto|scroll/.test(bx.c.overflowX) && bx.e.scrollWidth > bx.e.clientWidth + 1) return;
+    const pl = Math.min(it.rl, it.l) - bx.b.left, pr = bx.b.right - Math.max(it.rr, it.r);
+    if((pl < 2 || pr < 2) && bx.c.textOverflow !== 'ellipsis'){ seenBox.add(bx.e);
+      out.push('لبه: «' + it.t + '» ' + (Math.min(pl, pr) < 0 ? 'بریده شده' : 'به لبهٔ قاب چسبیده') + ' (' + Math.round(Math.min(pl, pr)) + 'px) [' + bx.e.tagName.toLowerCase() + '.' + String(bx.e.className || '').trim().split(/\s+/).slice(0, 2).join('.') + ']'); } });
   return {n: items.length, hits: Array.from(new Set(out)).slice(0, 30)};
 }
 
