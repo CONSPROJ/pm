@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261120150614">
+<meta name="pm-build" content="20261120162507">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -31602,6 +31602,11 @@ html.ui2 :is(.adm-newbtn, button.pri, .btn.pri, .pj-pri){box-shadow:none !import
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k] > .cff{display:none !important;}
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="contract"] > .cff.k-contract, :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="statement"] > .cff.k-statement, :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="letter"] > .cff.k-letter, :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="minute"] > .cff.k-minute, :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="design"] > .cff.k-design{display:flex !important;}
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k] > .cff-more{display:none !important;}
+/* ۶۰۴: همان فیلتر کاشی‌های اسناد برای هر پروندهٔ اسناد (کارت پرسنل، صفحهٔ مشاور/کارفرما)، نه فقط کارت پیمانکار */
+:is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k] > .cff{display:none !important;}
+:is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="contract"] > .cff.k-contract, :is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="statement"] > .cff.k-statement, :is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="letter"] > .cff.k-letter, :is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="minute"] > .cff.k-minute, :is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="design"] > .cff.k-design{display:flex !important;}
+:is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k] > .cff-more{display:none !important;}
+:is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="letter-out"] > .cff.k-letter-out, :is(html,#z0) :is(body,#z1) .cf-dpane .cf-feed[data-k="letter-in"] > .cff.k-letter-in{display:flex !important;}
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cff-fl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px;font-size:12px;color:var(--muted);}
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cff-fl[hidden]{display:none;}
 :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cff-fl b{color:var(--ink);}
@@ -50923,7 +50928,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         const k0 = nameKey(name), by = {};
         const sp = v => String(v || '').split(/[|،,]/).map(x => nameKey(x.trim())).filter(Boolean);
         (adminAll || []).forEach(a => { const r = a.row; if(!r || !a.kind) return;
-          if(nameKey(String(pick(r,AD.eng) || '')) === k0 || sp(pick(r,AD.rvWho)).indexOf(k0) !== -1 || sp(pick(r,AD.mTeam)).indexOf(k0) !== -1) (by[a.kind] = by[a.kind] || []).push(r); });
+          let hit = nameKey(String(pick(r,AD.eng) || '')) === k0 || sp(pick(r,AD.rvWho)).indexOf(k0) !== -1 || sp(pick(r,AD.mTeam)).indexOf(k0) !== -1;
+          /* ۶۰۴: صورتجلسه — حاضران جلسه، مسئول و مسئول پیگیری بند هم */
+          if(!hit && a.kind === 'minute'){ try{ hit = ((window.mnAttOf && window.mnAttOf(r)) || []).some(x => nameKey(x) === k0); }catch(e){}
+            if(!hit) hit = sp(pick(r,AD.mOwner)).indexOf(k0) !== -1 || sp(pick(r,AD.mFollow)).indexOf(k0) !== -1; }
+          if(hit) (by[a.kind] = by[a.kind] || []).push(r); });
         const P = ctDocsParts(name, () => [], kd => by[kd] || []), n = P.docs.reduce((t, x) => t + x.cnt, 0);
         return {n, html: n ? '<div class="cf cf-dpane pv-docs"><div class="rc-title">اسناد مرتبط<span class="n">' + toFa(n) + '</span></div>' + P.docTiles
             + (P.feed ? '<div class="rc-title">آخرین اسناد<span class="n">' + toFa(P.feedRows.length) + '</span></div>' + P.feed : '') + '</div>'
