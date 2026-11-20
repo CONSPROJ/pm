@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261120114901">
+<meta name="pm-build" content="20261120115503">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32316,6 +32316,13 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb{flex-wrap:nowrap !important;align-items:center;gap:6px !important;}
   :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb > #admSearch{flex:1 1 auto !important;min-width:0 !important;width:auto !important;}
   :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb > :not(#admSearch){flex:0 0 auto !important;}
+}
+/* ۵۹۱: گوشی، نوار دستهٔ اسناد — نام دسته همان زبانهٔ انتخاب‌شدهٔ بالاست؛ تکرارش پنهان، بازگشت فقط آیکن (مثل میز کار) و دکمهٔ ثبت باقی ردیف */
+@media (max-width:600px){
+  :is(html,#z0) :is(body,#z1) #admBar > .ws-bt{display:none !important;}
+  :is(html,#z0) :is(body,#z1) #admBar > .ws-back{width:40px;height:40px;padding:0 !important;justify-content:center;flex:0 0 40px;}
+  :is(html,#z0) :is(body,#z1) #admBar > .ws-back > span{display:none !important;}
+  :is(html,#z0) :is(body,#z1) #admBar > .ws-badd{flex:1 1 auto;justify-content:center;margin-inline-start:0 !important;}
 }
 </style>
 </head>
@@ -76125,7 +76132,7 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     if(c && AC[k] == null){ try{ AC[k] = getComputedStyle(c).getPropertyValue('--c').trim(); }catch(e){ AC[k] = ''; } }
     const col = AC[k] || '';
     const add = ADM_ORDER.indexOf(k) !== -1 && c && c.querySelector('[data-admquick]');
-    bar.innerHTML = '<button type="button" class="ws-back" data-adm-back="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg><span>اسناد</span></button>'
+    bar.innerHTML = '<button type="button" class="ws-back" data-adm-back="1" aria-label="بازگشت به اسناد" title="اسناد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg><span>اسناد</span></button>'
       + '<span class="ws-bt" style="--c:' + (col || 'var(--sky)') + '"><i>' + ic + '</i><b>' + esc(t) + '</b></span>'
       + (add ? '<button type="button" class="ws-badd" data-admquick="' + k + '" style="--c:' + (col || 'var(--sky)') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg><span>' + esc(t) + ' تازه</span></button>' : '');
   }
@@ -78826,7 +78833,9 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     /* سطر فهرست سریع: کارت کامل همان مورد زیرش باز می‌شود */
     const fr = e.target.closest('[data-afr]');
     if(fr && !e.target.closest('.afr-body')){
-      wrkOpenFastRow(fr);
+      const bd = wrkOpenFastRow(fr);
+      /* ۵۹۱: اگر کارت بازشده پایین‌تر از دید است (گوشی)، صفحه نرم تا سرسطر همان مورد می‌رود */
+      if(bd && bd.classList.contains('open')) requestAnimationFrame(() => { try{ if(bd.getBoundingClientRect().top > innerHeight * .62) scrollToSection(fr); }catch(err){} });
       return;
     }
     if(e.target.closest('#admReview')){
