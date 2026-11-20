@@ -32312,6 +32312,13 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
 :is(html,#z0) :is(body,#z1) :is(.adm-ms,#z3) .ms-pt.ahead > i:not(.ms-ava), :is(html,#z0) :is(body,#z1) :is(.adm-ms,#z3) .ms-pt.ghost > i:not(.ms-ava){width:11px !important;height:11px !important;}
 :is(html,#z0) :is(body,#z1) :is(.adm-ms,#z3) .ms-pt.due > i:not(.ms-ava){width:10px !important;height:10px !important;border-radius:2.5px !important;transform:translate(-50%, -50%) rotate(45deg) !important;}
 :is(html,#z0) :is(body,#z1) :is(.adm-ms,#z3) .ms-pt.now::after{inset:auto !important;top:50%;left:50%;width:14px;height:14px;margin:-7px 0 0 -7px;}
+
+/* ۵۸۰: کاشی‌ها و شاخص‌ها داخل «خلاصه» — تمام‌عرض بالای زبانه، با فاصلهٔ پایین */
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-pane[data-pane="sum"] > .ct4-sum{grid-area:auto !important;grid-column:1 / -1 !important;grid-row:1 !important;margin:0 0 14px !important;padding:0 !important;background:none !important;display:flex;flex-direction:column;gap:10px;}
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-pane[data-pane="sum"] > .ct4-sum > .hrk-row{margin:0 !important;height:auto !important;}
+
+/* ۵۸۰: فیلتر نامهٔ ارسالی/دریافتی در زبانهٔ اسناد (کلیدشان letter-out / letter-in است) */
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="letter-out"] > .cff.k-letter-out, :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .cf-feed[data-k="letter-in"] > .cff.k-letter-in{display:flex !important;}
 </style>
 </head>
 <body class="wpick-idle">
@@ -59798,7 +59805,7 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
             }).join('') + '</div>';
         }).join('') + '</div>';
     const feedRows = [];
-    docs.forEach(x => x.all.forEach(r => feedRows.push({kd: x.kd, r, d: admSentDate(x.kd, r)})));
+    docs.forEach(x => x.all.forEach(r => feedRows.push({kd: x.kd, tk: x.tk, r, d: admSentDate(x.kd, r)})));
     feedRows.sort((a, b) => { const x = faToDate(a.d), y = faToDate(b.d); return (y ? y.getTime() : 0) - (x ? x.getTime() : 0); });
     const stateOf = (kd, r) => {
       if(kd === 'statement' && isPaid(r)) return ['تسویه شده', 'ok'];
@@ -59810,11 +59817,11 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
       if(kd === 'design'){ const v = String(pick(r,AD.dStatus) || ''); return [v || '—', /تأیید|اجرا/.test(v) ? 'ok' : (/رد|اصلاح/.test(v) ? 'bad' : '')]; }
       return [notifyLabel(admNotify(kd, r)) || '—', ''];
     };
-    const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.map(({kd, r, d}, fi) => {
+    const feed = feedRows.length ? '<div class="cf-feed">' + feedRows.map(({kd, tk, r, d}, fi) => {
         const [stx, scl] = stateOf(kd, r);
         let al = false; try{ al = !!admCardAlert(kd, r); }catch(e){}
         const ago = d ? daysSince(d) : null;
-        return '<button type="button" class="cff k-' + kd + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
+        return '<button type="button" class="cff k-' + kd + (tk && tk !== kd ? ' k-' + tk : '') + (fi >= 6 ? ' cff-x' : '') + '" data-goto-kind="' + kd + '" data-goto-id="' + esc(String(pick(r,AD.id) || '')) + '">'
           + '<span class="cff-ic">' + (CF_I[kd] || '') + '</span>'
           + '<span class="cff-tx"><b>' + esc(arTitleOf(kd, r)) + '</b>'
           +   '<small>' + (d ? esc(admDate(d)) : 'بدون تاریخ') + (ago != null ? ' · ' + faDur(ago) + ' پیش' : '') + '</small></span>'
@@ -60174,11 +60181,16 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
       const sm = sp.querySelector(':scope > .hr-pane[data-pane="sum"]');
       const v = sm && sm.querySelector(':scope > .ctv-row'), k = sm && sm.querySelector(':scope > .hrk-row'), rg = sp.querySelector(':scope > .hr-rng2');
       if(!v && !k) return;
+      /* ۵۸۰: بالای زبانه‌ها فقط بازهٔ زمانی؛ کاشی‌های وضعیت و شاخص‌ها زیرمجموعهٔ «خلاصه» (اول همان زبانه) */
       const ov = document.createElement('div'); ov.className = 'ct4-ov';
       const hd = document.createElement('div'); hd.className = 'ct4-ovh';
-      if(v) hd.appendChild(v); if(rg) hd.appendChild(rg);
-      ov.appendChild(hd); if(k) ov.appendChild(k);
+      if(rg) hd.appendChild(rg);
+      ov.appendChild(hd);
       sp.insertBefore(ov, sp.firstChild);
+      const ov2 = document.createElement('div'); ov2.className = 'ct4-ov ct4-sum';
+      const hd2 = document.createElement('div'); hd2.className = 'ct4-ovh';
+      if(v){ hd2.appendChild(v); ov2.appendChild(hd2); } if(k) ov2.appendChild(k);
+      sm.insertBefore(ov2, sm.firstChild);
       /* ۵۶۳: آیکون زبانه‌ها */
       const TI = {sum:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>', work:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', fin:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h4"/>', docs:'<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'};
       sp.querySelectorAll(':scope > .hr-tabs > [data-hrtab]').forEach(b => { const d = TI[b.dataset.hrtab]; if(d && !b.querySelector('svg.tbi')) b.insertAdjacentHTML('afterbegin', '<svg class="tbi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'); });
