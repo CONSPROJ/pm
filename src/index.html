@@ -32161,6 +32161,13 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
 .dsc-c > b{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .dsc-c select{max-width:48%;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--field);font:inherit;font-size:12.5px;color:var(--ink);padding:0 8px;}
 :is(html,#z0) :is(body,#z1) .dsc-c.hl{background:color-mix(in srgb, var(--sky) 8%, transparent);}
 @media (max-width:700px){ .dsc-f{grid-template-columns:1fr;gap:2px;} .dsc-r{align-items:start;} .dsc-ed{padding-inline-start:0;} }
+
+/* ۵۶۵: چیپ رشته در سربرگ کارت پیمانکار */
+:is(html,#z0) :is(body,#z1) .ct4-meta > .ct-dsc{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;color:hsl(var(--dh) 50% 36%);background:hsl(var(--dh) 60% 50% / .1);box-shadow:inset 0 0 0 1px hsl(var(--dh) 50% 50% / .25);transition:background .15s;}
+:is(html,#z0) :is(body,#z1) .ct4-meta > .ct-dsc:hover{background:hsl(var(--dh) 60% 50% / .18);}
+:is(html,#z0) :is(body,#z1) .ct4-meta > .ct-dsc svg{width:13px;height:13px;flex:none;}
+:is(html,#z0) :is(body,#z1) .ct4-meta > .ct-dsc.none{color:var(--muted);background:transparent;box-shadow:inset 0 0 0 1px var(--line);border-style:dashed;}
+:is([data-theme="dark"],#z0) :is(body,#z1) .ct4-meta > .ct-dsc:not(.none){color:hsl(var(--dh) 70% 72%);background:hsl(var(--dh) 50% 50% / .16);}
 </style>
 </head>
 <body class="wpick-idle">
@@ -56865,7 +56872,7 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   /* عکس کارت پیمانکار و طرف‌ها؛ مدیر سامانه و مسئول پرونده‌ها دکمهٔ تغییر عکس دارند */
   function ctAvaHtml(name){
     let ed = false; try{ ed = isAdminUser() || can('ctr.contact') || can('ctr.edit') || can('write.adm') || rawLevel() <= 2; }catch(e){}
-    return '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + ctrDiscBadge(name) + (ed ? '<button type="button" class="ct-cam" data-ctava="' + esc(name) + '" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '') + '</span>';
+    return '<span class="ct-ava">' + avatarHtml(name, 'lg', true) + (ed ? '<button type="button" class="ct-cam" data-ctava="' + esc(name) + '" title="تغییر عکس" aria-label="تغییر عکس">' + PF_I.cam + '</button>' : '') + '</span>';
   }
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-ctava]'); if(!b) return;
@@ -56992,9 +56999,11 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
       if(!discIcon(d)){ try{ if(!DISC_C.__ct){ const M = new Map(); (adminAll || []).forEach(a => { if(a.kind !== 'contract' || !a.row) return; const t = String(pick(a.row,AD.cTitle) || '') + ' ' + String(pick(a.row,AD.cSubject) || '') + ' ' + String(pick(a.row,AD.cType) || '');
             ctrPartySplit(String(pick(a.row,AD.cParty) || '')).forEach(pp => { const k = nameKey(ctrCanon(pp)); if(k && discIcon(t)) M.set(k, t); }); }); DISC_C.__ct = M; }
           d = DISC_C.__ct.get(nameKey(ctrCanon(n))) || d; }catch(e){} }
-      const ic = discIcon(d); DISC_C.set(n, ic ? '<i class="ava-dc" style="--dh:' + ic.h + '" title="' + esc(ic.t) + '" data-discfor="' + esc(n) + '">' + ic.svg + '</i>' : ''); }
-    return DISC_C.get(n); }
-  window.ctrDiscBadge = ctrDiscBadge;
+      DISC_C.set(n, discIcon(d)); }
+    const ic = DISC_C.get(n); return ic ? '<i class="ava-dc" style="--dh:' + ic.h + '" title="' + esc(ic.t) + '" data-discfor="' + esc(n) + '">' + ic.svg + '</i>' : ''; }
+  /* ۵۶۵: رشتهٔ یک پیمانکار ({h,t,svg} یا null) — برای چیپ رشته در سربرگ کارت */
+  function ctrDiscInfo(n){ if(!n) return null; ctrDiscBadge(n); return DISC_C.get(n) || null; }
+  window.ctrDiscBadge = ctrDiscBadge; window.ctrDiscInfo = ctrDiscInfo;
   function avatarHtml(name, cls, noCount){
     if(!name) return '';
     const img = avatarOf(name);
@@ -59967,8 +59976,10 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
       let m = t.querySelector('.ct4-meta');
       if(!m){ m = document.createElement('span'); m.className = 'ct4-meta'; t.appendChild(m); }
       t.querySelectorAll(':scope > small, :scope > .ct-ownb').forEach(x => m.appendChild(x));
-      try{ const sm = m.querySelector(':scope > small'); if(sm && !sm.querySelector('svg')){ const ic = window.discIcon(sm.textContent); if(ic){ sm.insertAdjacentHTML('afterbegin', ic.svg); sm.classList.add('has-dc');
-        const ca = bg.querySelector('.mc-head .ct-ava'); if(ca && !ca.querySelector('.ava-dc')) ca.insertAdjacentHTML('beforeend', '<i class="ava-dc" style="--dh:' + ic.h + '" title="' + esc(ic.t) + '" data-discfor="' + esc(name) + '">' + ic.svg + '</i>'); } } }catch(e){}
+      /* ۵۶۵: رشته به‌صورت چیپ کنار نقش (نه نشان روی عکس) — کلیک = صفحهٔ «رشته‌ها و نشان‌ها» */
+      try{ if(!m.querySelector('.ct-dsc')){ const ic = ctrDiscInfo(name) || window.discIcon((m.querySelector(':scope > small') || {}).textContent || '');
+        m.insertAdjacentHTML('afterbegin', ic ? '<button type="button" class="ct-dsc" style="--dh:' + ic.h + '" data-discfor="' + esc(name) + '" title="رشته — برای تغییر بزنید">' + ic.svg + '<span>' + esc(ic.t) + '</span></button>'
+          : '<button type="button" class="ct-dsc none" data-discfor="' + esc(name) + '" title="تعیین رشته">+ رشته</button>'); } }catch(e){}
       const rp = bg.querySelector('.ct-card > .ct-rep'); if(rp) m.appendChild(rp);
     };
     /* نمای کلی (وضعیت، بازه، چهار شاخص) از زبانهٔ خلاصه بالای زبانه‌ها می‌رود و روی همهٔ زبانه‌ها می‌ماند؛ داخل همان .hr-split تا دکمه‌ها کار کنند */
