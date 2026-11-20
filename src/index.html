@@ -32253,6 +32253,14 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   :is(html,#z0) :is(body,#z1) main:has(> .panel.pane-in), :is(html,#z0) :is(body,#z1) .wrap:has(> .panel.pane-in){overflow-x:clip;}
 }
 @media (prefers-reduced-motion:reduce){ :is(html,#z0) :is(body,#z1) .panel.pane-in{animation:none !important;} }
+
+/* ۵۷۳: کاشی وضعیتِ همان زبانه‌ای که باز است پنهان (روی «مالی» کاشی مطالبات، روی «اسناد» کاشی اسناد، روی «کارکرد» کاشی حضور) */
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-split.ct2:has(> .hr-tabs > [data-hrtab="fin"].on) .ct4-ovh .ctv2[data-hrtabgo="fin"],
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-split.ct2:has(> .hr-tabs > [data-hrtab="docs"].on) .ct4-ovh .ctv2[data-hrtabgo="docs"],
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-split.ct2:has(> .hr-tabs > [data-hrtab="work"].on) .ct4-ovh .ctv2[data-hrtabgo="work"]{display:none !important;}
+
+/* ۵۷۳: دسکتاپ هم — ردیف شاخص‌های حضور فقط روی «خلاصه» */
+:is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-split.ct2:has(> .hr-tabs > [data-hrtab].on:not([data-hrtab="sum"])) > .ct4-ov > .hrk-row{display:none !important;}
 </style>
 </head>
 <body class="wpick-idle">
@@ -59098,17 +59106,15 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
               + (amt ? (due > 0 ? vp(dueDays != null && dueDays > 60 ? 'bad' : 'warn', esc(arToman(due)), 'تومان مطالبات باز', 'fin') : vp('ok', 'تسویه', 'همهٔ صورت‌وضعیت‌ها پرداخت شده', 'fin')) : '')
               + (admCrit ? vp('bad', toFa(admCrit) + ' سند', 'بحرانی؛ نیاز به پیگیری', 'docs') : '')
               + '</div>';
-            const sumPane = verdict + '<div class="hrk-row">'
+            const sumPane = verdict + (o.onlyAdm ? '<div hidden>' : '<div class="hrk-row">')
               + (o.onlyAdm ? '' :
                   '<div class="hrk ring"><svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="16"/>'
                   + '<circle class="fg" cx="20" cy="20" r="16" style="--c:' + C2.toFixed(1) + ';--o:' + (C2 * (1 - attPct)).toFixed(1) + '"/></svg>'
                   + '<span><b>' + toFa(present) + '<i>/' + toFa(days.length) + '</i></b><u>روز حضور</u></span></div>'
                   + tile('میانگین روزانه', toFa(avg) + ' نفر', vdW ? '<span class="' + (vdW > 0 ? 'up' : 'dn') + '">' + (vdW > 0 ? '▲ ' : '▼ ') + toFa(Math.abs(vdW)) + ' نفر نسبت به هفتهٔ قبل</span>' : 'در روزهای حضور')
                   + tile('بیشترین نیرو', hiD.men ? toFa(hiD.men) + ' نفر' : '—', hiD.men ? 'در روز ' + dayLabel2(hiD.d) : ''))
-              + (amt ? tile(due > 0 ? 'مطالبات (تومان)' : 'وضعیت مالی', due > 0 ? esc(arToman(due)) : 'تسویه',
-                          due > 0 ? (dueDays != null ? 'قدیمی‌ترین: ' + (dueDays < 60 ? toFa(dueDays) + ' روز' : dueDays < 730 ? toFa(Math.round(dueDays / 30)) + ' ماه' : toFa(Math.round(dueDays / 365)) + ' سال') : toFa(pct) + '٪ پرداخت‌شده') : toFa(pct) + '٪ پرداخت‌شده',
-                          due > 0 ? (dueDays != null && dueDays > 10 ? 'bad' : 'warm') : 'ok')
-                     : tile('وضعیت مالی', 'بدون سند', 'صورت وضعیتی نیست', 'dim'))
+              /* ۵۷۳: مطالبات دیگر اینجا تکرار نمی‌شود (کاشی وضعیت بالا و زبانهٔ مالی دارندش)؛ جایش کارکرد کل بازه به نفر-روز */
+              + (o.onlyAdm ? '' : tile('کارکرد بازه', toFa(series.reduce((t, x) => t + (x.men || 0), 0)) + ' نفر-روز', toFa(present) + ' روز کاری'))
               + '</div>'
               /* نفرات هر روز، بالای افزایش و کاهش نیرو */
               + (o.onlyAdm ? '<div class="hr-note">در این بازه گزارش کارگاهی برای این پیمانکار ثبت نشده؛ فقط پروندهٔ اداری دارد.</div>'
@@ -59330,7 +59336,8 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
                   + '<div class="cf-kpis">'
                   +   '<span><u>کل صورت‌وضعیت‌ها</u><b>' + esc(arToman(amt)) + '</b><small>' + toFa(stAll.length) + ' سند</small></span>'
                   +   '<span class="ok"><u>پرداخت‌شده</u><b>' + esc(arToman(paid)) + '</b><small>' + (payDate ? 'آخرین: ' + esc(admDate(payDate)) : '—') + '</small></span>'
-                  +   '<span class="' + (due > 0 ? 'bad' : 'ok') + '"><u>مانده</u><b>' + (due > 0 ? esc(arToman(due)) : '۰') + '</b><small>' + (openCount ? toFa(openCount) + ' سند باز' : 'تسویه') + '</small></span>'
+                  /* ۵۷۳: «مانده» همان عدد بزرگ بالاست؛ به‌جایش شمار صورت‌وضعیت‌های باز */
+                  +   '<span class="' + (openCount ? 'bad' : 'ok') + '"><u>صورت‌وضعیت باز</u><b>' + (openCount ? toFa(openCount) + ' سند' : '—') + '</b><small>' + (openCount ? 'منتظر پرداخت' : 'همه تسویه') + '</small></span>'
                   + '</div>';
               }
               if(cAmt){
