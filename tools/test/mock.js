@@ -46,6 +46,13 @@ if(process.env.MOCK_REVS){ try{ ds[4].revs = require('fs').readFileSync(process.
 for(let i = 1; i <= 700; i++){ const s = i % 5; tk.push({id: i, title: ['اجرای بلوک‌چینی طبقه ' + (i % 16 + 1), 'نصب داکت‌های تأسیسات', 'بتن‌ریزی سقف', 'کاشی‌کاری سرویس‌ها', 'لوله‌کشی آب و فاضلاب'][i % 5], created_by: ENG[i % 3], approved: true, owner1: i % 4 ? CTR[i % 6] : 'آقای مهدی نعیمی', owner2: '', side: 'اجرایی', position: 'طبقه ' + (i % 16 + 1),
   done: s === 0, doing: s === 1 || s === 2, not_done: s >= 3, start_date: addDays(T0, -30 + i % 20), due_date: addDays(T0, (i % 3 === 0 ? -5 : 10) + (i % 7)), blockers: '', category: ['سفت‌کاری', 'تأسیسات', 'نازک‌کاری'][i % 3], floor: String(i % 16 + 1)}); }
 const people = ENG.concat(['آقای حیدرنیا', 'آقای خان احمدی', 'آقای سامین خواجه‌زاده']).map((n, i) => ({name: n, role: ['کنترل پروژه', 'امور قراردادی', 'مهندس اجرا', 'مدیریت پروژه', 'سرپرست کارگاه', 'مهندس اجرا'][i], level: i === 3 ? 2 : 3, avatar_url: '', must_change: false, active: true, pending: false}));
+/* ۶۰۸: طرف‌های غیرپیمانکار (کارفرما، مشاور، مالک) با نوع ثبت‌شده در پرونده و چند سند، تا کارت کارفرما/مشاور و رنگ طرف‌ها هم آزموده شوند */
+const PTY = [['شرکت توسعهٔ آریا', 'emp'], ['مهندسین مشاور پارس طرح', 'cons'], ['آقای رضایی (مالک)', 'own']];
+const lists = PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})}));
+PTY.forEach(([n, t], j) => {
+  for(let i = 1; i <= 3; i++) lt.push({id: 'lp' + j + i, created_at: '2026-10-01T08:00:00+00:00', date_fa: addDays(T0, -i * 5 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], subject: ['درخواست صورت‌جلسه', 'اعلام نظر نقشه‌ها', 'پیگیری پرداخت'][i - 1], number: 'L-9' + j + i, party: n, sent_date: addDays(T0, -i * 5 - j), notify: 'برون‌سازمانی', owner: ENG[i % 3]});
+  if(t !== 'own') ct.push({id: 'cp' + j, created_at: '2026-06-01T08:00:00+00:00', date_fa: addDays(T0, -40 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[j % 3], title: t === 'emp' ? 'قرارداد اصلی پیمان مدیریت' : 'قرارداد خدمات مشاوره و نظارت', number: 'CP-' + (900 + j), party: n, subject: '', amount: String(12000000000 * (j + 1)), paid: String(4000000000), start_date: addDays(T0, -40 - j), sent_date: addDays(T0, -40 - j), notify: 'برون‌سازمانی', review: 'تایید شده', owner: ENG[j % 3]});
+});
 const prevDay = addDays(T0, -1);
 const dayOf = d => ({rows: activities.filter(r => r.date_fa === d), prev_rows: activities.filter(r => r.date_fa === addDays(d, -1)), issues: issues.filter(r => r.date_fa === d), machines: []});
 function json(route, body, status){ return route.fulfill({status: status || 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(body)}); }
@@ -57,7 +64,7 @@ async function install(page){
     if(/^rpc\/(bundle3|day3|pm_file_urls|pm_file_url)/.test(path)) return json(route, {code: 'PGRST202', message: 'Could not find'}, 404);
     if(path.startsWith('rpc/bundle2') && process.env.FAIL) return json(route, {message:'x'}, 500);
     if(path.startsWith('rpc/bundle2') && process.env.DELAY) await new Promise(r=>setTimeout(r,+process.env.DELAY));
-    if(path.startsWith('rpc/bundle2')){ const d = toEn(body.p_date || T0); return json(route, Object.assign({statements: st, contracts: ct, minutes: mn, letters: lt, tasks: tk, nudges: [], lists: [], people}, dayOf(d))); }
+    if(path.startsWith('rpc/bundle2')){ const d = toEn(body.p_date || T0); return json(route, Object.assign({statements: st, contracts: ct, minutes: mn, letters: lt, tasks: tk, nudges: [], lists, people}, dayOf(d))); }
     if(path.startsWith('rpc/day_only')) return json(route, dayOf(toEn(body.p_date || T0)));
     if(path.startsWith('rpc/pm_whoami')) return json(route, {v: 1, name: process.env.WHO || 'آقای مهدی نعیمی', admin: !process.env.NONADMIN, locked: false});
     if(path.startsWith('rpc/session_epoch')) return json(route, {epoch: 0});

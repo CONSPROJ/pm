@@ -18,7 +18,8 @@ function detect(rootSel){
   /* لایهٔ ثابت/چسبان (نوار پایین، سربرگ چسبان): محتوا عمداً از زیرش رد می‌شود — برخورد دو لایهٔ جدا حساب نمی‌شود */
   const layerOf = el => { for(let e = el; e && e !== document.body; e = e.parentElement){ const ps = getComputedStyle(e).position; if(ps === 'fixed' || ps === 'sticky') return e; } return null; };
   /* کادرِ بُرشِ نزدیک‌ترین والدِ overflow غیرvisible */
-  const clipOf = el => { let r = {left: -1e9, top: -1e9, right: 1e9, bottom: 1e9}; for(let e = el.parentElement; e && e !== document.body; e = e.parentElement){ const c = getComputedStyle(e);
+  /* خود عنصر متن هم اگر overflow:hidden (سه‌نقطه) دارد برش می‌دهد */
+  const clipOf = el => { let r = {left: -1e9, top: -1e9, right: 1e9, bottom: 1e9}; for(let e = el; e && e !== document.body; e = e.parentElement){ const c = getComputedStyle(e);
       if(c.overflowX !== 'visible' || c.overflowY !== 'visible'){ const b = e.getBoundingClientRect(); r = {left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom)}; } } return r; };
   const items = [];
   const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode: n => n.nodeValue.trim().length ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT});
@@ -86,7 +87,7 @@ const SCENES = require('./scenes.js');
       if(r.err){ console.log(dev, th, name, r.err); }
       else if(r.hits.length){ bad += r.hits.length; console.log('✕ ' + dev + ' ' + th + ' ' + name + ' (' + r.hits.length + ')'); r.hits.slice(0, 12).forEach(h => console.log('    ' + h)); }
       else console.log('✓ ' + dev + ' ' + th + ' ' + name + ' (' + r.n + ' متن)');
-      await p.evaluate(() => { document.getElementById('ctProfModal')?.remove(); document.body.classList.remove('ctp-open'); document.body.style.overflow = '';
+      await p.evaluate(() => { document.getElementById('ctProfModal')?.remove(); document.getElementById('acM')?.remove(); document.getElementById('deckModal') && (document.getElementById('deckModal').hidden = true); document.body.classList.remove('ctp-open'); document.body.style.overflow = '';
         document.querySelectorAll('.modal-bg:not([hidden])').forEach(m => { m.hidden = true; }); window.scrollTo(0, 0); });
     }
     await ctx.close();

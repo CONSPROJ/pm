@@ -59,7 +59,7 @@ function audit(rootSel){
       if(!r.err){ sum.tap += r.tap.length; sum.noname += r.noname.length; sum.low += r.low.length;
         console.log('— ' + th + ' ' + nm + ': لمس ' + r.tap.length + ' · تضاد ' + r.low.length + ' · بی‌نام ' + r.noname.length);
         const uniq = a => Array.from(new Set(a)).slice(0, 6); uniq(r.tap).forEach(x => console.log('   لمس  ' + x)); uniq(r.low).forEach(x => console.log('   تضاد ' + x)); uniq(r.noname).forEach(x => console.log('   بی‌نام ' + x)); }
-      await p.evaluate(() => { document.getElementById('ctProfModal')?.remove(); document.body.classList.remove('ctp-open'); document.body.style.overflow = ''; document.querySelectorAll('.modal-bg:not([hidden])').forEach(m => { m.hidden = true; }); window.scrollTo(0, 0); });
+      await p.evaluate(() => { document.getElementById('ctProfModal')?.remove(); document.getElementById('acM')?.remove(); document.getElementById('deckModal') && (document.getElementById('deckModal').hidden = true); document.body.classList.remove('ctp-open'); document.body.style.overflow = ''; document.querySelectorAll('.modal-bg:not([hidden])').forEach(m => { m.hidden = true; }); window.scrollTo(0, 0); });
     }
     await ctx.close();
   }
