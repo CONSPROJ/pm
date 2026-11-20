@@ -32190,6 +32190,12 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .ct4-ov > .hrk-row > .hrk.ring > span b{font-size:14px !important;}
   :is(html,#z0) :is(body,#z1) #ctProfModal#ctProfModal .ct4 .hr-split.ct2:has(> .hr-tabs > [data-hrtab].on:not([data-hrtab="sum"])) > .ct4-ov > .hrk-row{display:none !important;}
 }
+
+/* ۵۶۷: اعلانِ چندنفره — دو عکس روی هم */
+:is(html,#z0) :is(body,#z1) #notifBody .nr-av.nr-av2 > .ava{position:absolute;width:26px !important;height:26px !important;font-size:10px !important;box-shadow:0 0 0 2px var(--surface);}
+:is(html,#z0) :is(body,#z1) #notifBody .nr-av.nr-av2 > .ava:first-child{top:0;inset-inline-start:0;}
+:is(html,#z0) :is(body,#z1) #notifBody .nr-av.nr-av2 > .ava:nth-child(2){bottom:0;inset-inline-end:0;}
+:is(html,#z0) :is(body,#z1) #notifBody .nr-av.nr-av2 > i{bottom:-4px;inset-inline-end:auto;inset-inline-start:-4px;}
 </style>
 </head>
 <body class="wpick-idle">
@@ -36326,6 +36332,8 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
         text: (function(){ const p = ndParse(pick(r,N.msg)); return (p.urg ? p.urg + ' · ' : '') + p.text + (p.dl ? ' · مهلت: ' + p.dl : ''); })(),
         urg: ndParse(pick(r,N.msg)).urg,
         time: pick(r,N.time),
+        /* ۵۶۷: پرداخت و … — تاریخ خودِ رویداد (نه روز ثبتش) از متن پیام: «… در ۱۴۰۵/۰۷/۱۱ واریز شد» */
+        evDate: isDone ? feedEvDate(pick(r,N.msg)) : '', evLbl: isDone && /پرداخت|واریز|تسویه/.test(String(pick(r,N.title) || '') + String(pick(r,N.msg) || '')) ? 'تاریخ پرداخت' : 'تاریخ رویداد',
         seen: pick(r,N.state) === 'خوانده‌شده' || lseen.has('nd:' + pick(r,N.id)),
         goto:{kind: isDone ? (/^(statement|contract)$/.test(pr.target) ? pr.target : 'task') : (pick(r,N.kind) || ''),
               id: pick(r,N.itemId) || '', who: pick(r,N.to) || ''},
@@ -36576,10 +36584,15 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     const goto = x.goto && (x.goto.id || x.goto.kind === 'general');
     const shortNm = n => String(n || '').replace(/^(آقای|خانم|مهندس|دکتر)\s+/, '');
     const w = x.time ? (feedWhen(x.time) || '') : '';
-    const tm = /^(امروز|دیروز)/.test(w) ? (clockOf(x.time) || w.replace(/ · .*/, '')) : w.replace(/ · .*/, '');
+    const evD = x.evDate ? feedDayFa(x.evDate) : '';
+    const tm = evD ? evD : /^(امروز|دیروز)/.test(w) ? (clockOf(x.time) || w.replace(/ · .*/, '')) : w.replace(/ · .*/, '');
     const clean = t => String(t || '').replace(/⟦ref:[a-z]+:[^:⟧]+:([^⟧]*)⟧/g, (m0, t2) => t2 || 'پیوست').replace(/\s+/g, ' ').trim();
     const tx = clean(x.text);
-    const whoF = x.who && nameKey(x.who) !== nameKey(activeUserName()) ? x.who : '', who = shortNm(whoF);
+    const whoF = x.who && nameKey(x.who) !== nameKey(activeUserName()) ? x.who : '';
+    /* ۵۶۷: موردی که به چند نفر سپرده شده: همه نام برده می‌شوند (خودم = «شما»)، نه فقط اولی */
+    const meK = nameKey(activeUserName()), ppl = (x.avatars && x.avatars.length > 1 && !(x.dcat in {nudge:1, comment:1, mention:1})) ? x.avatars.filter((n, i, a) => n && a.findIndex(y => nameKey(y) === nameKey(n)) === i) : null;
+    const pplTx = ppl ? ppl.map(n => nameKey(n) === meK ? 'شما' : shortNm(n)).join('، ') : '';
+    const who = pplTx || shortNm(whoF);
     /* ۵۳۳: جملهٔ کامل و رسمی: «فلانی برای «سند» یادآوری فرستاد» و پیام در خط دوم داخل گیومه */
     const T = '<b class="nr-o">' + esc(x.title) + '</b>', W = '<b class="nr-w">' + esc(who) + '</b>';
     const VERB = {nudge: W + ' برای ' + T + ' یادآوری فرستاد', comment: W + ' روی ' + T + ' نظر گذاشت', mention: W + ' در ' + T + ' از شما نام برد', done: W + ' ' + T + ' را تکمیل‌شده اعلام کرد'};
@@ -36591,7 +36604,7 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     const unseenG = grp.filter(y => !y.seen);
     /* ۵۳۵: با زدن ردیف باز می‌شود: متن کامل، جزئیات، پیام‌های دیگر همان مورد و دکمه‌های اقدام */
     const avs = (x.avatars && x.avatars.length ? x.avatars : []).filter(n => nameKey(n) !== nameKey(activeUserName()));
-    const info = [['نوع', x.dcat === 'critical' ? 'بحرانی' + (x.goto && FEED_KIND_LBL[x.goto.kind] ? ' · ' + FEED_KIND_LBL[x.goto.kind] : '') : (FEED_SHORT[x.dcat] || '')], ['زمان', w], ['وضعیت', stg], [x.dcat === 'critical' ? 'مسئول' : 'فرستنده', avs.length ? avs.map(shortNm).join('، ') : who]].filter(r => r[1]);
+    const info = [['نوع', x.dcat === 'critical' ? 'بحرانی' + (x.goto && FEED_KIND_LBL[x.goto.kind] ? ' · ' + FEED_KIND_LBL[x.goto.kind] : '') : (FEED_SHORT[x.dcat] || '')], x.evDate ? [x.evLbl || 'تاریخ رویداد', toFa(x.evDate)] : ['', ''], [x.evDate ? 'زمان ثبت' : 'زمان', w], ['وضعیت', stg], [ppl || x.dcat === 'critical' || x.dcat === 'due' ? 'مسئول' : 'فرستنده', pplTx || (avs.length ? avs.map(shortNm).join('، ') : shortNm(whoF))]].filter(r => r[1]);
     const btn = (cls, attrs, label) => '<button type="button" class="nr-xb' + (cls ? ' ' + cls : '') + '" ' + attrs + '>' + label + '</button>';
     const acts = (goto ? btn('pri', 'data-fgo="1"', x.openCm ? 'خواندن نظرها' : 'مشاهده') : '')
       + (goto && !x.openCm && x.goto.id && x.goto.id !== 'general' ? btn('', 'data-fgo="doc"', feedGoLabel(x.goto)) : '')
@@ -36603,7 +36616,8 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
     return '<div class="nr' + (x.seen ? '' : ' new') + (feedOpen.has(String(x.fid)) ? ' open' : '') + '" style="--c:' + (FEED_COLOR[x.dcat] || 'var(--sky)') + ';--i:' + Math.min(i || 0, 12) + '" data-fid="' + esc(x.fid) + '" role="button" tabindex="0" aria-expanded="' + feedOpen.has(String(x.fid)) + '"'
       + (goto ? ' data-goto-kind="' + esc(x.goto.kind) + '" data-goto-id="' + esc(x.goto.id || 'general') + '" data-goto-who="' + esc(x.goto.who || '') + '"' + (x.openCm ? ' data-goto-cm="1"' : '') : '') + '>'
       + '<div class="nr-h">'
-      + (whoF && x.dcat !== 'critical' ? '<span class="nr-av">' + avatarHtml(whoF, '', true) + '<i>' + (FEED_ICON[x.dcat] || '') + '</i></span>' : '<span class="nr-ic">' + (FEED_ICON[x.dcat] || FEED_ICON[x.cat] || '') + '</span>')
+      + (ppl && x.dcat !== 'critical' ? '<span class="nr-av nr-av2">' + ppl.slice(0, 2).map(n => avatarHtml(n, '', true)).join('') + '<i>' + (FEED_ICON[x.dcat] || '') + '</i></span>'
+        : whoF && x.dcat !== 'critical' ? '<span class="nr-av">' + avatarHtml(whoF, '', true) + '<i>' + (FEED_ICON[x.dcat] || '') + '</i></span>' : '<span class="nr-ic">' + (FEED_ICON[x.dcat] || FEED_ICON[x.cat] || '') + '</span>')
       + '<span class="nr-b"><span class="nr-l1">' + line1 + (grp.length ? ' <em>' + toFa(grp.length + 1) + ' پیام</em>' : '') + '</span>' + (meta ? '<small' + (quote ? ' class="q"' : '') + '>' + esc(meta) + '</small>' : '') + '</span>'
       + '<span class="nr-r"><time>' + esc(tm) + '</time><i class="nr-chev" aria-hidden="true"></i></span></div>'
       + '<div class="nr-x">' + (tx ? '<p class="nr-msg">' + esc(quote ? '«' + tx + '»' : tx) + '</p>' : '')
@@ -55911,6 +55925,12 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
 
   // «2026-08-30 17:23:04» → «۱۷:۲۳»
   /* زمان اعلان با روز: «امروز ۱۴:۲۰»، «دیروز ۹:۰۵»، «۲۸ مهر · ۱۴:۲۰» (سال دیگر: با سال) */
+  /* ۵۶۷: تاریخ رویداد داخل متن اعلان (اولین «در YYYY/MM/DD») و برچسب کوتاهش (امروز/دیروز/۱۱ مهر) */
+  function feedEvDate(msg){ const m = toEn(String(msg || '')).match(/در\s+(1[34]\d\d)\/(\d{1,2})\/(\d{1,2})/); return m ? m[1] + '/' + m[2].padStart(2, '0') + '/' + m[3].padStart(2, '0') : ''; }
+  function feedDayFa(sh){ const m = String(sh || '').match(/^(\d{4})\/(\d{2})\/(\d{2})$/); if(!m) return '';
+    const td = toEn(String(todayShamsi() || '')).replace(/-/g, '/'); let yd = ''; try{ const d0 = new Date(); d0.setDate(d0.getDate() - 1); const k = g2j(d0.getFullYear(), d0.getMonth() + 1, d0.getDate()); yd = k[0] + '/' + String(k[1]).padStart(2, '0') + '/' + String(k[2]).padStart(2, '0'); }catch(e){}
+    return sh === td ? 'امروز' : sh === yd ? 'دیروز' : toFa(+m[3]) + ' ' + (FA_MONTHS[+m[2] - 1] || '') + (m[1] !== td.slice(0, 4) ? ' ' + toFa(m[1]) : ''); }
+  window.feedEvDate = feedEvDate; window.feedDayFa = feedDayFa;
   function feedWhen(stamp){
     const p = stampParts(stamp); if(!p || !p.y) return '';
     let j = null; try{ j = p.y > 1700 ? g2j(p.y, p.m, p.d) : [p.y, p.m, p.d]; }catch(e){ return ''; }
@@ -66038,7 +66058,8 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
         : (payIn && !payIn.fin
             ? docT + ': ' + arToman(amt) + ' تومان در ' + toFa(payIn.date) + ' واریز شد'
               + (fullAmt ? ' (جمع ' + arToman(totalPaid) + ' از ' + arToman(fullAmt) + ' تومان)' : '') + '؛ ثبت: ' + me + '.'
-            : docT + ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان' + (payIn ? ' در ' + toFa(payIn.date) : '') + ')' : '') + ' و تسویه شد؛ ثبت: ' + me + '.');
+            : (function(){ const pd = String((payIn && payIn.date) || values['تاریخ پرداخت'] || pick(before,AD.sPayDate) || '').trim();
+                return docT + ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان)' : '') + (pd ? ' در ' + toFa(pd) : '') + ' و تسویه شد؛ ثبت: ' + me + '.'; })());
       const rcp = milestoneRecipients();
       if(ev === 'sent') empHolderNames().forEach(n => { if(!rcp.some(x => nameKey(x) === nameKey(n))) rcp.unshift(n); });
       for(const w of (ev === 'sent' ? rcp.filter(x => nameKey(x) !== nameKey(me)) : rcp)){
