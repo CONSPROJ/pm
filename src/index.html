@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261120162507">
+<meta name="pm-build" content="20261120163818">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -28827,6 +28827,10 @@
   :is(html,#z0) :is(body,#z1) #xlHubM .xlh-tw{max-height:52vh;}
   .xlh-t td.nt.w em{color:var(--warn, #b7791f);}
   #xlHubM .xlh-bd > *{flex-shrink:0;}
+  .xlh-undo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:12px;border:1px dashed var(--line);font-size:12px;color:var(--muted);} .xlh-undo b{color:var(--ink);}
+  .xlh-dk select{height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12px;padding:0 8px;}
+  .xlh-t td.st em.up{color:var(--sky);}
+  .xlh-t tr.xlh-drow td{padding:0 10px 10px !important;border-top:0 !important;} .xlh-t tr.xlh-drow span{display:inline-block;margin:0 0 4px 8px;padding:3px 10px;border-radius:8px;font-size:11px;background:color-mix(in srgb, var(--sky) 9%, transparent);color:var(--ink);}
   #adminView.xl-drop{outline:2.5px dashed color-mix(in srgb, #1f7a4a 70%, transparent);outline-offset:-6px;border-radius:18px;}
   #adminView.xl-drop::after{content:'فایل اکسل را رها کنید تا سوابق وارد شود';position:fixed;inset:auto 0 40px 0;margin:auto;width:max-content;max-width:90vw;padding:12px 20px;border-radius:14px;background:#1f7a4a;color:#fff;font-weight:800;font-size:14px;z-index:9000;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);pointer-events:none;}
   #xlHubM .xlh-tw{flex:0 0 auto;min-height:min(260px, 40vh);}
@@ -89024,7 +89028,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function xlHScore(c, h){
     h = xlNk(h); if(!h) return 0;
     const ks = xlHk(c); if(ks.indexOf(h) !== -1) return 3;
-    let s = 0; ks.forEach(k => { if(k.length >= 3 && h.length >= 3 && (h.indexOf(k) !== -1 || k.indexOf(h) !== -1)) s = Math.max(s, 2); });
+    /* ۶۰۵: تطبیق بخشی — نام بلندتر (دقیق‌تر) برنده است: «مبلغ پرداختی (ریال)» به «مبلغ پرداختی» می‌رسد نه به «مبلغ» */
+    let s = 0; ks.forEach(k => { if(k.length >= 3 && h.length >= 3 && (h.indexOf(k) !== -1 || k.indexOf(h) !== -1)) s = Math.max(s, 2 + Math.min(k.length, h.length) / 100); });
     return s;
   }
   /* بهترین وصل ستون‌ها در یک ردیف: جفت‌های پرامتیاز اول، هر ستون فایل فقط یک بار */
@@ -89111,17 +89116,27 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   /* تکراری: در سامانه یا دو بار در همین فایل (کلید هر مشخصه: spec.dupKey) */
   function xlDups(spec, rows){
     if(!spec.dupKey) return;
-    let have = new Set(); try{ have = spec.dupHave ? spec.dupHave() : new Set(); }catch(e){}
+    let have = new Set(); try{ have = spec.dupMap ? spec.dupMap() : (spec.dupHave ? spec.dupHave() : new Set()); }catch(e){}
     const seen = new Map();
-    rows.forEach(r => { delete r.dup; if(Object.keys(r.err).length) return; let k = ''; try{ k = spec.dupKey(r.o); }catch(e){} if(!k) return;
-      if(have.has(k)) r.dup = 'در سامانه هست'; else if(seen.has(k)) r.dup = 'تکرار سطر ' + toFa(seen.get(k)); else seen.set(k, r.line); });
+    rows.forEach(r => { delete r.dup; delete r.ex; delete r.diff; if(Object.keys(r.err).length) return; let k = ''; try{ k = spec.dupKey(r.o); }catch(e){} if(!k) return;
+      if(have.has(k)){ r.dup = 'در سامانه هست';
+        /* ۶۰۵: سند موجودِ همان ردیف و تفاوت خانه‌های پرشده با آن (برای «به‌روزرسانی موجودها») */
+        const ex = have.get ? have.get(k) : null; if(ex && spec.diff){ r.ex = ex; try{ r.diff = spec.diff(r.o, ex); }catch(e){ r.diff = null; } } }
+      else if(seen.has(k)) r.dup = 'تکرار سطر ' + toFa(seen.get(k)); else seen.set(k, r.line); });
   }
   function xlRecheck(i){
     const S = xl.spec, r = xl.res && xl.res.rows[i]; if(!S || !r) return;
     const n = xlRow(S, r.raw, xl.res.hdr); r.o = n.o; r.err = n.err; r.note = n.note; xlDups(S, xl.res.rows);
   }
   /* ---------- پنجره ---------- */
-  const xl = {k: '', spec: null, res: null, src: null, busy: false, dupOn: false};
+  const xl = {k: '', spec: null, res: null, src: null, busy: false, dupOn: false, dupMode: 'skip'};
+  /* دسته‌بندی ردیف‌ها بنا به انتخاب تکراری‌ها: تازه، به‌روزرسانی، رد */
+  const xlUpd = r => xl.dupMode === 'update' && r.dup && r.ex && r.diff && r.diff.n > 0 && !r.done;
+  const xlNew = r => !Object.keys(r.err).length && !r.done && (!r.dup || xl.dupMode === 'add');
+  /* آخرین ورود هر بخش (در همین دستگاه، برای هر پروژه): شناسهٔ سندهای تازه و مقدار قبلیِ سندهای به‌روزشده */
+  const xlUndoK = S => { let pj = ''; try{ pj = (document.getElementById('projectName') || {}).value || ''; }catch(e){} return 'siteLogM.xlUndo.v1:' + pj + ':' + (S && (S.kindOf || S.title) || ''); };
+  function xlUndoGet(S){ try{ const v = JSON.parse(localStorage.getItem(xlUndoK(S)) || 'null'); return v && Date.now() - v.at < 14 * 864e5 ? v : null; }catch(e){ return null; } }
+  function xlUndoSet(S, v){ try{ if(v) localStorage.setItem(xlUndoK(S), JSON.stringify(v)); else localStorage.removeItem(xlUndoK(S)); }catch(e){} }
   function xlModal(){
     let m = document.getElementById('xlHubM'); if(m) return m;
     m = document.createElement('div'); m.id = 'xlHubM'; m.className = 'modal-bg'; m.hidden = true;
@@ -89132,7 +89147,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     m.addEventListener('change', e => {
       if(e.target.matches('[data-xlfile]') && e.target.files[0]){ const f = e.target.files[0]; e.target.value = ''; xlTake(f); return; }
       if(e.target.matches('[data-xlmap]')){ xl.src.map[+e.target.dataset.xlmap] = +e.target.value; xlParse(xl.spec); xlPaint(); return; }
-      if(e.target.matches('[data-xldup]')){ xl.dupOn = e.target.checked; xlPaint(); return; } });
+      if(e.target.matches('[data-xldupm]')){ xl.dupMode = e.target.value; xl.dupOn = xl.dupMode === 'add'; xlPaint(); return; } });
     /* چسباندن خانه‌های اکسل */
     m.addEventListener('paste', e => { const t = e.clipboardData && e.clipboardData.getData('text/plain'); if(!t || !/\t|\n/.test(t)) return;
       if(e.target.closest && e.target.closest('[data-xle]')) return; e.preventDefault(); xlTakeText(t); });
@@ -89162,6 +89177,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
                  + '<button type="button" class="xlh-b ghost" data-xla="tpl">' + XL_I.doc + '<span>فایل نمونهٔ خالی (اختیاری)</span></button>' : '') + '</div>'
              : '<small>ورود گروهی برای این بخش هنوز فعال نیست؛ دانلود کار می‌کند.</small>')
       + '</div></div>'
+      + (function(){ const u = xlUndoGet(S); return u ? '<div class="xlh-undo"><span>آخرین ورود: <b>' + esc(u.file || 'اکسل') + '</b> · ' + esc(u.d) + ' · ' + [u.n ? toFa(u.n) + ' سند تازه' : '', u.u ? toFa(u.u) + ' به‌روزرسانی' : ''].filter(Boolean).join('، ') + '</span><button type="button" class="xlh-b" data-xla="undo">↶ برگرداندن</button></div>' : ''; })()
       + (S.cols ? '<details class="xlh-cols"><summary>ستون‌هایی که سامانه می‌شناسد (' + toFa(S.cols.length) + ')</summary><div>' + S.cols.map(c => '<span class="' + (c.req ? 'rq' : '') + '"><b>' + esc(c.t) + (c.req ? ' *' : '') + '</b><small>' + esc(XL_T[c.type || 'text'] || '') + (c.help ? ' — ' + esc(c.help) : '') + (c.alias && c.alias.length ? ' · نام‌های دیگر: ' + esc(c.alias.slice(0, 5).join('، ')) : '') + '</small></span>').join('') + '</div></details>' : '');
     const ta = B.querySelector('.xlh-paste'); if(ta) ta.addEventListener('input', () => { if(/\t/.test(ta.value) && /\n/.test(ta.value)){ const t = ta.value; ta.value = ''; xlTakeText(t); } });
   }
@@ -89169,7 +89185,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function xlPreviewHtml(){
     const S = xl.spec, R = xl.res, C = S.cols || [], src = xl.src, sh = src.sheets[src.si], H = sh.aoa[src.hi] || [];
     const bad = R.rows.filter(r => Object.keys(r.err).length).length, dup = R.rows.filter(r => !Object.keys(r.err).length && r.dup).length;
-    const good = R.rows.filter(r => !Object.keys(r.err).length && (!r.dup || xl.dupOn) && !r.done).length, done = R.rows.filter(r => r.done).length;
+    const good = R.rows.filter(xlNew).length, upd = R.rows.filter(xlUpd).length, done = R.rows.filter(r => r.done).length;
+    const sysDup = R.rows.filter(r => !Object.keys(r.err).length && r.ex).length, sysChg = R.rows.filter(r => r.ex && r.diff && r.diff.n > 0 && !r.done).length;
     const mapped = C.filter((c, j) => src.map[j] >= 0).length, unused = H.map((h, i) => [h, i]).filter(([h, i]) => String(h).trim() && src.map.indexOf(i) === -1);
     /* پیشنهاد نوع سند دیگر وقتی ستون‌های فایل به آن بیشتر می‌خورد */
     let sug = ''; if(S.kindOf){ let bk = '', bs = src.score || 0; (S.subs || []).forEach(([k]) => { if(k === xl.k || !XL_SPECS[k]) return; const g = xlGuess(XL_SPECS[k], sh.aoa); if(g && g.score > bs + 2){ bs = g.score; bk = k; } });
@@ -89191,20 +89208,28 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
             const tx = c.type === 'money' && typeof v === 'number' ? toFa(v.toLocaleString('en')) : toFa(String(v == null ? '' : v));
             return er ? '<td class="er"><span contenteditable="true" spellcheck="false" data-xle="' + i + '|' + esc(c.k) + '" title="برای اصلاح بزنید و بنویسید">' + esc(String(r.raw[c.k] || '')) + '</span><em>' + esc(er) + '</em></td>'
               : '<td' + (nt ? ' class="nt' + (nt.charAt(0) === '!' ? ' w' : '') + '"' : '') + '>' + esc(tx) + (nt ? '<em>' + esc(nt.replace(/^!/, '')) + '</em>' : '') + '</td>'; }).join('')
-            + '<td class="st">' + (r.done ? '✓' : e ? '✕' : r.dup ? '<em title="' + esc(r.dup) + '">' + esc(xl.dupOn ? 'تکراری · ثبت می‌شود' : r.dup) + '</em>' : '') + '</td></tr>'; }).join('')
+            + '<td class="st">' + (r.done ? '✓' : e ? '✕' : r.dup ? (xl.dupMode === 'update' && r.ex
+                ? (r.diff && r.diff.n ? '<em class="up" title="' + esc(r.diff.lines.join('\n')) + '">به‌روز می‌شود</em>' : '<em>بدون تغییر</em>')
+                : '<em title="' + esc(r.dup) + '">' + esc(xl.dupMode === 'add' ? 'تکراری · ثبت می‌شود' : r.dup) + '</em>') : '') + '</td></tr>'
+            /* ۶۰۵: تغییرات به‌روزرسانی در یک سطر تمام‌عرض زیر همان ردیف */
+            + (xl.dupMode === 'update' && r.ex && r.diff && r.diff.n && !r.done ? '<tr class="xlh-drow"><td></td><td colspan="' + (C.length + 1) + '">' + r.diff.lines.map(l => '<span>' + esc(l) + '</span>').join('') + '</td></tr>' : ''); }).join('')
       + '</tbody></table>' + (R.rows.length > 400 ? '<div class="xlh-more">… و ' + toFa(R.rows.length - 400) + ' ردیف دیگر (همه ثبت می‌شوند)</div>' : '') + '</div>'
       + (bad ? '<small class="xlh-tip">خانه‌های قرمز را همین‌جا بزنید و درست کنید، یا «ردیف‌های خطادار» را دانلود، در اکسل اصلاح و دوباره بدهید.</small>' : '')
       + '<div class="xlh-prog" hidden><i></i><span></span></div>'
       + '<div class="xlh-ft"><button type="button" class="xlh-b" data-xla="back">فایل دیگر</button>'
       + (bad ? '<button type="button" class="xlh-b" data-xla="bad">' + XL_I.dl + '<span>ردیف‌های خطادار</span></button>' : '')
-      + (dup ? '<label class="xlh-dk"><input type="checkbox" data-xldup' + (xl.dupOn ? ' checked' : '') + '> تکراری‌ها هم ثبت شوند</label>' : '')
+      + (dup ? '<label class="xlh-dk"><span>تکراری‌ها:</span><select data-xldupm>'
+          + '<option value="skip"' + (xl.dupMode === 'skip' ? ' selected' : '') + '>رد شوند</option>'
+          + (S.update && sysDup ? '<option value="update"' + (xl.dupMode === 'update' ? ' selected' : '') + '>موجودها به‌روز شوند (' + toFa(sysChg) + ' تغییر)</option>' : '')
+          + '<option value="add"' + (xl.dupMode === 'add' ? ' selected' : '') + '>دوباره ثبت شوند</option></select></label>' : '')
       + '<span class="xlh-sp"></span>'
-      + (good ? '<button type="button" class="xlh-b pri" data-xla="save">' + XL_I.up + '<span>ثبت ' + toFa(good) + ' ردیف</span></button>' : '') + '</div>';
+      + ((good || upd) ? '<button type="button" class="xlh-b pri" data-xla="save">' + XL_I.up + '<span>' + [good ? 'ثبت ' + toFa(good) + ' ردیف' : '', upd ? 'به‌روزرسانی ' + toFa(upd) : ''].filter(Boolean).join(' + ') + '</span></button>' : '')
+      + (xlUndoGet(S) ? '<button type="button" class="xlh-b ghost" data-xla="undo">↶ برگرداندن آخرین ورود</button>' : '') + '</div>';
   }
   function xlStart(src){
     const S = xl.spec;
     if(!src.sheets.length){ showDialog('warn', 'ردیفی نیست', 'در این فایل داده‌ای پیدا نشد.'); return; }
-    xl.src = xlFit(S, src); xl.dupOn = false; xlParse(S);
+    xl.src = xlFit(S, src); xl.dupOn = false; xl.dupMode = 'skip'; xlParse(S);
     if(!xl.res.rows.length){ showDialog('warn', 'ردیفی نیست', 'زیر سرستون‌ها ردیفی پیدا نشد.'); xl.res = null; xl.src = null; return; }
     xlPaint();
   }
@@ -89230,15 +89255,27 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(S.custom && S.custom.exp){ try{ await S.custom.exp(); }catch(e){ showDialog('err', 'دانلود نشد', friendlyErr(e)); } return; }
       b.disabled = true; try{ const rows = S.rows ? await S.rows() : []; if(S.cols) xlWrite(S, rows, false); else if(S.tables) xlTables(S); }catch(e){ showDialog('err', 'دانلود نشد', friendlyErr(e)); } b.disabled = false; return; }
     if(a === 'save'){
-      const G = xl.res.rows.filter(r => !Object.keys(r.err).length && !r.done && (!r.dup || xl.dupOn)); if(!G.length || xl.busy) return;
+      const G = xl.res.rows.filter(xlNew), U = S.update ? xl.res.rows.filter(xlUpd) : []; if((!G.length && !U.length) || xl.busy) return;
       xl.busy = true; b.disabled = true; const pg = document.querySelector('#xlhB .xlh-prog'); if(pg) pg.hidden = false;
       const prog = (n, t) => { if(!pg) return; pg.querySelector('i').style.width = Math.round(n / t * 100) + '%'; pg.querySelector('span').textContent = toFa(n) + ' از ' + toFa(t); };
-      let ok = 0, fail = 0;
-      try{ const res = await S.save(G.map(r => r.o), prog); ok = res && res.ok != null ? res.ok : G.length; fail = res && res.fail || 0; if(!fail) G.forEach(r => { r.done = true; }); }
+      let ok = 0, fail = 0, upOk = 0; const undo = {at: Date.now(), d: toFa(todayShamsi()), file: xl.res.file || '', created: [], updated: []};
+      try{ if(G.length){ const res = await S.save(G.map(r => r.o), prog); ok = res && res.ok != null ? res.ok : G.length; fail = res && res.fail || 0; (res && res.created || []).forEach(c => undo.created.push(c)); if(!fail) G.forEach(r => { r.done = true; }); } }
       catch(e){ fail = G.length; showDialog('err', 'ثبت کامل نشد', friendlyErr(e)); }
+      /* ۶۰۵: به‌روزرسانی سندهای موجود فقط با خانه‌های پرشده‌ای که فرق دارند؛ مقدار قبلی برای برگرداندن نگه داشته می‌شود */
+      if(U.length){ try{ const res = await S.update(U, prog); upOk = res.ok || 0; fail += res.fail || 0; (res.undo || []).forEach(u => undo.updated.push(u)); U.forEach(r => { if(!r.updFail) r.done = true; }); }catch(e){ showDialog('err', 'به‌روزرسانی کامل نشد', friendlyErr(e)); } }
       xl.busy = false; try{ clearNetCache(); }catch(e){}
-      if(ok){ try{ shrToast(toFa(ok) + ' ردیف از اکسل ثبت شد' + (fail ? ' · ' + toFa(fail) + ' ناموفق' : '')); }catch(e){} try{ S.after && S.after(); }catch(e){} }
+      if(undo.created.length || undo.updated.length){ undo.n = undo.created.length; undo.u = undo.updated.length; xlUndoSet(S, undo); }
+      if(ok || upOk){ try{ shrToast([ok ? toFa(ok) + ' ردیف ثبت شد' : '', upOk ? toFa(upOk) + ' سند به‌روز شد' : ''].filter(Boolean).join(' · ') + (fail ? ' · ' + toFa(fail) + ' ناموفق' : '')); }catch(e){} try{ S.after && S.after(); }catch(e){} }
       xlPaint(); }
+    if(a === 'undo'){
+      const u = xlUndoGet(S); if(!u || xl.busy) return;
+      if(!(await askConfirm('برگرداندن آخرین ورود از اکسل', 'ورود «' + (u.file || 'اکسل') + '» (' + u.d + '): ' + [u.n ? toFa(u.n) + ' سند تازه به سطل بازیافت می‌رود' : '', u.u ? toFa(u.u) + ' سند به مقدار قبلی برمی‌گردد' : ''].filter(Boolean).join(' و ') + '.', 'برگرداندن'))) return;
+      xl.busy = true; let ok = 0, bad = 0;
+      for(const c of (u.created || [])){ try{ await supaAction({action: 'delete', target: c.kind, id: c.id}); ok++; }catch(e){ bad++; } }
+      for(const x of (u.updated || [])){ try{ await supaFetch(x.tbl + '?id=eq.' + encodeURIComponent(x.id), {method: 'PATCH', body: x.before}); ok++; }catch(e){ bad++; } }
+      xl.busy = false; xlUndoSet(S, null); try{ clearNetCache(); }catch(e){}
+      try{ shrToast('ورود برگردانده شد' + (bad ? ' · ' + toFa(bad) + ' مورد نشد' : '')); }catch(e){} try{ S.after && S.after(); }catch(e){}
+      xl.res = null; xl.src = null; xlPaint(); return; }
   }
   /* بخش بی‌مشخصه: هر جدول صفحه یک برگه + راهنمای ستون‌ها */
   function xlTables(S){
@@ -89363,6 +89400,41 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     design: () => xlDocRows('design').map(r => XL_DOC_DUP.design({'شماره مدرک': pick(r, AD.dNo), 'ویرایش': pick(r, AD.dRev), 'عنوان مدرک': pick(r, AD.dTitle)})),
     minute: () => xlDocRows('minute').map(r => XL_DOC_DUP.minute({'شرح بند': pick(r, AD.mText), 'تاریخ جلسه': pick(r, AD.mMeet)}))
   };
+  /* ۶۰۵: سند موجودِ هر کلید (برای «به‌روزرسانی موجودها») و ستون پایگاه‌دادهٔ هر خانهٔ قابل به‌روزرسانی */
+  const XL_ROW2O = {
+    statement: r => ({'طرف قرارداد': pick(r, AD.sParty), 'شماره قرارداد': pick(r, AD.sCno), 'نام قرارداد': pick(r, AD.sName), 'شماره صورت وضعیت': pick(r, AD.sNo), 'تاریخ ارسال': pick(r, AD.sDate), 'مبلغ صورت وضعیت': pick(r, AD.sAmount)}),
+    contract: r => ({'شماره قرارداد': pick(r, AD.cNo), 'عنوان قرارداد': pick(r, AD.cTitle), 'طرف قرارداد': pick(r, AD.cParty)}),
+    letter: r => ({'شماره نامه': pick(r, AD.lNo), 'موضوع نامه': pick(r, AD.lSubject), 'تاریخ ارسال': pick(r, AD.lDate)}),
+    design: r => ({'شماره مدرک': pick(r, AD.dNo), 'ویرایش': pick(r, AD.dRev), 'عنوان مدرک': pick(r, AD.dTitle)}),
+    minute: r => ({'شرح بند': pick(r, AD.mText), 'تاریخ جلسه': pick(r, AD.mMeet)})
+  };
+  /* [عنوان ستون اکسل، ستون پایگاه‌داده، کلید خواندن از ردیف موجود، نوع] */
+  const XL_UPD = {
+    statement: [['مبلغ صورت وضعیت', 'amount', 'مبلغ صورت وضعیت', 'money'], ['مبلغ پرداختی', 'paid', 'مبلغ پرداختی', 'money'], ['وضعیت', 'review', 'وضعیت رسیدگی'], ['تاریخ ارسال', 'sent_date', 'تاریخ ارسال', 'date'],
+      ['شماره قرارداد', 'contract_no', 'شماره قرارداد'], ['توضیحات', 'note', 'توضیحات'], ['مسئول', 'owner', 'مسئول']],
+    contract: [['مبلغ قرارداد', 'amount', 'مبلغ قرارداد', 'money'], ['مبلغ پرداختی', 'paid', 'مبلغ پرداختی', 'money'], ['وضعیت', 'review', 'وضعیت رسیدگی'], ['موضوع قرارداد', 'subject', 'موضوع قرارداد'],
+      ['تاریخ شروع قرارداد', 'start_date', 'تاریخ شروع قرارداد', 'date'], ['مسئول', 'owner', 'مسئول']],
+    letter: [['طرف مقابل', 'party', 'طرف مقابل'], ['تاریخ ارسال', 'sent_date', 'تاریخ ارسال', 'date'], ['موعد اتمام', 'due_date', 'موعد اتمام', 'date'], ['مسئول', 'owner', 'مسئول']],
+    design: [['وضعیت مدرک', 'status', 'وضعیت مدرک'], ['رشته', 'discipline', 'رشته'], ['طراح', 'party', 'طراح'], ['تاریخ ارسال', 'sent_date', 'تاریخ ارسال', 'date'], ['موعد اتمام', 'due_date', 'موعد اتمام', 'date'], ['توضیحات', 'note', 'توضیحات'], ['مسئول', 'owner', 'مسئول']],
+    minute: [['تاریخ اقدام', 'action_date', 'تاریخ اقدام', 'date'], ['مسئول پیگیری', 'owner', 'مسئول']]
+  };
+  function xlDocDupMap(kind){
+    const M = new Map(); xlDocRows(kind).forEach(r => { const o = XL_ROW2O[kind](r); let k = ''; try{ k = XL_DOC_DUP[kind](o); }catch(e){} if(k && !M.has(k)) M.set(k, r);
+      if(kind === 'statement' && pick(r, AD.sNo)){ const k2 = xlK(pick(r, AD.sName), pick(r, AD.sNo)); if(!M.has(k2)) M.set(k2, r); } });
+    return M;
+  }
+  const xlFmtV = (v, ty) => { if(v == null || v === '') return '—'; if(ty === 'money'){ const n = +toEn(String(v)).replace(/[^\d.-]/g, ''); return isFinite(n) ? toFa(n.toLocaleString('en')) : toFa(String(v)); } return toFa(String(v)); };
+  function xlDocDiff(kind, o, r){
+    const patch = {}, before = {}, lines = [];
+    (XL_UPD[kind] || []).forEach(([t, col, rk, ty]) => { const nv = o[t]; if(nv == null || nv === '') return;
+      const ov = exact(r, rk);
+      const same = ty === 'money' ? (+toEn(String(ov || 0)).replace(/[^\d.-]/g, '') || 0) === (+nv || 0)
+        : ty === 'date' ? (normDate(ov) || '') === (normDate(nv) || '') : normName(String(ov || '')) === normName(String(nv));
+      if(same) return;
+      patch[col] = ty === 'money' ? Number(nv) : String(nv); before[col] = ov == null || ov === '' ? null : (ty === 'money' ? Number(toEn(String(ov)).replace(/[^\d.-]/g, '')) || null : String(ov));
+      lines.push(t + ': ' + xlFmtV(ov, ty) + ' ← ' + xlFmtV(nv, ty)); });
+    return {n: lines.length, patch, before, lines, id: String(pick(r, AD.id) || '')};
+  }
   /* قراردادهای ثبت‌شده برای پر کردن صورت وضعیت: با شماره، یا نام (وقتی یکتا) */
   let xlCtMemo = null;
   function xlCtIdx(){
@@ -89406,6 +89478,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       sub: 'فایل اکسل قدیمی خودتان را بدهید؛ ستون‌ها خودکار پیدا می‌شوند',
       cols: XL_DOC[kind].map(c => Object.assign({k: c.t, type: 'text', help: XL_DOC_HELP[c.t] || ''}, c, {req: !!c.req})),
       check: XL_DOC_CHECK[kind], dupKey: XL_DOC_DUP[kind], dupHave: () => new Set(XL_DOC_HAVE[kind]()),
+      dupMap: () => xlDocDupMap(kind), diff: (o, r) => xlDocDiff(kind, o, r),
+      update: async (U, prog) => { const tbl = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[kind]; let ok = 0, fail = 0, i = 0; const undo = [];
+        for(const r of U){ i++; const d = r.diff; if(!d || !d.id){ r.updFail = 1; fail++; continue; }
+          try{ await supaFetch(tbl + '?id=eq.' + encodeURIComponent(d.id), {method: 'PATCH', body: d.patch}); undo.push({tbl, id: d.id, before: d.before}); ok++; }catch(e){ r.updFail = 1; fail++; }
+          if(i % 4 === 0) prog(i, U.length); }
+        prog(U.length, U.length); return {ok, fail, undo}; },
       notes: ['لازم نیست فایل قدیمی را به شکل این نمونه دربیاورید: سرستون‌هایی مثل «پیمانکار»، «ش.ق»، «مبلغ (تومان)» یا «تاریخ» خودکار شناخته می‌شوند و در پنجرهٔ ورود می‌شود عوضشان کرد.',
         'مبلغ‌ها در سامانه ریال است؛ اگر سرستون یا خانه «تومان» دارد، خودکار ×۱۰ می‌شود. «میلیون» و «میلیارد» هم خوانده می‌شود.',
         'سندی که با همین شماره در سامانه هست، دوباره ساخته نمی‌شود (مگر خودتان بخواهید).'],
@@ -89413,7 +89491,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         if(kind === 'statement' || kind === 'contract') o['وضعیت'] = exact(a.row, 'وضعیت رسیدگی') || ''; if(kind === 'minute'){ o['موضوع جلسه'] = pick(a.row, AD.mSubject) || ''; o['تاریخ جلسه'] = pick(a.row, AD.mMeet) || ''; } return o; }),
       save: async (R, prog) => {
         const key = {statement:'statements', contract:'contracts', minute:'minutes', letter:'letters', design:'designs'}[kind];
-        const me = activeUserName() || ''; let ok = 0, fail = 0;
+        const me = activeUserName() || ''; let ok = 0, fail = 0; const created = [];
         let items = [];
         if(kind === 'minute'){
           /* بندهای هم‌موضوع و هم‌تاریخ = یک صورتجلسه */
@@ -89428,8 +89506,9 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
           if(kind === 'minute') part.forEach(g => delete g.n);
           const payload = {type: 'admin', date: todayShamsi(), project: (document.getElementById('projectName') || {}).value || '', engineer: me}; payload[key] = part;
           const r = await post(payload); if(r && r.state !== 'failed') ok += cnt; else fail += cnt; done += cnt; prog(Math.min(total, done), total);
+          (r && r.created || []).forEach(c => created.push(c));
         }
-        return {ok, fail}; },
+        return {ok, fail, created}; },
       after: () => { setTimeout(() => { try{ loadAdmin(); }catch(e){} }, 400); }
     };
   });

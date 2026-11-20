@@ -62,6 +62,8 @@ async function install(page){
     if(path.startsWith('rpc/pm_whoami')) return json(route, {v: 1, name: process.env.WHO || 'آقای مهدی نعیمی', admin: !process.env.NONADMIN, locked: false});
     if(path.startsWith('rpc/session_epoch')) return json(route, {epoch: 0});
     if(path.startsWith('rpc/')) return json(route, {ok: false});
+    /* ثبت تازه: مثل سرور واقعی ردیف‌ها را با شناسه برمی‌گرداند (return=representation) */
+    if(req.method() === 'POST' && Array.isArray(body)) return json(route, body.map((x, i) => Object.assign({}, x, {id: 'n' + Date.now() + '_' + i})));
     if(req.method() !== 'GET') return json(route, []);
     if(path.startsWith('people')) return json(route, people);
     if(path.startsWith('designs')) return json(route, ds);
