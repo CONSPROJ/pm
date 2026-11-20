@@ -35523,7 +35523,8 @@ html body #tabBar.sb-q .sb-stg{display:none !important;}
   const FEED_MUTE_K = () => 'siteLogM.feedMute.v1.' + nameKey(activeUserName() || '');
   let feedMuteSet = null, feedShowMuted = false;
   const feedMutes = () => { if(!feedMuteSet){ try{ feedMuteSet = new Set(JSON.parse(localStorage.getItem(FEED_MUTE_K()) || '[]')); }catch(e){ feedMuteSet = new Set(); } } return feedMuteSet; };
-  const feedDocKey = x => (x && x.goto && x.goto.id && x.goto.id !== 'general') ? (x.goto.kind || '') + ':' + x.goto.id : '';
+  /* ۵۷۰: «گزارش روزانه» کلیدش فقط تاریخ است؛ نقص گزارشِ چند نفر در یک روز نباید یک ردیف شود — نام شخص هم در کلید */
+  const feedDocKey = x => (x && x.goto && x.goto.id && x.goto.id !== 'general') ? (x.goto.kind || '') + ':' + x.goto.id + (x.goto.kind === 'daily' || x.cat === 'missing' ? ':' + nameKey(x.goto.who || x.who || '') : '') : '';
   const feedIsMuted = x => { const k = feedDocKey(x); return !!k && feedMutes().has(k); };
   function feedMuteToggle(k){ const S = feedMutes(); if(S.has(k)) S.delete(k); else S.add(k); try{ localStorage.setItem(FEED_MUTE_K(), JSON.stringify(Array.from(S).slice(-500))); }catch(e){} }
   const feedShown = feed => (feed || []).filter(x =>
