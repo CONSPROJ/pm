@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121110516">
+<meta name="pm-build" content="20261121112828">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32425,6 +32425,9 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 @media (min-width:1180px){ :is(html,#z0) :is(body,#z1) .app-head{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:color-mix(in srgb, var(--canvas) 96%, transparent) !important;}
   :is(html,#z0) :is(body,#z1) .fd-toggle{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;} }
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+:is(html,#z0) :is(body,#z1) #admQuick .aq-sub{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px 0 8px;margin-inline-start:4px;border-radius:999px;border:1px solid color-mix(in srgb, var(--sky) 35%, var(--line));background:color-mix(in srgb, var(--sky) 10%, var(--surface));color:var(--ink);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;flex:0 0 auto;}
+:is(html,#z0) :is(body,#z1) #admQuick .aq-sub b{font-weight:800;color:var(--sky);} :is(html,#z0) :is(body,#z1) #admQuick .aq-sub svg{width:14px;height:14px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) #admQuick .aq-sub:hover{border-color:var(--alert);} :is(html,#z0) :is(body,#z1) #admQuick .aq-sub:hover svg{color:var(--alert);}
 /* ۶۱۸: فرم‌های معیار */
 :is(html,#z0) :is(body,#z1) #arcBody .afm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;}
 :is(html,#z0) :is(body,#z1) #arcBody .afm-ht{display:flex;flex-direction:column;gap:2px;} :is(html,#z0) :is(body,#z1) #arcBody .afm-ht b{font-size:15px;font-weight:800;color:var(--ink);} :is(html,#z0) :is(body,#z1) #arcBody .afm-ht small{font-size:12px;color:var(--muted);}
@@ -34199,7 +34202,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
        (پرکن خودکار iOS، افزونهٔ مرورگر، کتابخانهٔ بیرونی) و ربطی به کار
        کاربر ندارد؛ نوار قرمز برایش نشان داده نمی‌شود. */
     window.__opaqueErr = e => !!e && !e.error && !e.lineno && /^script error\.?$/i.test(String(e.message || '').trim());
-    window.addEventListener('error', e => { if(window.__opaqueErr(e)) return; showOnce(e.message || 'خطای ناشناخته'); });
+    window.addEventListener('error', e => { if(window.__opaqueErr(e) || /ResizeObserver loop/i.test(String(e.message || ''))) return; showOnce(e.message || 'خطای ناشناخته'); });
     window.addEventListener('unhandledrejection', e =>
       showOnce((e.reason && e.reason.message) || 'خطا در دریافت داده'));
   })();
@@ -54756,7 +54759,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const prev = order.find(k => document.getElementById(TABS[k].btn)
       .getAttribute('aria-selected') === 'true') || '';
     const changed = prev && prev !== name;
-    paintPageTitle(name, changed);
+    /* ۶۱۹: دسکتاپ: عنوان همان لحظه با محتوا عوض شود (محو ۱۶۰ms عنوانِ جاافتاده از محتوا، خودش یک پرش دیده می‌شد) */
+    paintPageTitle(name, changed && innerWidth < 701);
     try{ document.getElementById('tabBar').dataset.cur = name; }catch(e){}
     document.body.classList.toggle('on-home', name === 'home');
     Object.keys(TABS).forEach(k => {
@@ -54768,6 +54772,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const bx = {view:'reportView', tasks:'taskView', admin:'adminView'}[name];
       if(bx) uiArm(bx);
     }catch(e){}
+    try{ window.bentoNow && window.bentoNow(document.getElementById(TABS[name].panel)); }catch(e){}
     if(changed){
       try{
         const dir = order.indexOf(name) > order.indexOf(prev) ? -1 : 1;
@@ -77932,6 +77937,30 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     finally{ admView = viewKeep; admSort = sortKeep; }
     try{ dtStrips(items); }catch(e){}
   }
+  /* ۶۱۹: بازکشیدن فهرست فقط تکه‌های عوض‌شده را عوض می‌کند — رسیدن دادهٔ تازه (مثلاً رسیدگی صورت وضعیت‌ها چند صد میلی‌ثانیه بعد از باز شدن) کل فهرست را از نو نمی‌سازد
+     (پیش‌تر ۳۷۰KB دوباره ساخته می‌شد: ارتفاع صفحه یک لحظه می‌افتاد و صفحه روی دسکتاپ «پرش» داشت). */
+  function admMorph(a, b, d){
+    const A = a.childNodes, B = b.childNodes;
+    if(d > 5 || A.length !== B.length){ a.replaceChildren(...Array.from(B)); return; }
+    const bl = Array.from(B);
+    for(let x = 0; x < bl.length; x++){ const o = A[x], n = bl[x];
+      if(o.nodeType !== n.nodeType || o.nodeName !== n.nodeName){ o.replaceWith(n); continue; }
+      if(o.nodeType !== 1){ if(o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; continue; }
+      if(o.outerHTML === n.outerHTML) continue;
+      /* ویژگی‌ها در جا هم‌سان می‌شوند (شمار، کلاس وضعیت…)، بعد فرزندان */
+      Array.from(o.attributes).forEach(t => { if(!n.hasAttribute(t.name)) o.removeAttribute(t.name); });
+      Array.from(n.attributes).forEach(t => { if(o.getAttribute(t.name) !== t.value) o.setAttribute(t.name, t.value); });
+      if(o.innerHTML !== n.innerHTML) admMorph(o, n, d + 1); }
+  }
+  function admSetHtml(box, html){
+    /* اگر کس دیگری (اسکلت، پیام خالی) محتوا را عوض کرده، ساخت کامل */
+    const mine = box.__ah && box.childNodes.length && box.firstElementChild === box.__af;
+    if(mine && box.__ah === html) return;
+    box.__ah = html;
+    if(!mine){ box.innerHTML = html; box.__af = box.firstElementChild; return; }
+    try{ const t = document.createElement('template'); t.innerHTML = html; admMorph(box, t.content, 0); }catch(e){ box.innerHTML = html; }
+    box.__af = box.firstElementChild;
+  }
   function renderAdminListIn(items){
     adminOpenSnap = snapAdminOpen();
     if(!document.getElementById('admList-statement')) renderAdminSkeleton();
@@ -78143,17 +78172,17 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 
       /* بدون گروه: یک فهرست پیوسته به همان ترتیب انتخابی */
       if(grp === 'none'){
-        box.innerHTML = subK !== 'none' ? bodyHtml(rows) : admView === 'fast'
+        admSetHtml(box, subK !== 'none' ? bodyHtml(rows) : admView === 'fast'
           ? admFastList(rows, fastOf)
-          : '<div class="adm-list-grid">' + rows.flatMap(row => [row].concat(cAdds.get(row) || [])).map(row => admCard(k, row, true)).join('') + '</div>';
+          : '<div class="adm-list-grid">' + rows.flatMap(row => [row].concat(cAdds.get(row) || [])).map(row => admCard(k, row, true)).join('') + '</div>');
         return;
       }
-      if(grp === 'party' && k !== 'design'){ box.innerHTML = admByPartyHtml(k, rows, bodyHtml, true); return; }
+      if(grp === 'party' && k !== 'design'){ admSetHtml(box, admByPartyHtml(k, rows, bodyHtml, true)); return; }
       if(k === 'design') dsGrpMode = grp;
       /* زیرپنجره‌ها بر اساس وضعیت ابلاغ، به ترتیب مسیر کار:
          در حال تنظیم ← درون‌سازمانی ← برون‌سازمانی ← بن‌بست ← بدون وضعیت.
          داخل هر زیرپنجره همان ترتیب انتخابی می‌ماند. */
-      box.innerHTML = admGroupsHtml(k, rows, bodyHtml);
+      admSetHtml(box, admGroupsHtml(k, rows, bodyHtml));
     });
     /* ارسالی / دریافتی: زبانه‌های بالای نوار ابزار نامه‌ها، نه داخل فهرست */
     { const lb = document.getElementById('admList-letter');
@@ -78279,6 +78308,9 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     M.innerHTML = '<div class="aq-ch" role="tablist">' + AQ_F.map(([f, t]) => { const n = B.filter(x => aqOk(x, f) && aqDateOk(x)).length; return '<button type="button" class="' + (AQ.f === f ? 'on ' : '') + (f || 'all') + '" data-aqf="' + f + '">' + t + '<i>' + toFa(n) + '</i></button>'; }).join('') + '</div>'
       /* ۴۶۶: بازهٔ تاریخ به پنل فیلتر رفت تا بالای فهرست خلوت بماند؛ اینجا فقط یادآور بازهٔ فعال */
       + (AQ.from || AQ.to ? '<span class="aq-dtx">' + esc((AQ.from ? 'از ' + toFa(AQ.from) : '') + (AQ.to ? ' تا ' + toFa(AQ.to) : '')) + '</span>' : '')
+      /* ۶۱۹: زیرگروه فعال به‌صورت چیپ با × تا با یک لمس برداشته شود */
+      + (function(){ try{ if(!(cat in ADM_SUB_OPTS)) return ''; const v = admSubOf(cat); if(v === 'none') return ''; const o = ADM_SUB_OPTS[cat].find(x => x[0] === v);
+          return '<button type="button" class="aq-sub" data-aqsubx="1" title="برداشتن زیرگروه" aria-label="برداشتن زیرگروه ' + esc(o ? o[1] : '') + '"><span>زیرگروه: <b>' + esc(o ? o[1] : v) + '</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>'; }catch(e){ return ''; } })()
       + (AQ.f || AQ.from || AQ.to ? '<button type="button" class="aq-x" data-aqx="1">پاک کردن</button>' : '');
     try{ document.querySelectorAll('[data-aqd]').forEach(i => { const v = AQ[i.dataset.aqd] ? toFa(AQ[i.dataset.aqd]) : ''; if(document.activeElement !== i && i.value !== v) i.value = v; }); }catch(e){} }
   document.addEventListener('click', e => { if(!e.target.closest || e.target.closest('.adm-srch .adm-xwrap')) return; document.querySelectorAll('#adminView .adm-srch .adm-xbar:not([hidden])').forEach(b => { b.hidden = true; const t = b.parentNode.querySelector('[data-admxtg]'); if(t) t.setAttribute('aria-expanded', 'false'); }); });
@@ -78302,6 +78334,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   /* پنل شناور فیلتر با کلیک بیرون بسته می‌شود (نه روی منوهای کشویی خودش) */
   document.addEventListener('click', e => { const d = document.getElementById('admTabDrawer'); if(!d || !d.classList.contains('open') || !e.target.closest) return;
     if(e.target.closest('#admTabDrawer, [class*="ns-"], [class*="pcombo"], [class*="pc-"], .modal-bg, .fx-bg, .dp-pop, .jdp')) return; const t = d.querySelector('.fd-toggle'); if(t) t.click(); });
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-aqsubx]'); if(!b) return; e.preventDefault();
+    const ss = document.getElementById('admSubSel'); if(ss){ ss.value = 'none'; ss.dispatchEvent(new Event('change', {bubbles: true})); } });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-aqf], [data-aqx]'); if(!b) return; e.preventDefault();
     if(b.dataset.aqx){ AQ.f = ''; AQ.from = ''; AQ.to = ''; } else AQ.f = b.dataset.aqf; applyAdminFilters(); });
   document.addEventListener('change', e => { const i = e.target.closest && e.target.closest('[data-aqd]'); if(!i) return; AQ[i.dataset.aqd] = normDate(i.value) || ''; applyAdminFilters(); });
@@ -78780,7 +78814,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     ADM_ORDER.forEach(k => {
       const el = document.getElementById('admList-' + k);
       // فهرستی که محتوا دارد پاک نمی‌شود تا صفحه نپرد؛ فقط بار اول پیام می‌آید
-      if(el && !el.querySelector('[data-id]'))
+      /* ۶۱۹: سطرهای فهرست سریع data-id ندارند؛ بار دوم به بعد (adminLoaded) هیچ فهرستی خالی نمی‌شود — پیش‌تر هر بار برگشتن به اسناد کل صفحه پیام «در حال دریافت» می‌شد و دوباره ساخته می‌شد (پرش) */
+      if(el && !adminLoaded && !el.querySelector('[data-id], .afr, .adm-fast, .adm-grp, .adm-list-grid'))
         el.innerHTML = '<div class="empty" style="margin:10px 0 14px;">در حال دریافت موارد ثبت‌شده...</div>';
     });
     try{
@@ -105115,11 +105150,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   /* ۶۰۹: چیدمان آجری برای همهٔ .ws-bento روی دسکتاپ/تبلت (نه گوشی) */
   (function(){
     const MQ = matchMedia('(min-width:641px)'), GAP = 16, ROW = 6;
-    const ro = 'ResizeObserver' in window ? new ResizeObserver(es => { const S = new Set(); es.forEach(e => { const b = e.target.classList.contains('ws-bento') ? e.target : e.target.parentElement; if(b) S.add(b); }); S.forEach(b => sched(b)); }) : null;
+        const ro = 'ResizeObserver' in window ? new ResizeObserver(es => { const S = new Set(); es.forEach(e => { const b = e.target.classList.contains('ws-bento') ? e.target : e.target.parentElement; if(b) S.add(b); }); S.forEach(b => sched(b)); }) : null;
     const pend = new Set(); let raf = 0;
     const sched = b => { pend.add(b); if(!raf) raf = requestAnimationFrame(() => { raf = 0; const L = Array.from(pend); pend.clear(); L.forEach(lay); }); };
     function lay(b){
       if(!b.isConnected) return;
+      /* پنهان (صفحهٔ دیگر): پهنا صفر است و چیدمان یک‌ستونی غلط می‌ساخت؛ چیدمان قبلی می‌ماند تا با پیدا شدن، ResizeObserver درستش کند */
+      if(!b.getClientRects().length || !b.clientWidth) return;
       const K = Array.from(b.children).filter(k => k.offsetParent !== null || getComputedStyle(k).display !== 'none');
       if(!MQ.matches || K.length < 2){ b.classList.remove('msn'); K.forEach(k => { k.style.gridRow = ''; k.style.gridColumn = ''; }); return; }
       const w = b.clientWidth || b.getBoundingClientRect().width;
@@ -105139,8 +105176,14 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       K.forEach((k, i) => { const [j, at] = best.P[i]; const gc = String(j + 1), gr = (at + 1) + ' / span ' + SP[i];
         if(k.style.gridColumn !== gc) k.style.gridColumn = gc; if(k.style.gridRow !== gr) k.style.gridRow = gr; });
     }
+    /* ۶۱۹: switchTab همان لحظهٔ پیدا شدن صفحه (پیش از نقاشی) چیدمان را درست می‌کند تا یک فریم با چیدمان غلط دیده نشود (پرش دسکتاپ) */
+    window.bentoNow = root => { try{ (root || document).querySelectorAll('.ws-bento').forEach(b => { pend.delete(b); lay(b); }); }catch(e){} };
     function scan(){ document.querySelectorAll('.ws-bento').forEach(b => { if(!b.__msn){ b.__msn = 1; if(ro) ro.observe(b); } sched(b); }); }
-    let mt = 0; new MutationObserver(() => { if(mt) return; mt = requestAnimationFrame(() => { mt = 0; scan(); }); }).observe(document.body, {childList: true, subtree: true});
+    /* ۶۱۹: ساخت دوبارهٔ یک بنتو (مثلاً به‌روز شدن شمارها) همان لحظه، پیش از نقاشی، چیده می‌شود؛ پیش‌تر دو فریم بعد بود و یک فریم ستون‌های باریک دیده می‌شد */
+    let mt = 0; new MutationObserver(ms => { const B = new Set();
+      ms.forEach(m => { const t = m.target; if(t.nodeType !== 1) return; const b = t.closest ? t.closest('.ws-bento') : null; if(b) B.add(b); m.addedNodes.forEach(n => { if(n.nodeType === 1){ if(n.classList.contains('ws-bento')) B.add(n); else if(n.firstElementChild) n.querySelectorAll('.ws-bento').forEach(x => B.add(x)); } }); });
+      B.forEach(b => { if(!b.__msn){ b.__msn = 1; if(ro) ro.observe(b); } pend.delete(b); lay(b); });
+      if(mt) return; mt = requestAnimationFrame(() => { mt = 0; scan(); }); }).observe(document.body, {childList: true, subtree: true});
     (MQ.addEventListener ? MQ.addEventListener('change', scan) : MQ.addListener(scan));
     window.addEventListener('resize', () => document.querySelectorAll('.ws-bento').forEach(sched));
     scan();
