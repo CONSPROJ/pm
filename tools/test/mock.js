@@ -34,7 +34,7 @@ for(let k = 0; k < 35; k++){
     text: ['کمبود میلگرد در کارگاه', 'تأخیر در تحویل قالب', 'نقشهٔ اجرایی نما نرسیده'][k % 3], zone: 'طبقه ' + (1 + k % 9), who: CTR[k % 6], photos: null});
 }
 const st = [], ct = [], lt = [], mn = [], ds = [], tk = [];
-for(let i = 1; i <= 220; i++){ const c = CTR[i % 7]; const amt = (1 + R(9)) * 850000000; const paid = i % 3 === 0 ? amt : (i % 3 === 1 ? Math.round(amt * 0.4) : 0);
+for(let i = 1; i <= (+process.env.MOCK_ST || 220); i++){ const c = CTR[i % 7]; const amt = (1 + R(9)) * 850000000; const paid = i % 3 === 0 ? amt : (i % 3 === 1 ? Math.round(amt * 0.4) : 0);
   st.push({id: 's' + i, created_at: '2026-09-01T08:00:00+00:00', date_fa: addDays(T0, -i * 7), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], contract_name: 'قرارداد ' + SK[c], party: c, contract_no: 'C-' + (100 + i % 7),
     number: String(1 + Math.floor(i / 3)), amount: String(amt), paid: String(paid), sent_date: addDays(T0, -i * 7), due_date: addDays(T0, -i * 7 + 20), notify: 'برون‌سازمانی',
     review: ['بررسی کارفرما', 'بررسی داخلی', 'تایید شده', 'بررسی پیمانکار'][i % 4], owner: ENG[i % 3], pay_status: paid >= amt ? 'پرداخت شده' : ''}); }

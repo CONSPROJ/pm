@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261120172608">
+<meta name="pm-build" content="20261121051401">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32416,6 +32416,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 /* سربرگ چسبان همان بوم نیمه‌شفاف با تاری (روی هاله یکدست دیده می‌شود، نه نوار جدا) */
 :is(html,#z0) :is(body,#z1) .app-head{background:color-mix(in srgb, var(--canvas) 72%, transparent) !important;}
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+:is(html,#z0) :is(body,#z1) .adm-fast > .afr-lzmore{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:44px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--sky);border-top:1px solid var(--line);}
+:is(html,#z0) :is(body,#z1) .adm-fast > .afr-lzmore small{font-size:11.5px;color:var(--muted);text-decoration:underline;}
+/* ۶۰۹: دسکتاپ — صفحه‌های لانچر (میز کار، گزارش‌ها، اسناد) چیدمان آجری متعادل به‌جای ستون‌های CSS
+   (ستون‌های CSS کارت‌ها را بالا به پایین می‌ریختند؛ یک ستون خیلی بلند و دیگری کوتاه یا خالی می‌ماند). شبکه با ردیف‌های ۶px و span هر کارت به اندازهٔ ارتفاعش؛
+   هر کارت در کوتاه‌ترین ستون می‌نشیند، ترتیب خواندن از راست به چپ حفظ می‌شود، و شمار ستون‌ها هیچ‌وقت بیشتر از شمار گروه‌ها نیست. گوشی دست‌نخورده. */
+:is(html,#z0) :is(body,#z1) .ws-bento.ws-bento.msn{display:grid !important;column-count:auto !important;grid-template-columns:repeat(var(--mc, 3), minmax(0, 1fr));grid-auto-rows:6px;column-gap:16px;row-gap:0;align-items:start;}
+:is(html,#z0) :is(body,#z1) .ws-bento.ws-bento.msn > *{margin:0 !important;width:auto !important;display:block;}
 /* ۶۰۸: راهنمای رنگ طرف‌ها روی صافی‌های صفحهٔ اشخاص — هر نوع نقطه‌ای به همان رنگ آدمکِ بی‌عکس‌ها (AVA_SIDE) */
 :is(html,#z0) :is(body,#z1) .cdx-ty > button[data-cdxty]:not([data-cdxty=""])::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:6px;vertical-align:middle;background:hsl(var(--sd) 55% 52%);box-shadow:0 0 0 2px hsl(var(--sd) 60% 52% / .18);}
 :is(html,#z0) :is(body,#z1) .cdx-ty > [data-cdxty="staff"]{--sd:208;} :is(html,#z0) :is(body,#z1) .cdx-ty > [data-cdxty="ctr"]{--sd:6;} :is(html,#z0) :is(body,#z1) .cdx-ty > [data-cdxty="sup"]{--sd:186;}
@@ -39975,6 +39982,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   }
 
   async function gotoAdminItem(kind, id, gotoWho, noDeck){
+    try{ window.admLzAll && window.admLzAll(document.getElementById('adminView')); }catch(e){}
     // اعلان جریمه: پنل خودِ شخص، بخش «جریمه‌ها»
     // اعلان مرخصی: کارتابل خودِ شخص، بخش «مرخصی»
     if(kind === 'صندوق ورودی'){ try{ window.homeWrite && window.homeWrite('ib'); }catch(e){} return null; }
@@ -66321,6 +66329,36 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       try{ deckReindex(); }catch(e){}
     }, 30);
   }
+  /* ====== ۶۱۰: فهرست‌های بلند اسناد — ساخت تدریجی ======
+     با هزاران سند، عوض کردن دسته ده‌ها هزار عنصر می‌ساخت (ساخت HTML + محاسبهٔ سبک ~۲ ثانیه روی دسکتاپ). حالا در هر بار نقاشی یک دسته
+     حدود ۱۲۰ سطر اول ساخته می‌شود (هر فهرست سهم خودش، دست‌کم ۶ سطر)؛ بقیه پشت دکمهٔ «نمایش …» می‌مانند و با نزدیک شدن اسکرول یا زدن دکمه
+     ساخته می‌شوند. داده‌ها (جست‌وجو، فیلتر، خروجی، شمارها) از ردیف‌ها خوانده می‌شود نه از صفحه، پس دست نمی‌خورند. */
+  const ADM_LZ = new Map(); let admLzBudget = 1e9, admLzSeq = 0; const ADM_LZ_STEP = 60;
+  window.__admLzReset = n => { admLzBudget = n; };
+  window.__admLzClear = () => ADM_LZ.clear();
+  function admFastList(items, fastOf){
+    const n = items.length; let take = Math.min(n, Math.max(6, admLzBudget)); if(n - take <= 6) take = n; admLzBudget -= take;
+    let h = items.slice(0, take).map(fastOf).join('');
+    if(take < n){ const key = 'lz' + (++admLzSeq); ADM_LZ.set(key, {rest: items.slice(take), fn: fastOf});
+      h += '<button type="button" class="afr-lzmore" data-lzk="' + key + '"><b>نمایش ' + toFa(Math.min(ADM_LZ_STEP, n - take)) + ' مورد بعد · ' + toFa(n - take) + ' مانده</b><small data-lzall="1">همه</small></button>'; }
+    return '<div class="adm-fast">' + h + '</div>';
+  }
+  window.admFastList = admFastList;
+  function admLzMore(btn, all){
+    const e = btn && ADM_LZ.get(btn.dataset.lzk); if(!e){ if(btn) btn.remove(); return; }
+    const chunk = e.rest.splice(0, all ? e.rest.length : ADM_LZ_STEP);
+    btn.insertAdjacentHTML('beforebegin', chunk.map(e.fn).join(''));
+    if(e.rest.length) btn.querySelector('b').textContent = 'نمایش ' + toFa(Math.min(ADM_LZ_STEP, e.rest.length)) + ' مورد بعد · ' + toFa(e.rest.length) + ' مانده';
+    else { ADM_LZ.delete(btn.dataset.lzk); try{ admLzIO && admLzIO.unobserve(btn); }catch(er){} btn.remove(); }
+    try{ markAlertCards('#adminView'); }catch(er){}
+  }
+  const admLzIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting && e.target.isConnected) admLzMore(e.target); }), {rootMargin: '800px 0px'}) : null;
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.afr-lzmore'); if(!b) return; e.preventDefault(); e.stopPropagation(); admLzMore(b, !!e.target.closest('[data-lzall]')); }, true);
+  { let t = 0; const av = document.getElementById('adminView');
+    if(av && admLzIO) new MutationObserver(() => { if(t) return; t = requestAnimationFrame(() => { t = 0; av.querySelectorAll('.afr-lzmore:not([data-io])').forEach(b => { b.dataset.io = '1'; admLzIO.observe(b); }); }); }).observe(av, {childList: true, subtree: true}); }
+  /* پرش به سند یا برگشت به سر جای قبلی: سطرهای ساخته‌نشده اول ساخته می‌شوند */
+  window.admLzAll = root => { (root || document).querySelectorAll('.afr-lzmore').forEach(b => admLzMore(b, true)); };
+  window.admLzReveal = () => {};
   function admLiveOne(kind, id){
     const row = admRowById(id); if(!row) return;
     const sel = CSS.escape(id);
@@ -77650,7 +77688,9 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     let ltrSeg = '';
     let curCatL = ''; try{ curCatL = admCat; }catch(e){}
     const lazyOff = !!(qAdmin || kindFilter || otherFilter || elVal('fAdmOwner')) || !curCatL;
+    try{ window.__admLzClear(); }catch(e){}
     ADM_ORDER.forEach(k => {
+      try{ window.__admLzReset(120); }catch(e){}
       const raw0 = items.filter(x => x.kind === k);
       /* تفکیک دیسیپلین اسناد طراحی (۳۱۴): نوار رشته‌ها بالای فهرست؛ با انتخاب یکی، فقط اسناد همان رشته */
       const dDisc = k === 'design' ? dsDiscSel() : '';
@@ -77796,8 +77836,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const bodyHtml = items => {
         /* فهرست سریع: بدون گروه‌بندی شماره، فقط سطرهای فشرده */
         if(admView === 'fast')
-          return '<div class="adm-fast">'
-            + items.map(fastOf).join('') + '</div>';
+          return admFastList(items, fastOf);
         if((k !== 'contract' && k !== 'letter') || admManual(k))
           return '<div class="adm-list-grid">'
             + items.map(row => admCard(k, row, true)).join('') + '</div>';
@@ -77823,7 +77862,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       /* بدون گروه: یک فهرست پیوسته به همان ترتیب انتخابی */
       if(grp === 'none'){
         box.innerHTML = admView === 'fast'
-          ? '<div class="adm-fast">' + rows.map(fastOf).join('') + '</div>'
+          ? admFastList(rows, fastOf)
           : '<div class="adm-list-grid">' + rows.flatMap(row => [row].concat(cAdds.get(row) || [])).map(row => admCard(k, row, true)).join('') + '</div>';
         return;
       }
@@ -94334,6 +94373,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const id = el.dataset.afr || el.dataset.id || el.dataset.atr; return {y: window.scrollY, id, top: el.getBoundingClientRect().top}; };
     const admReanchor = k => { if(!k) return; const av = document.getElementById('adminView'); if(!av) return;
       const el = k.id ? av.querySelector('[data-afr="' + CSS.escape(k.id) + '"], .rv[data-id="' + CSS.escape(k.id) + '"], [data-atr="' + CSS.escape(k.id) + '"]') : null;
+      try{ el && window.admLzReveal && window.admLzReveal(el); }catch(e){}
       if(el && el.getClientRects().length && k.top != null) window.scrollBy(0, el.getBoundingClientRect().top - k.top); else window.scrollTo(0, k.y); };
     loadAdmin = async function(){
       const keep = restored ? admAnchor() : null;
@@ -104778,6 +104818,39 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     if(!first && Math.abs(window.scrollY - y) > 2) window.scrollTo({top: y});
   }
   window.homeRender = homeRender;
+
+  /* ۶۰۹: چیدمان آجری برای همهٔ .ws-bento روی دسکتاپ/تبلت (نه گوشی) */
+  (function(){
+    const MQ = matchMedia('(min-width:641px)'), GAP = 16, ROW = 6;
+    const ro = 'ResizeObserver' in window ? new ResizeObserver(es => { const S = new Set(); es.forEach(e => { const b = e.target.classList.contains('ws-bento') ? e.target : e.target.parentElement; if(b) S.add(b); }); S.forEach(b => sched(b)); }) : null;
+    const pend = new Set(); let raf = 0;
+    const sched = b => { pend.add(b); if(!raf) raf = requestAnimationFrame(() => { raf = 0; const L = Array.from(pend); pend.clear(); L.forEach(lay); }); };
+    function lay(b){
+      if(!b.isConnected) return;
+      const K = Array.from(b.children).filter(k => k.offsetParent !== null || getComputedStyle(k).display !== 'none');
+      if(!MQ.matches || K.length < 2){ b.classList.remove('msn'); K.forEach(k => { k.style.gridRow = ''; k.style.gridColumn = ''; }); return; }
+      const w = b.clientWidth || b.getBoundingClientRect().width;
+      const cMax = Math.max(1, Math.min(K.length, w >= 980 ? 3 : w >= 560 ? 2 : 1));
+      /* ارتفاع هر کارت (در ستون پهن‌تر کمی کوتاه‌تر می‌شود، ولی نسبت‌ها کافی است) */
+      const SP = K.map(k => { if(ro && !k.__msn){ k.__msn = 1; ro.observe(k); } return Math.max(1, Math.ceil((k.getBoundingClientRect().height + GAP) / ROW)); });
+      /* هر کارت در کوتاه‌ترین ستون؛ شمار ستونی که کمترین جای خالی می‌گذارد (با ترجیح ستون بیشتر وقتی تفاوت کم است) */
+      const place = (c, lpt) => {
+        /* lpt: ستون هر کارت با چینش بزرگ‌ترها اول تعیین می‌شود (تعادل بهتر)، ولی داخل هر ستون ترتیب اصلی می‌ماند */
+        const col = new Array(SP.length); { const H = new Array(c).fill(0); const ord = SP.map((sp, i) => i); if(lpt) ord.sort((a, b2) => SP[b2] - SP[a]);
+          ord.forEach(i => { let j = 0; for(let q = 1; q < c; q++) if(H[q] < H[j]) j = q; col[i] = j; H[j] += SP[i]; }); }
+        const H = new Array(c).fill(0), P = SP.map((sp, i) => { const j = col[i], at = H[j]; H[j] += sp; return [j, at]; }); return {P, max: Math.max(...H)}; };
+      const tot = SP.reduce((a, x) => a + x, 0); let best = null;
+      for(let c = cMax; c >= Math.min(2, cMax); c--) [false, true].forEach(lpt => { const r = place(c, lpt); r.c = c; r.waste = (c * r.max - tot) / tot + (lpt ? .03 : 0); if(!best || r.waste < best.waste - (r.c < best.c ? .18 : 0)) best = r; });
+      b.style.setProperty('--mc', best.c); b.classList.add('msn');
+      K.forEach((k, i) => { const [j, at] = best.P[i]; const gc = String(j + 1), gr = (at + 1) + ' / span ' + SP[i];
+        if(k.style.gridColumn !== gc) k.style.gridColumn = gc; if(k.style.gridRow !== gr) k.style.gridRow = gr; });
+    }
+    function scan(){ document.querySelectorAll('.ws-bento').forEach(b => { if(!b.__msn){ b.__msn = 1; if(ro) ro.observe(b); } sched(b); }); }
+    let mt = 0; new MutationObserver(() => { if(mt) return; mt = requestAnimationFrame(() => { mt = 0; scan(); }); }).observe(document.body, {childList: true, subtree: true});
+    (MQ.addEventListener ? MQ.addEventListener('change', scan) : MQ.addListener(scan));
+    window.addEventListener('resize', () => document.querySelectorAll('.ws-bento').forEach(sched));
+    scan();
+  })();
 
   /* ---- کلیک‌ها ---- */
   document.getElementById('homeView').addEventListener('click', e => {
