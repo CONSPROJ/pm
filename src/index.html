@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121141728">
+<meta name="pm-build" content="20261121144206">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32435,6 +32435,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 :is(html,#z0) :is(body,#z1) #wrkBody .ws-at{font-size:11px;color:var(--muted);white-space:nowrap;} :is(html,#z0) :is(body,#z1) #wrkBody .ws-at.late{color:#b5402f;font-weight:700;}
 :is(html,#z0) :is(body,#z1) #wrkBody .wk-tool.busy{opacity:.55;pointer-events:none;} :is(html,#z0) :is(body,#z1) #wrkBody .wk-tool b{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-inline-start:4px;border-radius:9px;background:#2b6cb0;color:#fff;font-size:10.5px;}
 :is(html,#z0) :is(body,#z1) .wgp{display:flex;flex-direction:column;gap:12px;}
+:is(html,#z0) :is(body,#z1) .wgp-sec{display:flex;flex-direction:column;gap:8px;} :is(html,#z0) :is(body,#z1) .wgp-sec h5{margin:4px 0 0;font-size:14px;font-weight:800;color:var(--ink);} :is(html,#z0) :is(body,#z1) .wgp-ar{font-style:normal;color:var(--muted);margin:0 4px;}
 :is(html,#z0) :is(body,#z1) .wgp-in{margin:0;font-size:12.5px;line-height:1.9;color:var(--muted);} :is(html,#z0) :is(body,#z1) .wgp-ro{margin:0;font-size:12px;color:#a0700f;}
 :is(html,#z0) :is(body,#z1) .wgp-l{display:flex;flex-direction:column;gap:8px;}
 :is(html,#z0) :is(body,#z1) .wgp-r{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);}
@@ -40213,7 +40214,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     try{ window.admLzAll && window.admLzAll(document.getElementById('adminView')); }catch(e){}
     // اعلان جریمه: پنل خودِ شخص، بخش «جریمه‌ها»
     // اعلان مرخصی: کارتابل خودِ شخص، بخش «مرخصی»
-    if(kind === 'صندوق ورودی'){ try{ window.homeWrite && window.homeWrite('ib'); }catch(e){} return null; }
+    if(kind === 'صندوق ورودی'){ try{ window.ibOpenAny ? window.ibOpenAny(String(id || '')) : window.umOpenIb('in', ''); }catch(e){} return null; }
     /* گزارش روزانه (اعلان نقص گزارش و تلنگرش): پیش‌تر هیچ‌جا باز نمی‌شد */
     if(kind === 'daily' || kind === 'missing' || kind === 'گزارش روزانه'){
       const d = normDate(id || '') || todayShamsi(), who = gotoWho || '';
@@ -66222,7 +66223,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       /* ۶۲۲: گروه‌های کاری مشترک (سمت‌هایی که کارشان با هم ثبت می‌شود، مثل تاور) */
-      try{ window.__wrkGrp = new Set(((lists && lists['گروه کاری مشترک']) || []).map(v => String(v).trim()).filter(Boolean)); window.wrkGrpChanged && window.wrkGrpChanged(); }catch(e2){}
+      try{ window.__wrkGrp = new Set(((lists && lists['گروه کاری مشترک']) || []).map(v => String(v).trim()).filter(Boolean)); window.__wrkKidOff = new Set(((lists && lists['شاگرد جدا']) || []).map(v => String(v).trim()).filter(Boolean)); window.wrkGrpChanged && window.wrkGrpChanged(); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
       try{ window.mnAttLoad && window.mnAttLoad(lists); }catch(e2){}
       try{ window.dtLoad && window.dtLoad(lists); }catch(e2){}
@@ -91829,8 +91830,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const n = Object.assign({id: 'ib' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), st: 'q', by: me, at: now, log: [{by: me, at: now, note: 'ارسال شد'}]}, o);
     if(!n.to) delete n.to;
     await ibSave(n);
-    if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.');
-    else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.'));
+    if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.', n.id);
+    else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.', n.id));
     ntCc('notif.ib', 'رونوشت: ' + (IB_T[n.t] || 'مکاتبه'), (n.party || n.by || '') + ' — ' + (IB_T[n.t] || 'مکاتبه') + ' تازه ارسال کرد.', n.to ? [n.to] : ibReviewers());
     return n;
   };
@@ -91972,8 +91973,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     try{ await ibSave(n); ib.trPrefill = null;
       if(PF && PF.cd){ try{ await window.cdSent(n); }catch(er){ console.error(er); } }
       if(n.prev){ const o0 = ib.list.find(x => x.id === n.prev); if(o0){ await ibSave(Object.assign({}, o0, {next: n.id, log: (o0.log || []).concat([{by: me, at: now, note: 'اصلاحیه ارسال شد: ' + o.no}]).slice(-80)})).catch(() => {}); } }
-      if(n.to) ibNotify(n.to, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.');
-      else ibReviewers().forEach(rv => ibNotify(rv, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.'));
+      if(n.to) ibNotify(n.to, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.', n.id);
+      else ibReviewers().forEach(rv => ibNotify(rv, 'ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' برای بررسی و تأیید رسید.', n.id));
       ntCc('notif.tr', 'رونوشت ترانسمیتال ' + o.no, toFa(n.docs.length) + ' مدرک طراحی از ' + n.party + ' ارسال شد.', n.to ? [n.to] : ibReviewers());
       if(box.closest('#ibArea')){ ib.tab = 'mine'; ib.open = n.id; ibRender(); } else { const m = box.closest('.modal-bg, .fx-bg'); if(m) m.remove(); }
       showDialog('ok', 'ترانسمیتال ' + o.no + ' ارسال شد', toFa(n.docs.length) + ' مدرک برای ' + (n.to || 'صف بررسی دفتر فنی') + ' فرستاده شد. پس از تأیید تیم اصلی، هر مدرک با کد خودش در «اسناد طراحی» ثبت می‌شود؛ وضعیت را در «مکاتبات ← ارسالی» می‌بینید.'); }
@@ -92222,7 +92223,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       files: L.map(d => d.files).join('\n'), log: [{by: me, at: now, note: 'ترانسمیتال ' + no + ' ارسال شد — اصلاحیهٔ ' + (o.no || '')}]}; if(o.to) n.to = o.to; else if(o.rv) n.to = o.rv;
     b.disabled = true; const t0 = b.textContent; b.textContent = 'در حال ارسال…';
     try{ await ibSave(n); await ibSave(Object.assign({}, o, {next: n.id, log: (o.log || []).concat([{by: me, at: now, note: 'اصلاحیه ارسال شد: ' + no}]).slice(-80)}));
-      if(n.to && nameKey(n.to) !== nameKey(me)) ibNotify(n.to, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.'); else ibReviewers().forEach(r => ibNotify(r, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.')); ntCc('notif.tr', 'رونوشت اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده از ' + (o.party || '') + ' ارسال شد.', n.to ? [n.to] : ibReviewers());
+      if(n.to && nameKey(n.to) !== nameKey(me)) ibNotify(n.to, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.', n.id); else ibReviewers().forEach(r => ibNotify(r, 'اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده برای بررسی دوباره رسید.')); ntCc('notif.tr', 'رونوشت اصلاحیهٔ ' + (o.no || ''), toFa(L.length) + ' مدرک اصلاح‌شده از ' + (o.party || '') + ' ارسال شد.', n.to ? [n.to] : ibReviewers());
       ib.tab = 'mine'; ib.open = n.id; ibRender(); try{ shrToast('اصلاحیه برای بررسی دوباره فرستاده شد'); }catch(er){} }
     catch(err){ showDialog('err', 'ارسال نشد', friendlyErr(err)); b.disabled = false; b.textContent = t0; } });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-trresub]'); if(!b) return; const o = ib.list.find(x => x.id === b.dataset.trresub); if(!o) return;
@@ -92245,7 +92246,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      کد سند زنده از کدینگ مرکزی (dcBuild همان نوع) ====== */
   const IB_META = ['no', 'd', 'due', 'cn', 'amt'];
   /* ۴۰۴: مسیر خودکار هر نوع: سمت‌های مسئول به ترتیب اولویت (قانون ibRoute.نوع = سمت‌ها با ویرگول؛ پیش‌فرض زیر) */
-  const IB_ROUTE0 = {letter: ['مسئول دبیرخانه', 'مسئول کنترل اسناد (DCC)', 'مسئول دفتر فنی', 'دفتر فنی پروژه'], statement: ['امور مالی', 'حسابدار', 'امور قراردادی', 'کارشناس قراردادها'],
+  const IB_ROUTE0 = {letter: ['مسئول دبیرخانه', 'مسئول کنترل اسناد (DCC)', 'مسئول دفتر فنی', 'دفتر فنی پروژه'], statement: [] /* ۶۲۳: صورت وضعیت بی‌گیرنده حدسی به سمت مالی نمی‌رود؛ صف بررسی دفتر فنی (مگر قانون ibRoute.statement تعیین شده باشد) */,
     contract: ['امور قراردادی', 'کارشناس قراردادها', 'امور مالی'], design: ['مدیر طراحی / هماهنگ‌کنندهٔ طراحی', 'هماهنگ‌کنندهٔ طراحی', 'مسئول کنترل اسناد (DCC)', 'مسئول طراحی', 'مسئول دفتر فنی', 'دفتر فنی پروژه']};
   function ibRoute(kind){ let L = null; try{ const v = window.pmRule && window.pmRule('ibRoute.' + kind, ''); if(v) L = String(v).split(/[،,]/).map(x => x.trim()).filter(Boolean); }catch(e){}
     L = L || IB_ROUTE0[kind] || []; const me = nameKey(activeUserName() || ''); const P = (peopleRows || []).filter(p => p && p.name && !p.pending && p.active !== false && nameKey(p.name) !== me);
@@ -92401,9 +92402,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function ntCc(cap, title, msg, skip){ try{ const me = activeUserName(), S = new Set([me].concat(skip || []).filter(Boolean).map(nameKey));
       (peopleRows || []).filter(p => p && p.name && !p.pending && p.active !== false && !S.has(nameKey(p.name))).forEach(p => { let ok = false; try{ ok = canUser(p.name, cap); }catch(e){} if(ok) ibNotify(p.name, title, msg); }); }catch(e){} }
   window.ntCc = ntCc;
-  function ibNotify(to, title, msg){
-    try{ return sendAction({action: 'nudge', from: activeUserName(), to, kind: IB_KIND, itemId: '', title, message: msg, date: todayShamsi()}); }catch(e){}
+  /* ۶۲۳: اعلان مکاتبه با شناسهٔ خودِ مورد، تا زدنش همان مورد را باز کند (پیش‌تر بی‌شناسه بود و زدنش جایی نمی‌برد) */
+  function ibNotify(to, title, msg, id){
+    try{ return sendAction({action: 'nudge', from: activeUserName(), to, kind: IB_KIND, itemId: id || '', title, message: msg, date: todayShamsi()}); }catch(e){}
   }
+  window.ibOpenAny = id => { const o = id ? ib.list.find(x => x.id === id) : null; let R = false; try{ R = ibCanR(); }catch(e){}
+    if(!o){ try{ window.ibFresh && window.ibFresh().then(() => { const o2 = ib.list.find(x => x.id === id); umOpenIb(o2 ? (ibIn(o2) ? 'in' : ibMine(o2) ? 'mine' : R && o2.st === 'q' && !o2.to ? 'q' : R ? 'arc' : 'in') : (R ? 'q' : 'in'), o2 ? id : ''); }); }catch(e){ umOpenIb(R ? 'q' : 'in', ''); } return; }
+    umOpenIb(ibIn(o) ? 'in' : ibMine(o) ? 'mine' : (R && o.st === 'q' && !o.to) ? 'q' : R ? 'arc' : 'in', id); };
   function ibReviewers(){ let L = []; try{ L = (peopleRows || []).filter(p => p.name && !p.pending && p.active !== false && (levelOf(p.name) === 1 || levelOf(p.name) === 2)).map(p => p.name); }catch(e){} return L.filter(n => nameKey(n) !== nameKey(activeUserName())); }
   function ibDiff(a, b){ const ch = {}; IB_F.map(f => f[0]).concat(['files']).forEach(k => { const x = String(a[k] || ''), y = String(b[k] || ''); if(x !== y) ch[k] = [x, y]; });
     const ra = (a.refs || []).map(r => r.t).join('، '), rb = (b.refs || []).map(r => r.t).join('، '); if(b.refs && ra !== rb) ch.refs = [ra, rb]; return ch; }
@@ -92441,7 +92446,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const me = activeUserName(), now = todayShamsi() + ' ' + new Date().toTimeString().slice(0, 5);
       ib.busy = true; sn.disabled = true;
       try{ await ibSave(Object.assign({}, o, {st: 'seen', rv: me, log: (o.log || []).concat([{by: me, at: now, note: 'دیده شد'}]).slice(-80)}));
-        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی: دیده شد', 'موردی که فرستاده بودید دیده شد.'); ibRender(); }
+        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی: دیده شد', 'موردی که فرستاده بودید دیده شد.', o.id); ibRender(); }
       catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); sn.disabled = false; }
       finally{ ib.busy = false; }
       return;
@@ -92462,8 +92467,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const n = Object.assign({id: 'ib' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), t: ib.kind, st: 'q', by: me, at: now, log: [{by: me, at: now, note: 'ارسال شد'}]}, o);
       ib.busy = true; sd.disabled = true; sd.textContent = '…';
       try{ await ibSave(n); ib.preRefs = null;
-        if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.');
-        else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.'));
+        if(n.to) ibNotify(n.to, 'دریافتی: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای شما در «دریافتی» رسید.', n.id);
+        else ibReviewers().forEach(r => ibNotify(r, 'دریافتی‌ها: ' + (IB_T[n.t] || ''), 'یک مورد تازه برای بررسی در «دریافتی‌ها» رسید.', n.id));
         ntCc('notif.ib', 'رونوشت: ' + (IB_T[n.t] || 'مکاتبه'), (n.party || n.by || '') + ' — ' + (IB_T[n.t] || 'مکاتبه') + ' تازه ارسال کرد.', n.to ? [n.to] : ibReviewers());
         ib.trDraft = null; ib.tab = 'mine'; ib.open = n.id; ibRender(); showDialog('ok', 'ارسال شد', n.to ? 'برای ' + n.to + ' فرستاده شد؛ وضعیتش را در «ارسالی» می‌بینید.' : 'مورد در صف بررسی است؛ نتیجه را از «ارسالی» یا اعلان‌ها می‌بینید.'); }
       catch(err){ showDialog('err', 'ارسال نشد', friendlyErr(err)); sd.disabled = false; sd.textContent = ib.kind === 'design' ? 'ارسال ترانسمیتال' : 'ارسال'; }
@@ -92494,7 +92499,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         const me = activeUserName(), now = todayShamsi() + ' ' + new Date().toTimeString().slice(0, 5);
         const n = Object.assign(o, {st: 'ok', made, rv: me, log: (o.log || []).concat(Object.keys(ch).length ? [{by: me, at: now, ch}] : []).concat([{by: me, at: now, note: 'تأیید و ثبت شد'}]).slice(-80)});
         await ibSave(n);
-        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: تأیید شد', 'موردی که فرستاده بودید تأیید و ثبت شد.');
+        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: تأیید شد', 'موردی که فرستاده بودید تأیید و ثبت شد.', o.id);
         ntCc('notif.ibres', 'تأیید شد: ' + (o.no || IB_T[o.t] || ''), (o.party || o.by || '') + ' — ' + (o.ti || IB_T[o.t] || '') + ' تأیید شد.', [o.by]);
         try{ if(typeof invalidateAdmin === 'function') invalidateAdmin(); }catch(err){}
         ibRender();
@@ -92508,7 +92513,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const me = activeUserName(), now = todayShamsi() + ' ' + new Date().toTimeString().slice(0, 5);
       ib.busy = true;
       try{ await ibSave(Object.assign({}, o, {st: 'no', why, rv: me, log: (o.log || []).concat([{by: me, at: now, note: 'رد شد: ' + why}]).slice(-80)}));
-        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: رد شد', 'موردی که فرستاده بودید رد شد؛ دلیلش را در «ارسال‌های من» ببینید.');
+        if(o.by && nameKey(o.by) !== nameKey(me)) ibNotify(o.by, 'دریافتی‌ها: رد شد', 'موردی که فرستاده بودید رد شد؛ دلیلش را در «ارسال‌های من» ببینید.', o.id);
         ntCc('notif.ibres', 'رد شد: ' + (o.no || IB_T[o.t] || ''), (o.party || o.by || '') + ' — ' + (o.ti || IB_T[o.t] || '') + ' رد شد.', [o.by]);
         ibRender(); }
       catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
@@ -96797,13 +96802,16 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      وضعیت — برای شاگردش هم نوشته می‌شود؛ مگر شاگرد جدا به مهندس
      دیگری سپرده شده باشد. */
   const WRK_KID_RE = /^\s*شاگرد\s+(.+)$/;
-  function wrkKidsOf(w){
+  /* ۶۲۳: هر جفت استاد/شاگرد را ادمین می‌تواند در «گروه مشترک» جدا کند (lists «شاگرد جدا»، مقدار = کد شاگرد) */
+  const wrkKidOff = k => !!(window.__wrkKidOff && window.__wrkKidOff.has(String(k.code || k.name)));
+  function wrkKidsAll(w){
     if(!w || WRK_KID_RE.test(String(w.role || ''))) return [];
     return (workersLive || []).filter(k => {
       const m = String(k.role || '').match(WRK_KID_RE);
       return m && nameKey(m[1]) === nameKey(w.name);
     });
   }
+  function wrkKidsOf(w){ return wrkKidsAll(w).filter(k => !wrkKidOff(k)); }
   /* ۶۲۲: گروه کاری مشترک — اگر برای یک سمت (مثلاً «تاور») روشن باشد، هر کاری که برای یکی از افراد آن سمت ثبت شود
      (مسئول، شرح، محل، ساعت) برای بقیهٔ همان سمت هم ثبت می‌شود؛ غایب‌ها و کسی که به مهندس دیگری سپرده شده دست نمی‌خورند.
      تنظیمش در lists («گروه کاری مشترک»، مقدار = نام سمت) برای همهٔ کاربران یکی است. */
@@ -97005,15 +97013,28 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     else showDialog('warn', 'چیزی اضافه نشد', 'همهٔ افراد گزارش ' + toFa(src) + ' برای امروز ثبت دارند، غایب‌اند یا دیگر فعال نیستند.');
   }
   /* ۶۲۲: پنجرهٔ «گروه کاری مشترک»: سمت‌های دو نفر به بالا با کلید روشن/خاموش (فقط مدیر) */
-  function wrkGrpHtml(){ const R = wrkGrpRoles(), can = wrkCanManage();
-    return '<div class="wgp"><p class="wgp-in">وقتی گروه یک سمت روشن است، هر کاری که برای یکی از افرادش ثبت شود (افزودن، مسئول، شرح، محل و ساعت) برای بقیهٔ همان سمت هم ثبت می‌شود. غایب‌ها و کسی که به مهندس دیگری سپرده شده دست نمی‌خورند. هر سطر بعداً جدا هم قابل تغییر است.</p>'
-      + (can ? '' : '<p class="wgp-ro">فقط مدیر می‌تواند گروه‌ها را روشن یا خاموش کند.</p>')
-      + (R.length ? '<div class="wgp-l">' + R.map(([r, L]) => { const on = wrkGrpOn(r);
-          return '<div class="wgp-r' + (on ? ' on' : '') + '"><div class="wgp-t"><b>' + esc(r) + '</b><small>' + toFa(L.length) + ' نفر · ' + esc(L.slice(0, 4).map(w => String(w.name).split(' ').slice(-1)[0]).join('، ')) + (L.length > 4 ? '…' : '') + '</small></div>'
-            + '<button type="button" class="wgp-sw" role="switch" aria-checked="' + on + '" aria-label="گروه مشترک ' + esc(r) + '" data-wgrpt="' + esc(r) + '"' + (can ? '' : ' disabled') + '><i></i></button></div>'; }).join('') + '</div>'
-        : '<div class="wk-empty">سمتی با دو نفر یا بیشتر پیدا نشد.</div>') + '</div>'; }
+  function wrkGrpHtml(){ const R = wrkGrpRoles(), can = isAdminUser();
+    const pairs = []; (workersLive || []).forEach(m => wrkKidsAll(m).forEach(k => pairs.push([m, k])));
+    const sw = (on, attr, lab) => '<button type="button" class="wgp-sw" role="switch" aria-checked="' + on + '" aria-label="' + esc(lab) + '" ' + attr + (can ? '' : ' disabled') + '><i></i></button>';
+    return '<div class="wgp">' + (can ? '' : '<p class="wgp-ro">فقط ادمین می‌تواند گروه‌ها را روشن یا خاموش کند.</p>')
+      + '<section class="wgp-sec"><h5>استاد و شاگرد</h5><p class="wgp-in">هر شاگرد هر چه برای استادش نوشته شود (مسئول، شرح، محل، ساعت و حضور) خودکار می‌گیرد؛ مگر جدا به مهندس دیگری سپرده شده باشد. با خاموش کردن، آن شاگرد جدا پر می‌شود.</p>'
+      +   (pairs.length ? '<div class="wgp-l">' + pairs.map(([m, k]) => { const on = !wrkKidOff(k);
+            return '<div class="wgp-r' + (on ? ' on' : '') + '"><div class="wgp-t"><b>' + esc(m.name) + ' <i class="wgp-ar">←</i> ' + esc(k.name) + '</b><small>' + esc(wrkRoleKey(wrkRole(m)) || 'استاد') + ' و شاگردش</small></div>'
+              + sw(on, 'data-wkidt="' + esc(k.code || k.name) + '"', 'هم‌پر شدن ' + k.name + ' با ' + m.name) + '</div>'; }).join('') + '</div>'
+          : '<div class="wk-empty">شاگردی ثبت نشده (سمت «شاگرد <نام استاد>» در مدیریت کارگران).</div>') + '</section>'
+      + '<section class="wgp-sec"><h5>هم‌سمت‌ها</h5><p class="wgp-in">وقتی گروه یک سمت روشن است (مثلاً تاور)، هر کاری که برای یکی از افرادش ثبت شود (افزودن، مسئول، شرح، محل و ساعت) برای بقیهٔ همان سمت هم ثبت می‌شود. غایب‌ها و کسی که به مهندس دیگری سپرده شده دست نمی‌خورند.</p>'
+      +   (R.length ? '<div class="wgp-l">' + R.map(([r, L]) => { const on = wrkGrpOn(r);
+            return '<div class="wgp-r' + (on ? ' on' : '') + '"><div class="wgp-t"><b>' + esc(r) + '</b><small>' + toFa(L.length) + ' نفر · ' + esc(L.slice(0, 4).map(w => String(w.name).split(' ').slice(-1)[0]).join('، ')) + (L.length > 4 ? '…' : '') + '</small></div>'
+              + sw(on, 'data-wgrpt="' + esc(r) + '"', 'گروه مشترک ' + r) + '</div>'; }).join('') + '</div>'
+          : '<div class="wk-empty">سمتی با دو نفر یا بیشتر پیدا نشد.</div>') + '</section></div>'; }
   function wrkGrpOpen(){ const m = fxModal('wgrpM', 'گروه کاری مشترک', '', wrkGrpHtml()); m.classList.add('wgp-m');
-    m.addEventListener('click', async e => { const b = e.target.closest('[data-wgrpt]'); if(!b || b.disabled || !wrkCanManage()) return; const r = b.dataset.wgrpt, on = !wrkGrpOn(r); b.disabled = true;
+    m.addEventListener('click', async e => { const kb = e.target.closest('[data-wkidt]'); if(kb && !kb.disabled && isAdminUser()){ const kk = kb.dataset.wkidt, off = !(window.__wrkKidOff && window.__wrkKidOff.has(kk)); kb.disabled = true;
+        try{ if(off) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: 'شاگرد جدا', value: kk}]});
+          else await supaFetch('lists?kind=eq.' + encodeURIComponent('شاگرد جدا') + '&value=eq.' + encodeURIComponent(kk), {method: 'DELETE'});
+          if(!window.__wrkKidOff) window.__wrkKidOff = new Set(); if(off) window.__wrkKidOff.add(kk); else window.__wrkKidOff.delete(kk); try{ clearNetCache(); }catch(er){}
+          const body = m.querySelector('.wgp'); if(body) body.outerHTML = wrkGrpHtml(); window.wrkGrpChanged(); try{ shrToast(off ? 'شاگرد جدا پر می‌شود' : 'شاگرد دوباره با استادش پر می‌شود'); }catch(er){} }
+        catch(err){ kb.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); } return; }
+      const b = e.target.closest('[data-wgrpt]'); if(!b || b.disabled || !isAdminUser()) return; const r = b.dataset.wgrpt, on = !wrkGrpOn(r); b.disabled = true;
       try{ if(on) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: WRK_GRP_KIND, value: r}]});
         else await supaFetch('lists?kind=eq.' + encodeURIComponent(WRK_GRP_KIND) + '&value=eq.' + encodeURIComponent(r), {method: 'DELETE'});
         if(!window.__wrkGrp) window.__wrkGrp = new Set(); if(on) window.__wrkGrp.add(r); else window.__wrkGrp.delete(r); try{ clearNetCache(); }catch(er){}
@@ -97286,7 +97307,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       +   '<button type="button" class="wk-tool" data-wpdf="' + kind + '" title="پی‌دی‌اف فهرست من">' + ic.me + '<span>فهرست من</span></button>'
       /* ۶۲۲: کپی گزارش دیروز (یا آخرین روز ثبت‌شده) برای امروز، و گروه‌های کاری مشترک */
       +   '<button type="button" class="wk-tool wk-copy" data-wcopy="' + kind + '" title="کارگران و شرح کارِ آخرین گزارش ثبت‌شده (دیروز) برای همین تاریخ پر شود؛ بعد از بررسی «ثبت» را بزنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg><span>کپی گزارش دیروز</span></button>'
-      +   '<button type="button" class="wk-tool wk-grp" data-wgrp="1" title="گروه کاری مشترک: کار ثبت‌شده برای یک نفر، برای بقیهٔ همان سمت (مثلاً تاور) هم ثبت شود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19a5.5 5.5 0 0111 0M14.5 15.5a4.5 4.5 0 016 3.5"/></svg><span>گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(window.__wrkGrp.size) + '</b>' : '') + '</span></button>'
+      +   (!isAdminUser() ? '' : '<button type="button" class="wk-tool wk-grp" data-wgrp="1" title="گروه کاری مشترک: کار ثبت‌شده برای یک نفر، برای بقیهٔ همان سمت (مثلاً تاور) هم ثبت شود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19a5.5 5.5 0 0111 0M14.5 15.5a4.5 4.5 0 016 3.5"/></svg><span>گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(window.__wrkGrp.size) + '</b>' : '') + '</span></button>')
       + '</div>'
       + '</div>'
       + '<div id="wrkListBox">' + wrkListHtml(kind) + '</div>'
@@ -99415,7 +99436,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       /* ۶۲۲: کپی گزارش دیروز / گروه مشترک */
       const cpy = e.target.closest('[data-wcopy]');
       if(cpy){ if(!cpy.classList.contains('busy')){ cpy.classList.add('busy'); try{ await wrkCopyPrev(cpy.dataset.wcopy); }finally{ cpy.classList.remove('busy'); } } return; }
-      if(e.target.closest('[data-wgrp]')){ wrkGrpOpen(); return; }
+      if(e.target.closest('[data-wgrp]')){ if(isAdminUser()) wrkGrpOpen(); return; }
       const as = e.target.closest('[data-wassign]');
       if(as){
         const key = as.dataset.wassign;
