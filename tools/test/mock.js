@@ -95,6 +95,11 @@ async function install(page){
       return json(route, a); }
     if(path.startsWith('issues')){ const g = url.match(/date_fa=gte\.([\d/]+)/), l = url.match(/date_fa=lte\.([\d/]+)/); let a = issues; if(g) a = a.filter(r => r.date_fa >= g[1]); if(l) a = a.filter(r => r.date_fa <= l[1]); return json(route, a); }
     if(path.startsWith('tasks')) return json(route, tk);
+    if(path.startsWith('worker_daily') || path.startsWith('worker_ot')){ const m = url.match(/date_fa=eq\.([^&]+)/), d = m ? m[1] : '';
+      const WD = {'۱۴۰۵/۰۸/۲۹': [{id: 'wd1', worker_code: '1104', worker_name: 'حکیم خالقی', engineer: 'آقای مهدی نعیمی', activity: 'جابجایی آرماتور طبقه ۵', zone: 'طبقه ۵', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-21T09:10:00', created_by: 'آقای مهدی نعیمی'}],
+        '۱۴۰۵/۰۸/۲۸': [{id: 'wd2', worker_code: '991', worker_name: 'بشیر احمد ضیایی', engineer: 'آقای مهدی نعیمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'},
+          {id: 'wd3', worker_code: '1104', worker_name: 'حکیم خالقی', engineer: 'آقای مهدی نعیمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'}]};
+      return json(route, path.startsWith('worker_ot') ? [] : (WD[d] || [])); }
     if(path.startsWith('lists')){ const k = url.match(/kind=eq\.([^&]+)/); return json(route, (k ? lists.filter(r => r.kind === k[1]) : lists).map(r => ({kind: r.kind, value: r.value}))); }
     return json(route, []);
   });
