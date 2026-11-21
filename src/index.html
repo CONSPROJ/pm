@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121144206">
+<meta name="pm-build" content="20261121145359">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -96816,8 +96816,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      (مسئول، شرح، محل، ساعت) برای بقیهٔ همان سمت هم ثبت می‌شود؛ غایب‌ها و کسی که به مهندس دیگری سپرده شده دست نمی‌خورند.
      تنظیمش در lists («گروه کاری مشترک»، مقدار = نام سمت) برای همهٔ کاربران یکی است. */
   const WRK_GRP_KIND = 'گروه کاری مشترک';
-  const wrkRoleKey = r => String(r || '').replace(/\s+/g, ' ').trim();
-  const wrkGrpOn = r => !!(window.__wrkGrp && window.__wrkGrp.has(wrkRoleKey(r)));
+  /* ۶۲۴: سمت‌های هم‌خانواده یک گروه‌اند: هر سمتی که «تاور» دارد (تاور، اپراتور تاور، تاورکرین…) = «تاورکرین» */
+  const WRK_ROLE_FAM = [[/تاور/, 'تاورکرین']];
+  const wrkRoleKey = r => { const t = String(r || '').replace(/\s+/g, ' ').trim(); for(const [re, k] of WRK_ROLE_FAM) if(re.test(t)) return k; return t; };
+  /* مقدارهای ذخیره‌شدهٔ قبلی (مثلاً «تاور») هم با همین قاعده خوانده می‌شوند */
+  const wrkGrpOn = r => { const G = window.__wrkGrp; if(!G || !G.size) return false; const k = wrkRoleKey(r); for(const v of G) if(wrkRoleKey(v) === k) return true; return false; };
   function wrkPeersOf(w){
     if(!w || WRK_KID_RE.test(String(w.role || ''))) return [];
     const r = wrkRoleKey(wrkRole(w)); if(!r || !wrkGrpOn(r)) return [];
@@ -97036,13 +97039,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         catch(err){ kb.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); } return; }
       const b = e.target.closest('[data-wgrpt]'); if(!b || b.disabled || !isAdminUser()) return; const r = b.dataset.wgrpt, on = !wrkGrpOn(r); b.disabled = true;
       try{ if(on) await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: WRK_GRP_KIND, value: r}]});
-        else await supaFetch('lists?kind=eq.' + encodeURIComponent(WRK_GRP_KIND) + '&value=eq.' + encodeURIComponent(r), {method: 'DELETE'});
-        if(!window.__wrkGrp) window.__wrkGrp = new Set(); if(on) window.__wrkGrp.add(r); else window.__wrkGrp.delete(r); try{ clearNetCache(); }catch(er){}
+        else for(const v of Array.from(window.__wrkGrp || []).filter(v => wrkRoleKey(v) === r)) await supaFetch('lists?kind=eq.' + encodeURIComponent(WRK_GRP_KIND) + '&value=eq.' + encodeURIComponent(v), {method: 'DELETE'});
+        if(!window.__wrkGrp) window.__wrkGrp = new Set(); if(on) window.__wrkGrp.add(r); else Array.from(window.__wrkGrp).filter(v => wrkRoleKey(v) === r).forEach(v => window.__wrkGrp.delete(v)); try{ clearNetCache(); }catch(er){}
         const body = m.querySelector('.wgp'); if(body) body.outerHTML = wrkGrpHtml(); window.wrkGrpChanged();
         try{ shrToast('گروه مشترک «' + r + '» ' + (on ? 'روشن شد' : 'خاموش شد')); }catch(er){} }
       catch(err){ b.disabled = false; showDialog('err', 'ذخیره نشد', friendlyErr(err)); } }); }
   window.wrkGrpChanged = () => { try{ const box = document.getElementById('wrkListBox'); if(box && (wrkTab === 'daily' || wrkTab === 'ot')) box.innerHTML = wrkListHtml(wrkTab);
-      document.querySelectorAll('[data-wgrp] span').forEach(sp => { sp.innerHTML = 'گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(window.__wrkGrp.size) + '</b>' : ''); }); }catch(e){ console.error('wrkGrpChanged', e); } };
+      document.querySelectorAll('[data-wgrp] span').forEach(sp => { sp.innerHTML = 'گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(new Set(Array.from(window.__wrkGrp).map(wrkRoleKey)).size) + '</b>' : ''); }); }catch(e){ console.error('wrkGrpChanged', e); } };
   /* ۶۲۲: زمان ثبت هر سطر (created_at) به شمسی؛ اگر روزِ ثبت بعد از تاریخ گزارش باشد «دیرثبت» است */
   function wrkAtFa(iso){ try{ const d = new Date(iso); if(isNaN(d)) return null; const j = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()), p = x => String(x).padStart(2, '0');
       const day = toFa(j[0] + '/' + p(j[1]) + '/' + p(j[2])), tm = toFa(p(d.getHours()) + ':' + p(d.getMinutes())), rep = wrkDateVal();
@@ -97307,7 +97310,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       +   '<button type="button" class="wk-tool" data-wpdf="' + kind + '" title="پی‌دی‌اف فهرست من">' + ic.me + '<span>فهرست من</span></button>'
       /* ۶۲۲: کپی گزارش دیروز (یا آخرین روز ثبت‌شده) برای امروز، و گروه‌های کاری مشترک */
       +   '<button type="button" class="wk-tool wk-copy" data-wcopy="' + kind + '" title="کارگران و شرح کارِ آخرین گزارش ثبت‌شده (دیروز) برای همین تاریخ پر شود؛ بعد از بررسی «ثبت» را بزنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg><span>کپی گزارش دیروز</span></button>'
-      +   (!isAdminUser() ? '' : '<button type="button" class="wk-tool wk-grp" data-wgrp="1" title="گروه کاری مشترک: کار ثبت‌شده برای یک نفر، برای بقیهٔ همان سمت (مثلاً تاور) هم ثبت شود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19a5.5 5.5 0 0111 0M14.5 15.5a4.5 4.5 0 016 3.5"/></svg><span>گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(window.__wrkGrp.size) + '</b>' : '') + '</span></button>')
+      +   (!isAdminUser() ? '' : '<button type="button" class="wk-tool wk-grp" data-wgrp="1" title="گروه کاری مشترک: کار ثبت‌شده برای یک نفر، برای بقیهٔ همان سمت (مثلاً تاور) هم ثبت شود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19a5.5 5.5 0 0111 0M14.5 15.5a4.5 4.5 0 016 3.5"/></svg><span>گروه مشترک' + (window.__wrkGrp && window.__wrkGrp.size ? ' <b>' + toFa(new Set(Array.from(window.__wrkGrp).map(wrkRoleKey)).size) + '</b>' : '') + '</span></button>')
       + '</div>'
       + '</div>'
       + '<div id="wrkListBox">' + wrkListHtml(kind) + '</div>'
