@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121145359">
+<meta name="pm-build" content="20261121150745">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -36881,6 +36881,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       nudgeKeys.add(nameKey(x.who) + '|' + String(x.goto && x.goto.id || '') + '|' + String(x.text || '').trim());
     });
     (notifCache.comments || []).forEach(r => {
+      if(cmIsAuto(r)) return;
       const dupKey = nameKey(pick(r,N.from)) + '|' + String(pick(r,N.itemId) || '')
                    + '|' + String(pick(r,N.msg) || '').trim();
       if(nudgeKeys.has(dupKey)) return;
@@ -38109,7 +38110,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
        بار نشان داده می‌شوند؛ تکرارهای قبلیِ یادداشت‌های خودکار هم پنهان
        می‌شوند. */
     const seenK = new Set();
-    const rowsC = (all || []).filter(r => pick(r,N.kind) === COMMENT_KIND && !cmParts(r).removed)
+    const rowsC = (all || []).filter(r => pick(r,N.kind) === COMMENT_KIND && !cmParts(r).removed && !cmIsAuto(r))
       .filter(r => {
         const k = [pick(r,N.itemId), nameKey(pick(r,N.from) || ''),
                    String(pick(r,N.msg) || '').replace(/\s+/g,' ').trim(),
@@ -38133,6 +38134,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function cmIsSys(r){ const m = String(pick(r,N.msg) || ''); try{ if(assignParts(m)) return true; }catch(e){}
     return /^بررسی داخلی به .+ واگذار شد|^نیاز به اصلاح دارد|این مورد را برای بررسی داخلی ابلاغ کرد/.test(m); }
   window.cmIsSys = cmIsSys;
+  /* ۶۲۵: یادداشت‌های خودکار گردش (ابلاغ برای بررسی داخلی، واگذاری بررسی، «نیاز به اصلاح دارد.» بی‌دلیل) دیگر ساخته نمی‌شوند
+     و ردیف‌های قدیمی‌شان هیچ‌جا نمی‌آیند (نخ نظرها، شمار، اعلان‌ها)؛ به‌جایش خودِ شخص اعلان مستقیم می‌گیرد */
+  function cmIsAuto(r){ const m = String(pick(r,N.msg) || ''); try{ if(assignParts(m)) return true; }catch(e){}
+    return /این مورد را برای بررسی داخلی ابلاغ کرد|^بررسی داخلی به .+ واگذار شد|^نیاز به اصلاح دارد\.\s*\(/.test(m); }
+  window.cmIsAuto = cmIsAuto;
   function buildCmIndex(){
     const byKey = new Map(), cnt = new Map();
     (commentCache.rows || []).forEach(r => {
@@ -66468,6 +66474,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         await supaFetch(table + '?id=eq.' + encodeURIComponent(obj.id), {method:'DELETE'});
         return true;
       }
+      let rvAddN = null;
       /* هر مسیری (منوی سریع، فرم ویرایش، کارت‌ها) که گروه بررسی را عوض
          کند و سند روی «رد» مانده باشد، سند را به «بررسی داخلی» برمی‌گرداند.
          پیش‌تر فقط منوی سریع این کار را می‌کرد و فرم ویرایش سند را روی
@@ -66494,6 +66501,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 
           const bArr = before.split('|').map(x => x.trim()).filter(Boolean);
           const aArr = after.split('|').map(x => x.trim()).filter(Boolean);
+          rvAddN = {kind: obj.target, id: obj.id, add: aArr.filter(n0 => !bArr.some(b0 => nameKey(b0) === nameKey(n0))), all: aArr};
           const kept = bArr.filter(b0 => aArr.some(n0 => nameKey(n0) === nameKey(b0)));
           const replaced = bArr.length && aArr.length && kept.length < bArr.length;
 
@@ -66555,6 +66563,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
           const stuck = Object.keys(patch).filter(c => patch[c] === null && c in back && back[c] != null && String(back[c]).trim() !== '');
           if(stuck.length) try{ shrToast('ذخیره شد؛ سرور «' + stuck.join('، ') + '» را خودش پر کرد'); }catch(e){} }
       }
+      /* ۶۲۵: هر مسیری که نفر تازه برای بررسی داخلی ابلاغ کند، همان لحظه اعلان مستقیم */
+      if(rvAddN && rvAddN.add.length) try{ setTimeout(() => { try{ notifyNewReviewers(rvAddN.kind, rvAddN.id, rvAddN.add, rvAddN.all); }catch(e){} }, 0); }catch(e){}
       return true;
     }catch(err){
       lastServerError = friendlyErr(err);
@@ -69117,40 +69127,23 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 
   /* تلنگر یک‌باره به کسی که تازه مسئول بررسی شده. یادآوریِ ماندگار
      کار اعلانِ زندهٔ buildAlerts است، نه این. */
+  /* ۶۲۵: هر کس برای بررسی داخلی ابلاغ شود همان روز اعلان مستقیم می‌گیرد (از هر مسیر: منوی سریع، فرم ویرایش، زنجیره)؛
+     یک بار در روز برای هر نفر و هر مورد. نظر خودکار «… ابلاغ کرد» دیگر ساخته نمی‌شود. */
+  const rvNotified = new Set();
   async function notifyNewReviewers(kind, id, added, allNames){
     if(!added || !added.length) return;
-    const me = activeUserName();
+    const me = activeUserName(), day = todayShamsi();
     const r = rowMap.get(id) || {};
     const title = (kind === 'statement')
       ? ('صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''))
       : ('قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''));
-
-    /* یک نظر، یک بار. اگر امروز برای همین مورد نظرِ ابلاغی از همین
-       شخص ثبت شده باشد، دوباره ساخته نمی‌شود — وگرنه با هر بار
-       اضافه کردن نفر تازه، رشتهٔ نظرها پر از متن تکراری می‌شد. */
-    try{
-      const who = (allNames && allNames.length ? allNames : added);
-      let dup = false;
-      try{
-        dup = (await loadComments()).some(c =>
-          String(pick(c,N.itemId) || '') === String(id)
-          && nameKey(pick(c,N.from)) === nameKey(me)
-          && dayKey(pick(c,N.date)) === dayKey(todayShamsi())
-          && assignParts(pick(c,N.msg) || ''));
-      }catch(e){}
-      if(!dup)
-        await sendAction({action:'nudge', from: me, to: pick(r,AD.eng) || me,
-          kind: COMMENT_KIND, itemId: id, title: title, date: todayShamsi(),
-          message: assignMsg(me, who)});
-    }catch(e){}
-
+    const msg = me + ' بررسی داخلی این مورد را به شما سپرد.';
     for(const w of added){
-      if(nameKey(w) === nameKey(me)) continue;
-      try{
-        await sendAction({action:'nudge', from: me, to: w, kind: kind, itemId: id,
-          title: title, date: todayShamsi(),
-          message: me + ' بررسی داخلی این مورد را به شما سپرد.'});
-      }catch(e){}
+      if(!w || nameKey(w) === nameKey(me)) continue;
+      const k = [kind, id, nameKey(w), day].join('|'); if(rvNotified.has(k)) continue;
+      let dup = false; try{ dup = ((typeof nudgeCache !== 'undefined' ? nudgeCache.rows : []) || []).some(x => String(pick(x,N.itemId) || '') === String(id) && nameKey(pick(x,N.to)) === nameKey(w) && /بررسی داخلی این مورد را به شما سپرد/.test(String(pick(x,N.msg) || '')) && dayKey(pick(x,N.date)) === dayKey(day)); }catch(e){}
+      rvNotified.add(k); if(dup) continue;
+      try{ await sendAction({action:'nudge', from: me, to: w, kind: kind, itemId: id, title: title, date: day, message: msg}); }catch(e){}
     }
     if(typeof invalidateNudges === 'function') invalidateNudges();
   }
@@ -69405,14 +69398,6 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     try{ window.__admMarkEdited && window.__admMarkEdited(kind, id); }catch(e){}
     if(d.pplCh){
       try{ await notifyNewReviewers(kind, id, d.add, names); }catch(e){}
-      if(names.length){
-        try{
-          await sendAction({action:'nudge', from: activeUserName(), to: names[0] || '', kind: COMMENT_KIND, itemId: id,
-            title: String(kind) + CM_SEP + '' + CM_SEP + rfTitle(kind, row),
-            message: 'بررسی داخلی به ' + names.join('، ') + ' واگذار شد' + (activeUserName() ? ' (توسط ' + activeUserName() + ')' : '') + '.',
-            _once: true, date: todayShamsi()});
-        }catch(e){}
-      }
     }
     clearNetCache();
     setTimeout(loadAdmin, 300);
@@ -69601,23 +69586,6 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         // فقط نفرات تازه‌اضافه‌شده یک تلنگر می‌گیرند، نه همهٔ فهرست
         const had = new Set(before.map(nameKey));
         await notifyNewReviewers(kind, id, names.filter(n => !had.has(nameKey(n))), names);
-        /* یادداشت خودکار زیر نظرها: بررسی داخلی به چه کسانی واگذار شد */
-        /* فقط اگر فهرست مسئولین بررسی واقعاً عوض شده باشد */
-        const changed = names.map(nameKey).sort().join('|') !== before.map(nameKey).sort().join('|');
-        if(names.length && changed){
-          const ttl = (rowNow && (pick(rowNow,AD.sNo) || pick(rowNow,AD.cNo)))
-            ? (KIND_LABEL[kind] + ' ' + toFa(pick(rowNow,AD.sNo) || pick(rowNow,AD.cNo)))
-            : (KIND_LABEL[kind] || '');
-          try{
-            await sendAction({action:'nudge', from: activeUserName(), to: names[0] || '',
-              kind: COMMENT_KIND, itemId: id,
-              title: String(kind) + CM_SEP + '' + CM_SEP + ttl,
-              message: 'بررسی داخلی به ' + names.join('، ') + ' واگذار شد'
-                + (activeUserName() ? ' (توسط ' + activeUserName() + ')' : '') + '.',
-              _once: true,
-              date: todayShamsi()});
-          }catch(e2){}
-        }
       }
       clearNetCache();
       setTimeout(loadAdmin, 400);
@@ -69710,7 +69678,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       let fixer = '';
       if(what === 'review' && /^رد /.test(val) && rowNow && window.hoAskRej){ try{ const ch = await window.hoAskRej(kind, rowNow); fixer = ch && ch.name ? ch.name : ''; }catch(e){} if(fixer) values[(AD_OWNER[kind] || AD_OWNER.statement)[0]] = fixer; }
       const ok = await sendAction({action:'update', target:kind, id:id, values:values});
-      if(ok && fixer){ try{ await sendAction({action:'nudge', from: activeUserName(), to: fixer, kind: COMMENT_KIND, itemId: id, title: String(kind) + CM_SEP + '' + CM_SEP + (typeof rfTitle === 'function' ? rfTitle(kind, rowNow) : ''), message: 'نیاز به اصلاح دارد. (' + (activeUserName() || '') + ')', date: todayShamsi()}); if(typeof invalidateNudges === 'function') invalidateNudges(); }catch(e){} }
+      if(ok && fixer && nameKey(fixer) !== nameKey(activeUserName())){ try{ await sendAction({action:'nudge', from: activeUserName(), to: fixer, kind: kind, itemId: id, title: (typeof rfTitle === 'function' ? rfTitle(kind, rowNow) : ''), message: activeUserName() + ' این مورد را برای اصلاح به شما سپرد.', date: todayShamsi()}); if(typeof invalidateNudges === 'function') invalidateNudges(); }catch(e){} }
       if(!ok){
         showDialog('err','ثبت نشد', lastServerError || 'دوباره تلاش کنید.');
         lastServerError = '';
