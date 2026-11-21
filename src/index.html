@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121151815">
+<meta name="pm-build" content="20261121161116">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -89820,15 +89820,25 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     xl.k = k; xl.spec = S; xl.res = null; xlModal().hidden = false; xlPaint();
   }
   window.xlOpen = xlOpen;
-  /* ۵۹۳: رها کردن فایل اکسل روی صفحهٔ اسناد = پنجرهٔ ورود همان دسته با همان فایل */
+  /* ۵۹۳: رها کردن فایل اکسل روی صفحهٔ اسناد = پنجرهٔ ورود همان دسته با همان فایل
+     ۶۲۷: فقط روی فهرستِ خودِ پنج نوع سند (صورت وضعیت، قرارداد، نامه، صورتجلسه، اسناد طراحی) و فقط وقتی هیچ فرم/کادر پیوستی زیر فایل نیست.
+     پیش‌تر کادر پیوست فقط هنگام کشیدن مستثنا بود، نه هنگام رها کردن؛ و آرشیو/فرم‌ها اصلاً مستثنا نبود — پیوستِ اکسلِ یک فرم «ورود قرارداد» حساب می‌شد. */
   (function(){ const isX = e => { const d = e.dataTransfer; return !!(d && d.types && Array.from(d.types).indexOf('Files') !== -1); };
+    const NO = '.up-box, .up-field, .up-it, .dsm, .modal, .modal-bg, .fx-bg, .nf, form, .arc-new, input, textarea, [contenteditable], #secAdmarchive, #secAdmtrn, #secAdmchore, #secAdmall';
+    const zone = t => { if(!t || !t.closest || !t.closest('#adminView') || t.closest(NO)) return false;
+      const sec = t.closest('[id^="secAdm"]'); if(!sec || !/^secAdm(statement|contract|letter|minute|design)$/.test(sec.id)) return false;
+      /* فرم ثبت/ویرایشِ باز در همین بخش: فایل مال پیوست آن است */
+      if(document.querySelector('#adminView .nf.open, .modal-bg:not([hidden]) .up-field, .fx-bg .up-field')) return false;
+      return true; };
     let hot = 0; const av0 = () => document.getElementById('adminView');
-    document.addEventListener('dragover', e => { const av = e.target.closest && e.target.closest('#adminView'); if(!av || !xlOk() || e.target.closest('.up-box, .up-field, .dsm, .modal, .modal-bg') || !isX(e)) return; e.preventDefault(); if(!hot){ hot = 1; av.classList.add('xl-drop'); } });
+    document.addEventListener('dragover', e => { if(!xlOk() || !isX(e) || !zone(e.target)){ if(hot){ hot = 0; const av = av0(); if(av) av.classList.remove('xl-drop'); } return; } e.preventDefault(); if(!hot){ hot = 1; const av = av0(); if(av) av.classList.add('xl-drop'); } });
     document.addEventListener('dragleave', e => { if(hot && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('#adminView'))){ hot = 0; const av = av0(); if(av) av.classList.remove('xl-drop'); } });
     document.addEventListener('drop', e => { const av = av0(); if(av) av.classList.remove('xl-drop'); const was = hot; hot = 0;
-      if(!was || !e.target.closest || !e.target.closest('#adminView')) return; const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      e.preventDefault(); e.stopPropagation(); if(!f) return;
-      if(!/\.(xlsx|xls|xlsm|csv)$/i.test(f.name)){ try{ shrToast('برای ورود سوابق، فایل اکسل (xlsx، xls یا csv) را رها کنید'); }catch(er){} return; }
+      if(!was || !zone(e.target)) return; const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!f) return;
+      /* فایل غیراکسل اینجا کاری ندارد؛ به کار بقیه (پیوست کارت) سپرده می‌شود */
+      if(!/\.(xlsx|xls|xlsm|csv)$/i.test(f.name)) return;
+      e.preventDefault(); e.stopPropagation();
       xlOpen('doc:cur'); xlTake(f); }, true);
   })();
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-xlhub]'); if(!b) return; e.preventDefault(); e.stopPropagation(); xlOpen(b.dataset.xlhub); }, true);
