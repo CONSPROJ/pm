@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121051401">
+<meta name="pm-build" content="20261121052119">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -37908,13 +37908,18 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      بعد از آن، شمارش هر کارت یک جست‌وجوی ساده است. */
   let cmIndex = null;
   const cmKey = (target, id) => String(target) + '\u0000' + String(id);
+  /* ۶۱۱: یادداشت خودکار گردش (ابلاغ، واگذاری بررسی، برگشت برای اصلاح) نظر نیست: در شمار نظرها و «آخرین نظرها» نمی‌آید
+     (در نخ نظرها همان ردیف رویداد کوتاه می‌ماند) */
+  function cmIsSys(r){ const m = String(pick(r,N.msg) || ''); try{ if(assignParts(m)) return true; }catch(e){}
+    return /^بررسی داخلی به .+ واگذار شد|^نیاز به اصلاح دارد|این مورد را برای بررسی داخلی ابلاغ کرد/.test(m); }
+  window.cmIsSys = cmIsSys;
   function buildCmIndex(){
     const byKey = new Map(), cnt = new Map();
     (commentCache.rows || []).forEach(r => {
       const k = cmKey(cmParts(r).target, pick(r,N.itemId) || '');
       if(!byKey.has(k)) byKey.set(k, []);
       byKey.get(k).push(r);
-      cnt.set(k, (cnt.get(k) || 0) + 1);
+      if(!cmIsSys(r)) cnt.set(k, (cnt.get(k) || 0) + 1);
     });
     cmIndex = {byKey, cnt};
   }
@@ -37951,6 +37956,10 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(typeof isRemindRow === 'function' && isRemindRow(r)) return;
       // تگ‌کردن در نظر، تلنگر نیست
       if(isMentionRow(r)) return;
+      /* ۶۱۱: همان استثناهای نخ تلنگرها (nudgesOf): اعلان تگ در نظر و اعلان خودکار واگذاری بررسی تلنگر نیستند —
+         پیش‌تر شمرده می‌شدند و روی «تلنگر» عدد می‌آمد در حالی که تلنگری نبود */
+      const ms = String(pick(r,N.msg) || '');
+      if(String(pick(r,N.title) || '').indexOf(CM_SEP + 'TAG') !== -1 || ms.indexOf('در نظرات شما را تگ کرد') === 0 || /بررسی داخلی این مورد را به شما سپرد|این مورد را برای بررسی داخلی ابلاغ کرد/.test(ms)) return;
       n++;
     });
     return n;
@@ -100339,7 +100348,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const id = x.goto && x.goto.id;
     if(!id) return '';
     const rows = (commentCache.rows || [])
-      .filter(r => String(pick(r,N.itemId)) === String(id))
+      .filter(r => String(pick(r,N.itemId)) === String(id) && !cmIsSys(r))
       .sort((a, b) => String(pick(a,N.time)).localeCompare(String(pick(b,N.time))));
     /* تازه‌ترین نظر اول، و هر نظر دکمهٔ پسند و نپسند دارد */
     const last = rows.slice(-2).reverse();
