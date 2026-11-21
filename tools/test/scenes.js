@@ -22,6 +22,9 @@ const SCENES = [
   ['hse', () => { switchTab('tasks'); wsSet('hse'); }],
   ['wh', () => { switchTab('tasks'); wsSet('wh'); }],
   ['qc', () => { switchTab('tasks'); wsSet('qc'); }],
+  /* ۶۱۶: آرشیو (فهرست و کاشی) */
+  ['archive', () => { try{ localStorage.setItem('siteLogM.arcView', 'list'); }catch(e){} switchTab('admin'); admSetCat('archive'); }, '#arcBody'],
+  ['archive-grid', () => { switchTab('admin'); admSetCat('archive'); setTimeout(() => { const b = document.querySelector('#arcBody [data-arcv="grid"]'); b && b.click(); }, 500); }, '#arcBody'],
   ['new-doc', () => { switchTab('admin'); admSetCat('contract'); const x = document.createElement('button'); x.dataset.admquick = 'contract'; document.body.appendChild(x); x.click(); x.remove(); }, '.af'],
   ['xl', () => { switchTab('admin'); admSetCat('statement'); window.xlOpen && xlOpen('doc:statement'); }, '#xlHubM'],
 ];

@@ -53,6 +53,12 @@ PTY.forEach(([n, t], j) => {
   for(let i = 1; i <= 3; i++) lt.push({id: 'lp' + j + i, created_at: '2026-10-01T08:00:00+00:00', date_fa: addDays(T0, -i * 5 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], subject: ['درخواست صورت‌جلسه', 'اعلام نظر نقشه‌ها', 'پیگیری پرداخت'][i - 1], number: 'L-9' + j + i, party: n, sent_date: addDays(T0, -i * 5 - j), notify: 'برون‌سازمانی', owner: ENG[i % 3]});
   if(t !== 'own') ct.push({id: 'cp' + j, created_at: '2026-06-01T08:00:00+00:00', date_fa: addDays(T0, -40 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[j % 3], title: t === 'emp' ? 'قرارداد اصلی پیمان مدیریت' : 'قرارداد خدمات مشاوره و نظارت', number: 'CP-' + (900 + j), party: n, subject: '', amount: String(12000000000 * (j + 1)), paid: String(4000000000), start_date: addDays(T0, -40 - j), sent_date: addDays(T0, -40 - j), notify: 'برون‌سازمانی', review: 'تایید شده', owner: ENG[j % 3]});
 });
+/* ۶۱۶: پیوست برای آرشیو (PDF، تصویر، نقشه، اکسل، ورد) روی بخشی از اسناد */
+const EXT = ['pdf', 'pdf', 'jpg', 'dwg', 'xlsx', 'pdf', 'docx', 'png'];
+const att = (i, base) => { const n = 1 + (i % 3); let o = []; for(let j = 0; j < n; j++){ const e = EXT[(i + j) % EXT.length]; o.push('https://example.com/f/' + base + i + '_' + j + '.' + e + '#' + encodeURIComponent(base + ' ' + i + (j ? ' - ' + (j + 1) : '') + '.' + e)); } return o.join('\n'); };
+st.forEach((x, i) => { if(i % 3 === 0) x.link = att(i, 'صورت-وضعیت'); });
+ct.forEach((x, i) => { if(i % 2 === 0) x.link = att(i, 'قرارداد'); });
+lt.forEach((x, i) => { if(i % 9 === 0) x.link = att(i, 'نامه'); });
 const prevDay = addDays(T0, -1);
 const dayOf = d => ({rows: activities.filter(r => r.date_fa === d), prev_rows: activities.filter(r => r.date_fa === addDays(d, -1)), issues: issues.filter(r => r.date_fa === d), machines: []});
 function json(route, body, status){ return route.fulfill({status: status || 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(body)}); }
