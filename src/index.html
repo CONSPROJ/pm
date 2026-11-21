@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121150745">
+<meta name="pm-build" content="20261121151815">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -35985,6 +35985,26 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     return out.sort((a,b) => (a.level === b.level) ? 0 : (a.level === 'hot' ? -1 : 1));
   }
 
+  /* ۶۲۶: اعلانِ گردش از وضعیت فعلی سند سنجیده می‌شود، نه فقط از ثبتِ قدیمی‌اش:
+     «بررسی داخلی این مورد را به شما سپرد» فقط تا وقتی می‌آید که گیرنده هنوز در مسیر بررسی داخلی همان سند است و تأیید نکرده؛
+     «برای اصلاح به شما سپرد» فقط تا وقتی سند رد داخلی و مسئولش همان شخص است. ویرایش مسیر گردش (برداشتن نفر) اعلانش را هم می‌برد. */
+  function ndStale(r){
+    try{
+      const k = pick(r,N.kind), m = String(pick(r,N.msg) || '');
+      if(k !== 'statement' && k !== 'contract') return false;
+      const asg = /بررسی داخلی این مورد را به شما سپرد/.test(m), fix = /برای اصلاح به شما سپرد/.test(m);
+      if(!asg && !fix) return false;
+      const id = String(pick(r,N.itemId) || ''); if(!id || !(adminAll || []).length) return false;
+      const a = adminAll.find(x => x.kind === k && String(pick(x.row,AD.id)) === id); if(!a) return true;   // سند حذف شده
+      const to = nameKey(pick(r,N.to) || ''), st = String(pick(a.row,AD.review) || '');
+      if(asg){ if(st !== 'بررسی داخلی' && st !== 'رد داخلی') return true;
+        if(!reviewersOf(a.row).some(n => nameKey(n) === to)) return true;
+        return reviewersDoneOf(a.row).has(to); }
+      if(fix){ if(!/^رد/.test(st)) return true; return nameKey(pick(a.row, AD_OWNER[k] || ['مسئول']) || '') !== to; }
+    }catch(e){}
+    return false;
+  }
+  window.ndStale = ndStale;
   function myNudges(all){
     const me = activeUserName();
     // پیام‌های معمولی در بخش پیام‌ها دیده می‌شوند، نه در زنگوله
@@ -35992,6 +36012,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(nameKey(pick(r,N.to)) !== nameKey(me)) return false;
       const k = pick(r,N.kind);
       if(k === MSG_KIND || k === COMMENT_KIND || isReactRow(r) || isTbRow(r) || k === PR_KIND) return false;
+      if(ndStale(r)) return false;
       /* رکوردهای داده (برنامهٔ زمان‌بندی، منابع، دورهٔ همکاری) اعلان نیستند */
       if(k === 'برنامه زمانبندی' || k === 'منابع برنامه' || k === 'دوره همکاری' || k === 'کالای انبار' || k === 'گردش انبار' || k === 'درخواست انبار' || k === 'درخواست بازرسی' || k === 'عدم انطباق' || k === 'چک‌لیست کیفیت' || k === 'کاور پروفایل' || k === 'تغییر و ادعا' || k === 'ماشین‌آلات' || k === 'کارکرد ماشین' || k === 'بودجه پروژه' || k === 'عکس پیشرفت' || k === 'پشتیبان سامانه') return false;
       // اعلان گزارش‌نفرستاده‌ای که گزارشش بعداً ثبت شده، نمایش داده نمی‌شود
@@ -66474,7 +66495,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         await supaFetch(table + '?id=eq.' + encodeURIComponent(obj.id), {method:'DELETE'});
         return true;
       }
-      let rvAddN = null;
+      let rvAddN = null, rvDropN = [];
       /* هر مسیری (منوی سریع، فرم ویرایش، کارت‌ها) که گروه بررسی را عوض
          کند و سند روی «رد» مانده باشد، سند را به «بررسی داخلی» برمی‌گرداند.
          پیش‌تر فقط منوی سریع این کار را می‌کرد و فرم ویرایش سند را روی
@@ -66502,6 +66523,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
           const bArr = before.split('|').map(x => x.trim()).filter(Boolean);
           const aArr = after.split('|').map(x => x.trim()).filter(Boolean);
           rvAddN = {kind: obj.target, id: obj.id, add: aArr.filter(n0 => !bArr.some(b0 => nameKey(b0) === nameKey(n0))), all: aArr};
+          rvDropN = bArr.filter(b0 => !aArr.some(n0 => nameKey(n0) === nameKey(b0)));
           const kept = bArr.filter(b0 => aArr.some(n0 => nameKey(n0) === nameKey(b0)));
           const replaced = bArr.length && aArr.length && kept.length < bArr.length;
 
@@ -66565,6 +66587,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       }
       /* ۶۲۵: هر مسیری که نفر تازه برای بررسی داخلی ابلاغ کند، همان لحظه اعلان مستقیم */
       if(rvAddN && rvAddN.add.length) try{ setTimeout(() => { try{ notifyNewReviewers(rvAddN.kind, rvAddN.id, rvAddN.add, rvAddN.all); }catch(e){} }, 0); }catch(e){}
+      /* ۶۲۶: نفری که از مسیر برداشته شد: اعلان ابلاغ همین سند برایش «خوانده» می‌شود (در همهٔ دستگاه‌ها و شمارها) */
+      if(rvDropN.length) try{ setTimeout(async () => { for(const w of rvDropN){ try{ await supaFetch('nudges?item_id=eq.' + encodeURIComponent(obj.id) + '&to_name=eq.' + encodeURIComponent(w) + '&kind=eq.' + encodeURIComponent(obj.target) + '&message=like.' + encodeURIComponent('*بررسی داخلی این مورد را به شما سپرد*'), {method: 'PATCH', body: {seen: true}}); }catch(e){} } try{ invalidateNudges && invalidateNudges(); }catch(e){} }, 0); }catch(e){}
       return true;
     }catch(err){
       lastServerError = friendlyErr(err);
