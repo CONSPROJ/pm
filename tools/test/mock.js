@@ -51,7 +51,13 @@ const PTY = [['شرکت توسعهٔ آریا', 'emp'], ['مهندسین مشا�
 const FORMS = [{id:'fm1', t:'فرم معیار صورتجلسه', g:'اداری', nt:'برای همهٔ جلسات هماهنگی هفتگی', by:'آقای مهدی نعیمی', d:'1405/07/29', f:'https://example.com/f/MOM.pdf#MOM.pdf'},
   {id:'fm2', t:'فرم مجوز کار در ارتفاع', g:'ایمنی', nt:'پیش از هر کار بالای ۲ متر', by:'آقای پارسا محمودی', d:'1405/06/10', f:'https://example.com/f/permit.docx#permit.docx'},
   {id:'fm3', t:'درخواست بازرسی (IR)', g:'کیفیت', nt:'', by:'آقای امیر ابراهیمی', d:'1405/05/02', f:'https://example.com/f/IR.xlsx#IR.xlsx\nhttps://example.com/f/IR-guide.pdf#IR-guide.pdf'}];
-const lists = FORMS.map(f => ({kind: 'فرم آرشیو', value: JSON.stringify(f)})).concat(PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})})));
+const TRN = [
+  {id:'ibt1', t:'design', st:'q', by:'آقای پارسا محمودی', to:'آقای مهدی نعیمی', at:'1405/08/27 10:20', no:'RAR-TRN-0007', ti:'نقشه‌های معماری طبقات ۳ تا ۵ — ویرایش ۲', party:'مشاور طرح نو', poi:'برای تأیید', due:'1405/08/25',
+   docs:[{ti:'پلان طبقه سوم', disc:'معماری', code:'A-301', full:'RAR-AR-L03-DR-A-301', rev:'2'}, {ti:'پلان طبقه چهارم', disc:'معماری', code:'A-401', full:'RAR-AR-L04-DR-A-401', rev:'2'}], log:[]},
+  {id:'ibt2', t:'design', st:'ok', by:'آقای پارسا محمودی', at:'1405/08/10 09:00', no:'RAR-TRN-0006', ti:'سازه — دیتیل‌های فونداسیون', party:'مشاور طرح نو', poi:'برای بررسی و اظهارنظر', rv:'آقای مهدی نعیمی',
+   docs:[{ti:'دیتیل فونداسیون ۱', disc:'سازه', code:'S-101', rev:'1', rv:'A'}, {ti:'دیتیل فونداسیون ۲', disc:'سازه', code:'S-102', rev:'1', rv:'B'}, {ti:'مقاطع شمع', disc:'سازه', code:'S-103', rev:'1', rv:'C'}], log:[]},
+  {id:'ibt3', t:'design', st:'no', by:'آقای مهدی نعیمی', at:'1405/07/02 14:00', no:'RAR-TRN-0004', ti:'تأسیسات برقی — روشنایی لابی', party:'تیم مدیریت پروژه', poi:'برای اطلاع', docs:[{ti:'روشنایی لابی', disc:'تأسیسات برقی', code:'E-210', rev:'0', rv:'D'}], log:[]}];
+const lists = TRN.map(o => ({kind: 'صندوق ورودی', value: o.id + '\u00a6' + JSON.stringify(Object.assign({}, o, {id: undefined}))})).concat(FORMS.map(f => ({kind: 'فرم آرشیو', value: JSON.stringify(f)}))).concat(PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})})));
 PTY.forEach(([n, t], j) => {
   for(let i = 1; i <= 3; i++) lt.push({id: 'lp' + j + i, created_at: '2026-10-01T08:00:00+00:00', date_fa: addDays(T0, -i * 5 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], subject: ['درخواست صورت‌جلسه', 'اعلام نظر نقشه‌ها', 'پیگیری پرداخت'][i - 1], number: 'L-9' + j + i, party: n, sent_date: addDays(T0, -i * 5 - j), notify: 'برون‌سازمانی', owner: ENG[i % 3]});
   if(t !== 'own') ct.push({id: 'cp' + j, created_at: '2026-06-01T08:00:00+00:00', date_fa: addDays(T0, -40 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[j % 3], title: t === 'emp' ? 'قرارداد اصلی پیمان مدیریت' : 'قرارداد خدمات مشاوره و نظارت', number: 'CP-' + (900 + j), party: n, subject: '', amount: String(12000000000 * (j + 1)), paid: String(4000000000), start_date: addDays(T0, -40 - j), sent_date: addDays(T0, -40 - j), notify: 'برون‌سازمانی', review: 'تایید شده', owner: ENG[j % 3]});
@@ -89,6 +95,7 @@ async function install(page){
       return json(route, a); }
     if(path.startsWith('issues')){ const g = url.match(/date_fa=gte\.([\d/]+)/), l = url.match(/date_fa=lte\.([\d/]+)/); let a = issues; if(g) a = a.filter(r => r.date_fa >= g[1]); if(l) a = a.filter(r => r.date_fa <= l[1]); return json(route, a); }
     if(path.startsWith('tasks')) return json(route, tk);
+    if(path.startsWith('lists')){ const k = url.match(/kind=eq\.([^&]+)/); return json(route, (k ? lists.filter(r => r.kind === k[1]) : lists).map(r => ({kind: r.kind, value: r.value}))); }
     return json(route, []);
   });
 }
