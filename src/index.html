@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121095651">
+<meta name="pm-build" content="20261121104726">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32425,6 +32425,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 @media (min-width:1180px){ :is(html,#z0) :is(body,#z1) .app-head{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:color-mix(in srgb, var(--canvas) 96%, transparent) !important;}
   :is(html,#z0) :is(body,#z1) .fd-toggle{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;} }
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+/* ۶۱۷: زیرگروه داخل گروه اصلی — تورفتگی ملایم، سرتیتر کوچک‌تر و خط راهنمای رنگی */
+:is(html,#z0) :is(body,#z1) .adm-subs{display:flex;flex-direction:column;gap:6px;padding:6px 0 4px;}
+:is(html,#z0) :is(body,#z1) .adm-grp.adm-sub2{margin-inline-start:12px !important;border-inline-start:2px solid color-mix(in srgb, var(--sky) 30%, var(--line)) !important;border-radius:0 12px 12px 0 !important;}
+:is(html,#z0) :is(body,#z1) .adm-grp.adm-sub2 > .adm-grp-head{min-height:36px !important;padding:4px 10px !important;background:color-mix(in srgb, var(--sky) 5%, transparent) !important;}
+:is(html,#z0) :is(body,#z1) .adm-grp.adm-sub2 > .adm-grp-head b{font-size:12.5px !important;font-weight:700 !important;}
+:is(html,#z0) :is(body,#z1) .adm-grp.adm-sub2 > .adm-grp-head .ap-ic{width:22px !important;height:22px !important;}
+:is(html,#z0) :is(body,#z1) .avb-sub[hidden]{display:none !important;}
 /* ۶۱۶: آرشیو از نو */
 :is(html,#z0) :is(body,#z1) #arcBody .arx-c > .arx-cv.arx-cv{width:100% !important;box-sizing:border-box;}
 :is(html,#z0) :is(body,#z1) #arcBody .arx-c > .arx-nm.arx-nm{width:100% !important;box-sizing:border-box;flex-direction:column !important;align-items:flex-start !important;}
@@ -33335,6 +33342,10 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       <label class="avb-sel avb-grp" title="گروه‌بندی فهرست">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="6" rx="1.8"/><rect x="3.5" y="14" width="17" height="6" rx="1.8"/></svg>
         <u class="avb-pre">گروه‌بندی</u><select id="admGrpSel" aria-label="گروه‌بندی"></select>
+      </label>
+      <label class="avb-sel avb-sub" title="زیرگروه: داخل هر گروه، دستهٔ دوم (مثلاً طبقه ← رشته)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8 12h12M8 19h12M4 5v14"/></svg>
+        <u class="avb-pre">زیرگروه</u><select id="admSubSel" aria-label="زیرگروه"></select>
       </label>
       <button type="button" class="avb-sw" data-admgroupsw="1" role="switch" aria-checked="false">
         <span class="sw" aria-hidden="true"><i></i></span><span class="avb-swl">تفکیک رسیدگی</span>
@@ -68027,6 +68038,46 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     design:    [['floor','طبقه'], ['disc','رشته (دیسیپلین)'], ['hold','مرحلهٔ گردش'], ['designer','طراح'], ['none','بدون گروه']]
   };
   const ADM_GRP_DEF = {statement:'notify', contract:'notify', letter:'none', minute:'meet', design:'floor'};
+  /* ۶۱۷: زیرگروه — داخل هر گروه اصلی، دستهٔ دوم (مثلاً طبقه ← رشته). هر دسته گزینه‌های خودش؛ هم‌نام گروه اصلی نشان داده نمی‌شود */
+  const ADM_SUB_OPTS = {
+    statement: [['none','بدون زیرگروه'], ['party','طرف قرارداد'], ['review','مرحلهٔ رسیدگی'], ['month','ماه']],
+    contract:  [['none','بدون زیرگروه'], ['party','طرف قرارداد'], ['review','مرحلهٔ رسیدگی'], ['month','ماه']],
+    letter:    [['none','بدون زیرگروه'], ['party','طرف مکاتبه'], ['dir','دریافتی / ارسالی'], ['month','ماه']],
+    design:    [['none','بدون زیرگروه'], ['disc','رشته (دیسیپلین)'], ['floor','طبقه'], ['designer','طراح'], ['month','ماه']]
+  };
+  const admSubOf = k => { let v = ''; try{ v = localStorage.getItem(pjLs('admSub.' + k)) || ''; }catch(e){} const g = admGrpOf(k); return (ADM_SUB_OPTS[k] || []).some(o => o[0] === v) && v !== g ? v : 'none'; };
+  const admSubSet = (k, v) => { try{ localStorage.setItem(pjLs('admSub.' + k), v); }catch(e){} };
+  window.admSubOf = admSubOf;
+  /* مقدار(های) زیرگروه یک سند — سند چندرشته‌ای زیر هر رشته‌اش */
+  function admSubVals(kind, sub, r){
+    try{
+      if(sub === 'party'){ const p = String(admParty(kind, r) || '').trim(); return [p || 'بدون طرف']; }
+      if(sub === 'review'){ const v = String(effectiveReview(r) || '').trim(); return [v === 'تایید شده' ? 'تأیید نهایی' : (v || 'بدون وضعیت رسیدگی')]; }
+      if(sub === 'dir') return [typeof ltrDirOf === 'function' && ltrDirOf(r) === 'دریافتی' ? 'دریافتی' : 'ارسالی'];
+      if(sub === 'month'){ const d = toEn(normDate(admSentDate(kind, r)) || ''); return [d ? faMonName(d.slice(0, 7)) : 'بدون تاریخ']; }
+      if(sub === 'disc'){ const D = String(pick(r, AD.dDisc) || '').split(/[،,|]/).map(x => x.trim()).filter(Boolean); return D.length ? D : ['بدون رشته']; }
+      if(sub === 'floor') return [dsFloorName(dsFloorKeys(r)[0])];
+      if(sub === 'designer') return [dsPersonOf(r)];
+    }catch(e){}
+    return ['—'];
+  }
+  /* ترتیب زیرگروه‌ها: طبقه از بالا به پایین، رشته طبق فهرست رشته‌ها، ماه جدید به قدیم، بقیه پرتعدادتر اول؛ «بدون…» آخر */
+  function admSubHtml(kind, sub, items, inner, pkey){
+    const M = new Map(); items.forEach(r => admSubVals(kind, sub, r).forEach(v => { if(!M.has(v)) M.set(v, []); M.get(v).push(r); }));
+    if(M.size < 2 && items.length < 4) return inner(items);
+    let E = Array.from(M.entries());
+    const none = v => /^بدون/.test(v) || v === '—';
+    if(sub === 'floor'){ const ord = new Map(); items.forEach(r => { const k = dsFloorKeys(r)[0]; const nm = dsFloorName(k); if(!ord.has(nm)) ord.set(nm, dsFloorOrd(k)); }); E.sort((a, b) => (ord.get(a[0]) || 0) - (ord.get(b[0]) || 0)); }
+    else if(sub === 'disc'){ const DO = (function(){ let L = []; try{ L = dcTab('dsc').map(x => x[1]); }catch(e){} return L.length ? L : DESIGN_DISC; })(); const o = d => none(d) ? 999 : (DO.indexOf(d) === -1 ? 500 : DO.indexOf(d)); E.sort((a, b) => o(a[0]) - o(b[0]) || a[0].localeCompare(b[0], 'fa')); }
+    else if(sub === 'month'){ const key = l => { const d = toEn(normDate(admSentDate(kind, l[0])) || ''); return d; }; E.sort((a, b) => none(a[0]) - none(b[0]) || key(b[1]).localeCompare(key(a[1]))); }
+    else E.sort((a, b) => none(a[0]) - none(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0], 'fa'));
+    return '<div class="adm-subs">' + E.map(([v, l]) => { const key = 'sub|' + kind + '|' + sub + '|' + (pkey || '') + '|' + v, open = admGrpOpen.get(key) !== false;
+      return '<div class="adm-grp adm-sub adm-sub2 g-info' + (open ? ' open' : '') + '" data-grp="' + esc(key) + '">'
+        + '<button type="button" class="adm-grp-head" aria-expanded="' + open + '">'
+        + (sub === 'designer' || sub === 'party' ? (none(v) ? '<i class="gd" aria-hidden="true"></i>' : '<span class="ap-ic ava g-av">' + ctrAvaIn(v) + '</span>') : '<i class="gd" aria-hidden="true"></i>')
+        + '<span class="g-tx"><b>' + esc(v) + '</b></span><span class="gn">' + toFa(l.length) + ' مورد</span><span class="grp-ar" aria-hidden="true">' + (open ? '▴' : '▾') + '</span></button>'
+        + '<div class="adm-grp-body">' + inner(l) + '</div></div>'; }).join('') + '</div>';
+  }
   function admSortOn(k){ return k !== 'minute' && admSortK(k) !== 'new-desc'; }
   /* مرتب‌سازی دستی فعال است: تکه‌تکه کردن پنهان (پیمانکار، شمارهٔ سند) کنار می‌رود تا ترتیب انتخابی دست‌نخورده دیده شود */
   const admManual = k => admSortK(k) !== 'new-desc';
@@ -77670,7 +77721,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         return tg + Array.from(by.entries()).sort((a, b) => dOrd(a[0]) - dOrd(b[0]) || a[0].localeCompare(b[0], 'fa')).map(([k, list]) => {
           const bad = list.filter(r => dsCls(r) === 'bad').length, ok = list.filter(r => dsCls(r) === 'ok').length;
           const gk = openP('design|dc:' + k);
-          return grpHtml(gk, {t: k, c: bad ? 'bad' : (ok === list.length ? 'ok' : 'info')}, list, dsGrpPerson ? byPerson(gk, list) : bodyHtml(list), false);
+          return grpHtml(gk, {t: k, c: bad ? 'bad' : (ok === list.length ? 'ok' : 'info')}, list, (dsGrpPerson && admSubOf('design') === 'none') ? byPerson(gk, list) : bodyHtml(list), false);
         }).join('');
       }
       if(dsGrpMode === 'floor'){
@@ -77682,7 +77733,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
           void dOrd;
           const bad = list.filter(r => dsCls(r) === 'bad').length, ok = list.filter(r => dsCls(r) === 'ok').length;
           const gk = openP('design|f:' + k);
-          return grpHtml(gk, {t: dsFloorName(k), c: bad ? 'bad' : (ok === list.length ? 'ok' : 'info')}, list, dsGrpPerson ? byPerson(gk, list) : bodyHtml(list), false);
+          return grpHtml(gk, {t: dsFloorName(k), c: bad ? 'bad' : (ok === list.length ? 'ok' : 'info')}, list, (dsGrpPerson && admSubOf('design') === 'none') ? byPerson(gk, list) : bodyHtml(list), false);
         }).join('');
       }
       return tg + (function(){
@@ -77691,7 +77742,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       return groupBy(rows, gOf, DG.map(x => x[0])).map(([v, list]) => {
         const g = DG.find(x => x[0] === v) || [v, v || 'بدون گردش', 'off'];
         const gk = openP('design|h:' + v);
-        return grpHtml(gk, {t: g[1], c: g[2]}, list, dsGrpPerson ? byPerson(gk, list) : admByPartyHtml(kind, list, bodyHtml), false);
+        return grpHtml(gk, {t: g[1], c: g[2]}, list, (dsGrpPerson && admSubOf('design') === 'none') ? byPerson(gk, list) : admByPartyHtml(kind, list, bodyHtml), false);
       }).join('');
       })();
     }
@@ -77712,6 +77763,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      می‌آیند تا کاربر مستقیم سراغ پیمانکار موردنظرش برود. اگر فقط یک
      طرف باشد یا موارد کم باشند، همان فهرست ساده می‌ماند. */
   function admByPartyHtml(kind, list, bodyHtml){
+    /* زیرگروه انتخاب شده: تفکیک پنهانِ طرف کنار می‌رود (مگر خودِ گروه اصلی «طرف» باشد — آرگومان چهارم) */
+    try{ if(!arguments[3] && window.admSubOf && ADM_SUB_OPTS[kind] && admSubOf(kind) !== 'none') return bodyHtml(list); }catch(e){}
     const sorted = admSortDoneLast(kind, list);
     const byP = new Map();
     sorted.forEach(row => {
@@ -78004,7 +78057,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
           + ad.map(a2 => admFastRow(k, a2).replace('class="afr ', 'class="afr afr-add ')).join('') + '</div></div>';
       };
       // در قرارداد و نامه، زیر نام هر فرد بر اساس شمارهٔ سند هم تیتر می‌خورد
-      const bodyHtml = items => {
+      /* ۶۱۷: زیرگروه انتخابی، بعد همان بدنهٔ قبلی */
+      const subK = (k in ADM_SUB_OPTS) ? admSubOf(k) : 'none';
+      let subSeq = 0;
+      const bodyHtml = items => subK !== 'none' ? admSubHtml(k, subK, items, bodyHtml0, String(++subSeq) + ':' + String(pick(items[0] || {}, AD.id) || '')) : bodyHtml0(items);
+      const bodyHtml0 = items => {
         /* فهرست سریع: بدون گروه‌بندی شماره، فقط سطرهای فشرده */
         if(admView === 'fast')
           return admFastList(items, fastOf);
@@ -78032,7 +78089,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 
       /* بدون گروه: یک فهرست پیوسته به همان ترتیب انتخابی */
       if(grp === 'none'){
-        box.innerHTML = admView === 'fast'
+        box.innerHTML = subK !== 'none' ? bodyHtml(rows) : admView === 'fast'
           ? admFastList(rows, fastOf)
           : '<div class="adm-list-grid">' + rows.flatMap(row => [row].concat(cAdds.get(row) || [])).map(row => admCard(k, row, true)).join('') + '</div>';
         return;
@@ -78861,10 +78918,15 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         gs.value = g;
       }
       bar.classList.toggle('grouped', g !== (ADM_GRP_DEF[k] || 'none'));
+      { const ss = document.getElementById('admSubSel'), lab = ss && ss.closest('label');
+        const opts = (ADM_SUB_OPTS[k] || []).filter(o => o[0] !== g);
+        if(lab) lab.hidden = !opts.length;
+        if(ss && opts.length){ const html = opts.map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join(''); if(ss.__h !== html){ ss.innerHTML = html; ss.__h = html; } ss.value = admSubOf(k); }
+        bar.classList.toggle('subbed', opts.length > 0 && admSubOf(k) !== 'none'); }
       /* زیرگروه: صورت وضعیت، قرارداد و نامه زیر وضعیت ابلاغ ← رسیدگی؛ اسناد طراحی ← طراح */
       let swOn = null, swT = '';
       if(g === 'notify' && ADM_BY_REVIEW.indexOf(k) !== -1){ swOn = admGroupMode === 'nested'; swT = 'تفکیک رسیدگی'; }
-      else if(k === 'design' && (g === 'floor' || g === 'hold' || g === 'disc')){ swOn = !!dsGrpPerson; swT = 'تفکیک طراح'; }
+      else if(k === 'design' && (g === 'floor' || g === 'hold' || g === 'disc') && admSubOf('design') === 'none'){ swOn = !!dsGrpPerson; swT = 'تفکیک طراح'; }
       if(sw){
         sw.hidden = swOn == null;
         if(swOn != null){
@@ -78904,6 +78966,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     { const db = document.getElementById('admSortDir');
       if(db) db.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const [f, dir] = String(admSort || 'new-desc').split('-'); setSort((so ? so.value : f) + '-' + (dir === 'asc' ? 'desc' : 'asc')); }); }
     if(gs) gs.addEventListener('change', () => { admGrpSet(curCat(), gs.value); redraw(); });
+    { const ss = document.getElementById('admSubSel'); if(ss) ss.addEventListener('change', () => { admSubSet(curCat(), ss.value); redraw(); }); }
     bar.addEventListener('click', e => {
       if(e.target.closest('[data-admgroupsw]')){
         const k = curCat();
