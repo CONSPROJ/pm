@@ -967,3 +967,6 @@
 - داده: همان مکاتبات (`صندوق ورودی`، t=design)؛ `window.ibTrAll / ibTrSt / ibTrWaitMe / ibTrOpen` — کلیک کاشی همان صفحهٔ بررسی و تأیید A تا D را باز می‌کند.
 - جست‌وجوی Ctrl+K: ترنسمیتال با شماره، موضوع و کد مدارک (`trn:<id>`).
 - CSS آرشیو برای `#trnBody` هم (`:is(#arcBody,#trnBody)`)؛ mock: سه ترنسمیتال نمونه و پاسخ `lists?kind=eq.`؛ صحنه‌های `transmittals` و `trn-sec`.
+
+## 621 — انیمیشن جابه‌جایی صفحه‌های اصلی روی دسکتاپ
+- دسکتاپ (`UI_DESK`) همهٔ حرکت‌ها را خاموش داشت؛ حالا در switchTab صفحهٔ تازه با Web Animations محو و ۱۴px جابه‌جا وارد می‌شود (۳۰۰ms، فقط opacity/transform، بی fill)، جهت بنا به ترتیب زبانه‌ها. با reduced-motion / html.rm خاموش.

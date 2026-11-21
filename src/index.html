@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121115822">
+<meta name="pm-build" content="20261121122052">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -54806,6 +54806,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(bx) uiArm(bx);
     }catch(e){}
     try{ window.bentoNow && window.bentoNow(document.getElementById(TABS[name].panel)); }catch(e){}
+    /* ۶۲۱: دسکتاپ — جابه‌جایی نرم صفحه‌های اصلی: صفحهٔ تازه با محو و کمی بالا آمدن (فقط opacity و transform؛ بی محاسبهٔ دوبارهٔ استایل/چیدمان، سبک برای کارت گرافیک ضعیف).
+       همان لحظهٔ پیدا شدن شروع می‌شود (Web Animations) تا فریمی بی‌انیمیشن دیده نشود؛ fill ندارد تا transform بعد از پایان نماند */
+    if(changed && innerWidth >= 701){ try{ const P = document.getElementById(TABS[name].panel), rm = document.documentElement.classList.contains('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if(P && !rm && P.animate){ (P.getAnimations ? P.getAnimations() : []).forEach(a => { if(a.id === 'pgx') a.cancel(); });
+          const up = order.indexOf(name) > order.indexOf(prev) ? 1 : -1;
+          const a = P.animate([{opacity: 0, transform: 'translate3d(0,' + (14 * up) + 'px,0)'}, {opacity: 1, transform: 'none'}], {duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)'}); a.id = 'pgx'; } }catch(e){} }
     if(changed){
       try{
         const dir = order.indexOf(name) > order.indexOf(prev) ? -1 : 1;
