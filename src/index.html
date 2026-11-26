@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126191626">
+<meta name="pm-build" content="20261126192951">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32493,6 +32493,13 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 /* ۶۳۹: زبانه‌های مرکز پرونده‌ها روی گوشی: نوار لغزان با فاصله از لبه */
 @media (max-width:720px){ :is(html,#z0) :is(body,#z1) .cdx-tabs{overflow-x:auto !important;padding-inline:8px !important;scrollbar-width:none;scroll-padding-inline:8px;} :is(html,#z0) :is(body,#z1) .cdx-tabs::-webkit-scrollbar{display:none;} :is(html,#z0) :is(body,#z1) .cdx-tabs > button{flex:none !important;padding-inline:12px !important;} }
 /* ۶۴۸: یک فرم برای همهٔ تطبیق‌ها */
+:is(html,#z0) :is(body,#z1) .gm-eb{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);}
+:is(html,#z0) :is(body,#z1) .gm-eb > b{font-size:12.5px;font-weight:800;color:var(--ink);} :is(html,#z0) :is(body,#z1) .gm-eb > small{font-size:11.5px;color:var(--muted);line-height:1.7;}
+:is(html,#z0) :is(body,#z1) .gm-eb.dng{border-color:color-mix(in srgb, #d0453a 30%, var(--line));background:color-mix(in srgb, #d0453a 4%, var(--surface));} :is(html,#z0) :is(body,#z1) .gm-eb.dng > b{color:#a8322a;}
+:is(html,#z0) :is(body,#z1) .gm-er{display:flex;flex-wrap:wrap;gap:6px;align-items:center;} :is(html,#z0) :is(body,#z1) .gm-er .gm-in{flex:1 1 220px;height:40px;border-radius:10px;}
+:is(html,#z0) :is(body,#z1) .gm-kw{display:flex;flex-direction:column;gap:4px;min-width:0;} :is(html,#z0) :is(body,#z1) .gm-kw .gm-k{flex:1;}
+:is(html,#z0) :is(body,#z1) .gm-kd{all:unset;cursor:pointer;align-self:flex-start;font-size:11px;font-weight:700;color:#a8322a;padding:2px 8px;border-radius:7px;} :is(html,#z0) :is(body,#z1) .gm-kd:hover{background:color-mix(in srgb, #d0453a 10%, var(--surface));}
+
 :is(html,#z0) :is(body,#z1) .gm{display:flex;flex-direction:column;gap:14px;}
 :is(html,#z0) :is(body,#z1) .gm button{font-family:var(--f);}
 :is(html,#z0) :is(body,#z1) .gm-s{padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:10px;}
@@ -44954,17 +44961,20 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       merge: async (from, to) => { const ok = await kxMerge(from, to); if(ok){ try{ await ctrDropName(from); }catch(e){} } return ok; },
       distinct: async (a, b) => { await kxLink(a, b, false); },
       link: async (a, b, keep) => { await kxLink(a, b, true); await kxSetPrimary(keep); },
-      remove: async (n, rep, o) => { if(rep) return GM.names.merge(n, rep); if(gmUsed(o)){ showDialog('warn', 'نام درست لازم است', '«' + n + '» در گزارش‌ها یا اسناد آمده؛ نام درست را بنویسید تا آن رکوردها به آن منتقل شوند.'); return false; }
-        if(!(await askConfirm('حذف نام', '«' + n + '» در هیچ گزارش یا سندی نیامده؛ از پرونده‌ها و فهرست‌ها برداشته شود؟', 'حذف'))) return false; try{ await kxUnlink(n); }catch(e){} return !!(await ctrDropName(n)); },
+      remove: async (n, rep, o) => { if(rep) return GM.names.merge(n, rep);
+        if(!(await askConfirm('حذف کامل نام', '«' + n + '» از پرونده‌ها، پیوندها و همهٔ فهرست‌های انتخاب حذف شود؟' + (gmUsed(o) ? '\n\n' + toFa(gmUsed(o)) + ' گزارش و سند قبلی همان نوشته را نگه می‌دارند (پاک نمی‌شوند). اگر می‌خواهید آن‌ها هم عوض شوند، «جایگزینی کامل» را بزنید.' : ''), 'حذف'))) return false;
+        try{ await kxUnlink(n); }catch(e){} return !!(await ctrDropName(n)); },
+      rmNote: o => gmUsed(o) ? 'از پرونده‌ها و فهرست‌ها حذف می‌شود؛ گزارش‌ها و اسناد قبلی دست نمی‌خورند' : 'در هیچ گزارش یا سندی نیامده؛ کامل حذف می‌شود',
       open: n => { try{ ctcOpen(n); }catch(e){} }, openT: 'پرونده'},
     disc: {t: 'رشته', ts: 'رشته‌ها', ph: 'نام درست رشته، مثلاً تأسیسات الکتریکال',
       items: () => { let U = []; try{ U = discUsage(); }catch(e){} return U.map(o => ({n: o.n, u: o.t + o.c + o.p + o.d, d: [o.t ? toFa(o.t) + ' فعالیت' : '', o.c ? toFa(o.c) + ' پیمانکار' : '', o.p ? toFa(o.p) + ' نفر' : '', o.d ? toFa(o.d) + ' سند طراحی' : ''].filter(Boolean).join(' · ')})); },
       dupes: () => { let D = []; try{ D = discDupes(); }catch(e){} return D.map(x => ({a: {n: x.a.n, u: x.a.t + x.a.c + x.a.p + x.a.d}, b: {n: x.b.n, u: x.b.t + x.b.c + x.b.p + x.b.d}, sim: x.sm, key: x.key})); },
       merge: (from, to) => discRename(from, to),
       distinct: async (a, b) => { const k = [a, b].sort().join('|'), cur = String((window.pmRule ? window.pmRule('discNo', '') : '') || ''); await window.coRuleSet({discNo: cur.split(';').filter(Boolean).concat([k]).join(';')}); try{ window.__pmRules.discNo = cur ? cur + ';' + k : k; }catch(e){} },
-      remove: async (n, rep, o) => { if(rep) return discRename(n, rep); if(gmUsed(o)){ showDialog('warn', 'جایگزین لازم است', '«' + n + '» کاربرد دارد؛ رشتهٔ درست را بنویسید تا کاربردهایش به آن منتقل شوند.'); return false; }
-        if(!(await askConfirm('حذف رشته', '«' + n + '» از فهرست رشته‌ها برداشته شود؟', 'حذف'))) return false;
+      remove: async (n, rep, o) => { if(rep) return discRename(n, rep);
+        if(!(await askConfirm('حذف کامل رشته', '«' + n + '» از فهرست رشته‌ها و همهٔ انتخاب‌ها حذف شود؟' + (gmUsed(o) ? '\n\n' + toFa(gmUsed(o)) + ' کاربرد قبلی (فعالیت، پیمانکار، سند) همان نوشته را نگه می‌دارد. برای انتقال آن‌ها «جایگزینی کامل» را بزنید.' : ''), 'حذف'))) return false;
         try{ await kxListDel(TK_CAT_KIND, n); }catch(e){} tkCatHidden.add(n); try{ await kxListAdd(TK_CAT_HIDE, n); }catch(e){} clearNetCache(); return true; },
+      rmNote: o => gmUsed(o) ? 'از فهرست و انتخاب‌ها حذف می‌شود؛ کاربردهای قبلی دست نمی‌خورند' : 'کاربردی ندارد؛ کامل حذف می‌شود',
       tool: ['نشان و رنگ رشته‌ها', 'data-phtool="disc"']},
     skill: {t: 'تخصص', ts: 'تخصص‌ها', ph: 'نام درست تخصص، مثلاً آرماتوربندی',
       items: () => { let U = []; try{ U = skUsage(); }catch(e){} return U.map(o => ({n: o.n, u: o.r + o.c, d: [o.r ? toFa(o.r) + ' ردیف گزارش' : '', o.c ? toFa(o.c) + ' پیمانکار' : ''].filter(Boolean).join(' · ') || 'فقط در فهرست'})); },
@@ -44975,15 +44985,24 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         if(rep) return skRename(n, rep);
         if(!(await askConfirm('حذف تخصص', '«' + n + '» حذف شود؟' + (x.r || x.c ? '\n\nجایگزینی نوشته نشده؛ این تخصص از پرونده‌های پیمانکار برداشته و در ' + toFa(x.r) + ' ردیف گزارش خالی می‌شود.' : ''), 'حذف'))) return false;
         if(x.r || x.c) return skClear(n, x);
-        try{ await kxListDel('تخصص', n); }catch(e){} skHidden.add(n); skPersist(); try{ await kxListAdd(SK_HIDE_KIND, n); }catch(e){} clearNetCache(); return true; }},
+        try{ await kxListDel('تخصص', n); }catch(e){} skHidden.add(n); skPersist(); try{ await kxListAdd(SK_HIDE_KIND, n); }catch(e){} clearNetCache(); return true; },
+      rmNote: o => gmUsed(o) ? 'از پرونده‌ها و فهرست حذف و در ' + toFa(o.u) + ' ردیف گزارش خالی می‌شود' : 'کاربردی ندارد؛ کامل حذف می‌شود'},
     loc: {t: 'محل', ts: 'محل‌ها', ph: 'محل درست یا فضای تعریف‌شده',
       items: () => { if(typeof mt === 'undefined' || !mt.rows){ try{ mtLoad(); }catch(e){} return null; }
         return mt.rows.filter(x => x.n > 0).map(x => { const m = mtMatchOf(x.z); return {n: x.z, u: x.n, d: toFa(x.n) + ' ردیف گزارش', st: m.ok ? (zmKey(m.to) !== zmKey(x.z) ? '← ' + m.to : 'فضای تعریف‌شده') : '', bad: !m.ok}; }); },
       dupes: () => { try{ const D = mrData(); const L = D.l1.concat(D.l2), m = new Map(); L.forEach(x => { const k = zmKey(x.v); const o = m.get(k) || {v: x.v, n: 0}; o.n += x.n; m.set(k, o); });
           return mrPairs(Array.from(m.values())).map(p => ({a: {n: p.a.v, u: p.a.n}, b: {n: p.b.v, u: p.b.n}, sim: p.sim || 0})); }catch(e){ return []; } },
-      merge: async (from, to, quiet) => { if(!quiet && !(await askConfirm('یکی کردن محل', '«' + from + '» در همهٔ گزارش‌ها «' + to + '» حساب شود؟', 'یکی کن'))) return false; await mrAlias(from, to); await zmSaveAlias(); return true; },
+      merge: async (from, to, quiet) => { if(!quiet && !(await askConfirm('جایگزینی کامل محل', '«' + from + '» در همهٔ ردیف‌های گزارش به «' + to + '» تغییر کند؟', 'جایگزین کن'))) return false;
+        await supaFetch('activities?zone=eq.' + encodeURIComponent(from), {method: 'PATCH', body: {zone: to}});
+        try{ (allRows || []).forEach(r => { if(String(pick(r,F.zone) || '').trim() === from) setCell(r, 'محل کارکرد', to); }); }catch(e){}
+        await mrAlias(from, to); await zmSaveAlias(); try{ const x = mt.rows.find(r => r.z === from), y = mt.rows.find(r => r.z === to); if(x){ if(y){ y.n += x.n; x.n = 0; } else x.z = to; } }catch(e){} return true; },
       distinct: async (a, b) => { await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: ZM_DIST_KIND, value: zmKey(a) + ZM_SEP + zmKey(b)}]}); zmLocAdd(ZM_DIST_KIND, [zmKey(a) + ZM_SEP + zmKey(b)]); ZM_DIST.add(zmPairKey(a, b)); clearNetCache(); },
-      remove: async (n, rep) => { if(!rep){ showDialog('warn', 'محل درست لازم است', 'محل‌ها از گزارش‌ها می‌آیند؛ برای حذف املای اشتباه، محل یا فضای درست را بنویسید تا آن ردیف‌ها به آن منتقل شوند.'); return false; } return GM.loc.merge(n, rep); },
+      remove: async (n, rep, o) => { if(rep) return GM.loc.merge(n, rep);
+        if(!(await askConfirm('حذف کامل محل', '«' + n + '» از ' + toFa(gmUsed(o)) + ' ردیف گزارش پاک شود؟ محل این ردیف‌ها خالی می‌ماند.', 'حذف'))) return false;
+        await supaFetch('activities?zone=eq.' + encodeURIComponent(n), {method: 'PATCH', body: {zone: ''}});
+        try{ (allRows || []).forEach(r => { if(String(pick(r,F.zone) || '').trim() === n) setCell(r, 'محل کارکرد', ''); }); }catch(e){}
+        zmAliasPairs = zmAliasPairs.filter(x => zmKey(x.a) !== zmKey(n)); await zmSaveAlias(); try{ const x = mt.rows.find(r => r.z === n); if(x) x.n = 0; }catch(e){} return true; },
+      rmNote: o => 'محل در ' + toFa(o.u) + ' ردیف گزارش خالی می‌شود',
       /* اتصال به فضای تعریف‌شده (طبقه + واحد/فضا): همان «یکی کردن» با نام استاندارد فضا */
       queue: () => { if(typeof mt === 'undefined' || !mt.rows) return []; return mt.rows.filter(x => x.n > 0 && !mtMatchOf(x.z).ok).sort((a, b) => b.n - a.n).slice(0, 40).map(x => { const sg = mtSuggest(x.z); return {n: x.z, u: x.n, to: sg && (sg.f || sg.l1) ? slCompose(sg.f ? [sg.f] : [], sg.l1 ? (/^[\d۰-۹]+$/.test(sg.l1) ? toEn(sg.l1) : sg.l1) : '') : '', sc: sg ? sg.sc : 0, why: sg ? sg.t || sg.why || '' : ''}; }); },
       link: async (from, to) => { zmAliasPairs = zmAliasPairs.filter(x => zmKey(x.a) !== zmKey(from)).concat([{a: from, b: to}]); await zmSaveAlias(); return true; }}
@@ -44995,7 +45014,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     const D = A.dupes(), Q = A.queue ? A.queue() : [], q = String(gm.q[k] || '').trim(), qq = toEn(q).toLowerCase();
     const L = I.filter(o => !qq || toEn(o.n).toLowerCase().indexOf(qq) !== -1).sort((a, b) => (b.bad ? 1 : 0) - (a.bad ? 1 : 0) || b.u - a.u || a.n.localeCompare(b.n, 'fa'));
     const nWait = D.length + Q.length, sel = Array.from(gm.sel).filter(v => v.indexOf(k + ':') === 0).map(v => v.slice(k.length + 1));
-    const side = (o, other) => '<button type="button" class="gm-k" data-gmkeep="' + esc(o.n) + '" data-gmdrop="' + esc(other.n) + '"><b>' + esc(o.n) + '</b><small>' + (o.u ? toFa(o.u) + ' کاربرد' : 'بی‌کاربرد') + '</small><u>این بماند</u></button>';
+    const side = (o, other) => '<span class="gm-kw"><button type="button" class="gm-k" data-gmkeep="' + esc(o.n) + '" data-gmdrop="' + esc(other.n) + '"><b>' + esc(o.n) + '</b><small>' + (o.u ? toFa(o.u) + ' کاربرد' : 'بی‌کاربرد') + '</small><u>این بماند</u></button><button type="button" class="gm-kd" data-gmdel="' + esc(o.n) + '" title="حذف کامل «' + esc(o.n) + '»">حذف</button></span>';
     const pair = x => '<div class="gm-p"><span class="gm-sim" title="شباهت"><i><s style="width:' + Math.round(Math.min(1, x.sim || 0) * 100) + '%"></s></i><em>' + toFa(Math.round(Math.min(1, x.sim || 0) * 100)) + '٪</em></span>'
       + side(x.a, x.b) + side(x.b, x.a)
       + '<span class="gm-pa"><button type="button" class="gm-no" data-gmno="' + esc(x.a.n) + '" data-b="' + esc(x.b.n) + '">جدا هستند</button>'
@@ -45003,19 +45022,21 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     const qrow = x => '<div class="gm-p gm-q"><span class="gm-qn"><b>' + esc(x.n) + '</b><small>' + toFa(x.u) + ' ردیف گزارش · به فضای تعریف‌شده وصل نیست</small></span>'
       + (x.to ? '<button type="button" class="gm-k ok" data-gmlinkto="' + esc(x.n) + '" data-to="' + esc(x.to) + '"><b>' + esc(x.to) + '</b><small>پیشنهاد سامانه' + (x.sc ? ' · ' + toFa(Math.round(x.sc * 100)) + '٪' : '') + '</small><u>وصل کن</u></button>' : '<span class="gm-ns">پیشنهادی نیست</span>')
       + '<span class="gm-pa"><button type="button" class="gm-no" data-gmopen="' + esc(x.n) + '">جای دیگر…</button></span></div>';
-    const edit = o => '<div class="gm-ed"><label><span>' + (k === 'loc' ? 'محل یا فضای درست' : 'نام درست') + ' <small>اگر نام یکی از موارد دیگر را بنویسید، این دو یکی می‌شوند و همهٔ کاربردها به آن می‌رود</small></span><input type="text" class="gm-in" list="gmL-' + k + '" value="' + esc(o.n) + '" placeholder="' + esc(A.ph) + '" autocomplete="off"></label>'
-      + '<div class="gm-ea"><button type="button" class="mini go" data-gmren="' + esc(o.n) + '">ثبت نام درست</button><button type="button" class="mini danger" data-gmdel="' + esc(o.n) + '">' + (o.u ? 'حذف (کاربردها به نام بالا)' : 'حذف') + '</button>'
-      + (A.open ? '<button type="button" class="mini" data-gmfile="' + esc(o.n) + '">' + esc(A.openT) + '</button>' : '') + '<button type="button" class="mini" data-gmopen="">بستن</button></div></div>';
+    const edit = o => '<div class="gm-ed">'
+      + '<div class="gm-eb"><b>جایگزینی کامل</b><small>' + esc(o.n) + ' در همهٔ ' + (k === 'loc' ? 'ردیف‌های گزارش' : 'گزارش‌ها، پرونده‌ها و فهرست‌ها') + ' با مورد زیر جایگزین و خودش حذف می‌شود' + (o.u ? ' (' + toFa(o.u) + ' کاربرد منتقل می‌شود)' : '') + '. اگر نام یکی از موارد موجود را بنویسید، این دو یکی می‌شوند.</small>'
+      +   '<div class="gm-er"><input type="text" class="gm-in" list="gmL-' + k + '" value="" placeholder="' + esc(A.ph) + '" autocomplete="off"><button type="button" class="mini go" data-gmren="' + esc(o.n) + '">جایگزین کن</button></div></div>'
+      + '<div class="gm-eb dng"><b>حذف کامل</b><small>' + esc(A.rmNote ? A.rmNote(o) : '') + '</small><div class="gm-er"><button type="button" class="mini danger" data-gmdel="' + esc(o.n) + '">حذف «' + esc(o.n) + '»</button>'
+      + (A.open ? '<button type="button" class="mini" data-gmfile="' + esc(o.n) + '">' + esc(A.openT) + '</button>' : '') + '<button type="button" class="mini" data-gmopen="">بستن</button></div></div></div>';
     const row = o => { const op = gm.open === k + ':' + o.n, ck = gm.sel.has(k + ':' + o.n);
       return '<div class="gm-r' + (op ? ' op' : '') + (ck ? ' ck' : '') + (o.bad ? ' bad' : '') + '"><div class="gm-rh"><button type="button" class="gm-ck" data-gmck="' + esc(o.n) + '" aria-pressed="' + ck + '" aria-label="انتخاب">' + (ck ? '✓' : '') + '</button>'
         + '<button type="button" class="gm-rn" data-gmopen="' + esc(o.n) + '"><b>' + esc(o.n) + '</b><small>' + esc(o.d || (o.u ? toFa(o.u) + ' کاربرد' : 'بی‌کاربرد')) + '</small></button>'
-        + (o.st ? '<i class="gm-st">' + esc(o.st) + '</i>' : o.bad ? '<i class="gm-st bad">وصل نیست</i>' : '') + '<button type="button" class="gm-go" data-gmopen="' + esc(o.n) + '">اصلاح ›</button></div>' + (op ? edit(o) : '') + '</div>'; };
+        + (o.st ? '<i class="gm-st">' + esc(o.st) + '</i>' : o.bad ? '<i class="gm-st bad">وصل نیست</i>' : '') + '<button type="button" class="gm-go" data-gmopen="' + esc(o.n) + '">جایگزینی / حذف ›</button></div>' + (op ? edit(o) : '') + '</div>'; };
     const lim = gm.lim || 60;
     return '<div class="gm" data-gm="' + k + '">'
       + '<section class="gm-s"><div class="gm-sh"><b>منتظر تصمیم</b><em class="' + (nWait ? 'due' : 'ok') + '">' + (nWait ? toFa(nWait) : '✓') + '</em><small>' + (nWait ? 'برای هر جفت، موردی را که درست است بزنید؛ دیگری در آن ادغام و حذف می‌شود.' : 'موردی منتظر تصمیم نیست.') + '</small></div>'
       +   (D.length ? '<div class="gm-ps">' + D.slice(0, 30).map(pair).join('') + '</div>' : '')
       +   (Q.length ? '<div class="gm-sub">وصل به فضاهای تعریف‌شده <em>' + toFa(Q.length) + '</em></div><div class="gm-ps">' + Q.map(qrow).join('') + '</div>' : '') + '</section>'
-      + '<section class="gm-s"><div class="gm-sh"><b>همهٔ ' + esc(A.ts) + '</b><em>' + toFa(I.length) + '</em><small>برای اصلاح نام، یکی کردن یا حذف، روی هر مورد بزنید.</small>' + (A.tool ? '<button type="button" class="mini" ' + A.tool[1] + '>' + esc(A.tool[0]) + '</button>' : '') + '</div>'
+      + '<section class="gm-s"><div class="gm-sh"><b>همهٔ ' + esc(A.ts) + '</b><em>' + toFa(I.length) + '</em><small>«جایگزینی / حذف» روی هر مورد: جایگزینی کامل با مورد دیگر، یا حذف کامل.</small>' + (A.tool ? '<button type="button" class="mini" ' + A.tool[1] + '>' + esc(A.tool[0]) + '</button>' : '') + '</div>'
       +   '<label class="gm-qx">' + DC_I.search + '<input type="search" class="gm-qi" data-gmq="' + k + '" value="' + esc(q) + '" placeholder="جست‌وجوی ' + esc(A.t) + '…" autocomplete="off"></label>'
       +   (sel.length ? '<div class="gm-bulk"><b>' + toFa(sel.length) + ' مورد انتخاب‌شده</b><input type="text" class="gm-in gm-bi" list="gmL-' + k + '" placeholder="یکی کردن همه در… (' + esc(A.t) + ' درست)" autocomplete="off"><button type="button" class="mini go" data-gmbulk="merge">یکی کن</button><button type="button" class="mini danger" data-gmbulk="del">حذف</button><button type="button" class="mini" data-gmbulk="clr">لغو انتخاب</button></div>' : '')
       +   '<div class="gm-list">' + (L.length ? L.slice(0, lim).map(row).join('') + (L.length > lim ? '<button type="button" class="gm-more" data-gmmore="1">نمایش ' + toFa(Math.min(60, L.length - lim)) + ' مورد دیگر · از ' + toFa(L.length) + '</button>' : '') : '<div class="phb-empty">موردی پیدا نشد.</div>') + '</div></section>'
@@ -45040,10 +45061,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     if(b.dataset.gmlink){ return run(() => A.link(b.dataset.gmlink, b.dataset.b, b.dataset.gmlink), 'هر دو املا ماندند و یک طرف شمرده می‌شوند'); }
     if(b.dataset.gmlinkto){ return run(() => A.link(b.dataset.gmlinkto, b.dataset.to), '«' + b.dataset.gmlinkto + '» به «' + b.dataset.to + '» وصل شد'); }
     if(b.dataset.gmren){ const n = b.dataset.gmren, v = String((b.closest('.gm-ed').querySelector('.gm-in') || {}).value || '').replace(/\s+/g, ' ').trim();
-      if(!v || v === n){ showDialog('warn', 'نام درست', 'نام درست را بنویسید یا از فهرست انتخاب کنید.'); return; }
+      if(!v || v === n){ showDialog('warn', 'جایگزین', 'موردی را که جای «' + n + '» می‌نشیند بنویسید یا از فهرست انتخاب کنید.'); return; }
       gm.open = ''; return run(() => A.merge(n, v), '«' + n + '» → «' + v + '»'); }
-    if(b.dataset.gmdel){ const n = b.dataset.gmdel, v = String((b.closest('.gm-ed').querySelector('.gm-in') || {}).value || '').replace(/\s+/g, ' ').trim();
-      gm.open = ''; return run(() => A.remove(n, v && v !== n ? v : '', itemOf(n)), '«' + n + '» حذف شد'); }
+    if(b.dataset.gmdel){ const n = b.dataset.gmdel; gm.open = ''; return run(() => A.remove(n, '', itemOf(n)), '«' + n + '» حذف شد'); }
     if(b.dataset.gmbulk){ const sel = Array.from(gm.sel).filter(v => v.indexOf(k + ':') === 0).map(v => v.slice(k.length + 1));
       if(b.dataset.gmbulk === 'clr'){ sel.forEach(n => gm.sel.delete(k + ':' + n)); gmRepaint(); return; }
       const v = String((box.querySelector('.gm-bi') || {}).value || '').replace(/\s+/g, ' ').trim();
@@ -45340,7 +45360,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     const cntB = n => n == null ? ' <i class="phb-sbn">…</i>' : n ? ' <i class="phb-sbn due">' + toFa(n) + '</i>' : ' <i class="phb-sbn ok">✓</i>';
     const matchSub = subBar([['match', 'نام افراد و طرف‌ها' + cntB(nNames)]].concat(adm ? [['loc', 'محل‌ها و فضاها' + cntB(nLoc)]] : []).concat(ed ? [['disc', 'رشته‌ها' + cntB(discDup.length)], ['skill', 'تخصص‌ها' + cntB(nSk)]] : []).concat(adm ? [['db', 'پایگاه داده']] : []));
     const discSub = matchSub;
-    const gmHelp = '<p class="phb-mh">همهٔ تطبیق‌ها یک الگو دارند: «منتظر تصمیم» (جفت‌های شبیه: موردی که درست است را بزنید، یا «جدا هستند») و «همهٔ موارد» (اصلاح نام، یکی کردن و حذف؛ هر کاربرد به نام درست منتقل می‌شود).</p>';
+    const gmHelp = '<p class="phb-mh">همهٔ تطبیق‌ها یک الگو دارند: «منتظر تصمیم» (جفت‌های شبیه: موردی که درست است را بزنید، یا «جدا هستند») و «همهٔ موارد» (جایگزینی کامل با مورد دیگر یا حذف کامل؛ انتخاب گروهی هم دارد).</p>';
     let body = '';
     if(tab === 'ov'){
       const avg = live.length ? Math.round(live.reduce((t, e) => t + e.inf.score * 20, 0) / live.length) : 100;
