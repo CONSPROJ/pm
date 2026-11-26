@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126095935">
+<meta name="pm-build" content="20261126101147">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32442,6 +32442,19 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 :is(html,#z0) :is(body,#z1) .ui2-sw button.def::after{content:'';position:absolute;top:3px;inset-inline-end:3px;width:6px;height:6px;border-radius:50%;background:#d49b18;}
 :is(html,#z0) :is(body,#z1) .ui2-sw button{position:relative;}
 :is(html,#z0) :is(body,#z1) .ui2-def{margin-inline-start:8px;}
+:is(html,#z0) :is(body,#z1) .cdl-qm{display:inline-block;margin-inline-start:6px;font-style:normal;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;color:var(--sky);background:color-mix(in srgb, var(--sky) 12%, transparent);}
+:is(html,#z0) :is(body,#z1) .hr-fls{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:8px;margin:0 0 14px;}
+:is(html,#z0) :is(body,#z1) .hrf{position:relative;display:flex;flex-direction:column;gap:2px;padding:9px 12px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);overflow:hidden;}
+:is(html,#z0) :is(body,#z1) .hrf b{font-size:13px;color:var(--ink);} :is(html,#z0) :is(body,#z1) .hrf span{font-size:11.5px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .hrf i{position:absolute;inset-inline-start:0;bottom:0;height:4px;width:var(--p);background:linear-gradient(90deg, var(--sky), color-mix(in srgb, var(--sky) 60%, #6fc59c));border-radius:0 4px 4px 0;}
+:is(html,#z0) :is(body,#z1) .rc-title small{font-size:11px;font-weight:400;color:var(--muted);margin-inline-start:6px;}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp{margin-inline-start:auto;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;color:var(--muted);flex:0 0 26px;}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp:hover{background:var(--field);color:var(--ink);}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp svg{width:15px;height:15px;transition:transform .18s;transform:rotate(-90deg);}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp.on svg{transform:none;}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp[hidden]{display:none;}
+html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
+@media (max-width:1179px){ :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;} }
 /* ۶۳۰: صف بررسی بخش‌های اسناد */
 :is(html,#z0) :is(body,#z1) .adm-rq:empty{display:none;}
 :is(html,#z0) :is(body,#z1) .adm-rq .rq{margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in srgb, #d49b18 35%, var(--line));background:color-mix(in srgb, #d49b18 6%, var(--surface));}
@@ -59906,6 +59919,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
                 +   kv2('آخرین حضور', o.last ? taskDate(o.last) : '')
                 +   kv2('تخصص‌ها', Array.from(o.skills || []).slice(0,4).join('، '))
                 + '</div>'
+                /* ۶۳۱: خلاصهٔ طبقه — چند نفر-روز و چند روز در هر طبقه، پرکارترین اول */
+                + (function(){ try{ const M = new Map(); (o.rows || []).forEach(r => { const z = String(pick(r,F.zone) || '') + ' ' + String((F.floor ? pick(r,F.floor) : '') || ''); let K = []; try{ K = floorKeysOf(z) || []; }catch(e){} if(!K.length) return;
+                      const mn = menOf(r) || 0, dk = dayKey(pick(r,F.date)); K.forEach(k => { if(!M.has(k)) M.set(k, {men: 0, days: new Set()}); const x = M.get(k); x.men += mn; if(dk) x.days.add(dk); }); });
+                    if(!M.size) return '';
+                    const L = Array.from(M.entries()).sort((a, b) => b[1].men - a[1].men), mx = L[0][1].men || 1;
+                    const lbl = k => { const f = (typeof BUILDING !== 'undefined' ? BUILDING : []).find(x => x.key === k); return f ? f.label : k; };
+                    return '<div class="rc-title">به تفکیک طبقه <small>' + toFa(L.length) + ' طبقه</small></div><div class="hr-fls">' + L.slice(0, 12).map(([k, x]) => '<div class="hrf" style="--p:' + Math.max(6, Math.round(x.men / mx * 100)) + '%"><b>' + esc(lbl(k)) + '</b><span>' + toFa(x.men) + ' نفر-روز · ' + toFa(x.days.size) + ' روز</span><i></i></div>').join('') + '</div>'; }catch(e){ return ''; } })()
                 + (o.byZone.size
                     ? '<div class="rc-title">فعالیت‌ها به تفکیک محل</div><div class="hr-zones">'
                       + (function(){
@@ -59941,11 +59961,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
                           + (function(){ const fp = faParts(dk); return '<span class="cdl-cal">' + (fp ? '<b>' + toFa(fp[2]) + '</b><small>' + FA_MONTHS[fp[1] - 1] + '</small>' : '<b>' + esc(dayLabel2(dk)) + '</b>') + '</span>'; })()
                           + '<span class="cdl-dt"><b>' + esc(sk.slice(0, 3).join('، ') + (sk.length > 3 ? ' +' + toFa(sk.length - 3) : '') || 'بدون تخصص') + '</b><small>'
                           +   esc((function(){ const Z = Array.from(new Set(L.map(r => String(pick(r,F.zone) || '').trim()).filter(Boolean))); return Z.length ? Z.slice(0, 2).join('، ') + (Z.length > 2 ? ' +' + toFa(Z.length - 2) : '') : 'محل ثبت نشده'; })()) + ' · ' + toFa(L.length) + ' ردیف</small></span>'
-                          + '<span class="cdl-n"><b>' + toFa(men) + '</b><u>نفر</u></span>'
+                          + '<span class="cdl-n" data-men0="' + men + '"><b>' + toFa(men) + '</b><u>نفر</u></span>'
                           + (ni ? '<em class="cdl-ni" title="مانع ثبت‌شده در این روز">' + toFa(ni) + ' مانع</em>' : '')
                           + '<i class="cdl-ar" aria-hidden="true"></i></summary>'
                           + L.map(r => { const os = +toEn(String(pick(r,F.ostad) || 0)) || 0, sh = +toEn(String(pick(r,F.shagerd) || 0)) || 0, sb = String(pick(r,F.sub) || '').trim();
-                              return '<div class="cdl-r"><div class="cdl-h"><b>' + esc(pick(r,F.skill) || 'بدون تخصص') + '</b><span>' + (os ? 'استادکار ' + toFa(os) : '') + (os && sh ? ' · ' : '') + (sh ? 'شاگرد ' + toFa(sh) : '') + '</span></div>'
+                              return '<div class="cdl-r" data-rq="' + esc(toEn([pick(r,F.skill), pick(r,F.zone), sb, pick(r,F.activity), (F.floor ? pick(r,F.floor) : '')].join(' ')).toLowerCase()) + '" data-men="' + (menOf(r) || 0) + '"><div class="cdl-h"><b>' + esc(pick(r,F.skill) || 'بدون تخصص') + '</b><span>' + (os ? 'استادکار ' + toFa(os) : '') + (os && sh ? ' · ' : '') + (sh ? 'شاگرد ' + toFa(sh) : '') + '</span></div>'
                                 + ((pick(r,F.zone) || sb) ? '<small class="cdl-z">' + esc([pick(r,F.zone), sb].filter(Boolean).join(' › ')) + '</small>' : '')
                                 + (pick(r,F.activity) ? '<p>' + esc(pick(r,F.activity)) + '</p>' : '') + '</div>'; }).join('')
                           + '</details>'; }).join('')
@@ -105727,6 +105747,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const sbsHas = id => Object.prototype.hasOwnProperty.call(sbsGet(), id);
     const sbsOpen = id => !!sbsGet()[id];
     const sbsSet = (id, on) => { try{ const o = sbsGet(); o[id] = on ? 1 : 0; localStorage.setItem(SBS_K, JSON.stringify(o)); }catch(e){} };
+    /* دکمهٔ فلشِ باز/بستهٔ زیرفهرست کنار «میز کار»، «اسناد» و «گزارش‌ها» */
+    function sbExpPaint(){ ['tabTasks', 'tabAdmin', 'tabView'].forEach(id => { const t = document.getElementById(id); if(!t) return; const d = bar.querySelector('.sb-sub[data-for="' + id + '"]');
+      let b = t.querySelector(':scope > .sb-exp'); if(!d || !d.__h){ if(b) b.hidden = true; return; }
+      if(!b){ t.insertAdjacentHTML('beforeend', '<span class="sb-exp" role="button" tabindex="0" aria-label="باز و بسته کردن زیرفهرست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'); b = t.querySelector(':scope > .sb-exp'); }
+      b.hidden = false; const on = d.classList.contains('open'); b.classList.toggle('on', on); b.setAttribute('aria-expanded', String(on)); }); }
+    setTimeout(sbExpPaint, 1500); setInterval(() => { try{ if(mq.matches) sbExpPaint(); }catch(e){} }, 4000);
     function put(id, html, open){ const d = box(id); if(!d) return; if(d.__h !== html){ d.innerHTML = html; d.__h = html; } d.classList.toggle('open', !!open && !!html); }
     function build(){
       if(!mq.matches) return;
@@ -105746,7 +105772,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       }catch(e){}
       try{ const SW = window.starList('w').map(k => L0.find(x => x.k === k)).filter(Boolean);
         h = starGrp(SW.map(x => { let hn = null; try{ hn = wsHint(x.k); }catch(e){} return it('data-sbws="' + x.k + '" style="--c:' + x.c + '"', x.ic ? x.ic() : '', x.t, hn && hn.n, hn && hn.hot, ['w', x.k]); }).join('')) + h; }catch(e){}
-      put('tabTasks', h, (sbsHas('tabTasks') ? sbsOpen('tabTasks') : cur === 'tasks'));
+      put('tabTasks', h, (sbsHas('tabTasks') ? sbsOpen('tabTasks') : false));
       /* اسناد و گزارش‌ها هم مثل میز کار: دسته‌های تاشو */
       const S2 = sbgGet();
       const sgrp = (key, t, rows, act) => { if(!rows) return ''; const op = S2[key] != null ? !!S2[key] : !!act;
@@ -105763,7 +105789,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         a = ADM_ORDER.filter(k => k !== 'all').map(ai).join('') + ai('trn') + (ADM_ORDER.indexOf('archive') === -1 ? ai('archive') : ''); void ak;
         a = starGrp(window.starList('a').filter(k => k !== 'all' && (ADM_ORDER.indexOf(k) !== -1 || k === 'archive' || k === 'trn')).map(ai).join('')) + a;
       }catch(e){ a = ''; }
-      put('tabAdmin', a, (sbsHas('tabAdmin') ? sbsOpen('tabAdmin') : cur === 'admin'));
+      put('tabAdmin', a, (sbsHas('tabAdmin') ? sbsOpen('tabAdmin') : false));
       /* گزارش‌ها */
       let v = '';
       try{
@@ -105775,7 +105801,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         const used = new Set(); v = starGrp(window.starList('v').filter(k => R[k]).map(k => R[k]).join('')) + VG.map(([gk, gt, ks]) => { const rows = ks.filter(k => R[k]).map(k => { used.add(k); return R[k]; }).join(''); return sgrp(gk, gt, rows, ks.indexOf(vk) !== -1); }).join('')
           + Object.keys(R).filter(k => !used.has(k)).map(k => R[k]).join(''); void vk;
       }catch(e){ v = ''; }
-      put('tabView', v, (sbsHas('tabView') ? sbsOpen('tabView') : cur === 'view'));
+      put('tabView', v, (sbsHas('tabView') ? sbsOpen('tabView') : false));
       /* جای چسبیدن «ثبت تازه» و جست‌وجو زیر سربرگ ستون */
       try{ const nb = bar.querySelector('#navBrand'), ta = bar.querySelector('.tab-add'); if(nb && ta){ const t1 = nb.offsetHeight - 16 + 6; bar.style.setProperty('--sbT1', t1 + 'px'); bar.style.setProperty('--sbT2', (t1 + ta.offsetHeight + 10) + 'px'); } }catch(e){}
       mark();
@@ -105821,10 +105847,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(!mq.matches) return;
       const t = e.target.closest && e.target.closest('.tab[id]');
       if(t && !t.classList.contains('tab-add')){
-        if(t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView'){ const d0 = bar.querySelector('.sb-sub[data-for="' + t.id + '"]'); const on = !(d0 && d0.classList.contains('open')); sbsSet(t.id, on);
+        /* ۶۳۱: زدن خودِ «میز کار/اسناد/گزارش‌ها» فقط بخش را باز می‌کند؛ زیرفهرست فقط با دکمهٔ فلش کنارش باز و بسته می‌شود (پیش‌تر هر زدن آکاردئون را هم باز/بسته می‌کرد) */
+        const ex = e.target.closest('.sb-exp');
+        if(ex) { e.preventDefault(); e.stopPropagation(); }
+        if(ex && (t.id === 'tabTasks' || t.id === 'tabAdmin' || t.id === 'tabView')){ const d0 = bar.querySelector('.sb-sub[data-for="' + t.id + '"]'); const on = !(d0 && d0.classList.contains('open')); sbsSet(t.id, on);
           /* یک زیرفهرست باز در هر لحظه: باز شدن میز کار، اسناد یا گزارش‌ها بقیه را می‌بندد */
           if(on) ['tabTasks', 'tabAdmin', 'tabView'].forEach(x => { if(x !== t.id) sbsSet(x, 0); }); }
-        bar.querySelectorAll('.sb-sub').forEach(x => x.classList.toggle('open', !!x.__h && sbsOpen(x.dataset.for))); }
+        bar.querySelectorAll('.sb-sub').forEach(x => x.classList.toggle('open', !!x.__h && sbsOpen(x.dataset.for))); sbExpPaint(); if(ex) return; }
       const si = e.target.closest && e.target.closest('.sb-it');
       if(si){ bar.querySelectorAll('.sb-it.on').forEach(x => { if(x !== si) x.classList.remove('on'); }); si.classList.add('on'); bar.__pend = {k: si.dataset.sbws || si.dataset.sbadm || si.dataset.sbview, until: Date.now() + 1500}; }
     }, true);
@@ -107796,8 +107825,15 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   document.addEventListener('change', e => { if(e.target && e.target.matches && e.target.matches('[data-rdlctr]')) rdlFilter(e.target); });
   /* جست‌وجو در گزارش‌های روزانهٔ کارت پیمانکار */
   document.addEventListener('input', e => { const i = e.target; if(!i || !i.matches || !i.matches('[data-cwkq]')) return; const q = toEn(String(i.value || '').trim()).toLowerCase(), L = i.closest('.cwk-p');
-    if(!L) return; let n = 0; L.querySelectorAll('details.cdl-d').forEach(d => { const hit = !q || String(d.dataset.q || '').toLowerCase().indexOf(q) !== -1; d.hidden = !hit; if(q){ d.classList.remove('more'); if(hit && n < 3) d.open = true; } if(hit) n++; });
-    const all = L.querySelector('[data-cdlall]'); if(all) all.hidden = !!q; const qn = L.querySelector('.cwk-qn'); if(qn) qn.textContent = q ? toFa(n) + ' نتیجه' : toFa(L.querySelectorAll('details.cdl-d').length) + ' روز'; L.classList.toggle('cwk-none', !!q && !n); });
+    /* ۶۳۱: با جست‌وجو (مثلاً «راه‌پله مرکزی») داخل هر روز فقط ردیف‌های همان محل/تخصص می‌ماند و شمار نفرات همان ردیف‌هاست؛ جمع کل هم می‌آید */
+    if(!L) return; let n = 0, menT = 0, rowsT = 0; const nz = t => String(t || '').replace(/[\u200c\u0654ـ]/g, '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/\s+/g, ' '), qz = nz(q), has = t => { const tz = nz(t); if(tz.indexOf(qz) === -1) return false; const i = tz.indexOf(qz), nx = tz.charAt(i + qz.length); return !(/\d$/.test(qz) && /\d/.test(nx)); };
+    L.querySelectorAll('details.cdl-d').forEach(d => { const R = Array.from(d.querySelectorAll('.cdl-r')); let men = 0, hitR = 0;
+      R.forEach(r => { const ok = !q || has(String(r.dataset.rq || '')); r.hidden = !ok; if(ok){ hitR++; men += +r.dataset.men || 0; } });
+      const hit = !q || hitR > 0 || has(String(d.dataset.q || '').toLowerCase()); if(q && !hitR && hit) R.forEach(r => { r.hidden = false; men += +r.dataset.men || 0; hitR++; });
+      d.hidden = !hit; const cn = d.querySelector('.cdl-n'); if(cn){ const b = cn.querySelector('b'); if(b) b.textContent = toFa(q ? men : (+cn.dataset.men0 || 0)); }
+      let tg = d.querySelector('.cdl-qm'); if(q && hit && hitR < R.length){ if(!tg){ tg = document.createElement('em'); tg.className = 'cdl-qm'; const sm = d.querySelector('summary .cdl-dt'); if(sm) sm.appendChild(tg); } tg.textContent = toFa(hitR) + ' از ' + toFa(R.length) + ' ردیف'; } else if(tg) tg.remove();
+      if(q){ d.classList.remove('more'); if(hit && n < 3) d.open = true; } if(hit){ n++; menT += men; rowsT += hitR; } });
+    const all = L.querySelector('[data-cdlall]'); if(all) all.hidden = !!q; const qn = L.querySelector('.cwk-qn'); if(qn) qn.textContent = q ? toFa(n) + ' روز · ' + toFa(menT) + ' نفر-روز' : toFa(L.querySelectorAll('details.cdl-d').length) + ' روز'; L.classList.toggle('cwk-none', !!q && !n); });
   /* پیمانکاران حاضر: از گزارش روزانه (activities). بازهٔ «همه» = همین ماه؛ امسال/سه ماه اخیر همان بازه */
   const RC_CTM = {rows: null, from: '', to: ''};
   function rcCtmRange(){ const t = toEn(todayShamsi()), y = t.slice(0, 4), m = t.slice(5, 7);
