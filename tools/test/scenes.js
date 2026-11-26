@@ -11,6 +11,11 @@ const SCENES = [
   ['tasks', () => { switchTab('tasks'); wsSet('tasks'); }],
   ['wrk', () => { switchTab('tasks'); wsSet('wrk'); }],
   ['people', () => { switchTab('tasks'); wsSet('ctr'); }],
+  /* ۶۴۷: تطبیق و اصلاح داده‌ها (یک‌جا) و اطلاعات پایهٔ پروژه */
+  ['hub-match', () => { window.dcOpen('names'); }, '.phb-m'],
+  ['hub-loc', () => { window.dcOpen('loc'); }, '.phb-m'],
+  ['hub-disc', () => { window.dcOpen('disc'); }, '.phb-m'],
+  ['hub-base', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="base"]'); b && b.click(); }, 700); }, '.phb-m'],
   /* ۶۴۶: فرم پرونده (مشخصات، تماس و بانکی، اسناد عمومی) و پروندهٔ تازه */
   ['ctc-names', () => { ctcOpen('تأسیسات نوین'); }, '#ctcModal'],
   ['ctc-contact', () => { ctcOpen('تأسیسات نوین'); setTimeout(() => { const b = document.querySelector('#ctcModal .ctx-nav [data-ctxjump="contact"]'); b && b.click(); }, 400); }, '#ctcModal'],
