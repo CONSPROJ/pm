@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126104127">
+<meta name="pm-build" content="20261126111705">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32475,6 +32475,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 :is(html,#z0) :is(body,#z1) #wrkBody .hrs-left{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb, #c2453d 7%, var(--surface));border:1px solid color-mix(in srgb, #c2453d 25%, var(--line));font-size:12.5px;}
 :is(html,#z0) :is(body,#z1) #wrkBody .hrs-left b{color:#a8322b;margin-inline-end:4px;} :is(html,#z0) :is(body,#z1) #wrkBody .hrs-left span{padding:3px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);} :is(html,#z0) :is(body,#z1) #wrkBody .hrs-left em{font-style:normal;color:var(--muted);font-size:11px;}
 :is(html,#z0) :is(body,#z1) #wrkBody .hrs tr.hrs-gone td{color:var(--muted);} :is(html,#z0) :is(body,#z1) #wrkBody .hrs em.hrs-l{font-style:normal;color:#c2453d;font-weight:700;} :is(html,#z0) :is(body,#z1) #wrkBody .hrs em.hrs-j{font-style:normal;color:#2f8a5b;font-weight:700;margin-inline-end:6px;}
+/* ۶۳۵: حلقهٔ رنگ نوع طرف دور آواتار */
+:is(html,#z0) :is(body,#z1) .ava > .pty-ring{position:absolute;inset:-2px;border-radius:50%;box-shadow:0 0 0 2px hsl(var(--pr) 62% 46%);pointer-events:none;z-index:1;}
+:is(html,#z0)[data-theme="dark"] :is(body,#z1) .ava > .pty-ring{box-shadow:0 0 0 2px hsl(var(--pr) 60% 60%);}
 /* ۶۳۰: صف بررسی بخش‌های اسناد */
 :is(html,#z0) :is(body,#z1) .adm-rq:empty{display:none;}
 :is(html,#z0) :is(body,#z1) .adm-rq .rq{margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in srgb, #d49b18 35%, var(--line));background:color-mix(in srgb, #d49b18 6%, var(--surface));}
@@ -34786,6 +34789,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       method:'POST', headers:{'Prefer':'resolution=merge-duplicates'},
       body:[Object.assign({name}, patch)]
     });
+    /* ۶۳۵: فرد تازه/تغییرکرده همان لحظه در فهرست‌ها و انتخابگرها (بی‌بارگذاری دوباره) */
+    try{ [window.__peopleAll, peopleRows].forEach(L => { if(!Array.isArray(L)) return; const x = L.find(p => nameKey(p.name) === nameKey(name)); if(x) Object.assign(x, patch); else L.push(Object.assign({name}, patch)); }); }catch(e){}
+    try{ peopleAt = 0; loadPeople(true).then(() => { try{ window.dispatchEvent(new CustomEvent('pm:people', {detail: {name}})); }catch(e){} }); }catch(e){}
   }
 
   let loginName = '';
@@ -42225,7 +42231,13 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     try{ localStorage.setItem(('siteLogM.ctrContacts.v1.' + (function(){ try{ return localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){ return 'p1'; } })()), JSON.stringify(Array.from(ctrContacts.values()))); }catch(e){}
     clearNetCache();
     ctcRefreshDom(canon);
+    try{ window.dispatchEvent(new CustomEvent('pm:parties', {detail: {name: canon}})); }catch(e){}
   }
+  /* ۶۳۵: پس از ثبت فرد یا طرف: فهرست‌های پیشنهادی، شمارهٔ پرونده‌ها و صفحهٔ باز همان لحظه تازه می‌شوند */
+  function pmLiveNames(names){ ['engineerList', 'contractorList', 'contractPartyList', 'ownerList'].forEach(id => { const dl = document.getElementById(id); if(!dl) return; const have = new Set(Array.from(dl.options).map(o => o.value));
+      (names || []).forEach(n => { n = String(n || '').trim(); if(!n || have.has(n)) return; if(id === 'engineerList' && !(peopleRows || []).some(p => nameKey(p.name) === nameKey(n))) return; if(id !== 'engineerList' && (peopleRows || []).some(p => nameKey(p.name) === nameKey(n)) && !ctrContactOf(n)) return; const o = document.createElement('option'); o.value = n; dl.appendChild(o); have.add(n); }); }); }
+  window.addEventListener('pm:people', e => { try{ pmLiveNames((peopleRows || []).map(p => p.name)); window.buildOwnerList && window.buildOwnerList(); window.refreshWhoChip && window.refreshWhoChip(); }catch(er){} try{ window.wsRefresh && window.wsRefresh(); }catch(er){} });
+  window.addEventListener('pm:parties', e => { try{ pmLiveNames([e.detail && e.detail.name]); window.buildOwnerList && window.buildOwnerList(); }catch(er){} try{ typeof ctrInvalidate === 'function' && ctrInvalidate(); }catch(er){} try{ typeof ctcRepaint === 'function' && ctcRepaint(); }catch(er){} });
   function ctcRefreshDom(canon){
     document.querySelectorAll('[data-ctcmini]').forEach(b => { if(!canon || normName(ctrCanon(b.dataset.ctc)) === normName(canon)) b.outerHTML = ctcMiniHtml(b.dataset.ctc); });
     document.querySelectorAll('.ctc-bar[data-ctc]').forEach(b => { if(b.closest('.ctc-mini')) return; if(!canon || normName(ctrCanon(b.dataset.ctc)) === normName(canon)) b.outerHTML = ctcBarHtml(b.dataset.ctc); });
@@ -57820,9 +57832,12 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   window.avaIconFor = avaIconFor;
   /* ۵۹۸: بی‌عکس = آدمکِ ساده و تخت (سر و شانه، بی برق و سایهٔ کارتونی) به رنگ طرف فرد، و حروف اول خیلی کوچک روی شانه‌ها */
   const AVA_SIL = '<svg class="ava-sil" viewBox="0 0 40 40" aria-hidden="true" preserveAspectRatio="xMidYMax meet"><circle cx="20" cy="15" r="7"/><path d="M5 41c0-8.6 6.7-14.4 15-14.4S35 32.4 35 41z"/></svg>';
-  function ctrAvaIn(name){ const img = avatarOf(name); if(img) return '<img src="' + esc(img) + '" alt="" loading="lazy">';
+  /* ۶۳۵: طرف‌های پروژه (پیمانکار، کارفرما، مشاور، طراح، مالک، تأمین‌کننده) حلقهٔ رنگ نوعشان را دارند — به‌ویژه وقتی عکس دارند و رنگ پس‌زمینه دیده نمی‌شود */
+  function ctrRing(name){ try{ const sd = avaSide(name); if(!sd || sd === 'pm') return ''; const S = AVA_SIDE[sd]; return '<i class="pty-ring" style="--pr:' + S[0] + '" title="' + esc(S[1]) + '" aria-hidden="true"></i>'; }catch(e){ return ''; } }
+  window.ctrRing = ctrRing;
+  function ctrAvaIn(name){ const img = avatarOf(name); if(img) return '<img src="' + esc(img) + '" alt="" loading="lazy">' + ctrRing(name);
     const sl = AVA_SIDE[avaSide(name)][1];
-    return '<var class="ava-mg sil' + avaOrg(name) + '" style="--ah:' + avaVars(name) + '" title="' + esc(name + (sl ? ' · ' + sl : '')) + '"><i class="mg-t">' + esc(initialsOf(name)) + '</i></var>'; }
+    return '<var class="ava-mg sil' + avaOrg(name) + '" style="--ah:' + avaVars(name) + '" title="' + esc(name + (sl ? ' · ' + sl : '')) + '"><i class="mg-t">' + esc(initialsOf(name)) + '</i></var>' + ctrRing(name); }
   function ctrAva(name, cls){ if(!name) return ''; const ni = !avatarOf(name); return '<span class="ava ctr-ava ' + (cls || '') + (ni ? ' noimg' + avaOrg(name) + '" style="--ah:' + avaVars(name) : '') + '" data-hrprof="' + esc(name) + '" title="' + esc(name) + '">' + ctrAvaIn(name) + '</span>'; }
   window.ctrAva = ctrAva; window.ctrAvaIn = ctrAvaIn;
   /* هر جا نام پیمانکار به‌شکل پیوند آمده (پرونده‌ها، گزارش نیروی انسانی، نمودارها، کارت‌ها)
@@ -66705,6 +66720,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
           const stuck = Object.keys(patch).filter(c => patch[c] === null && c in back && back[c] != null && String(back[c]).trim() !== '');
           if(stuck.length) try{ shrToast('ذخیره شد؛ سرور «' + stuck.join('، ') + '» را خودش پر کرد'); }catch(e){} }
       }
+      /* ۶۳۵: تغییرِ ذخیره‌شده همان لحظه در حافظه و صفحه دیده می‌شود (مسئول، بررسی‌کننده، وضعیت…)؛ پیش‌تر تا بارگذاری دوباره دیده نمی‌شد */
+      try{ if(obj.action === 'update' && /^(statement|contract|minute|letter|design)$/.test(obj.target) && obj.values && typeof rowMap !== 'undefined'){
+          const r0 = rowMap.get(obj.id); if(r0) Object.keys(obj.values).forEach(k => { if(k.indexOf('__') !== 0) try{ setCell(r0, k, obj.values[k]); }catch(e){} });
+          clearTimeout(window.__liveT); window.__liveT = setTimeout(() => { try{ if(typeof applyAdminFilters === 'function') applyAdminFilters(); }catch(e){} try{ window.deckRefill && window.deckRefill(); }catch(e){} try{ window.dispatchEvent(new CustomEvent('pm:docs', {detail: {kind: obj.target, id: obj.id}})); }catch(e){} }, 60); } }catch(e){}
       /* ۶۲۵: هر مسیری که نفر تازه برای بررسی داخلی ابلاغ کند، همان لحظه اعلان مستقیم */
       if(rvAddN && rvAddN.add.length) try{ setTimeout(() => { try{ notifyNewReviewers(rvAddN.kind, rvAddN.id, rvAddN.add, rvAddN.all); }catch(e){} }, 0); }catch(e){}
       /* ۶۲۶: نفری که از مسیر برداشته شد: اعلان ابلاغ همین سند برایش «خوانده» می‌شود (در همهٔ دستگاه‌ها و شمارها) */
@@ -102492,6 +102511,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     const tmp = document.createElement('div'); tmp.innerHTML = deckCardHtml(deckView[i], i, deckView.length);
     const fresh = tmp.firstElementChild; if(!fresh) return; fresh.dataset.dkFilled = '1'; el.replaceWith(fresh);
   }
+  /* ۶۳۵: کارت باز همین حالا از دادهٔ تازه دوباره ساخته می‌شود (بی‌بارگذاری دوباره) */
+  window.deckRefill = () => { try{ const dm = document.getElementById('deckModal'); if(!dm || dm.hidden) return; const el = deckEl(deckIdx); if(!el) return; el.dataset.dkFilled = '0'; deckFillOne(deckIdx); }catch(e){} };
   function deckMarkSeenToday(){
     try{ localStorage.setItem(DECK_SEEN_KEY, todayShamsi()); }catch(e){}
   }
