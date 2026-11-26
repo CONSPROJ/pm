@@ -85,6 +85,13 @@ async function install(page){
     if(path.startsWith('rpc/pm_whoami')) return json(route, {v: 1, name: process.env.WHO || 'آقای مهدی نعیمی', admin: !process.env.NONADMIN, locked: false});
     if(path.startsWith('rpc/session_epoch')) return json(route, {epoch: 0});
     if(path.startsWith('rpc/')) return json(route, {ok: false});
+    /* lists: ثبت و حذف در حافظهٔ همین آزمون می‌ماند (مثل سرور واقعی، تا بازخوانی قانون‌ها/تنظیمات مقدار ذخیره‌شده را برگرداند) */
+    if(path.startsWith('lists')){
+      if(req.method() === 'POST' && Array.isArray(body)){ body.forEach(x => { if(x && x.kind != null && !lists.some(r => r.kind === x.kind && r.value === x.value)) lists.push({kind: x.kind, value: x.value}); }); return json(route, body); }
+      if(req.method() === 'DELETE'){ const k = url.match(/kind=eq\.([^&]+)/), v = url.match(/value=like\.([^&]+)/), ve = url.match(/value=eq\.([^&]+)/);
+        if(k){ for(let i = lists.length - 1; i >= 0; i--){ const r = lists[i]; if(r.kind !== k[1]) continue; if(v){ const pre = v[1].replace(/\*$/, ''); if(String(r.value).indexOf(pre) !== 0) continue; } if(ve && r.value !== ve[1]) continue; lists.splice(i, 1); } }
+        return json(route, []); }
+    }
     /* ثبت تازه: مثل سرور واقعی ردیف‌ها را با شناسه برمی‌گرداند (return=representation) */
     if(req.method() === 'POST' && Array.isArray(body)) return json(route, body.map((x, i) => Object.assign({}, x, {id: 'n' + Date.now() + '_' + i})));
     if(req.method() !== 'GET') return json(route, []);
