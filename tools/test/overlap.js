@@ -87,7 +87,7 @@ const SCENES = require('./scenes.js');
       if(r.err){ console.log(dev, th, name, r.err); }
       else if(r.hits.length){ bad += r.hits.length; console.log('✕ ' + dev + ' ' + th + ' ' + name + ' (' + r.hits.length + ')'); r.hits.slice(0, 12).forEach(h => console.log('    ' + h)); }
       else console.log('✓ ' + dev + ' ' + th + ' ' + name + ' (' + r.n + ' متن)');
-      await p.evaluate(() => { document.getElementById('ctProfModal')?.remove(); document.getElementById('acM')?.remove(); document.getElementById('deckModal') && (document.getElementById('deckModal').hidden = true); document.body.classList.remove('ctp-open'); document.body.style.overflow = '';
+      await p.evaluate(() => { const cm = document.getElementById('ctcModal'); if(cm){ cm.hidden = true; document.body.style.overflow = ''; document.body.classList.remove('ctc-open'); } document.getElementById('ctProfModal')?.remove(); document.getElementById('acM')?.remove(); document.getElementById('deckModal') && (document.getElementById('deckModal').hidden = true); document.body.classList.remove('ctp-open'); document.body.style.overflow = '';
         document.querySelectorAll('.modal-bg:not([hidden])').forEach(m => { m.hidden = true; }); window.scrollTo(0, 0); });
     }
     await ctx.close();

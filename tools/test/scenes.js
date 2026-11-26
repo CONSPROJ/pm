@@ -11,6 +11,11 @@ const SCENES = [
   ['tasks', () => { switchTab('tasks'); wsSet('tasks'); }],
   ['wrk', () => { switchTab('tasks'); wsSet('wrk'); }],
   ['people', () => { switchTab('tasks'); wsSet('ctr'); }],
+  /* ۶۴۶: فرم پرونده (مشخصات، تماس و بانکی، اسناد عمومی) و پروندهٔ تازه */
+  ['ctc-names', () => { ctcOpen('تأسیسات نوین'); }, '#ctcModal'],
+  ['ctc-contact', () => { ctcOpen('تأسیسات نوین'); setTimeout(() => { const b = document.querySelector('#ctcModal .ctx-nav [data-ctxjump="contact"]'); b && b.click(); }, 400); }, '#ctcModal'],
+  ['ctc-gdocs', () => { ctcOpen('تأسیسات نوین'); setTimeout(() => { const b = document.querySelector('#ctcModal .ctx-nav [data-ctxjump="gdocs"]'); b && b.click(); }, 400); }, '#ctcModal'],
+  ['ctc-new', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('[data-cdxnew="1"]'); b && b.click(); }, 700); }, '#ctcModal'],
   /* ۶۴۵: کنسول مدیریت و قابلیت‌های هر نفر */
   ['ac-docs', () => { window.acOpen('docs'); }, '#acM'],
   ['ac-feat', () => { window.acOpen('acc'); setTimeout(() => { const b = document.querySelector('#acM [data-acrun="feat"]'); b && b.click(); setTimeout(() => { const p = document.querySelector('[data-pcp]'); p && p.click(); }, 900); }, 400); }, '.pp-mods'],
