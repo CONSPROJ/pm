@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126101147">
+<meta name="pm-build" content="20261126102211">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32450,11 +32450,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 :is(html,#z0) :is(body,#z1) .rc-title small{font-size:11px;font-weight:400;color:var(--muted);margin-inline-start:6px;}
 :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp{margin-inline-start:auto;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;color:var(--muted);flex:0 0 26px;}
 :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp:hover{background:var(--field);color:var(--ink);}
-:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp svg{width:15px;height:15px;transition:transform .18s;transform:rotate(-90deg);}
-:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp.on svg{transform:none;}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp svg{width:15px;height:15px;transition:transform .18s;transform:none !important;scale:none !important;rotate:none !important;translate:none !important;}
+:is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp.on svg{transform:rotate(-90deg) !important;scale:none !important;}
 :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp[hidden]{display:none;}
 html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 @media (max-width:1179px){ :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;} }
+:is(html,#z0) :is(body,#z1) .cct-fin{margin:4px 0 10px;padding:12px;border-radius:12px;background:var(--field);}
+:is(html,#z0) :is(body,#z1) .cct-nt{display:block;margin-top:6px;font-size:11.5px;color:var(--muted);}
 /* ۶۳۰: صف بررسی بخش‌های اسناد */
 :is(html,#z0) :is(body,#z1) .adm-rq:empty{display:none;}
 :is(html,#z0) :is(body,#z1) .adm-rq .rq{margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in srgb, #d49b18 35%, var(--line));background:color-mix(in srgb, #d49b18 6%, var(--surface));}
@@ -43558,6 +43560,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       +   '<input type="text" class="cct-pin" data-list="contractPartyList" autocomplete="off" placeholder="+ افزودن طرف قرارداد"></div></div>'
       + '<div class="cct-g">' + f('amt', 'مبلغ قرارداد (ریال)', pick(r, AD.cAmount), ' inputmode="numeric" class="money-in"') + f('d', 'تاریخ شروع', toFa(admDate(pick(r, AD.cStart)) || ''), ' inputmode="numeric"') + '</div>'
       + '<div class="cct-g">' + f('end', pick(r, AD.cAdd) ? 'تاریخ اتمام تمدیدشده با این الحاقیه' : 'تاریخ اتمام قرارداد', toFa(admDate(cEndRaw(r)) || ''), ' inputmode="numeric" placeholder="بدون تاریخ"') + '</div>'
+      /* ۶۳۲: حسن انجام کار و پیش‌پرداخت (کلید = شماره و عنوان قرارداد؛ برای قرارداد تازه هم) */
+      + (cctAddV(r) ? '' : '<div class="cct-fin">' + (function(){ try{ return sfRetFieldHtml(r); }catch(e){ return ''; } })() + '</div>')
+      /* قرارداد تازه: جریمهٔ تأخیر همین حالا؛ جدول بها پس از ذخیره (قرارداد باز می‌ماند) */
+      + (!id ? '<div class="cct-pen">' + f('rate', 'جریمهٔ تأخیر روزانه (ریال)', '', ' inputmode="numeric" class="money-in" placeholder="خالی = یک‌هزارم مبلغ قرارداد"') + '<small class="cct-nt">جدول بها بعد از «ذخیره» در همین کارت باز می‌شود.</small></div>' : '')
       + (function(){
           if(!id || cctAddV(r)) return '';
           const S = ctrEndState(r), cfg = cendCfg.get(cendKey(r)) || {};
@@ -43664,6 +43670,11 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       { const r0 = id ? cctRows().find(x => String(pick(x, AD.id)) === id) : null, ne = normDate(g('end')) || g('end'), oe = r0 ? (normDate(String(cEndRaw(r0) || '')) || String(cEndRaw(r0) || '')) : '';
         if(ne !== oe) vals['تاریخ اتمام قرارداد'] = ne; }
       sv.disabled = true;
+      /* ۶۳۲: حسن انجام کار و پیش‌پرداخت — همان ذخیرهٔ فرم دفتر فنی */
+      try{ const ri = ed.querySelector('.a-cRet'); if(ri){ const ck = sfCKey(g('no'), g('t')); const v = parseFloat(toEn(ri.value).replace(/[^\d.]/g, ''));
+          const av = moneyNum((ed.querySelector('.a-cAdv') || {}).value || ''), apv = parseFloat(toEn((ed.querySelector('.a-cAdvP') || {}).value || '').replace(/[^\d.]/g, ''));
+          if(ck){ const base = Object.assign({}, SF_C.get(ck) || {}); if(isFinite(v)) base.ret = v; else delete base.ret; if(av) base.adv = av; else delete base.adv; if(isFinite(apv)) base.advP = apv; else delete base.advP;
+            const o2 = Object.keys(base).length ? base : null; if(o2) SF_C.set(ck, o2); else SF_C.delete(ck); await sfSaveRow(SF_C_KIND, ck, o2).catch(() => {}); } } }catch(e){}
       /* تکمیل کار و نرخ جریمه (جدا از ستون‌های قرارداد) */
       { const dn = ed.querySelector('[data-cck="done"]');
         if(dn && id){ const r0 = cctRows().find(x => String(pick(x, AD.id)) === id);
@@ -43689,7 +43700,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       try{ P.forEach(p1 => mergeIntoList('contractPartyList', [p1])); }catch(err){}
       cct.open = ''; cct.neu = false;
       try{ clearNetCache(); ctrInvalidate(); }catch(err){}
-      if(!id){ try{ await loadAdmin(); }catch(err){} }
+      if(!id){ try{ await loadAdmin(); }catch(err){}
+        /* ۶۳۲: قرارداد تازه: نرخ جریمه ذخیره و همان قرارداد باز می‌شود تا جدول بها اضافه شود */
+        try{ const nr = cctRows().find(x => String(pick(x, AD.cNo) || '') === String(vals['شماره قرارداد'] || '') && String(pick(x, AD.cTitle) || '') === String(vals['عنوان قرارداد'] || ''));
+          if(nr){ const rate = +toEn(g('rate')).replace(/[^\d]/g, '') || 0; if(rate) await cendSave(cendKey(nr), {done: false, doneAt: '', rate}).catch(() => {}); cct.open = String(pick(nr, AD.id) || ''); } }catch(err){} }
       ctcRepaint();
       showDialog('ok', 'ذخیره شد', 'قرارداد ذخیره شد' + (P.length > 1 ? ' و برای ' + toFa(P.length) + ' طرف ثبت شد.' : '.'));
     }
@@ -105750,7 +105764,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     /* دکمهٔ فلشِ باز/بستهٔ زیرفهرست کنار «میز کار»، «اسناد» و «گزارش‌ها» */
     function sbExpPaint(){ ['tabTasks', 'tabAdmin', 'tabView'].forEach(id => { const t = document.getElementById(id); if(!t) return; const d = bar.querySelector('.sb-sub[data-for="' + id + '"]');
       let b = t.querySelector(':scope > .sb-exp'); if(!d || !d.__h){ if(b) b.hidden = true; return; }
-      if(!b){ t.insertAdjacentHTML('beforeend', '<span class="sb-exp" role="button" tabindex="0" aria-label="باز و بسته کردن زیرفهرست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>'); b = t.querySelector(':scope > .sb-exp'); }
+      if(!b){ t.insertAdjacentHTML('beforeend', '<span class="sb-exp" role="button" tabindex="0" aria-label="باز و بسته کردن زیرفهرست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>'); b = t.querySelector(':scope > .sb-exp'); }
       b.hidden = false; const on = d.classList.contains('open'); b.classList.toggle('on', on); b.setAttribute('aria-expanded', String(on)); }); }
     setTimeout(sbExpPaint, 1500); setInterval(() => { try{ if(mq.matches) sbExpPaint(); }catch(e){} }, 4000);
     function put(id, html, open){ const d = box(id); if(!d) return; if(d.__h !== html){ d.innerHTML = html; d.__h = html; } d.classList.toggle('open', !!open && !!html); }
