@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126102211">
+<meta name="pm-build" content="20261126103204">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32457,6 +32457,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 @media (max-width:1179px){ :is(html,#z0) :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;} }
 :is(html,#z0) :is(body,#z1) .cct-fin{margin:4px 0 10px;padding:12px;border-radius:12px;background:var(--field);}
 :is(html,#z0) :is(body,#z1) .cct-nt{display:block;margin-top:6px;font-size:11.5px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .afr-tg.loc{display:inline-flex;align-items:center;gap:3px;color:#2a8a86;background:color-mix(in srgb, #2a8a86 11%, transparent);} :is(html,#z0) :is(body,#z1) .afr-tg.loc svg{width:11px;height:11px;flex:0 0 11px;}
 /* ۶۳۰: صف بررسی بخش‌های اسناد */
 :is(html,#z0) :is(body,#z1) .adm-rq:empty{display:none;}
 :is(html,#z0) :is(body,#z1) .adm-rq .rq{margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in srgb, #d49b18 35%, var(--line));background:color-mix(in srgb, #d49b18 6%, var(--surface));}
@@ -66350,6 +66351,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       try{ rvChainLoad(lists); }catch(e2){}
       try{ zmLoad(lists); }catch(e2){}
       try{ window.ltrMetaLoad && window.ltrMetaLoad(lists); }catch(e2){}
+      try{ window.docLocLoad && window.docLocLoad(lists); }catch(e2){}
       /* ۶۲۲: گروه‌های کاری مشترک (سمت‌هایی که کارشان با هم ثبت می‌شود، مثل تاور) */
       try{ window.__wrkGrp = new Set(((lists && lists['گروه کاری مشترک']) || []).map(v => String(v).trim()).filter(Boolean)); window.__wrkKidOff = new Set(((lists && lists['شاگرد جدا']) || []).map(v => String(v).trim()).filter(Boolean)); window.wrkGrpChanged && window.wrkGrpChanged(); }catch(e2){}
       try{ window.sfLoad && window.sfLoad(lists); }catch(e2){}
@@ -67037,9 +67039,11 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         if(vals.__att){ try{ const sj = vals['موضوع صورتجلسه'] || pick(rowMap.get(id) || {}, AD.mSubject), mt = vals['تاریخ صورتجلسه'] || pick(rowMap.get(id) || {}, AD.mMeet); mnAttSave(sj, mt, vals.__att); }catch(e){} }
         delete vals.__att;
         const lmeta = vals.__lmeta; delete vals.__lmeta;
+        const dloc = vals.__dloc; delete vals.__dloc;
         host.classList.add('busy');
         const okA = await sendAction({action:'update', target: target, id: id, values: vals});
         if(okA && lmeta && target === 'letter') try{ await window.ltrMetaSave(id, lmeta, rowMap.get(id)); }catch(e){}
+        if(okA && dloc != null) try{ await window.docLocSave(target, id, dloc); }catch(e){}
         host.classList.remove('busy');
         if(!okA){
           showDialog('err','ذخیره نشد', lastServerError || 'اتصال را بررسی کنید.');
@@ -67844,6 +67848,18 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   const ltrDirOf = r => String((r && exact(r,'جهت نامه')) || '').trim() === 'دریافتی' ? 'دریافتی' : 'ارسالی';
   /* ۶۳۰: نامه — درون‌سازمانی/برون‌سازمانی و رونوشت؛ در lists («مشخصات نامه»، «شناسه¦JSON {sc, team, cc}») تا ستون تازه لازم نباشد.
      درون‌سازمانی فقط برای تیمِ ثبت‌کننده (و رونوشت‌ها، مسئول، ثبت‌کننده) دیده می‌شود؛ رونوشت نامه را برای آن شخص (حتی بی‌دسترسی به نامه‌ها) نشان می‌دهد. */
+  /* ۶۳۳: طبقه و محل صورت وضعیت و قرارداد (ستون ندارند) — lists «محل سند»: «kind:id¦محل» ؛ همان انتخابگر طبقه/محل گزارش روزانه */
+  const DOC_LOC_KIND = 'محل سند', DOC_LOC = new Map();
+  window.docLocLoad = lists => { DOC_LOC.clear(); ((lists && lists[DOC_LOC_KIND]) || []).forEach(v => { const s0 = String(v), i = s0.indexOf('¦'); if(i < 1) return; DOC_LOC.set(s0.slice(0, i), s0.slice(i + 1)); }); };
+  const docLocOf = (kind, r) => DOC_LOC.get(kind + ':' + String(pick(r,AD.id) || '')) || '';
+  window.docLocOf = docLocOf;
+  async function docLocSave(kind, id, v){ id = String(id || ''); if(!id) return; const k = kind + ':' + id; v = String(v || '').trim(); if((DOC_LOC.get(k) || '') === v) return;
+    await supaFetch('lists?kind=eq.' + encodeURIComponent(DOC_LOC_KIND) + '&value=like.' + encodeURIComponent(k + '¦*'), {method: 'DELETE'}).catch(() => {});
+    if(v){ await supaFetch('lists?on_conflict=kind,value', {method: 'POST', headers: {'Prefer': 'resolution=merge-duplicates'}, body: [{kind: DOC_LOC_KIND, value: k + '¦' + v}]}); DOC_LOC.set(k, v); } else DOC_LOC.delete(k);
+    try{ clearNetCache(); }catch(e){} }
+  window.docLocSave = docLocSave;
+  function docLocSecHtml(kind, r){ const cur = r && pick(r,AD.id) ? docLocOf(kind, r) : '', zi = cur.indexOf(' › '), l1 = zi > 0 ? cur.slice(0, zi) : cur, sub = zi > 0 ? cur.slice(zi + 3) : '', uid = 'dl' + Math.random().toString(36).slice(2, 8);
+    try{ return '<div class="field ds-sl" style="grid-column:1 / -1">' + slHtml('a-xLoc', 'a-xLocSub', l1, sub, uid + 'z', uid + 'p') + '</div>'; }catch(e){ return ''; } }
   const LTR_META_KIND = 'مشخصات نامه', LTR_META = new Map();
   window.ltrMetaLoad = lists => { LTR_META.clear(); ((lists && lists[LTR_META_KIND]) || []).forEach(v => { const s0 = String(v), i = s0.indexOf('¦'); if(i < 1) return; try{ LTR_META.set(s0.slice(0, i), JSON.parse(s0.slice(i + 1)) || {}); }catch(e){} });
     try{ if(typeof adminAll !== 'undefined' && adminAll.length){ const n0 = adminAll.length; adminAll = adminAll.filter(x => x.kind !== 'letter' || ltrVisible(x.row) !== false); if(adminAll.length !== n0) try{ applyAdminFilters(); }catch(e){} } }catch(e){} };
@@ -68631,6 +68647,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
             /* «منقضی» در عنوان حذف شد؛ فقط ستون وضعیت آن را نشان می‌دهد */
 
           }catch(e){} return ''; })();
+          /* ۶۳۳: طبقه و محل صورت وضعیت و قرارداد */
+          if(kind === 'statement' || kind === 'contract'){ try{ const lc = docLocOf(kind, r); if(lc) tg += '<em class="afr-tg loc" title="طبقه و محل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>' + esc(lc.length > 40 ? lc.slice(0, 38) + '…' : lc) + '</em>'; }catch(e){} }
           /* ۶۳۰: نامه — درون‌سازمانی و رونوشت */
           if(kind === 'letter'){ try{ const lm = ltrMeta(r); if(lm.sc === 'in') tg = '<em class="afr-tg lin" title="فقط تیم خودتان و رونوشت‌ها می‌بینند">درون‌سازمانی</em>' + tg; if((lm.cc || []).length) tg += '<em class="afr-tg lcc" title="رونوشت: ' + esc(lm.cc.join('، ')) + '">رونوشت ' + toFa(lm.cc.length) + '</em>'; }catch(e){} }
           /* صورت وضعیت: شمارهٔ قرارداد در فهرست */
@@ -72745,6 +72763,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
           + fdue('a-due','موعد اتمام', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.statement)), 'three')
         + flowSec('a-sNotify', pick(r,AD.sNotify), 'a-sReview')
+        + sec('cal', 'طبقه و محل', docLocSecHtml('statement', r), 'one')
         + sec('doc', 'کد سند', dcLiveHtml('statement'), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'توضیحات', f('a-sNote','توضیحات', pick(r,AD.sNote), true), 'one'));
@@ -72781,6 +72800,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
           + fdue('a-due','موعد پیگیری', pick(r,AD.due))
           + fo('a-owner','مسئول', pick(r,AD_OWNER.contract)))
         + flowSec('a-cNotify', pick(r,AD.cNotify), 'a-cReview')
+        + sec('cal', 'طبقه و محل', docLocSecHtml('contract', r), 'one')
         + sec('doc', 'کد سند', dcLiveHtml('contract'), 'one')
         + sec('clip', 'پیوست', flink(pick(r,AD.link)), 'one')
         + sec('note', 'موضوع قرارداد', f('a-cSubject','موضوع قرارداد', pick(r,AD.cSubject), true), 'one'));
@@ -75382,6 +75402,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     if(id && id !== 'new') dtSave(dtKey(box.dataset.dt, id), dtRead(box));
   }, true);
   function admValues(kind, host){
+    const __loc = (kind === 'statement' || kind === 'contract') ? (function(){ const z = host.querySelector('.a-xLoc'); if(!z) return null; const sb = (host.querySelector('.a-xLocSub') || {}).value || ''; return String(z.value || '').trim() + (String(sb).trim() ? ' › ' + String(sb).trim() : ''); })() : null;
     const q = c => { const el = host.querySelector('.'+c); return el ? el.value.trim() : null; };
     const put = (o, key, c) => { const v = q(c); if(v !== null) o[key] = v; };
     const o = {};
@@ -75457,6 +75478,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       o[kind === 'statement' ? 'نوع ابلاغ' : 'وضعیت ابلاغ'] = NOTIFY_BY_REVIEW[o['وضعیت رسیدگی']];
     /* تاریخ‌ها همیشه به شکل یکسان ۱۴۰۵/۰۸/۰۳ ذخیره می‌شوند (هر شکلی که تایپ شده باشد) */
     Object.keys(o).forEach(k => { if(!/^(تاریخ|موعد)/.test(k) || typeof o[k] !== 'string' || !o[k].trim()) return; const n = normDate(o[k]); if(n) o[k] = n; });
+    if(__loc !== null) o.__dloc = __loc;
     return o;
   }
 
@@ -75616,6 +75638,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         newDocs.push(r.created[0]);
         try{ if(rec.dt) await dtSave(dtKey(r.created[0].kind || rec.kind, r.created[0].id), rec.dt); }catch(e){}
         try{ if(rec.kind === 'letter' && rec.item && rec.item.__lmeta) await window.ltrMetaSave(r.created[0].id, rec.item.__lmeta, null); }catch(e){}
+        try{ if(rec.item && rec.item.__dloc) await window.docLocSave(rec.kind, r.created[0].id, rec.item.__dloc); }catch(e){}
         try{ await admNewMilestones(r.created[0], rec.item); }catch(e){}
         try{ if(rec.item && rec.item.items) await mnNotifyFollowers(r.created.filter(c => c.kind === 'minute'), rec.item); }catch(e){}
       }
@@ -75683,7 +75706,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         sentDate:v['تاریخ ارسال'], dueDate:v['موعد اتمام'], notify:v['وضعیت ابلاغ'], owner:v['مسئول'], link:v['لینک']});
       if(v.__lmeta) item.__lmeta = v.__lmeta;
     }
-    delete v.__bands; delete v.__att; delete v.__dsSide0; delete v.__dsAt0; delete v.__lmeta;
+    if(v.__dloc != null && (kind === 'statement' || kind === 'contract')){ item.__dloc = v.__dloc;
+    }
+    delete v.__bands; delete v.__att; delete v.__dsSide0; delete v.__dsAt0; delete v.__lmeta; delete v.__dloc;
     if(!document.getElementById('admOwner').value.trim()){
       showDialog('warn','تهیه‌کننده انتخاب نشده','اول تهیه‌کنندهٔ گزارش را در همین تب انتخاب کنید.');
       return;
@@ -81290,7 +81315,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       + '<div class="prf-g">'
       +   '<label class="te-f"><u>تاریخ</u><input type="text" class="hs-date date-in" inputmode="numeric" value="' + esc(toFa(D.date)) + '"></label>'
 
-      +   '<label class="te-f"><u>محل</u><input type="text" class="hs-zone" data-list="zoneList" autocomplete="off" placeholder="بلوک، طبقه یا محدوده" value="' + esc(D.zone) + '"></label>'
+      /* ۶۳۳: طبقه و محل با همان انتخابگر گزارش روزانه (طبقه، یک یا چند ← محل) */
+      +   (window.slHtml ? '<div class="te-f hs-slw" style="grid-column:1 / -1">' + window.slHtml('hs-zone', '', D.zone || '', '', 'hsz' + Date.now().toString(36), 'hsp' + Date.now().toString(36)) + '</div>'
+            : '<label class="te-f"><u>محل</u><input type="text" class="hs-zone" data-list="zoneList" autocomplete="off" placeholder="بلوک، طبقه یا محدوده" value="' + esc(D.zone) + '"></label>')
       +   '<label class="te-f"><u>پیمانکار مرتبط</u><input type="text" class="hs-ctr" data-list="contractorList" autocomplete="off" placeholder="اختیاری" value="' + esc(D.ctr) + '"></label>'
       + '</div>'
       + '<details class="prf-more"' + (D.time || D.people ? ' open' : '') + '><summary><b>ساعت و افراد درگیر</b><small>' + esc([D.time ? toFa(D.time) : '', D.people].filter(Boolean).join(' · ') || 'اختیاری') + '</small></summary><div class="prf-g">'
