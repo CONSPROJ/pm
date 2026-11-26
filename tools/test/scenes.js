@@ -11,6 +11,9 @@ const SCENES = [
   ['tasks', () => { switchTab('tasks'); wsSet('tasks'); }],
   ['wrk', () => { switchTab('tasks'); wsSet('wrk'); }],
   ['people', () => { switchTab('tasks'); wsSet('ctr'); }],
+  /* ۶۴۵: کنسول مدیریت و قابلیت‌های هر نفر */
+  ['ac-docs', () => { window.acOpen('docs'); }, '#acM'],
+  ['ac-feat', () => { window.acOpen('acc'); setTimeout(() => { const b = document.querySelector('#acM [data-acrun="feat"]'); b && b.click(); setTimeout(() => { const p = document.querySelector('[data-pcp]'); p && p.click(); }, 900); }, 400); }, '.pp-mods'],
   /* ۶۴۳–۶۴۴: بخش‌های مرکز پرونده‌ها */
   ['hub-list', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="list"]'); b && b.click(); }, 700); }, '.phb-tbl'],
   ['hub-fin', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="fin"]'); b && b.click(); }, 700); }, '.phb-fsum'],
