@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126084525">
+<meta name="pm-build" content="20261126090124">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -13869,7 +13869,7 @@
   /* نظرات، تلنگر و اشتراک همیشه دیده شوند: در صفحهٔ کوتاه، کارت اسکرول می‌خورد
      و این نوار پایینِ کارت می‌چسبد، نه اینکه زیر لبه پنهان بماند */
   .dk-card .dk-adm .rv.adm-k.adm-k{overflow:clip !important;}
-  .dk-card .dk-adm .cm-bar{position:sticky;bottom:-15px;z-index:4;background:var(--dk-bg, var(--surface));margin-bottom:-6px !important;padding-bottom:8px !important;box-shadow:0 -10px 14px -10px rgba(0,0,0,.18);}
+  .dk-card .dk-adm .cm-bar{position:sticky;bottom:-15px;z-index:30;isolation:isolate;background:var(--dk-bg, var(--surface));margin-bottom:-6px !important;padding-bottom:8px !important;box-shadow:0 -10px 14px -10px rgba(0,0,0,.18);}
   /* پیشرفت همیشه پیدا، ولی باریک: عنوان و درصد و نوار، بی برچسب‌های زیر */
   .dk-card .dk-adm .pgx{margin:6px 0 0 !important;padding:6px 10px !important;border-radius:10px !important;}
   .dk-card:not(.dk-x) .dk-adm .pgx .pgx-sl, .dk-card:not(.dk-x) .dk-adm .pgx .pgx-a, .dk-card:not(.dk-x) .dk-adm .pgx .pgx-e{display:none !important;}
@@ -21831,7 +21831,8 @@
   .dk-card .dk-adm .rv.adm-k{overflow:hidden !important;}
   .dk-card .dk-adm .adm-head .nudge-flag{margin-inline-end:6px !important;}
   .dk-card .dk-adm .adm-head{display:flex;align-items:flex-start;order:1;}
-  .dk-card .dk-adm .adm-head .ava.rail{position:static !important;margin:3px !important;width:40px !important;height:40px !important;flex:0 0 40px !important;font-size:12.5px !important;box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px color-mix(in srgb, var(--ink) 12%, transparent);}
+  /* ۶۲۸: relative، نه static — آواتار تصویری/حرفی (.ava-mg مطلق) پیش‌تر به پهنای کل سربرگ کش می‌آمد (بیضیِ بزرگ روی کارت طراحی) */
+  .dk-card .dk-adm .adm-head .ava.rail{position:relative !important;margin:3px !important;width:40px !important;height:40px !important;flex:0 0 40px !important;font-size:12.5px !important;box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px color-mix(in srgb, var(--ink) 12%, transparent);}
   .dk-card .dk-adm .adm-head .nudge-flag{order:3;position:relative !important;inset:auto !important;margin:4px 0 0 !important;}
   .dk-card .dk-adm .adm-titlewrap{flex:1;min-width:0;display:flex;flex-direction:column;}
   .dk-card .dk-adm .adm-title{margin:0;font-size:16px !important;font-weight:800 !important;color:var(--ink);-webkit-line-clamp:unset;display:block;}
@@ -31373,7 +31374,10 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
       var pref = localStorage.getItem('siteLogM.theme.v1') || 'auto';
       /* ۵۱۴: ظاهر تازه (پیش‌نمایش): کلاس ui2 پیش از نقاشی صفحه؛ با ?ui=2 / ?ui=1 هم روشن/خاموش می‌شود */
       try{ var qm = /[?&]ui=([0abcd12])/.exec(location.search); if(qm) localStorage.setItem('siteLogM.themeUi2', qm[1] === '2' || qm[1] === '1' ? 'b' : qm[1]);
-        var u2 = localStorage.getItem('siteLogM.themeUi2') || '0'; if(u2 === '1') u2 = 'b';
+        var u2 = localStorage.getItem('siteLogM.themeUi2'); if(u2 === '1') u2 = 'b';
+        /* ۶۲۸: کاربری که خودش ظاهری انتخاب نکرده، پیش‌فرض پروژه (تعیین ادمین) را می‌گیرد */
+        if(u2 == null){ try{ var pj0 = localStorage.getItem('siteLogM.project.v1') || 'p1', R0 = JSON.parse(localStorage.getItem('siteLogM.rules.' + pj0) || '{}'); if(R0 && R0.ui2Def) u2 = String(R0.ui2Def); }catch(e){} }
+        u2 = u2 || '0';
         if(/^[abcd]$/.test(u2)){ document.documentElement.classList.add('ui2'); document.documentElement.dataset.ui2p = u2; } }catch(e){}
       var dark = pref === 'dark' || (pref === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -32429,6 +32433,15 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 @media (min-width:1180px){ :is(html,#z0) :is(body,#z1) .app-head{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:color-mix(in srgb, var(--canvas) 96%, transparent) !important;}
   :is(html,#z0) :is(body,#z1) .fd-toggle{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;} }
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+/* ۶۲۸: نوار پایین کارت (نظرات، تلنگر، اشتراک، سابقه) زمینهٔ پر دارد؛ پیش‌تر شفاف بود و روی جعبهٔ نظرات بررسی (CRS) می‌افتاد */
+:is(html,#z0) :is(body,#z1) .dk-card .dk-adm .rv.adm-k > .cm-bar.cm-bar{background:var(--surface) !important;}
+:is(html,#z0) :is(body,#z1) :is(#adminView, .adm-host) :is(#secAdmchore, [data-jumpadm="secAdmchore"], [data-admcat="chore"], [data-sbadm="chore"], [data-lndadm="chore"]){display:none !important;}
+:is(html,#z0) :is(body,#z1) .ui2-sw button{min-width:44px;padding:5px 8px !important;}
+:is(html,#z0) :is(body,#z1) .ui2-sw button i{display:block;width:30px;height:20px;border-radius:7px;border:1px solid rgba(0,0,0,.14);position:relative;overflow:hidden;}
+:is(html,#z0) :is(body,#z1) .ui2-sw button i b{position:absolute;inset-inline-start:0;top:0;bottom:0;width:40%;}
+:is(html,#z0) :is(body,#z1) .ui2-sw button.def::after{content:'';position:absolute;top:3px;inset-inline-end:3px;width:6px;height:6px;border-radius:50%;background:#d49b18;}
+:is(html,#z0) :is(body,#z1) .ui2-sw button{position:relative;}
+:is(html,#z0) :is(body,#z1) .ui2-def{margin-inline-start:8px;}
 /* ۶۲۸: زیرعنوان پنجره‌های fxModal (پیش‌تر hlpBtn تعریف‌نشده بود و پنجره باز نمی‌شد) */
 :is(html,#z0) :is(body,#z1) .fx-hd .fx-sub{display:block;margin-top:2px;font-size:12px;font-weight:400;color:var(--muted);line-height:1.7;}
 /* ۶۲۲: گروه مشترک، زمان ثبت، کپی دیروز */
@@ -49106,6 +49119,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const v = b.dataset.ui2p, H = document.documentElement; H.classList.toggle('ui2', v !== '0'); if(v !== '0') H.dataset.ui2p = v; else delete H.dataset.ui2p;
     try{ localStorage.setItem('siteLogM.themeUi2', v); }catch(er){}
     b.parentElement.querySelectorAll('button').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); }, true);
+  document.addEventListener('click', async e => { const b = e.target.closest && e.target.closest('[data-ui2def]'); if(!b) return; e.preventDefault(); e.stopPropagation(); if(!isAdminUser()) return;
+    const H = document.documentElement, v = H.classList.contains('ui2') ? (H.dataset.ui2p || 'b') : '0'; b.disabled = true;
+    try{ const L = await fxList(RULES_K, true); const x = (L || []).find(r => r.id === 'cfg'); const cur = Object.assign({}, (x && x.o && x.o.v) || {}); cur.ui2Def = v;
+      await fxPut(RULES_K, 'cfg', {v: cur, by: activeUserName(), at: Date.now()}); Object.assign(window.__pmRules, cur);
+      try{ localStorage.setItem('siteLogM.rules.' + pjHdrId(), JSON.stringify(cur)); }catch(er){}
+      shrToast('ظاهر فعلی پیش‌فرض این پروژه شد'); try{ b.closest('.st2-line, .st-line, div').querySelectorAll('[data-ui2p]').forEach(x => x.classList.toggle('def', x.dataset.ui2p === v)); }catch(er){} }
+    catch(err){ showDialog('err', 'ذخیره نشد', friendlyErr(err)); } b.disabled = false; }, true);
   function stSeg(key, cur, opts){
     return '<span class="st2-seg" role="radiogroup">' + opts.map(([v, t]) =>
       '<button type="button" role="radio" aria-checked="' + (String(cur) === String(v)) + '" class="' + (String(cur) === String(v) ? 'on' : '')
@@ -49245,8 +49265,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     if(!me) return h + '</div>';
     h += sec('ظاهر',
         stLine(ST2_I.sun, 'پوسته', '', stSeg('theme', theme, [['auto','خودکار'],['light','روز'],['dark','شب']]), true)
-      + stLine(ST2_I.sun, 'ظاهر تازه (پیش‌نمایش)', 'الف سفید و سرمه‌ای · ب خاکستری روشن و آبی · ج کاجی · د گرافیتی؛ «قبلی» = ظاهر فعلی', (function(){ const cur = document.documentElement.classList.contains('ui2') ? (document.documentElement.dataset.ui2p || 'b') : '0';
-          return '<span class="st2-seg" role="radiogroup">' + [['0','قبلی'],['a','الف'],['b','ب'],['c','ج'],['d','د']].map(([v, t]) => '<button type="button" role="radio" aria-checked="' + (cur === v) + '" class="' + (cur === v ? 'on' : '') + '" data-ui2p="' + v + '">' + t + '</button>').join('') + '</span>'; })(), true)
+      /* ۶۲۸: نام‌های ظاهر (الف، ب، …) برداشته شد؛ نمونهٔ رنگ هر ظاهر؛ ادمین ظاهر پیش‌فرض همین پروژه را تعیین می‌کند */
+      + stLine(ST2_I.sun, 'ظاهر', 'روی همین دستگاه' + (function(){ let d = ''; try{ d = String((window.__pmRules || {}).ui2Def || ''); }catch(e){} return d ? ' · پیش‌فرض پروژه تعیین شده' : ''; })(), (function(){ const cur = document.documentElement.classList.contains('ui2') ? (document.documentElement.dataset.ui2p || 'b') : '0';
+          const SW = {'0': ['#f3f4f6', '#2b6c8f', 'کلاسیک'], a: ['#ffffff', '#1f2f5c', 'سفید و سرمه‌ای'], b: ['#eef1f5', '#2f6fb0', 'خاکستری و آبی'], c: ['#f4f2ec', '#2f6a4a', 'سبز کاجی'], d: ['#e9eaec', '#2c2f36', 'گرافیتی']};
+          let def = ''; try{ def = String((window.__pmRules || {}).ui2Def || ''); }catch(e){}
+          return '<span class="st2-seg ui2-sw" role="radiogroup">' + Object.keys(SW).map(v => { const [bg, ac, t] = SW[v]; return '<button type="button" role="radio" aria-checked="' + (cur === v) + '" aria-label="' + t + '" title="' + t + (def === v ? ' — پیش‌فرض پروژه' : '') + '" class="' + (cur === v ? 'on' : '') + (def === v ? ' def' : '') + '" data-ui2p="' + v + '"><i style="background:' + bg + '"><b style="background:' + ac + '"></b></i></button>'; }).join('') + '</span>'
+            + (isAdminUser() ? '<button type="button" class="mini ui2-def" data-ui2def="1" title="همین ظاهر برای همهٔ اعضای این پروژه که خودشان چیزی انتخاب نکرده‌اند">پیش‌فرض پروژه</button>' : ''); })(), true)
       + stLine(ST2_I.txt, 'اندازهٔ نوشته‌ها', 'روی همین دستگاه', stSeg('zoom', upref('zoom'), [['s','ریز'],['m','معمولی'],['l','درشت'],['xl','خیلی درشت']]), true)
       + stLine(ST2_I.txt, 'زبان / Language', 'فارسی یا انگلیسی؛ روی همین دستگاه، با انتخاب صفحه تازه می‌شود', '<span class="st2-seg" role="radiogroup">' + [['fa','فارسی'],['en','English']].map(([v, t]) => '<button type="button" role="radio" aria-checked="' + ((window.pmLang || 'fa') === v) + '" class="' + ((window.pmLang || 'fa') === v ? 'on' : '') + '" data-pmlang="' + v + '">' + t + '</button>').join('') + '</span>', true)
       + vmSettingsLine()
@@ -76244,7 +76268,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     box.innerHTML = '<div id="admPendingBar"></div><div class="jump-bar" id="admJumpBar"></div>'
       + '<div class="ds-hub-slot"></div>'
       + '<div class="adm-cats" id="admCats" role="tablist" aria-label="دسته‌های دفتر فنی">'
-      + ADM_ORDER.concat(['chore']).map(k => {
+      /* ۶۲۸: «فعالیت عمومی» دیگر جزو اسناد نیست (کاشی، لانچر، نوار پرش) */
+      + ADM_ORDER.map(k => {
           const lb = k === 'chore' ? 'فعالیت عمومی' : KIND_LABEL[k];
           const ic = k === 'chore'
             ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 001 1h3l5 4V5L8 9H5a1 1 0 00-1 1z"/><path d="M17.5 8.5a5 5 0 010 7"/></svg>'
@@ -87685,7 +87710,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       + (function(){ const n = window.fxSnagCount ? window.fxSnagCount(u) : null; return '<button type="button" class="spd-qr' + (n ? ' hot' : '') + '" data-fxgo="snag:' + esc(u) + '" title="چک‌لیست تحویل و ایرادهای واحد">تحویل' + (n ? ' · ' + toFa(n) + ' ایراد' : '') + '</button>'; })()
       + '<button type="button" class="spd-qr" data-spqr="u:' + esc(u) + '" title="کد QR این واحد">QR</button><button type="button" class="sp-x" data-spu="' + esc(u) + '" aria-label="بستن">×</button></div>'
       + '<div class="sp-g"><div class="te-f"><u>وضعیت فروش</u><div class="wh-seg sm">' + SP_ST.map(([k, t]) => '<button type="button" data-spst="' + k + '" class="' + (st === k ? 'on' : '') + '"' + (ed ? '' : ' disabled') + '>' + t + '</button>').join('') + '</div></div>'
-      + '<div class="te-f"><u>مالک <em>یک یا چند نفر؛ نام و نام خانوادگی</em></u>' + spTagsHtml('own', own, ed, 'spOwnList', 'از پروندهٔ نیروی انسانی یا نام و نام خانوادگی تازه', true) + '</div>'
+      + '<div class="te-f"><u>مالک <em>یک یا چند نفر؛ نام و نام خانوادگی</em></u>' + spTagsHtml('own', own, ed, 'spOwnList', 'از فهرست مالکان یا نام و نام خانوادگی تازه', true) + '</div>'
       + '<label class="te-f"><u>متراژ (m²)</u><input type="text" data-spf="area" inputmode="decimal" value="' + esc(o.area ? toFa(o.area) : '') + '"' + (ed || pe ? '' : ' readonly') + '></label>'
       + '<label class="te-f"><u>تیپ</u><select data-spf="tp"' + (pe ? '' : ' disabled') + '><option value="">بدون تیپ</option>' + Array.from(spTypes.keys()).map(k => '<option' + (k === o.tp ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select></label>'
       + '<label class="te-f"><u>نوع واحد</u><input type="text" data-spf="ty" list="spTyList" value="' + esc(o.ty || '') + '"' + (ed || pe ? '' : ' readonly') + ' placeholder="مثلاً دو خوابه"></label></div>'
@@ -87717,10 +87742,9 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function spDLs(){
     /* فهرست افراد برای مالک: مالکان، کاربران سامانه و همهٔ پرونده‌های نیروی انسانی */
     const own = new Set();
-    try{ ctrContacts.forEach(o => { if(o && o.t === 'own' && o.name) own.add(o.name); }); }catch(e){}
-    try{ listNames().forEach(n => own.add(n)); }catch(e){}
-    try{ ctrContacts.forEach(o => { if(o && o.name) own.add(o.name); }); }catch(e){}
-    try{ pjPartyPeople().forEach(o => own.add(o.n)); }catch(e){}
+    /* ۶۲۸: فقط مالکان — پروندهٔ «مالک / سرمایه‌گذار»، هر طرفی که «مالک هم هست» و مالکانِ ثبت‌شدهٔ واحدها؛ پیش‌تر همهٔ کاربران و پیمانکاران هم می‌آمدند */
+    try{ ctrContacts.forEach(o => { if(o && o.name && (o.t === 'own' || o.ow)) own.add(o.name); }); }catch(e){}
+    try{ pjPartyPeople().forEach(o => { if(o && o.n && (o.t === 'own' || o.side === 'own')) own.add(o.n); }); }catch(e){}
     sp.units.forEach(o => spSplit(o && o.own).forEach(n => own.add(n)));
     const ty = new Set(['یک خوابه', 'دو خوابه', 'سه خوابه', 'چهار خوابه', 'پنت‌هاوس', 'دوبلکس', 'تجاری', 'اداری']); sp.units.forEach(o => { if(o && o.ty) ty.add(o.ty); });
     return '<datalist id="spOwnList">' + Array.from(own).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
