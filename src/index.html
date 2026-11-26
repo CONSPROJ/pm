@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126200341">
+<meta name="pm-build" content="20261126201620">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32492,6 +32492,14 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 :is(html,#z0) :is(body,#z1) .hm-add .hma-g.top > u{color:#8a5a00;}
 /* ۶۳۹: زبانه‌های مرکز پرونده‌ها روی گوشی: نوار لغزان با فاصله از لبه */
 @media (max-width:720px){ :is(html,#z0) :is(body,#z1) .cdx-tabs{overflow-x:auto !important;padding-inline:8px !important;scrollbar-width:none;scroll-padding-inline:8px;} :is(html,#z0) :is(body,#z1) .cdx-tabs::-webkit-scrollbar{display:none;} :is(html,#z0) :is(body,#z1) .cdx-tabs > button{flex:none !important;padding-inline:12px !important;} }
+/* ۶۵۲: پروژه‌های یک طرف */
+:is(html,#z0) :is(body,#z1) .pjp-l{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:8px;}
+:is(html,#z0) :is(body,#z1) .pjp-c{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);min-width:0;}
+:is(html,#z0) :is(body,#z1) .pjp-c:hover:not(.cur){border-color:var(--sky);} :is(html,#z0) :is(body,#z1) .pjp-c.cur{cursor:default;background:color-mix(in srgb, #2f8a5a 5%, var(--surface));}
+:is(html,#z0) :is(body,#z1) .pjp-av{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:900;color:#fff;background:hsl(var(--h,205) 45% 42%);}
+:is(html,#z0) :is(body,#z1) .pjp-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;} :is(html,#z0) :is(body,#z1) .pjp-t b{font-size:12.5px;font-weight:800;color:var(--ink);} :is(html,#z0) :is(body,#z1) .pjp-t b i{font-style:normal;font-size:10px;color:#2f8a5a;} :is(html,#z0) :is(body,#z1) .pjp-t small{font-size:11px;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .pjp-r{display:flex;flex-wrap:wrap;gap:4px;} :is(html,#z0) :is(body,#z1) .pjp-r u{text-decoration:none;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--field);color:var(--ink);}
+:is(html,#z0) :is(body,#z1) .pjp-go{flex:none;font-style:normal;font-size:11.5px;font-weight:800;color:var(--sky);}
 /* ۶۴۸: یک فرم برای همهٔ تطبیق‌ها */
 :is(html,#z0) :is(body,#z1) .gm-go.dng{color:#a8322a;} :is(html,#z0) :is(body,#z1) .ctm .gm-s{margin-top:10px;padding:12px;} :is(html,#z0) :is(body,#z1) .ctm .gm-r.on{background:color-mix(in srgb, #2f8a5a 5%, var(--surface));} :is(html,#z0) :is(body,#z1) .ctm-add{margin-top:8px;}
 :is(html,#z0) :is(body,#z1) .gm-oth{min-width:200px;} :is(html,#z0) :is(body,#z1) .gm-oth .gm-oi{height:36px;border-radius:9px;font-size:12px;}
@@ -47825,7 +47833,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const ownHead = owners.length ? 'e:' + normName((owners.find(o => /رئیس|مدیرعامل|نماینده|سرپرست/.test(String(OV(normName(o.n)).d || o.d || ''))) || owners[0]).n)
         : empTeamExt.length ? 'e:' + normName((empTeamExt.find(e => /رئیس|مدیرعامل|نماینده|سرپرست/.test(String(OV(normName(e.n)).d || e.d || ''))) || empTeamExt[0]).n)
         : empTeamRoots.length ? 'p:' + nameKey(empTeamRoots[0]) : '';
-      const GF = new Map(), gpUp = k => { const g0 = og.nodes.get('gp:' + k); if(k === 'pm' && ownHead && !(g0 && g0.up)) return ownHead; const u = (g0 || {}).up || ''; return u === 'g:emp' || u === 'g:root' ? '' : u; };
+      const ownerAt = (function(){ try{ return String((pjCur() || {}).ownerAt || ''); }catch(e){ return ''; } })();
+      const GF = new Map(), gpUp = k => { const g0 = og.nodes.get('gp:' + k); if(k === 'pm' && ownHead && !(g0 && g0.up)) return ownHead;
+        /* ۶۵۱: جایگاه مالک از «اطلاعات پروژه»؛ جابه‌جایی دستی در چارت مقدم است */
+        if(k === 'own' && !(g0 && g0.up)){ if(/مدیریت/.test(ownerAt)) return 'g:pm'; if(/مشاور/.test(ownerAt)) return 'g:cons'; } const u = (g0 || {}).up || ''; return u === 'g:emp' || u === 'g:root' ? '' : u; };
       const branches = [];
       const addG = (k, mk) => { GF.set(k, mk); };
       /* تیم مدیریت پیمان */
@@ -62225,7 +62236,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       if(pt0 === 'cons' || pt0 === 'emp' || pt0 === 'own'){
         const ttl0 = bg.querySelector('.mc-head'), body0 = bg.querySelector('.ct-body');
         try{ if(ttl0){ ttl0.insertAdjacentHTML('afterbegin', ctAvaHtml(name)); bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', '<small>' + esc(ctrRoleLabel(name)) + '</small>'); } try{ const ob = ctOwnBadge(name); if(ob) bg.querySelector('.mc-title').insertAdjacentHTML('beforeend', ob); }catch(e2){} }catch(e){}
-        if(body0) body0.innerHTML = ctPartyHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : '');
+        if(body0) body0.innerHTML = ctPartyHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : '') + (window.pjOfPartyHtml ? window.pjOfPartyHtml(name) : '');
         ct4Head();
         return;
       }
@@ -62256,7 +62267,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const hv = cd && cd.querySelector('.hv-stats');
       const sp = cd && cd.querySelector('.hr-split');
       const pt = (function(){ try{ return ctrTypeOf(name); }catch(e){ return ''; } })();
-      if(pt === 'cons' || pt === 'emp' || pt === 'own'){ body.innerHTML = ctPartyHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : ''); return; }
+      if(pt === 'cons' || pt === 'emp' || pt === 'own'){ body.innerHTML = ctPartyHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : '') + (window.pjOfPartyHtml ? window.pjOfPartyHtml(name) : ''); return; }
       body.innerHTML = ((cd && sp)
         ? (hv ? '<div class="ct-stats">' + hv.innerHTML + '</div>' : '')
           + '<div class="hr-split hr2 ct2">' + sp.innerHTML + '</div>'
@@ -62264,7 +62275,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
             const t = ctrTypeOf(name);
             return (t === 'cons' || t === 'emp' || t === 'own') ? ctPartyHtml(name)
               : rangeBar() + '<div class="empty">برای «' + esc(name) + '» در این بازه گزارش کارگاهی ثبت نشده است. بازهٔ بلندتری را انتخاب کنید.</div>' + ctPartyHtml(name);
-          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + (window.spwCtrHtml ? window.spwCtrHtml(name) : '') + (window.spOwnerHtml ? window.spOwnerHtml(name) : '') + ctPfViewHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : '') + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
+          })()) + (window.pgCtrHtml ? window.pgCtrHtml(name) : '') + (window.spwCtrHtml ? window.spwCtrHtml(name) : '') + (window.spOwnerHtml ? window.spOwnerHtml(name) : '') + ctPfViewHtml(name) + (window.arcGenFor ? window.arcGenFor(name) : '') + (window.pjOfPartyHtml ? window.pjOfPartyHtml(name) : '') + coCtrSlot(name) + qcCtrSlot(name) + whCtrSlot(name);
       try{ whCtrFill(); qcCtrFill(); coCtrFill(); }catch(e){}
       ct4Ov();
       if(keepTab){
@@ -107871,7 +107882,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       {k:'contractor', t:'پیمانکاران اصلی', multi:1, w:2}, {k:'pm', t:'مدیر پروژه', multi:1, w:2}, {k:'site', t:'سرپرست کارگاه', multi:1, w:2},
       {k:'investor', t:'مالک / سرمایه‌گذار', multi:1, w:2}, {k:'architect', t:'طراح معماری', multi:1, w:2}, {k:'structEng', t:'طراح سازه', multi:1, w:2},
       {k:'mepEng', t:'طراح تأسیسات', multi:1, w:2}, {k:'facadeCo', t:'مجری نما', multi:1, w:2}, {k:'elevCo', t:'تأمین‌کنندهٔ آسانسور', multi:1, w:2},
-      {k:'designBy', t:'طراحی بر عهدهٔ', opt:['کارفرما', 'مشاور طراح', 'تیم پروژه'], w:2}]},
+      {k:'designBy', t:'طراحی بر عهدهٔ', opt:['کارفرما', 'مشاور طراح', 'تیم پروژه'], w:2},
+      {k:'ownerAt', t:'جایگاه مالک در چارت سازمانی', opt:['زیر کارفرما', 'زیر تیم مدیریت پیمان', 'زیر مشاور و ناظر'], w:2}]},
     {g:'موقعیت', f:[
       {k:'country', t:'کشور', opt:PJ_COUNTRIES}, {k:'province', t:'استان', opt:PJ_PROVINCES},
       {k:'city', t:'شهر', dl:'pjCities'}, {k:'district', t:'منطقه / محله'}, {k:'address', t:'نشانی', w:2},
@@ -108268,6 +108280,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     let types = ''; try{ const T = new Map(); sp.units.forEach(o => { const t = (o && (o.ty || o.tp)) || ''; if(t) T.set(t, (T.get(t) || 0) + 1); }); types = Array.from(T.entries()).sort((a, b) => b[1] - a[1]).map(([t, n]) => t + ' (' + toFa(n) + ')').join('، '); }catch(e){}
     return {up, dn, units, types};
   }
+  /* ۶۵۱: هر فیلد عوامل پروژه فهرست مناسب خودش را دارد (پیش‌تر یک فهرست مشترک از همه) */
+  const PJ_FL = {employer: 'emp', investor: 'own', consultant: 'cons', supervisor: 'cons', architect: 'cons', structEng: 'cons', mepEng: 'cons', contractor: 'ctr', facadeCo: 'ctr', elevCo: 'ctr', pm: 'usr', site: 'usr'};
   function pjFieldHtml(f, v){
     const val = v == null ? '' : String(v);
     /* خالی؟ مقدار خواندنی از طبقات و فضاها راهنمای خانه می‌شود */
@@ -108277,7 +108291,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     if(f.multi){
       const L = pjArr(v);
       inp = '<div class="pj-tags" data-pjtags="' + f.k + '" data-pname="1">' + L.map(n => '<span class="pj-tag" data-v="' + esc(n) + '">' + (pjIsPerson(n) ? avatarHtml(n, 'xs', true) : '') + '<b>' + esc(n) + '</b><button type="button" data-pjtagrm="1" aria-label="برداشتن">×</button></span>').join('')
-        + '<input type="text" class="pj-tagin" data-list="pjPartyNames" placeholder="' + (L.length ? 'نفر دیگر…' : 'نام را بنویسید یا از فهرست انتخاب کنید') + '" autocomplete="off"></div>';
+        + '<input type="text" class="pj-tagin" data-list="' + (PJ_FL[f.k] ? 'pjPN_' + PJ_FL[f.k] : 'pjPartyNames') + '" placeholder="' + (L.length ? 'نفر دیگر…' : 'نام را بنویسید یا از فهرست انتخاب کنید') + '" autocomplete="off"></div>';
       return '<label class="pj-fl w2"><span>' + f.t + (L.length > 1 ? ' <em class="pj-tn">' + toFa(L.length) + '</em>' : '') + '</span>' + inp + '</label>';
     }
     /* نوع پروژه و وضعیت فعلی: یک دکمهٔ جمع‌وجور (مثل فهرست کشویی) که پنل گروه‌بندی‌شده باز می‌کند؛ وضعیت با نوار مراحل طراحی ← اجرا ← تحویل */
@@ -108295,6 +108309,28 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     return '<label class="pj-fl' + (f.w === 2 ? ' w2' : '') + '"><span>' + f.t + (f.req ? ' <i>*</i>' : '') + '</span>' + inp + '</label>';
   }
   /* فهرست نام‌ها: رشتهٔ قدیمی («الف، ب») یا آرایه */
+  /* ۶۵۲: همهٔ پروژه‌های یک طرف: از عوامل اطلاعات هر پروژه (کارفرما، مالک، مشاور، پیمانکار، …) و عضویت کاربران */
+  window.pjOfParty = function(name){
+    const nk = nameKey(name || ''); let alias = new Set([nk]); try{ (window.ctrNamesOf ? window.ctrNamesOf(name) : []).forEach(n => alias.add(nameKey(n))); }catch(e){}
+    const same = v => { const k = nameKey(v); if(alias.has(k)) return true; try{ return nameSim(v, name) >= 0.92; }catch(e){ return false; } };
+    const lab = {}; PJ_F.forEach(g => g.f.forEach(f => { if(f.multi) lab[f.k] = f.t; }));
+    const out = [];
+    PJ.all.forEach((p, id) => { const R = [];
+      Object.keys(lab).forEach(k => { if(pjArr(p[k]).some(same)) R.push(lab[k]); });
+      ((p.seed && p.seed.pty) || []).forEach(x => { if(x && x.n && same(x.n)) R.push(x.d || 'طرف پروژه'); });
+      const m = PJ.mem.find(x => x.pid === id && same(x.name) && x.state !== PJ_ST_NO); if(m) R.push(m.role ? 'عضو: ' + m.role : 'عضو پروژه');
+      if(R.length) out.push({id, p, roles: Array.from(new Set(R)), cur: id === PJ.cur}); });
+    return out.sort((a, b) => (b.cur ? 1 : 0) - (a.cur ? 1 : 0) || String(a.p.name || '').localeCompare(String(b.p.name || ''), 'fa'));
+  };
+  window.pjOfPartyHtml = function(name){ try{
+    const L = window.pjOfParty(name); if(!L.length) return '';
+    return '<section class="ctg pjp"><div class="ctg-h"><b>پروژه‌های این طرف</b><em>' + toFa(L.length) + '</em></div><div class="pjp-l">'
+      + L.map(x => '<button type="button" class="pjp-c' + (x.cur ? ' cur' : '') + '"' + (x.cur ? ' disabled' : ' data-pjpgo="' + esc(x.id) + '"') + '><span class="pjp-av" style="--h:' + (function(){ try{ return pjHue(x.id); }catch(e){ return 205; } })() + '">' + esc(String(x.p.name || '؟').trim().charAt(0)) + '</span>'
+        + '<span class="pjp-t"><b>' + esc(x.p.name || 'پروژه') + (x.cur ? ' <i>همین پروژه</i>' : '') + '</b><small>' + esc([x.p.status, x.p.city].filter(Boolean).join(' · ')) + '</small><span class="pjp-r">' + x.roles.map(r => '<u>' + esc(r) + '</u>').join('') + '</span></span>'
+        + (x.cur ? '' : '<em class="pjp-go">ورود ›</em>') + '</button>').join('') + '</div></section>';
+  }catch(e){ return ''; } };
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-pjpgo]'); if(!b) return; e.preventDefault();
+    try{ document.getElementById('ctProfModal') && document.getElementById('ctProfModal').remove(); }catch(er){} pjSwitch(b.dataset.pjpgo); });
   function pjArr(v){ if(Array.isArray(v)) return v.filter(Boolean); return String(v || '').split(/\s*[،,]\s*/).map(x => x.trim()).filter(Boolean); }
   window.pjArr = pjArr;
   function pjIsPerson(n){ try{ return listNames().some(x => nameKey(x) === nameKey(n)); }catch(e){ return false; } }
@@ -108313,7 +108349,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   /* افراد «اطلاعات پروژه» با نقش‌شان در نیروی انسانی */
   function pjPartyPeople(){
     const p = (typeof PJ !== 'undefined' && PJ.all.get(PJ.cur)) || {}, out = [], seen = new Set();
-    [['employer', 'emp'], ['consultant', 'cons'], ['supervisor', 'cons'], ['contractor', 'ctr']].forEach(([k, t]) => pjArr(p[k]).forEach(n => { n = String(n).trim(); const nk = nameKey(n); if(!n || seen.has(nk)) return; seen.add(nk); out.push({n, t}); }));
+    [['employer', 'emp'], ['investor', 'own'], ['consultant', 'cons'], ['supervisor', 'cons'], ['contractor', 'ctr']].forEach(([k, t]) => pjArr(p[k]).forEach(n => { n = String(n).trim(); const nk = nameKey(n); if(!n || seen.has(nk)) return; seen.add(nk); out.push({n, t}); }));
     return out;
   }
   window.pjPartyPeople = pjPartyPeople;
@@ -108338,7 +108374,19 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       PJ.mem.filter(m => m.pid === pid && m.state !== PJ_ST_NO).forEach(m => add(m.name, m.role || 'عضو پروژه'));
       const p0 = PJ.all.get(pid) || {}; ((p0.seed && p0.seed.pty) || []).forEach(x => x && add(x.n, x.d || 'طرف پروژه'));
     }
-    return '<datalist id="pjPartyNames">' + out.join('') + '</datalist><datalist id="pjCities">' + pjCitiesOf((typeof pjSt !== 'undefined' && pjSt.draft || {}).province || (PJ.all.get(PJ.cur) || {}).province || '').map(c => '<option value="' + c + '">').join('') + '</datalist>';
+    /* ۶۵۱: فهرست هر نوع طرف: پرونده‌های همان نوع اول، بعد بقیه */
+    const G = {emp: [], own: [], cons: [], ctr: [], usr: []};
+    if(pid === PJ.cur){
+      try{ listNames().forEach(n => G.usr.push([n, roleOf(n) || 'کاربر سامانه'])); }catch(e){}
+      try{ ctrContacts.forEach(o => { if(!o || !o.name || ctrIsHidden(o.name)) return; const t = o.t || 'ctr';
+          if(t === 'emp') G.emp.push([o.name, o.em ? 'کارفرما' : 'تیم کارفرما']); else if(t === 'own') G.own.push([o.name, 'مالک / سرمایه‌گذار']); else if(t === 'cons') G.cons.push([o.name, o.ro || 'مشاور / طراح']); else G.ctr.push([o.name, t === 'sup' ? 'تأمین‌کننده' : 'پیمانکار']);
+          if(o.ow && t !== 'own') G.own.push([o.name, 'مالک هم هست']); }); }catch(e){}
+      try{ (typeof sp !== 'undefined' ? sp.units : new Map()).forEach((u, k) => { if(u && u.own) spSplit(u.own).forEach(n => G.own.push([n, 'مالک واحد ' + toFa(k)])); }); }catch(e){}
+      try{ const dl = document.getElementById('contractorList'); if(dl) Array.from(dl.options).forEach(o => G.ctr.push([o.value, 'پیمانکار'])); }catch(e){}
+    }
+    const dlOf = (id, L) => { const sn = new Set(); return '<datalist id="' + id + '">' + L.filter(([n]) => { const k = nameKey(n); if(!n || sn.has(k)) return false; sn.add(k); return true; }).map(([n, lb]) => '<option value="' + esc(n) + '" label="' + esc(lb) + '">').join('') + '</datalist>'; };
+    const lists = dlOf('pjPN_emp', G.emp.concat(G.usr.filter(x => /کارفرما/.test(x[1])))) + dlOf('pjPN_own', G.own.concat(G.emp)) + dlOf('pjPN_cons', G.cons) + dlOf('pjPN_ctr', G.ctr) + dlOf('pjPN_usr', G.usr);
+    return lists + '<datalist id="pjPartyNames">' + out.join('') + '</datalist><datalist id="pjCities">' + pjCitiesOf((typeof pjSt !== 'undefined' && pjSt.draft || {}).province || (PJ.all.get(PJ.cur) || {}).province || '').map(c => '<option value="' + c + '">').join('') + '</datalist>';
   }
   function pjFloorsText(p){
     const F = Array.isArray(p.floors) && p.floors.length ? p.floors : (p.id === 'p1' ? PJ_B0 : []);
