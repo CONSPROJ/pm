@@ -210,7 +210,7 @@
 </script>
 
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261121161116">
+<meta name="pm-build" content="20261126084525">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -32429,6 +32429,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
 @media (min-width:1180px){ :is(html,#z0) :is(body,#z1) .app-head{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;background:color-mix(in srgb, var(--canvas) 96%, transparent) !important;}
   :is(html,#z0) :is(body,#z1) .fd-toggle{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;} }
 @media print{ :is(html,#z0) body{background:#fff !important;background-image:none !important;} }
+/* ۶۲۸: زیرعنوان پنجره‌های fxModal (پیش‌تر hlpBtn تعریف‌نشده بود و پنجره باز نمی‌شد) */
+:is(html,#z0) :is(body,#z1) .fx-hd .fx-sub{display:block;margin-top:2px;font-size:12px;font-weight:400;color:var(--muted);line-height:1.7;}
 /* ۶۲۲: گروه مشترک، زمان ثبت، کپی دیروز */
 @media (max-width:640px){ :is(html,#z0) :is(body,#z1) #wrkBody .wk-tools{flex-wrap:wrap !important;gap:6px !important;} :is(html,#z0) :is(body,#z1) #wrkBody .wk-tools > .wk-tool{flex:1 1 calc(33.333% - 6px) !important;min-width:0;white-space:nowrap;} }
 :is(html,#z0) :is(body,#z1) #wrkBody .w-grpb{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:3px;padding:1px 8px;border-radius:999px;font-style:normal;font-size:10.5px;font-weight:700;color:#2b6cb0;background:color-mix(in srgb, #2b6cb0 11%, transparent);}
@@ -35524,7 +35526,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      فقط فهرست ثابتِ داخل کد خوانده می‌شد؛ برای همین تغییر سمت در پنل،
      در پروفایل، گزارش‌ها و پرینت‌ها دیده نمی‌شد و با هر ورود یا عوض
      کردن عکس، سمت قدیمی دوباره روی پایگاه‌داده نوشته می‌شد. */
-  function roleOf(name){
+  /* ۶۲۸: «تأسیسات برقی» در همهٔ سامانه «تأسیسات الکتریکال» است؛ داده‌های قدیمی (سمت، رشته) هنگام خواندن همین می‌شوند */
+  const elecNorm = v => String(v == null ? '' : v).replace(/ت[أا]سیسات\s*برق[یي]?(?![\u0600-\u06FF])/g, 'تأسیسات الکتریکال');
+  window.elecNorm = elecNorm;
+  function roleOf(name){ return elecNorm(roleOf0(name)); }
+  function roleOf0(name){
     try{ const pr = pjRoleOf(name); if(pr) return pr; }catch(e){}
     /* پروژهٔ غیر اصلی: سمت فقط از عضویت همین پروژه؛ سمتِ پروژهٔ دیگر (مثلاً «مدیر سامانه») به این پروژه نمی‌آید */
     try{ if(window.__pjScoped && window.__pjScoped()) return ''; }catch(e){}
@@ -39757,6 +39763,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   }
   async function showChatWith(name){
     document.getElementById('msgTo').value = name || '';
+    if(name) setTimeout(() => { try{ window.umPreFlush && window.umPreFlush(); }catch(e){} }, 0);
     document.getElementById('msgPeopleWrap').hidden = !!name;
     document.getElementById('msgChatWrap').hidden = !name;
     const cmBg = document.getElementById('chatModal');
@@ -41659,9 +41666,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(window.__opaqueErr && window.__opaqueErr(ev)) return;
       const bar = document.getElementById('errBar');
       if(!bar) return;
+      if(/ResizeObserver loop/i.test(String(ev.message || ''))) return;
       bar.hidden = false;
+      /* ۶۲۸: همهٔ کد در یک خط ساخته می‌شود؛ شمارهٔ خط به‌تنهایی جایی را نشان نمی‌داد — نام تابع و ستون هم می‌آید */
+      let fn = ''; try{ const m = String((ev.error && ev.error.stack) || '').split('\n').map(x => x.trim()).find(x => /^at /.test(x)); if(m) fn = m.replace(/^at\s+/, '').replace(/\s*\(.*$/, '').replace(/https?:\S+/, '').trim(); }catch(e){}
       bar.textContent = 'خطا: ' + (ev.message || '')
-        + (ev.filename ? '' : '') + (ev.lineno ? ' (خط ' + ev.lineno + ')' : '');
+        + (ev.lineno ? ' (خط ' + ev.lineno + (ev.colno ? '، ستون ' + ev.colno : '') + (fn ? '، ' + fn : '') + ')' : '');
     }catch(e){}
   });
   window.addEventListener('unhandledrejection', ev => {
@@ -42869,7 +42879,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   const discSame = (a, b) => { const ka = discKey(a), kb = discKey(b); return !!ka && ka === kb; };
   /* سمت یا تخصص برای مشاور و تیم کارفرما: «مشاور سازه»، «نیروی تدارکات»، «مالی» … */
   const CTR_ROLE_SUG = {
-    cons: ['مشاور سازه', 'مشاور معماری', 'مشاور تأسیسات مکانیکی', 'مشاور تأسیسات برقی', 'مشاور نما', 'مشاور ژئوتکنیک', 'ناظر عالیه', 'ناظر مقیم', 'مشاور مدیریت طرح'],
+    cons: ['مشاور سازه', 'مشاور معماری', 'مشاور تأسیسات مکانیکی', 'مشاور تأسیسات الکتریکال', 'مشاور نما', 'مشاور ژئوتکنیک', 'ناظر عالیه', 'ناظر مقیم', 'مشاور مدیریت طرح'],
     own: ['سرمایه‌گذار', 'سهام‌دار', 'شریک', 'مالک زمین', 'مالک واحد', 'پیش‌خریدار'],
     sup: ['مصالح ساختمانی', 'میلگرد و آهن‌آلات', 'بتن آماده', 'آسانسور', 'تجهیزات تأسیسات', 'تجهیزات برقی', 'درب و پنجره', 'سنگ و کاشی', 'اجارهٔ ماشین‌آلات'],
     emp: ['مدیر پروژهٔ کارفرما', 'نمایندهٔ کارفرما', 'مالی', 'تدارکات', 'دفتر فنی کارفرما', 'امور قراردادها و حقوقی', 'کنترل پروژه', 'نظارت کارفرما']
@@ -43055,7 +43065,10 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   }
   document.addEventListener('change', e => {
     const i = e.target; if(!i || !i.classList || !i.classList.contains('ctg-in') || !i.dataset.ctgnew) return;
-    if(String(i.value || '').trim()){ ctgAdd(i.closest('.ctg'), i.value); i.value = ''; }
+    /* ۶۲۸: change ِ هنگام ترک کادر (با کلیک روی پیشنهاد) متن نیمه‌تایپ‌شده را برچسب می‌کرد؛ کمی صبر تا انتخاب پیشنهاد جای آن بنشیند */
+    clearTimeout(i.__ctgT); i.__ctgT = setTimeout(() => { const v = String(i.value || '').trim(); if(!v || !i.isConnected) return;
+      if(document.activeElement === i) return;   // هنوز در حال تایپ است؛ Enter یا ترک کادر اضافه می‌کند
+      ctgAdd(i.closest('.ctg'), v); i.value = ''; }, 220);
   });
   /* ---- تگ‌ها در فرم پیمانکار ---- */
   function ctgSync(box){
@@ -43660,7 +43673,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const chip = (n, lb) => n ? '<i>' + toFa(n) + ' ' + lb + '</i>' : '';
     return '<div class="dsc2"><div class="cdx-note">یک فهرست برای همهٔ بخش‌ها: رشتهٔ <b>فعالیت‌ها</b>، <b>افراد</b>، دیسیپلین <b>پیمانکاران</b> و رشتهٔ <b>اسناد طراحی</b>. با تغییر نام یا یکی کردن، همه‌جا با هم عوض می‌شود.</div>'
       + '<div class="dsc2-auto"><span><b>دیسیپلین خودکار</b><small>پیمانکاران از روی تخصص‌ها و افراد از روی سمت؛ دیسیپلینی که دستی گذاشته شده دست نمی‌خورد.</small></span><button type="button" class="dz-b" data-discauto="1">به‌روزرسانی الان</button></div>'
-      + '<div class="dsc2-add"><input type="text" class="dsc2-in" placeholder="دیسیپلین تازه، مثلاً تأسیسات برقی" autocomplete="off"><button type="button" class="dz-b pri" data-discadd="1">+ افزودن</button></div>'
+      + '<div class="dsc2-add"><input type="text" class="dsc2-in" placeholder="دیسیپلین تازه، مثلاً تأسیسات الکتریکال" autocomplete="off"><button type="button" class="dz-b pri" data-discadd="1">+ افزودن</button></div>'
       + (discData ? '' : '<div class="ctdk-empty"><i class="ctdk-spin"></i>در حال شمردن کاربردها…</div>')
       + '<div class="dsc2-list">' + U.map(o => {
           const used = o.t + o.c + o.p + o.d, op = discOpen === o.n;
@@ -45349,7 +45362,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
    ['مدیر مهندسی', 'pm', 'دفتر فنی', 'مدیریت پروژه', 'مسئول دفتر فنی'], ['کارشناس برنامه‌ریزی و کنترل پروژه', 'pm', 'کنترل پروژه', 'کنترل پروژه', 'کنترل پروژه'],
    ['کارشناس متره و برآورد', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', 'دفتر فنی پروژه'], ['مسئول کنترل اسناد (DCC)', 'pm', 'دفتر فنی', 'مسئول دفتر فنی', 'دفتر فنی پروژه'],
    ['مسئول BIM', 'pm', 'طراحی', 'مسئول دفتر فنی', 'مسئول طراحی'], ['هماهنگ‌کنندهٔ طراحی', 'pm', 'طراحی', 'مسئول طراحی', 'مسئول طراحی'],
-   ['مسئول تأسیسات مکانیکی', 'pm', 'اجرا', 'مدیر اجرایی', 'سرپرست اجرا'], ['مسئول تأسیسات برقی', 'pm', 'اجرا', 'مدیر اجرایی', 'سرپرست اجرا'],
+   ['مسئول تأسیسات مکانیکی', 'pm', 'اجرا', 'مدیر اجرایی', 'سرپرست اجرا'], ['مسئول تأسیسات الکتریکال', 'pm', 'اجرا', 'مدیر اجرایی', 'سرپرست اجرا'],
    ['سرپرست نازک‌کاری', 'pm', 'اجرا', 'سرپرست اجرا', 'سرپرست طبقات'], ['سرپرست سفت‌کاری و سازه', 'pm', 'اجرا', 'سرپرست اجرا', 'سرپرست طبقات'], ['سرپرست نما', 'pm', 'اجرا', 'سرپرست اجرا', 'سرپرست طبقات'],
    ['مسئول نقشه‌برداری', 'pm', 'اجرا', 'سرپرست کارگاه', 'مهندس اجرا'], ['نقشه‌بردار', 'pm', 'اجرا', 'مسئول نقشه‌برداری', 'مهندس اجرا'],
    ['مسئول ماشین‌آلات', 'pm', 'ماشین‌آلات', 'سرپرست کارگاه', 'مسئول تدارکات'], ['مسئول آزمایشگاه و مقاومت مصالح', 'pm', 'کیفیت', 'کنترل کیفیت', 'کنترل کیفیت'],
@@ -45423,7 +45436,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   const pjRoleOfSafe = n => { try{ return roleOf(n); }catch(e){ return ''; } };
   /* دارندگان هر سمت در همین پروژه */
   window.ogHoldersOf = r => { try{ return listNames().filter(n => String(roleOf(n) || '').trim() === r); }catch(e){ return []; } };
-  const ogPos = n => ogPositions().find(x => x.n === n) || null;
+  const ogPos = n => { const k = window.elecNorm ? window.elecNorm(n) : n; return ogPositions().find(x => x.n === n || (window.elecNorm ? window.elecNorm(x.n) : x.n) === k) || null; };
   window.ogPosNames = () => ogPositions().filter(x => !x.off).sort((a, b) => ogOrd(a) - ogOrd(b)).map(x => x.n);
   /* ====== وراثت از زیرمجموعه ======
      مثل سامانه‌های بزرگ مدیریت پروژه: سمت بالادست هر کاری را که زیردستانش مجازند، خودش هم می‌تواند (نظارت و جایگزینی).
@@ -46068,7 +46081,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   /* ---- فرم تکمیل اطلاعات (اولین ورود به پروژه) ---- */
   const ONB_DEG = ['دیپلم', 'کاردانی', 'کارشناسی', 'کارشناسی ارشد', 'دکتری'];
   const ONB_NEZ = ['ندارد', 'پایهٔ ۳', 'پایهٔ ۲', 'پایهٔ ۱', 'ارشد'];
-  const ONB_DISC = ['معماری', 'عمران', 'سازه', 'تأسیسات مکانیکی', 'تأسیسات برقی', 'شهرسازی', 'معماری داخلی', 'ژئوتکنیک', 'نقشه‌برداری', 'ترافیک', 'مدیریت پروژه', 'حسابداری و مالی', 'حقوقی', 'ایمنی و بهداشت', 'سایر'];
+  const ONB_DISC = ['معماری', 'عمران', 'سازه', 'تأسیسات مکانیکی', 'تأسیسات الکتریکال', 'شهرسازی', 'معماری داخلی', 'ژئوتکنیک', 'نقشه‌برداری', 'ترافیک', 'مدیریت پروژه', 'حسابداری و مالی', 'حقوقی', 'ایمنی و بهداشت', 'سایر'];
   const onbSnooze = () => { try{ return sessionStorage.getItem('siteLogM.onbLater.' + (localStorage.getItem('siteLogM.project.v1') || 'p1')) === '1'; }catch(e){ return false; } };
   function onbNeeded(){
     const me = ogMe(); if(!me) return false;
@@ -46219,12 +46232,12 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       ['مدیر طراحی معماری', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
       ['مدیر طراحی سازه', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
       ['مدیر طراحی تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
-      ['مدیر طراحی تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
+      ['مدیر طراحی تأسیسات الکتریکال', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
       ['مدیر طراحی داخلی', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'write.adm', 'rep.adm', 'doc.design', 'reg.rfi.ok', 'reg.smt', 'inbox.review', 'team.progress']],
       ['طراح معماری', 'cons', 'طراحی', 'مدیر طراحی معماری', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح سازه', 'cons', 'طراحی', 'مدیر طراحی سازه', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح تأسیسات مکانیکی', 'cons', 'طراحی', 'مدیر طراحی تأسیسات مکانیکی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
-      ['طراح تأسیسات برقی', 'cons', 'طراحی', 'مدیر طراحی تأسیسات برقی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
+      ['طراح تأسیسات الکتریکال', 'cons', 'طراحی', 'مدیر طراحی تأسیسات الکتریکال', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح داخلی', 'cons', 'طراحی', 'مدیر طراحی داخلی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح محوطه و منظر', 'cons', 'طراحی', 'مدیر طراحی / هماهنگ‌کنندهٔ طراحی', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
       ['طراح نما', 'cons', 'طراحی', 'مدیر طراحی معماری', ['tab.admin', 'rep.adm', 'doc.design', 'reg.rfi.ok']],
@@ -46965,6 +46978,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const rows = pcGroups(caps).map(g => '<tr class="mx-g"><td colspan="' + (L.length + 1) + '">' + esc(g.g) + '</td></tr>'
       + g.items.map(c => { const R = permRolesOf(c.k), bs = !colT && permIsBase(c.k); return '<tr' + (bs ? ' class="mx-bs"' : '') + '><td class="mx-c"><b>' + esc(c.t) + '</b>' + (bs ? '<em>پایه: از سطح</em>' : '') + '</td>' + L.map(x => { const on = R.indexOf(x.n) !== -1, ih = on ? '' : inh(x, c.k);
           return '<td><button type="button" class="mx-b' + (on ? ' on' : ih ? ' ih' : '') + '" data-pcr="' + esc(c.k) + '" data-role="' + esc(x.n) + '" title="' + esc(x.n + ' — ' + c.t + (ih ? ' (از ' + ih + ')' : '')) + '" aria-pressed="' + on + '"></button></td>'; }).join('') + '</tr>'; }).join('')).join('');
+    /* ۶۲۸: هیچ اجازه‌ای با جست‌وجو جور نیست: جدولِ خالیِ بی‌توضیح نه (به‌نظر «خراب» می‌آمد)؛ پیام و پاک کردن جست‌وجو */
+    if(!caps.length) return '<div class="mx-sides">' + sides.map(([k, t]) => '<button type="button" class="' + (k === side ? 'on' : '') + '" data-mxs="' + k + '">' + esc(t) + '</button>').join('') + '</div><div class="pc-none mx-none"><b>' + (pcState.q ? 'هیچ ' + (colT || 'اجازه') + 'ای با «' + esc(pcState.q) + '» پیدا نشد' : 'اجازه‌ای تعریف نشده') + '</b>' + (pcState.q ? ' <button type="button" class="pp-btn" data-pcqx="1">پاک کردن جست‌وجو</button>' : '') + '</div>';
     return '<div class="mx-sides">' + sides.map(([k, t]) => '<button type="button" class="' + (k === side ? 'on' : '') + '" data-mxs="' + k + '">' + esc(t) + '</button>').join('') + '</div>'
       + (L.length ? '<div class="mx-w"><table class="mx-t"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div><p class="mx-lg"><i class="on"></i> مستقیم <i class="ih"></i> از زیرمجموعه <i></i> ندارد</p>' : '<div class="pc-none">این طرف سمتی ندارد.</div>');
   }
@@ -61866,7 +61881,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     : (admDoneState(k, r).cls === 'ok');
   const arDueOf = (k, r) => (k === 'minute') ? pick(r,AD.mDate) : (dueTracked(r) ? pick(r,AD.due) : '');
   function arTitleOf(k, r){
-    const no = (k === 'statement') ? pick(r,AD.sNo) : (k === 'contract') ? pick(r,AD.cNo) : (k === 'letter') ? pick(r,AD.lNo) : (k === 'design') ? pick(r,AD.dNo) : pick(r,AD.mIdx);
+    /* ۶۲۸: صورتجلسه شمارهٔ جلسه ندارد؛ «ردیف بند» (همه ۱) به‌جای شماره می‌آمد */
+    const no = (k === 'statement') ? pick(r,AD.sNo) : (k === 'contract') ? pick(r,AD.cNo) : (k === 'letter') ? pick(r,AD.lNo) : (k === 'design') ? pick(r,AD.dNo) : '';
     const t = (k === 'design') ? dsTitle(r)
             : (k === 'statement') ? (pick(r,AD.sName) || 'صورت وضعیت')
             : (k === 'contract') ? (pick(r,AD.cTitle) || 'قرارداد')
@@ -63501,8 +63517,10 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     contractPartyList: 'siteLogM.contractParties.v1',
     contractSubjectList: 'siteLogM.contractSubjects.v1'
   };
+  /* ۶۲۸: مقدارهای واردشدهٔ هر فهرست مال همان پروژه است (پیش‌تر کلید مشترک بود و شماره قرارداد، طرف‌ها و نام‌های یک پروژه در پروژهٔ دیگر پیشنهاد می‌شد) */
+  const lsKeyOf = k => { let pj = 'p1'; try{ pj = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return pj === 'p1' ? k : k + '@' + pj; };
   function extraOf(key){
-    try{ return JSON.parse(localStorage.getItem(key) || '[]') || []; }catch(e){ return []; }
+    try{ return JSON.parse(localStorage.getItem(lsKeyOf(key)) || '[]') || []; }catch(e){ return []; }
   }
   function applyExtras(listId){
     const dl = document.getElementById(listId);
@@ -63528,7 +63546,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       if(v && !have.has(v) && extra.indexOf(v) === -1){ extra.push(v); changed = true; }
     });
     if(changed){
-      try{ localStorage.setItem(LISTS[listId], JSON.stringify(extra.slice(-300))); }catch(e){}
+      try{ localStorage.setItem(lsKeyOf(LISTS[listId]), JSON.stringify(extra.slice(-300))); }catch(e){}
       applyExtras(listId);
     }
   }
@@ -67569,12 +67587,14 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       });
     };
     (window.requestIdleCallback || (f => setTimeout(f, 800)))(() => {
+      /* ۶۲۸: فهرست ثابت قراردادها مال پروژهٔ اصلی است؛ پروژهٔ دیگر فقط قراردادهای خودش */
+      let pj0 = 'p1'; try{ pj0 = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} if(pj0 !== 'p1') return;
       fill('contractNoList', CONTRACT_SEED.map(x => x.n));
       fill('contractPartyList', CONTRACT_SEED.map(x => x.p));
       fill('contractSubjectList', CONTRACT_SEED.map(x => x.s));
     }, {timeout: 2500});
   })();
-  const contractByNo = no => CONTRACT_SEED.find(x => x.n === String(no || '').trim());
+  const contractByNo = no => { let pj0 = 'p1'; try{ pj0 = localStorage.getItem('siteLogM.project.v1') || 'p1'; }catch(e){} return pj0 === 'p1' ? CONTRACT_SEED.find(x => x.n === String(no || '').trim()) : null; };
 
   /* ====== موارد اداری ====== */
   const AD = {
@@ -67764,7 +67784,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   // نام مفرد هر دسته، برای «ثبت ... تازه» و شناسهٔ کارت
   const KIND_ONE = k => (k === 'design' ? 'سند طراحی' : KIND_LABEL[k]);
   /* اسناد طراحی: رشته‌ها و وضعیت‌های مدرک */
-  const DESIGN_DISC = ['معماری','سازه','تأسیسات مکانیکی','تأسیسات برقی','محوطه','نما','سایر'];
+  const DESIGN_DISC = ['معماری','سازه','تأسیسات مکانیکی','تأسیسات الکتریکال','محوطه','نما','سایر'];
   const DESIGN_STATES = ['در حال بررسی','نزد مشاور/کارفرما','نیاز به اصلاح','تأیید مشروط','تأیید شده','رد شده','برای اجرا','کنسل شده'];
   const DESIGN_CLS = {'در حال بررسی':'st-info','نزد مشاور/کارفرما':'st-info','نیاز به اصلاح':'st-bad','تأیید مشروط':'st-warn',
                       'تأیید شده':'st-ok','رد شده':'st-bad','برای اجرا':'st-ok'};
@@ -67803,10 +67823,11 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   }
   window.dccSummaryHtml = dccSummaryHtml;
   const DOC_TYPES = ['نقشه','رندر','مدل‌سازی (BIM)','شاپ‌دراوینگ','دیتیل اجرایی','محاسبات','مشخصات فنی','گزارش فنی','دستورالعمل','سایر'];
-  /* رشته‌های هم‌معنی یکی می‌شوند (الکتریکال، برق، تأسیسات الکتریکی ← تأسیسات برقی) */
-  const DS_DISC_ALIAS = [[/^(الکتریکال|برق|تاسیسات\s*برق[یي]?|تأسیسات\s*الکتریک[یي]?|تاسیسات\s*الکتریک[یي]?|electrical)$/i, 'تأسیسات برقی'],
+  /* رشته‌های هم‌معنی یکی می‌شوند (الکتریکال، برق، تأسیسات الکتریکال/الکتریکی ← تأسیسات الکتریکال؛ ۶۲۸) */
+  const elecNorm0 = v => (window.elecNorm ? window.elecNorm(v) : v);
+  const DS_DISC_ALIAS = [[/^(الکتریکال|برق|تاسیسات\s*برق[یي]?|تأسیسات\s*برق[یي]?|تأسیسات\s*الکتریک[یي]?|تاسیسات\s*الکتریک[یي]?|تاسیسات\s*الکتریکال|تأسیسات\s*الکتریکال|electrical)$/i, 'تأسیسات الکتریکال'],
     [/^(مکانیکال|مکانیک|تاسیسات\s*مکانیک[یي]?|تأسیسات\s*مکانیکال|mechanical)$/i, 'تأسیسات مکانیکی'], [/^(سازه‌ای|structure|structural)$/i, 'سازه'], [/^(معمار[یي]|architecture)$/i, 'معماری']];
-  function dsDiscNorm(v){ const t = String(v || '').trim().replace(/ي/g, 'ی'); for(const [re, to] of DS_DISC_ALIAS) if(re.test(t)) return to; return t; }
+  function dsDiscNorm(v){ const t = elecNorm0(String(v || '').trim().replace(/ي/g, 'ی')); for(const [re, to] of DS_DISC_ALIAS) if(re.test(t)) return to; return t; }
   /* چند رشته در یک سند: با «، » کنار هم ذخیره می‌شوند */
   function dsDiscs(v){ return Array.from(new Set(String(v || '').split(/\s*[،,]\s*/).map(dsDiscNorm).filter(Boolean))); }
   /* عنوان سند طراحی: پسوند فایل (.pdf، .dwg…) از عنوان می‌افتد و نوع سند (نقشه، رندر…) کنار عنوان می‌نشیند */
@@ -67923,7 +67944,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     if(kind === 'contract')  return pick(r,AD.cDate);
     if(kind === 'letter')    return pick(r,AD.lDate);
     if(kind === 'design')    return exact(r,'تاریخ ارسال');
-    return pick(r,AD.mDate);
+    /* ۶۲۸: صورتجلسه: تاریخ خودِ جلسه (پیش‌تر «تاریخ اقدام» که معمولاً خالی است و «بدون تاریخ» می‌آمد) */
+    return pick(r,AD.mMeet) || pick(r,AD.mDate) || exact(r,'تاریخ') || '';
   }
   const NOTIFY_ORDER = ['برون‌سازمانی','درون‌سازمانی','در حال تنظیم','Hold',''];
   function notifyRank(v){
@@ -68201,7 +68223,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   /* ترتیب زیرگروه‌ها: طبقه از بالا به پایین، رشته طبق فهرست رشته‌ها، ماه جدید به قدیم، بقیه پرتعدادتر اول؛ «بدون…» آخر */
   function admSubHtml(kind, sub, items, inner, pkey){
     const M = new Map(); items.forEach(r => admSubVals(kind, sub, r).forEach(v => { if(!M.has(v)) M.set(v, []); M.get(v).push(r); }));
-    if(M.size < 2 && items.length < 4) return inner(items);
+    /* ۶۲۸: زیرگروه انتخاب‌شده همیشه دیده می‌شود (پیش‌تر گروه کوچکِ تک‌زیرگروه، مثل «کل ساختمان»، بی‌زیرگروه می‌آمد و ناهماهنگ به‌نظر می‌رسید) */
+    if(!items.length) return inner(items);
     let E = Array.from(M.entries());
     const none = v => /^بدون/.test(v) || v === '—';
     if(sub === 'floor'){ const ord = new Map(); items.forEach(r => { const k = dsFloorKeys(r)[0]; const nm = dsFloorName(k); if(!ord.has(nm)) ord.set(nm, dsFloorOrd(k)); }); E.sort((a, b) => (ord.get(a[0]) || 0) - (ord.get(b[0]) || 0)); }
@@ -71236,7 +71259,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
      رشته‌های کدینگ همان پروژه و سرفصل‌های ساخته‌شده در چارت هم به آن اضافه می‌شوند (discCatalog) */
   const DS_TREE = [['معماری', ['معماری داخلی', 'شهرسازی و طراحی شهری']], ['طراحی داخلی', ['دکوراسیون و مبلمان']], ['نما', ['نمای شیشه‌ای و کرتین‌وال']], ['محوطه', ['منظر و فضای سبز']],
     ['سازه', ['سازه‌های ویژه']], ['ژئوتکنیک', ['گودبرداری و نگهبان', 'نقشه‌برداری']],
-    ['تأسیسات مکانیکی', ['لوله‌کشی و بهداشتی', 'تهویهٔ مطبوع (HVAC)', 'اطفای حریق', 'گاز', 'استخر و سونا']], ['تأسیسات برقی', ['برق قدرت', 'روشنایی', 'جریان ضعیف', 'اعلام حریق']],
+    ['تأسیسات مکانیکی', ['لوله‌کشی و بهداشتی', 'تهویهٔ مطبوع (HVAC)', 'اطفای حریق', 'گاز', 'استخر و سونا']], ['تأسیسات الکتریکال', ['برق قدرت', 'روشنایی', 'جریان ضعیف', 'اعلام حریق']],
     ['آسانسور و پله‌برقی', []], ['هوشمندسازی (BMS)', []], ['ایمنی و حریق', ['مهندسی حریق', 'پدافند غیرعامل']], ['ترافیک و پارکینگ', ['حمل‌ونقل و دسترسی']],
     ['هتلینگ', ['آشپزخانهٔ صنعتی', 'لاندری', 'تجهیزات هتلی']], ['آکوستیک', []], ['نورپردازی', []], ['انرژی و پایداری', ['بهینه‌سازی انرژی (مبحث ۱۹)', 'ساختمان سبز']],
     ['عمران و ابنیه', ['زهکشی و راه']], ['BIM و هماهنگی', ['مدل تجمیعی', 'کنترل تداخلات']], ['متره و برآورد', []], ['برنامه‌ریزی و کنترل پروژه', []]];
@@ -71343,7 +71366,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         sty: [['IP', 'موقت'], ['IN', 'مستقل'], ['FA', 'قطعی']],
         zn: [['ZZ', 'همهٔ بخش‌ها']],
         lvl: [],
-        dsc: [['A', 'معماری'], ['S', 'سازه'], ['M', 'تأسیسات مکانیکی'], ['E', 'تأسیسات برقی'], ['P', 'لوله‌کشی و بهداشتی'], ['H', 'تهویهٔ مطبوع (HVAC)'], ['Y', 'اطفای حریق'], ['I', 'طراحی داخلی'],
+        dsc: [['A', 'معماری'], ['S', 'سازه'], ['M', 'تأسیسات مکانیکی'], ['E', 'تأسیسات الکتریکال'], ['P', 'لوله‌کشی و بهداشتی'], ['H', 'تهویهٔ مطبوع (HVAC)'], ['Y', 'اطفای حریق'], ['I', 'طراحی داخلی'],
           ['Y', 'نما'], ['L', 'محوطه'], ['C', 'عمران و ابنیه'], ['C', 'ژئوتکنیک'], ['D', 'زهکشی و راه'], ['G', 'نقشه‌برداری'], ['Q', 'متره و برآورد'], ['K', 'کارفرما'], ['W', 'پیمانکار'], ['X', 'پیمانکار جزء'],
           ['F', 'بهره‌برداری و نگهداری'], ['T', 'شهرسازی'], ['B', 'بازرسی ساختمان'], ['Z', 'مدیریت پروژه'], ['Z', 'ایمنی'], ['Z', 'سایر']],
         typ: [['DR', 'نقشه'], ['DR', 'شاپ‌دراوینگ'], ['DR', 'دیتیل اجرایی'], ['M3', 'مدل‌سازی (BIM)'], ['M2', 'مدل دوبعدی'], ['CM', 'مدل تجمیعی'], ['VS', 'رندر'], ['AF', 'انیمیشن'], ['CA', 'محاسبات'],
@@ -71364,7 +71387,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         stg: [['R1', 'Riba 1'], ['R2', 'Riba 2'], ['R3', 'Riba 3'], ['R4', 'Riba 4'], ['R5', 'Riba 5']],
         zn: [],
         lvl: [['PLE', 'Pile — شمع'], ['FND', 'Foundation — فونداسیون'], ['BSM', 'Basement — زیرزمین'], ['GRD', 'Ground — همکف'], ['MEZ(x)', 'Mezzanine — نیم‌طبقه'], ['FLR(x)', 'Floor — طبقه'], ['TFL(x)', 'Typical Floor — طبقات تیپ'], ['RF', 'Roof — بام'], ['EL', 'Elevation — نما'], ['SEC(x)', 'Section — برش'], ['SP', 'Site Plan — سایت پلان']],
-        dsc: [['ARC', 'Architectural — معماری'], ['MEP', 'Mechanical & Electrical & Plumbing — تأسیسات (MEP)'], ['MEC', 'Mechanical — تأسیسات مکانیکی'], ['ELE', 'Electrical — تأسیسات برقی'], ['PLM', 'Plumbing — لوله‌کشی و بهداشتی'], ['STR', 'Structural — سازه'], ['ID', 'Interior Design — طراحی داخلی'], ['PMO', 'Project Management — مدیریت پروژه']],
+        dsc: [['ARC', 'Architectural — معماری'], ['MEP', 'Mechanical & Electrical & Plumbing — تأسیسات (MEP)'], ['MEC', 'Mechanical — تأسیسات مکانیکی'], ['ELE', 'Electrical — تأسیسات الکتریکال'], ['PLM', 'Plumbing — لوله‌کشی و بهداشتی'], ['STR', 'Structural — سازه'], ['ID', 'Interior Design — طراحی داخلی'], ['PMO', 'Project Management — مدیریت پروژه']],
         typ: [['DRW', 'Drawing — نقشه'], ['RD', 'Rendering & Moodboard — رندر و مودبورد'], ['SCH', 'Time Schedule — برنامهٔ زمانی'], ['RPT', 'Report — گزارش'], ['CNT', 'Calculation Note — دفترچهٔ محاسبات'], ['SPC', 'Specification — مشخصات فنی'], ['CD', 'Coding — کدینگ'], ['COV', 'Cover — جلد'], ['DLST', 'Drawing List — فهرست نقشه‌ها'], ['GEN', 'General Note — یادداشت‌های عمومی'], ['SIG', 'Sign — علائم'], ['LAN', 'Landscape — محوطه'], ['LAY', 'Layout — لی‌آوت'], ['DT', 'Detail — جزئیات']],
         suit: [],
         sh: 'ARC 0000 = Cover — جلد' + '\n' + 'ARC 0001 = Index — فهرست' + '\n' + 'ARC 0020 = General Note — یادداشت‌های عمومی' + '\n' + 'ARC 0050 = General Symbol — علائم عمومی' + '\n' + 'ARC 0100 = Plans & Area — پلان‌ها و مساحت' + '\n' + 'ARC 0200 = Site Plan — سایت پلان' + '\n' + 'ARC 0300 = Site Plan Detail — جزئیات سایت پلان' + '\n' + 'ARC 0400 = Foundation Formwork — قالب‌بندی فونداسیون' + '\n' + 'ARC 0500 = Formwork Plan — پلان قالب‌بندی' + '\n' + 'ARC 0600 = Formwork Wall — قالب‌بندی دیوار' + '\n' + 'ARC 0700 = Formwork Stairs — قالب‌بندی پله' + '\n' + 'ARC 1000 = General Plan-Dimension Plan — پلان ابعادی' + '\n' + 'ARC 1200 = Roof Plan, Helipad & Roof Garden — پلان بام، هلی‌پد و روف‌گاردن' + '\n' + 'ARC 1300 = Base Course Wall Plan — پلان دیوارچینی' + '\n' + 'ARC 1400 = Furniture Plan — پلان مبلمان' + '\n' + 'ARC 1500 = Flooring Plan — پلان کفسازی' + '\n' + 'ARC 2000 = Elevation — نما' + '\n' + 'ARC 2100 = Elevation Detail — جزئیات نما' + '\n' + 'ARC 2200 = Elevation Door & Window Type — نمای تیپ در و پنجره' + '\n' + 'ARC 3000 = Section — برش' + '\n' + 'ARC 3100 = Wall Section — برش دیوار' + '\n' + 'ARC 4000 = Enlarged Room — پلان بزرگ‌نمایی اتاق' + '\n' + 'ARC 4100 = Enlarged Kitchen — بزرگ‌نمایی آشپزخانه' + '\n' + 'ARC 4200 = Enlarged Service — بزرگ‌نمایی سرویس‌ها' + '\n' + 'ARC 4300 = Enlarged General — بزرگ‌نمایی عمومی' + '\n' + 'ARC 5000 = Enlarged Stairs — بزرگ‌نمایی پله' + '\n' + 'ARC 5100 = Enlarged Lift Lobby — بزرگ‌نمایی لابی آسانسور' + '\n' + 'ARC 5200 = Enlarged Escalator — بزرگ‌نمایی پله‌برقی' + '\n' + 'ARC 5300 = Enlarged General Stair — بزرگ‌نمایی پله عمومی' + '\n' + 'ARC 6000 = Ceiling Plan — پلان سقف' + '\n' + 'ARC 7000 = Door & Window Type Table — جدول تیپ در و پنجره' + '\n' + 'ARC 7200 = Door Type Elevation & Detailing — نما و جزئیات تیپ درها' + '\n' + 'ARC 8000 = Finishing Table — جدول نازک‌کاری' + '\n' + 'ARC 9000 = Base Course Detail — جزئیات دیوارچینی' + '\n' + 'ARC 9050 = WallPost Detail — جزئیات وال‌پست' + '\n' + 'ARC 9100 = Lintel Detail — جزئیات نعل‌درگاه' + '\n' + 'ARC 9150 = Masonry Wall Detail — جزئیات دیوار بنایی' + '\n' + 'ARC 9200 = Flooring Detail — جزئیات کفسازی' + '\n' + 'ARC 9250 = Ceiling Detail — جزئیات سقف' + '\n' + 'ARC 9300 = General Detail — جزئیات عمومی' + '\n' + 'STR 0000 = Cover — جلد' + '\n' + 'STR 0001 = Index — فهرست' + '\n' + 'STR 0020 = General Note — یادداشت‌های عمومی' + '\n' + 'STR 0100 = Pile Design — طراحی شمع' + '\n' + 'STR 0200 = Foundation — فونداسیون' + '\n' + 'STR 0300 = Column Type — تیپ ستون‌ها' + '\n' + 'STR 0400 = Section Column — مقطع ستون' + '\n' + 'STR 0500 = Base Plate Column — صفحه‌ستون' + '\n' + 'STR 0600 = Slab — دال' + '\n' + 'STR 0700 = Framing — قاب‌بندی' + '\n' + 'STR 0800 = Connection — اتصالات' + '\n' + 'STR 0900 = Retaining Wall — دیوار حائل' + '\n' + 'STR 1000 = Shear Wall — دیوار برشی' + '\n' + 'STR 1100 = Stairs Structural Design — طراحی سازهٔ پله' + '\n' + 'STR 1200 = Detail — جزئیات' + '\n' + 'ELE 0000 = Cover — جلد' + '\n' + 'ELE 0001 = Index — فهرست' + '\n' + 'ELE 0100 = General Note — یادداشت‌های عمومی' + '\n' + 'ELE 0200 = Legend — راهنما' + '\n' + 'ELE 1000 = Lighting System — سیستم روشنایی' + '\n' + 'ELE 1100 = Floor Lighting System — روشنایی کف' + '\n' + 'ELE 1200 = Safety Lighting System — روشنایی اضطراری' + '\n' + 'ELE 1300 = Façade Lighting System — روشنایی نما' + '\n' + 'ELE 2000 = Socket Outlet System — پریزها' + '\n' + 'ELE 2100 = Mechanical Outlet System — پریزهای تأسیساتی' + '\n' + 'ELE 3000 = BMS — مدیریت هوشمند ساختمان' + '\n' + 'ELE 3100 = Access Control System — کنترل تردد' + '\n' + 'ELE 3200 = PMS — PMS' + '\n' + 'ELE 4000 = GPON — GPON' + '\n' + 'ELE 4100 = LAN & Data Network — شبکهٔ داده' + '\n' + 'ELE 4200 = Telephone System — تلفن' + '\n' + 'ELE 4300 = MATV — آنتن مرکزی' + '\n' + 'ELE 4400 = Sound System — صوت' + '\n' + 'ELE 4500 = CCTV System — دوربین مداربسته' + '\n' + 'ELE 4600 = Intercom System — آیفون و اینترکام' + '\n' + 'ELE 5000 = Cable Tray — سینی کابل' + '\n' + 'ELE 5100 = Busduct System — باس‌داکت' + '\n' + 'ELE 5200 = Trunking System — ترانکینگ' + '\n' + 'ELE 6000 = Fire Alarm System — اعلام حریق' + '\n' + 'ELE 6100 = Fire Alarm Top of False Ceiling — اعلام حریق بالای سقف کاذب' + '\n' + 'ELE 6200 = ECS & SOS — ECS و SOS' + '\n' + 'ELE 6400 = GRMS — GRMS' + '\n' + 'ELE 7000 = Riser Diagram — رایزر دیاگرام' + '\n' + 'ELE 7100 = Electrical Panel SLD — تابلوها (SLD)' + '\n' + 'ELE 8000 = Earthing System — ارتینگ' + '\n' + 'ELE 8100 = Bonding System — همبندی' + '\n' + 'ELE 8200 = Earthing Lighting Systems — ارت روشنایی' + '\n' + 'ELE 9000 = Detail — جزئیات' + '\n' + 'ID 0000 = Cover — جلد' + '\n' + 'ID 0001 = Index — فهرست' + '\n' + 'ID 0100 = General Info — اطلاعات عمومی' + '\n' + 'ID 0200 = Furniture & Equipment — مبلمان و تجهیزات' + '\n' + 'ID 0300 = Ceiling — سقف' + '\n' + 'ID 0400 = Flooring — کفسازی' + '\n' + 'ID 0500 = Interior View — نمای داخلی' + '\n' + 'ID 0600 = Lighting — نورپردازی' + '\n' + 'ID 0700 = LV Equipment (Keys & Sockets) — کلید و پریز' + '\n' + 'ID 0800 = Material Layout — چیدمان متریال' + '\n' + 'MEC 0000 = Cover — جلد' + '\n' + 'MEC 0001 = Drawing List — فهرست نقشه‌ها' + '\n' + 'MEC 0020 = General Notes — یادداشت‌های عمومی' + '\n' + 'MEC 1000 = Sewage System — فاضلاب' + '\n' + 'MEC 1100 = Rain Water System — آب باران' + '\n' + 'MEC 2000 = Domestic Water System — آب مصرفی' + '\n' + 'MEC 3000 = Exhaust Air System — تخلیهٔ هوا' + '\n' + 'MEC 3100 = HVAC Ducting Fresh Air — کانال هوای تازه' + '\n' + 'MEC 3200 = HVAC Ducting SU & RE — کانال رفت و برگشت' + '\n' + 'MEC 4000 = AHU & Fancoil Piping — لوله‌کشی هواساز و فن‌کویل' + '\n' + 'MEC 4100 = DX Piping System — لوله‌کشی DX' + '\n' + 'MEC 5000 = Firebox — جعبه آتش‌نشانی' + '\n' + 'MEC 5100 = Sprinkler — اسپرینکلر' + '\n' + 'MEC 6000 = Smoke Management System — مدیریت دود' + '\n' + 'MEC 7000 = Flow Diagram — فلو دیاگرام' + '\n' + 'MEC 7100 = Equipment Layout — چیدمان تجهیزات' + '\n' + 'MEC 7200 = Equipment Schedule — جدول تجهیزات' + '\n' + 'MEC 7300 = Equipment Weight — وزن تجهیزات' + '\n' + 'MEC 8000 = Detail — جزئیات' + '\n' + 'PLM 0000 = Cover — جلد' + '\n' + 'PLM 0001 = Drawing List — فهرست نقشه‌ها' + '\n' + 'PLM 0020 = General Notes — یادداشت‌های عمومی' + '\n' + 'PLM 1000 = Sewage System — فاضلاب' + '\n' + 'PLM 1100 = Rain Water System — آب باران' + '\n' + 'PLM 2000 = Domestic Water System — آب مصرفی' + '\n' + 'PLM 3000 = Exhaust Air System — تخلیهٔ هوا' + '\n' + 'PLM 3100 = HVAC Ducting Fresh Air — کانال هوای تازه' + '\n' + 'PLM 3200 = HVAC Ducting SU & RE — کانال رفت و برگشت' + '\n' + 'PLM 4000 = AHU & Fancoil Piping — لوله‌کشی هواساز و فن‌کویل' + '\n' + 'PLM 4100 = DX Piping System — لوله‌کشی DX' + '\n' + 'PLM 5000 = Firebox — جعبه آتش‌نشانی' + '\n' + 'PLM 5100 = Sprinkler — اسپرینکلر' + '\n' + 'PLM 6000 = Smoke Management System — مدیریت دود' + '\n' + 'PLM 7000 = Flow Diagram — فلو دیاگرام' + '\n' + 'PLM 7100 = Equipment Layout — چیدمان تجهیزات' + '\n' + 'PLM 7200 = Equipment Schedule — جدول تجهیزات' + '\n' + 'PLM 7300 = Equipment Weight — وزن تجهیزات' + '\n' + 'PLM 8000 = Detail — جزئیات' + '\n' + 'MEP 0000 = Cover — جلد' + '\n' + 'MEP 0001 = Drawing List — فهرست نقشه‌ها' + '\n' + 'MEP 0020 = General Notes — یادداشت‌های عمومی' + '\n' + 'MEP 1000 = Sewage System — فاضلاب' + '\n' + 'MEP 1100 = Rain Water System — آب باران' + '\n' + 'MEP 2000 = Domestic Water System — آب مصرفی' + '\n' + 'MEP 3000 = Exhaust Air System — تخلیهٔ هوا' + '\n' + 'MEP 3100 = HVAC Ducting Fresh Air — کانال هوای تازه' + '\n' + 'MEP 3200 = HVAC Ducting SU & RE — کانال رفت و برگشت' + '\n' + 'MEP 4000 = AHU & Fancoil Piping — لوله‌کشی هواساز و فن‌کویل' + '\n' + 'MEP 4100 = DX Piping System — لوله‌کشی DX' + '\n' + 'MEP 5000 = Firebox — جعبه آتش‌نشانی' + '\n' + 'MEP 5100 = Sprinkler — اسپرینکلر' + '\n' + 'MEP 6000 = Smoke Management System — مدیریت دود' + '\n' + 'MEP 7000 = Flow Diagram — فلو دیاگرام' + '\n' + 'MEP 7100 = Equipment Layout — چیدمان تجهیزات' + '\n' + 'MEP 7200 = Equipment Schedule — جدول تجهیزات' + '\n' + 'MEP 7300 = Equipment Weight — وزن تجهیزات' + '\n' + 'MEP 8000 = Detail — جزئیات'
@@ -75660,6 +75683,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       const nfBtn = e.target.closest('.nf-toggle');
       if(nfBtn && !nfBtn.closest('.gen-box') && !nfBtn.closest('.chore-box')){
         const card = nfBtn.closest('.nf');
+        /* ۶۲۸: پنجرهٔ باز ثبت فقط با × (یا انصراف/Esc که برنامه‌ای می‌زنند) بسته می‌شود؛ پیش‌تر کلیک روی هر جای سربرگ پنجره را می‌بست */
+        if(card && card.classList.contains('open') && e.isTrusted && !e.target.closest('.nf-ar, [data-nfx]')) return;
         if(card){
           const open = card.classList.toggle('open');
           const ar = nfBtn.querySelector('.nf-ar');
@@ -76620,7 +76645,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const ext = a => String(a && a.ext || '').toLowerCase(), kOf = a => /dwg|dxf/.test(ext(a)) ? 'cad' : ATT_KIND(ext(a));
     const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     const card = f => { let A = []; try{ A = attachList(f.f); }catch(e){} const a = A[0] || {}; const k = kOf(a), canDel = isAdminUser() || nameKey(f.by) === nameKey(me);
-      return '<article class="afm up-it k-' + k + (String(f.id || f.t) === arc.hi ? ' hi' : '') + '" data-arcfid="' + esc(f.id || f.t) + '" data-url="' + esc(a.full || '') + '">'
+      return '<article class="afm up-it k-' + k + (String(f.id || f.t) === arc.hi ? ' hi' : '') + '" data-arcfid="' + esc(f.id || f.t) + '" data-url="' + esc(a.full || '') + '" data-fvl="' + esc(String(f.f || '')) + '" data-fvtitle="' + esc(f.t || '') + '">'
         + '<div class="afm-top"><span class="afm-badge">' + esc((ext(a) || 'FILE').toUpperCase().slice(0, 4)) + '</span>'
         +   '<span class="afm-g">' + esc(f.g || 'سایر') + '</span>'
         +   (canDel ? '<button type="button" class="afm-del" data-arcdel="' + esc(f.id) + '" title="حذف فرم" aria-label="حذف فرم"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>' : '') + '</div>'
@@ -76628,7 +76653,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         + (f.nt ? '<p>' + esc(f.nt) + '</p>' : '')
         + '<div class="afm-meta">' + (f.by ? avatarHtml(f.by, 'xs', true) + '<span>' + esc(String(f.by).replace(/^(آقای|خانم)\s+/, '')) + '</span>' : '') + (f.d ? '<em>' + esc(toFa(f.d)) + '</em>' : '') + (A.length > 1 ? '<em>' + toFa(A.length) + ' فایل</em>' : '') + '</div>'
         + '<div class="afm-acts">' + (a.url ? '<a class="afm-dl" href="' + esc(attachDownloadUrl(a)) + '" download="' + esc(a.name) + '" target="_blank" rel="noopener">' + UP_I.dl + '<span>دانلود فرم</span></a>'
-          + '<button type="button" class="afm-v up-nm" data-fv="1" title="نمایش">' + EYE + '</button>' : '')
+          + '<button type="button" class="afm-v up-nm" data-fv="0" title="نمایش" aria-label="نمایش فرم">' + EYE + '</button>' : '')
         + (A.length > 1 ? '<details class="afm-more"><summary>همهٔ فایل‌ها</summary>' + A.map(x => attachItemHtml(x, false)).join('') + '</details>' : '') + '</div>'
         + '</article>'; };
     return '<div class="afm-head"><div class="afm-ht"><b>فرم‌های معیار پروژه</b><small>نمونهٔ خام فرم‌ها (صورتجلسه، مجوز کار، درخواست بازرسی…) برای دانلود و استفادهٔ همه</small></div>'
@@ -78950,6 +78975,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
         .concat(a.letters.map(r => ({kind:'letter', row:r})))
         .concat((a.designs || []).map(r => ({kind:'design', row:r}))).filter(docRowOk);
       adminAll.forEach(x => { const id = pick(x.row,AD.id); if(id) rowMap.set(id, x.row); });
+      /* ۶۲۸: رشتهٔ قدیمی «تأسیسات برقی» در حافظه «تأسیسات الکتریکال» خوانده می‌شود */
+      try{ adminAll.forEach(x => { if(x.kind !== 'design') return; const v = String(pick(x.row,AD.dDisc) || ''); if(/برق/.test(v)) setCell(x.row, AD.dDisc[0], window.elecNorm(v)); }); }catch(e){}
       // حالت پنجره‌ها و محل اسکرول بعد از رندر برمی‌گردد
       setTimeout(() => { try{ admRestore(snap); }catch(e){} }, 0);
       adminLoaded = true;
@@ -80267,7 +80294,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       + '<div class="dsc-leg"><span><i class="t-gap"></i>اصلاح و ارسال مجدد (نزد طراح)</span><span><i class="t-info"></i>بررسی داخلی</span><span><i class="t-ext"></i>نزد مشاور/کارفرما</span><span><i class="t-bad"></i>اصلاح</span></div>'
       + '</div>';
   }
-  const DS_DISC_C = {'معماری':'#6d5bb5', 'سازه':'#b0632f', 'تأسیسات مکانیکی':'#2a8a86', 'تأسیسات برقی':'#b8860b', 'محوطه':'#3f7a52', 'نما':'#2f6f8f'};
+  const DS_DISC_C = {'معماری':'#6d5bb5', 'سازه':'#b0632f', 'تأسیسات مکانیکی':'#2a8a86', 'تأسیسات الکتریکال':'#b8860b', 'محوطه':'#3f7a52', 'نما':'#2f6f8f'};
   const dsDiscColor = d => { if(DS_DISC_C[d]) return DS_DISC_C[d]; let h = 0; String(d || '').split('').forEach(ch => { h = (h * 31 + ch.charCodeAt(0)) % 360; }); return 'hsl(' + h + ' 45% 42%)'; };
   /* ====== کارت سند طراحی v3 ======
      بالا: شمارهٔ مدرک، ویرایش، رشته و وضعیت. بعد یک جمله: سند الان دست کیست و
@@ -86192,7 +86219,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   const WH_ITEM_KIND = 'کالای انبار', WH_MOVE_KIND = 'گردش انبار', WH_REQ_KIND = 'درخواست انبار', WH_NOTE_KIND = 'انبار';
   const WH_T = {in:{t:'رسید', c:'ok', s:1}, out:{t:'حوالهٔ مصرف', c:'out', s:-1}, loan:{t:'امانت', c:'loan', s:-1}, ret:{t:'برگشت', c:'ret', s:1}, adj:{t:'اصلاح شمارش', c:'adj', s:1}};
   const WH_PFX = {in:'RC', out:'IS', loan:'LN', ret:'RT', adj:'AD'};
-  const WH_GROUPS = ['مصالح ساختمانی','آهن‌آلات','تأسیسات مکانیکی','تأسیسات برقی','ابزار','ایمنی و حفاظت','مصرفی','نازک‌کاری','سایر'];
+  const WH_GROUPS = ['مصالح ساختمانی','آهن‌آلات','تأسیسات مکانیکی','تأسیسات الکتریکال','ابزار','ایمنی و حفاظت','مصرفی','نازک‌کاری','سایر'];
   const WH_UNITS = ['عدد','شاخه','کیلوگرم','تن','متر','مترمربع','مترمکعب','کیسه','بسته','دستگاه','لیتر','رول','جفت','سرویس'];
   const wh = {t: 0, busy: null, items: [], moves: [], reqs: [], tab: '', q: '', g: '', f: 'all', draft: null, open: ''};
   const whNum = v => { const n = parseFloat(toEn(String(v == null ? '' : v)).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; };
@@ -86723,7 +86750,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
        «چک‌لیست کیفیت»  قالب‌های چک‌لیست که مدیر کیفیت می‌سازد (قالب‌های پایه داخلی‌اند)
      فقط هنگام باز شدن بخش، گزارش یا پروندهٔ پیمانکار خوانده می‌شود. */
   const QC_IR_KIND = 'درخواست بازرسی', QC_NCR_KIND = 'عدم انطباق', QC_TPL_KIND = 'چک‌لیست کیفیت', QC_NOTE_KIND = 'کنترل کیفیت';
-  const QC_DISC = ['سازه','معماری','تأسیسات مکانیکی','تأسیسات برقی','ایمنی','محوطه'];
+  const QC_DISC = ['سازه','معماری','تأسیسات مکانیکی','تأسیسات الکتریکال','ایمنی','محوطه'];
   const QC_BASE = [
     {id:'b-conc', n:'بتن‌ریزی', d:'سازه', items:['آرماتوربندی مطابق نقشه و دستور کار','کاور (فاصله‌نگه‌دار) کافی','قالب‌بندی، تراز و شاقول','تمیزی قالب و رهاسازی','اسلامپ و دمای بتن','نمونه‌گیری آزمونه','ویبره و عمل‌آوری']},
     {id:'b-rebar', n:'آرماتوربندی', d:'سازه', items:['قطر و تعداد میلگرد','فاصله و وصله‌ها','طول مهاری و خم‌ها','خاموت‌ها','بست و اتصالات','تمیزی میلگرد از زنگ و روغن']},
@@ -86733,7 +86760,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     {id:'b-tile', n:'کاشی و سرامیک', d:'معماری', items:['شیب‌بندی کف','تراز و فاصلهٔ درز','نبود پوکی','برش‌ها و نصب گوشه‌ها','بندکشی','تطابق رنگ و سری تولید']},
     {id:'b-wp', n:'عایق رطوبتی', d:'معماری', items:['تمیزی و خشکی سطح','پرایمر','همپوشانی لایه‌ها','برگشت روی دیوار','آزمون آب‌بندی']},
     {id:'b-pipe', n:'لوله‌کشی آب و فاضلاب', d:'تأسیسات مکانیکی', items:['جنس و سایز لوله','شیب لوله فاضلاب','بست و نگهدارنده','آزمون فشار / آب‌بندی','عایق حرارتی','برچسب و مسیر']},
-    {id:'b-elec', n:'لوله‌گذاری و کابل‌کشی برق', d:'تأسیسات برقی', items:['سایز لوله و کابل','مسیر مطابق نقشه','جعبه‌تقسیم‌ها','ارت و همبندی','آزمون عایقی','برچسب‌گذاری مدارها']},
+    {id:'b-elec', n:'لوله‌گذاری و کابل‌کشی برق', d:'تأسیسات الکتریکال', items:['سایز لوله و کابل','مسیر مطابق نقشه','جعبه‌تقسیم‌ها','ارت و همبندی','آزمون عایقی','برچسب‌گذاری مدارها']},
     {id:'b-scaf', n:'داربست و ایمنی کار در ارتفاع', d:'ایمنی', items:['پایه و صفحهٔ زیرین','مهاربندی','تخته‌گذاری کامل','نرده و پاخور','برچسب سبز بازرسی','کمربند و نقطهٔ اتصال']}
   ];
   const QC_ST = {wait:'در انتظار بازرسی', ok:'پذیرفته', cond:'پذیرفته مشروط', rej:'رد شد', cancel:'لغو شد'};
@@ -88100,7 +88127,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       ['آتش‌نشانی', [['لوله آتش‌نشانی', 'm'], ['اسپرینکلر', 'عدد'], ['جعبه آتش‌نشانی', 'عدد'], ['پمپ آتش‌نشانی', 'دستگاه']]],
       ['گازرسانی', [['لوله گاز', 'm'], ['شیر گاز', 'عدد'], ['رگلاتور', 'عدد']]],
       ['لوازم بهداشتی', [['توالت فرنگی', 'عدد'], ['روشویی', 'عدد'], ['دوش و وان', 'عدد'], ['شیرآلات', 'عدد']]]]],
-    ['تأسیسات برقی', [
+    ['تأسیسات الکتریکال', [
       ['لوله‌گذاری و سینی کابل', [['لوله فلکسی', 'm'], ['لوله فولادی', 'm'], ['سینی کابل', 'm'], ['جعبه تقسیم', 'عدد']]],
       ['سیم‌کشی و کابل‌کشی', [['سیم ۱٫۵', 'm'], ['سیم ۲٫۵', 'm'], ['سیم ۴ و ۶', 'm'], ['کابل مسی', 'm']]],
       ['تابلو و روشنایی', [['تابلو برق', 'دستگاه'], ['چراغ', 'عدد'], ['کلید و پریز', 'عدد'], ['سیستم ارت', 'سرویس']]],
@@ -88108,7 +88135,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       ['آسانسور', [['نصب آسانسور', 'دستگاه'], ['ریل و راهنما', 'm']]]]],
     ['محوطه', [
       ['محوطه‌سازی', [['جدول‌گذاری', 'm'], ['سنگفرش', 'm²'], ['آسفالت', 'm²'], ['فضای سبز', 'm²'], ['دیوار محوطه', 'm²']]]]]];
-  const MQ_SKS = ['بنایی', 'گچ‌کاری', 'کاشی و سرامیک', 'سنگ‌کاری', 'نقاشی', 'آهنگری', 'درب و پنجره', 'سقف کاذب', 'عایق‌کاری', 'بتن و قالب‌بندی', 'آرماتوربندی', 'نما', 'تأسیسات مکانیکی', 'تأسیسات برقی'];
+  const MQ_SKS = ['بنایی', 'گچ‌کاری', 'کاشی و سرامیک', 'سنگ‌کاری', 'نقاشی', 'آهنگری', 'درب و پنجره', 'سقف کاذب', 'عایق‌کاری', 'بتن و قالب‌بندی', 'آرماتوربندی', 'نما', 'تأسیسات مکانیکی', 'تأسیسات الکتریکال'];
   /* ضریب مصرف پیش‌فرض از روی نام ردیف یا تخصص؛ ضریب ثبت‌شده در فهرست بها جای آن را می‌گیرد */
   const MQ_DEF = [
     [/بلوک|بنایی/, [{n: 'بلوک سفالی', u: 'عدد', r: 10, wp: 3}, {n: 'ملات ماسه سیمان', u: 'm³', r: 0.02, wp: 5}]],
@@ -90181,7 +90208,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   function fxModal(id, title, sub, body, wide){
     let m = document.getElementById(id); if(m) m.remove();
     m = document.createElement('div'); m.id = id; m.className = 'modal-bg fx-bg';
-    m.innerHTML = '<div class="modal fx-m' + (wide ? ' wide' : '') + '"><div class="fx-hd"><div><b>' + title + (sub ? hlpBtn(sub) : '') + '</b></div><button type="button" class="ico-btn" data-fxx="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div><div class="fx-bd">' + body + '</div></div>';
+    m.innerHTML = '<div class="modal fx-m' + (wide ? ' wide' : '') + '"><div class="fx-hd"><div><b>' + title + '</b>' + (sub ? '<small class="fx-sub">' + sub + '</small>' : '') + '</div><button type="button" class="ico-btn" data-fxx="1" aria-label="بستن"><svg class="xi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div><div class="fx-bd">' + body + '</div></div>';
     document.body.appendChild(m);
     m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-fxx]')){ m.remove(); } });
     return m;
@@ -90267,7 +90294,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   document.addEventListener('change', async e => { const i = e.target; if(!i.matches || !i.matches('[data-fxpn]')) return; const p = (fxC.get(FX_PIN) || []).find(x => x.id === i.dataset.fxpn); if(!p) return; try{ await fxPut(FX_PIN, p.id, Object.assign({}, p.o, {n: i.value.trim().slice(0, 60)})); }catch(er){} });
 
   /* ---------- ۲) چک‌لیست تحویل واحد (ایرادها) ---------- */
-  const FX_SNAG_CAT = ['کاشی و سرامیک', 'رنگ و نازک‌کاری', 'درب و پنجره', 'تأسیسات مکانیکی', 'تأسیسات برقی', 'کابینت و کمد', 'نما', 'سایر'];
+  const FX_SNAG_CAT = ['کاشی و سرامیک', 'رنگ و نازک‌کاری', 'درب و پنجره', 'تأسیسات مکانیکی', 'تأسیسات الکتریکال', 'کابینت و کمد', 'نما', 'سایر'];
   const FX_SNAG_ST = [['open', 'باز', 'bad'], ['fixed', 'رفع شد', 'warn'], ['ok', 'تأیید شد', 'ok']];
   async function fxSnagOpen(u){
     const f = spFloorOf(u); const m = fxModal('fxSnagM', 'تحویل و ایرادهای ' + esc(spUnitLb(u)), esc(f ? f.label : '') + ' · ایراد را با عکس ثبت کنید و به پیمانکار بسپارید؛ پیمانکار «رفع شد» می‌زند و ناظر تأیید می‌کند', '<div class="fx-wait">در حال خواندن…</div>');
@@ -90414,7 +90441,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       warn: () => '', canNew: () => regCan('reg.dly'), sum: L => { const d = L.filter(x => x.o.st !== 'no').reduce((t, x) => t + (+toEn(x.o.days || 0) || 0), 0), ok = L.filter(x => x.o.st === 'ok').reduce((t, x) => t + (+toEn(x.o.days || 0) || 0), 0); return d ? toFa(d) + ' روز تأخیر ثبت‌شده · ' + toFa(ok) + ' روز تمدید پذیرفته' : ''; },
       apv: {st: ['claim'], ok: () => regCan('reg.dly.ok'), s: o => [o.cause, o.days ? toFa(o.days) + ' روز' : ''].filter(Boolean).join(' · ')}},
     cc: {sort: (a, b) => String(a.o.code || '').localeCompare(String(b.o.code || ''), 'fa', {numeric: true}), kind: 'کد هزینه', t: 'کدهای هزینه و بودجه', sub: 'ساختار هزینه (WBS هزینه)، بودجهٔ هر کد، تعهد قراردادها و هزینهٔ واقعی', c: '#8a6a1f', pre: 'CC',
-      f: [{k: 'code', t: 'کد', type: 'text', req: 1}, {k: 'item', t: 'شرح', type: 'text', req: 1}, {k: 'grp', t: 'سرفصل', type: 'sel', opts: () => ['تجهیز و بالاسری', 'گود و فونداسیون', 'اسکلت', 'سفت‌کاری', 'تأسیسات مکانیکی', 'تأسیسات برقی', 'نما', 'نازک‌کاری', 'محوطه', 'طراحی و نظارت', 'عوارض و مجوز', 'سایر'], req: 1},
+      f: [{k: 'code', t: 'کد', type: 'text', req: 1}, {k: 'item', t: 'شرح', type: 'text', req: 1}, {k: 'grp', t: 'سرفصل', type: 'sel', opts: () => ['تجهیز و بالاسری', 'گود و فونداسیون', 'اسکلت', 'سفت‌کاری', 'تأسیسات مکانیکی', 'تأسیسات الکتریکال', 'نما', 'نازک‌کاری', 'محوطه', 'طراحی و نظارت', 'عوارض و مجوز', 'سایر'], req: 1},
         {k: 'bud', t: 'بودجه (تومان)', type: 'num', req: 1}, {k: 'com', t: 'تعهد شده / قرارداد (تومان)', type: 'num'}, {k: 'act', t: 'هزینهٔ واقعی تاکنون (تومان)', type: 'num'}, {k: 'ctr', t: 'پیمانکار / تأمین‌کننده', type: 'ctr'}, {k: 'note', t: 'توضیح', type: 'area', w: 2}],
       st: [['act', 'فعال', 'ok'], ['closed', 'بسته شد', 'off']], next: {act: ['closed'], closed: ['act']}, may: () => regCan('reg.cc'), edAny: 1,
       line: o => { const b = +toEn(o.bud || 0) || 0, c = +toEn(o.com || 0) || 0, a = +toEn(o.act || 0) || 0; return [o.code, o.grp, 'بودجه ' + fmtMoney(b), c ? 'تعهد ' + fmtMoney(c) : '', a ? 'واقعی ' + fmtMoney(a) : '', b ? 'مانده ' + fmtMoney(b - Math.max(c, a)) : ''].filter(Boolean).join(' · '); },
@@ -90437,7 +90464,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
       sum: L => { const M = new Map(); L.forEach(x => { const k = x.o.item; if(!M.has(k)) M.set(k, []); M.get(k).push(regAvg(x.o)); }); const R = Array.from(M, ([k, v]) => [k, v.reduce((a, b) => a + b, 0) / v.length]).sort((a, b) => b[1] - a[1]);
         return R.length ? 'رتبه: ' + R.slice(0, 5).map((r, i) => toFa(i + 1) + '. ' + r[0] + ' (' + toFa(r[1].toFixed(1)) + ')').join('  ') : ''; }}
   };
-  const REG_DISC = ['معماری', 'سازه', 'تأسیسات مکانیکی', 'تأسیسات برقی', 'نما', 'محوطه', 'سایر'];
+  const REG_DISC = ['معماری', 'سازه', 'تأسیسات مکانیکی', 'تأسیسات الکتریکال', 'نما', 'محوطه', 'سایر'];
   const REG_15 = ['۱', '۲', '۳', '۴', '۵'];
   const fmtMoney = n => toFa(Math.round(+n || 0).toLocaleString('en-US'));
   const regScore = o => (parseInt(toEn(o.p || 0), 10) || 0) * (parseInt(toEn(o.i || 0), 10) || 0);
@@ -91685,13 +91712,25 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   }
   window.umOpenIb = umOpenIb;
   /* «گفت‌وگو دربارهٔ این مورد» از هر کارت */
-  window.umDiscuss = (k, id, t) => { um.pre = [{k, id: String(id), t: t || umLive(k, String(id))}]; openMessages(''); };
+  /* ۶۲۸: «گفت‌وگو دربارهٔ این سند» گفت‌وگو را با مسئول سند (یا اگر خودم مسئولم، با بررسی‌کننده یا ثبت‌کننده) باز می‌کند و سند پیوست می‌شود؛
+     پیش‌تر با نام خالی باز می‌شد و چون گفت‌وگویی باز نبود پیوست هم نمی‌آمد — دکمه کاری نمی‌کرد */
+  window.umDiscuss = (k, id, t) => { um.pre = [{k, id: String(id), t: t || umLive(k, String(id))}];
+    let who = ''; try{ const a = (adminAll || []).find(x => x.kind === k && String(pick(x.row,AD.id)) === String(id)); const me = nameKey(activeUserName());
+      if(a){ const C = [pick(a.row, AD_OWNER[k] || ['مسئول'])].concat(typeof reviewersOf === 'function' ? reviewersOf(a.row) : []).concat([pick(a.row, AD.eng)]).map(x => String(x || '').trim()).filter(x => x && nameKey(x) !== me);
+        who = C.find(n => (typeof listNames === 'function' ? listNames() : []).some(m => nameKey(m) === nameKey(n))) || ''; } }catch(e){}
+    openMessages(who);
+    if(!who) try{ shrToast('مخاطب را انتخاب کنید؛ سند به پیام پیوست می‌شود'); }catch(e){} };
   function umDiscussHtml(kind, r){ const id = pick(r,AD.id); return id ? '<button type="button" class="um-disc" data-umdisc="' + esc(kind + '|' + id) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5a2 2 0 01-2 2H8.5L4 20V6a2 2 0 012-2h12a2 2 0 012 2z"/></svg>گفت‌وگو دربارهٔ این سند</button>' : ''; }
   window.umDiscussHtml = umDiscussHtml;
+  /* پیوستِ منتظر (سند) همین که گفت‌وگویی باز شد در کادر پیوست می‌نشیند */
+  function umPreFlush(){ const inChat = !!(document.getElementById('msgTo') || {value: ''}).value.trim(); if(inChat && um.pre){ const L = um.pre; um.pre = null; umPickShow(true, L); umTabsPaint(); } }
+  window.umPreFlush = umPreFlush;
   new MutationObserver(() => {
     const bg = document.getElementById('chatModal'); if(!bg) return;
-    if(bg.hidden === um.vis && !um.pre) return; um.vis = bg.hidden;
-    if(!bg.hidden){ umTabsPaint(); const inChat = !!document.getElementById('msgTo').value.trim(); if(inChat && um.pre){ umPickShow(true, um.pre); um.pre = null; umTabsPaint(); } }
+    /* ۶۲۸: فقط تغییر نمایش خود پنجره؛ پیش‌تر وقتی پیوستِ منتظر بود و گفت‌وگویی باز نبود، هر نقاشی زبانه‌ها (که خودش hidden عوض می‌کند)
+       دوباره همین را صدا می‌زد — حلقهٔ بی‌پایان و یخ‌زدن صفحه با «گفت‌وگو دربارهٔ این سند» */
+    if(bg.hidden === um.vis) return; um.vis = bg.hidden;
+    if(!bg.hidden){ umTabsPaint(); umPreFlush(); }
     else{ const p = document.getElementById('umPick'); if(p && !p.hidden) umPickShow(false); umIbExit(); }
   }).observe(document.documentElement, {attributes: true, subtree: true, attributeFilter: ['hidden']});
   document.addEventListener('input', e => {
@@ -98009,7 +98048,8 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
     const match = w => !q
       || nk2(w.name).indexOf(nk2(q)) !== -1
       || nk2(w.role || '').indexOf(nk2(q)) !== -1
-      || nk2(w.pno || '').indexOf(nk2(toEn(q))) !== -1;
+      /* ۶۲۸: کد پرسنلی مستقیم با ارقام لاتین (فارسی/انگلیسی فرقی ندارد) — هم pno هم code */
+      || [w.pno, w.code].some(c => c != null && String(c) !== '' && toEn(String(c)).indexOf(toEn(q).replace(/\s+/g, '')) !== -1);
     const allHere = workersAll.filter(w => wrkIsHere(w));
     const roleOk = w => !wrkManRole || (wrkManRole === '-' ? !String(w.role || '').trim() : String(w.role || '').trim() === wrkManRole);
     const here = allHere.filter(match).filter(roleOk);
@@ -98061,7 +98101,13 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
             '<button type="button" data-wmrole="' + esc(r === 'بدون سمت' ? '-' : r) + '"' + ((wrkManRole === (r === 'بدون سمت' ? '-' : r)) ? ' class="on"' : '') + '>'
             + esc(r) + '<i>' + toFa(n) + '</i></button>').join('')
       + '</div>'
-      + '<datalist id="wmRoleList">' + Array.from(roles.keys()).filter(r => r !== 'بدون سمت').map(r => '<option value="' + esc(r) + '">').join('') + '</datalist>'
+      /* ۶۲۸: «شاگرد …» پیشنهاد استادها (بنا، جوشکار، کارگر فنی و هر استادکاری که شاگرد ندارد اول) */
+      + '<datalist id="wmRoleList">' + Array.from(roles.keys()).filter(r => r !== 'بدون سمت' && !/^\s*شاگرد\s/.test(r)).map(r => '<option value="' + esc(r) + '">').join('')
+      +   (function(){ const kidRe = /^\s*شاگرد\s+(.+)$/, M = (workersAll || []).filter(w => wrkIsHere(w) && !kidRe.test(String(w.role || '')) && /بنا|جوشکار|کارگر فنی|استاد|آرماتور|قالب|نجار|کاشی|سنگ|گچ|نقاش|آهنگر|لوله|برق/.test(String(w.role || '')));
+          const has = new Set((workersAll || []).map(w => { const m = String(w.role || '').match(kidRe); return m ? nameKey(m[1]) : ''; }).filter(Boolean));
+          M.sort((a, b) => (has.has(nameKey(a.name)) - has.has(nameKey(b.name))) || String(a.role || '').localeCompare(String(b.role || ''), 'fa'));
+          return M.map(w => '<option value="شاگرد ' + esc(w.name) + '">' + esc(String(w.role || '') + (has.has(nameKey(w.name)) ? ' · شاگرد دارد' : '')) + '</option>').join(''); })()
+      + '</datalist>'
       /* وضعیت پایگاه‌داده، همیشه پیدا: تا وقتی فهرست آنجا نباشد هیچ
          تغییری ذخیره نمی‌شود، و کاربر باید بداند چرا. */
       + (workersFromDb
@@ -106615,7 +106661,7 @@ html.ui2[data-theme="dark"]{--canvas:#0d1015;--sbar:#0d1015;--surface:#161a20;--
   };
   /* ۳۲۸: رشته یا تخصص طرف از فهرست، بنا به نوع طرف: طراح و مشاور ← رشته‌ها و زیرشاخه‌ها؛ پیمانکار ← تخصص‌های اجرایی؛ تأمین‌کننده ← گروه کالا؛ کارفرما ← ندارد */
   const PJ_TRADES = ['گودبرداری و پایدارسازی', 'اسکلت بتنی', 'اسکلت فلزی', 'قالب‌بندی', 'آرماتوربندی', 'بتن‌ریزی', 'بنایی و سفت‌کاری', 'گچ و خاک', 'کاشی و سرامیک', 'سنگ‌کاری', 'نما', 'نازک‌کاری', 'عایق‌کاری',
-    'تأسیسات مکانیکی', 'تأسیسات برقی', 'لوله‌کشی', 'کانال‌کشی و تهویه', 'اطفای حریق', 'آسانسور', 'درب و پنجره', 'کابینت و دکوراسیون', 'نقاشی', 'محوطه‌سازی', 'سقف کاذب', 'اپوکسی و کفپوش'];
+    'تأسیسات مکانیکی', 'تأسیسات الکتریکال', 'لوله‌کشی', 'کانال‌کشی و تهویه', 'اطفای حریق', 'آسانسور', 'درب و پنجره', 'کابینت و دکوراسیون', 'نقاشی', 'محوطه‌سازی', 'سقف کاذب', 'اپوکسی و کفپوش'];
   const PJ_SUPPLY = ['مصالح ساختمانی', 'میلگرد و فولاد', 'بتن آماده', 'سیمان', 'تجهیزات مکانیکی', 'تجهیزات برقی', 'آسانسور', 'نما و سنگ', 'کاشی و سرامیک', 'درب و پنجره', 'ماشین‌آلات و اجاره', 'سایر'];
   function pjSpecOpts(t){
     if(t === 'cons'){ const L = []; try{ (typeof DS_TREE !== 'undefined' ? DS_TREE : []).forEach(([m, subs]) => { L.push([m, m]); subs.forEach(x => L.push([x, '— ' + x])); }); }catch(e){} L.push(['نظارت عالیه', 'نظارت عالیه'], ['نظارت مقیم', 'نظارت مقیم'], ['مدیریت طرح', 'مدیریت طرح']); return L; }

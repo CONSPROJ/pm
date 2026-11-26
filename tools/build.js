@@ -27,6 +27,8 @@ function deadPruner(html){
   const pre = new Set();
   (code.match(/['"`]([A-Za-z_][A-Za-z0-9_-]*)['"`]?\s*(\+|\$\{)/g) || []).forEach(x => { const k = /['"`]([A-Za-z_][A-Za-z0-9_-]*)/.exec(x); if(k && k[1].length >= 2) pre.add(k[1]); });
   (code.match(/([A-Za-z_][A-Za-z0-9_-]*)\$\{/g) || []).forEach(x => { const k = x.slice(0, -2); if(k.length >= 2) pre.add(k); });
+  /* ۶۲۸: پیشوندی که وسط رشته آمده (' tn-' + x، "afr tn-' + x): آخرین نام پیش از بسته شدن رشته و + — پیش‌تر فقط اول رشته دیده می‌شد و رنگ وضعیت‌ها حذف شده بود */
+  (code.match(/([A-Za-z_][A-Za-z0-9_-]*-)['"`]\s*(\+|\$\{)/g) || []).forEach(x => { const k = /([A-Za-z_][A-Za-z0-9_-]*-)/.exec(x); if(k && k[1].length >= 3) pre.add(k[1]); });
   const P = Array.from(pre);
   const alive = t => words.has(t) || P.some(p => t.startsWith(p));
   return function prune(css){
