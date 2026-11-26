@@ -11,6 +11,10 @@ const SCENES = [
   ['tasks', () => { switchTab('tasks'); wsSet('tasks'); }],
   ['wrk', () => { switchTab('tasks'); wsSet('wrk'); }],
   ['people', () => { switchTab('tasks'); wsSet('ctr'); }],
+  /* ۶۴۳–۶۴۴: بخش‌های مرکز پرونده‌ها */
+  ['hub-list', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="list"]'); b && b.click(); }, 700); }, '.phb-tbl'],
+  ['hub-fin', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="fin"]'); b && b.click(); }, 700); }, '.phb-fsum'],
+  ['hub-org', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="org"]'); b && b.click(); setTimeout(() => { const c = document.querySelector('.tms [data-tmpos]'); c && c.click(); }, 300); }, 700); }, '.tms-ed'],
   ['ctr-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('[data-cdxprof]'); b && b.click(); setTimeout(() => { const h = document.querySelector('#ctProfModal .mc-head'); h && h.insertAdjacentHTML('afterend', '<div class="ct-alias2">با نام‌های: کارفرمای پروژه، نام دیگر پیمانکار</div>'); }, 900); }, 600); }, '#ctProfModal'],
   /* ۶۰۸: کارت کارفرما و مشاور (نوع ثبت‌شده در پرونده؛ دادهٔ mock) */
   ['client-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const x = document.createElement('button'); x.dataset.hrprof = 'شرکت توسعهٔ آریا'; document.body.appendChild(x); x.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); x.click(); x.remove(); }, 600); }, '#ctProfModal'],

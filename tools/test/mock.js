@@ -96,6 +96,8 @@ async function install(page){
         return json(route, []); }
     }
     /* ثبت تازه: مثل سرور واقعی ردیف‌ها را با شناسه برمی‌گرداند (return=representation) */
+    /* ۶۴۴: ثبت فرد (سمت، تیم، …) در آزمون هم ماندگار است */
+    if(path.startsWith('people') && req.method() === 'POST' && Array.isArray(body)){ body.forEach(r => { const x = people.find(q => q.name === r.name); if(x) Object.assign(x, r); else people.push(Object.assign({active: true}, r)); }); return json(route, body); }
     if(req.method() === 'POST' && Array.isArray(body)) return json(route, body.map((x, i) => Object.assign({}, x, {id: 'n' + Date.now() + '_' + i})));
     if(req.method() !== 'GET') return json(route, []);
     if(path.startsWith('people')) return json(route, people);
