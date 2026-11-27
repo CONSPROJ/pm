@@ -72,7 +72,7 @@ const SCENES = require('./scenes.js');
     const ctx = await b.newContext(Object.assign(dev === 'phone' ? devices['iPhone 13'] : {viewport: {width: 1440, height: 900}}, {colorScheme: th}));
     /* یک بار بارگذاری برای هر حالت؛ صحنه‌ها پشت سر هم، بعد از هر صحنه پنجره‌های باز بسته می‌شوند */
     const p = await ctx.newPage(); await install(p);
-    await p.addInitScript(() => { localStorage.setItem('siteLogM.user.v1', 'آقای مهدی نعیمی'); localStorage.setItem('siteLogM.tok.v1', 'x'.repeat(40)); localStorage.setItem('siteLogM.a2hs.v1', '1');
+    await p.addInitScript(() => { localStorage.setItem('siteLogM.user.v1', 'آقای کاوه رستمی'); localStorage.setItem('siteLogM.tok.v1', 'x'.repeat(40)); localStorage.setItem('siteLogM.a2hs.v1', '1');
       const g = Storage.prototype.getItem; Storage.prototype.getItem = function(k){ if(String(k).indexOf('siteLogM.tour.v1:') === 0) return '1'; return g.call(this, k); }; });
     await p.goto(URL); await p.waitForTimeout(6500);
     await p.evaluate(t => { document.documentElement.dataset.theme = t; }, th);

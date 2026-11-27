@@ -7,7 +7,7 @@ import { importLegacy, jalaliToIso } from '../src/db/import-legacy';
 const URL = process.env.TEST_DATABASE_URL || 'postgres://pm@127.0.0.1:55432/pmtest';
 
 const backup = { tables: {
-  people: [{ name: 'آقای مهدی نعیمی', role: 'کنترل پروژه', level: 1 }, { name: 'خانم سارا رضایی', role: 'طراح سازه', level: 4 }, { name: 'قدیمی', role: '', level: 3, active: false }],
+  people: [{ name: 'آقای کاوه رستمی', role: 'کنترل پروژه', level: 1 }, { name: 'خانم سارا رضایی', role: 'طراح سازه', level: 4 }, { name: 'قدیمی', role: '', level: 3, active: false }],
   lists: [{ kind: 'پیمانکار — تماس', value: 'مهندسین مشاور نقش¦' + JSON.stringify({ t: 'cons', ro: 'طراح سازه', d: 'سازه' }) },
           { kind: 'پیمانکار — تماس', value: 'کارفرما¦' + JSON.stringify({ t: 'emp' }) }, { kind: 'دیگر', value: 'x' },
           { kind: 'نظرات بررسی طراحی', value: 'd1\u00a6' + JSON.stringify({ items: [{ rev: '0', side: 'cons', by: 'مشاور', d: '1404/01/20', t: 'نظر اول', r: 'اصلاح شد', rd: '1404/02/01', st: 'closed', cr: '1', cd: '1404/03/10' }, { rev: '1', side: 'emp', t: 'نظر دوم', st: 'open' }] }) }],

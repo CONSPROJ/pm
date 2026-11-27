@@ -120,6 +120,19 @@ Deno.serve(async (req) => {
   const to = nk(row.to_name);
   if (!to || to === nk(row.from_name)) return json({ skip: "self" });
 
+  // گروه گفت‌وگو: به همهٔ اعضا جز فرستنده (اعضا از ردیف واقعی lists)
+  if (nk(row.kind) === "پیام" && to.startsWith("گروه:")) {
+    const gid = to.slice(5);
+    const g = await db(`lists?kind=eq.${encodeURIComponent("گروه گفت‌وگو")}&value=like.${encodeURIComponent(gid + "¦*")}&select=value&limit=1`);
+    const gv = g.ok ? ((await g.json()) as { value: string }[])[0]?.value ?? "" : "";
+    let grp: { n?: string; m?: string[] } = {};
+    try { grp = JSON.parse(gv.slice(gv.indexOf("¦") + 1)); } catch { /* گروه نیست */ }
+    const from = nk(row.from_name), members = (grp.m ?? []).map(nk).filter((x) => x && x !== from);
+    let n = 0;
+    for (const m of members) n += await sendTo(m, { title: `${grp.n ?? "گروه"} · ${from}`, body: "پیام تازه در گروه", tag: `msg:${to}`, open: `msg:${to}` });
+    return json({ ok: true, n });
+  }
+
   const n = await sendTo(to, payloadOf(row));
   return json({ ok: true, n });
 });

@@ -8,7 +8,7 @@ require('fs').mkdirSync(OUT, { recursive: true });
   for(const dev of only.split(',')){
     const ctx = await b.newContext(dev === 'phone' ? Object.assign({}, devices['iPhone 13'], DARK ? {colorScheme:'dark'} : {}) : Object.assign({viewport:{width:1440, height:900}}, DARK ? {colorScheme:'dark'} : {}));
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await install(p);
-    await p.addInitScript(() => { localStorage.setItem('siteLogM.user.v1','آقای مهدی نعیمی'); localStorage.setItem('siteLogM.tok.v1','x'.repeat(40)); localStorage.setItem('siteLogM.a2hs.v1','1');
+    await p.addInitScript(() => { localStorage.setItem('siteLogM.user.v1','آقای کاوه رستمی'); localStorage.setItem('siteLogM.tok.v1','x'.repeat(40)); localStorage.setItem('siteLogM.a2hs.v1','1');
       const g = Storage.prototype.getItem; Storage.prototype.getItem = function(k){ if(String(k).indexOf('siteLogM.tour.v1:') === 0) return '1'; return g.call(this, k); }; });
     await p.goto(URL); await p.waitForTimeout(7000);
     const S = [['home', () => switchTab('home')], ['docs', () => { switchTab('admin'); admSetCat('statement'); }], ['contract', () => admSetCat('contract')], ['design', () => admSetCat('design')],

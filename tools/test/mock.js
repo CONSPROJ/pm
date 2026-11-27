@@ -17,7 +17,7 @@ function addDays(fa, n){
 const T0 = todayFa();
 const CTR = ['شرکت آرمان سازه', 'پیمانکار حسینی', 'گروه برق پارس', 'تأسیسات نوین', 'نمای سنگ البرز', 'بتن آماده تهران', 'امانی', 'شرکت کاشی نگین'];
 const SK = {'شرکت آرمان سازه': 'آرماتوربندی', 'پیمانکار حسینی': 'بنایی', 'گروه برق پارس': 'برق', 'تأسیسات نوین': 'تأسیسات مکانیکی', 'نمای سنگ البرز': 'نماکاری', 'بتن آماده تهران': 'بتن‌ریزی', 'امانی': 'کارگر ساده', 'شرکت کاشی نگین': 'کاشی‌کاری'};
-const ENG = ['آقای مهدی نعیمی', 'آقای امیر ابراهیمی', 'آقای پارسا محمودی'];
+const ENG = ['آقای کاوه رستمی', 'آقای بهرام نیک‌پور', 'آقای آرش صدری'];
 let rnd = 7; const R = n => { rnd = (rnd * 9301 + 49297) % 233280; return Math.floor(rnd / 233280 * n); };
 const activities = [], issues = [];
 let aid = 1, iid = 1;
@@ -43,27 +43,27 @@ for(let i = 1; i <= 400; i++){ lt.push({id: 'l' + i, created_at: '2026-10-01T08:
 for(let i = 1; i <= 120; i++){ mn.push({id: 'm' + i, meeting_id: 'M' + Math.ceil(i / 3), created_at: '2026-10-01T08:00:00+00:00', date_fa: addDays(T0, -i * 3), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], subject: 'جلسهٔ هماهنگی هفتگی', meet_date: addDays(T0, -i * 3), category: 'اقدام', owner: CTR[i % 6], action_date: addDays(T0, -i * 3 + 7), idx: String(i % 3 + 1), text: ['تحویل نقشهٔ کارگاهی', 'تأمین نیروی اضافه برای طبقه ۵', 'رفع نواقص لوله‌کشی'][i % 3], notify: 'درون‌سازمانی', done: i % 4 === 0}); }
 for(let i = 1; i <= 150; i++){ ds.push({id: 'd' + i, created_at: '2026-' + String(10 - (i % 5)).padStart(2, '0') + '-01T08:00:00+00:00', date_fa: addDays(T0, -i * 4), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], title: ['نقشهٔ معماری طبقات', 'جزئیات نما', 'دیاگرام برق', 'نقشهٔ سازه'][i % 4], number: 'D-' + (300 + i), discipline: ['معماری', 'سازه', 'برق', 'مکانیک'][i % 4], revision: String(i % 3), party: 'مشاور طرح نو', sent_date: addDays(T0, -i * 4), status: ['نزد مشاور/کارفرما', 'تأیید شده', 'اصلاح و ارسال مجدد'][i % 3], notify: 'برون‌سازمانی', owner: ENG[i % 3], doc_type: 'نقشه'}); }
 if(process.env.MOCK_REVS){ try{ ds[4].revs = require('fs').readFileSync(process.env.MOCK_REVS, 'utf8'); }catch(e){} }
-for(let i = 1; i <= 700; i++){ const s = i % 5; tk.push({id: i, title: ['اجرای بلوک‌چینی طبقه ' + (i % 16 + 1), 'نصب داکت‌های تأسیسات', 'بتن‌ریزی سقف', 'کاشی‌کاری سرویس‌ها', 'لوله‌کشی آب و فاضلاب'][i % 5], created_by: ENG[i % 3], approved: true, owner1: i % 4 ? CTR[i % 6] : 'آقای مهدی نعیمی', owner2: '', side: 'اجرایی', position: 'طبقه ' + (i % 16 + 1),
+for(let i = 1; i <= 700; i++){ const s = i % 5; tk.push({id: i, title: ['اجرای بلوک‌چینی طبقه ' + (i % 16 + 1), 'نصب داکت‌های تأسیسات', 'بتن‌ریزی سقف', 'کاشی‌کاری سرویس‌ها', 'لوله‌کشی آب و فاضلاب'][i % 5], created_by: ENG[i % 3], approved: true, owner1: i % 4 ? CTR[i % 6] : 'آقای کاوه رستمی', owner2: '', side: 'اجرایی', position: 'طبقه ' + (i % 16 + 1),
   done: s === 0, doing: s === 1 || s === 2, not_done: s >= 3, start_date: addDays(T0, -30 + i % 20), due_date: addDays(T0, (i % 3 === 0 ? -5 : 10) + (i % 7)), blockers: '', category: ['سفت‌کاری', 'تأسیسات', 'نازک‌کاری'][i % 3], floor: String(i % 16 + 1)}); }
-const people = ENG.concat(['آقای حیدرنیا', 'آقای خان احمدی', 'آقای سامین خواجه‌زاده']).map((n, i) => ({name: n, role: ['کنترل پروژه', 'امور قراردادی', 'مهندس اجرا', 'مدیریت پروژه', 'سرپرست کارگاه', 'مهندس اجرا'][i], level: i === 3 ? 2 : 3, avatar_url: '', must_change: false, active: true, pending: false}));
+const people = ENG.concat(['آقای فرهادی', 'آقای یزدانی', 'آقای نیما توکلی']).map((n, i) => ({name: n, role: ['کنترل پروژه', 'امور قراردادی', 'مهندس اجرا', 'مدیریت پروژه', 'سرپرست کارگاه', 'مهندس اجرا'][i], level: i === 3 ? 2 : 3, avatar_url: '', must_change: false, active: true, pending: false}));
 /* ۶۰۸: طرف‌های غیرپیمانکار (کارفرما، مشاور، مالک) با نوع ثبت‌شده در پرونده و چند سند، تا کارت کارفرما/مشاور و رنگ طرف‌ها هم آزموده شوند */
 const PTY = [['شرکت توسعهٔ آریا', 'emp'], ['مهندسین مشاور پارس طرح', 'cons'], ['آقای رضایی (مالک)', 'own']];
-const FORMS = [{id:'fm1', t:'فرم معیار صورتجلسه', g:'اداری', nt:'برای همهٔ جلسات هماهنگی هفتگی', by:'آقای مهدی نعیمی', d:'1405/07/29', f:'https://example.com/f/MOM.pdf#MOM.pdf'},
-  {id:'fm2', t:'فرم مجوز کار در ارتفاع', g:'ایمنی', nt:'پیش از هر کار بالای ۲ متر', by:'آقای پارسا محمودی', d:'1405/06/10', f:'https://example.com/f/permit.docx#permit.docx'},
-  {id:'fm3', t:'درخواست بازرسی (IR)', g:'کیفیت', nt:'', by:'آقای امیر ابراهیمی', d:'1405/05/02', f:'https://example.com/f/IR.xlsx#IR.xlsx\nhttps://example.com/f/IR-guide.pdf#IR-guide.pdf'}];
+const FORMS = [{id:'fm1', t:'فرم معیار صورتجلسه', g:'اداری', nt:'برای همهٔ جلسات هماهنگی هفتگی', by:'آقای کاوه رستمی', d:'1405/07/29', f:'https://example.com/f/MOM.pdf#MOM.pdf'},
+  {id:'fm2', t:'فرم مجوز کار در ارتفاع', g:'ایمنی', nt:'پیش از هر کار بالای ۲ متر', by:'آقای آرش صدری', d:'1405/06/10', f:'https://example.com/f/permit.docx#permit.docx'},
+  {id:'fm3', t:'درخواست بازرسی (IR)', g:'کیفیت', nt:'', by:'آقای بهرام نیک‌پور', d:'1405/05/02', f:'https://example.com/f/IR.xlsx#IR.xlsx\nhttps://example.com/f/IR-guide.pdf#IR-guide.pdf'}];
 const TRN = [
-  {id:'ibt1', t:'design', st:'q', by:'آقای پارسا محمودی', to:'آقای مهدی نعیمی', at:'1405/08/27 10:20', no:'RAR-TRN-0007', ti:'نقشه‌های معماری طبقات ۳ تا ۵ — ویرایش ۲', party:'مشاور طرح نو', poi:'برای تأیید', due:'1405/08/25',
+  {id:'ibt1', t:'design', st:'q', by:'آقای آرش صدری', to:'آقای کاوه رستمی', at:'1405/08/27 10:20', no:'RAR-TRN-0007', ti:'نقشه‌های معماری طبقات ۳ تا ۵ — ویرایش ۲', party:'مشاور طرح نو', poi:'برای تأیید', due:'1405/08/25',
    docs:[{ti:'پلان طبقه سوم', disc:'معماری', code:'A-301', full:'RAR-AR-L03-DR-A-301', rev:'2'}, {ti:'پلان طبقه چهارم', disc:'معماری', code:'A-401', full:'RAR-AR-L04-DR-A-401', rev:'2'}], log:[]},
-  {id:'ibt2', t:'design', st:'ok', by:'آقای پارسا محمودی', at:'1405/08/10 09:00', no:'RAR-TRN-0006', ti:'سازه — دیتیل‌های فونداسیون', party:'مشاور طرح نو', poi:'برای بررسی و اظهارنظر', rv:'آقای مهدی نعیمی',
+  {id:'ibt2', t:'design', st:'ok', by:'آقای آرش صدری', at:'1405/08/10 09:00', no:'RAR-TRN-0006', ti:'سازه — دیتیل‌های فونداسیون', party:'مشاور طرح نو', poi:'برای بررسی و اظهارنظر', rv:'آقای کاوه رستمی',
    docs:[{ti:'دیتیل فونداسیون ۱', disc:'سازه', code:'S-101', rev:'1', rv:'A'}, {ti:'دیتیل فونداسیون ۲', disc:'سازه', code:'S-102', rev:'1', rv:'B'}, {ti:'مقاطع شمع', disc:'سازه', code:'S-103', rev:'1', rv:'C'}], log:[]},
-  {id:'ibt3', t:'design', st:'no', by:'آقای مهدی نعیمی', at:'1405/07/02 14:00', no:'RAR-TRN-0004', ti:'تأسیسات برقی — روشنایی لابی', party:'تیم مدیریت پروژه', poi:'برای اطلاع', docs:[{ti:'روشنایی لابی', disc:'تأسیسات برقی', code:'E-210', rev:'0', rv:'D'}], log:[]}];
+  {id:'ibt3', t:'design', st:'no', by:'آقای کاوه رستمی', at:'1405/07/02 14:00', no:'RAR-TRN-0004', ti:'تأسیسات برقی — روشنایی لابی', party:'تیم مدیریت پروژه', poi:'برای اطلاع', docs:[{ti:'روشنایی لابی', disc:'تأسیسات برقی', code:'E-210', rev:'0', rv:'D'}], log:[]}];
 /* ۶۴۲: اسناد عمومی یک طرف (کارت طرف) */
-const GEN = [{id:'g1', t:'بیمه‌نامهٔ مسئولیت مدنی ۱۴۰۵', ty:'بیمه', p:'تأسیسات نوین', d:'1405/02/10', nt:'اعتبار تا ۱۴۰۶/۰۲/۱۰', by:'آقای مهدی نعیمی', f:'https://example.com/f/ins.pdf#ins.pdf'},
-  {id:'g2', t:'ضمانت‌نامهٔ حسن انجام کار', ty:'ضمانت‌نامه', p:'تأسیسات نوین', d:'1405/03/01', by:'آقای مهدی نعیمی', f:'https://example.com/f/g.xlsx#g.xlsx\nhttps://example.com/f/g2.docx#g2.docx'}];
-const LMETA = [['l1', {sc: 'in', team: 'x:شرکت دیگر', cc: []}], ['l2', {sc: 'in', team: 's:pm', cc: []}], ['l4', {sc: 'ex', team: '', cc: ['آقای مهدی نعیمی']}]];
+const GEN = [{id:'g1', t:'بیمه‌نامهٔ مسئولیت مدنی ۱۴۰۵', ty:'بیمه', p:'تأسیسات نوین', d:'1405/02/10', nt:'اعتبار تا ۱۴۰۶/۰۲/۱۰', by:'آقای کاوه رستمی', f:'https://example.com/f/ins.pdf#ins.pdf'},
+  {id:'g2', t:'ضمانت‌نامهٔ حسن انجام کار', ty:'ضمانت‌نامه', p:'تأسیسات نوین', d:'1405/03/01', by:'آقای کاوه رستمی', f:'https://example.com/f/g.xlsx#g.xlsx\nhttps://example.com/f/g2.docx#g2.docx'}];
+const LMETA = [['l1', {sc: 'in', team: 'x:شرکت دیگر', cc: []}], ['l2', {sc: 'in', team: 's:pm', cc: []}], ['l4', {sc: 'ex', team: '', cc: ['آقای کاوه رستمی']}]];
 const lists = LMETA.map(([id, o]) => ({kind: 'مشخصات نامه', value: id + '\u00a6' + JSON.stringify(o)})).concat(TRN.map(o => ({kind: 'صندوق ورودی', value: o.id + '\u00a6' + JSON.stringify(Object.assign({}, o, {id: undefined}))})).concat(FORMS.map(f => ({kind: 'فرم آرشیو', value: JSON.stringify(f)}))).concat(GEN.map(f => ({kind: 'سند عمومی', value: JSON.stringify(f)}))).concat(PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})}))));
 /* ۶۷۸: همان چیزی که سرور واقعی دارد — مدیر اصلی سامانه و داده‌های پروژهٔ اصلی (منتقل‌شده از lib/seed-p1.json) */
-lists.push({kind: 'مدیر اصلی سامانه', value: 'آقای مهدی نعیمی'});
+lists.push({kind: 'مدیر اصلی سامانه', value: 'آقای کاوه رستمی'});
 if(!process.env.SEEDLESS){
   const SD = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../lib/seed-p1.json'), 'utf8'));
   lists.push({kind: 'پروژه', value: 'p1\u00a6' + JSON.stringify(Object.assign({}, SD.project, {floors: SD.floors, fac: SD.facade, mods: null}))});
@@ -95,7 +95,10 @@ async function install(page){
     if(path.startsWith('rpc/bundle2') && process.env.DELAY) await new Promise(r=>setTimeout(r,+process.env.DELAY));
     if(path.startsWith('rpc/bundle2')){ const d = toEn(body.p_date || T0); return json(route, Object.assign({statements: st, contracts: ct, minutes: mn, letters: lt, tasks: tk, nudges: [], lists, people}, dayOf(d))); }
     if(path.startsWith('rpc/day_only')) return json(route, dayOf(toEn(body.p_date || T0)));
-    if(path.startsWith('rpc/pm_whoami')) return json(route, {v: 1, name: process.env.WHO || 'آقای مهدی نعیمی', admin: !process.env.NONADMIN, locked: false});
+    if(path.startsWith('rpc/pm_chat_ver')) return json(route, 1);
+    if(path.startsWith('rpc/pm_presence')){ const now = Date.now(); return json(route, people.map((p0, i) => ({n: p0.name, t: new Date(now - (i % 3 === 0 ? 5000 : i * 600000)).toISOString()}))); }
+    if(path.startsWith('rpc/pm_chat_group_leave')) return json(route, true);
+    if(path.startsWith('rpc/pm_whoami')) return json(route, {v: 1, name: process.env.WHO || 'آقای کاوه رستمی', admin: !process.env.NONADMIN, locked: false});
     if(path.startsWith('rpc/session_epoch')) return json(route, {epoch: 0});
     if(path.startsWith('rpc/')) return json(route, {ok: false});
     /* lists: ثبت و حذف در حافظهٔ همین آزمون می‌ماند (مثل سرور واقعی، تا بازخوانی قانون‌ها/تنظیمات مقدار ذخیره‌شده را برگرداند) */
@@ -104,6 +107,13 @@ async function install(page){
       if(req.method() === 'DELETE'){ const k = url.match(/kind=eq\.([^&]+)/), v = url.match(/value=like\.([^&]+)/), ve = url.match(/value=eq\.([^&]+)/);
         if(k){ for(let i = lists.length - 1; i >= 0; i--){ const r = lists[i]; if(r.kind !== k[1]) continue; if(v){ const pre = v[1].replace(/\*$/, ''); if(String(r.value).indexOf(pre) !== 0) continue; } if(ve && r.value !== ve[1]) continue; lists.splice(i, 1); } }
         return json(route, []); }
+    }
+    /* ۶۷۹: پیام‌ها در حافظهٔ همین آزمون (ثبت، ویرایش، خواندن) */
+    if(path.startsWith('nudges')){
+      const NS = install.__nudges || (install.__nudges = []);
+      if(req.method() === 'POST' && Array.isArray(body)){ const out = body.map(x => { const t = new Date().toISOString(); const r = Object.assign({}, x, {id: 'm' + (NS.length + 1), created_at: t, updated_at: t}); NS.push(r); return r; }); return json(route, out); }
+      if(req.method() === 'PATCH'){ const m = url.match(/id=eq\.([^&]+)/); const r = m && NS.find(x => String(x.id) === m[1]); if(r) Object.assign(r, body, {updated_at: new Date().toISOString()}); return json(route, r ? [r] : []); }
+      if(req.method() === 'GET') return json(route, NS.slice().reverse());
     }
     /* ثبت تازه: مثل سرور واقعی ردیف‌ها را با شناسه برمی‌گرداند (return=representation) */
     /* ۶۴۴: ثبت فرد (سمت، تیم، …) در آزمون هم ماندگار است */
@@ -119,9 +129,9 @@ async function install(page){
     if(path.startsWith('issues')){ const g = url.match(/date_fa=gte\.([\d/]+)/), l = url.match(/date_fa=lte\.([\d/]+)/); let a = issues; if(g) a = a.filter(r => r.date_fa >= g[1]); if(l) a = a.filter(r => r.date_fa <= l[1]); return json(route, a); }
     if(path.startsWith('tasks')) return json(route, tk);
     if(path.startsWith('worker_daily') || path.startsWith('worker_ot')){ const m = url.match(/date_fa=eq\.([^&]+)/), d = m ? m[1] : '';
-      const WD = {'۱۴۰۵/۰۸/۲۹': [{id: 'wd1', worker_code: '1104', worker_name: 'حکیم خالقی', engineer: 'آقای مهدی نعیمی', activity: 'جابجایی آرماتور طبقه ۵', zone: 'طبقه ۵', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-21T09:10:00', created_by: 'آقای مهدی نعیمی'}],
-        '۱۴۰۵/۰۸/۲۸': [{id: 'wd2', worker_code: '991', worker_name: 'بشیر احمد ضیایی', engineer: 'آقای مهدی نعیمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'},
-          {id: 'wd3', worker_code: '1104', worker_name: 'حکیم خالقی', engineer: 'آقای مهدی نعیمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'}]};
+      const WD = {'۱۴۰۵/۰۸/۲۹': [{id: 'wd1', worker_code: '1104', worker_name: 'رحیم کاظمی', engineer: 'آقای کاوه رستمی', activity: 'جابجایی آرماتور طبقه ۵', zone: 'طبقه ۵', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-21T09:10:00', created_by: 'آقای کاوه رستمی'}],
+        '۱۴۰۵/۰۸/۲۸': [{id: 'wd2', worker_code: '991', worker_name: 'نادر سلیمی', engineer: 'آقای کاوه رستمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'},
+          {id: 'wd3', worker_code: '1104', worker_name: 'رحیم کاظمی', engineer: 'آقای کاوه رستمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'}]};
       return json(route, path.startsWith('worker_ot') ? [] : (WD[d] || [])); }
     if(path.startsWith('lists')){ const k = url.match(/kind=eq\.([^&]+)/); return json(route, (k ? lists.filter(r => r.kind === k[1]) : lists).map(r => ({kind: r.kind, value: r.value}))); }
     return json(route, []);

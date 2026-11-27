@@ -62,7 +62,6 @@ as $$
 declare me text := public.pm_me(); lv integer;
 begin
   if me is null then return false; end if;
-  if me = 'آقای مهدی نعیمی' then return true; end if;               -- ادمین سامانه (همان فهرست داخل سایت)
   select level into lv from public.people where name = me;
   return coalesce(lv, 0) = 1;
 end $$;

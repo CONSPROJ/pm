@@ -28,13 +28,13 @@ const SCENES = [
   ['hub-list', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="list"]'); b && b.click(); }, 700); }, '.phb-tbl'],
   ['hub-fin', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="fin"]'); b && b.click(); }, 700); }, '.phb-fsum'],
   ['hub-org', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('.phb-n [data-cdxtab="org"]'); b && b.click(); setTimeout(() => { const c = document.querySelector('.tms [data-tmpos]'); c && c.click(); }, 300); }, 700); }, '.tms-ed'],
-  ['ctr-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('[data-cdxprof]'); b && b.click(); setTimeout(() => { const h = document.querySelector('#ctProfModal .mc-head'); h && h.insertAdjacentHTML('afterend', '<div class="ct-alias2">با نام‌های: کارفرمای پروژه، نام دیگر پیمانکار</div>'); }, 900); }, 600); }, '#ctProfModal'],
+  ['ctr-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const b = document.querySelector('[data-cdxprof]'); if(b) b.click(); else { let n = ''; try{ n = (kxStats()[0] || {}).name || ''; }catch(e){} if(!n){ const o = document.querySelector('#contractorList option'); n = o ? o.value : ''; } if(n) openContractorProfile(n); } setTimeout(() => { const h = document.querySelector('#ctProfModal .mc-head'); h && h.insertAdjacentHTML('afterend', '<div class="ct-alias2">با نام‌های: کارفرمای پروژه، نام دیگر پیمانکار</div>'); }, 900); }, 600); }, '#ctProfModal'],
   /* ۶۰۸: کارت کارفرما و مشاور (نوع ثبت‌شده در پرونده؛ دادهٔ mock) */
   ['client-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const x = document.createElement('button'); x.dataset.hrprof = 'شرکت توسعهٔ آریا'; document.body.appendChild(x); x.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); x.click(); x.remove(); }, 600); }, '#ctProfModal'],
   ['cons-card', () => { switchTab('tasks'); wsSet('ctr'); setTimeout(() => { const x = document.createElement('button'); x.dataset.hrprof = 'مهندسین مشاور پارس طرح'; document.body.appendChild(x); x.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true})); x.click(); x.remove(); }, 600); }, '#ctProfModal'],
   /* ۶۰۸: کارت فعالیت (دک)، کارت پرسنل، کنسول مدیریت و چند بخش میز کار */
   ['deck', () => { switchTab('admin'); admSetCat('statement'); setTimeout(() => { window.deckOpenAt && deckOpenAt('statement', 's5'); }, 500); }, '#deckModal'],
-  ['person-card', () => { switchTab('home'); setTimeout(() => { window.openProfile ? openProfile('آقای امیر ابراهیمی') : 0; }, 300); }, '#profileModal'],
+  ['person-card', () => { switchTab('home'); setTimeout(() => { window.openProfile ? openProfile('آقای بهرام نیک‌پور') : 0; }, 300); }, '#profileModal'],
   ['admin-console', () => { window.acOpen && acOpen(); }, '#acM'],
   ['hse', () => { switchTab('tasks'); wsSet('hse'); }],
   ['wh', () => { switchTab('tasks'); wsSet('wh'); }],

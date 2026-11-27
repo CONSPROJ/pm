@@ -2,14 +2,15 @@
 --  مالک سامانه و حذف مقدارهای ثابت (۳۷۰)
 --  ۱) مدیران اصلی سامانه از فهرست «مدیر اصلی سامانه» (سراسری) خوانده می‌شوند، نه از نامی که در کد نوشته شده.
 --     فقط خود مدیران اصلی این فهرست را تغییر می‌دهند و آخرین نفر برداشته نمی‌شود.
---  ۲) سمت افراد فقط از حسابشان: سمت‌های خالی یک بار از جدول قدیمی پر می‌شود (جدول از کد سایت حذف شد).
+--  ۲) سمت افراد فقط از حسابشان.
 --  پیش‌نیاز: security_phase1.sql و project.sql. اجرای دوباره بی‌خطر است.
 -- =====================================================================
 
--- ۱) فهرست مدیران اصلی (یک بار با مدیر فعلی پر می‌شود)
+-- ۱) فهرست مدیران اصلی: اگر خالی است، یک بار با مدیران فعلی (سطح ۱ در جدول افراد) پر می‌شود — هیچ نامی در این فایل نیست
 insert into public.lists(kind, value, project_id)
-select 'مدیر اصلی سامانه', 'آقای مهدی نعیمی', '*'
- where not exists (select 1 from public.lists where kind = 'مدیر اصلی سامانه');
+select 'مدیر اصلی سامانه', p.name, '*' from public.people p
+ where coalesce(p.level, 0) = 1 and coalesce(p.active, true)
+   and not exists (select 1 from public.lists where kind = 'مدیر اصلی سامانه');
 
 create or replace function public.pm_is_root() returns boolean
 language sql stable security definer
@@ -64,21 +65,6 @@ drop policy if exists "pm sys rules del" on public.lists;
 create policy "pm sys rules del" on public.lists as restrictive for delete
   using (not (kind = 'قوانین سامانه' and value like 'sys¦%') or (select public.pm_is_root()));
 
--- ۲) سمت‌های خالی از جدول قدیمی
-update public.people p set role = m.role
-  from (values
-    ('آقای حیدرنیا', 'مدیریت پروژه'),
-    ('آقای خان احمدی', 'سرپرست کارگاه'),
-    ('آقای علی خداپناهی', 'سرپرست مشاعات'),
-    ('آقای خداپناهی', 'سرپرست مشاعات'),
-    ('آقای مهدی اسلامی', 'مهندس اجرا'),
-    ('آقای سامین خواجه‌زاده', 'مهندس اجرا'),
-    ('آقای عرفان حیدری', 'مهندس اجرا'),
-    ('آقای پارسا محمودی', 'مهندس اجرا'),
-    ('آقای امیر ابراهیمی', 'امور قراردادی'),
-    ('آقای مهدی نعیمی', 'کنترل پروژه'),
-    ('خانم سپیده کریمیان', 'دفتر فنی پروژه')
-  ) as m(name, role)
- where p.name = m.name and coalesce(btrim(p.role), '') = '';
+-- ۲) (انتقال یک‌بارهٔ سمت‌ها از جدول قدیمی انجام شده و از این فایل برداشته شد؛ سمت‌ها فقط از حساب افراد می‌آیند)
 
 select value as "مدیر اصلی سامانه" from public.lists where kind = 'مدیر اصلی سامانه';
