@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127112609">
+<meta name="pm-build" content="20261127114029">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -37064,7 +37064,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       if(!mine(who)) return;
       out.push({level: dl > L[1] ? 'hot' : 'warm', kind, id: pick(r,AD.id), who,
         stageDays: dl, stage: st, title,
-        note: toFa(dl) + ' روز در مرحلهٔ «' + st + '» مانده'});
+        note: admStageNote(kind, st, dl, r)});
     };
     empWatch(A.statements, 'statement',
       r => 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''));
@@ -37084,7 +37084,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         out.push({level:'hot', kind:'statement', id: pick(r,AD.id), who: who0,
           stageDays: reviewStageDays(r), stage: String(pick(r,AD.review) || ''),
           title: 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''),
-          note: 'موعد ' + faDur(od) + ' گذشته و هنوز تسویه نشده'});
+          note: 'موعد تنظیم ' + faDur(od) + ' گذشته و هنوز به گردش نرفته'});
         return;
       }
       if(dl == null || dl <= 5) return;
@@ -37094,7 +37094,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       out.push({level: dl > ADM_HOT_DAYS ? 'hot' : 'warm', kind:'statement', id: pick(r,AD.id), who,
         stageDays: sd, stage: String(pick(r,AD.review) || ''),
         title: 'صورت وضعیت ' + (pick(r,AD.sNo) || '') + ' — ' + (pick(r,AD.sParty) || ''),
-        note: toFa(dl) + ' روز از ارسال گذشته و هنوز تسویه نشده'});
+        note: toFa(dl) + ' روز در حال تنظیم و هنوز ارسال نشده'});
     });
 
     /* اتمام قرارداد: نزدیک اتمام یا گذشته از آن (با جریمهٔ تأخیر) */
@@ -37134,7 +37134,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       out.push({level: dl > ADM_HOT_DAYS ? 'hot' : 'warm', kind:'contract', id: pick(r,AD.id), who,
         stageDays: cd, stage: String(pick(r,AD.review) || ''),
         title: 'قرارداد ' + (pick(r,AD.cNo) || '') + ' — ' + (pick(r,AD.cTitle) || ''),
-        note: toFa(dl) + ' روز بلاتکلیف مانده'});
+        note: toFa(dl) + ' روز در حال تنظیم و هنوز ابلاغ نشده'});
     });
 
     (A.minutes || []).forEach(r => {
@@ -37575,11 +37575,28 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   /* سقف روزهای هر مرحلهٔ گردش: [هشدار، بحرانی]. بررسی داخلی و کارفرما
      قاعدهٔ خودشان را دارند (RV_HOT_DAYS و EMP_HOT_DAYS). */
   /* ۴۵۳: مهلت هر مرحله [هشدار، بحرانی] از «قوانین و مهلت‌ها» (کلید sla.a.<مرحله>.w/.h)؛ این‌ها فقط پیش‌فرض‌اند */
-  const SLA_DEF = {a: {'تأیید داخلی':[3,7], 'بررسی پیمانکار':[7,14], 'رد پیمانکار':[7,14], 'تأیید پیمانکار':[3,7], 'تایید شده':[15,30]},
+  const SLA_DEF = {a: {'تأیید داخلی':[3,7], 'بررسی پیمانکار':[7,14], 'رد پیمانکار':[7,14], 'تأیید پیمانکار':[3,7], 'رد کارفرما':[3,7], 'تایید شده':[15,30]},
     d: {'دریافت':[2,4], 'در حال بررسی':[4,7], 'نزد مشاور/کارفرما':[7,14], 'نیاز به اصلاح':[7,14], 'تأیید مشروط':[7,14]}};
   window.SLA_DEF = SLA_DEF;
   const slaOf = p => { const o = {}; Object.keys(SLA_DEF[p]).forEach(k => { const D = SLA_DEF[p][k]; const w = +pmRule('sla.' + p + '.' + k + '.w', D[0]) || D[0], h = +pmRule('sla.' + p + '.' + k + '.h', D[1]) || D[1]; o[k] = [Math.min(w, h), Math.max(w, h)]; }); return o; };
   const ADM_STAGE_LIM = slaOf('a');
+  /* ۶۸۱: متن هر مرحله به زبان کار، نه «X روز در مرحلهٔ …»؛ صورت وضعیتِ تأییدشده یعنی منتظر پرداخت (با پرداخت‌های جزئی) */
+  function admPayPart(r){
+    try{ const a = moneyNum(pick(r,AD.sAmount)), p0 = payLogSum(r) || amtNum(pick(r,AD.sPaid)); if(p0 > 0 && a > 0 && p0 < a) return '؛ ' + arToman(p0) + ' از ' + arToman(a) + ' تومان پرداخت شده'; }catch(e){}
+    return '';
+  }
+  function admStageNote(kind, st, dl, r){
+    const d = toFa(dl) + ' روز', st0 = kind === 'statement';
+    switch(st){
+      case 'تأیید داخلی': return 'تأیید داخلی شده؛ ' + d + ' منتظر ارسال' + (st0 ? ' به پیمانکار یا کارفرما' : '');
+      case 'بررسی پیمانکار': return d + ' نزد پیمانکار برای بررسی';
+      case 'رد پیمانکار': return 'پیمانکار رد کرده؛ ' + d + ' منتظر اصلاح';
+      case 'تأیید پیمانکار': return 'پیمانکار پذیرفته؛ ' + d + ' منتظر ارسال به کارفرما';
+      case 'رد کارفرما': return 'کارفرما رد کرده؛ ' + d + ' منتظر اصلاح و ارسال دوباره';
+      case 'تایید شده': return st0 ? 'تأیید کارفرما؛ ' + d + ' منتظر پرداخت' + admPayPart(r) : 'تأیید شده؛ ' + d + ' منتظر ابلاغ';
+    }
+    return d + ' در مرحلهٔ «' + st + '» مانده';
+  }
   /* اسناد طراحی «در حال تنظیم» ندارند: از دریافت، هر مرحله با خودش */
   const DS_STAGE_LIM = slaOf('d');
   function dsStageNow(r){
@@ -37699,15 +37716,15 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     }
     if(ADM_STAGE_LIM[rvSt]){
       const dl = admStageDays(r);
-      return (dl != null && dl > ADM_STAGE_LIM[rvSt][0]) ? toFa(dl) + ' روز در مرحلهٔ «' + rvSt + '»' : '';
+      return (dl != null && dl > ADM_STAGE_LIM[rvSt][0]) ? admStageNote(kind, rvSt, dl, r) : '';
     }
     if(!admInDraft(r)) return '';
     if(kind === 'statement'){
       const dl = daysSince(pick(r,AD.sDate));
-      if(dl != null && dl > 5) return toFa(dl) + ' روز از ارسال گذشته و هنوز تسویه نشده';
+      if(dl != null && dl > 5) return toFa(dl) + ' روز در حال تنظیم و هنوز ارسال نشده';
     }else if(kind === 'contract'){
       const dl = daysSince(pick(r,AD.cDate) || pick(r,AD.cStart));
-      if(dl != null && dl > 5) return toFa(dl) + ' روز بلاتکلیف مانده';
+      if(dl != null && dl > 5) return toFa(dl) + ' روز در حال تنظیم و هنوز ابلاغ نشده';
     }
     return '';
   }
@@ -37999,7 +38016,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     let out = [];
 
     // ---- ۱) موعد نزدیک یا گذشته و هنوز باز ----
-    const dueSrc = (notifCritical || []).concat(notifCache.items || []);
+    /* ۶۸۱: هشدار دقیقِ سند (مرحله، کارفرما، پرداخت) اول؛ فهرست بحرانی فقط چیزی را اضافه می‌کند که آنجا نیست */
+    const dueSrc = (notifCache.items || []).concat(notifCritical || []);
     const dueIds = new Set();
     dueSrc.forEach(x => {
       // یک مورد می‌تواند بیش از یک هشدار داشته باشد (مثلاً هم تسویه‌نشده
@@ -69364,9 +69382,11 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         ? me + ' ' + docT + ' را برای کارفرما ارسال کرد.'
         : (payIn && !payIn.fin
             ? docT + ': ' + arToman(amt) + ' تومان در ' + toFa(payIn.date) + ' واریز شد'
-              + (fullAmt ? ' (جمع ' + arToman(totalPaid) + ' از ' + arToman(fullAmt) + ' تومان)' : '') + '؛ ثبت: ' + me + '.'
+              + (fullAmt && totalPaid > 0 ? ' (جمع ' + arToman(totalPaid) + ' از ' + arToman(fullAmt) + ' تومان؛ مانده ' + arToman(Math.max(0, fullAmt - totalPaid)) + ')' : '') + '؛ ثبت: ' + me + '.'
             : (function(){ const pd = String((payIn && payIn.date) || values['تاریخ پرداخت'] || pick(before,AD.sPayDate) || '').trim();
-                return docT + ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان)' : '') + (pd ? ' در ' + toFa(pd) : '') + ' و تسویه شد؛ ثبت: ' + me + '.'; })());
+                const tot = Math.max(totalPaid, amt || 0);
+                return docT + (payIn && tot > amt && amt ? ': آخرین قسط ' + arToman(amt) + ' تومان واریز شد و تسویهٔ کامل شد (جمع ' + arToman(tot) + ' تومان)' : ' پرداخت شد' + (amt ? ' (' + arToman(amt) + ' تومان)' : '') + ' و تسویهٔ کامل شد')
+                  + (pd ? ' — تاریخ ' + toFa(pd) : '') + '؛ ثبت: ' + me + '.'; })());
       const rcp = milestoneRecipients();
       if(ev === 'sent') empHolderNames().forEach(n => { if(!rcp.some(x => nameKey(x) === nameKey(n))) rcp.unshift(n); });
       for(const w of (ev === 'sent' ? rcp.filter(x => nameKey(x) !== nameKey(me)) : rcp)){
@@ -72406,26 +72426,6 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       return true;
     }
     return false;
-  }
-
-  /* همان قاعدهٔ زنگوله، این بار روی خودِ کارت اداری */
-  function admAlertOf(kind, r){
-    // نامه‌ها و هر موردی که کارش تمام شده، هشدار نمی‌گیرند
-    if(kind === 'letter' || kind === 'minute' || kind === 'design') return null;
-    try{ if(admDoneState(kind, r).cls === 'ok') return null; }catch(e){}
-    let dl = null, why = '';
-    if(kind === 'statement'){
-      if(isPaid(r)) return null;
-      dl = daysSince(pick(r,AD.sDate));
-      why = 'روز از ارسال گذشته و هنوز تسویه نشده';
-    }else if(kind === 'contract'){
-      const n = pick(r,AD.cNotify);
-      if(n === 'برون‌سازمانی' || n === 'درون‌سازمانی') return null;
-      dl = daysSince(pick(r,AD.cDate) || pick(r,AD.cStart));
-      why = 'روز بلاتکلیف مانده';
-    }else return null;
-    if(dl == null || dl <= pmRule('bellWarnDays', 5)) return null;
-    return {level: dl > pmRule('bellHotDays', 30) ? 'hot' : 'warm', note: toFa(dl) + ' ' + why};
   }
 
   /* ====== کارت گردش بررسی ======
@@ -80447,7 +80447,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     const o = opts || {};
     const me = activeUserName();
     let watchAll = false; try{ watchAll = isAdminUser() || can('task.watchAll'); }catch(e){}
-    const out = [];
+    const out = [], seenAdm = new Set();
     (tasks || []).forEach(r => {
       const id = pick(r,T.id) || r.__admId;
       const st = taskStatus(r);
@@ -80462,11 +80462,17 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       /* سند دفتر فنی: موعد فقط تا رفتن به گردش (بررسی داخلی) معنا دارد؛ بعد از آن
          مدت از ابلاغ و ماندن در هر مرحله سنجیده می‌شود */
       const ar0 = r.__admRow, dueRaw0 = (ar0 && !dueTracked(ar0)) ? '' : pick(r,T.due);
-      const why = criticalOf(id, dueRaw0, false,
+      /* ۶۸۱: سند دفتر فنی با همان قاعدهٔ دقیق کارت (مرحله، کارفرما، پرداخت) بحرانی می‌شود، نه با «X از ابلاغ گذشته و هنوز باز است» */
+      let why = '';
+      if(ar0 && r.__admKind){
+        const kk = r.__admKind + '|' + id; if(seenAdm.has(kk)) return; seenAdm.add(kk);
+        try{ if(!o.ignoreMuted || !alertOffSet().has(String(id))){ if(admCardHot(r.__admKind, ar0)) why = admCardAlert(r.__admKind, ar0); } }catch(e){}
+      }else why = criticalOf(id, dueRaw0, false,
         {kind: r.__admKind || 'task', startRaw: pick(r,T.start), review: inReview(r),
          ignoreMuted: !!o.ignoreMuted, noNudge: !!o.noNudge});
       const g = taskGroupOf(r);
-      if(g === 'اجرایی' && !o.includeExec) return;
+      /* اجرایی‌ها شلوغی نظارتی‌اند؛ ولی بحرانیِ خودِ مسئول همیشه به خودش نشان داده می‌شود */
+      if(g === 'اجرایی' && !o.includeExec && !owners.some(x => nameKey(x) === nameKey(me))) return;
       if(why) out.push({
         id: id, title: pick(r,T.title) || 'بدون عنوان',
         who: owner, owners: owners, row: r, why, group: g,
@@ -80474,7 +80480,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
            موردِ بحرانی «هشدار عادی» حساب می‌شد و موارد بقیه که فقط
            در حالت بحرانی به مدیریت نشان داده می‌شوند، کنار می‌رفتند.
            note هم متن دلیل است که بدونش کارت بی‌توضیح می‌ماند. */
-        level: 'hot', note: why, kind: r.__admKind || 'task'
+        level: /تا موعد.*مانده|موعدش امروز/.test(why) ? 'warm' : 'hot', note: why, kind: r.__admKind || 'task'
       });
     });
     return out;
