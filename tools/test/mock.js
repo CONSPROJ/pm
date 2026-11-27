@@ -62,6 +62,16 @@ const GEN = [{id:'g1', t:'بیمه‌نامهٔ مسئولیت مدنی ۱۴۰۵
   {id:'g2', t:'ضمانت‌نامهٔ حسن انجام کار', ty:'ضمانت‌نامه', p:'تأسیسات نوین', d:'1405/03/01', by:'آقای مهدی نعیمی', f:'https://example.com/f/g.xlsx#g.xlsx\nhttps://example.com/f/g2.docx#g2.docx'}];
 const LMETA = [['l1', {sc: 'in', team: 'x:شرکت دیگر', cc: []}], ['l2', {sc: 'in', team: 's:pm', cc: []}], ['l4', {sc: 'ex', team: '', cc: ['آقای مهدی نعیمی']}]];
 const lists = LMETA.map(([id, o]) => ({kind: 'مشخصات نامه', value: id + '\u00a6' + JSON.stringify(o)})).concat(TRN.map(o => ({kind: 'صندوق ورودی', value: o.id + '\u00a6' + JSON.stringify(Object.assign({}, o, {id: undefined}))})).concat(FORMS.map(f => ({kind: 'فرم آرشیو', value: JSON.stringify(f)}))).concat(GEN.map(f => ({kind: 'سند عمومی', value: JSON.stringify(f)}))).concat(PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})}))));
+/* ۶۷۸: همان چیزی که سرور واقعی دارد — مدیر اصلی سامانه و داده‌های پروژهٔ اصلی (منتقل‌شده از lib/seed-p1.json) */
+lists.push({kind: 'مدیر اصلی سامانه', value: 'آقای مهدی نعیمی'});
+if(!process.env.SEEDLESS){
+  const SD = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../lib/seed-p1.json'), 'utf8'));
+  lists.push({kind: 'پروژه', value: 'p1\u00a6' + JSON.stringify(Object.assign({}, SD.project, {floors: SD.floors, fac: SD.facade, mods: null}))});
+  lists.push({kind: 'گزارش‌دهندگان', value: JSON.stringify({req: SD.reporters, ex: []})});
+  Object.keys(SD.lists).forEach(k => SD.lists[k].forEach(v => lists.push({kind: k, value: v})));
+  SD.contracts.forEach(x => lists.push({kind: 'قرارداد پایه', value: x.n + '\u00a6' + JSON.stringify({p: x.p, s: x.s})}));
+  lists.push({kind: 'انتقال دادهٔ اولیه', value: 'v1'});
+}
 PTY.forEach(([n, t], j) => {
   for(let i = 1; i <= 3; i++) lt.push({id: 'lp' + j + i, created_at: '2026-10-01T08:00:00+00:00', date_fa: addDays(T0, -i * 5 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[i % 3], subject: ['درخواست صورت‌جلسه', 'اعلام نظر نقشه‌ها', 'پیگیری پرداخت'][i - 1], number: 'L-9' + j + i, party: n, sent_date: addDays(T0, -i * 5 - j), notify: 'برون‌سازمانی', owner: ENG[i % 3]});
   if(t !== 'own') ct.push({id: 'cp' + j, created_at: '2026-06-01T08:00:00+00:00', date_fa: addDays(T0, -40 - j), project: 'رویال آدرس رزیدنس', engineer: ENG[j % 3], title: t === 'emp' ? 'قرارداد اصلی پیمان مدیریت' : 'قرارداد خدمات مشاوره و نظارت', number: 'CP-' + (900 + j), party: n, subject: '', amount: String(12000000000 * (j + 1)), paid: String(4000000000), start_date: addDays(T0, -40 - j), sent_date: addDays(T0, -40 - j), notify: 'برون‌سازمانی', review: 'تایید شده', owner: ENG[j % 3]});
