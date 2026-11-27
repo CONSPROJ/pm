@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127155122">
+<meta name="pm-build" content="20261127160330">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -67792,12 +67792,30 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       if(window.__coSpaceCol && Array.isArray(opts.body)) opts = Object.assign({}, opts, {body: opts.body.map(r => Object.assign({}, r, {co_space: sp || null}))}); }
     netBusy(1);
     try{
-      let r = await supaFetchRaw(path, opts);
+      let r = await (supaPaged(path, opts) || supaFetchRaw(path, opts));
       if(isTasks && (!opts || !opts.method || opts.method === 'GET') && Array.isArray(r)) r = r.filter(t => !t || (sp ? String(t.co_space || '') === sp : !t.co_space));
       if(opts && opts.method && opts.method !== 'GET'){ try{ liveWrote(path, opts); }catch(e){} }
       return r;
     }
     finally{ netBusy(-1); }
+  }
+  /* ۶۸۸: سرور در هر درخواست حداکثر ۱۰۰۰ ردیف می‌دهد؛ خواندنی که بیشتر می‌خواهد (limit>1000) خودکار صفحه‌به‌صفحه
+     خوانده و به هم وصل می‌شود. پیش‌تر این خواندن‌ها (گزارش‌ها، موانع، فعالیت‌ها، نامه‌ها…) بی‌صدا در ۱۰۰۰ ردیف بریده می‌شدند. */
+  const SUPA_PG = 1000;
+  function supaPaged(path, opts){
+    const o = opts || {}; if(o.method && o.method !== 'GET') return null;
+    const m = /([?&])limit=(\d+)/.exec(path); if(!m || +m[2] <= SUPA_PG || /[?&]offset=/.test(path) || /^rpc\//.test(path)) return null;
+    const want = +m[2], base = path.replace(m[0], m[1] === '?' ? '?' : '').replace('?&', '?');
+    const hasOrd = /[?&]order=/.test(path);
+    return (async () => { let out = [], ord = hasOrd ? '' : '&order=id.asc';
+      for(let off = 0; off < want; off += SUPA_PG){
+        const lim = Math.min(SUPA_PG, want - off), q = base + (base.indexOf('?') === -1 ? '?' : '&') + 'limit=' + lim + '&offset=' + off + ord;
+        let R;
+        try{ R = await supaFetchRaw(q, opts); }
+        catch(e){ if(ord && off === 0 && /42703|column|order/i.test(String(e && e.message))){ ord = ''; off -= SUPA_PG; continue; } throw e; }
+        if(!Array.isArray(R)) return R;
+        out = out.concat(R); if(R.length < lim) break; }
+      return out; })();
   }
   async function supaFetchRaw(path, opts){
     const o = opts || {};
