@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127080152">
+<meta name="pm-build" content="20261127092419">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -33723,6 +33723,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) :is(.aq-ch,#z4) > button.on{background:color-mix(in srgb, var(--qc) 14%, transparent) !important;}
 :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) :is(.aq-ch,#z4) > button.on > i{color:#10151c !important;}
 :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) .ltr-seg{background:rgba(255,255,255,.05) !important;} :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) .ltr-scs button.on{color:#8cc4e4 !important;background:rgba(90,163,201,.14) !important;border-color:rgba(90,163,201,.45) !important;} :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) .ltr-scs button.in.on{color:#b9adf0 !important;background:rgba(169,155,234,.14) !important;border-color:rgba(169,155,234,.45) !important;} :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) .ltr-seg button.on svg{color:#8cc4e4;} :is(html[data-theme="dark"],#z0) :is(body,#z1) :is(#adminView,#z3) .ltr-seg button.on{background:rgba(255,255,255,.1) !important;}
+/* ۶۷۳ */
+:is(html,#z0) :is(body,#z1) .dk4b.gol{color:#2f6f8f;background:color-mix(in srgb, #2f6f8f 10%, transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb, #2f6f8f 25%, transparent);}
+:is(html[data-theme="dark"],#z0) :is(body,#z1) .dk4b.gol{color:#8cc4e4;background:rgba(90,163,201,.12);}
 /* ۶۳۷: «ثبت تازه» — طراحی تازه */
 :is(html,#z0) :is(body,#z1) .hm-add.hx3{--hx3-bd:color-mix(in srgb, var(--line) 85%, transparent);display:flex;flex-direction:column;overflow:hidden;padding:0;max-width:1000px;width:100%;height:min(760px, 90vh);max-height:90vh;border-radius:22px 22px 0 0;background:var(--surface);box-shadow:0 30px 80px -20px rgba(10,20,35,.45), 0 0 0 1px var(--hx3-bd);}
 :is(html,#z0) :is(body,#z1) .hm-add.hx3 .hma-grab{margin:8px auto 0;flex:none;}
@@ -73627,7 +73630,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       ava: String(pick(r,T.m1) || pick(r,T.m2) || '').trim()});
     const mid = done
       ? {k:'ok', t:'انجام', d:doneD, last:true}
-      : {k: late ? 'bad' : 'i', t:'امروز', d:'', now:true, txt: st.label, isToday:true};
+      : {k: late ? 'bad' : 'i', t:'امروز', d:'', now:true, txt: (st.cls === 'doing' || st.cls === 'todo') ? st.label : '', isToday:true};
     /* موعد واقعی: کار انجام‌شده با روز انجامش سنجیده می‌شود */
     const doneLate = (done && doneD && dueRaw) ? faDiff(dueRaw, doneD) : null;
     const dueP = dueRaw ? {k:'due', t:'موعد', d:dueRaw, due:true,
@@ -73660,6 +73663,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
           else ln.em = toFa(g) + ' روز';
         }
         if(ln.dueNote) ln.em = (ln.em ? ln.em + ' · ' : '') + ln.dueNote;
+        /* ۶۷۳: ابلاغ چندنفره — عکس گیرنده‌ها روی خط پایانی (تا «انجام»)، انجام‌داده‌ها با تیک */
+        if(i === pts.length - 1 && x.t === 'انجام' && r && Array.isArray(r.__gen) && r.__gen.length > 1){
+          ln.who = r.__gen.map(p => p.who); ln.done = r.__gen.filter(p => p.done).map(p => p.who);
+          const nd = ln.done.length; ln.em = ''; ln.w = Math.max(ln.w || 0, 2.6 + r.__gen.length * 0.5); x.sub = toFa(nd) + ' از ' + toFa(r.__gen.length); }
         items.push(ln);
       }
       items.push(x);
@@ -104138,6 +104145,41 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     }
     try{ return !!canEditAdm(kind, row); }catch(e){ return false; }
   }
+  /* ====== ۶۷۳: نوار فشردهٔ فعالیت و بند صورتجلسه ====== */
+  function dkTaskBarHtml(x, i, kind, row, full){
+    const IC = {ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+      go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+      more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>'};
+    if(kind === 'minute'){
+      const dn = mnDone(row), dd = daysSince(pick(row,AD.mDate));
+      const meta = !dn && dd != null ? '<em' + (dd > 0 ? ' class="late"' : '') + '>' + (dd > 0 ? toFa(dd) + ' روز دیر' : dd === 0 ? 'موعد امروز' : toFa(-dd) + ' روز تا موعد') + '</em>' : '';
+      return '<div class="dk4 t-' + (dn ? 'ok' : dd != null && dd > 0 ? 'bad' : 'go') + '"><div class="dk4-r">'
+        + '<span class="dk4-st"><i></i><span><b>' + (dn ? 'انجام شد' : 'در جریان') + '</b>' + (meta ? '<small>' + meta + '</small>' : '') + '</span></span>'
+        + '<span class="dk4-a">' + (dn ? (full ? '<button type="button" class="dk4b bad ic" data-dk-band="' + i + '" data-v="false" title="برگرداندن به «انجام نشده»" aria-label="انجام نشده">↺</button>' : '<span class="dk4-end">انجام شده</span>')
+          : '<button type="button" class="dk4b ok" data-dk-band="' + i + '" data-v="true">' + IC.ok + '<span>انجام شد</span></button>') + '</span></div></div>';
+    }
+    const st = taskStatus(row), done = st.cls === 'done';
+    const due = taskDue(row), dd = due ? daysSince(due) : null;
+    const appr = typeof needsApproval === 'function' && needsApproval(row);
+    const gen = x.genAll && x.genAll.length > 1;
+    const tone = done ? 'ok' : (x.level === 'hot' || (dd != null && dd > 0)) ? 'bad' : st.cls === 'doing' ? 'go' : 'nil';
+    const lab = done ? (appr ? 'انجام شد · منتظر تأیید' : 'انجام شد') : st.cls === 'doing' ? 'در حال اجرا' : st.cls === 'todo' ? 'انجام نشده' : 'در انتظار انجام';
+    const meta = [!done && dd != null ? '<em' + (dd > 0 ? ' class="late"' : '') + '>' + (dd > 0 ? toFa(dd) + ' روز دیر' : dd === 0 ? 'موعد امروز' : toFa(-dd) + ' روز تا موعد') + '</em>' : '',
+      gen ? '<em>' + toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length) + ' انجام داده‌اند</em>' : ''].filter(Boolean).join('');
+    let acts = '';
+    if(appr && full) acts += '<button type="button" class="dk4b ok" data-dk-appr="' + i + '">' + IC.ok + '<span>تأیید</span></button>';
+    else if(!done){
+      acts += '<button type="button" class="dk4b ok" data-dk-task="done" data-dk-i="' + i + '">' + IC.ok + '<span>' + (gen ? 'انجام دادم' : 'انجام شد') + '</span></button>';
+      if(full && st.cls !== 'doing' && !gen) acts += '<button type="button" class="dk4b gol ic" data-dk-task="doing" data-dk-i="' + i + '" title="در حال اجرا" aria-label="در حال اجرا">' + IC.go + '</button>';
+    }else if(!full) acts += '<span class="dk4-end">انجام شده</span>';
+    const panel = full ? '<div class="dk-ebody" hidden><div class="dk-a3p"><div class="dk-a3sec"><u>وضعیت کار</u><div class="dk-a3ln"><div>'
+      + [['done', 'انجام شد', 'ok'], ['doing', 'در حال اجرا', 'go'], ['todo', 'انجام نشده', 'bad']].map(([v, t, c]) => '<button type="button" class="dk-a3c t-' + c + (st.cls === v ? ' on' : '') + '" data-dk-task="' + v + '" data-dk-i="' + i + '"><i></i>' + t + '</button>').join('')
+      + '</div></div></div></div></div>' : '';
+    return '<div class="dk4 t-' + tone + '"><div class="dk4-r">'
+      + '<span class="dk4-st"><i></i><span><b>' + esc(lab) + '</b>' + (meta ? '<small>' + meta + '</small>' : '') + '</span></span>'
+      + '<span class="dk4-a">' + acts + (full ? '<button type="button" class="dk4b ic more" data-dk-eopen="1" title="همهٔ وضعیت‌ها" aria-label="همهٔ وضعیت‌ها">' + IC.more + '</button>' : '') + '</span>'
+      + '</div>' + panel + '</div>';
+  }
   /* ====== ۶۶۹: نوار وضعیت فشرده — یک ردیف: مرحله، «تأیید»، «رد» و «همهٔ وضعیت‌ها» ====== */
   function dkAct3Html(x, i, kind, row, full, isRev, meNow){
     const rvNow = String(pick(row,AD.review) || ''), ntNow = String(admNotify(kind, row) || '');
@@ -104219,16 +104261,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       else if(stNow0 === 'بررسی کارفرما') holder = side === 'emp' || side === 'cons' || side === 'own';
     }catch(e){} }
     if(scK && (full || holder)) return dkAct3Html(x, i, kind, row, full, isRev, meNow);
-    /* کاربر عادی: فقط «انجام دادم» */
-    if(!full){
-      if(kind === 'task')
-        return '<div class="dk-set"><button type="button" class="dk-sbtn done big" '
-          + 'data-dk-task="done" data-dk-i="' + i + '">انجام دادم</button></div>';
-      if(kind === 'minute')
-        return '<div class="dk-set"><button type="button" class="dk-sbtn done big" '
-          + 'data-dk-band="' + i + '" data-v="true">انجام دادم</button></div>';
-      return '';
-    }
+    /* ۶۷۳: فعالیت و بند صورتجلسه هم همان نوار فشرده (کاربر عادی فقط «انجام دادم») */
+    if((kind === 'task' || kind === 'minute') && row) return dkTaskBarHtml(x, i, kind, row, full);
+    if(!full) return '';
 
     /* تغییر وضعیت جمع است: یک ردیف با وضعیت فعلی؛ با لمس باز می‌شود */
     const wrapEdit = (inner, sum) => inner ? '<div class="dk-edit dk-edit2">'
@@ -104626,7 +104661,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const due = pick(row,T.due);
       const d = due ? daysSince(due) : null;
       const st = (typeof taskStatus === 'function') ? taskStatus(row).cls : '';
-      if(!due || st === 'done') return '';
+      /* ۶۷۳: موعد و «بحرانی» در سربرگ و روی نمودار هست؛ جعبهٔ جدا تکرار بود */
+      if(!due || st === 'done' || true) return '';
       const tone = d > 0 ? 'bad' : (d >= -2 ? 'warn' : 'ok');
       const txt = d > 0 ? ('بحرانی — ' + toFa(d) + ' روز از موعد گذشته')
                 : (d === 0 ? 'موعد امروز است' : ('تا موعد ' + toFa(-d) + ' روز'));
@@ -104732,11 +104768,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     let grp = ''; try{ grp = taskGroupOf(row) || ''; }catch(e){}
     const bits = ['<span class="mi-k">فعالیت' + (grp ? ' <b>' + esc(grp) + '</b>' : '') + '</span>'];
     const pos = pick(row,T.pos); if(pos) bits.push('<span class="mi-p">' + esc(pos) + '</span>');
-    if(x.genAll && x.genAll.length > 1)
-      bits.push('<span class="mi-a">' + toFa(x.genAll.filter(p => p.done).length) + ' از ' + toFa(x.genAll.length) + ' انجام</span>');
+    if(x.genAll && x.genAll.length > 1){ /* ۶۷۳: گیرنده‌ها و انجام‌داده‌ها روی نمودار نشان داده می‌شوند */ }
     else if(owners.length > 1) bits.push('<span class="mi-p">' + owners.map(esc).join('، ') + '</span>');
     const due = taskDue(row); if(due) bits.push('<span class="mi-t">موعد ' + esc(taskDate(due)) + '</span>');
-    let tl = ''; try{ tl = taskTlBlockHtml(row); }catch(e){ tl = ''; }
+    let tl = ''; try{ row.__gen = (x.genAll && x.genAll.length > 1) ? x.genAll : null; tl = taskTlBlockHtml(row); }catch(e){ tl = ''; } try{ delete row.__gen; }catch(e){}
     /* موانع همیشه پیدا؛ فقط بررسی و فهرست افراد پشت «جزئیات» */
     const blk = deckBlockHtml(x, 'task', row, i);
     const more = deckReviewHtml('task', row) + (x.genAll && x.genAll.length > 1 ? deckInfoHtml(x, 'task', row) : '');
