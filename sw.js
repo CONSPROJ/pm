@@ -43,17 +43,27 @@ self.addEventListener('fetch', e => {
   const rest = url.pathname.slice(scope.pathname.length);
   if(rest && rest !== 'index.html') return;
   const key = new Request(scope.href);
+  /* ۶۹۱: شمارهٔ ساخت نسخهٔ نگه‌داشته کنار خودش؛ با build.txt (چند بایت) مقایسه می‌شود */
+  const bkey = new Request(scope.href + '__pm_build');
+  const buildNow = async ms => { try{ const r = await Promise.race([fetch(scope.href + 'build.txt?t=' + Date.now(), {cache: 'no-store'}), new Promise(z => setTimeout(() => z(null), ms))]); return r && r.ok ? String(await r.text()).trim() : null; }catch(err){ return null; } };
   const fromNet = async () => {
     const res = await fetch(req, {cache: 'no-cache'});
-    if(res && res.ok && res.type === 'basic'){ const c = await caches.open(PAGE_CACHE); await c.put(key, res.clone()); }
+    if(res && res.ok && res.type === 'basic'){ const c = await caches.open(PAGE_CACHE); await c.put(key, res.clone());
+      try{ const txt = await res.clone().text(); const m = /<meta name="pm-build" content="(\d+)"/.exec(txt.slice(0, 120000)); if(m) await c.put(bkey, new Response(m[1])); }catch(err){} }
     return res;
   };
   e.respondWith((async () => {
     /* نسخهٔ مشخص خواسته شده (به‌روزرسانی): از شبکه */
     if(url.searchParams.has('v')){ try{ return await fromNet(); }catch(err){ const hit = await caches.match(key); if(hit) return hit; throw err; } }
-    /* اول شبکه (تا ۳ ثانیه)؛ اگر شبکه کند یا قطع بود، نسخهٔ نگه‌داشته — تا بعد از انتشار، نسخهٔ قدیم دیگر نشان داده نشود */
     const hit = await caches.match(key);
     if(!hit) return fromNet();
+    /* نسخهٔ نگه‌داشته همان آخرین نسخه است؟ فوری باز می‌شود (بی دانلود ۷ مگابایت). نسخهٔ تازه منتشر شده؟ همان نسخهٔ تازه یک بار از شبکه
+       (پیش‌تر اگر شبکه بیش از ۳ ثانیه طول می‌کشید نسخهٔ قدیم نشان داده می‌شد و بعد صفحه خودش دوباره بار می‌شد). */
+    const have = await (async () => { try{ const r = await caches.match(bkey); return r ? String(await r.text()).trim() : null; }catch(err){ return null; } })();
+    const latest = await buildNow(2500);
+    if(latest && have && latest === have){ e.waitUntil(Promise.resolve()); return hit; }
+    if(latest){ try{ const res = await fromNet(); if(res && res.ok) return res; }catch(err){} return hit; }
+    /* بی‌شبکه یا خیلی کند: مثل قبل — شبکه تا ۳ ثانیه، وگرنه نسخهٔ نگه‌داشته */
     const net = fromNet();
     e.waitUntil(net.then(() => {}, () => {}));
     const timer = new Promise(r => setTimeout(() => r(null), 3000));
