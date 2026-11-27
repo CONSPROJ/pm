@@ -64,6 +64,10 @@ const LMETA = [['l1', {sc: 'in', team: 'x:شرکت دیگر', cc: []}], ['l2', {
 const lists = LMETA.map(([id, o]) => ({kind: 'مشخصات نامه', value: id + '\u00a6' + JSON.stringify(o)})).concat(TRN.map(o => ({kind: 'صندوق ورودی', value: o.id + '\u00a6' + JSON.stringify(Object.assign({}, o, {id: undefined}))})).concat(FORMS.map(f => ({kind: 'فرم آرشیو', value: JSON.stringify(f)}))).concat(GEN.map(f => ({kind: 'سند عمومی', value: JSON.stringify(f)}))).concat(PTY.map(([n, t]) => ({kind: 'پیمانکار — تماس', value: n + '\u00a6' + JSON.stringify({t, tel: t === 'emp' ? '02188000000' : '', d: ''})}))));
 /* ۶۷۸: همان چیزی که سرور واقعی دارد — مدیر اصلی سامانه و داده‌های پروژهٔ اصلی (منتقل‌شده از lib/seed-p1.json) */
 lists.push({kind: 'مدیر اصلی سامانه', value: 'آقای کاوه رستمی'});
+/* ۶۸۴: برنامهٔ زمان‌بندی بزرگ برای آزمون کارایی (PLANBIG=40000) */
+if(process.env.PLANBIG){ const N = +process.env.PLANBIG; let g = '';
+  for(let i = 0; i < N; i++){ if(i % 50 === 0){ g = 'g' + i; lists.push({kind: 'زمان‌بندی', value: g + '¦' + JSON.stringify({n: 'بستهٔ کاری ' + (i / 50 + 1), p: '', o: i / 50, d: 0, dep: [], pc: 0})}); }
+    lists.push({kind: 'زمان‌بندی', value: 'a' + i + '¦' + JSON.stringify({n: 'فعالیت ' + i, p: g, o: i % 50, d: 3 + (i % 7), dep: i % 50 ? [{id: 'a' + (i - 1), t: 'FS', l: 0}] : [], pc: i % 3 ? 0 : 40, ty: i % 9 === 0 ? 'ds' : ''})}); } }
 if(!process.env.SEEDLESS){
   const SD = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../lib/seed-p1.json'), 'utf8'));
   lists.push({kind: 'پروژه', value: 'p1\u00a6' + JSON.stringify(Object.assign({}, SD.project, {floors: SD.floors, fac: SD.facade, mods: null}))});
@@ -133,7 +137,8 @@ async function install(page){
         '۱۴۰۵/۰۸/۲۸': [{id: 'wd2', worker_code: '991', worker_name: 'نادر سلیمی', engineer: 'آقای کاوه رستمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'},
           {id: 'wd3', worker_code: '1104', worker_name: 'رحیم کاظمی', engineer: 'آقای کاوه رستمی', activity: 'بالا بردن قالب', zone: 'طبقه ۴', state: 'ok', t_in: '07:00', t_out: '16:00', created_at: '2026-11-19T15:00:00'}]};
       return json(route, path.startsWith('worker_ot') ? [] : (WD[d] || [])); }
-    if(path.startsWith('lists')){ const k = url.match(/kind=eq\.([^&]+)/); return json(route, (k ? lists.filter(r => r.kind === k[1]) : lists).map(r => ({kind: r.kind, value: r.value}))); }
+    if(path.startsWith('lists')){ const k = url.match(/kind=eq\.([^&]+)/), off = +((url.match(/[?&]offset=(\d+)/) || [])[1] || 0), lim = +((url.match(/[?&]limit=(\d+)/) || [])[1] || 0);
+      let L = (k ? lists.filter(r => r.kind === k[1]) : lists).map(r => ({kind: r.kind, value: r.value})); if(lim) L = L.slice(off, off + Math.min(lim, 1000)); return json(route, L); }
     return json(route, []);
   });
 }
