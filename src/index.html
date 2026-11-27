@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127220449">
+<meta name="pm-build" content="20261127224421">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -77666,6 +77666,264 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     window.addEventListener('afterprint', done, {once: true});
     setTimeout(() => { try{ window.print(); }catch(e){ done(); } }, 60);
   };
+  /* ۷۰۱: چاپ و PDF در آیفون/آیپد
+     iOS در حالت «برنامهٔ صفحهٔ اصلی» window.print() را بی‌صدا نادیده می‌گیرد و در Safari هم دکمه‌هایی که بعد از کار ناهمگام چاپ می‌کنند گاهی کار نمی‌کنند.
+     در iOS همهٔ چاپ‌ها (همان #printArea یا چاپ زندهٔ prLive) به یک «پیش‌نمایش چاپ» می‌روند: نسخهٔ چاپی با همان قالب چاپ در یک قاب A4 ساخته می‌شود،
+     از آن PDF واقعی درست می‌شود (صفحه‌به‌صفحه، بدون بریدن سطرها) و با برگهٔ اشتراک iOS باز می‌شود — که «چاپ»، «ذخیره در Files» و ارسال دارد.
+     در Safari (نه حالت برنامه) دکمهٔ «چاپ مستقیم» هم هست. */
+  (function(){
+    const ua = navigator.userAgent || '';
+    const IOS = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+    const FORCE = /[?&]iosprint=1/.test(location.search);
+    if(!IOS && !FORCE) return;
+    const STANDALONE = (function(){ try{ return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; }catch(e){ return false; } })() || /[?&]iosprint=1/.test(location.search) && /[?&]sa=1/.test(location.search);
+    const native = window.print.bind(window);
+    const PI = {
+      share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
+      print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>',
+      x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+    };
+    /* قالب چاپ: قاعده‌های @media print باز می‌شوند، قاعده‌های فقط-صفحه‌نمایش کنار می‌روند */
+    let cssCache = null;
+    const collectCss = () => {
+      if(cssCache) return cssCache;
+      const out = [];
+      const walk = rules => { for(const r of rules){
+        if(r.type === 4 /* MEDIA */){ const m = String((r.media && r.media.mediaText) || '').toLowerCase();
+          if(/\bprint\b/.test(m) && !/not\s+print/.test(m)){ walk(r.cssRules); continue; }
+          if(/\bscreen\b/.test(m)) continue;
+          out.push(r.cssText); continue; }
+        out.push(r.cssText); } };
+      for(const sh of Array.from(document.styleSheets)){
+        let rs = null; try{ rs = sh.cssRules; }catch(e){ continue; }
+        if(!rs) continue;
+        const mt = String((sh.media && sh.media.mediaText) || '').toLowerCase();
+        if(mt && !/print|all/.test(mt)) continue;
+        if(sh.ownerNode && sh.ownerNode.id === 'iosPrCss') continue;
+        walk(rs);
+      }
+      return (cssCache = out.join('\n'));
+    };
+    /* محتوای چاپ همین لحظه (پیش از آنکه صدازننده پاکش کند) */
+    const capture = () => {
+      const de = document.documentElement;
+      const fixCanvas = (src, dst) => { const a = src.querySelectorAll('canvas'), b = dst.querySelectorAll('canvas');
+        a.forEach((cv, i) => { const t = b[i]; if(!t) return; try{ const im = document.createElement('img'); im.src = cv.toDataURL('image/png'); im.style.cssText = 'width:' + (cv.clientWidth || cv.width) + 'px;max-width:100%;height:auto;'; t.replaceWith(im); }catch(e){} }); };
+      const fixInputs = (src, dst) => { const a = src.querySelectorAll('input,textarea,select'), b = dst.querySelectorAll('input,textarea,select');
+        a.forEach((x, i) => { const t = b[i]; if(!t) return; try{ if(x.type === 'checkbox' || x.type === 'radio'){ if(x.checked) t.setAttribute('checked', ''); else t.removeAttribute('checked'); } else if(x.tagName === 'SELECT'){ const o = t.options[x.selectedIndex]; if(o) o.setAttribute('selected', ''); } else if(x.tagName === 'TEXTAREA') t.textContent = x.value; else t.setAttribute('value', x.value); }catch(e){} }); };
+      if(de.classList.contains('pr-live')){
+        const root = document.querySelector('.pr-root'); if(!root) return null;
+        const chain = []; for(let e = root.parentElement; e && e !== document.body; e = e.parentElement) chain.unshift(e);
+        let top = null, cur = null;
+        chain.forEach(a => { const c = a.cloneNode(false); c.removeAttribute('hidden'); c.classList.add('pr-path'); if(cur) cur.appendChild(c); else top = c; cur = c; });
+        const rc = root.cloneNode(true); fixCanvas(root, rc); fixInputs(root, rc);
+        if(cur) cur.appendChild(rc); else top = rc;
+        return {html: top.outerHTML, live: true, title: document.title};
+      }
+      const a = document.getElementById('printArea'); if(!a || !a.innerHTML.trim()) return null;
+      const c = a.cloneNode(true); fixCanvas(a, c); fixInputs(a, c);
+      return {html: '<div id="printArea">' + c.innerHTML + '</div>', live: false, title: document.title, raw: a.innerHTML};
+    };
+    const PAD = 42;   /* حاشیهٔ صفحه ≈ ۱۱ میلی‌متر */
+    const docHtml = (cap, W) => '<!doctype html><html lang="fa" dir="rtl"' + (cap.live ? ' class="pr-live"' : '') + '><head><meta charset="utf-8"><base href="' + esc(location.href.split('#')[0]) + '">'
+      + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap">'
+      + '<style>' + collectCss().replace(/<\/style/gi, '<\\/style') + '\n'
+      + 'html,body{background:#fff !important;background-image:none !important;margin:0 !important;width:' + W + 'px !important;min-height:0 !important;height:auto !important;overflow:visible !important;color:#000;}'
+      + 'body{padding:' + PAD + 'px !important;box-sizing:border-box !important;font-family:Vazirmatn,sans-serif;}'
+      + 'html::before,body::before,html::after,body::after{display:none !important;}'
+      /* فاصلهٔ حروف صفر: html2canvas در غیر این صورت متن را حرف‌به‌حرف می‌کشد و حروف فارسی از هم جدا می‌شوند */
+      + '*,*::before,*::after{letter-spacing:normal !important;word-spacing:normal !important;}'
+      + 'html body > iframe.html2canvas-container:not(#z9):not(#z8), html body > div:not([id]):not([class]):not(#z9):not(#z8){display:block !important;}'
+      + (cap.live ? '' : '#printArea{display:block !important;}')
+      + '</style></head><body>' + cap.html + '</body></html>';
+    const loadLib = src => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error('کتابخانهٔ PDF بارگذاری نشد')); document.head.appendChild(sc); });
+    let libs = null;
+    const needLibs = () => libs || (libs = (window.jspdf ? Promise.resolve() : loadLib('lib/jspdf-2.5.1.umd.min.js')).catch(e => { libs = null; throw e; }));
+    /* html2canvas باید داخل خود قاب اجرا شود (بیرون از قاب، بررسی نوع عنصرها میان دو پنجره شکست می‌خورد و بوم خالی می‌ساخت) */
+    const frLib = fr => new Promise((ok, no) => { const w = fr.contentWindow, d = fr.contentDocument; if(w.html2canvas) return ok(w.html2canvas);
+      const sc = d.createElement('script'); sc.src = new URL('lib/html2canvas-1.4.1.min.js', location.href).href; sc.onload = () => w.html2canvas ? ok(w.html2canvas) : no(new Error('html2canvas')); sc.onerror = () => no(new Error('کتابخانهٔ PDF بارگذاری نشد')); d.head.appendChild(sc); });
+    /* برش صفحه‌ها: جایی که هیچ سطر متن، عکس یا ردیف جدولی را نصف نکند */
+    const cutPoints = (d, total, PH1, PHn) => { const PH = PH1;
+      const block = new Uint8Array(total + 2);
+      const mark = (t, b) => { t = Math.max(0, Math.floor(t)); b = Math.min(total, Math.ceil(b)); for(let y = t + 1; y < b; y++) block[y] = 1; };
+      const tw = d.createTreeWalker(d.body, NodeFilter.SHOW_TEXT); const rg = d.createRange(); let n;
+      while((n = tw.nextNode())){ if(!n.nodeValue.trim()) continue; rg.selectNodeContents(n); for(const r of rg.getClientRects()) if(r.height > 0 && r.height < PH * .5) mark(r.top + d.defaultView.scrollY, r.bottom + d.defaultView.scrollY); }
+      /* درون ردیف‌ها، عکس‌ها و نمودارها بریده نمی‌شود؛ مرز میان دو ردیف آزاد است */
+      d.body.querySelectorAll('img,svg,canvas,tr,.pr-sign,.pr-avoid').forEach(e => { const r = e.getBoundingClientRect(); if(r.height > 2 && r.height < PH * .6) mark(r.top + d.defaultView.scrollY + 1, r.bottom + d.defaultView.scrollY - 1); });
+      const cuts = [0]; let y0 = 0;
+      while(total - y0 > (cuts.length > 1 ? PHn : PH1)){
+        const ph = cuts.length > 1 ? PHn : PH1;
+        let y = y0 + ph, best = -1;
+        for(let k = y; k > y0 + ph * .55; k--) if(!block[k]){ best = k; break; }
+        if(best < 0) best = y;
+        cuts.push(best); y0 = best;
+      }
+      cuts.push(total);
+      return cuts;
+    };
+    /* html2canvas رنگ‌های color-mix (که مرورگر color(srgb …) گزارش می‌کند) را نمی‌شناسد؛ پیش از ترسیم در نسخهٔ کپی به rgba برمی‌گردند */
+    const CC = new Map(); let cctx = null;
+    const colorRgba = c => { if(CC.has(c)) return CC.get(c); let out = 'rgba(0,0,0,0)';
+      try{ if(!cctx){ const cv = document.createElement('canvas'); cv.width = cv.height = 1; cctx = cv.getContext('2d', {willReadFrequently: true}); }
+        cctx.clearRect(0, 0, 1, 1); cctx.fillStyle = '#000'; cctx.fillStyle = c; cctx.fillRect(0, 0, 1, 1); const d = cctx.getImageData(0, 0, 1, 1).data;
+        out = 'rgba(' + d[0] + ',' + d[1] + ',' + d[2] + ',' + Math.round(d[3] / 255 * 1000) / 1000 + ')'; }catch(e){}
+      CC.set(c, out); return out; };
+    /* تابع رنگ با پرانتز تودرتو هم (مثل color(srgb …) یا oklab(… / calc(…))) */
+    const BAD = /(?:color|oklch|oklab|lab|lch|color-mix)\(/;
+    const toRgba = v => { let s0 = String(v), out = '', k = 0;
+      const re = /(?:color-mix|color|oklch|oklab|lab|lch)\(/g; let m;
+      while((m = re.exec(s0))){ let dep = 0, e = m.index; for(; e < s0.length; e++){ if(s0[e] === '(') dep++; else if(s0[e] === ')'){ dep--; if(!dep) break; } }
+        out += s0.slice(k, m.index) + colorRgba(s0.slice(m.index, e + 1)); k = e + 1; re.lastIndex = k; }
+      return out + s0.slice(k); };
+    let CPROPS = null;
+    const fixColors = (cd, sel) => { const w = cd.defaultView; const list = sel ? Array.from(cd.querySelectorAll(sel)) : [cd.documentElement, cd.body].concat(Array.from(cd.body.querySelectorAll('*')));
+      if(!CPROPS){ const cs0 = w.getComputedStyle(cd.body); CPROPS = []; for(let n = 0; n < cs0.length; n++){ const pr = cs0[n]; if(/color|background|shadow|border|outline|fill|stroke|decoration|caret|column-rule|mask|filter/.test(pr) && !/width|style|radius|image-(?:slice|width|outset|repeat)|collapse|spacing|clip|origin|repeat|size|position|attachment|blend|mode/.test(pr)) CPROPS.push(pr); } }
+      /* اول همه خوانده می‌شود، بعد یک‌جا نوشته می‌شود (خواندن و نوشتن یکی‌درمیان هر بار کل سبک‌ها را از نو حساب می‌کرد) */
+      const todo = [];
+      list.forEach(el => { let cs; try{ cs = w.getComputedStyle(el); }catch(e){ return; } if(cs.display === 'none') return;
+        for(let n = 0; n < CPROPS.length; n++){ const pr = CPROPS[n]; const v = cs.getPropertyValue(pr); if(v && BAD.test(v)) todo.push([el, pr, v]); }
+        /* آیکن‌هایی که با mask کشیده می‌شوند (html2canvas mask ندارد و مربع خاکستری می‌کشید) */
+        const mk = cs.getPropertyValue('-webkit-mask-image') || cs.getPropertyValue('mask-image'); if(mk && mk !== 'none') todo.push([el, 'visibility', 'hidden']); });
+      todo.forEach(([el, pr, v]) => { try{ el.style.setProperty(pr, pr === 'visibility' ? v : toRgba(v), 'important'); }catch(e){} }); };
+    async function makePdf(fr, W, land, prog){
+      await needLibs(); const h2c = await frLib(fr);
+      const d = fr.contentDocument; try{ await d.fonts.ready; }catch(e){}
+      try{ fixColors(d); }catch(e){}
+      const PH = Math.round(W * (land ? 210 / 297 : 297 / 210));
+      const total = Math.ceil(d.documentElement.scrollHeight);
+      /* حاشیهٔ بالا و پایین هر صفحه (body فقط یک حاشیهٔ بالا دارد) */
+      const cuts = cutPoints(d, total, PH - PAD, PH - PAD * 2);
+      const {jsPDF} = window.jspdf;
+      const pdf = new jsPDF({orientation: land ? 'l' : 'p', unit: 'pt', format: 'a4', compress: true});
+      const pw = pdf.internal.pageSize.getWidth();
+      const k = pw / W, SC = 2;
+      /* چند صفحه با یک ترسیم (هر بوم زیر سقف ~۱۵ میلیون پیکسل آیفون)، بعد برش به صفحه‌ها */
+      const maxH = Math.floor(15e6 / (W * SC * SC));
+      const segs = []; for(let i = 0; i < cuts.length - 1; i++) if(cuts[i + 1] - cuts[i] >= 4) segs.push([cuts[i], cuts[i + 1]]);
+      const chunks = []; segs.forEach(sg => { const c = chunks[chunks.length - 1]; if(c && sg[1] - c[0][0] <= maxH) c.push(sg); else chunks.push([sg]); });
+      const dw = d.defaultView;
+      const opts = {scale: SC, backgroundColor: '#ffffff', x: 0, width: W, windowWidth: W, windowHeight: Math.max(PH, total), scrollX: 0, scrollY: 0, useCORS: true, logging: false,
+        /* بخش‌های پنهان (زبانه‌های غیرفعال و…) اصلاً کپی نمی‌شوند */
+        ignoreElements: el => { try{ return el.nodeType === 1 && !/^(HTML|HEAD|BODY|STYLE|LINK|META|TITLE|BASE|SCRIPT)$/.test(el.tagName) && !!el.closest('body') && dw.getComputedStyle(el).display === 'none'; }catch(e){ return false; } },
+        onclone: cd => { try{ fixColors(cd, '[class*="___html2canvas___pseudoelement"]'); }catch(e){} }};
+      let pg = 0;
+      for(const ch of chunks){
+        const y0 = ch[0][0], y1 = ch[ch.length - 1][1];
+        const big = await h2c(d.body, Object.assign({}, opts, {y: y0, height: y1 - y0}));
+        for(const [a, b] of ch){
+          const cv = document.createElement('canvas'); cv.width = big.width; cv.height = Math.round((b - a) * SC);
+          const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+          cx.drawImage(big, 0, Math.round((a - y0) * SC), big.width, cv.height, 0, 0, cv.width, cv.height);
+          if(pg) pdf.addPage();
+          pdf.addImage(cv.toDataURL('image/jpeg', .92), 'JPEG', 0, pg ? PAD * k : 0, pw, (b - a) * k, undefined, 'FAST');
+          pg++; if(prog) prog(pg, segs.length);
+          cv.width = cv.height = 0;
+        }
+        big.width = big.height = 0;
+        await new Promise(r => setTimeout(r, 0));
+      }
+      return pdf.output('blob');
+    }
+    const fileName = t => String(t || 'گزارش').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90) + '.pdf';
+    async function sharePdf(blob, title){
+      const name = fileName(title);
+      const f = new File([blob], name, {type: 'application/pdf'});
+      try{ if(navigator.canShare && navigator.canShare({files: [f]})){ await navigator.share({files: [f], title: name.replace(/\.pdf$/, '')}); return 'shared'; } }
+      catch(e){ if(e && e.name === 'AbortError') return 'cancel'; }
+      const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = name; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 120000);
+      return 'download';
+    }
+    const ensureCss = () => { if(document.getElementById('iosPrCss')) return; const st = document.createElement('style'); st.id = 'iosPrCss';
+      st.textContent = '#iosPr{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;background:color-mix(in srgb, var(--canvas, #eef0f3) 96%, #000);color:var(--ink, #15171b);font-family:Vazirmatn,sans-serif;direction:rtl;}'
+        + '#iosPr .ipr-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;background:var(--surface, #fff);border-bottom:1px solid var(--line, #e6e8ed);}'
+        + '#iosPr .ipr-bar b{flex:1 1 auto;min-width:0;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+        + '#iosPr .ipr-x{all:unset;box-sizing:border-box;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line, #e6e8ed);background:var(--surface, #fff);cursor:pointer;flex:none;} #iosPr .ipr-x svg{width:16px;height:16px;}'
+        + '#iosPr .ipr-pv{flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px 12px 24px;}'
+        + '#iosPr .ipr-pg{margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(15,23,42,.14);border-radius:4px;overflow:hidden;transform-origin:top right;}'
+        + '#iosPr .ipr-pg iframe{border:0;display:block;transform-origin:top right;background:#fff;}'
+        + '#iosPr .ipr-act{display:flex;flex-direction:column;gap:8px;padding:12px 14px calc(env(safe-area-inset-bottom) + 12px);background:var(--surface, #fff);border-top:1px solid var(--line, #e6e8ed);}'
+        + '#iosPr .ipr-st{font-size:12px;color:var(--muted, #5f636b);text-align:center;min-height:18px;}'
+        + '#iosPr .ipr-btns{display:flex;gap:8px;}'
+        + '#iosPr .ipr-b{all:unset;box-sizing:border-box;flex:1 1 0;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14.5px;font-weight:800;cursor:pointer;border:1px solid var(--line, #e6e8ed);background:var(--surface, #fff);color:var(--ink, #15171b);}'
+        + '#iosPr .ipr-b.pri{background:var(--ink, #15171b);color:var(--surface, #fff);border-color:transparent;}'
+        + '#iosPr .ipr-b[disabled]{opacity:.45;pointer-events:none;} #iosPr .ipr-b svg{width:18px;height:18px;}'
+        + '#iosPr .ipr-bar .ipr-sp{width:16px;height:16px;border-radius:50%;border:2px solid var(--line, #e6e8ed);border-top-color:var(--ink, #15171b);animation:iprSp .8s linear infinite;flex:none;}'
+        + '@keyframes iprSp{to{transform:rotate(360deg)}}'
+        + '@media print{#iosPr{display:none !important;}}';
+      document.head.appendChild(st); };
+    let open = null;
+    function close(){ if(!open) return; const o = open; open = null; try{ o.el.remove(); }catch(e){} document.body.style.overflow = o.ov || '';
+      /* صدازننده‌ها پاک‌سازی (برگرداندن عنوان، خالی‌کردن #printArea، برداشتن حالت چاپ زنده) را با afterprint انجام می‌دهند */
+      if(!o.nativeDone) try{ window.dispatchEvent(new Event('afterprint')); }catch(e){} }
+    /* برگهٔ پیش‌نمایش: یا محتوای چاپ (cap) یا یک PDF آماده (blob) */
+    function sheet(opt){
+      ensureCss(); if(open) close();
+      const el = document.createElement('div'); el.id = 'iosPr'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'پیش‌نمایش چاپ');
+      const title = opt.title || 'گزارش';
+      el.innerHTML = '<div class="ipr-bar"><button type="button" class="ipr-x" data-iprx aria-label="بستن">' + PI.x + '</button><b>' + esc(title) + '</b><i class="ipr-sp"></i></div>'
+        + '<div class="ipr-pv"></div>'
+        + '<div class="ipr-act"><div class="ipr-st">در حال آماده‌سازی…</div><div class="ipr-btns">'
+        +   '<button type="button" class="ipr-b pri" data-iprs disabled>' + PI.share + '<span>چاپ یا ذخیرهٔ PDF</span></button>'
+        +   (!STANDALONE && opt.cap ? '<button type="button" class="ipr-b" data-iprn>' + PI.print + '<span>چاپ مستقیم</span></button>' : '')
+        + '</div></div>';
+      document.body.appendChild(el);
+      const o = {el, ov: document.body.style.overflow, cap: opt.cap, blob: opt.blob || null, title, nativeDone: false};
+      open = o; document.body.style.overflow = 'hidden';
+      const st = el.querySelector('.ipr-st'), sb = el.querySelector('[data-iprs]'), sp = el.querySelector('.ipr-sp');
+      const ready = msg => { sb.disabled = false; if(sp) sp.remove(); st.textContent = msg || 'آماده است — «چاپ یا ذخیرهٔ PDF» برگهٔ اشتراک آیفون را باز می‌کند (چاپ، ذخیره در Files، ارسال).'; };
+      const fail = e => { if(sp) sp.remove(); st.textContent = 'ساخت PDF نشد: ' + (e && e.message || e) + (STANDALONE ? '' : ' — از «چاپ مستقیم» استفاده کنید.'); };
+      el.addEventListener('click', async ev => {
+        if(ev.target.closest('[data-iprx]')){ close(); return; }
+        if(ev.target.closest('[data-iprs]')){ if(!o.blob) return; const r = await sharePdf(o.blob, title); if(r === 'download') st.textContent = 'فایل PDF دانلود شد.'; return; }
+        if(ev.target.closest('[data-iprn]')){
+          /* چاپ مستقیم Safari: اگر صدازننده #printArea را خالی کرده، همان محتوای گرفته‌شده برمی‌گردد */
+          const c = o.cap; let refill = false;
+          if(c && !c.live){ const a = document.getElementById('printArea'); if(a && !a.innerHTML.trim() && c.raw){ a.innerHTML = c.raw; refill = true; } }
+          const after = () => { o.nativeDone = true; if(refill){ const a = document.getElementById('printArea'); if(a) a.innerHTML = ''; } };
+          window.addEventListener('afterprint', after, {once: true});
+          try{ native(); }catch(e){}
+          return;
+        }
+      });
+      if(o.blob){
+        el.querySelector('.ipr-pv').innerHTML = '<div style="display:grid;place-items:center;height:100%;text-align:center;color:var(--muted,#5f636b);font-size:13px;line-height:2">' + PI.print.replace('<svg', '<svg style="width:46px;height:46px;opacity:.5;display:block;margin:0 auto 8px"') + 'فایل PDF آماده است.</div>';
+        ready();
+        return o;
+      }
+      const cap = opt.cap;
+      const land = /class="[^"]*\b(adm-xp|mat-form)\b/.test(cap.html) || /\blandscape\b/.test(cap.html.slice(0, 400));
+      const W = land ? 1123 : 794;
+      const pv = el.querySelector('.ipr-pv');
+      const pg = document.createElement('div'); pg.className = 'ipr-pg';
+      const fr = document.createElement('iframe'); fr.setAttribute('title', 'پیش‌نمایش'); fr.style.width = W + 'px'; fr.style.height = '1123px';
+      pg.appendChild(fr); pv.appendChild(pg);
+      const fit = () => { if(!fr.contentDocument || !fr.contentDocument.documentElement) return; const H = Math.max(200, fr.contentDocument.documentElement.scrollHeight);
+        const s = Math.min(1, (pv.clientWidth - 24) / W); fr.style.height = H + 'px'; fr.style.transform = 'scale(' + s + ')';
+        pg.style.width = Math.round(W * s) + 'px'; pg.style.height = Math.round(H * s) + 'px'; };
+      fr.onload = async () => {
+        try{ const d = fr.contentDocument; try{ await Promise.race([d.fonts.ready, new Promise(r => setTimeout(r, 2500))]); }catch(e){}
+          const imgs = Array.from(d.images).filter(i => !i.complete); await Promise.race([Promise.all(imgs.map(i => new Promise(r => { i.onload = i.onerror = r; }))), new Promise(r => setTimeout(r, 4000))]);
+          fit(); if(open !== o) return;
+          st.textContent = 'در حال ساخت PDF…';
+          o.blob = await makePdf(fr, W, land, (i, n) => { if(open === o) st.textContent = 'در حال ساخت PDF — صفحهٔ ' + toFa(i) + ' از ' + toFa(n); });
+          if(open !== o) return;
+          ready();
+        }catch(e){ fail(e); }
+      };
+      fr.srcdoc = docHtml(cap, W);
+      window.addEventListener('resize', fit);
+      return o;
+    }
+    window.print = function(){
+      let cap = null; try{ cap = capture(); }catch(e){}
+      if(!cap){ try{ native(); }catch(e){} return; }
+      sheet({cap, title: cap.title});
+    };
+    /* PDF آماده (پیوست‌ها): برگهٔ اشتراک با یک لمس تازه (iOS پس از دانلود ناهمگام اجازهٔ بازکردن پنجره نمی‌دهد) */
+    window.iosPdfSheet = (blob, title) => { sheet({blob, title}); };
+    window.__iosPrint = {sheet, makePdf, capture, cutPoints, STANDALONE};
+  })();
   /* پیش‌نمایش فایل: عکس و سند آفیس از روی خود پنجره؛ PDF مستقیم با چاپگر مرورگر (روی گوشی در برگهٔ تازه) */
   /* بخش «گزارش‌ها»: یک دکمهٔ «چاپ» ثابت برای همهٔ گزارش‌ها (همانی که روی صفحه است) */
   (function(){
@@ -77690,7 +77948,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const blob = a.src === 's3' ? await s3Blob(a) : await fetch(attachDownloadUrl(a)).then(r => { if(!r.ok) throw new Error('fetch'); return r.blob(); });
       const url = URL.createObjectURL(blob.type === 'application/pdf' ? blob : new Blob([blob], {type: 'application/pdf'}));
       const touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-      if(touch){ window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+      if(window.iosPdfSheet){ URL.revokeObjectURL(url); window.iosPdfSheet(blob.type === 'application/pdf' ? blob : new Blob([blob], {type: 'application/pdf'}), String(a.name || 'سند').replace(/\.pdf$/i, '')); }
+      else if(touch){ window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 60000); }
       else{
         let fr = document.getElementById('prFrame'); if(fr) fr.parentNode.removeChild(fr);
         fr = document.createElement('iframe'); fr.id = 'prFrame'; fr.style.cssText = 'position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;';
