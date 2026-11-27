@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127114029">
+<meta name="pm-build" content="20261127115233">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -103387,14 +103387,15 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   const DECK_BASE_N = 9;
   /* اخبار مدیریت: شاخهٔ جدا، فقط برای مدیر. هر دسته یک پرسش ملموس را
      جواب می‌دهد و هر سند فقط در یک دسته می‌آید (به همین ترتیب). */
+  /* ۶۸۲: فقط پرونده‌های باز (پرداخت‌شده، ابلاغ‌شده، کنسل‌شده در وضعیت‌های جاری نمی‌آیند)؛ ترتیب = اهمیت برای مدیر */
   const DECK_NEWS = [
-    {g:'n-stuck', c:['hold','rej'], t:'بن‌بست و ردشده', p:'b-mgr'},
-    {g:'n-emp',   c:['emp'],        t:'منتظر کارفرما',              p:'b-mgr'},
-    {g:'n-rv',    c:['rv'], late:true, t:'بررسی داخلیِ طولانی',     p:'b-mgr'},
-    {g:'n-blk',   c:['blk'],        t:'موانع کارگاه',               p:'b-mgr'},
-    {g:'n-iss',   c:[],             t:'موانع گزارش روزانه',         p:'b-mgr'},
-    {g:'n-pay',   c:['pay'],        t:'پرداخت‌ها و تسویه‌ها',        p:'b-mgr'},
-    {g:'n-ok',    c:['ok'],         t:'تأییدهای اخیر',              p:'b-mgr'}
+    {g:'n-stuck', c:['hold','rej'],     t:'ردشده و متوقف',           p:'b-mgr'},
+    {g:'n-due',   c:['wpay'],           t:'منتظر پرداخت',            p:'b-mgr'},
+    {g:'n-emp',   c:['emp'],            t:'نزد کارفرما',             p:'b-mgr'},
+    {g:'n-rv',    c:['rv'], late:true,  t:'بررسی داخلی طولانی',      p:'b-mgr'},
+    {g:'n-blk',   c:['blk'],            t:'موانع جاری',              p:'b-mgr'},
+    {g:'n-pay',   c:['pay'],            t:'پرداخت‌های اخیر',          p:'b-mgr'},
+    {g:'n-ok',    c:['ok','notify'],    t:'تأیید و ابلاغ اخیر',       p:'b-mgr'}
   ];
   /* ====== تازه تمام‌شده ======
      کارت‌ها تا حالا فقط کارِ مانده را نشان می‌دادند. این دسته آخرین
@@ -103531,12 +103532,12 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   function deckIssNews(){
     return (dkIss.rows || []).slice(0, 30).map(g => {
       const n = g.days.size, fresh = daysSince(g.last) <= 1;
-      return {cat:'due', grp:'n-iss', level: n >= 3 && fresh ? 'warm' : 'calm', side:'',
+      return {cat:'due', grp:'n-blk', level: n >= 3 && fresh ? 'warm' : 'calm', side:'',
         who: g.by, title: g.t,
         text: [g.party, g.zone].filter(Boolean).join(' · ') + (g.party || g.zone ? ' — ' : '')
           + (n > 1 ? toFa(n) + ' روز در گزارش‌ها، از ' + (faDateLong(g.first) || toFa(g.first)) : 'گزارش ' + (faDateLong(g.last) || toFa(g.last)))
           + (fresh ? '' : ' · دیگر گزارش نشده'),
-        goto: null, fid: 'news:n-iss:' + g.id, seen: true};
+        goto: null, fid: 'news:n-blk:i' + g.id, seen: true};
     });
   }
   function deckNewsItems(){
@@ -103557,7 +103558,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         if(seenG.has(id)) return;
         seenG.add(id); used.add(id);
         const emp = x.cat === 'emp';
-        const lvl = x.tone === 'bad' ? 'hot' : (emp ? 'warm' : 'calm');
+        const lvl = x.tone === 'bad' ? 'hot' : (emp || x.tone === 'warn' ? 'warm' : 'calm');
         out.push({cat:'due', grp: z.g, level: lvl,
           side: emp ? 'employer' : '',
           who: x.by || '', title: x.title || '',
@@ -104112,6 +104113,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const kind = a.kind, r = a.row;
       if(!r) return;
       const id = pick(r,AD.id);
+      /* ۶۸۲: پروندهٔ بسته (تسویه، ابلاغ برون‌سازمانی، کنسل) در وضعیت‌های جاری نمی‌آید؛ پیش‌تر صورت وضعیتِ پرداخت‌شده هنوز «نزد کارفرما» دیده می‌شد */
+      let closed = false; try{ closed = admCancelled(r) || admDoneState(kind, r).cls === 'ok'; }catch(e){}
       stageLogOf(r).forEach(e => {
         if(!e) return;
         if(e.type === 'rv-round'){
@@ -104131,7 +104134,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         /* ردها از وضعیت فعلی ساخته می‌شوند (پایین‌تر)؛ ردی که بعدش دور
            دوم بررسی آمده، دیگر رد حساب نمی‌شود. */
         if(/رد/.test(e.to)) return;
-        const cat = (e.to === 'تایید شده' || e.to === 'تأیید داخلی') ? 'ok' : 'rv';
+        /* «تأییدها» فقط تأیید کارفرما؛ تأیید داخلی جزو جریان داخلی است */
+        const cat = (e.to === 'تایید شده') ? 'ok' : 'rv';
         add({date: e.date, kind: kind, id: id, title: docTitle(kind, r), cat: cat,
              what: (e.from ? esc(e.from) + ' ← ' : '') + esc(e.to), raw: true,
              tone: tone, by: e.by || ''});
@@ -104150,11 +104154,19 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         add({date: payLastDate(r), kind: kind, id: id, title: docTitle(kind, r), cat: 'pay',
              what: 'پرداخت شد ' + toFa(admDate(payLastDate(r)) || '') + (amtNum(pick(r,AD.sAmount)) ? ' — ' + arToman(amtNum(pick(r,AD.sAmount))) + ' تومان' : ''),
              tone: 'ok', by: ''});
-      else if(kind === 'statement' && /در حال پرداخت/.test(String(pick(r,AD.sPayStatus) || '')))
-        out.push({date: '', ago: 0, kind: kind, id: id, title: docTitle(kind, r), cat: 'pay',
-             what: 'در حال پرداخت', tone: 'info', by: '', live: true});
-      /* وضعیت‌های جاری: نزد کارفرما / در بررسی داخلی / رد شده */
+      /* وضعیت‌های جاری: فقط پروندهٔ باز */
+      if(closed) return;
       const rvNow = effectiveReview(r);
+      /* منتظر پرداخت: تأیید کارفرما گرفته و هنوز تسویه نشده (با پرداخت‌های جزئی و مانده) */
+      if(kind === 'statement' && (rvNow === 'تایید شده' || /در حال پرداخت/.test(String(pick(r,AD.sPayStatus) || '')))){
+        let dW = null; try{ dW = admStageDays(r); }catch(e){}
+        const L2 = ADM_STAGE_LIM['تایید شده'] || [15, 30];
+        const amt = moneyNum(pick(r,AD.sAmount)); let pd = 0; try{ pd = payLogSum(r) || amtNum(pick(r,AD.sPaid)); }catch(e){}
+        out.push({date:'', ago:-0.55, kind, id, title: docTitle(kind, r), cat:'wpay',
+          what: (dW != null ? toFa(dW) + ' روز از تأیید کارفرما' : 'تأیید کارفرما') + ' — '
+            + (amt ? (pd > 0 ? 'مانده ' + arToman(Math.max(0, amt - pd)) + ' از ' + arToman(amt) + ' تومان' : arToman(amt) + ' تومان پرداخت نشده') : 'هنوز پرداخت نشده'),
+          tone: dW != null && dW > L2[1] ? 'bad' : (dW != null && dW > L2[0] ? 'warn' : 'info'), by:'', live:true, sortKey: -(dW || 0)});
+      }
       if(/^رد/.test(rvNow)){
         let since = '';
         const lgR = stageLogOf(r);
@@ -104163,7 +104175,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         }
         const dR = since ? daysSince(since) : null;
         out.push({date:'', ago:-0.6, kind: kind, id: id, title: docTitle(kind, r), cat:'rej',
-          what: rvNow + (dR != null ? ' — ' + toFa(dR) + ' روز' : ''),
+          what: rvNow + (dR != null ? ' — ' + toFa(dR) + ' روز منتظر اصلاح' : ' — منتظر اصلاح'),
           tone:'bad', by:'', live:true, sortKey: -(dR || 0)});
       }
       if(rvNow === 'بررسی کارفرما'){
@@ -104216,9 +104228,12 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         const sdN = String(pick(t,T.side) || '').trim();
         const blk = (sdN === 'فعالیت عمومی' || sdN === 'کار اداری') ? ''
                   : String(pick(t,T.blockers) || '').trim();
-        if(blk)
+        /* ۶۸۲: مانعِ فعالیتی که مدت‌هاست رها شده (موعدش بیش از ۶۰ روز گذشته) خبر نیست؛ بحرانی فقط اگر موعد گذشته باشد */
+        const dOv = daysSince(pick(t,T.due));
+        if(blk && !(dOv != null && dOv > 60))
           out.push({date:'', ago:-0.4, kind:'task', id: id, title: ttl, cat:'blk',
-            what:'مانع: ' + blk + (who ? ' — ' + who : ''), tone:'bad', by:'', live:true});
+            what:'مانع: ' + blk + (who ? ' — ' + who : '') + (dOv != null && dOv > 0 ? ' — موعد ' + toFa(dOv) + ' روز گذشته' : ''),
+            tone: dOv != null && dOv > 0 ? 'bad' : 'warn', by:'', live:true, sortKey: -(dOv || 0)});
       }
     });
     out.sort((x, y) => (x.ago - y.ago) || ((x.sortKey || 0) - (y.sortKey || 0)));
@@ -104242,6 +104257,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     {c:'hold',   t:'به بن‌بست رسیده',      tone:'bad', w:1},
     {c:'rej',    t:'رد شده‌ها',            tone:'bad', w:2},
     {c:'blk',    t:'موانع ثبت‌شده',        tone:'bad', w:3},
+    {c:'wpay',   t:'منتظر پرداخت',         tone:'bad', w:4},
     {c:'pay',    t:'آخرین پرداخت‌ها',      tone:'ok',  w:4},
     {c:'emp',    t:'نزد کارفرما',          tone:'emp', w:5},
     {c:'ok',     t:'تأییدها',              tone:'ok',  w:6},
@@ -104625,6 +104641,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     'n-rej':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>',
     'n-blk':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>',
     'n-emp':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"/></svg>',
+    'n-due':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M12 9.5v3l2 1.2"/><path d="M7 6V4.5M17 6V4.5"/></svg>',
     'n-pay':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.5"/></svg>',
     follow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="8.5"/></svg>',
     'follow-adm':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="8.5"/></svg>',
@@ -104679,7 +104696,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   }
   let deckHubB = '';
   /* ۶۳۷: صفحهٔ کارت‌های فعالیت — طراحی تازه: هر بخش و هر دسته رنگ خودش، نوار فوریت، مسئولان و دیرترین مورد */
-  const DH4_HUE = {'b-adm':'#6d5bb5', 'b-exec':'#1f8a7e', 'b-mgr':'#3b5bb5', 'k-st':'#2f7fa8', 'k-ct':'#6d5bb5', 'k-lt':'#1f9a8e', 'k-mn':'#c0702a', 'k-ds':'#b5486b', 'k-gen':'#4a63b8', 'k-ex':'#3f7a52', 'k-pr':'#2a8a86', 'k-miss':'#a33b3b'};
+  const DH4_HUE = {'b-adm':'#6d5bb5', 'b-exec':'#1f8a7e', 'b-mgr':'#3b5bb5', 'k-st':'#2f7fa8', 'k-ct':'#6d5bb5', 'k-lt':'#1f9a8e', 'k-mn':'#c0702a', 'k-ds':'#b5486b', 'k-gen':'#4a63b8', 'k-ex':'#3f7a52', 'k-pr':'#2a8a86', 'k-miss':'#a33b3b', 'n-stuck':'#c0453a', 'n-due':'#b0631c', 'n-emp':'#6d5bb5', 'n-rv':'#2f7fa8', 'n-blk':'#a35a2a', 'n-pay':'#2f8a5a', 'n-ok':'#3f7a52'};
   const DH4_PAL = ['#2f7fa8', '#6d5bb5', '#1f9a8e', '#c0702a', '#b5486b', '#4a63b8', '#3f7a52'];
   const dh4Hue = g => DH4_HUE[g] || DH4_PAL[Array.from(String(g)).reduce((a, c) => a + c.charCodeAt(0), 0) % DH4_PAL.length];
   function dh4Ppl(arr){
@@ -104740,7 +104757,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
           const top = arr[0];
           const lt = z.news ? '' : deckLateTxt(top);
           const sub = top ? (z.news && top.text ? String(top.text).replace(/<[^>]+>/g, '').split(' — ')[0] + ' — ' : '') + String(top.title || '') : '';
-          const meta = (nh ? '<em class="h">' + toFa(nh) + ' بحرانی</em>' : nw ? '<em class="w">' + toFa(nw) + ' نزدیک موعد</em>' : '<em>' + (z.news ? 'برای اطلاع' : 'در جریان') + '</em>')
+          const meta = (nh ? '<em class="h">' + toFa(nh) + ' بحرانی</em>' : nw ? '<em class="w">' + toFa(nw) + (z.news ? ' نیاز به پیگیری' : ' نزدیک موعد') + '</em>' : '<em>' + (z.news ? (/^n-(due|emp|stuck|blk|rv)$/.test(z.g) ? 'در جریان' : 'برای اطلاع') : 'در جریان') + '</em>')
             + '<span>' + toFa(arr.length) + ' مورد</span>';
           return '<button type="button" class="dh5-c' + (nh ? ' hot' : nw ? ' warm' : '') + '" data-dk-cat="' + z.g + '" style="--i:' + k + ';--c:' + dh4Hue(z.g) + '">'
             + '<span class="dh5-ch"><span class="dh5-ic">' + (DECK_CAT_ICON[z.g] || '') + '</span>'
@@ -104863,8 +104880,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       /* برچسب کوتاه در نوار تکه‌ای؛ نام کامل در راهنما */
       const sh = ({'k-st':'صورت وضعیت', 'k-ct':'قرارداد', 'k-lt':'نامه', 'k-mn':'صورتجلسه',
                    'k-gen':'ابلاغ', 'k-ex':'فعالیت', 'k-ds':'طراحی', 'k-pr':'تدارکات', 'k-miss':'گزارش', 'done-adm':'تمام‌شده',
-                   'done-exec':'تمام‌شده', 'n-stuck':'گیرها', 'n-emp':'کارفرما', 'n-rv':'بررسی',
-                   'n-blk':'موانع', 'n-pay':'پرداخت', 'n-ok':'تأییدها'})[z.g] || z.t;
+                   'done-exec':'تمام‌شده', 'n-stuck':'ردشده', 'n-due':'منتظر پرداخت', 'n-emp':'کارفرما', 'n-rv':'بررسی',
+                   'n-blk':'موانع', 'n-pay':'پرداخت‌ها', 'n-ok':'تأییدها'})[z.g] || z.t;
       const nh = arr.filter(y => y.level === 'hot').length, dn = /^done-/.test(z.g);
       return '<button type="button" class="dk-tab dk4' + (z.g === deckGrp ? ' on' : '') + (nh ? ' hot' : '') + (dn ? ' dn' : '')
         + '" data-dk-tab="' + z.g + '" title="' + esc(z.t) + (nh ? ' — ' + toFa(nh) + ' بحرانی' : '') + '" style="--c:' + (dn ? '#2f8a5a' : dh4Hue(z.g)) + '">'
