@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261127143223">
+<meta name="pm-build" content="20261127153119">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -33907,7 +33907,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
 :is(html,#z0) :is(body,#z1) :is(.app-head,#z2) #whoChip .ava::after{width:10px !important;height:10px !important;background:#22a565 !important;}
 :is(html,#z0) :is(body,#z1) :is(.app-head,#z2) #whoChip .pty-ring{display:none !important;}
 :is(html,#z0) :is(body,#z1) :is(.app-head,#z2) #whoChip .ava-mg{box-shadow:none !important;}
-:is(html,#z0) :is(body,#z1) :is(.app-head,#z2) .hd-acts > .bell::before, :is(html,#z0) :is(body,#z1) :is(.app-head,#z2) .hd-acts > .bell::after{display:none !important;}
+:is(html,#z0) :is(body,#z1) :is(.app-head,#z2) .hd-acts > .bell:not(#spBtn)::before, :is(html,#z0) :is(body,#z1) :is(.app-head,#z2) .hd-acts > .bell:not(#spBtn)::after{display:none !important;}
 /* گوشی و تبلت */
 @media (max-width:1179px){
   :is(html,#z0) :is(body,#z1) :is(.app-head,#z2){position:sticky !important;top:0;z-index:60;display:flex !important;align-items:center !important;gap:8px !important;min-height:0 !important;height:auto !important;
@@ -34736,6 +34736,13 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         <div class="kind-caps wrk-caps" id="spTabs"></div>
       </div>
       <div class="block" id="spBody"><div class="empty">در حال آماده‌سازی…</div></div>
+    </div>
+    <div id="pgArea" hidden>
+      <div class="block" id="pgHead">
+        <div class="block-head"><span class="tag">۱</span><span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><b>پیشرفت فیزیکی</b>
+          <span class="side" id="pgSide"></span></div>
+      </div>
+      <div class="block" id="pgBody"><div class="empty">در حال آماده‌سازی…</div></div>
     </div>
     <div id="ibArea" hidden>
       <div class="block" id="ibHead">
@@ -56467,6 +56474,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     {k:'cad', t:'نقشه‌خوان', s:'باز کردن نقشه، اندازه‌گیری و مساحت محل‌ها', c:'#24577a', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M3 9h7v12M10 13h11M15 3v10"/></svg>',
       ok:() => { try{ return can('tab.admin') || can('qt.view') || can('sp.view') || isAdminUser(); }catch(e){ return true; } },
       go:() => { try{ window.open('cad.html?theme=' + (document.documentElement.dataset.theme || ''), '_blank', 'noopener'); }catch(e){} }},
+    {k:'pgp', t:'پیشرفت فیزیکی', s:'درصد پیشرفت هر تخصص در هر طبقه، محدوده و پیشرفت هر پیمانکار', c:'#2f7fa8', area:'pgArea', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>', ok:() => { try{ return can('sp.prog') || can('sp.view') || isAdminUser(); }catch(e){ return false; } }},
     {k:'sch', t:'برنامهٔ زمان‌بندی', s:'گانت، مسیر بحرانی، منابع و خط مبنا · هم‌گام با فهرست فعالیت‌ها', c:'#3b6ea5', ic:() => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M8 10h9M6 15h6M13 20h7"/><path d="M3 3v18"/></svg>',
       ok:() => true,
       go:() => { let ed = false; try{ ed = can('tab.admin') || isAdminUser(); }catch(e){} try{ window.open('plan.html?r=' + Date.now().toString(36) + '&theme=' + (document.documentElement.dataset.theme || '') + (ed ? '&ed=1' : ''), '_blank', 'noopener'); }catch(e){} }},
@@ -56554,7 +56562,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   const WS_AGRP = [{t:'افراد و دسترسی', d:'کاربران، سمت‌ها، پرونده‌ها و گزارش‌دهندگان', c:'#3d7fb0', ks:['users','ct','rpt','bc','log'], ic: WS_GI('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/><path d="M16 4.6a3 3 0 010 6M17.5 14.2c1.8.6 3 2.2 3.5 4.8"/>')},
     {t:'داده و تطبیق', d:'بخش‌های فعال، قوانین و مهلت‌ها، نام‌ها، محل و طبقه و جدول‌ها', c:'#b07512', ks:['mods','rules','data'], ic: WS_GI('<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>')},
     {t:'سامانه و امنیت', d:'سرور، پشتیبان، حالت نگهداری، محل آپلود، زنجیرهٔ تأیید و نسخه‌ها', c:'#c4553f', ks:['sec','maint','up','chain','ver'], ic: WS_GI('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')}];
-  const WS_GOF = {disc:'eng', team:'hr', trn:'eng', mdr:'eng', dly:'fld', apv:'fld', tasks:'fld', crew:'fld', wrk:'fld', gl:'fld', sch:'pln', la:'pln', fc:'pln', rsk:'pln', mtg:'pln', qc:'qhs', itp:'qhs', con:'qhs', hse:'qhs', ptw:'qhs', rfi:'eng', smt:'eng', cad:'eng', cut:'eng', prc:'res', mrc:'res', wh:'res', rcn:'res', mc:'res', mnt:'res', qt:'fin', co:'fin', cc:'fin', ib:'fin', vnd:'fin', rc:'ana', wkr:'ana', kpi:'ana', pf:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj'};
+  const WS_GOF = {pgp:'pln', disc:'eng', team:'hr', trn:'eng', mdr:'eng', dly:'fld', apv:'fld', tasks:'fld', crew:'fld', wrk:'fld', gl:'fld', sch:'pln', la:'pln', fc:'pln', rsk:'pln', mtg:'pln', qc:'qhs', itp:'qhs', con:'qhs', hse:'qhs', ptw:'qhs', rfi:'eng', smt:'eng', cad:'eng', cut:'eng', prc:'res', mrc:'res', wh:'res', rcn:'res', mc:'res', mnt:'res', qt:'fin', co:'fin', cc:'fin', ib:'fin', vnd:'fin', rc:'ana', wkr:'ana', kpi:'ana', pf:'ana', ctr:'hr', org:'hr', leave:'hr', sp:'prj', hov:'prj'};
   const WS_GOK = Object.keys(WS_GOF), wsGofOrd = (a, b) => { const i = WS_GOK.indexOf(a.k), j = WS_GOK.indexOf(b.k); return (i < 0 ? 999 : i) - (j < 0 ? 999 : j); };
   const wsMod = k => WS_MODS.find(x => x.k === k);
   /* ====== بخش‌های فعال پروژه ======
@@ -91109,7 +91117,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   window.pgSetFloors = pgSetFloors;
   window.pgSaveOne = (s, f, l, p) => pgSave(s, f, l, p);
   window.spL1 = spL1;
-  window.spGoSkill = (sk, fk) => { sp.tab = 'pg'; pg.sk = sk; pg.open = fk || ''; pg.add = false; try{ window.homeWrite && window.homeWrite('sp'); }catch(e){} try{ spRender(); }catch(e){} };
+  window.spGoSkill = (sk, fk) => { pg.sk = sk; pg.open = fk || ''; pg.add = false; try{ switchTab('tasks'); window.wsSet('pgp'); }catch(e){} try{ window.pgRender(); }catch(e){} };
   function pgHtml(){
     const SK = pgSkills(), ed = pgCanE();
     if(!pg.sk || SK.indexOf(pg.sk) === -1) pg.sk = SK[0] || '';
@@ -91146,25 +91154,30 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     return h;
   }
   window.pgHtml = pgHtml;
+  /* ۶۸۶: «پیشرفت فیزیکی» بخش خودش را در برنامه‌ریزی و کنترل دارد (پیش‌تر زبانه‌ای در فضاها و واحدها بود) */
+  window.pgRender = () => { const b = document.getElementById('pgBody'); if(!b) return; const SK = pgSkills();
+    const side = document.getElementById('pgSide'); if(side) side.textContent = SK.length ? toFa(SK.length) + ' تخصص' : '';
+    b.innerHTML = '<div class="wh-in">' + spDLs() + pgHtml() + '</div>'; };
+  const pgRe = () => { const g = document.getElementById('pgArea'); if(g && !g.hidden) window.pgRender(); const a = document.getElementById('spArea'); if(a && !a.hidden) pgRe(); };
   document.addEventListener('click', async e => {
-    const host = document.getElementById('spArea'); if(!host || !host.contains(e.target)) return;
+    const host = e.target.closest && e.target.closest('#spArea, #pgArea'); if(!host) return;
     const t = e.target;
-    const sk = t.closest('[data-pgsk]'); if(sk){ pg.sk = sk.dataset.pgsk; pg.open = ''; pg.add = false; spRender(); return; }
-    const fl = t.closest('[data-pgfl]'); if(fl){ pg.open = pg.open === fl.dataset.pgfl ? '' : fl.dataset.pgfl; spRender(); return; }
-    const ad = t.closest('[data-pgadd]'); if(ad){ pg.add = ad.dataset.pgadd === '1'; spRender(); return; }
+    const sk = t.closest('[data-pgsk]'); if(sk){ pg.sk = sk.dataset.pgsk; pg.open = ''; pg.add = false; pgRe(); return; }
+    const fl = t.closest('[data-pgfl]'); if(fl){ pg.open = pg.open === fl.dataset.pgfl ? '' : fl.dataset.pgfl; pgRe(); return; }
+    const ad = t.closest('[data-pgadd]'); if(ad){ pg.add = ad.dataset.pgadd === '1'; pgRe(); return; }
     if(t.closest('[data-pgskadd]')){
       const i = host.querySelector('[data-pgskin]'), v = i ? skCanon(i.value) : ''; if(!v) return;
       try{ const sl = document.getElementById('skillList'); if(sl && !Array.from(sl.options).some(o => normName(o.value) === normName(v))){ kxListAdd('تخصص', v).catch(() => {}); mergeIntoList('skillList', [v]); } }catch(e){}
       /* تخصص تازه با یک ردیف خالیِ «کل طبقهٔ اول» ثبت نمی‌شود؛ همین که انتخاب شود در فهرست می‌ماند تا اولین عدد */
       if(pgSkills().indexOf(v) === -1){ try{ await pgSave(v, '_', '', 0); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); return; } }
-      pg.sk = v; spRender(); return;
+      pg.sk = v; pgRe(); return;
     }
-    const rm = t.closest('[data-pgarm]'); if(rm){ try{ await pgSaveA(rm.dataset.pgarm, pg.sk, null); spRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
+    const rm = t.closest('[data-pgarm]'); if(rm){ try{ await pgSaveA(rm.dataset.pgarm, pg.sk, null); pgRe(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); } return; }
     if(t.closest('[data-pgasave]')){
       const box = t.closest('.pg-af'), c = (box.querySelector('[data-pgac]') || {}).value || '';
       if(!c.trim()){ showDialog('warn', 'پیمانکار', 'نام پیمانکار را انتخاب کنید.'); return; }
       const fls = Array.from(box.querySelectorAll('.pg-fs input:checked')).map(x => x.value);
-      try{ await pgSaveA(c.trim(), pg.sk, fls); pg.add = false; spRender(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
+      try{ await pgSaveA(c.trim(), pg.sk, fls); pg.add = false; pgRe(); }catch(err){ showDialog('err', 'ثبت نشد', friendlyErr(err)); }
     }
   });
   /* عدد درصد: با خروج از خانه یا Enter ثبت می‌شود */
@@ -91176,11 +91189,11 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     if(raw !== '' && !isFinite(+raw)) return;
     if(p === cur) return;
     i.dataset.busy = '1';
-    try{ await pgSave(pg.sk, i.dataset.pgf, i.dataset.pgl, p); spRender(); }
+    try{ await pgSave(pg.sk, i.dataset.pgf, i.dataset.pgl, p); pgRe(); }
     catch(err){ delete i.dataset.busy; showDialog('err', 'ثبت نشد', friendlyErr(err)); }
   }
-  document.addEventListener('change', e => { if(e.target.matches && e.target.matches('#spArea .pg-in')) pgCommit(e.target); });
-  document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.matches && e.target.matches('#spArea .pg-in')){ e.preventDefault(); e.target.blur(); } });
+  document.addEventListener('change', e => { if(e.target.matches && e.target.matches('#spArea .pg-in, #pgArea .pg-in')) pgCommit(e.target); });
+  document.addEventListener('keydown', e => { if(e.key === 'Enter' && e.target.matches && e.target.matches('#spArea .pg-in, #pgArea .pg-in')){ e.preventDefault(); e.target.blur(); } });
   /* درصد پیشرفت روی کارت پیمانکار */
   window.pgCtrHtml = c => {
     const A = pg.a.filter(x => normName(x.c) === normName(c)); if(!A.length) return '';
@@ -102128,8 +102141,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const idle = !m;
       caps.classList.toggle('picked', !idle);
       document.body.classList.toggle('wpick-idle', idle);
-      const wrk = (m === 'wrk'), prc = (m === 'prc'), hse = (m === 'hse'), whm = (m === 'wh'), qcm = (m === 'qc'), com = (m === 'co'), mcm = (m === 'mc'), spm = (m === 'sp'), qtm = (m === 'qt'), ibm = (m === 'ib');
-      crewEls().forEach(el => { el.style.display = (wrk || prc || hse || whm || qcm || com || mcm || spm || qtm || ibm || idle) ? 'none' : ''; });
+      const wrk = (m === 'wrk'), prc = (m === 'prc'), hse = (m === 'hse'), whm = (m === 'wh'), qcm = (m === 'qc'), com = (m === 'co'), mcm = (m === 'mc'), spm = (m === 'sp'), qtm = (m === 'qt'), ibm = (m === 'ib'), pgm = (m === 'pgp');
+      crewEls().forEach(el => { el.style.display = (wrk || prc || hse || whm || qcm || com || mcm || spm || qtm || ibm || pgm || idle) ? 'none' : ''; });
+      const gA = document.getElementById('pgArea'); if(gA){ gA.hidden = !pgm; if(pgm){ try{ window.pgRender(); }catch(e){} } }
       const cA = document.getElementById('coArea'); if(cA){ cA.hidden = !com; if(com){ try{ coRender(); }catch(e){} } }
       const mA = document.getElementById('mcArea'); if(mA){ mA.hidden = !mcm; if(mcm){ try{ mcRender(); }catch(e){} } }
       const sA = document.getElementById('spArea'); if(sA){ sA.hidden = !spm; if(spm){ try{ spRender(); }catch(e){} } }
