@@ -209,8 +209,26 @@
 })();
 </script>
 
+<script>
+/* ۶۵۸ سرعت: قانون‌های «body:has(…)»، «html:has(…)» و «#panel…:has(…)» با هر تغییر کوچک صفحه کل صفحه را دوباره سبک‌دهی می‌کردند
+   (ده‌ها بار در هر کلیک؛ بیش از ۹۰٪ زمان سبک‌دهی). به‌جایشان همان شرط‌ها یک بار در هر تغییر (یک‌جا، پیش از رسم) خوانده می‌شوند
+   و یک کلاس روی html می‌نشیند؛ قانون‌ها با :where(html.hx-…) نوشته شده‌اند و ویژگی (specificity) هرکدام دقیقاً همان قبلی است. */
+(function(){
+  var F = [['hx-cur-home','#tabBar[data-cur="home"]'], ['hx-cur-admin','#tabBar[data-cur="admin"]'], ['hx-cur-tasks','#tabBar[data-cur="tasks"]'],
+    ['hx-cat-all','#adminView[data-cat="all"]'], ['hx-cat-archive','#adminView[data-cat="archive"]'], ['hx-cat-trn','#adminView[data-cat="trn"]'],
+    ['hx-tcal','#panelTasks #taskView .tcal.tpanel:not(.open)'], ['hx-wrkw','#panelWrite #wrkArea:not([hidden])'], ['hx-wrkh','#wsHost #wrkArea:not([hidden])'],
+    ['hx-modal','body > .modal-bg:not([hidden])'], ['hx-fv','body > .fv-bg:not([hidden])'], ['hx-rs','.rs'], ['hx-wsgrp','.page #wsList:not([hidden]) .ws-grp'],
+    ['hx-crsum','#panelWrite #crSum'], ['hx-vkio','#panelView #viewKindCaps :is([data-kind="intro"], [data-kind="org"]).on'],
+    ['hx-wsnew','#panelTasks :is(#wsHost [data-prtab="new"].on, #wsHost [data-hstab="new"].on, #wsHost [data-cotab="new"].on)'], ['hx-ctd','#panelTasks #wsCtd:not([hidden])']];
+  var de = document.documentElement;
+  function sync(){ for(var i = 0; i < F.length; i++){ var on = false; try{ on = !!document.querySelector(F[i][1]); }catch(e){} if(de.classList.contains(F[i][0]) !== on) de.classList.toggle(F[i][0], on); } }
+  window.hxSync = sync;
+  try{ new MutationObserver(sync).observe(de, {subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'data-cur', 'data-cat']}); }catch(e){}
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); sync();
+})();
+</script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261126233546">
+<meta name="pm-build" content="20261127045522">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -5360,7 +5378,7 @@
   #panelTasks[data-tkw="cal"] #taskView,
   #panelTasks[data-tkw="cal"] #taskJumpBar{display:none !important;}
   /* نوار پرش فقط وقتی پنجرهٔ فعالیت‌ها باز است */
-  #panelTasks:has(#taskView .tcal.tpanel:not(.open)) #taskJumpBar{display:none !important;}
+  :where(html.hx-tcal) #panelTasks:is(*, #taskView .tcal.tpanel:not(.open)) #taskJumpBar{display:none !important;}
 
   /* لیست فعالیت به تفکیک نفر: پرسنل و خارج سازمان */
   .tk-grp-h{
@@ -17484,7 +17502,7 @@
     margin:0 0 14px;padding:14px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);
     box-shadow:0 14px 30px -26px rgba(15,20,35,.6);animation:popIn .45s cubic-bezier(.22,.7,.2,1) both;
   }
-  :is(#panelWrite,#wsHost):has(#wrkArea:not([hidden])) .cr-sum{display:none;}
+  :where(html.hx-wrkw) #panelWrite:is(*, #wrkArea:not([hidden])) .cr-sum, :where(html.hx-wrkh) #wsHost:is(*, #wrkArea:not([hidden])) .cr-sum{display:none;}
   .crs-ring{position:relative;width:56px;height:56px;}
   .crs-ring svg{width:100%;height:100%;transform:rotate(-90deg) scaleY(-1);}
   .crs-ring circle{fill:none;stroke-width:5;}
@@ -18993,12 +19011,12 @@
   #adminView[data-cat="archive"]:not(.searching) > #secAdmarchive{display:block;}
   #adminView[data-cat="trn"]:not(.searching) > #secAdmtrn{display:block;}
   #adminView.searching > #secAdmtrn{display:none !important;}
-  #adminView[data-cat="trn"] > .adm-export, body:has(#adminView[data-cat="trn"]) #admViewBar{display:none !important;}
+  #adminView[data-cat="trn"] > .adm-export, :where(html.hx-cat-trn) body:is(*, #adminView[data-cat="trn"]) #admViewBar{display:none !important;}
   #adminView[data-cat="all"]:not(.searching) > #secAdmall{display:block;}
   #adminView.searching > #secAdmall{display:none !important;}
-  #adminView[data-cat="all"] > .adm-export, body:has(#adminView[data-cat="all"]) #admViewBar{display:none !important;}
+  #adminView[data-cat="all"] > .adm-export, :where(html.hx-cat-all) body:is(*, #adminView[data-cat="all"]) #admViewBar{display:none !important;}
   #adminView.searching > #secAdmarchive{display:none !important;}
-  #adminView[data-cat="archive"] > .adm-export, #adminView[data-cat="archive"] ~ .admview-bar, body:has(#adminView[data-cat="archive"]) #admViewBar{display:none !important;}
+  #adminView[data-cat="archive"] > .adm-export, #adminView[data-cat="archive"] ~ .admview-bar, :where(html.hx-cat-archive) body:is(*, #adminView[data-cat="archive"]) #admViewBar{display:none !important;}
   #adminView:not(.searching) > .adm-sec > .adm-sec-head .sec-ar{display:none;}
   #adminView:not(.searching) > .adm-sec > .adm-sec-body{display:block !important;}
   :is(#adminView, .adm-host) .adm-sec.cat-in{animation:paneIn2 .3s cubic-bezier(.22,.8,.2,1) both;}
@@ -19451,7 +19469,7 @@
   .b2-hint{font-size:10.5px;color:var(--muted);margin:0 2px 10px;}
   /* سربرگ گوشیِ میز کار: جمع‌وجور و یک‌دست */
   @media (max-width:640px){
-    html.ws-in:has(#tabBar[data-cur="tasks"]) #pageTitle{display:none !important;}
+    html.ws-in:where(.hx-cur-tasks):is(*, #tabBar[data-cur="tasks"]) #pageTitle{display:none !important;}
     html.ws-in #panelTasks > #wsBar{padding-block:4px !important;min-height:0 !important;margin-bottom:6px !important;}
     #tkTiles.rk-cards{display:grid !important;grid-template-columns:repeat(3, minmax(0,1fr)) !important;gap:4px !important;padding:4px !important;border-radius:14px !important;background:var(--field) !important;margin-bottom:10px !important;}
     #tkTiles.rk-cards > .rk{min-height:0 !important;height:40px !important;padding:0 8px !important;flex-direction:row !important;align-items:center !important;justify-content:center !important;gap:6px !important;border-radius:10px !important;box-shadow:none !important;border:0 !important;background:transparent !important;color:var(--muted) !important;}
@@ -20163,7 +20181,7 @@
   #navBack .nb-x:hover{background:var(--field);color:var(--ink);}
   @keyframes navBackIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @media(min-width:641px){ #navBack{bottom:22px;} }
-  body:has(> .modal-bg:not([hidden])) #navBack, body:has(> .fv-bg:not([hidden])) #navBack{display:none;}
+  :where(html.hx-modal) body:is(*, .modal-bg:not([hidden])) #navBack, :where(html.hx-fv) body:is(*, .fv-bg:not([hidden])) #navBack{display:none;}
   /* بازگشت به پنجرهٔ قبلی، کنار ✕ پنجره‌های تودرتو */
   .ov-back{all:unset;box-sizing:border-box;cursor:pointer;flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:inline-grid;place-items:center;
     color:var(--ink);background:var(--field);border:1px solid var(--line);margin-inline-end:6px;}
@@ -22132,7 +22150,7 @@
     .rs-spark{height:90px;} .rs-li{padding:9px 12px;} .rs-bar{grid-template-columns:minmax(80px, 36%) 1fr auto;}
   }
   /* تاریخ نمایش */
-  body:has(.rs) .jcal{z-index:1001;color:var(--ink);}
+  :where(html.hx-rs) body:is(*, .rs) .jcal{z-index:1001;color:var(--ink);}
   .rs-date{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);
     color:#fff;font:800 12px var(--f);cursor:pointer;white-space:nowrap;flex:none;}
   .rs-date svg{width:16px;height:16px;color:#f0b35a;}
@@ -26208,7 +26226,7 @@
 
   /* ====== نسخهٔ دسکتاپ: صفحهٔ پهن‌تر و چیدمان مرتب‌تر برای خانه، میز کار و اسناد ====== */
   @media (min-width:1280px){
-    body:has(#tabBar[data-cur="home"]) .page, body:has(#tabBar[data-cur="admin"]) .page, .page:has(#wsList:not([hidden]) .ws-grp){max-width:1160px;}
+    :where(html.hx-cur-home) body:is(*, #tabBar[data-cur="home"]) .page, :where(html.hx-cur-admin) body:is(*, #tabBar[data-cur="admin"]) .page, :where(html.hx-wsgrp) .page:is(*, #wsList:not([hidden]) .ws-grp){max-width:1160px;}
   }
   @media (min-width:1024px){
     /* اسناد: پنج نوع در یک ردیف هم‌اندازه، «همهٔ اسناد» و «آرشیو» دو کاشی کوچک روی هم در ستون آخر */
@@ -26477,7 +26495,7 @@
     html body #crSum .crs-kpis > span{background:none !important;border:0 !important;border-radius:0 !important;position:relative;flex:1 !important;}
     html body #crSum .crs-kpis > span + span::before{content:"";position:absolute;inset-inline-start:0;top:6px;bottom:6px;width:1px;background:var(--line);}
     html body #crSum .crs-kpis > span.on b{color:var(--vz1) !important;}
-    html body #panelWrite:has(#crSum) #writeJumpBar{display:none !important;}
+    html:where(.hx-crsum) body #panelWrite:is(*, #crSum) #writeJumpBar{display:none !important;}
     html body #crSum .crs-nav{display:flex;flex-direction:column;gap:2px;grid-column:1 / -1;}
     .crs-ni{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;height:38px;padding:0 8px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--ink);}
     .crs-ni > i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;flex:none;font-style:normal;font-size:11px;font-weight:800;border:1.5px solid color-mix(in srgb, var(--ink) 22%, transparent);color:#fff;}
@@ -27054,8 +27072,8 @@
   }
   /* معرفی پروژه و چارت سازمانی تاریخ ندارند: نوار بازه و تاریخ و «نمایش گزارش» پنهان */
   @media (min-width:1180px){
-    :is(html,#z0) :is(body,#z1) #panelView:has(#viewKindCaps :is([data-kind="intro"], [data-kind="org"]).on) .viewbar > :is(#rangeCaps, .vb-row){display:none !important;}
-    :is(html,#z0) :is(body,#z1) #panelView:has(#viewKindCaps :is([data-kind="intro"], [data-kind="org"]).on) :is(#viewTb, #reportView > #jumpBar){display:none !important;}
+    :is(html,#z0):where(.hx-vkio) :is(body,#z1) #panelView:is(*, #viewKindCaps :is([data-kind="intro"], [data-kind="org"]).on) .viewbar > :is(#rangeCaps, .vb-row){display:none !important;}
+    :is(html,#z0):where(.hx-vkio) :is(body,#z1) #panelView:is(*, #viewKindCaps :is([data-kind="intro"], [data-kind="org"]).on) :is(#viewTb, #reportView > #jumpBar){display:none !important;}
     :is(html,#z0) :is(body,#z1) #reportView .cf-kpis, :is(html,#z0) :is(body,#z1) #reportView [class*="-kpis"]:not(.tdh-kpis){gap:0 !important;}
   }
   /* فرم‌های ثبت (تدارکات، انبار، کیفیت، تغییرات) روی دسکتاپ: فیلدهای اصلی راست، ستون کناری چسبان (.fx-side) برای شرح، پیوست و دکمه‌های ثبت */
@@ -30263,7 +30281,7 @@
   .prf-more > summary em{font-style:normal;font-weight:500;color:var(--muted);} .prf-more[open]{padding-bottom:10px;}
 
 /* ۳۰۹: وقتی فرم تازهٔ همان بخش باز است، دکمهٔ «+ ثبت» بالای صفحه تکراری است */
-:is(html,#z0) :is(body,#z1) #panelTasks:has(#wsHost [data-prtab="new"].on, #wsHost [data-hstab="new"].on, #wsHost [data-cotab="new"].on) #wsBar .ws-badd{display:none!important}
+:is(html,#z0):where(.hx-wsnew) :is(body,#z1) #panelTasks:is(*, #wsHost [data-prtab="new"].on, #wsHost [data-hstab="new"].on, #wsHost [data-cotab="new"].on) #wsBar .ws-badd{display:none!important}
 
 /* ۳۱۰: کارت‌های انتخاب نوع گزارش (طرح قدیمی) دیگر دیده نمی‌شوند؛ «+» برگهٔ ثبت تازه را باز می‌کند و زبانهٔ ثبت فقط گزارش پیمانکاری است */
 :is(html,#z0) :is(body,#z1) #panelWrite #wModeCaps{display:none!important}
@@ -30324,7 +30342,7 @@
 .cdx-selbar{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;margin:8px 0;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgba(10,20,40,.08)}.cdx-selbar>span{flex:1}.cdx-selbar b{font-size:13px}
 .cdx-r.selm{position:relative;padding-inline-start:44px !important;cursor:pointer}.cdx-r.selm::before{content:"";position:absolute;inset-inline-start:14px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:6px;border:2px solid var(--line);background:var(--surface)}
 .cdx-r.selm.sel{box-shadow:0 0 0 2px var(--sky,#2f6f9f) inset}.cdx-r.selm.sel::before{background:var(--sky,#2f6f9f);border-color:var(--sky,#2f6f9f);box-shadow:inset 0 0 0 3px var(--surface)}
-#panelTasks:has(#wsCtd:not([hidden])) #wsBar .ws-bxl{display:none !important}
+:where(html.hx-ctd) #panelTasks:is(*, #wsCtd:not([hidden])) #wsBar .ws-bxl{display:none !important}
 .pj-hue{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;margin:10px 0;border-radius:14px;background:var(--field)}.pj-hue>span:first-child{display:flex;flex-direction:column;gap:2px;flex:1;min-width:180px}.pj-hue small{color:var(--muted);font-size:11.5px}
 .pj-hues{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.pj-hues button[data-pjhue]:not(.pj-hueimg){width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);background:linear-gradient(135deg,hsl(var(--h) 62% 52%),hsl(var(--h) 55% 38%));box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
 .pj-hues button.on{box-shadow:0 0 0 2px hsl(var(--h) 60% 45%)}.pj-hueimg{height:28px;padding:0 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font:inherit;font-size:12px;cursor:pointer}
@@ -30952,7 +30970,7 @@ button.dcc-d:hover{border-color:var(--line,#e2e6ec)} button.dcc-d.on{border-colo
 :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb > .adm-xwrap{order:4!important}
 :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb > .adm-xwrap .adm-xtg{border:1px solid var(--line)!important;background:var(--surface)!important;color:var(--ink)!important;font-weight:700!important}
 :is(html,#z0) :is(body,#z1) #adminView .adm-srch .ftb > .adm-xwrap .adm-xtg i{display:none}
-body:has(#adminView[data-cat="all"]) #admViewBtn, body:has(#adminView[data-cat="archive"]) #admViewBtn{display:none!important}
+:where(html.hx-cat-all) body:is(*, #adminView[data-cat="all"]) #admViewBtn, :where(html.hx-cat-archive) body:is(*, #adminView[data-cat="archive"]) #admViewBtn{display:none!important}
 /* نوار نما: پنهان؛ فقط به‌صورت منوی شناور «نمایش» */
 :is(html,#z0) :is(body,#z1) #adminView #admViewBar:not(.pop){display:none!important}
 :is(html,#z0) :is(body,#z1) #adminView #admViewBar.pop{position:absolute!important;z-index:70!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;margin:0!important;padding:14px!important;
@@ -31276,6 +31294,70 @@ html[data-dshide~="all"]:is(html,#z0) :is(body,#z1) :is(#admCats > .acat[data-ad
 #pjBody .pjw-r.three{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.2fr) 36px;gap:8px;align-items:center}
 #pjBody .pjw-r.three > *{min-width:0;height:44px} #pjBody .pjw-nospec{display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--field,#f4f6f9);border-radius:12px}
 @media (max-width:640px){ #pjBody .pjw-r.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;padding:10px;border:1px solid var(--line,#e3e7ed);border-radius:14px} #pjBody .pjw-r.three > input:first-child{grid-column:1 / -1} }
+
+/* ۶۵۸: «ابلاغ و رسیدگی» — مسیر مرحله‌ای رسیدگی، ابلاغ خودکار فشرده، مسئولین جمع‌شونده */
+:is(html,#z0) :is(body,#z1) :is(.af,#z2) .field.af-autonf{display:flex !important;border:0 !important;box-shadow:none !important;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:0 0 12px !important;padding:8px 10px;border-radius:12px;background:color-mix(in srgb, var(--ink) 3.5%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .af-autonf > label{display:inline-flex !important;align-items:center;margin:0 !important;font-size:11px;font-weight:700;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .af .af-autonf .af-nf{height:26px;padding:0 11px;font-size:11.5px;background:var(--surface);border:1px solid var(--line);}
+:is(html,#z0) :is(body,#z1) .af .af-autonf small{flex-basis:100%;margin:0;font-size:10.5px;line-height:1.6;}
+:is(html,#z0) :is(body,#z1) :is(.af,#z2) .field.afr{--tn:var(--sky);display:flex !important;flex-direction:column;align-items:stretch !important;gap:10px;margin:0 0 14px !important;padding:0 !important;background:none !important;border:0 !important;box-shadow:none !important;}
+:is(html,#z0) :is(body,#z1) .af .afr[data-tone="ok"]{--tn:var(--ok);} :is(html,#z0) :is(body,#z1) .af .afr[data-tone="bad"]{--tn:var(--alert);}
+:is(html,#z0) :is(body,#z1) .af .afr:is([data-tone="cx"],[data-tone="nil"]){--tn:var(--muted);}
+:is(html,#z0) :is(body,#z1) .af .afr-now{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;min-width:0;
+  background:color-mix(in srgb, var(--tn) 8%, var(--surface));border:1px solid color-mix(in srgb, var(--tn) 26%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .afr-dot{flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:var(--tn);box-shadow:0 0 0 4px color-mix(in srgb, var(--tn) 18%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .afr-nt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.5;}
+:is(html,#z0) :is(body,#z1) .af .afr-nt small{font-size:10px;font-weight:700;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .af .afr-nt b{font-size:14px;font-weight:800;color:var(--tn);}
+:is(html,#z0) :is(body,#z1) .af .afr-nt em{font-style:normal;font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+:is(html,#z0) :is(body,#z1) .af .afr-pg{flex:0 0 auto;font-family:var(--m);font-size:10.5px;color:var(--muted);padding:3px 8px;border-radius:99px;background:var(--surface);border:1px solid var(--line);}
+:is(html,#z0) :is(body,#z1) .af .afr-pg b{color:var(--tn);font-size:12px;}
+:is(html,#z0) :is(body,#z1) .af .afr-path{display:flex;flex-direction:column;gap:0;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s{position:relative;display:flex !important;align-items:center;gap:10px;width:100%;height:34px !important;padding:0 6px !important;margin:0;
+  border-radius:10px !important;background:transparent !important;border:0 !important;box-shadow:none !important;color:var(--muted) !important;font-size:12px !important;font-weight:600 !important;text-align:start;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s:hover{background:color-mix(in srgb, var(--ink) 4%, transparent) !important;color:var(--ink) !important;}
+/* خط اتصال بین گره‌ها */
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s:not(:last-child)::after{content:"";position:absolute;inset-inline-start:16px;top:26px;height:16px;width:2px;border-radius:2px;background:var(--line);z-index:0;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.done:not(:last-child)::after{background:color-mix(in srgb, var(--ok) 55%, transparent);}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s > .afr-n{position:relative;z-index:1;flex:0 0 22px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+  font-family:var(--m);font-size:10px !important;font-weight:800;color:var(--muted) !important;background:var(--surface) !important;border:1.5px solid var(--line);}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s > .afr-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.done{color:var(--ink) !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.done > .afr-n{background:var(--ok) !important;border-color:var(--ok);color:#fff !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.done > .afr-n > span{display:none;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.done > .afr-n::after{content:"";width:8px;height:4px;border:solid #fff;border-width:0 0 2px 2px;transform:translateY(-1px) rotate(-45deg);}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.cur, :is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.on{background:color-mix(in srgb, var(--tn) 10%, transparent) !important;color:var(--tn) !important;font-weight:800 !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.cur > .afr-n, :is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.on > .afr-n{background:var(--tn) !important;border-color:var(--tn);color:#fff !important;box-shadow:0 0 0 4px color-mix(in srgb, var(--tn) 18%, transparent);}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.stop{color:var(--alert) !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.stop > .afr-n{background:var(--alert) !important;border-color:var(--alert);color:#fff !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.stop > .afr-n > span{display:none;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.stop > .afr-n::after{content:"×";font-size:13px;line-height:1;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-s.cx{opacity:.55;text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--muted) 60%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .afr-alt{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:10px;border-top:1px dashed var(--line);}
+:is(html,#z0) :is(body,#z1) .af .afr-at{flex-basis:100%;font-size:10.5px;font-weight:700;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-x{height:28px !important;padding:0 11px !important;font-size:11px !important;font-weight:700 !important;border-radius:99px !important;box-shadow:none !important;
+  background:transparent !important;border:1px solid var(--line) !important;color:var(--muted) !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-x.r:hover{border-color:color-mix(in srgb, var(--alert) 45%, transparent) !important;color:var(--alert) !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-x.r.on{background:var(--alert-soft) !important;border-color:color-mix(in srgb, var(--alert) 45%, transparent) !important;color:var(--alert) !important;}
+:is(html,#z0) :is(body,#z1) :is(.afr,#z2) .af-c.afr-x.k.on{background:color-mix(in srgb, var(--ink) 9%, transparent) !important;border-color:color-mix(in srgb, var(--ink) 25%, transparent) !important;color:var(--ink) !important;}
+/* مسئولین بررسی: فهرست جمع‌شونده و ردیف‌های فشرده */
+:is(html,#z0) :is(body,#z1) .af .rvw2{padding-top:12px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .rvw2 .rvw2-h > label{display:block !important;font-size:12px;font-weight:800;color:var(--ink);}
+:is(html,#z0) :is(body,#z1) .af .rvw2-sel{min-height:40px;margin-bottom:8px;}
+:is(html,#z0) :is(body,#z1) .af .rvw2-empty{font-size:10.5px;line-height:1.7;}
+:is(html,#z0) :is(body,#z1) .af .rvw2-tg{display:flex;align-items:center;gap:7px;width:100%;height:36px;padding:0 11px;margin:0 0 8px;border-radius:11px;cursor:pointer;
+  font:inherit;font-size:11.5px;font-weight:700;color:var(--sky);background:var(--sky-soft);border:1px solid color-mix(in srgb, var(--sky) 22%, transparent);}
+:is(html,#z0) :is(body,#z1) .af .rvw2-tg svg{width:15px;height:15px;flex:0 0 15px;transition:transform .2s;}
+:is(html,#z0) :is(body,#z1) .af .rvw2-tg[aria-expanded="true"] svg{transform:rotate(45deg);}
+:is(html,#z0) :is(body,#z1) .af .rvw2-tg span{flex:1;text-align:start;}
+:is(html,#z0) :is(body,#z1) .af .rvw2-tg em{font-style:normal;font-size:10px;font-weight:700;color:var(--muted);}
+:is(html,#z0) :is(body,#z1) .af .rvw2-pk[hidden]{display:none !important;}
+:is(html,#z0) :is(body,#z1) .af .af-side .rvw2-grid, :is(html,#z0) :is(body,#z1) .af-side .rvw2-grid{grid-template-columns:minmax(0,1fr) !important;max-height:236px;gap:4px;}
+:is(html,#z0) :is(body,#z1) .af-side .rvw2-p{padding:6px 8px;gap:8px;border-radius:10px;}
+:is(html,#z0) :is(body,#z1) .af-side .rvw2-av .ava{width:26px !important;height:26px !important;flex:0 0 26px;}
+/* ستون کناری چسبان نباید از صفحه بلندتر شود؛ وگرنه پایینش (پیوست، توضیحات) هرگز دیده نمی‌شد */
+@media (min-width:1180px){ html body .af.af-2c > .af-side{max-height:calc(100vh - var(--hdh, 64px) - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;} }
+
 </style>
 <script>
 /* حالت نمایش دسکتاپ: «استودیو» (چیدمان دسکتاپ فعلی) یا «کلاسیک» (ستون فشردهٔ شبیه گوشی).
@@ -56155,11 +56237,13 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('acM') && !document.querySelector('.modal-bg:not([hidden]), .fx-bg')){ document.getElementById('acM').remove(); document.documentElement.classList.remove('ac-open'); } });
   document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-acopen]'); if(!b) return; e.preventDefault(); e.stopPropagation(); window.acOpen(b.dataset.acopen !== '1' ? b.dataset.acopen : ''); }, true);
   /* ستون کناری: ورودی «مدیریت سامانه» فقط برای ادمین */
-  setInterval(() => { try{ const bar = document.getElementById('tabBar'), v = document.getElementById('tabView'); if(!bar || !v) return; let a = false; try{ a = isAdminUser(); }catch(e){}
+  /* ۶۵۸: همان لحظهٔ اول هم اجرا می‌شود (پیش‌تر ۱.۵ ثانیه بعد اضافه می‌شد و منو می‌پرید) */
+  const acTabSync = () => { try{ const bar = document.getElementById('tabBar'), v = document.getElementById('tabView'); if(!bar || !v) return; let a = false; try{ a = isAdminUser(); }catch(e){}
     let b = document.getElementById('tabAc'); if(!a){ if(b) b.remove(); return; } if(b) return;
     b = document.createElement('button'); b.type = 'button'; b.className = 'tab tab-ac'; b.id = 'tabAc'; b.dataset.acopen = '1'; b.title = 'کنسول مدیریت سامانه';
     b.innerHTML = '<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="lb">مدیریت سامانه</span>';
-    { const sb = v.nextElementSibling; (sb && sb.classList.contains('sb-sub') ? sb : v).after(b); } }catch(e){} }, 1500);
+    { const sb = v.nextElementSibling; (sb && sb.classList.contains('sb-sub') ? sb : v).after(b); } }catch(e){} };
+  acTabSync(); setTimeout(acTabSync, 0); setInterval(acTabSync, 1500);
   /* اگر زیرفهرست گزارش‌ها بعداً ساخته شد، «مدیریت سامانه» همیشه بعد از آن بماند */
   setInterval(() => { try{ const v = document.getElementById('tabView'), b = document.getElementById('tabAc'); if(!v || !b) return; const sb = v.parentElement.querySelector('.sb-sub[data-for="tabView"]'); const want = sb || v; if(want.nextElementSibling !== b) want.after(b); }catch(e){} }, 1500);
   /* «مدیریت کل سامانه» جدا در ستون کناری نیست؛ اولین بخش همان «مدیریت سامانه» (کنسول) است — برای مدیر اصلی */
@@ -74155,6 +74239,10 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
         + '<div class="rvw2-h"><label>مسئولین بررسی داخلی</label><span class="rvw2-n">' + (on.size ? toFa(on.size) + ' نفر انتخاب شده' : 'کسی انتخاب نشده') + '</span></div>'
         + '<input type="hidden" class="a-rvWho" value="' + esc((cur || []).join('|')) + '">'
         + '<div class="rvw2-sel">' + rvwSelHtml(cur || []) + '</div>'
+        + '<button type="button" class="rvw2-tg" data-rvtg="1" aria-expanded="' + (on.size ? 'false' : 'true') + '">'
+        +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+        +   '<span>' + (on.size ? 'افزودن یا تغییر مسئولین' : 'انتخاب از فهرست') + '</span><em>' + toFa(names.length) + ' نفر</em></button>'
+        + '<div class="rvw2-pk"' + (on.size ? ' hidden' : '') + '>'
         + (names.length > 6 ? '<label class="rvw2-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>'
             + '<input type="text" class="rvw2-find" placeholder="جست‌وجوی نام یا سمت…" autocomplete="off"></label>' : '')
         + '<div class="rvw-pickrow rvw2-grid">'
@@ -74166,7 +74254,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
                 + '<span class="rvw2-tx"><b>' + esc(n) + '</b>' + (rl ? '<small>' + esc(rl) + '</small>' : '') + '</span>'
                 + '<i class="rvw2-ck"></i></button>';
             }).join('')
-        + '</div></div>';
+        + '</div></div></div>';
     };
     const reviewSel = (cls, cur) => '<div class="field" style="margin-bottom:8px;"><label>وضعیت رسیدگی</label>'
       + '<select class="'+cls+'">'
@@ -74244,9 +74332,9 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       : fd(cls, lbl, val);
     const flowSec = (nCls, nVal, rCls) => isNewItem
       /* ثبت تازه: وضعیت ابلاغ و رسیدگی هم قابل انتخاب (تأییدشده، ردشده، پرداخت‌شده… برای سندهای قدیمی یا بسته)؛ پیش‌فرض «در حال تنظیم» */
-      ? sec('flow', 'ابلاغ و رسیدگی', chips(notifySel(nCls, 'درون‌سازمانی')) + chips(reviewSel(rCls, 'در حال تنظیم'))
+      ? sec('flow', 'ابلاغ و رسیدگی', notifySel(nCls, 'درون‌سازمانی') + afrHtml(rCls, 'در حال تنظیم')
           + '<input type="hidden" class="a-rvWho" value=""><small class="af-hint">مسئولین بررسی بعد از ثبت، با «ویرایش» تعیین می‌شوند.</small>', 'one')
-      : sec('flow', 'ابلاغ و رسیدگی', chips(notifySel(nCls, nVal)) + chips(reviewSel(rCls, pick(r,AD.review))) + reviewersField(reviewersOf(r)), 'one');
+      : sec('flow', 'ابلاغ و رسیدگی', notifySel(nCls, nVal) + afrHtml(rCls, String(pick(r,AD.review) || '')) + reviewersField(reviewersOf(r)), 'one');
 
     if(kind === 'statement'){
       return wrap(
@@ -76662,6 +76750,63 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   }, true);
 
   /* ردیف انتخاب‌شده‌ها در فرم مسئولین بررسی داخلی */
+  /* ====== ۶۵۸: رسیدگی به شکل مسیر مرحله‌ای ======
+     مسیر اصلی (تنظیم ← بررسی و تأیید داخلی ← پیمانکار ← کارفرما ← تأیید ← پرداخت)
+     عمودی و شماره‌دار؛ مرحله‌های گذشته تیک می‌خورند، مرحلهٔ جاری برجسته است.
+     ردها و کنسل جدا، زیر مسیر. مقدار همچنان در همان select مخفی ذخیره می‌شود
+     (همان کلیک .af-c داخل .af-chips) تا admValues بدون تغییر بخواند. */
+  const AFR_MAIN = ['در حال تنظیم','بررسی داخلی','تأیید داخلی','بررسی پیمانکار','تأیید پیمانکار','بررسی کارفرما','تایید شده','پرداخت شده'];
+  const AFR_STOP = {'رد داخلی':1, 'رد پیمانکار':3, 'رد کارفرما':5};
+  const AFR_SUB = {'در حال تنظیم':'پیش‌نویس، هنوز ارسال نشده', 'بررسی داخلی':'نزد مسئولین بررسی تیم', 'تأیید داخلی':'آمادهٔ ارسال به طرف قرارداد',
+    'بررسی پیمانکار':'نزد پیمانکار', 'تأیید پیمانکار':'پیمانکار پذیرفته', 'بررسی کارفرما':'نزد کارفرما / مشاور', 'تایید شده':'نهایی و تأییدشده', 'پرداخت شده':'تسویه شده',
+    'رد داخلی':'در بررسی داخلی رد شد', 'رد پیمانکار':'پیمانکار رد کرد', 'رد کارفرما':'کارفرما رد کرد', 'کنسل شده':'پرونده بسته شد'};
+  function afrStepCls(cur, i){
+    const at = AFR_MAIN.indexOf(cur);
+    if(cur === 'کنسل شده') return ' cx';
+    if(cur in AFR_STOP){ const k = AFR_STOP[cur]; return i < k ? ' done' : i === k ? ' stop' : ''; }
+    return i < at ? ' done' : i === at ? ' cur' : '';
+  }
+  function afrTone(cur){ return !cur ? 'nil' : cur === 'کنسل شده' ? 'cx' : (cur in AFR_STOP) ? 'bad' : (cur === 'تایید شده' || cur === 'پرداخت شده') ? 'ok' : 'go'; }
+  function afrNowHtml(cur){
+    const i = AFR_MAIN.indexOf(cur);
+    return '<span class="afr-dot"></span><span class="afr-nt"><small>وضعیت فعلی</small><b>' + esc(cur || 'تعیین نشده') + '</b>'
+      + (AFR_SUB[cur] ? '<em>' + esc(AFR_SUB[cur]) + '</em>' : '') + '</span>'
+      + (i !== -1 ? '<span class="afr-pg"><b>' + toFa(i + 1) + '</b>/' + toFa(AFR_MAIN.length) + '</span>' : '');
+  }
+  window.afrHtml = (cls, cur) => {
+    cur = String(cur || '');
+    const all = [''].concat(REVIEW_STATES.map(x => x.v));
+    if(cur && all.indexOf(cur) === -1) all.push(cur);
+    const i0 = AFR_MAIN.indexOf(cur);
+    return '<div class="field af-chips afr" data-tone="' + afrTone(cur) + '">'
+      + '<select class="' + cls + '" hidden>' + all.map(v => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(v) + '</option>').join('') + '</select>'
+      + '<div class="afr-now">' + afrNowHtml(cur) + '</div>'
+      + '<div class="afr-path" role="group" aria-label="مرحلهٔ رسیدگی">'
+      +   AFR_MAIN.map((v, i) => '<button type="button" class="af-c afr-s' + afrStepCls(cur, i) + (v === cur ? ' on' : '') + '" data-afv="' + esc(v) + '"'
+            + (v === cur ? ' aria-current="step"' : '') + '>'
+            + '<i class="afr-n"><span>' + toFa(i + 1) + '</span></i><span class="afr-l">' + esc(v) + '</span></button>').join('')
+      + '</div>'
+      + '<div class="afr-alt"><span class="afr-at">پایان دیگر</span>'
+      +   ['رد داخلی','رد پیمانکار','رد کارفرما','کنسل شده'].map(v => '<button type="button" class="af-c afr-x ' + (v === 'کنسل شده' ? 'k' : 'r') + (v === cur ? ' on' : '') + '" data-afv="' + esc(v) + '">' + esc(v) + '</button>').join('')
+      + '</div></div>';
+  };
+  function afrPaint(box){
+    const sel = box && box.querySelector('select'); if(!sel) return;
+    const cur = sel.value || '';
+    box.dataset.tone = afrTone(cur);
+    box.querySelectorAll('.afr-s').forEach((b, i) => {
+      b.className = 'af-c afr-s' + afrStepCls(cur, i) + (b.dataset.afv === cur ? ' on' : '');
+      if(b.dataset.afv === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+    });
+    const now = box.querySelector('.afr-now'); if(now) now.innerHTML = afrNowHtml(cur);
+  }
+  document.addEventListener('change', e => { const b = e.target && e.target.closest && e.target.closest('.afr'); if(b) afrPaint(b); });
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-rvtg]'); if(!t) return;
+    const pk = t.parentElement.querySelector('.rvw2-pk'); if(!pk) return;
+    pk.hidden = !pk.hidden; t.setAttribute('aria-expanded', pk.hidden ? 'false' : 'true');
+    if(!pk.hidden){ const q = pk.querySelector('.rvw2-find'); if(q) setTimeout(() => q.focus(), 30); }
+  });
   function rvwSelHtml(list){
     if(!list.length) return '<span class="rvw2-empty">از فهرست زیر یک یا چند نفر را برای بررسی داخلی انتخاب کنید.</span>';
     return list.map((n, i) => '<span class="rvw2-chip"><i>' + toFa(i + 1) + '</i>' + avatarHtml(n, '', true)
@@ -76738,6 +76883,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       return;
     }
     const again = c.classList.contains('on');
+    /* ۶۵۸: در مسیر رسیدگی، کلیک دوباره روی مرحلهٔ جاری آن را خالی نمی‌کند */
+    if(again && box.classList.contains('afr')) return;
     sel.value = again ? '' : c.dataset.afv;
     box.querySelectorAll('.af-c').forEach(x => x.classList.toggle('on', !again && x === c));
     sel.dispatchEvent(new Event('change', {bubbles:true}));
@@ -107254,7 +107401,11 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     let dz = false; try{ dz = !!window.pjIsDesign(); }catch(e){}
     if(/طراح|BIM|نقشه/.test(rl)) return 'des'; if(lv <= 2) return dz ? 'des' : 'mgr'; return dz ? 'des' : 'site'; }
   const hlFull = o => o.filter(k => HL_B[k]).concat(HL_DEF.filter(k => o.indexOf(k) === -1));
-  window.homeLayOrder = () => { const v = hlGet(); if(!v) return HL_DEF.slice(); const H = new Set(v.h || []); return hlFull(v.o).filter(k => !H.has(k)); };
+  /* ۶۵۸: تا چیدمانی ذخیره نشده، همان الگوی پیشنهادی نقش نشان داده می‌شود (نه چیدمان پیش‌فرض)؛ پیش‌تر کاربر تازه ۹ ثانیه خانهٔ
+     پیش‌فرض را می‌دید و بعد خانه یکباره با الگوی نقشش عوض می‌شد */
+  window.homeLayOrder = () => { const v = hlGet();
+    if(!v){ try{ const P = hlPs().find(x => x.k === hlSuggest()); if(P && Array.isArray(P.o)){ const H = new Set(P.h || []); return hlFull(P.o).filter(k => !H.has(k)); } }catch(e){} return HL_DEF.slice(); }
+    const H = new Set(v.h || []); return hlFull(v.o).filter(k => !H.has(k)); };
   const hlApplyPreset = k => { const P = hlPs().find(x => x.k === k) || hlPs()[0]; hlSet({p: P.k, o: P.o.slice(), h: P.h.slice()}); };
   const hlRerender = () => { try{ const b = document.getElementById('homeView'); if(b) b.__h = ''; homeRender(); }catch(e){} };
   /* پیش‌نمایش کوچک هر الگو: بلوک‌ها به‌شکل نوارهای رنگی با اندازهٔ تقریبی */
@@ -107514,7 +107665,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     function sbExpPaint(){ ['tabTasks', 'tabAdmin', 'tabView'].forEach(id => { const t = document.getElementById(id); if(!t) return; const d = bar.querySelector('.sb-sub[data-for="' + id + '"]');
       let b = t.querySelector(':scope > .sb-exp'); if(!d || !d.__h){ if(b) b.hidden = true; return; }
       if(!b){ t.insertAdjacentHTML('beforeend', '<span class="sb-exp" role="button" tabindex="0" aria-label="باز و بسته کردن زیرفهرست"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>'); b = t.querySelector(':scope > .sb-exp'); }
-      b.hidden = false; const on = d.classList.contains('open'); b.classList.toggle('on', on); b.setAttribute('aria-expanded', String(on)); }); }
+      if(b.hidden) b.hidden = false; const on = d.classList.contains('open'); if(b.classList.contains('on') !== on) b.classList.toggle('on', on); if(b.getAttribute('aria-expanded') !== String(on)) b.setAttribute('aria-expanded', String(on)); }); }
     setTimeout(sbExpPaint, 1500); setInterval(() => { try{ if(mq.matches) sbExpPaint(); }catch(e){} }, 4000);
     function put(id, html, open){ const d = box(id); if(!d) return; if(d.__h !== html){ d.innerHTML = html; d.__h = html; } d.classList.toggle('open', !!open && !!html); }
     function build(){
@@ -107637,6 +107788,8 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     new MutationObserver(() => { clearTimeout(t); build(); }).observe(bar, {attributes: true, attributeFilter: ['data-cur']});
     document.addEventListener('click', () => soon(250), true); window.addEventListener('pm:navsync', () => soon(30));
     try{ mq.addEventListener('change', () => soon(20)); }catch(e){}
+    /* ۶۵۸: ستون کناری همان لحظهٔ اول کامل ساخته می‌شود (پیش‌تر ۱.۲ ثانیه بعد؛ «مدیریت سامانه» و فلش زیرفهرست‌ها یکباره اضافه می‌شدند و منو می‌پرید) */
+    try{ build(); try{ sbExpPaint(); }catch(e){} }catch(e){} setTimeout(() => { try{ build(); sbExpPaint(); }catch(e){} }, 0);
     setTimeout(build, 1200); setInterval(() => { if(!document.hidden && mq.matches) build(); }, 60000);
     window.sbBuild = build;
     /* باز شدن بخش از جای دیگر (خانه، جست‌وجو، پیوند) هم برجستگی ستون کناری را درست می‌کند */
@@ -109819,7 +109972,7 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
     /* شمارهٔ فوری روی بخش اصلی: جمع شماره‌های قرمز زیرمنو */
     const badge = () => { ['tabTasks', 'tabAdmin', 'tabView'].forEach(id => { const t = document.getElementById(id), d = bar.querySelector('.sb-sub[data-for="' + id + '"]'); if(!t) return;
       let n = 0; if(d) d.querySelectorAll('.sb-it > em.hot').forEach(x => { n += +toEn(x.textContent) || 0; });
-      let e = t.querySelector('.sb-bdg'); if(!n){ if(e) e.remove(); return; } if(!e){ e = document.createElement('em'); e.className = 'sb-bdg'; t.appendChild(e); } e.textContent = toFa(n); }); };
+      let e = t.querySelector('.sb-bdg'); if(!n){ if(e) e.remove(); return; } if(!e){ e = document.createElement('em'); e.className = 'sb-bdg'; t.appendChild(e); } const tx = toFa(n); if(e.textContent !== tx) e.textContent = tx; }); };
     new MutationObserver(() => { clearTimeout(bar.__bt); bar.__bt = setTimeout(badge, 120); }).observe(bar, {childList: true, subtree: true, characterData: true});
     setTimeout(badge, 1500);
   })();
