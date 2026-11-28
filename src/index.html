@@ -228,7 +228,7 @@
 })();
 </script>
 <meta charset="UTF-8">
-<meta name="pm-build" content="20261128064511">
+<meta name="pm-build" content="20261128065741">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1d4a61" media="(prefers-color-scheme: light)">
@@ -34742,6 +34742,20 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
   #attArea .atn-q{width:100%;}
 }
 :is(html[data-theme="dark"],#z0) #attArea .atn-me, :is(html[data-theme="dark"],#z0) #attArea .atn-rp{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);}
+/* ۷۰۷: کارت‌ها و نمودارهای خانه — جابه‌جایی و تغییر اندازه */
+:is(html,#z0) :is(body,#z1) #homeView .dsz-h{display:none;}
+@media (min-width:1100px){
+  :is(html,#z0) :is(body,#z1) #homeView .hd4.open > .hd4-g.dsz-g, :is(html,#z0) :is(body,#z1) #homeView .hdb-in .hdb-g.dsz-g, :is(html,#z0) :is(body,#z1) #homeView .hdb .hdb-g.dsz-g, :is(html,#z0) :is(body,#z1) #homeView .hzk.dsz-g{display:grid !important;grid-template-columns:repeat(12, minmax(0,1fr)) !important;grid-auto-flow:row dense !important;overflow:visible !important;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk]{grid-column:span var(--dsz, 4) !important;position:relative !important;min-width:0 !important;width:auto !important;max-width:none !important;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk][draggable="true"]{cursor:grab;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk].dk-drag{opacity:.45;outline:2px dashed color-mix(in srgb, var(--ink) 30%, transparent);outline-offset:2px;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk] > .dsz-h{all:unset;box-sizing:border-box;display:grid;place-items:center;position:absolute;bottom:6px;inset-inline-end:6px;width:24px;height:24px;border-radius:8px;cursor:ew-resize;z-index:5;
+    color:var(--muted);background:color-mix(in srgb, var(--surface) 85%, transparent);border:1px solid var(--line);opacity:0;transition:opacity .15s;touch-action:none;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk]:hover > .dsz-h, :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk].dsz-on > .dsz-h{opacity:1;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk] > .dsz-h svg{width:13px;height:13px;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk].dsz-on{outline:2px solid color-mix(in srgb, var(--sky, #2f6f8f) 45%, transparent);outline-offset:2px;}
+  :is(html,#z0) :is(body,#z1) #homeView .dsz-g > [data-dk] svg{max-width:100%;}
+}
 /* ۶۳۷: «ثبت تازه» — طراحی تازه */
 :is(html,#z0) :is(body,#z1) .hm-add.hx3{--hx3-bd:color-mix(in srgb, var(--line) 85%, transparent);display:flex;flex-direction:column;overflow:hidden;padding:0;max-width:1000px;width:100%;height:min(760px, 90vh);max-height:90vh;border-radius:22px 22px 0 0;background:var(--surface);box-shadow:0 30px 80px -20px rgba(10,20,35,.45), 0 0 0 1px var(--hx3-bd);}
 :is(html,#z0) :is(body,#z1) .hm-add.hx3 .hma-grab{margin:8px auto 0;flex:none;}
@@ -109598,7 +109612,55 @@ html.sb-mini :is(body,#z1) #tabBar .tab > .sb-exp{display:none !important;}
       const r = c.getBoundingClientRect(), after = (e.clientY - r.top) > r.height / 2 || ((e.clientY - r.top) > r.height * .25 && (getComputedStyle(c).direction === 'rtl' ? e.clientX < r.left + r.width / 2 : e.clientX > r.left + r.width / 2));
       c.parentElement.insertBefore(drag, after ? c.nextSibling : c); });
     document.addEventListener('dragend', () => { if(!drag) return; const box = drag.parentElement; drag.classList.remove('dk-drag'); drag = null;
-      try{ localStorage.setItem(dashOrdK(), JSON.stringify(Array.from(box.querySelectorAll(':scope > [data-dk]')).map(x => x.dataset.dk))); }catch(e){} });
+      try{ localStorage.setItem(dashOrdK() + (box.classList.contains('hd4-g') ? '.h4' : box.classList.contains('hzk') ? '.hz' : ''), JSON.stringify(Array.from(box.querySelectorAll(':scope > [data-dk]')).map(x => x.dataset.dk))); }catch(e){} });
+  })();
+  /* ۷۰۷: همهٔ کارت‌ها و نمودارهای خانه (هر دو گروه: نمای مدیریتی hd4 و نمودارهای hdb) جابه‌جاشدنی و بزرگ/کوچک‌شدنی (دسکتاپ)
+     شبکهٔ ۱۲ ستونی؛ هر کارت یک دستگیرهٔ گوشه دارد — کشیدن = تغییر پهنا (چسبیده به ستون‌ها)، دوبار زدن = اندازهٔ بعدی؛ برای هر کاربر روی همین دستگاه */
+  const dashSzK = () => 'siteLogM.dashSz.' + dashPk() + '.' + (activeUserName() || '');
+  const dashSz = () => { try{ return JSON.parse(localStorage.getItem(dashSzK()) || '{}') || {}; }catch(e){ return {}; } };
+  const DSZ_STEPS = [3, 4, 6, 8, 12];
+  const dszDef = el => el.classList.contains('hd4-c') ? 3 : el.classList.contains('hdb-wide') ? 8 : el.classList.contains('hzk-t') ? Math.max(3, Math.floor(12 / Math.max(1, el.parentElement.querySelectorAll(':scope > .hzk-t').length))) : 4;
+  const dszOn = () => window.matchMedia && matchMedia('(min-width:1100px)').matches;
+  function dashEnhance(){
+    const H = document.getElementById('homeView'); if(!H) return;
+    const SZ = dashSz();
+    H.querySelectorAll('.hd4-g, .hdb-g, .hzk').forEach(box => {
+      const h4 = box.classList.contains('hd4-g'), hz = box.classList.contains('hzk'), sfx = h4 ? '.h4' : '.hz';
+      box.classList.add('dsz-g');
+      Array.from(box.children).forEach(el => {
+        if(h4 && el.classList.contains('hd4-c') && !el.dataset.dk){ const k = Array.from(el.classList).find(c => /^hd4-(?!c$)/.test(c)); if(k){ el.dataset.dk = 'h4:' + k; el.setAttribute('draggable', 'true'); } }
+        if(hz && el.classList.contains('hzk-t') && !el.dataset.dk){ const k = Array.from(el.classList).find(c => /^k-/.test(c)); if(k){ el.dataset.dk = 'hz:' + k; el.setAttribute('draggable', 'true'); } }
+        const k = el.dataset.dk; if(!k) return;
+        el.style.setProperty('--dsz', SZ[k] || dszDef(el));
+        if(!el.querySelector(':scope > .dsz-h')) el.insertAdjacentHTML('beforeend', '<button type="button" class="dsz-h" data-dsz aria-label="تغییر اندازه — بکشید یا دو بار بزنید" title="تغییر اندازه: بکشید، یا دو بار بزنید"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 20 4 15M15 20 4 9"/></svg></button>');
+      });
+      if((h4 || hz) && !box.dataset.dszOrd){ box.dataset.dszOrd = '1';
+        let ord = []; try{ ord = JSON.parse(localStorage.getItem(dashOrdK() + sfx) || '[]') || []; }catch(e){}
+        if(ord.length){ const pos = k => { const i = ord.indexOf(k); return i === -1 ? 99 : i; };
+          Array.from(box.querySelectorAll(':scope > [data-dk]')).sort((a, b) => pos(a.dataset.dk) - pos(b.dataset.dk)).forEach(x => box.appendChild(x)); } }
+    });
+  }
+  (function(){
+    let t = 0; const run = () => { clearTimeout(t); t = setTimeout(() => { try{ dashEnhance(); }catch(e){} }, 60); };
+    const watch = () => { const H = document.getElementById('homeView'); if(!H){ setTimeout(watch, 800); return; } new MutationObserver(run).observe(H, {childList: true, subtree: true}); run(); };
+    watch();
+    const save = el => { const SZ = dashSz(); SZ[el.dataset.dk] = +getComputedStyle(el).getPropertyValue('--dsz') || dszDef(el); try{ localStorage.setItem(dashSzK(), JSON.stringify(SZ)); }catch(e){} };
+    /* دو بار زدن: اندازهٔ بعدی */
+    document.addEventListener('dblclick', e => { const h = e.target.closest && e.target.closest('[data-dsz]'); if(!h || !dszOn()) return; e.preventDefault(); e.stopPropagation();
+      const el = h.parentElement, cur = +getComputedStyle(el).getPropertyValue('--dsz') || dszDef(el); const i = DSZ_STEPS.findIndex(v => v > cur);
+      el.style.setProperty('--dsz', i === -1 ? DSZ_STEPS[0] : DSZ_STEPS[i]); save(el); }, true);
+    document.addEventListener('click', e => { const h = e.target.closest && e.target.closest('[data-dsz]'); if(h){ e.preventDefault(); e.stopPropagation(); } }, true);
+    /* کشیدن دستگیره: پهنا به نزدیک‌ترین ستون */
+    let R = null;
+    document.addEventListener('pointerdown', e => { const h = e.target.closest && e.target.closest('[data-dsz]'); if(!h || !dszOn()) return; e.preventDefault(); e.stopPropagation();
+      const el = h.parentElement, box = el.parentElement, br = box.getBoundingClientRect(), gap = parseFloat(getComputedStyle(box).columnGap) || 12;
+      R = {el, x: e.clientX, w: el.getBoundingClientRect().width, col: (br.width - gap * 11) / 12, gap, rtl: getComputedStyle(box).direction === 'rtl', id: e.pointerId};
+      el.classList.add('dsz-on'); try{ h.setPointerCapture(e.pointerId); }catch(er){} }, true);
+    document.addEventListener('pointermove', e => { if(!R || e.pointerId !== R.id) return; e.preventDefault();
+      const dx = R.rtl ? R.x - e.clientX : e.clientX - R.x, w = R.w + dx;
+      const n = Math.max(2, Math.min(12, Math.round((w + R.gap) / (R.col + R.gap)))); R.el.style.setProperty('--dsz', n); }, {passive: false});
+    const up = e => { if(!R || e.pointerId !== R.id) return; R.el.classList.remove('dsz-on'); save(R.el); R = null; };
+    document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   })();
   /* راهنمای شناور نمودارها */
   document.addEventListener('mousemove', e => {
